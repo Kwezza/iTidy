@@ -10,19 +10,31 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
+#include <proto/wb.h>
+#include <proto/diskfont.h> // Include diskfont library
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 
 #define ICON_SPACING_X 10
-#define ICON_SPACING_Y 50
+#define ICON_SPACING_Y 35
 #define ICON_START_X 10
 #define ICON_START_Y 10
 #define SCROLLBAR_WIDTH 20
 #define SCROLLBAR_HEIGHT 20
 
-void ArrangeIcons(BPTR lock, BOOL resizeOnly);
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
+
+typedef struct
+{
+    int width;
+    int height;
+} IconSize;
+
+void ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly);
 int Compare(const void *a, const void *b);
+void GetNewIconSize(struct DiskObject *diskObject, IconSize *iconSize);
+BOOL IsNewIcon(struct DiskObject *diskObject);
 
 int main(int argc, char **argv)
 {
@@ -40,7 +52,7 @@ int main(int argc, char **argv)
     if (lock)
     {
         printf("Locked directory: %s\n", argv[1]);
-        ArrangeIcons(lock, resizeOnly);
+        ArrangeIcons(lock, argv[1], resizeOnly);
         UnLock(lock);
         printf("Unlocked directory: %s\n", argv[1]);
     }
@@ -53,7 +65,7 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void ArrangeIcons(BPTR lock, BOOL resizeOnly)
+void ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly)
 {
     struct FileInfoBlock *fib;
     struct DiskObject *diskObject;
@@ -67,6 +79,10 @@ void ArrangeIcons(BPTR lock, BOOL resizeOnly)
     LONG y;
     LONG maxX;
     LONG maxY;
+    LONG windowWidth; // Move the declaration to the beginning
+    char fullPath[512];
+    char *dotInfo;
+    struct TextFont *font;
 
     fileNames = NULL;
     fileCount = 0;
@@ -108,6 +124,14 @@ void ArrangeIcons(BPTR lock, BOOL resizeOnly)
     printf("Window opened on Workbench screen.\n");
 
     rastPort = window->RPort;
+    windowWidth = window->Width - SCROLLBAR_WIDTH; // Adjusted window width
+    windowWidth=windowWidth-20; // Adjusted window width
+    // Set the font to match the Workbench font
+    font = OpenDiskFont((struct TextAttr *)screen->RastPort.Font);
+    if (font)
+    {
+        SetFont(rastPort, font);
+    }
 
     Examine(lock, fib);
     while (ExNext(lock, fib))
@@ -131,54 +155,87 @@ void ArrangeIcons(BPTR lock, BOOL resizeOnly)
     {
         struct TextExtent textExtent;
         WORD textWidth;
-        WORD iconWidth, iconHeight;
+        IconSize iconSize = {0, 0};
         textWidth = 0;
 
-        diskObject = GetDiskObject(fileNames[i]);
+        // Create full path without ".info" extension
+        sprintf(fullPath, "%s/%s", dirPath, fileNames[i]);
+        dotInfo = strstr(fullPath, ".info");
+        if (dotInfo)
+        {
+            *dotInfo = '\0'; // Remove ".info" from the path
+        }
+
+        printf("Getting disk object for file: %s\n", fullPath);
+
+        diskObject = GetDiskObject(fullPath);
         if (diskObject)
         {
+            LONG centerX;
             if (TextExtent(rastPort, fileNames[i], strlen(fileNames[i]), &textExtent))
             {
                 textWidth = textExtent.te_Width;
             }
 
-            iconWidth = diskObject->do_Gadget.Width;
-            iconHeight = diskObject->do_Gadget.Height;
+            if (IsNewIcon(diskObject))
+            {
+                GetNewIconSize(diskObject, &iconSize);
+                printf("Icon size for file: %s is (%d, %d)\n", fullPath, iconSize.width, iconSize.height);
+            }
+            else
+            {
+                iconSize.width = diskObject->do_Gadget.Width;
+                iconSize.height = diskObject->do_Gadget.Height;
+            }
+
+            // Check if the icon text or icon itself exceeds the window width
+            if (x + MAX(textWidth, iconSize.width) > windowWidth)
+            {
+                x = ICON_START_X;
+                y += iconSize.height + textExtent.te_Height + ICON_SPACING_Y;
+            }
+
+            // Center the icon within the space calculated based on text width or icon width
+            centerX = x + (MAX(textWidth, iconSize.width) - iconSize.width) / 2;
 
             if (!resizeOnly)
             {
-                diskObject->do_CurrentX = x;
+                diskObject->do_CurrentX = centerX;
                 diskObject->do_CurrentY = y;
-                PutDiskObject(fileNames[i], diskObject);
-                printf("Arranged icon for file: %s at (%ld, %ld) with size (%d, %d)\n", fileNames[i], x, y, iconWidth, iconHeight);
+                printf("Arranging icon for file: %s at (%ld, %ld) with size (%d, %d)\n", fullPath, centerX, y, iconSize.width, iconSize.height);
+                if (!PutDiskObject(fullPath, diskObject))
+                {
+                    printf("Failed to save icon position for file: %s\n", fullPath);
+                }
+                else
+                {
+                    printf("Saved icon position for file: %s\n", fullPath);
+                }
             }
             else
             {
                 x = diskObject->do_CurrentX;
                 y = diskObject->do_CurrentY;
-                printf("Found existing icon position for file: %s at (%ld, %ld) with size (%d, %d)\n", fileNames[i], x, y, iconWidth, iconHeight);
+                printf("Found existing icon position for file: %s at (%ld, %ld) with size (%d, %d)\n", fileNames[i], x, y, iconSize.width, iconSize.height);
             }
 
-            if (x + textWidth > maxX)
+            if (x + MAX(textWidth, iconSize.width) > maxX)
             {
-                maxX = x + textWidth;
+                maxX = x + MAX(textWidth, iconSize.width);
             }
-            if (y + iconHeight > maxY)
+            if (y + iconSize.height + textExtent.te_Height > maxY)
             {
-                maxY = y + iconHeight;
+                maxY = y + iconSize.height + textExtent.te_Height;
             }
 
-            if (!resizeOnly)
-            {
-                x += textWidth + ICON_SPACING_X;
-                if (x > (window->Width - ICON_SPACING_X))
-                {
-                    x = ICON_START_X;
-                    y += ICON_SPACING_Y;
-                }
-            }
+            // Increment x position
+            x += MAX(textWidth, iconSize.width) + ICON_SPACING_X;
 
             FreeDiskObject(diskObject);
+        }
+        else
+        {
+            printf("Failed to get disk object for file: %s\n", fullPath);
         }
         free(fileNames[i]);
     }
@@ -186,8 +243,8 @@ void ArrangeIcons(BPTR lock, BOOL resizeOnly)
     free(fileNames);
 
     // Adjust the window size to fit all icons
-    maxX += SCROLLBAR_WIDTH;
-    maxY += SCROLLBAR_HEIGHT;
+    maxX = windowWidth + SCROLLBAR_WIDTH;  // Ensure width is the window width
+    maxY += SCROLLBAR_HEIGHT;  // Add height for scrollbar if needed
     ChangeWindowBox(window, window->LeftEdge, window->TopEdge, maxX, maxY);
     printf("Resized window to fit all icons: Width = %ld, Height = %ld\n", maxX, maxY);
 
@@ -196,9 +253,54 @@ void ArrangeIcons(BPTR lock, BOOL resizeOnly)
     UnlockPubScreen("Workbench", screen);
     printf("Unlocked Workbench screen.\n");
     FreeDosObject(DOS_FIB, fib);
+
+    // Restore the original font
+    if (font)
+    {
+        CloseFont(font);
+    }
 }
 
 int Compare(const void *a, const void *b)
 {
     return strcmp(*(const char **)a, *(const char **)b);
+}
+
+BOOL IsNewIcon(struct DiskObject *diskObject)
+{
+    STRPTR *toolTypes = diskObject->do_ToolTypes;
+    if (toolTypes && strcmp(toolTypes[0], " ") == 0 &&
+        strcmp(toolTypes[1], "*** DON'T EDIT THE FOLLOWING LINES!! ***") == 0)
+    {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+void GetNewIconSize(struct DiskObject *diskObject, IconSize *newIconSize)
+{
+    STRPTR *toolTypes;
+    STRPTR toolType;
+    char *prefix = "IM1=";
+    int i;
+
+    if (!diskObject || !(toolTypes = diskObject->do_ToolTypes))
+    {
+        printf("Invalid DiskObject or ToolTypes.\n");
+        return;
+    }
+
+    for (i = 0; (toolType = toolTypes[i]); i++)
+    {
+        if (strncmp(toolType, prefix, strlen(prefix)) == 0)
+        {
+            if (toolType && strlen(toolType) >= 7)
+            {
+                newIconSize->width = (int)toolType[5] - 33;
+                newIconSize->height = (int)toolType[6] - 33;
+                printf("Found NewIcon data: Width = %d, Height = %d\n", newIconSize->width, newIconSize->height);
+            }
+            break;
+        }
+    }
 }

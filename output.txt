@@ -1,0 +1,164 @@
+Locked directory: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos
+Workbench screen dimensions: Width = 800, Height = 600
+Window opened on Workbench screen.
+Found file: Z.info
+Found file: X.info
+Found file: W.info
+Found file: V.info
+Found file: U.info
+Found file: T.info
+Found file: S.info
+Found file: R.info
+Found file: Q.info
+Found file: P.info
+Found file: O.info
+Found file: N.info
+Found file: M.info
+Found file: L.info
+Found file: K.info
+Found file: J.info
+Found file: I.info
+Found file: H.info
+Found file: G.info
+Found file: F.info
+Found file: E.info
+Found file: D.info
+Found file: C.info
+Found file: B.info
+Found file: A.info
+Found file: 0.info
+Sorted file names alphabetically.
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/0
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/0 is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/0 at (10, 10) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/0
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/A
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/A is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/A at (62, 10) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/A
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/B
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/B is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/B at (114, 10) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/B
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/C
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/C is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/C at (166, 10) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/C
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/D
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/D is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/D at (218, 10) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/D
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/E
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/E is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/E at (270, 10) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/E
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/F
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/F is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/F at (322, 10) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/F
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/G
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/G is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/G at (374, 10) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/G
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/H
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/H is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/H at (426, 10) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/H
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/I
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/I is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/I at (478, 10) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/I
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/J
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/J is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/J at (530, 10) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/J
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/K
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/K is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/K at (582, 10) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/K
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/L
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/L is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/L at (634, 10) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/L
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/M
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/M is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/M at (686, 10) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/M
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/N
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/N is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/N at (10, 100) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/N
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/O
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/O is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/O at (62, 100) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/O
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/P
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/P is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/P at (114, 100) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/P
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/Q
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/Q is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/Q at (166, 100) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/Q
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/R
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/R is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/R at (218, 100) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/R
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/S
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/S is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/S at (270, 100) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/S
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/T
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/T is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/T at (322, 100) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/T
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/U
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/U is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/U at (374, 100) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/U
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/V
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/V is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/V at (426, 100) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/V
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/W
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/W is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/W at (478, 100) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/W
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/X
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/X is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/X at (530, 100) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/X
+Getting disk object for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/Z
+Found NewIcon data: Width = 42, Height = 42
+Icon size for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/Z is (42, 42)
+Arranging icon for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/Z at (582, 100) with size (42, 42)
+Saved icon position for file: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos/Z
+Resized window to fit all icons: Width = 780, Height = 175
+Closed window on Workbench screen.
+Unlocked Workbench screen.
+Unlocked directory: PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted/Demos
