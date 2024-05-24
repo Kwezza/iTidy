@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "struct.h": "c",
+        "dosfunctions.h": "c"
+    }
+}
