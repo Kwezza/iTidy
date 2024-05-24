@@ -12,6 +12,7 @@
 #include <proto/graphics.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #define ICON_SPACING_X 10
 #define ICON_SPACING_Y 50
@@ -25,30 +26,28 @@ int Compare(const void *a, const void *b);
 
 int main(int argc, char **argv)
 {
-    struct WBStartup *wbStartup = (struct WBStartup *)argv;
-    struct WBArg *wbArg;
+    BPTR lock;
+    BOOL resizeOnly;
 
-    if (argc == 0 && wbStartup != NULL)
+    if (argc < 3)
     {
-        wbArg = wbStartup->sm_ArgList;
-        if (wbArg->wa_Lock)
-        {
-            ArrangeIcons(wbArg->wa_Lock, FALSE); // Change FALSE to TRUE if you want to only resize the window
-        }
+        printf("Usage: %s <directory> <resizeOnly>\n", argv[0]);
+        return 1;
     }
-    else if (argc > 2)
+
+    lock = Lock(argv[1], ACCESS_READ);
+    resizeOnly = (BOOL)atoi(argv[2]); // Use the second argument to indicate resizeOnly
+    if (lock)
     {
-        BPTR lock = Lock(argv[1], ACCESS_READ);
-        BOOL resizeOnly = (BOOL)atoi(argv[2]); // Use the second argument to indicate resizeOnly
-        if (lock)
-        {
-            ArrangeIcons(lock, resizeOnly);
-            UnLock(lock);
-        }
+        printf("Locked directory: %s\n", argv[1]);
+        ArrangeIcons(lock, resizeOnly);
+        UnLock(lock);
+        printf("Unlocked directory: %s\n", argv[1]);
     }
     else
     {
-        printf("Usage: %s <directory> <resizeOnly>\n", argv[0]);
+        printf("Failed to lock the directory: %s\n", argv[1]);
+        return 1;
     }
 
     return 0;
@@ -61,24 +60,35 @@ void ArrangeIcons(BPTR lock, BOOL resizeOnly)
     struct Screen *screen;
     struct Window *window;
     struct RastPort *rastPort;
-    char **fileNames = NULL;
-    int fileCount = 0;
+    char **fileNames;
+    int fileCount;
     int i;
-    LONG x = ICON_START_X;
-    LONG y = ICON_START_Y;
-    LONG maxX = 0;
-    LONG maxY = 0;
+    LONG x;
+    LONG y;
+    LONG maxX;
+    LONG maxY;
+
+    fileNames = NULL;
+    fileCount = 0;
+    x = ICON_START_X;
+    y = ICON_START_Y;
+    maxX = 0;
+    maxY = 0;
 
     if (!(fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL)))
     {
+        printf("Failed to allocate FileInfoBlock.\n");
         return;
     }
 
     if (!(screen = LockPubScreen("Workbench")))
     {
+        printf("Failed to lock Workbench screen.\n");
         FreeDosObject(DOS_FIB, fib);
         return;
     }
+
+    printf("Workbench screen dimensions: Width = %ld, Height = %ld\n", screen->Width, screen->Height);
 
     if (!(window = OpenWindowTags(NULL,
                                   WA_Left, 0,
@@ -89,10 +99,13 @@ void ArrangeIcons(BPTR lock, BOOL resizeOnly)
                                   WA_CustomScreen, screen,
                                   TAG_DONE)))
     {
+        printf("Failed to open window on Workbench screen.\n");
         UnlockPubScreen("Workbench", screen);
         FreeDosObject(DOS_FIB, fib);
         return;
     }
+
+    printf("Window opened on Workbench screen.\n");
 
     rastPort = window->RPort;
 
@@ -103,6 +116,7 @@ void ArrangeIcons(BPTR lock, BOOL resizeOnly)
         {
             fileNames = realloc(fileNames, sizeof(char *) * (fileCount + 1));
             fileNames[fileCount] = strdup(fib->fib_FileName);
+            printf("Found file: %s\n", fib->fib_FileName);
             fileCount++;
         }
     }
@@ -110,40 +124,48 @@ void ArrangeIcons(BPTR lock, BOOL resizeOnly)
     if (!resizeOnly)
     {
         qsort(fileNames, fileCount, sizeof(char *), Compare);
+        printf("Sorted file names alphabetically.\n");
     }
 
     for (i = 0; i < fileCount; i++)
     {
+        struct TextExtent textExtent;
+        WORD textWidth;
+        WORD iconWidth, iconHeight;
+        textWidth = 0;
+
         diskObject = GetDiskObject(fileNames[i]);
         if (diskObject)
         {
-            struct TextExtent textExtent;
-            WORD textWidth = 0;
-
             if (TextExtent(rastPort, fileNames[i], strlen(fileNames[i]), &textExtent))
             {
                 textWidth = textExtent.te_Width;
             }
+
+            iconWidth = diskObject->do_Gadget.Width;
+            iconHeight = diskObject->do_Gadget.Height;
 
             if (!resizeOnly)
             {
                 diskObject->do_CurrentX = x;
                 diskObject->do_CurrentY = y;
                 PutDiskObject(fileNames[i], diskObject);
+                printf("Arranged icon for file: %s at (%ld, %ld) with size (%d, %d)\n", fileNames[i], x, y, iconWidth, iconHeight);
             }
             else
             {
                 x = diskObject->do_CurrentX;
                 y = diskObject->do_CurrentY;
+                printf("Found existing icon position for file: %s at (%ld, %ld) with size (%d, %d)\n", fileNames[i], x, y, iconWidth, iconHeight);
             }
 
             if (x + textWidth > maxX)
             {
                 maxX = x + textWidth;
             }
-            if (y + ICON_SPACING_Y > maxY)
+            if (y + iconHeight > maxY)
             {
-                maxY = y + ICON_SPACING_Y;
+                maxY = y + iconHeight;
             }
 
             if (!resizeOnly)
@@ -164,11 +186,15 @@ void ArrangeIcons(BPTR lock, BOOL resizeOnly)
     free(fileNames);
 
     // Adjust the window size to fit all icons
-    SetWindowTitles(window, "Icons Arranged", (UBYTE *)-1);
-    ChangeWindowBox(window, window->LeftEdge, window->TopEdge, maxX + SCROLLBAR_WIDTH, maxY + SCROLLBAR_HEIGHT);
+    maxX += SCROLLBAR_WIDTH;
+    maxY += SCROLLBAR_HEIGHT;
+    ChangeWindowBox(window, window->LeftEdge, window->TopEdge, maxX, maxY);
+    printf("Resized window to fit all icons: Width = %ld, Height = %ld\n", maxX, maxY);
 
     CloseWindow(window);
+    printf("Closed window on Workbench screen.\n");
     UnlockPubScreen("Workbench", screen);
+    printf("Unlocked Workbench screen.\n");
     FreeDosObject(DOS_FIB, fib);
 }
 
