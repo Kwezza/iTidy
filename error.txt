@@ -1,0 +1,37 @@
+entry Processing directory: pc0:Retroplay-WHDLoad-downloader/
+Processing directory: pc0:Retroplay-WHDLoad-downloader//Texts
+entry Processing directory: pc0:Retroplay-WHDLoad-downloader//Texts
+Processing directory: pc0:Retroplay-WHDLoad-downloader//Tests
+entry Processing directory: pc0:Retroplay-WHDLoad-downloader//Tests
+Processing directory: pc0:Retroplay-WHDLoad-downloader//temp
+entry Processing directory: pc0:Retroplay-WHDLoad-downloader//temp
+Failed to lock directory: pc0:Retroplay-WHDLoad-downloader//Texts
+Failed to lock directory: pc0:Retroplay-WHDLoad-downloader//Tests
+Failed to lock directory: pc0:Retroplay-WHDLoad-downloader//tempProcessing directory: pc0:Retroplay-WHDLoad-downloader//Source
+entry Processing directory: pc0:Retroplay-WHDLoad-downloader//Source
+Processing directory: pc0:Retroplay-WHDLoad-downloader//Old dat files
+entry Processing directory: pc0:Retroplay-WHDLoad-downloader//Old dat files
+Processing directory: pc0:Retroplay-WHDLoad-downloader//icons
+entry Processing directory: pc0:Retroplay-WHDLoad-downloader//icons
+
+Failed to lock directory: pc0:Retroplay-WHDLoad-downloader//Source
+Failed to lock directory: pc0:Retroplay-WHDLoad-downloader//Old dat files
+Failed to lock directory: pc0:Retroplay-WHDLoad-downloProcessing directory: pc0:Retroplay-WHDLoad-downloader//Help files
+entry Processing directory: pc0:Retroplay-WHDLoad-downloader//Help files
+Processing directory: pc0:Retroplay-WHDLoad-downloader//GameFiles
+entry Processing directory: pc0:Retroplay-WHDLoad-downloader//GameFiles
+Processing directory: pc0:Retroplay-WHDLoad-downloader//Extracted
+entry Processing directory: pc0:Retroplay-WHDLoad-downloader//Extracted
+ader//icons
+Failed to lock directory: pc0:Retroplay-WHDLoad-downloader//Help files
+Failed to lock directory: pc0:Retroplay-WHDLoad-downloader//GameFiles
+Failed to lock directory: pc0:Retroplay-WHDProcessing directory: pc0:Retroplay-WHDLoad-downloader//Arexx
+entry Processing directory: pc0:Retroplay-WHDLoad-downloader//Arexx
+Processing directory: pc0:Retroplay-WHDLoad-downloader//.vscode
+entry Processing directory: pc0:Retroplay-WHDLoad-downloader//.vscode
+Processing directory: pc0:Retroplay-WHDLoad-downloader//.git
+entry Processing directory: pc0:Retroplay-WHDLoad-downloader//.git
+Load-downloader//Extracted
+Failed to lock directory: pc0:Retroplay-WHDLoad-downloader//Arexx
+Failed to lock directory: pc0:Retroplay-WHDLoad-downloader//.vscode
+Failed to lock directory: pc0:Retroplay-WHDLoad-downloader//.git
