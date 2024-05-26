@@ -45,6 +45,7 @@ int Compare(const void *a, const void *b);
 BOOL IsNewIcon(struct DiskObject *diskObject);
 void GetNewIconSize(struct DiskObject *diskObject, IconSize *newIconSize);
 void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo);
+void GetFolderInfo(const char *folderPath,folderWindowSize *folderDeatils);
 
 int main(int argc, char **argv)
 {
@@ -101,6 +102,10 @@ void ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly)
     y = ICON_START_Y;
     maxX = 0;
     maxY = 0;
+
+
+    GetFolderInfo(dirPath,&newFolderInfo);
+    printf("Folder Info: left = %d, top = %d, width = %d, height = %d\n", newFolderInfo.left, newFolderInfo.top, newFolderInfo.width, newFolderInfo.height);
 
     if (!(fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL)))
     {
@@ -262,6 +267,8 @@ void ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly)
 
     newFolderInfo.height = maxY;
     SaveFolderSettings(dirPath, &newFolderInfo);
+    GetFolderInfo(dirPath,&newFolderInfo);
+    printf("Folder Info: left = %d, top = %d, width = %d, height = %d\n", newFolderInfo.left, newFolderInfo.top, newFolderInfo.width, newFolderInfo.height);
     // Save new window size to DiskObject
     // SaveNewWindowSize(diskObject, dirPath, maxX, maxY);
 
@@ -376,4 +383,49 @@ void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo)
     }
 
     FreeDiskObject(diskObject);
+}
+
+
+void GetFolderInfo(const char *folderPath,folderWindowSize *folderDeatils)
+{
+
+    char diskInfoPath[256]; // Buffer for the disk.info path
+    struct DiskObject *diskObject;
+    folderDeatils->left = 0;
+    folderDeatils->top = 0;
+    folderDeatils->width = 0;
+    folderDeatils->height = 0;
+    strcpy(diskInfoPath, folderPath);
+
+    //strcat(diskInfoPath, ".info");
+
+    //sanitize_amiga_file_path(diskInfoPath);
+    //if(does_file_or_folder_exist(diskInfoPath, 0) == 0)
+    //{
+    //    Printf("File does not exist: %s\n", (ULONG)diskInfoPath);
+    //    return;
+    //}
+    printf(".info path: %s\n", diskInfoPath);
+    // Load the disk.info file
+    diskObject = GetDiskObject(diskInfoPath);
+    if (diskObject == NULL)
+    {
+        Printf("Unable to load disk.info for folder: %s\n",  diskInfoPath);
+        return ;
+    }
+
+    if (diskObject->do_Type == WBDRAWER && diskObject->do_DrawerData)
+    {
+        folderDeatils->left = diskObject->do_DrawerData->dd_NewWindow.LeftEdge;
+        folderDeatils->top = diskObject->do_DrawerData->dd_NewWindow.TopEdge;
+        folderDeatils->width = diskObject->do_DrawerData->dd_NewWindow.Width;
+        folderDeatils->height = diskObject->do_DrawerData->dd_NewWindow.Height;
+    }
+    else
+    {
+        Printf("Invalid DiskObject type or missing DrawerData for: %s\n", (ULONG)diskInfoPath);
+    }
+
+    FreeDiskObject(diskObject);
+
 }
