@@ -65,8 +65,8 @@ typedef struct
 #define const_fontDefault 1
 #define const_fontScreen 2
 
-#define CHUNK_SIZE 1024  /* Size of the buffer to read in each iteration */
-#define HEADER_SIZE 12   /* Size of IFF header ("FORM" + size + "ICON") */  /* Size of IFF header ("FORM" + size + "ICON")  for OS3.5 Icons*/
+#define CHUNK_SIZE 1024                                                  /* Size of the buffer to read in each iteration */
+#define HEADER_SIZE 12 /* Size of IFF header ("FORM" + size + "ICON") */ /* Size of IFF header ("FORM" + size + "ICON")  for OS3.5 Icons*/
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
@@ -75,6 +75,14 @@ typedef struct
     int width;
     int height;
 } IconSize;
+
+struct Screen *screen;
+struct Window *window;
+struct RastPort *rastPort;
+struct TextFont *font;
+
+int screenHight=0;
+int screenWidth=0;
 
 int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth);
 int Compare(const void *a, const void *b);
@@ -91,6 +99,8 @@ void removeInfoExtension(const char *input, char *output);
 void ResizeAndMoveWindow(const char *windowTitle, int newX, int newY, int newWidth, int newHeight);
 int isOS35IconFormat(const char *filename);
 int getOS35IconSize(const char *filename, IconSize *size);
+int InitializeWindow(void);
+void CleanupWindow(void);
 
 int main(int argc, char **argv)
 {
@@ -99,11 +109,84 @@ int main(int argc, char **argv)
         Printf("Usage: %s <directory>\n", argv[0]);
         return RETURN_FAIL;
     }
-
+    InitializeWindow();
     ProcessDirectory(argv[1]);
-
+    CleanupWindow();
     return RETURN_OK;
 }
+
+// Function to open a tiny, non-intrusive window and initialize the RastPort
+int InitializeWindow()
+{
+
+    int windowWidth;
+    int windowHeight;
+    int windowLeft;
+    int windowTop;
+
+    screen = LockPubScreen("Workbench");
+    if (!screen)
+    {
+        printf("Failed to lock Workbench screen.\n");
+        return 0;
+    }
+    printf("screen width: %d\n", screen->Width);   
+    printf("Screen height: %d\n", screen->Height);  
+    screenHight=screen->Height;
+    screenWidth=screen->Width;
+    // Set tiny dimensions and place the window at the bottom right corner
+    windowWidth = 1;                          // Minimal width
+    windowHeight = 1;                         // Minimal height
+    windowLeft = screen->Width - windowWidth; // Bottom right corner
+    windowTop = screen->Height - windowHeight;
+
+    window = OpenWindowTags(NULL,
+                            WA_Left, windowLeft,
+                            WA_Top, windowTop,
+                            WA_Width, windowWidth,
+                            WA_Height, windowHeight,
+                            WA_Flags, WFLG_BACKDROP, // Makes it a backdrop window
+                            WA_CustomScreen, screen,
+                            TAG_DONE);
+    if (!window)
+    {
+        printf("Failed to open window.\n");
+        UnlockPubScreen("Workbench", screen);
+        return 0;
+    }
+
+    rastPort = window->RPort;
+
+    // Use the default Workbench font directly from the screen's RastPort
+    font = screen->RastPort.Font;
+    if (font)
+    {
+        SetFont(rastPort, font);
+    }
+    else
+    {
+        printf("Failed to get default font from screen.\n");
+    }
+
+    return 1; // Success
+}
+
+void CleanupWindow()
+{
+    if (font)
+    {
+        CloseFont(font); // Close the opened font
+    }
+    if (window)
+    {
+        CloseWindow(window);
+    }
+    if (screen)
+    {
+        UnlockPubScreen("Workbench", screen);
+    }
+}
+
 int HasSlaveFile(const char *path)
 {
     BPTR lock;
@@ -156,7 +239,7 @@ void ProcessDirectory(const char *path)
 
     if (HasSlaveFile(path))
     {
-        printf("Found .slave file in %s, resizing windows only and skipping.\n", path);
+        // printf("Found .slave file in %s, resizing windows only and skipping.\n", path);
         FormatIconsAndWindow(path, TRUE);
         return;
     }
@@ -178,6 +261,7 @@ void ProcessDirectory(const char *path)
 
     if (Examine(lock, fib))
     {
+        FormatIconsAndWindow(path, FALSE);
         while (ExNext(lock, fib))
         {
             if (fib->fib_DirEntryType > 0)
@@ -210,7 +294,7 @@ int FormatIconsAndWindow(const char *folder, int resizeOnly)
     minAverageWidthPercent = -100;
     if (lock)
     {
-        printf("Locked directory: %s\n", folder);
+        // printf("Locked directory: %s\n", folder);
         if (resizeOnly)
         {
             minAverageWidthPercent = ArrangeIcons(lock, folder, resizeOnly, CurrentWidth);
@@ -245,6 +329,20 @@ int FormatIconsAndWindow(const char *folder, int resizeOnly)
     }
 
     return 0;
+}
+
+void CalculateTextExtent(const char *text,struct TextExtent *textExtent) {
+    //struct TextExtent textExtent;
+    ULONG textLength = strlen(text);
+
+    if (!rastPort) {
+        printf("RastPort is not initialized.\n");
+        return;
+    }
+
+    // Calculate text extent
+    TextExtent(rastPort, text, textLength, textExtent);
+    //printf("Text extent: Width = %d, Height = %d\n", textExtent->te_Width, textExtent->te_Height);
 }
 
 int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
@@ -302,41 +400,46 @@ int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
         return 0;
     }
 
-    if (!(screen = LockPubScreen("Workbench")))
-    {
-        printf("Failed to lock Workbench screen.\n");
-        FreeDosObject(DOS_FIB, fib);
-        return 0;
-    }
+    /* if (!(screen = LockPubScreen("Workbench")))
+     {
+         printf("Failed to lock Workbench screen.\n");
+         FreeDosObject(DOS_FIB, fib);
+         return 0;
+     }
 
-    // printf("Workbench screen dimensions: Width = %ld, Height = %ld\n", screen->Width, screen->Height);
+     // printf("Workbench screen dimensions: Width = %ld, Height = %ld\n", screen->Width, screen->Height);
 
-    if (!(window = OpenWindowTags(NULL,
-                                  WA_Left, 0,
-                                  WA_Top, 0,
-                                  WA_Width, screen->Width,
-                                  WA_Height, screen->Height,
-                                  WA_Flags, WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_SIZEBRIGHT | WFLG_CLOSEGADGET | WFLG_SIZEGADGET,
-                                  WA_CustomScreen, screen,
-                                  TAG_DONE)))
-    {
-        printf("Failed to open window on Workbench screen.\n");
-        UnlockPubScreen("Workbench", screen);
-        FreeDosObject(DOS_FIB, fib);
-        return 0;
-    }
+     if (!(window = OpenWindowTags(NULL,
+                                   WA_Left, 0,
+                                   WA_Top, 0,
+                                   WA_Width, screen->Width,
+                                   WA_Height, screen->Height,
+                                   WA_Flags, WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_SIZEBRIGHT | WFLG_CLOSEGADGET | WFLG_SIZEGADGET,
+                                   WA_CustomScreen, screen,
+                                   TAG_DONE)))
+     {
+         printf("Failed to open window on Workbench screen.\n");
+         UnlockPubScreen("Workbench", screen);
+         FreeDosObject(DOS_FIB, fib);
+         return 0;
+     }
 
-    // printf("Window opened on Workbench screen.\n");
+     // printf("Window opened on Workbench screen.\n");
 
-    rastPort = window->RPort;
+     rastPort = window->RPort;
+         font = OpenDiskFont((struct TextAttr *)screen->RastPort.Font);
+     if (font)
+     {
+         SetFont(rastPort, font);
+     }
+     */
 
     windowWidth = newWidth;
     // Set the font to match the Workbench font
-    font = OpenDiskFont((struct TextAttr *)screen->RastPort.Font);
-    if (font)
-    {
-        SetFont(rastPort, font);
-    }
+
+
+    printf("screen width: %d\n", screenWidth);   
+    printf("windowWidth: %d\n", windowWidth);  
 
     if (Examine(lock, fib))
     {
@@ -363,21 +466,24 @@ int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
                         break;
                     }
 
-                    printf("fileNames: %s\n", fileNames[fileCount]);
+                    // printf("fileNames: %s\n", fileNames[fileCount]);
                     fileCount++;
                 } /* if file has .info extension */
             } /* if it's a file */
         } /* while ExNext */
     } /* if Examine */
 
+    printf("screen width: %d\n", screenWidth);   
+    printf("windowWidth: %d\n", windowWidth);  
+
     if (!resizeOnly)
     {
         qsort(fileNames, fileCount, sizeof(char *), Compare);
     }
 
-    if (fileCount > MaxIconsToAlign || newWidth > window->Width - SCROLLBAR_WIDTH)
+    if (fileCount > MaxIconsToAlign || newWidth > screenWidth - SCROLLBAR_WIDTH)
     {
-        windowWidth = window->Width - SCROLLBAR_WIDTH; // Adjusted window width
+        windowWidth = screenWidth - SCROLLBAR_WIDTH; // Adjusted window width
         SkipAutoResize = TRUE;
         // printf("Skipping auto resize due to large number of icons or new width.\n");
         // printf("MaxIconsToAlign: %d  window width: %d\n", MaxIconsToAlign, windowWidth);
@@ -393,7 +499,7 @@ int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
 
         // Create full path without ".info" extension
         sprintf(fullPath, "%s/%s", dirPath, fileNames[i]);
-        strcpy(fullPathWithIcon,fullPath);
+        strcpy(fullPathWithIcon, fullPath);
         dotInfo = strstr(fullPath, ".info");
         if (dotInfo)
         {
@@ -404,55 +510,64 @@ int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
 
         diskObject = GetDiskObject(fullPath);
 
-        //printf("Is os35 icon format: %d\n", isOS35IconFormat(fullPathWithIcon)  );
+        // printf("Is os35 icon format: %d\n", isOS35IconFormat(fullPathWithIcon)  );
         if (diskObject)
         {
-            if (TextExtent(rastPort, fileNameNoInfo, strlen(fileNameNoInfo), &textExtent))
+            
+            
+                CalculateTextExtent(fileNameNoInfo,&textExtent);
+                
+            /*if (TextExtent(rastPort, fileNameNoInfo, strlen(fileNameNoInfo), &textExtent))
             {
+                
                 textWidth = textExtent.te_Width;
                 printf("Text Width: %d\n", textWidth);
-            }
+                printf("Text extent: Width = %d, Height = %d\n", textExtent.te_Width, textExtent.te_Height);
+
+                CalculateTextExtent(fileNameNoInfo,&textExtent);
+                printf("Text extent: Width = %d, Height = %d\n", textExtent.te_Width, textExtent.te_Height);
+            }*/
             // printf("fullPath: %s filename: %s noinfo: %s\n", fullPath, fileNames[i], fileNameNoInfo);
             // newTextWidth=GetIconTextWidth(fileNames[i]);
             // printf("Text Width: %d, new text width %d\n", textWidth, newTextWidth);
 
             if (IsNewIcon(diskObject))
             {
-                //printf("Is new icon\n");
+                // printf("Is new icon\n");
                 GetNewIconSize(diskObject, &iconSize);
-
             }
             else if (isOS35IconFormat(fullPathWithIcon))
             {
-                //printf("Is OS3.5 Icon\n");
+                // printf("Is OS3.5 Icon\n");
                 getOS35IconSize(fullPathWithIcon, &iconSize);
             }
             else if (diskObject->do_Gadget.Width != 0 && diskObject->do_Gadget.Height != 0)
             {
-                printf("Normal Icon\n");
+                // printf("Normal Icon\n");
                 iconSize.width = diskObject->do_Gadget.Width;
                 iconSize.height = diskObject->do_Gadget.Height;
             }
             else
             {
-                printf("Normal Icon\n");
+                // printf("Normal Icon\n");
                 iconSize.width = diskObject->do_CurrentX;
                 iconSize.height = diskObject->do_CurrentY;
             }
-
-            printf("Width (W=%d T=%d), Height (H=%d T=%d) Box: X%d, Y%d to X%d,Y%d Name: %s\n",
-                   iconSize.width,
-                   textWidth,
-                   iconSize.height,
-                   iconSize.height + textExtent.te_Height,
-                   diskObject->do_CurrentX,
-                   diskObject->do_CurrentY,
-                   diskObject->do_CurrentX + MAX(textWidth, iconSize.width),
-                   diskObject->do_CurrentY + iconSize.height + textExtent.te_Height,
-                   fileNameNoInfo);
-                   //fileNames[i]);
+//printf("1  X: %d, Y: %d,  Saved icon: %s \n", x,y,fullPath);
+            /* printf("Width (W=%d T=%d), Height (H=%d T=%d) Box: X%d, Y%d to X%d,Y%d Name: %s\n",
+                    iconSize.width,
+                    textWidth,
+                    iconSize.height,
+                    iconSize.height + textExtent.te_Height,
+                    diskObject->do_CurrentX,
+                    diskObject->do_CurrentY,
+                    diskObject->do_CurrentX + MAX(textWidth, iconSize.width),
+                    diskObject->do_CurrentY + iconSize.height + textExtent.te_Height,
+                    fileNameNoInfo);*/
+            // fileNames[i]);
 
             // Check if the icon text or icon itself exceeds the window width
+            printf("3  X: %d, Y: %d, win width: %d, rowcount %d, Current endX %d,  Saved icon: %s \n", x,y,windowWidth,rowcount,x + MAX(textWidth, iconSize.width),fullPath);
             if (x + MAX(textWidth, iconSize.width) > windowWidth)
             {
                 if (rowcount < maxWidthsToCheck)
@@ -463,7 +578,7 @@ int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
                 y += iconSize.height + textExtent.te_Height + ICON_SPACING_Y;
                 rowcount++;
             }
-
+//printf("3  X: %d, Y: %d, window width: %d, rowcount %d, Current endX %d,  Saved icon: %s \n", x,y,windowWidth,rowcount,x + MAX(textWidth, iconSize.width),fullPath);
             // Center the icon within the space calculated based on text width or icon width
             centerX = x + (MAX(textWidth, iconSize.width) - iconSize.width) / 2;
 
@@ -478,6 +593,7 @@ int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
                 }
                 else
                 {
+                    printf("4  X: %d, Y: %d, window width: %d, Saved icon: %s \n", x,y,windowWidth,fullPath);
                 }
             }
             else
@@ -488,28 +604,26 @@ int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
 
             // if (x + MAX(textWidth, iconSize.width) > maxX)
             //{
-            maxX = MAX(maxX, ( diskObject->do_CurrentX + MAX(textWidth, iconSize.width)));
+            maxX = MAX(maxX, (diskObject->do_CurrentX + MAX(textWidth, iconSize.width)));
             maxY = MAX(maxY, (diskObject->do_CurrentY + iconSize.height + textExtent.te_Height));
             //}
             // if (y + iconSize.height + textExtent.te_Height > maxY)
             //{
             //    maxY = y + iconSize.height + textExtent.te_Height;
             //}
-            printf("maxX: %d, maxY: %d\n ", maxX, maxY);
+            // printf("maxX: %d, maxY: %d\n ", maxX, maxY);
             // Increment x position
             x += MAX(textWidth, iconSize.width) + ICON_SPACING_X;
 
             FreeDiskObject(diskObject);
-
-
         }
         else
         {
         }
         free(fileNames[i]);
-        printf("\n");
-        // printf("MaxX: %d, MaxY: %d\n", maxX, maxY);
-        // printf("fileCount: %d\n", fileCount);
+        // printf("\n");
+        //  printf("MaxX: %d, MaxY: %d\n", maxX, maxY);
+        //  printf("fileCount: %d\n", fileCount);
     }
 
     free(fileNames);
@@ -524,13 +638,13 @@ int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
         maxY += 25;
     }
     // Adjust the window size to fit all icons
-    //maxX = maxX + SCROLLBAR_WIDTH; // Ensure width is the window width
-    //maxY += SCROLLBAR_HEIGHT;             // Add height for scrollbar if needed
-    posTop = (screen->Height - maxY) / 2;
-    posLeft = (screen->Width - maxX) / 2;
+    // maxX = maxX + SCROLLBAR_WIDTH; // Ensure width is the window width
+    // maxY += SCROLLBAR_HEIGHT;             // Add height for scrollbar if needed
+    posTop = (screenHight - maxY) / 2;
+    posLeft = (screenWidth - maxX) / 2;
 
-maxX= maxX  + SCROLLBAR_WIDTH ;
-maxY= maxY + SCROLLBAR_HEIGHT+WINDOW_TITLE_HEIGHT;
+    maxX = maxX + SCROLLBAR_WIDTH;
+    maxY = maxY + SCROLLBAR_HEIGHT + WINDOW_TITLE_HEIGHT;
     // WindowToFront(myWindow);
 
     // printf("Resized window to fit all icons: Width = %ld, Height = %ld\n", maxX, maxY);
@@ -538,33 +652,33 @@ maxY= maxY + SCROLLBAR_HEIGHT+WINDOW_TITLE_HEIGHT;
     newFolderInfo.top = posLeft;
     newFolderInfo.width = maxX;
 
-    //if (!resizeOnly)
+    // if (!resizeOnly)
     //{
-    //    if (maxY > screen->Height - WORKBENCH_BAR)
-    //    {
-    //        maxY = screen->Height + WORKBENCH_BAR;
-    //    }
-    //    else
-    //    {
-    //        //maxY = maxY + WORKBENCH_BAR;
-    //    }
-   // }
+    //     if (maxY > screen->Height - WORKBENCH_BAR)
+    //     {
+    //         maxY = screen->Height + WORKBENCH_BAR;
+    //     }
+    //     else
+    //     {
+    //         //maxY = maxY + WORKBENCH_BAR;
+    //     }
+    // }
 
-    newFolderInfo.height = maxY ;
+    newFolderInfo.height = maxY;
     // SaveFolderSettings(dirPath, &newFolderInfo);
     //  GetFolderInfo(dirPath, &newFolderInfo);
     //   printf("Folder Info: left = %d, top = %d, width = %d, height = %d\n", newFolderInfo.left, newFolderInfo.top, newFolderInfo.width, newFolderInfo.height);
     //    Save new window size to DiskObject
     //    SaveNewWindowSize(diskObject, dirPath, maxX, maxY);
 
-    printf("Window resized to fit all icons: Width = %ld, Height = %ld\n", maxX, maxY);
-    printf("Window position: Left =  %d, Top = %d \n",  posTop,  posLeft);
-    printf("BorderLeft: %d, BorderRight: %d, BorderTop: %d,BorderBottom: %d\n", window->BorderLeft, window->BorderRight, window->BorderTop, window->BorderBottom);
-    printf("Screen dimensions: Width = %ld, Height = %ld\n", screen->Width, screen->Height);
-        CloseWindow(window);
+    // printf("Window resized to fit all icons: Width = %ld, Height = %ld\n", maxX, maxY);
+    // printf("Window position: Left =  %d, Top = %d \n", posTop, posLeft);
+    // printf("BorderLeft: %d, BorderRight: %d, BorderTop: %d,BorderBottom: %d\n", window->BorderLeft, window->BorderRight, window->BorderTop, window->BorderBottom);
+    // printf("Screen dimensions: Width = %ld, Height = %ld\n", screen->Width, screen->Height);
+    // CloseWindow(window);
     SaveFolderSettings(dirPath, &newFolderInfo);
     // printf("Closed window on Workbench screen.\n");
-    UnlockPubScreen("Workbench", screen);
+    // UnlockPubScreen("Workbench", screen);
     // printf("Unlocked Workbench screen.\n");
     FreeDosObject(DOS_FIB, fib);
 
@@ -597,17 +711,17 @@ maxY= maxY + SCROLLBAR_HEIGHT+WINDOW_TITLE_HEIGHT;
     currentLoopCount++;
 
     // Restore the original font
-    if (font)
-    {
-        CloseFont(font);
-    }
+    // if (font)
+    //{
+    //    CloseFont(font);
+    //}
 
     if (SkipAutoResize)
         minAverageWidthPercent = 0;
     // printf("newindow width: %d\n", newWidth);
 
-    newFolderInfo.left = posTop;
-    ResizeAndMoveWindow( windowTitle,  newFolderInfo.left ,  newFolderInfo.height, newFolderInfo.width,  newFolderInfo.height);
+    // newFolderInfo.left = posTop;
+    // ResizeAndMoveWindow(windowTitle, newFolderInfo.left, newFolderInfo.height, newFolderInfo.width, newFolderInfo.height);
 
     return minAverageWidthPercent;
 }
@@ -627,10 +741,10 @@ BOOL IsNewIcon(struct DiskObject *diskObject)
     /* Print all tooltypes */
     if (toolTypes != NULL)
     {
-        
+
         while (*toolTypes != NULL)
         {
-            printf("ToolType: %s\n", *toolTypes);
+            // printf("ToolType: %s\n", *toolTypes);
             if (strcmp(*toolTypes, "*** DON'T EDIT THE FOLLOWING LINES!! ***") == 0)
             {
                 newIconFormat = TRUE;
@@ -649,21 +763,23 @@ BOOL IsNewIcon(struct DiskObject *diskObject)
     return FALSE;
 } /* IsNewIcon */
 
-int isOS35IconFormat(const char *filename) {
+int isOS35IconFormat(const char *filename)
+{
     FILE *file;
     UBYTE buffer[CHUNK_SIZE];
     size_t bytesRead;
     long fileSize;
-    int foundForm = 0;  /* Flag to indicate if "FORM" has been found */
-    int foundIcon = 0;  /* Flag to indicate if "ICON" has been found after "FORM" */
+    int foundForm = 0; /* Flag to indicate if "FORM" has been found */
+    int foundIcon = 0; /* Flag to indicate if "ICON" has been found after "FORM" */
     long offset = 0;
     size_t i;
 
     /* Open the file in binary mode */
     file = fopen(filename, "rb");
-    if (file == NULL) {
+    if (file == NULL)
+    {
         perror("Error opening file");
-        return 0;  /* Return false on error */
+        return 0; /* Return false on error */
     }
 
     /* Get the file size */
@@ -672,29 +788,35 @@ int isOS35IconFormat(const char *filename) {
     fseek(file, 0, SEEK_SET);
 
     /* Check if the file size is at least the size of the header */
-    if (fileSize < HEADER_SIZE) {
+    if (fileSize < HEADER_SIZE)
+    {
         fclose(file);
-        return 0;  /* File too small to be OS3.5 icon */
+        return 0; /* File too small to be OS3.5 icon */
     }
 
     /* Read the file in chunks and search for the headers */
-    while ((bytesRead = fread(buffer, 1, CHUNK_SIZE, file)) > 0) {
-        for ( i = 0; i < bytesRead - HEADER_SIZE; i++) {
+    while ((bytesRead = fread(buffer, 1, CHUNK_SIZE, file)) > 0)
+    {
+        for (i = 0; i < bytesRead - HEADER_SIZE; i++)
+        {
             /* Check for "FORM" header */
-            if (!foundForm && memcmp(buffer + i, "FORM", 4) == 0) {
-                foundForm = 1;  /* Found "FORM" */
+            if (!foundForm && memcmp(buffer + i, "FORM", 4) == 0)
+            {
+                foundForm = 1; /* Found "FORM" */
                 offset = ftell(file) - bytesRead + i;
             }
 
             /* If "FORM" was found, look for "ICON" */
-            if (foundForm && memcmp(buffer + i + 8, "ICON", 4) == 0) {
-                foundIcon = 1;  /* Found "ICON" */
-                break;  /* Break the loop as we've found the required headers */
+            if (foundForm && memcmp(buffer + i + 8, "ICON", 4) == 0)
+            {
+                foundIcon = 1; /* Found "ICON" */
+                break;         /* Break the loop as we've found the required headers */
             }
         }
 
-        if (foundIcon) {
-            break;  /* Exit the loop once "FORM" and "ICON" are found */
+        if (foundIcon)
+        {
+            break; /* Exit the loop once "FORM" and "ICON" are found */
         }
     }
 
@@ -733,14 +855,15 @@ void GetNewIconSize(struct DiskObject *diskObject, IconSize *newIconSize)
 }
 
 /* Function to check if the icon file is in the OS3.5 format and return its size */
-int getOS35IconSize(const char *filename, IconSize *size) {
+int getOS35IconSize(const char *filename, IconSize *size)
+{
     FILE *file;
     UBYTE buffer[CHUNK_SIZE];
     size_t bytesRead;
     long fileSize;
-    int foundForm = 0;  /* Flag to indicate if "FORM" has been found */
-    int foundIcon = 0;  /* Flag to indicate if "ICON" has been found after "FORM" */
-    int foundFace = 0;  /* Flag to indicate if "FACE" chunk has been found */
+    int foundForm = 0; /* Flag to indicate if "FORM" has been found */
+    int foundIcon = 0; /* Flag to indicate if "ICON" has been found after "FORM" */
+    int foundFace = 0; /* Flag to indicate if "FACE" chunk has been found */
     long offset = 0;
 
     /* Initialize the size */
@@ -749,9 +872,10 @@ int getOS35IconSize(const char *filename, IconSize *size) {
 
     /* Open the file in binary mode */
     file = fopen(filename, "rb");
-    if (file == NULL) {
+    if (file == NULL)
+    {
         perror("Error opening file");
-        return 0;  /* Return false on error */
+        return 0; /* Return false on error */
     }
 
     /* Get the file size */
@@ -760,41 +884,48 @@ int getOS35IconSize(const char *filename, IconSize *size) {
     fseek(file, 0, SEEK_SET);
 
     /* Check if the file size is at least the size of the header */
-    if (fileSize < HEADER_SIZE) {
+    if (fileSize < HEADER_SIZE)
+    {
         fclose(file);
-        return 0;  /* File too small to be OS3.5 icon */
+        return 0; /* File too small to be OS3.5 icon */
     }
 
     /* Read the file in chunks and search for the headers */
-    while ((bytesRead = fread(buffer, 1, CHUNK_SIZE, file)) > 0) {
+    while ((bytesRead = fread(buffer, 1, CHUNK_SIZE, file)) > 0)
+    {
         int i;
 
-        for (i = 0; i < bytesRead - HEADER_SIZE; i++) {
+        for (i = 0; i < bytesRead - HEADER_SIZE; i++)
+        {
             /* Check for "FORM" header */
-            if (!foundForm && memcmp(buffer + i, "FORM", 4) == 0) {
-                foundForm = 1;  /* Found "FORM" */
+            if (!foundForm && memcmp(buffer + i, "FORM", 4) == 0)
+            {
+                foundForm = 1; /* Found "FORM" */
                 offset = ftell(file) - bytesRead + i;
             }
 
             /* If "FORM" was found, look for "ICON" */
-            if (foundForm && memcmp(buffer + i + 8, "ICON", 4) == 0) {
-                foundIcon = 1;  /* Found "ICON" */
+            if (foundForm && memcmp(buffer + i + 8, "ICON", 4) == 0)
+            {
+                foundIcon = 1; /* Found "ICON" */
             }
 
             /* If "ICON" was found, look for "FACE" */
-            if (foundIcon && memcmp(buffer + i, "FACE", 4) == 0) {
-                foundFace = 1;  /* Found "FACE" chunk */
-                
+            if (foundIcon && memcmp(buffer + i, "FACE", 4) == 0)
+            {
+                foundFace = 1; /* Found "FACE" chunk */
+
                 /* Read the width and height from the "FACE" chunk */
                 size->width = (buffer[i + 8] & 0xFF) + 1;
                 size->height = (buffer[i + 9] & 0xFF) + 1;
 
-                break;  /* We have what we need, so break the loop */
+                break; /* We have what we need, so break the loop */
             }
         }
 
-        if (foundFace) {
-            break;  /* Exit the loop once "FACE" chunk is found */
+        if (foundFace)
+        {
+            break; /* Exit the loop once "FACE" chunk is found */
         }
     }
 
@@ -955,21 +1086,25 @@ void removeInfoExtension(const char *input, char *output)
 } /* removeInfoExtension */
 
 /* Function to resize a window and move it to a new position */
-void ResizeAndMoveWindow(const char *windowTitle, int newX, int newY, int newWidth, int newHeight) {
+void ResizeAndMoveWindow(const char *windowTitle, int newX, int newY, int newWidth, int newHeight)
+{
     struct Screen *screen;
     struct Window *window;
 
     /* Lock the public screen */
     screen = LockPubScreen(NULL);
-    if (screen == NULL) {
+    if (screen == NULL)
+    {
         printf("Failed to lock public screen.\n");
         return;
     }
 
     /* Find the window with the specified title */
     window = screen->FirstWindow;
-    while (window != NULL) {
-        if (window->Title != NULL && strcmp(window->Title, windowTitle) == 0) {
+    while (window != NULL)
+    {
+        if (window->Title != NULL && strcmp(window->Title, windowTitle) == 0)
+        {
             /* Resize the window */
             SizeWindow(window, newWidth - window->Width, newHeight - window->Height);
 
