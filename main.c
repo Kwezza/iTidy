@@ -55,7 +55,7 @@ typedef struct
 #define ICON_SPACING_Y 10
 #define ICON_START_X 10
 #define ICON_START_Y 10
-#define SCROLLBAR_WIDTH 20
+#define SCROLLBAR_WIDTH 30
 #define SCROLLBAR_HEIGHT 20
 #define WINDOW_TITLE_HEIGHT 18
 #define WORKBENCH_BAR 20
@@ -64,6 +64,9 @@ typedef struct
 #define const_fontIcon 0
 #define const_fontDefault 1
 #define const_fontScreen 2
+
+#define CHUNK_SIZE 1024  /* Size of the buffer to read in each iteration */
+#define HEADER_SIZE 12   /* Size of IFF header ("FORM" + size + "ICON") */  /* Size of IFF header ("FORM" + size + "ICON")  for OS3.5 Icons*/
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
@@ -86,7 +89,8 @@ int HasSlaveFile(const char *path);
 int strncasecmp_custom(const char *s1, const char *s2, size_t n);
 void removeInfoExtension(const char *input, char *output);
 void ResizeAndMoveWindow(const char *windowTitle, int newX, int newY, int newWidth, int newHeight);
-
+int isOS35IconFormat(const char *filename);
+int getOS35IconSize(const char *filename, IconSize *size);
 
 int main(int argc, char **argv)
 {
@@ -260,6 +264,7 @@ int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
     LONG maxY;
     LONG windowWidth;
     char fullPath[512];
+    char fullPathWithIcon[512];
     char *dotInfo;
     struct TextFont *font;
     folderWindowSize newFolderInfo;
@@ -388,6 +393,7 @@ int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
 
         // Create full path without ".info" extension
         sprintf(fullPath, "%s/%s", dirPath, fileNames[i]);
+        strcpy(fullPathWithIcon,fullPath);
         dotInfo = strstr(fullPath, ".info");
         if (dotInfo)
         {
@@ -397,6 +403,8 @@ int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
         removeInfoExtension(fileNames[i], fileNameNoInfo);
 
         diskObject = GetDiskObject(fullPath);
+
+        //printf("Is os35 icon format: %d\n", isOS35IconFormat(fullPathWithIcon)  );
         if (diskObject)
         {
             if (TextExtent(rastPort, fileNameNoInfo, strlen(fileNameNoInfo), &textExtent))
@@ -410,12 +418,26 @@ int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
 
             if (IsNewIcon(diskObject))
             {
+                //printf("Is new icon\n");
                 GetNewIconSize(diskObject, &iconSize);
+
+            }
+            else if (isOS35IconFormat(fullPathWithIcon))
+            {
+                //printf("Is OS3.5 Icon\n");
+                getOS35IconSize(fullPathWithIcon, &iconSize);
+            }
+            else if (diskObject->do_Gadget.Width != 0 && diskObject->do_Gadget.Height != 0)
+            {
+                printf("Normal Icon\n");
+                iconSize.width = diskObject->do_Gadget.Width;
+                iconSize.height = diskObject->do_Gadget.Height;
             }
             else
             {
-                iconSize.width = diskObject->do_Gadget.Width;
-                iconSize.height = diskObject->do_Gadget.Height;
+                printf("Normal Icon\n");
+                iconSize.width = diskObject->do_CurrentX;
+                iconSize.height = diskObject->do_CurrentY;
             }
 
             printf("Width (W=%d T=%d), Height (H=%d T=%d) Box: X%d, Y%d to X%d,Y%d Name: %s\n",
@@ -605,9 +627,10 @@ BOOL IsNewIcon(struct DiskObject *diskObject)
     /* Print all tooltypes */
     if (toolTypes != NULL)
     {
+        
         while (*toolTypes != NULL)
         {
-            // printf("ToolType: %s\n", *toolTypes);
+            printf("ToolType: %s\n", *toolTypes);
             if (strcmp(*toolTypes, "*** DON'T EDIT THE FOLLOWING LINES!! ***") == 0)
             {
                 newIconFormat = TRUE;
@@ -626,6 +649,61 @@ BOOL IsNewIcon(struct DiskObject *diskObject)
     return FALSE;
 } /* IsNewIcon */
 
+int isOS35IconFormat(const char *filename) {
+    FILE *file;
+    UBYTE buffer[CHUNK_SIZE];
+    size_t bytesRead;
+    long fileSize;
+    int foundForm = 0;  /* Flag to indicate if "FORM" has been found */
+    int foundIcon = 0;  /* Flag to indicate if "ICON" has been found after "FORM" */
+    long offset = 0;
+    size_t i;
+
+    /* Open the file in binary mode */
+    file = fopen(filename, "rb");
+    if (file == NULL) {
+        perror("Error opening file");
+        return 0;  /* Return false on error */
+    }
+
+    /* Get the file size */
+    fseek(file, 0, SEEK_END);
+    fileSize = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    /* Check if the file size is at least the size of the header */
+    if (fileSize < HEADER_SIZE) {
+        fclose(file);
+        return 0;  /* File too small to be OS3.5 icon */
+    }
+
+    /* Read the file in chunks and search for the headers */
+    while ((bytesRead = fread(buffer, 1, CHUNK_SIZE, file)) > 0) {
+        for ( i = 0; i < bytesRead - HEADER_SIZE; i++) {
+            /* Check for "FORM" header */
+            if (!foundForm && memcmp(buffer + i, "FORM", 4) == 0) {
+                foundForm = 1;  /* Found "FORM" */
+                offset = ftell(file) - bytesRead + i;
+            }
+
+            /* If "FORM" was found, look for "ICON" */
+            if (foundForm && memcmp(buffer + i + 8, "ICON", 4) == 0) {
+                foundIcon = 1;  /* Found "ICON" */
+                break;  /* Break the loop as we've found the required headers */
+            }
+        }
+
+        if (foundIcon) {
+            break;  /* Exit the loop once "FORM" and "ICON" are found */
+        }
+    }
+
+    /* Close the file */
+    fclose(file);
+
+    /* Return true if both "FORM" and "ICON" were found */
+    return (foundForm && foundIcon);
+}
 void GetNewIconSize(struct DiskObject *diskObject, IconSize *newIconSize)
 {
     STRPTR *toolTypes;
@@ -652,6 +730,79 @@ void GetNewIconSize(struct DiskObject *diskObject, IconSize *newIconSize)
             break;
         }
     }
+}
+
+/* Function to check if the icon file is in the OS3.5 format and return its size */
+int getOS35IconSize(const char *filename, IconSize *size) {
+    FILE *file;
+    UBYTE buffer[CHUNK_SIZE];
+    size_t bytesRead;
+    long fileSize;
+    int foundForm = 0;  /* Flag to indicate if "FORM" has been found */
+    int foundIcon = 0;  /* Flag to indicate if "ICON" has been found after "FORM" */
+    int foundFace = 0;  /* Flag to indicate if "FACE" chunk has been found */
+    long offset = 0;
+
+    /* Initialize the size */
+    size->width = 0;
+    size->height = 0;
+
+    /* Open the file in binary mode */
+    file = fopen(filename, "rb");
+    if (file == NULL) {
+        perror("Error opening file");
+        return 0;  /* Return false on error */
+    }
+
+    /* Get the file size */
+    fseek(file, 0, SEEK_END);
+    fileSize = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    /* Check if the file size is at least the size of the header */
+    if (fileSize < HEADER_SIZE) {
+        fclose(file);
+        return 0;  /* File too small to be OS3.5 icon */
+    }
+
+    /* Read the file in chunks and search for the headers */
+    while ((bytesRead = fread(buffer, 1, CHUNK_SIZE, file)) > 0) {
+        int i;
+
+        for (i = 0; i < bytesRead - HEADER_SIZE; i++) {
+            /* Check for "FORM" header */
+            if (!foundForm && memcmp(buffer + i, "FORM", 4) == 0) {
+                foundForm = 1;  /* Found "FORM" */
+                offset = ftell(file) - bytesRead + i;
+            }
+
+            /* If "FORM" was found, look for "ICON" */
+            if (foundForm && memcmp(buffer + i + 8, "ICON", 4) == 0) {
+                foundIcon = 1;  /* Found "ICON" */
+            }
+
+            /* If "ICON" was found, look for "FACE" */
+            if (foundIcon && memcmp(buffer + i, "FACE", 4) == 0) {
+                foundFace = 1;  /* Found "FACE" chunk */
+                
+                /* Read the width and height from the "FACE" chunk */
+                size->width = (buffer[i + 8] & 0xFF) + 1;
+                size->height = (buffer[i + 9] & 0xFF) + 1;
+
+                break;  /* We have what we need, so break the loop */
+            }
+        }
+
+        if (foundFace) {
+            break;  /* Exit the loop once "FACE" chunk is found */
+        }
+    }
+
+    /* Close the file */
+    fclose(file);
+
+    /* Return true if the "FACE" chunk was found and size was set */
+    return foundFace;
 }
 
 void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo)
@@ -827,7 +978,7 @@ void ResizeAndMoveWindow(const char *windowTitle, int newX, int newY, int newWid
 
             /* Print the window details */
             printf("Window Title: %s\n", window->Title);
-                        printf("Window Left: %d\n", window->LeftEdge);
+            printf("Window Left: %d\n", window->LeftEdge);
             printf("Window top: %d\n", window->TopEdge);
             printf("Window Width: %d\n", window->Width);
             printf("Window Height: %d\n", window->Height);

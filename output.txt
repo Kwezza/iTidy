@@ -1,0 +1,24 @@
+entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TZer0DemoAGA
+Found .slave file in PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TZer0DemoAGA, resizing windows only and skipping.
+Locked directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TZer0DemoAGA
+fileNames: TZer0DemoAGA.info
+fileNames: ReadMe.info
+fileNames: Manual.info
+Text Width: 84
+ToolType: SLAVE=TZer0DemoAGA.slave
+ToolType: PRELOAD
+Width (W=120 T=84), Height (H=96 T=109) Box: X5, Y4 to X125,Y113 Name: TZer0DemoAGA
+maxX: 125, maxY: 113
+ 
+Text Width: 42
+Width (W=42 T=42), Height (H=46 T=59) Box: X187, Y4 to X229,Y63 Name: ReadMe
+maxX: 229, maxY: 113
+ 
+Text Width: 42
+Width (W=42 T=42), Height (H=46 T=59) Box: X133, Y4 to X175,Y63 Name: Manual
+maxX: 229, maxY: 113
+ 
+Window resized to fit all icons: Width = 259, Height = 151
+Window position: Left =  243, Top = 285 
+BorderLeft: 4, BorderRight: 18, BorderTop: 16,BorderBottom: 2
+Screen dimensions: Width = 800, Height = 600
