@@ -76,6 +76,18 @@ typedef struct
     int height;
 } IconSize;
 
+typedef struct
+{
+    int icon_width;
+    int icon_height;
+    int text_width;
+    int text_height;
+    char icon_text[40];
+    BOOL is_folder;
+
+} FullIconDetails;
+
+
 struct Screen *screen;
 struct Window *window;
 struct RastPort *rastPort;
@@ -240,7 +252,7 @@ void ProcessDirectory(const char *path)
     if (HasSlaveFile(path))
     {
         // printf("Found .slave file in %s, resizing windows only and skipping.\n", path);
-        FormatIconsAndWindow(path, TRUE);
+        //FormatIconsAndWindow(path, TRUE);
         return;
     }
 
@@ -516,6 +528,8 @@ int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
             
             
                 CalculateTextExtent(fileNameNoInfo,&textExtent);
+
+                
                 
             /*if (TextExtent(rastPort, fileNameNoInfo, strlen(fileNameNoInfo), &textExtent))
             {
@@ -556,19 +570,19 @@ int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
 //printf("1  X: %d, Y: %d,  Saved icon: %s \n", x,y,fullPath);
             /* printf("Width (W=%d T=%d), Height (H=%d T=%d) Box: X%d, Y%d to X%d,Y%d Name: %s\n",
                     iconSize.width,
-                    textWidth,
+                    textExtent.te_Width,
                     iconSize.height,
                     iconSize.height + textExtent.te_Height,
                     diskObject->do_CurrentX,
                     diskObject->do_CurrentY,
-                    diskObject->do_CurrentX + MAX(textWidth, iconSize.width),
+                    diskObject->do_CurrentX + MAX(textExtent.te_Width, iconSize.width),
                     diskObject->do_CurrentY + iconSize.height + textExtent.te_Height,
                     fileNameNoInfo);*/
             // fileNames[i]);
 
             // Check if the icon text or icon itself exceeds the window width
-            printf("3  X: %d, Y: %d, win width: %d, rowcount %d, Current endX %d,  Saved icon: %s \n", x,y,windowWidth,rowcount,x + MAX(textWidth, iconSize.width),fullPath);
-            if (x + MAX(textWidth, iconSize.width) > windowWidth)
+            printf("3  X: %d, Y: %d, win width: %d, rowcount %d, Current endX %d,  Saved icon: %s \n", x,y,windowWidth,rowcount,x + MAX(textExtent.te_Width, iconSize.width),fullPath);
+            if (x + MAX(textExtent.te_Width, iconSize.width) > windowWidth)
             {
                 if (rowcount < maxWidthsToCheck)
                 {
@@ -578,9 +592,9 @@ int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
                 y += iconSize.height + textExtent.te_Height + ICON_SPACING_Y;
                 rowcount++;
             }
-//printf("3  X: %d, Y: %d, window width: %d, rowcount %d, Current endX %d,  Saved icon: %s \n", x,y,windowWidth,rowcount,x + MAX(textWidth, iconSize.width),fullPath);
+//printf("3  X: %d, Y: %d, window width: %d, rowcount %d, Current endX %d,  Saved icon: %s \n", x,y,windowWidth,rowcount,x + MAX(textExtent.te_Width, iconSize.width),fullPath);
             // Center the icon within the space calculated based on text width or icon width
-            centerX = x + (MAX(textWidth, iconSize.width) - iconSize.width) / 2;
+            centerX = x + (MAX(textExtent.te_Width, iconSize.width) - iconSize.width) / 2;
 
             if (!resizeOnly)
             {
@@ -602,9 +616,9 @@ int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
                 y = diskObject->do_CurrentY;
             }
 
-            // if (x + MAX(textWidth, iconSize.width) > maxX)
+            // if (x + MAX(textExtent.te_Width, iconSize.width) > maxX)
             //{
-            maxX = MAX(maxX, (diskObject->do_CurrentX + MAX(textWidth, iconSize.width)));
+            maxX = MAX(maxX, (diskObject->do_CurrentX + MAX(textExtent.te_Width, iconSize.width)));
             maxY = MAX(maxY, (diskObject->do_CurrentY + iconSize.height + textExtent.te_Height));
             //}
             // if (y + iconSize.height + textExtent.te_Height > maxY)
@@ -613,7 +627,7 @@ int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
             //}
             // printf("maxX: %d, maxY: %d\n ", maxX, maxY);
             // Increment x position
-            x += MAX(textWidth, iconSize.width) + ICON_SPACING_X;
+            x += MAX(textExtent.te_Width, iconSize.width) + ICON_SPACING_X;
 
             FreeDiskObject(diskObject);
         }
