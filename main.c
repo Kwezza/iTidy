@@ -55,9 +55,9 @@ typedef struct
 #define ICON_SPACING_Y 10
 #define ICON_START_X 10
 #define ICON_START_Y 10
-#define SCROLLBAR_WIDTH 30
-#define SCROLLBAR_HEIGHT 20
-#define WINDOW_TITLE_HEIGHT 18
+#define SCROLLBAR_WIDTH 50
+#define SCROLLBAR_HEIGHT 30
+#define WINDOW_TITLE_HEIGHT 30
 #define WORKBENCH_BAR 20
 
 #define FONT_PREFS_FILE "ENV:sys/font.prefs"
@@ -630,8 +630,10 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight)
     posTop = (screenHight - winHeight) / 2;
     posLeft = (screenWidth - winWidth) / 2;
 
-    newFolderInfo.left = posTop;
-    newFolderInfo.top = posLeft;
+    printf("Screen Height: %d, Screen Width: %d\n", screenHight, screenWidth);
+
+    newFolderInfo.left = posLeft;
+    newFolderInfo.top = posTop;
     newFolderInfo.width = winWidth ;
     newFolderInfo.height = winHeight;
 
