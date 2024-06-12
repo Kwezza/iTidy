@@ -51,3 +51,9 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+main
+output.txt
+output1.txt
+output2.txt
+output3.txt
+
