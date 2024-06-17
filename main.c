@@ -43,6 +43,10 @@
 
 #include <ctype.h>
 
+
+#include "Settings/IControlPrefs.h"
+#include "Settings/WorkbenchPrefs.h"
+
 typedef struct
 {
     int left;
@@ -59,6 +63,9 @@ typedef struct
 #define SCROLLBAR_HEIGHT 30
 #define WINDOW_TITLE_HEIGHT 30
 #define WORKBENCH_BAR 20
+
+#define PADDING_WIDTH 2
+#define PADDING_HEIGHT 2
 
 #define FONT_PREFS_FILE "ENV:sys/font.prefs"
 #define const_fontIcon 0
@@ -112,6 +119,8 @@ struct Screen *screen;
 struct Window *window;
 struct RastPort *rastPort;
 struct TextFont *font;
+struct WorkbenchSettings prefsWorkbench;
+struct IControlPrefsDetails prefsIControl;
 
 const MAX_ICONS_TO_ALLIGN = 50;
 
@@ -141,6 +150,7 @@ void dumpIconArrayToScreen(IconArray *iconArray);
 void resizeFolderToContents(char *dirPath, IconArray *iconArray);
 void repoistionWindow(char *dirPath, int winWidth, int winHeight);
 IconPosition GetIconPositionFromPath(const char *iconPath);
+int IsRootDirectorySimple(const char *path);
 
 int main(int argc, char **argv)
 {
@@ -149,6 +159,12 @@ int main(int argc, char **argv)
         Printf("Usage: %s <directory>\n", argv[0]);
         return RETURN_FAIL;
     }
+    fetchWorkbenchSettings(&prefsWorkbench);
+    fetchIControlSettings(&prefsIControl);
+    printf("IControl prefs:  border width: %d, border height: %d\n", prefsIControl.currentBarWidth, prefsIControl.currentBarHeight);
+    printf("IControl prefs:  title height: %d, Window height: %d\n", prefsIControl.currentTitleBarHeight, prefsIControl.currentWindowBarHeight);
+    printf("IControl prefs:  volume guage width: %d\n", prefsIControl.currentCGaugeWidth);
+
     InitializeWindow();
     ProcessDirectory(argv[1]);
     CleanupWindow();
@@ -604,7 +620,15 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
     return iconArray;
 }
 
+int IsRootDirectorySimple(const char *path) {
+    size_t length = strlen(path);
 
+    // Check if the last character is a colon
+    if (length > 0 && path[length - 1] == ':') {
+        return 1; // True - it is a root directory
+    }
+    return 0; // False - it is not a root directory
+}
 
 void resizeFolderToContents(char *dirPath, IconArray *iconArray)
 {
@@ -624,13 +648,16 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight)
     int posTop = 0, posLeft = 0;
     folderWindowSize newFolderInfo;
 
-    winWidth = winWidth+ SCROLLBAR_WIDTH;
-    winHeight = winHeight + SCROLLBAR_HEIGHT + WINDOW_TITLE_HEIGHT;
+    winWidth = winWidth + prefsIControl.currentBarWidth + prefsIControl.currentLeftBarWidth + (PADDING_WIDTH*2);
+    /* is it the root directory and does it have the size guage? */ 
+    if (prefsWorkbench.disableVolumeGauge && IsRootDirectorySimple(*dirPath)) winWidth= winWidth + prefsIControl.currentCGaugeWidth;
+
+    winHeight = winHeight + prefsIControl.currentWindowBarHeight + prefsIControl.currentBarHeight + (PADDING_HEIGHT*2); // SCROLLBAR_HEIGHT + WINDOW_TITLE_HEIGHT;
 
     posTop = (screenHight - winHeight) / 2;
     posLeft = (screenWidth - winWidth) / 2;
 
-    printf("Screen Height: %d, Screen Width: %d\n", screenHight, screenWidth);
+    printf("Calculated screen Height: %d, Screen Width: %d\n", screenHight, screenWidth);
 
     newFolderInfo.left = posLeft;
     newFolderInfo.top = posTop;

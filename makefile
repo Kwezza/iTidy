@@ -12,10 +12,10 @@ LFLAGS =
 all: main
 
 main: main.o
-    $(SC) link to main $(CFLAGS) main.o 
+    $(SC) link to main $(CFLAGS) main.o  Settings/IControlPrefs.o  Settings/WorkbenchPrefs.o
 
 main.o: main.c
-    $(SC) $(CFLAGS) main.c 
+    $(SC) $(CFLAGS) main.c Settings/IControlPrefs.c  Settings/WorkbenchPrefs.c
 
 clean:
-    delete main.o main main.info main.lnk 
+    delete main.o main main.info main.lnk Settings/IControlPrefs.o  Settings/WorkbenchPrefs.o

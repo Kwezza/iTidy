@@ -4,14 +4,13 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "C:/Amiga/includes"
+                "C:/Amiga/AmigaIncludes/**"
             ],
             "defines": [],
             "windowsSdkVersion": "10.0.18362.0",
-            "compilerPath": "path/to/your/compiler.exe",
             "cStandard": "c89",
             "cppStandard": "c++17",
-            "intelliSenseMode": "windows-gcc-x64"
+            "intelliSenseMode": "gcc-x64"
         }
     ],
     "version": 4

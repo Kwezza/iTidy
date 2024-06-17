@@ -2,5 +2,9 @@
     "cSpell.words": [
         "diskobject",
         "rowcount"
-    ]
+    ],
+    "files.associations": {
+        "icon.h": "c",
+        "stdio.h": "c"
+    }
 }
