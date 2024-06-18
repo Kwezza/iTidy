@@ -4,357 +4,615 @@ IControl prefs:  volume guage width: 19
 screen width: 1024
 Screen height: 768
 entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T
+Formatting actual folder - not a slove folder
 screen width: 1024
 windowWidth: 320
 Dumping Icon Array of 267 icons, max width is 166px
-Icon 0: Width = 42, Height = 42, Text Width = 144, Text Height = 13, Max Width = 144, Max Height = 57, x = 461, y = 5665, Text = TZer0DemoNoMovieAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TZer0DemoNoMovieAGA.info
-Icon 1: Width = 42, Height = 42, Text Width = 93, Text Height = 13, Max Width = 93, Max Height = 57, x = 35, y = 5665, Text = TZer0DemoAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TZer0DemoAGA.info
-Icon 2: Width = 42, Height = 42, Text Width = 139, Text Height = 13, Max Width = 139, Max Height = 57, x = 615, y = 5600, Text = TyphoonThompsonNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TyphoonThompsonNTSC.info
-Icon 3: Width = 42, Height = 42, Text Width = 166, Text Height = 13, Max Width = 166, Max Height = 57, x = 280, y = 5600, Text = TyphoonThompson512kNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TyphoonThompson512kNTSC.info
-Icon 4: Width = 42, Height = 42, Text Width = 49, Text Height = 13, Max Width = 49, Max Height = 57, x = 641, y = 5535, Text = Typhoon.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Typhoon.info
-Icon 5: Width = 42, Height = 42, Text Width = 43, Text Height = 13, Max Width = 43, Max Height = 57, x = 394, y = 5535, Text = Twylyte.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Twylyte.info
-Icon 6: Width = 42, Height = 42, Text Width = 58, Text Height = 13, Max Width = 58, Max Height = 57, x = 328, y = 5535, Text = TwinWorld.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TwinWorld.info
-Icon 7: Width = 42, Height = 42, Text Width = 64, Text Height = 13, Max Width = 64, Max Height = 57, x = 143, y = 5535, Text = TwinTurbos.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TwinTurbos.info
-Icon 8: Width = 42, Height = 42, Text Width = 42, Text Height = 13, Max Width = 42, Max Height = 57, x = 652, y = 5470, Text = Twintris.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Twintris.info
-Icon 9: Width = 42, Height = 42, Text Width = 96, Text Height = 13, Max Width = 96, Max Height = 57, x = 300, y = 5470, Text = TVSportsFootball.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TVSportsFootball.info
-Icon 10: Width = 42, Height = 42, Text Width = 89, Text Height = 13, Max Width = 89, Max Height = 57, x = 185, y = 5470, Text = TVSportsBoxing.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TVSportsBoxing.info
-Icon 11: Width = 42, Height = 42, Text Width = 114, Text Height = 13, Max Width = 114, Max Height = 57, x = 639, y = 5405, Text = TVSportsBasketballIt.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TVSportsBasketballIt.info
-Icon 12: Width = 42, Height = 42, Text Width = 142, Text Height = 13, Max Width = 142, Max Height = 57, x = 77, y = 5405, Text = TVSportsBasketball2223It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TVSportsBasketball2223It.info
-Icon 13: Width = 42, Height = 42, Text Width = 136, Text Height = 13, Max Width = 136, Max Height = 57, x = 576, y = 5340, Text = TVSportsBasketball2223.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TVSportsBasketball2223.info
-Icon 14: Width = 42, Height = 42, Text Width = 108, Text Height = 13, Max Width = 108, Max Height = 57, x = 227, y = 5340, Text = TVSportsBasketball.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TVSportsBasketball.info
-Icon 15: Width = 42, Height = 42, Text Width = 99, Text Height = 13, Max Width = 99, Max Height = 57, x = 568, y = 5275, Text = TVSportsBaseball.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TVSportsBaseball.info
-Icon 16: Width = 42, Height = 42, Text Width = 37, Text Height = 13, Max Width = 42, Max Height = 57, x = 324, y = 5275, Text = Tusker.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tusker.info
-Icon 17: Width = 42, Height = 42, Text Width = 79, Text Height = 13, Max Width = 79, Max Height = 57, x = 164, y = 5275, Text = TurricanNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurricanNTSC.info
-Icon 18: Width = 42, Height = 42, Text Width = 78, Text Height = 13, Max Width = 78, Max Height = 57, x = 638, y = 5210, Text = TurricanDemo.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurricanDemo.info
-Icon 19: Width = 42, Height = 42, Text Width = 80, Text Height = 13, Max Width = 80, Max Height = 57, x = 415, y = 5210, Text = TurricanCDTV.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurricanCDTV.info
-Icon 20: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 42, y = 5210, Text = Turrican3Image.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Turrican3Image.info
-Icon 21: Width = 42, Height = 42, Text Width = 80, Text Height = 13, Max Width = 80, Max Height = 57, x = 659, y = 5145, Text = Turrican3Files.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Turrican3Files.info
-Icon 22: Width = 42, Height = 42, Text Width = 85, Text Height = 13, Max Width = 85, Max Height = 57, x = 276, y = 5145, Text = Turrican3Demo.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Turrican3Demo.info
-Icon 23: Width = 42, Height = 42, Text Width = 85, Text Height = 13, Max Width = 85, Max Height = 57, x = 175, y = 5145, Text = Turrican2Demo.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Turrican2Demo.info
-Icon 24: Width = 42, Height = 42, Text Width = 87, Text Height = 13, Max Width = 87, Max Height = 57, x = 631, y = 5080, Text = Turrican2CDTV.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Turrican2CDTV.info
-Icon 25: Width = 42, Height = 42, Text Width = 53, Text Height = 13, Max Width = 53, Max Height = 57, x = 300, y = 5080, Text = Turrican2.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Turrican2.info
-Icon 26: Width = 42, Height = 42, Text Width = 46, Text Height = 13, Max Width = 46, Max Height = 57, x = 230, y = 5080, Text = Turrican.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Turrican.info
-Icon 27: Width = 42, Height = 42, Text Width = 60, Text Height = 13, Max Width = 60, Max Height = 57, x = 667, y = 5015, Text = TurnNBurn.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurnNBurn.info
-Icon 28: Width = 42, Height = 42, Text Width = 134, Text Height = 13, Max Width = 134, Max Height = 57, x = 370, y = 5015, Text = TurboTraxArcane512KB.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurboTraxArcane512KB.info
-Icon 29: Width = 42, Height = 42, Text Width = 123, Text Height = 13, Max Width = 123, Max Height = 57, x = 227, y = 5015, Text = TurboTraxArcane1MB.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurboTraxArcane1MB.info
-Icon 30: Width = 42, Height = 42, Text Width = 87, Text Height = 13, Max Width = 87, Max Height = 57, x = 548, y = 4950, Text = TurboRaketti2Fi.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurboRaketti2Fi.info
-Icon 31: Width = 42, Height = 42, Text Width = 76, Text Height = 13, Max Width = 76, Max Height = 57, x = 440, y = 4950, Text = TurboRaketti2.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurboRaketti2.info
-Icon 32: Width = 42, Height = 42, Text Width = 107, Text Height = 13, Max Width = 107, Max Height = 57, x = 196, y = 4950, Text = TurboOutRunNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurboOutRunNTSC.info
-Icon 33: Width = 42, Height = 42, Text Width = 74, Text Height = 13, Max Width = 74, Max Height = 57, x = 519, y = 4885, Text = TurboOutRun.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurboOutRun.info
-Icon 34: Width = 42, Height = 42, Text Width = 67, Text Height = 13, Max Width = 67, Max Height = 57, x = 320, y = 4885, Text = TurboCupFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurboCupFr.info
-Icon 35: Width = 42, Height = 42, Text Width = 55, Text Height = 13, Max Width = 55, Max Height = 57, x = 146, y = 4885, Text = TurboCup.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurboCup.info
-Icon 36: Width = 42, Height = 42, Text Width = 32, Text Height = 13, Max Width = 42, Max Height = 57, x = 91, y = 4885, Text = Turbo.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Turbo.info
-Icon 37: Width = 42, Height = 42, Text Width = 107, Text Height = 13, Max Width = 107, Max Height = 57, x = 513, y = 4820, Text = TubularWorldsAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TubularWorldsAGA.info
-Icon 38: Width = 42, Height = 42, Text Width = 117, Text Height = 13, Max Width = 117, Max Height = 57, x = 213, y = 4820, Text = TubularWorlds512KB.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TubularWorlds512KB.info
-Icon 39: Width = 42, Height = 42, Text Width = 106, Text Height = 13, Max Width = 106, Max Height = 57, x = 690, y = 4755, Text = TubularWorlds1MB.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TubularWorlds1MB.info
-Icon 40: Width = 42, Height = 42, Text Width = 101, Text Height = 13, Max Width = 101, Max Height = 57, x = 572, y = 4755, Text = TubeWarriorsAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TubeWarriorsAGA.info
-Icon 41: Width = 42, Height = 42, Text Width = 62, Text Height = 13, Max Width = 62, Max Height = 57, x = 209, y = 4755, Text = TrollsCD32.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrollsCD32.info
-Icon 42: Width = 42, Height = 42, Text Width = 57, Text Height = 13, Max Width = 57, Max Height = 57, x = 133, y = 4755, Text = TrollsAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrollsAGA.info
-Icon 43: Width = 42, Height = 42, Text Width = 30, Text Height = 13, Max Width = 42, Max Height = 57, x = 608, y = 4690, Text = Trolls.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Trolls.info
-Icon 44: Width = 42, Height = 42, Text Width = 119, Text Height = 13, Max Width = 119, Max Height = 57, x = 507, y = 4690, Text = TroisPetitsCochonsFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TroisPetitsCochonsFr.info
-Icon 45: Width = 42, Height = 42, Text Width = 25, Text Height = 13, Max Width = 42, Max Height = 57, x = 153, y = 4690, Text = Trog.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Trog.info
-Icon 46: Width = 42, Height = 42, Text Width = 85, Text Height = 13, Max Width = 85, Max Height = 57, x = 572, y = 4625, Text = TroddlersImage.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TroddlersImage.info
-Icon 47: Width = 42, Height = 42, Text Width = 79, Text Height = 13, Max Width = 79, Max Height = 57, x = 464, y = 4625, Text = TroddlersFiles.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TroddlersFiles.info
-Icon 48: Width = 42, Height = 42, Text Width = 84, Text Height = 13, Max Width = 84, Max Height = 57, x = 49, y = 4625, Text = TrivialPursuitFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrivialPursuitFr.info
-Icon 49: Width = 42, Height = 42, Text Width = 88, Text Height = 13, Max Width = 88, Max Height = 57, x = 513, y = 4560, Text = TrivialPursuitDe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrivialPursuitDe.info
-Icon 50: Width = 42, Height = 42, Text Width = 110, Text Height = 13, Max Width = 110, Max Height = 57, x = 203, y = 4560, Text = TrivialPursuitANBFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrivialPursuitANBFr.info
-Icon 51: Width = 42, Height = 42, Text Width = 114, Text Height = 13, Max Width = 114, Max Height = 57, x = 60, y = 4560, Text = TrivialPursuitANBDe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrivialPursuitANBDe.info
-Icon 52: Width = 42, Height = 42, Text Width = 98, Text Height = 13, Max Width = 98, Max Height = 57, x = 304, y = 4495, Text = TrivialPursuitANB.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrivialPursuitANB.info
-Icon 53: Width = 42, Height = 42, Text Width = 72, Text Height = 13, Max Width = 72, Max Height = 57, x = 185, y = 4495, Text = TrivialPursuit.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrivialPursuit.info
-Icon 54: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 694, y = 4430, Text = TripleX.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TripleX.info
-Icon 55: Width = 42, Height = 42, Text Width = 121, Text Height = 13, Max Width = 121, Max Height = 57, x = 331, y = 4430, Text = TrickyQuikyGamesDe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrickyQuikyGamesDe.info
-Icon 56: Width = 42, Height = 42, Text Width = 47, Text Height = 13, Max Width = 47, Max Height = 57, x = 140, y = 4430, Text = TrianGO.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrianGO.info
-Icon 57: Width = 42, Height = 42, Text Width = 64, Text Height = 13, Max Width = 64, Max Height = 57, x = 632, y = 4365, Text = TrexWarrior.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrexWarrior.info
-Icon 58: Width = 42, Height = 42, Text Width = 74, Text Height = 13, Max Width = 74, Max Height = 57, x = 412, y = 4365, Text = TreasureTrap.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TreasureTrap.info
-Icon 59: Width = 42, Height = 42, Text Width = 154, Text Height = 13, Max Width = 154, Max Height = 57, x = 74, y = 4365, Text = TreasureSavageFrontNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TreasureSavageFrontNTSC.info
-Icon 60: Width = 42, Height = 42, Text Width = 145, Text Height = 13, Max Width = 145, Max Height = 57, x = 395, y = 4300, Text = TreasureIslandDizzyCD32.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TreasureIslandDizzyCD32.info
-Icon 61: Width = 42, Height = 42, Text Width = 113, Text Height = 13, Max Width = 113, Max Height = 57, x = 60, y = 4300, Text = TreasureIslandDizzy.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TreasureIslandDizzy.info
-Icon 62: Width = 42, Height = 42, Text Width = 111, Text Height = 13, Max Width = 111, Max Height = 57, x = 597, y = 4235, Text = TrapsNTreasuresDe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrapsNTreasuresDe.info
-Icon 63: Width = 42, Height = 42, Text Width = 95, Text Height = 13, Max Width = 95, Max Height = 57, x = 311, y = 4235, Text = TrapsNTreasures.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrapsNTreasures.info
-Icon 64: Width = 42, Height = 42, Text Width = 65, Text Height = 13, Max Width = 65, Max Height = 57, x = 711, y = 4170, Text = TrapRunner.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrapRunner.info
-Icon 65: Width = 42, Height = 42, Text Width = 77, Text Height = 13, Max Width = 77, Max Height = 57, x = 495, y = 4170, Text = TransworldDe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TransworldDe.info
-Icon 66: Width = 42, Height = 42, Text Width = 58, Text Height = 13, Max Width = 58, Max Height = 57, x = 293, y = 4170, Text = Transplant.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Transplant.info
-Icon 67: Width = 42, Height = 42, Text Width = 96, Text Height = 13, Max Width = 96, Max Height = 57, x = 196, y = 4170, Text = TransarcticaAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TransarcticaAGA.info
-Icon 68: Width = 42, Height = 42, Text Width = 69, Text Height = 13, Max Width = 69, Max Height = 57, x = 509, y = 4105, Text = Transarctica.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Transarctica.info
-Icon 69: Width = 42, Height = 42, Text Width = 92, Text Height = 13, Max Width = 92, Max Height = 57, x = 255, y = 4105, Text = TrainedAssassin.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrainedAssassin.info
-Icon 70: Width = 42, Height = 42, Text Width = 75, Text Height = 13, Max Width = 75, Max Height = 57, x = 154, y = 4105, Text = TradersNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TradersNTSC.info
-Icon 71: Width = 42, Height = 42, Text Width = 58, Text Height = 13, Max Width = 58, Max Height = 57, x = 554, y = 4040, Text = TradersDe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TradersDe.info
-Icon 72: Width = 42, Height = 42, Text Width = 42, Text Height = 13, Max Width = 42, Max Height = 57, x = 394, y = 4040, Text = Tracker.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tracker.info
-Icon 73: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 251, y = 4040, Text = TRacer.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TRacer.info
-Icon 74: Width = 42, Height = 42, Text Width = 80, Text Height = 13, Max Width = 80, Max Height = 57, x = 175, y = 4040, Text = ToyottesImage.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ToyottesImage.info
-Icon 75: Width = 42, Height = 42, Text Width = 74, Text Height = 13, Max Width = 74, Max Height = 57, x = 496, y = 3975, Text = ToyottesFiles.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ToyottesFiles.info
-Icon 76: Width = 42, Height = 42, Text Width = 118, Text Height = 13, Max Width = 118, Max Height = 57, x = 374, y = 3975, Text = ToyotaCelicaGTRally.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ToyotaCelicaGTRally.info
-Icon 77: Width = 42, Height = 42, Text Width = 136, Text Height = 13, Max Width = 136, Max Height = 57, x = 56, y = 3975, Text = TownWithNoNameCDTV.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TownWithNoNameCDTV.info
-Icon 78: Width = 42, Height = 42, Text Width = 109, Text Height = 13, Max Width = 109, Max Height = 57, x = 471, y = 3910, Text = TowerTopplerNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TowerTopplerNTSC.info
-Icon 79: Width = 42, Height = 42, Text Width = 105, Text Height = 13, Max Width = 105, Max Height = 57, x = 46, y = 3910, Text = TowerOfSoulsAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TowerOfSoulsAGA.info
-Icon 80: Width = 42, Height = 42, Text Width = 79, Text Height = 13, Max Width = 79, Max Height = 57, x = 565, y = 3845, Text = TowerOfBabel.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TowerOfBabel.info
-Icon 81: Width = 42, Height = 42, Text Width = 87, Text Height = 13, Max Width = 87, Max Height = 57, x = 464, y = 3845, Text = TournamentGolf.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TournamentGolf.info
-Icon 82: Width = 42, Height = 42, Text Width = 95, Text Height = 13, Max Width = 95, Max Height = 57, x = 49, y = 3845, Text = TotalRecallImage.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TotalRecallImage.info
-Icon 83: Width = 42, Height = 42, Text Width = 89, Text Height = 13, Max Width = 89, Max Height = 57, x = 443, y = 3780, Text = TotalRecallFiles.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TotalRecallFiles.info
-Icon 84: Width = 42, Height = 42, Text Width = 72, Text Height = 13, Max Width = 72, Max Height = 57, x = 196, y = 3780, Text = TotalFootball.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TotalFootball.info
-Icon 85: Width = 42, Height = 42, Text Width = 101, Text Height = 13, Max Width = 101, Max Height = 57, x = 659, y = 3715, Text = TotalEclipseNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TotalEclipseNTSC.info
-Icon 86: Width = 42, Height = 42, Text Width = 68, Text Height = 13, Max Width = 68, Max Height = 57, x = 551, y = 3715, Text = TotalEclipse.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TotalEclipse.info
-Icon 87: Width = 42, Height = 42, Text Width = 102, Text Height = 13, Max Width = 102, Max Height = 57, x = 168, y = 3715, Text = TotalCarnageAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TotalCarnageAGA.info
-Icon 88: Width = 42, Height = 42, Text Width = 99, Text Height = 13, Max Width = 99, Max Height = 57, x = 49, y = 3715, Text = TorvakTheWarrior.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TorvakTheWarrior.info
-Icon 89: Width = 42, Height = 42, Text Width = 122, Text Height = 13, Max Width = 122, Max Height = 57, x = 349, y = 3650, Text = TornadoGroundAttack.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TornadoGroundAttack.info
-Icon 90: Width = 42, Height = 42, Text Width = 73, Text Height = 13, Max Width = 73, Max Height = 57, x = 237, y = 3650, Text = TornadoAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TornadoAGA.info
-Icon 91: Width = 42, Height = 42, Text Width = 46, Text Height = 13, Max Width = 46, Max Height = 57, x = 645, y = 3585, Text = Tornado.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tornado.info
-Icon 92: Width = 42, Height = 42, Text Width = 72, Text Height = 13, Max Width = 72, Max Height = 57, x = 568, y = 3585, Text = TopWrestling.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TopWrestling.info
-Icon 93: Width = 42, Height = 42, Text Width = 57, Text Height = 13, Max Width = 57, Max Height = 57, x = 248, y = 3585, Text = TopSecret.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TopSecret.info
-Icon 94: Width = 42, Height = 42, Text Width = 87, Text Height = 13, Max Width = 87, Max Height = 57, x = 164, y = 3585, Text = TopGear2CD32.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TopGear2CD32.info
-Icon 95: Width = 42, Height = 42, Text Width = 82, Text Height = 13, Max Width = 82, Max Height = 57, x = 519, y = 3520, Text = TopGear2AGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TopGear2AGA.info
-Icon 96: Width = 42, Height = 42, Text Width = 55, Text Height = 13, Max Width = 55, Max Height = 57, x = 341, y = 3520, Text = TopGear2.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TopGear2.info
-Icon 97: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 195, y = 3520, Text = TopCat.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TopCat.info
-Icon 98: Width = 42, Height = 42, Text Width = 64, Text Height = 13, Max Width = 64, Max Height = 57, x = 25, y = 3520, Text = TopBanana.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TopBanana.info
-Icon 99: Width = 42, Height = 42, Text Width = 38, Text Height = 13, Max Width = 42, Max Height = 57, x = 638, y = 3455, Text = Toobin.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Toobin.info
-Icon 100: Width = 42, Height = 42, Text Width = 95, Text Height = 13, Max Width = 95, Max Height = 57, x = 558, y = 3455, Text = Tony&FriendsDe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tony&FriendsDe.info
-Icon 101: Width = 42, Height = 42, Text Width = 62, Text Height = 13, Max Width = 62, Max Height = 57, x = 227, y = 3455, Text = TommyGun.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TommyGun.info
-Icon 102: Width = 42, Height = 42, Text Width = 146, Text Height = 13, Max Width = 146, Max Height = 57, x = 475, y = 3390, Text = TomLandryFootballDeluxe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TomLandryFootballDeluxe.info
-Icon 103: Width = 42, Height = 42, Text Width = 107, Text Height = 13, Max Width = 107, Max Height = 57, x = 161, y = 3390, Text = TomLandryFootball.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TomLandryFootball.info
-Icon 104: Width = 42, Height = 42, Text Width = 99, Text Height = 13, Max Width = 99, Max Height = 57, x = 42, y = 3390, Text = TomAndTheGhost.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TomAndTheGhost.info
-Icon 105: Width = 42, Height = 42, Text Width = 95, Text Height = 13, Max Width = 95, Max Height = 57, x = 415, y = 3325, Text = Tom&JerryHHAL.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tom&JerryHHAL.info
-Icon 106: Width = 42, Height = 42, Text Width = 68, Text Height = 13, Max Width = 68, Max Height = 57, x = 324, y = 3325, Text = Tom&Jerry2.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tom&Jerry2.info
-Icon 107: Width = 42, Height = 42, Text Width = 61, Text Height = 13, Max Width = 61, Max Height = 57, x = 25, y = 3325, Text = Tom&Jerry.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tom&Jerry.info
-Icon 108: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 580, y = 3260, Text = Tolteka.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tolteka.info
-Icon 109: Width = 42, Height = 42, Text Width = 23, Text Height = 13, Max Width = 42, Max Height = 57, x = 529, y = 3260, Text = Toki.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Toki.info
-Icon 110: Width = 42, Height = 42, Text Width = 68, Text Height = 13, Max Width = 68, Max Height = 57, x = 391, y = 3260, Text = TitusTheFox.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TitusTheFox.info
-Icon 111: Width = 42, Height = 42, Text Width = 71, Text Height = 13, Max Width = 71, Max Height = 57, x = 175, y = 3260, Text = TitanicBlinky.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TitanicBlinky.info
-Icon 112: Width = 42, Height = 42, Text Width = 27, Text Height = 13, Max Width = 42, Max Height = 57, x = 596, y = 3195, Text = Titan.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Titan.info
-Icon 113: Width = 42, Height = 42, Text Width = 66, Text Height = 13, Max Width = 66, Max Height = 57, x = 533, y = 3195, Text = TipOffNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TipOffNTSC.info
-Icon 114: Width = 42, Height = 42, Text Width = 81, Text Height = 13, Max Width = 81, Max Height = 57, x = 181, y = 3195, Text = TipOffDeEsFrIt.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TipOffDeEsFrIt.info
-Icon 115: Width = 42, Height = 42, Text Width = 33, Text Height = 13, Max Width = 42, Max Height = 57, x = 101, y = 3195, Text = TipOff.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TipOff.info
-Icon 116: Width = 42, Height = 42, Text Width = 37, Text Height = 13, Max Width = 42, Max Height = 57, x = 603, y = 3130, Text = Tinyus.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tinyus.info
-Icon 117: Width = 42, Height = 42, Text Width = 96, Text Height = 13, Max Width = 96, Max Height = 57, x = 523, y = 3130, Text = TinyTroopsCDDe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TinyTroopsCDDe.info
-Icon 118: Width = 42, Height = 42, Text Width = 80, Text Height = 13, Max Width = 80, Max Height = 57, x = 150, y = 3130, Text = TinyTroopsCD.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TinyTroopsCD.info
-Icon 119: Width = 42, Height = 42, Text Width = 62, Text Height = 13, Max Width = 62, Max Height = 57, x = 655, y = 3065, Text = TinyTroops.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TinyTroops.info
-Icon 120: Width = 42, Height = 42, Text Width = 73, Text Height = 13, Max Width = 73, Max Height = 57, x = 450, y = 3065, Text = TinySkweeks.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TinySkweeks.info
-Icon 121: Width = 42, Height = 42, Text Width = 72, Text Height = 13, Max Width = 72, Max Height = 57, x = 230, y = 3065, Text = TinyInvaders.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TinyInvaders.info
-Icon 122: Width = 42, Height = 42, Text Width = 64, Text Height = 13, Max Width = 64, Max Height = 57, x = 143, y = 3065, Text = TinyGalaga.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TinyGalaga.info
-Icon 123: Width = 42, Height = 42, Text Width = 63, Text Height = 13, Max Width = 63, Max Height = 57, x = 635, y = 3000, Text = TinyBobble.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TinyBobble.info
-Icon 124: Width = 42, Height = 42, Text Width = 123, Text Height = 13, Max Width = 123, Max Height = 57, x = 412, y = 3000, Text = TinToyAdventureAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TinToyAdventureAGA.info
-Icon 125: Width = 42, Height = 42, Text Width = 133, Text Height = 13, Max Width = 133, Max Height = 57, x = 607, y = 2935, Text = TintinOnTheMoonImage.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TintinOnTheMoonImage.info
-Icon 126: Width = 42, Height = 42, Text Width = 127, Text Height = 13, Max Width = 127, Max Height = 57, x = 272, y = 2935, Text = TintinOnTheMoonFiles.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TintinOnTheMoonFiles.info
-Icon 127: Width = 42, Height = 42, Text Width = 65, Text Height = 13, Max Width = 65, Max Height = 57, x = 32, y = 2935, Text = TimeSoldier.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeSoldier.info
-Icon 128: Width = 42, Height = 42, Text Width = 70, Text Height = 13, Max Width = 70, Max Height = 57, x = 656, y = 2870, Text = TimesOfLore.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimesOfLore.info
-Icon 129: Width = 42, Height = 42, Text Width = 73, Text Height = 13, Max Width = 73, Max Height = 57, x = 447, y = 2870, Text = TimeScanner.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeScanner.info
-Icon 130: Width = 42, Height = 42, Text Width = 107, Text Height = 13, Max Width = 107, Max Height = 57, x = 217, y = 2870, Text = TimeRunnersSeries.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunnersSeries.info
-Icon 131: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 513, y = 2805, Text = TimeRunners30.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners30.info
-Icon 132: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 276, y = 2805, Text = TimeRunners29.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners29.info
-Icon 133: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 175, y = 2805, Text = TimeRunners28.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners28.info
-Icon 134: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 649, y = 2740, Text = TimeRunners27.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners27.info
-Icon 135: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 276, y = 2740, Text = TimeRunners26.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners26.info
-Icon 136: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 175, y = 2740, Text = TimeRunners25.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners25.info
-Icon 137: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 649, y = 2675, Text = TimeRunners24.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners24.info
-Icon 138: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 276, y = 2675, Text = TimeRunners23.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners23.info
-Icon 139: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 39, y = 2675, Text = TimeRunners22.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners22.info
-Icon 140: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 513, y = 2610, Text = TimeRunners21.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners21.info
-Icon 141: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 276, y = 2610, Text = TimeRunners20.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners20.info
-Icon 142: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 175, y = 2610, Text = TimeRunners19.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners19.info
-Icon 143: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 649, y = 2545, Text = TimeRunners18.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners18.info
-Icon 144: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 276, y = 2545, Text = TimeRunners17.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners17.info
-Icon 145: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 39, y = 2545, Text = TimeRunners16.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners16.info
-Icon 146: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 649, y = 2480, Text = TimeRunners15.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners15.info
-Icon 147: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 276, y = 2480, Text = TimeRunners14.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners14.info
-Icon 148: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 39, y = 2480, Text = TimeRunners13.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners13.info
-Icon 149: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 513, y = 2415, Text = TimeRunners12.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners12.info
-Icon 150: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 276, y = 2415, Text = TimeRunners11.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners11.info
-Icon 151: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 175, y = 2415, Text = TimeRunners10.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners10.info
-Icon 152: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 513, y = 2350, Text = TimeRunners09.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners09.info
-Icon 153: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 412, y = 2350, Text = TimeRunners08.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners08.info
-Icon 154: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 175, y = 2350, Text = TimeRunners07.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners07.info
-Icon 155: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 513, y = 2285, Text = TimeRunners06.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners06.info
-Icon 156: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 276, y = 2285, Text = TimeRunners05.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners05.info
-Icon 157: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 175, y = 2285, Text = TimeRunners04.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners04.info
-Icon 158: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 649, y = 2220, Text = TimeRunners03.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners03.info
-Icon 159: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 276, y = 2220, Text = TimeRunners02.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners02.info
-Icon 160: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 175, y = 2220, Text = TimeRunners01.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners01.info
-Icon 161: Width = 42, Height = 42, Text Width = 66, Text Height = 13, Max Width = 66, Max Height = 57, x = 571, y = 2155, Text = TimeRunner.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunner.info
-Icon 162: Width = 42, Height = 42, Text Width = 55, Text Height = 13, Max Width = 55, Max Height = 57, x = 397, y = 2155, Text = TimeRace.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRace.info
-Icon 163: Width = 42, Height = 42, Text Width = 75, Text Height = 13, Max Width = 75, Max Height = 57, x = 321, y = 2155, Text = TimeMachine.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeMachine.info
-Icon 164: Width = 42, Height = 42, Text Width = 53, Text Height = 13, Max Width = 53, Max Height = 57, x = 122, y = 2155, Text = TimeLock.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeLock.info
-Icon 165: Width = 42, Height = 42, Text Width = 38, Text Height = 13, Max Width = 42, Max Height = 57, x = 644, y = 2090, Text = TimeFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeFr.info
-Icon 166: Width = 42, Height = 42, Text Width = 42, Text Height = 13, Max Width = 42, Max Height = 57, x = 592, y = 2090, Text = TimeDe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeDe.info
-Icon 167: Width = 42, Height = 42, Text Width = 61, Text Height = 13, Max Width = 61, Max Height = 57, x = 324, y = 2090, Text = TimeBandit.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeBandit.info
-Icon 168: Width = 42, Height = 42, Text Width = 83, Text Height = 13, Max Width = 83, Max Height = 57, x = 237, y = 2090, Text = TimeAndMagik.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeAndMagik.info
-Icon 169: Width = 42, Height = 42, Text Width = 26, Text Height = 13, Max Width = 42, Max Height = 57, x = 717, y = 2025, Text = Time.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Time.info
-Icon 170: Width = 42, Height = 42, Text Width = 57, Text Height = 13, Max Width = 57, Max Height = 57, x = 551, y = 2025, Text = TigerRoad.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TigerRoad.info
-Icon 171: Width = 42, Height = 42, Text Width = 49, Text Height = 13, Max Width = 49, Max Height = 57, x = 481, y = 2025, Text = TieBreak.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TieBreak.info
-Icon 172: Width = 42, Height = 42, Text Width = 77, Text Height = 13, Max Width = 77, Max Height = 57, x = 161, y = 2025, Text = ThunderStrike.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderStrike.info
-Icon 173: Width = 42, Height = 42, Text Width = 108, Text Height = 13, Max Width = 108, Max Height = 57, x = 49, y = 2025, Text = ThunderJawsImage.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderJawsImage.info
-Icon 174: Width = 42, Height = 42, Text Width = 102, Text Height = 13, Max Width = 102, Max Height = 57, x = 314, y = 1960, Text = ThunderJawsFiles.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderJawsFiles.info
-Icon 175: Width = 42, Height = 42, Text Width = 110, Text Height = 13, Max Width = 110, Max Height = 57, x = 196, y = 1960, Text = ThunderHawkNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderHawkNTSC.info
-Icon 176: Width = 42, Height = 42, Text Width = 89, Text Height = 13, Max Width = 89, Max Height = 57, x = 572, y = 1895, Text = ThunderHawkFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderHawkFr.info
-Icon 177: Width = 42, Height = 42, Text Width = 93, Text Height = 13, Max Width = 93, Max Height = 57, x = 471, y = 1895, Text = ThunderHawkDe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderHawkDe.info
-Icon 178: Width = 42, Height = 42, Text Width = 77, Text Height = 13, Max Width = 77, Max Height = 57, x = 241, y = 1895, Text = ThunderHawk.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderHawk.info
-Icon 179: Width = 42, Height = 42, Text Width = 71, Text Height = 13, Max Width = 71, Max Height = 57, x = 32, y = 1895, Text = ThunderCats.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderCats.info
-Icon 180: Width = 42, Height = 42, Text Width = 83, Text Height = 13, Max Width = 83, Max Height = 57, x = 391, y = 1830, Text = ThunderBurner.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderBurner.info
-Icon 181: Width = 42, Height = 42, Text Width = 68, Text Height = 13, Max Width = 68, Max Height = 57, x = 300, y = 1830, Text = ThunderBoy.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderBoy.info
-Icon 182: Width = 42, Height = 42, Text Width = 111, Text Height = 13, Max Width = 111, Max Height = 57, x = 652, y = 1765, Text = ThunderBladeNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderBladeNTSC.info
-Icon 183: Width = 42, Height = 42, Text Width = 78, Text Height = 13, Max Width = 78, Max Height = 57, x = 544, y = 1765, Text = ThunderBlade.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderBlade.info
-Icon 184: Width = 42, Height = 42, Text Width = 73, Text Height = 13, Max Width = 73, Max Height = 57, x = 321, y = 1765, Text = Thunderbirds.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Thunderbirds.info
-Icon 185: Width = 42, Height = 42, Text Width = 110, Text Height = 13, Max Width = 110, Max Height = 57, x = 607, y = 1700, Text = ThreeStoogesNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThreeStoogesNTSC.info
-Icon 186: Width = 42, Height = 42, Text Width = 77, Text Height = 13, Max Width = 77, Max Height = 57, x = 370, y = 1700, Text = ThreeStooges.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThreeStooges.info
-Icon 187: Width = 42, Height = 42, Text Width = 137, Text Height = 13, Max Width = 137, Max Height = 57, x = 248, y = 1700, Text = ThomasTheTankEngine2.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThomasTheTankEngine2.info
-Icon 188: Width = 42, Height = 42, Text Width = 130, Text Height = 13, Max Width = 130, Max Height = 57, x = 451, y = 1635, Text = ThomasTheTankEngine.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThomasTheTankEngine.info
-Icon 189: Width = 42, Height = 42, Text Width = 162, Text Height = 13, Max Width = 162, Max Height = 57, x = 77, y = 1635, Text = ThomasTankEngPinballCD32.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThomasTankEngPinballCD32.info
-Icon 190: Width = 42, Height = 42, Text Width = 157, Text Height = 13, Max Width = 157, Max Height = 57, x = 656, y = 1570, Text = ThomasTankEngPinballAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThomasTankEngPinballAGA.info
-Icon 191: Width = 42, Height = 42, Text Width = 69, Text Height = 13, Max Width = 69, Max Height = 57, x = 188, y = 1570, Text = ThirdCourier.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThirdCourier.info
-Icon 192: Width = 42, Height = 42, Text Width = 45, Text Height = 13, Max Width = 45, Max Height = 57, x = 18, y = 1570, Text = Thexder.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Thexder.info
-Icon 193: Width = 42, Height = 42, Text Width = 140, Text Height = 13, Max Width = 140, Max Height = 57, x = 443, y = 1505, Text = ThemeParkMysteryNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThemeParkMysteryNTSC.info
-Icon 194: Width = 42, Height = 42, Text Width = 107, Text Height = 13, Max Width = 107, Max Height = 57, x = 150, y = 1505, Text = ThemeParkMystery.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThemeParkMystery.info
-Icon 195: Width = 42, Height = 42, Text Width = 94, Text Height = 13, Max Width = 94, Max Height = 57, x = 39, y = 1505, Text = ThemeParkCD32.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThemeParkCD32.info
-Icon 196: Width = 42, Height = 42, Text Width = 89, Text Height = 13, Max Width = 89, Max Height = 57, x = 495, y = 1440, Text = ThemeParkAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThemeParkAGA.info
-Icon 197: Width = 42, Height = 42, Text Width = 62, Text Height = 13, Max Width = 62, Max Height = 57, x = 175, y = 1440, Text = ThemePark.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThemePark.info
-Icon 198: Width = 42, Height = 42, Text Width = 89, Text Height = 13, Max Width = 89, Max Height = 57, x = 688, y = 1375, Text = TheirFinestHour.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TheirFinestHour.info
-Icon 199: Width = 42, Height = 42, Text Width = 147, Text Height = 13, Max Width = 147, Max Height = 57, x = 328, y = 1375, Text = TheirFinestHour&Missions.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TheirFinestHour&Missions.info
-Icon 200: Width = 42, Height = 42, Text Width = 88, Text Height = 13, Max Width = 88, Max Height = 57, x = 185, y = 1375, Text = TheatreOfDeath.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TheatreOfDeath.info
-Icon 201: Width = 42, Height = 42, Text Width = 51, Text Height = 13, Max Width = 51, Max Height = 57, x = 555, y = 1310, Text = TFXAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TFXAGA.info
-Icon 202: Width = 42, Height = 42, Text Width = 129, Text Height = 13, Max Width = 129, Max Height = 57, x = 451, y = 1310, Text = TexPiomboCaldoPart2It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TexPiomboCaldoPart2It.info
-Icon 203: Width = 42, Height = 42, Text Width = 129, Text Height = 13, Max Width = 129, Max Height = 57, x = 526, y = 1245, Text = TexPiomboCaldoPart1It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TexPiomboCaldoPart1It.info
-Icon 204: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 418, y = 1245, Text = Tex12It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex12It.info
-Icon 205: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 265, y = 1245, Text = Tex11It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex11It.info
-Icon 206: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 18, y = 1245, Text = Tex10It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex10It.info
-Icon 207: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 630, y = 1180, Text = Tex09It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex09It.info
-Icon 208: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 477, y = 1180, Text = Tex08It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex08It.info
-Icon 209: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 418, y = 1180, Text = Tex07It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex07It.info
-Icon 210: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 171, y = 1180, Text = Tex06It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex06It.info
-Icon 211: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 18, y = 1180, Text = Tex05It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex05It.info
-Icon 212: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 616, y = 1115, Text = Tex04It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex04It.info
-Icon 213: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 557, y = 1115, Text = Tex03It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex03It.info
-Icon 214: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 404, y = 1115, Text = Tex02It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex02It.info
-Icon 215: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 251, y = 1115, Text = Tex01It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex01It.info
-Icon 216: Width = 42, Height = 42, Text Width = 30, Text Height = 13, Max Width = 42, Max Height = 57, x = 101, y = 1115, Text = Tetrix.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tetrix.info
-Icon 217: Width = 42, Height = 42, Text Width = 49, Text Height = 13, Max Width = 49, Max Height = 57, x = 583, y = 1050, Text = TetrisPro.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TetrisPro.info
-Icon 218: Width = 42, Height = 42, Text Width = 82, Text Height = 13, Max Width = 82, Max Height = 57, x = 485, y = 1050, Text = TetrisMirrorsoft.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TetrisMirrorsoft.info
-Icon 219: Width = 42, Height = 42, Text Width = 90, Text Height = 13, Max Width = 90, Max Height = 57, x = 49, y = 1050, Text = TetrisInfogrames.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TetrisInfogrames.info
-Icon 220: Width = 42, Height = 42, Text Width = 61, Text Height = 13, Max Width = 61, Max Height = 57, x = 673, y = 985, Text = TetraQuest.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TetraQuest.info
-Icon 221: Width = 42, Height = 42, Text Width = 60, Text Height = 13, Max Width = 60, Max Height = 57, x = 363, y = 985, Text = TestDrive2.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TestDrive2.info
-Icon 222: Width = 42, Height = 42, Text Width = 125, Text Height = 13, Max Width = 125, Max Height = 57, x = 63, y = 985, Text = TestDrive2&DataDisks.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TestDrive2&DataDisks.info
-Icon 223: Width = 42, Height = 42, Text Width = 53, Text Height = 13, Max Width = 53, Max Height = 57, x = 593, y = 920, Text = TestDrive.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TestDrive.info
-Icon 224: Width = 42, Height = 42, Text Width = 111, Text Height = 13, Max Width = 111, Max Height = 57, x = 317, y = 920, Text = TerrysBigAdventure.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TerrysBigAdventure.info
-Icon 225: Width = 42, Height = 42, Text Width = 60, Text Height = 13, Max Width = 60, Max Height = 57, x = 209, y = 920, Text = Terrorpods.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Terrorpods.info
-Icon 226: Width = 42, Height = 42, Text Width = 51, Text Height = 13, Max Width = 51, Max Height = 57, x = 21, y = 920, Text = Terramex.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Terramex.info
-Icon 227: Width = 42, Height = 42, Text Width = 142, Text Height = 13, Max Width = 142, Max Height = 57, x = 562, y = 855, Text = Terminator2JudgmentDay.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Terminator2JudgmentDay.info
-Icon 228: Width = 42, Height = 42, Text Width = 106, Text Height = 13, Max Width = 106, Max Height = 57, x = 53, y = 855, Text = Terminator2Arcade.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Terminator2Arcade.info
-Icon 229: Width = 42, Height = 42, Text Width = 69, Text Height = 13, Max Width = 69, Max Height = 57, x = 600, y = 790, Text = TensaiDemo.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TensaiDemo.info
-Icon 230: Width = 42, Height = 42, Text Width = 127, Text Height = 13, Max Width = 127, Max Height = 57, x = 370, y = 790, Text = TenPinBowlingArcadia.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TenPinBowlingArcadia.info
-Icon 231: Width = 42, Height = 42, Text Width = 108, Text Height = 13, Max Width = 108, Max Height = 57, x = 49, y = 790, Text = TennisCup512KbFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TennisCup512KbFr.info
-Icon 232: Width = 42, Height = 42, Text Width = 96, Text Height = 13, Max Width = 96, Max Height = 57, x = 345, y = 725, Text = TennisCup512Kb.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TennisCup512Kb.info
-Icon 233: Width = 42, Height = 42, Text Width = 67, Text Height = 13, Max Width = 67, Max Height = 57, x = 136, y = 725, Text = TennisCup2.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TennisCup2.info
-Icon 234: Width = 42, Height = 42, Text Width = 97, Text Height = 13, Max Width = 97, Max Height = 57, x = 42, y = 725, Text = TennisCup1MbFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TennisCup1MbFr.info
-Icon 235: Width = 42, Height = 42, Text Width = 85, Text Height = 13, Max Width = 85, Max Height = 57, x = 422, y = 660, Text = TennisCup1Mb.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TennisCup1Mb.info
-Icon 236: Width = 42, Height = 42, Text Width = 82, Text Height = 13, Max Width = 82, Max Height = 57, x = 328, y = 660, Text = TennisChamps.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TennisChamps.info
-Icon 237: Width = 42, Height = 42, Text Width = 113, Text Height = 13, Max Width = 113, Max Height = 57, x = 636, y = 595, Text = TemplosSagradosEs.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TemplosSagradosEs.info
-Icon 238: Width = 42, Height = 42, Text Width = 150, Text Height = 13, Max Width = 150, Max Height = 57, x = 269, y = 595, Text = TempleOfEnlightenedSouls.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TempleOfEnlightenedSouls.info
-Icon 239: Width = 42, Height = 42, Text Width = 130, Text Height = 13, Max Width = 130, Max Height = 57, x = 663, y = 530, Text = TempleOfApshaiTrilogy.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TempleOfApshaiTrilogy.info
-Icon 240: Width = 42, Height = 42, Text Width = 43, Text Height = 13, Max Width = 43, Max Height = 57, x = 450, y = 530, Text = TellerFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TellerFr.info
-Icon 241: Width = 42, Height = 42, Text Width = 87, Text Height = 13, Max Width = 87, Max Height = 57, x = 370, y = 530, Text = TeenageQueen.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeenageQueen.info
-Icon 242: Width = 42, Height = 42, Text Width = 139, Text Height = 13, Max Width = 139, Max Height = 57, x = 479, y = 465, Text = TeenageMtntNinjaTurtles.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeenageMtntNinjaTurtles.info
-Icon 243: Width = 42, Height = 42, Text Width = 163, Text Height = 13, Max Width = 163, Max Height = 57, x = 301, y = 465, Text = TeenageMtntHeroTurtlesCOp.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeenageMtntHeroTurtlesCOp.info
-Icon 244: Width = 42, Height = 42, Text Width = 137, Text Height = 13, Max Width = 137, Max Height = 57, x = 373, y = 400, Text = TeenageMtntHeroTurtles.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeenageMtntHeroTurtles.info
-Icon 245: Width = 42, Height = 42, Text Width = 55, Text Height = 13, Max Width = 55, Max Height = 57, x = 147, y = 400, Text = Tecnoball.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tecnoball.info
-Icon 246: Width = 42, Height = 42, Text Width = 73, Text Height = 13, Max Width = 73, Max Height = 57, x = 695, y = 335, Text = Technology2.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Technology2.info
-Icon 247: Width = 42, Height = 42, Text Width = 63, Text Height = 13, Max Width = 63, Max Height = 57, x = 507, y = 335, Text = Technocop.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Technocop.info
-Icon 248: Width = 42, Height = 42, Text Width = 28, Text Height = 13, Max Width = 42, Max Height = 57, x = 376, y = 335, Text = Tech.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tech.info
-Icon 249: Width = 42, Height = 42, Text Width = 98, Text Height = 13, Max Width = 98, Max Height = 57, x = 157, y = 335, Text = TearawayThomas.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TearawayThomas.info
-Icon 250: Width = 42, Height = 42, Text Width = 73, Text Height = 13, Max Width = 73, Max Height = 57, x = 669, y = 270, Text = TeamYankee.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeamYankee.info
-Icon 251: Width = 42, Height = 42, Text Width = 67, Text Height = 13, Max Width = 67, Max Height = 57, x = 474, y = 270, Text = TeamSuzuki.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeamSuzuki.info
-Icon 252: Width = 42, Height = 42, Text Width = 29, Text Height = 13, Max Width = 42, Max Height = 57, x = 412, y = 270, Text = TBird.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TBird.info
-Icon 253: Width = 42, Height = 42, Text Width = 122, Text Height = 13, Max Width = 122, Max Height = 57, x = 238, y = 270, Text = TassTimesInTonetown.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TassTimesInTonetown.info
-Icon 254: Width = 42, Height = 42, Text Width = 79, Text Height = 13, Max Width = 79, Max Height = 57, x = 572, y = 205, Text = TarghanNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TarghanNTSC.info
-Icon 255: Width = 42, Height = 42, Text Width = 58, Text Height = 13, Max Width = 58, Max Height = 57, x = 384, y = 205, Text = TarghanFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TarghanFr.info
-Icon 256: Width = 42, Height = 42, Text Width = 82, Text Height = 13, Max Width = 82, Max Height = 57, x = 297, y = 205, Text = TarghanFastFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TarghanFastFr.info
-Icon 257: Width = 42, Height = 42, Text Width = 70, Text Height = 13, Max Width = 70, Max Height = 57, x = 648, y = 140, Text = TarghanFast.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TarghanFast.info
-Icon 258: Width = 42, Height = 42, Text Width = 46, Text Height = 13, Max Width = 46, Max Height = 57, x = 481, y = 140, Text = Targhan.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Targhan.info
-Icon 259: Width = 42, Height = 42, Text Width = 62, Text Height = 13, Max Width = 62, Max Height = 57, x = 411, y = 140, Text = TankBuster.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TankBuster.info
-Icon 260: Width = 42, Height = 42, Text Width = 48, Text Height = 13, Max Width = 48, Max Height = 57, x = 227, y = 140, Text = Tangram.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tangram.info
-Icon 261: Width = 42, Height = 42, Text Width = 68, Text Height = 13, Max Width = 68, Max Height = 57, x = 645, y = 75, Text = Tanglewood.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tanglewood.info
-Icon 262: Width = 42, Height = 42, Text Width = 135, Text Height = 13, Max Width = 135, Max Height = 57, x = 523, y = 75, Text = TalkingStorybook3Bears.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TalkingStorybook3Bears.info
-Icon 263: Width = 42, Height = 42, Text Width = 64, Text Height = 13, Max Width = 64, Max Height = 57, x = 98, y = 75, Text = TakeEmOut.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TakeEmOut.info
-Icon 264: Width = 42, Height = 42, Text Width = 64, Text Height = 13, Max Width = 64, Max Height = 57, x = 25, y = 75, Text = Taekwondo.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Taekwondo.info
-Icon 265: Width = 42, Height = 42, Text Width = 125, Text Height = 13, Max Width = 125, Max Height = 57, x = 566, y = 10, Text = TableTennisSimulation.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TableTennisSimulation.info
-Icon 266: Width = 42, Height = 42, Text Width = 118, Text Height = 13, Max Width = 118, Max Height = 57, x = 227, y = 10, Text = TableHockeyArcadia.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TableHockeyArcadia.info
-entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TempleOfApshaiTrilogy
-Dumping Icon Array of 2 icons, max width is 130px
-Icon 0: Width = 93, Height = 58, Text Width = 130, Text Height = 13, Max Width = 130, Max Height = 73, x = 43, y = 4, Text = TempleOfApshaiTrilogy.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TempleOfApshaiTrilogy/TempleOfApshaiTrilogy.info
-Icon 1: Width = 42, Height = 46, Text Width = 47, Text Height = 13, Max Width = 47, Max Height = 61, x = 182, y = 4, Text = ReadMe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TempleOfApshaiTrilogy/ReadMe.info
-Max Width: 229, Max Height: 77 folder PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TempleOfApshaiTrilogy
+Icon 0: Width = 42, Height = 42, Text Width = 144, Text Height = 13, Max Width = 144, Max Height = 57, x = 197, y = 3561, Text = TZer0DemoNoMovieAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TZer0DemoNoMovieAGA.info
+Icon 1: Width = 42, Height = 42, Text Width = 93, Text Height = 13, Max Width = 93, Max Height = 57, x = 46, y = 3561, Text = TZer0DemoAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TZer0DemoAGA.info
+Icon 2: Width = 42, Height = 42, Text Width = 139, Text Height = 13, Max Width = 139, Max Height = 57, x = 727, y = 3494, Text = TyphoonThompsonNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TyphoonThompsonNTSC.info
+Icon 3: Width = 42, Height = 42, Text Width = 166, Text Height = 13, Max Width = 166, Max Height = 57, x = 538, y = 3494, Text = TyphoonThompson512kNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TyphoonThompson512kNTSC.info
+Icon 4: Width = 42, Height = 42, Text Width = 49, Text Height = 13, Max Width = 49, Max Height = 57, x = 420, y = 3494, Text = Typhoon.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Typhoon.info
+Icon 5: Width = 42, Height = 42, Text Width = 43, Text Height = 13, Max Width = 43, Max Height = 57, x = 247, y = 3494, Text = Twylyte.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Twylyte.info
+Icon 6: Width = 42, Height = 42, Text Width = 58, Text Height = 13, Max Width = 58, Max Height = 57, x = 64, y = 3494, Text = TwinWorld.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TwinWorld.info
+Icon 7: Width = 42, Height = 42, Text Width = 64, Text Height = 13, Max Width = 64, Max Height = 57, x = 765, y = 3427, Text = TwinTurbos.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TwinTurbos.info
+Icon 8: Width = 42, Height = 42, Text Width = 42, Text Height = 13, Max Width = 42, Max Height = 57, x = 600, y = 3427, Text = Twintris.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Twintris.info
+Icon 9: Width = 42, Height = 42, Text Width = 96, Text Height = 13, Max Width = 96, Max Height = 57, x = 397, y = 3427, Text = TVSportsFootball.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TVSportsFootball.info
+Icon 10: Width = 42, Height = 42, Text Width = 89, Text Height = 13, Max Width = 89, Max Height = 57, x = 224, y = 3427, Text = TVSportsBoxing.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TVSportsBoxing.info
+Icon 11: Width = 42, Height = 42, Text Width = 114, Text Height = 13, Max Width = 114, Max Height = 57, x = 36, y = 3427, Text = TVSportsBasketballIt.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TVSportsBasketballIt.info
+Icon 12: Width = 42, Height = 42, Text Width = 142, Text Height = 13, Max Width = 142, Max Height = 57, x = 726, y = 3360, Text = TVSportsBasketball2223It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TVSportsBasketball2223It.info
+Icon 13: Width = 42, Height = 42, Text Width = 136, Text Height = 13, Max Width = 136, Max Height = 57, x = 553, y = 3360, Text = TVSportsBasketball2223.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TVSportsBasketball2223.info
+Icon 14: Width = 42, Height = 42, Text Width = 108, Text Height = 13, Max Width = 108, Max Height = 57, x = 391, y = 3360, Text = TVSportsBasketball.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TVSportsBasketball.info
+Icon 15: Width = 42, Height = 42, Text Width = 99, Text Height = 13, Max Width = 99, Max Height = 57, x = 219, y = 3360, Text = TVSportsBaseball.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TVSportsBaseball.info
+Icon 16: Width = 42, Height = 42, Text Width = 37, Text Height = 13, Max Width = 42, Max Height = 57, x = 72, y = 3360, Text = Tusker.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tusker.info
+Icon 17: Width = 42, Height = 42, Text Width = 79, Text Height = 13, Max Width = 79, Max Height = 57, x = 757, y = 3293, Text = TurricanNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurricanNTSC.info
+Icon 18: Width = 42, Height = 42, Text Width = 78, Text Height = 13, Max Width = 78, Max Height = 57, x = 582, y = 3293, Text = TurricanDemo.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurricanDemo.info
+Icon 19: Width = 42, Height = 42, Text Width = 80, Text Height = 13, Max Width = 80, Max Height = 57, x = 405, y = 3293, Text = TurricanCDTV.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurricanCDTV.info
+Icon 20: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 226, y = 3293, Text = Turrican3Image.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Turrican3Image.info
+Icon 21: Width = 42, Height = 42, Text Width = 80, Text Height = 13, Max Width = 80, Max Height = 57, x = 53, y = 3293, Text = Turrican3Files.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Turrican3Files.info
+Icon 22: Width = 42, Height = 42, Text Width = 85, Text Height = 13, Max Width = 85, Max Height = 57, x = 754, y = 3226, Text = Turrican3Demo.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Turrican3Demo.info
+Icon 23: Width = 42, Height = 42, Text Width = 85, Text Height = 13, Max Width = 85, Max Height = 57, x = 578, y = 3226, Text = Turrican2Demo.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Turrican2Demo.info
+Icon 24: Width = 42, Height = 42, Text Width = 87, Text Height = 13, Max Width = 87, Max Height = 57, x = 401, y = 3226, Text = Turrican2CDTV.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Turrican2CDTV.info
+Icon 25: Width = 42, Height = 42, Text Width = 53, Text Height = 13, Max Width = 53, Max Height = 57, x = 242, y = 3226, Text = Turrican2.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Turrican2.info
+Icon 26: Width = 42, Height = 42, Text Width = 46, Text Height = 13, Max Width = 46, Max Height = 57, x = 70, y = 3226, Text = Turrican.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Turrican.info
+Icon 27: Width = 42, Height = 42, Text Width = 60, Text Height = 13, Max Width = 60, Max Height = 57, x = 767, y = 3159, Text = TurnNBurn.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurnNBurn.info
+Icon 28: Width = 42, Height = 42, Text Width = 134, Text Height = 13, Max Width = 134, Max Height = 57, x = 554, y = 3159, Text = TurboTraxArcane512KB.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurboTraxArcane512KB.info
+Icon 29: Width = 42, Height = 42, Text Width = 123, Text Height = 13, Max Width = 123, Max Height = 57, x = 383, y = 3159, Text = TurboTraxArcane1MB.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurboTraxArcane1MB.info
+Icon 30: Width = 42, Height = 42, Text Width = 87, Text Height = 13, Max Width = 87, Max Height = 57, x = 225, y = 3159, Text = TurboRaketti2Fi.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurboRaketti2Fi.info
+Icon 31: Width = 42, Height = 42, Text Width = 76, Text Height = 13, Max Width = 76, Max Height = 57, x = 55, y = 3159, Text = TurboRaketti2.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurboRaketti2.info
+Icon 32: Width = 42, Height = 42, Text Width = 107, Text Height = 13, Max Width = 107, Max Height = 57, x = 743, y = 3092, Text = TurboOutRunNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurboOutRunNTSC.info
+Icon 33: Width = 42, Height = 42, Text Width = 74, Text Height = 13, Max Width = 74, Max Height = 57, x = 584, y = 3092, Text = TurboOutRun.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurboOutRun.info
+Icon 34: Width = 42, Height = 42, Text Width = 67, Text Height = 13, Max Width = 67, Max Height = 57, x = 411, y = 3092, Text = TurboCupFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurboCupFr.info
+Icon 35: Width = 42, Height = 42, Text Width = 55, Text Height = 13, Max Width = 55, Max Height = 57, x = 241, y = 3092, Text = TurboCup.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurboCup.info
+Icon 36: Width = 42, Height = 42, Text Width = 32, Text Height = 13, Max Width = 42, Max Height = 57, x = 72, y = 3092, Text = Turbo.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Turbo.info
+Icon 37: Width = 42, Height = 42, Text Width = 107, Text Height = 13, Max Width = 107, Max Height = 57, x = 743, y = 3025, Text = TubularWorldsAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TubularWorldsAGA.info
+Icon 38: Width = 42, Height = 42, Text Width = 117, Text Height = 13, Max Width = 117, Max Height = 57, x = 562, y = 3025, Text = TubularWorlds512KB.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TubularWorlds512KB.info
+Icon 39: Width = 42, Height = 42, Text Width = 106, Text Height = 13, Max Width = 106, Max Height = 57, x = 392, y = 3025, Text = TubularWorlds1MB.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TubularWorlds1MB.info
+Icon 40: Width = 42, Height = 42, Text Width = 101, Text Height = 13, Max Width = 101, Max Height = 57, x = 218, y = 3025, Text = TubeWarriorsAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TubeWarriorsAGA.info
+Icon 41: Width = 42, Height = 42, Text Width = 62, Text Height = 13, Max Width = 62, Max Height = 57, x = 62, y = 3025, Text = TrollsCD32.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrollsCD32.info
+Icon 42: Width = 42, Height = 42, Text Width = 57, Text Height = 13, Max Width = 57, Max Height = 57, x = 768, y = 2958, Text = TrollsAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrollsAGA.info
+Icon 43: Width = 42, Height = 42, Text Width = 30, Text Height = 13, Max Width = 42, Max Height = 57, x = 600, y = 2958, Text = Trolls.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Trolls.info
+Icon 44: Width = 42, Height = 42, Text Width = 119, Text Height = 13, Max Width = 119, Max Height = 57, x = 385, y = 2958, Text = TroisPetitsCochonsFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TroisPetitsCochonsFr.info
+Icon 45: Width = 42, Height = 42, Text Width = 25, Text Height = 13, Max Width = 42, Max Height = 57, x = 248, y = 2958, Text = Trog.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Trog.info
+Icon 46: Width = 42, Height = 42, Text Width = 85, Text Height = 13, Max Width = 85, Max Height = 57, x = 50, y = 2958, Text = TroddlersImage.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TroddlersImage.info
+Icon 47: Width = 42, Height = 42, Text Width = 79, Text Height = 13, Max Width = 79, Max Height = 57, x = 757, y = 2891, Text = TroddlersFiles.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TroddlersFiles.info
+Icon 48: Width = 42, Height = 42, Text Width = 84, Text Height = 13, Max Width = 84, Max Height = 57, x = 579, y = 2891, Text = TrivialPursuitFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrivialPursuitFr.info
+Icon 49: Width = 42, Height = 42, Text Width = 88, Text Height = 13, Max Width = 88, Max Height = 57, x = 401, y = 2891, Text = TrivialPursuitDe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrivialPursuitDe.info
+Icon 50: Width = 42, Height = 42, Text Width = 110, Text Height = 13, Max Width = 110, Max Height = 57, x = 214, y = 2891, Text = TrivialPursuitANBFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrivialPursuitANBFr.info
+Icon 51: Width = 42, Height = 42, Text Width = 114, Text Height = 13, Max Width = 114, Max Height = 57, x = 36, y = 2891, Text = TrivialPursuitANBDe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrivialPursuitANBDe.info
+Icon 52: Width = 42, Height = 42, Text Width = 98, Text Height = 13, Max Width = 98, Max Height = 57, x = 748, y = 2824, Text = TrivialPursuitANB.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrivialPursuitANB.info
+Icon 53: Width = 42, Height = 42, Text Width = 72, Text Height = 13, Max Width = 72, Max Height = 57, x = 585, y = 2824, Text = TrivialPursuit.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrivialPursuit.info
+Icon 54: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 424, y = 2824, Text = TripleX.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TripleX.info
+Icon 55: Width = 42, Height = 42, Text Width = 121, Text Height = 13, Max Width = 121, Max Height = 57, x = 208, y = 2824, Text = TrickyQuikyGamesDe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrickyQuikyGamesDe.info
+Icon 56: Width = 42, Height = 42, Text Width = 47, Text Height = 13, Max Width = 47, Max Height = 57, x = 69, y = 2824, Text = TrianGO.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrianGO.info
+Icon 57: Width = 42, Height = 42, Text Width = 64, Text Height = 13, Max Width = 64, Max Height = 57, x = 765, y = 2757, Text = TrexWarrior.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrexWarrior.info
+Icon 58: Width = 42, Height = 42, Text Width = 74, Text Height = 13, Max Width = 74, Max Height = 57, x = 584, y = 2757, Text = TreasureTrap.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TreasureTrap.info
+Icon 59: Width = 42, Height = 42, Text Width = 154, Text Height = 13, Max Width = 154, Max Height = 57, x = 368, y = 2757, Text = TreasureSavageFrontNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TreasureSavageFrontNTSC.info
+Icon 60: Width = 42, Height = 42, Text Width = 145, Text Height = 13, Max Width = 145, Max Height = 57, x = 196, y = 2757, Text = TreasureIslandDizzyCD32.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TreasureIslandDizzyCD32.info
+Icon 61: Width = 42, Height = 42, Text Width = 113, Text Height = 13, Max Width = 113, Max Height = 57, x = 36, y = 2757, Text = TreasureIslandDizzy.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TreasureIslandDizzy.info
+Icon 62: Width = 42, Height = 42, Text Width = 111, Text Height = 13, Max Width = 111, Max Height = 57, x = 741, y = 2690, Text = TrapsNTreasuresDe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrapsNTreasuresDe.info
+Icon 63: Width = 42, Height = 42, Text Width = 95, Text Height = 13, Max Width = 95, Max Height = 57, x = 573, y = 2690, Text = TrapsNTreasures.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrapsNTreasures.info
+Icon 64: Width = 42, Height = 42, Text Width = 65, Text Height = 13, Max Width = 65, Max Height = 57, x = 412, y = 2690, Text = TrapRunner.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrapRunner.info
+Icon 65: Width = 42, Height = 42, Text Width = 77, Text Height = 13, Max Width = 77, Max Height = 57, x = 230, y = 2690, Text = TransworldDe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TransworldDe.info
+Icon 66: Width = 42, Height = 42, Text Width = 58, Text Height = 13, Max Width = 58, Max Height = 57, x = 64, y = 2690, Text = Transplant.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Transplant.info
+Icon 67: Width = 42, Height = 42, Text Width = 96, Text Height = 13, Max Width = 96, Max Height = 57, x = 749, y = 2623, Text = TransarcticaAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TransarcticaAGA.info
+Icon 68: Width = 42, Height = 42, Text Width = 69, Text Height = 13, Max Width = 69, Max Height = 57, x = 586, y = 2623, Text = Transarctica.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Transarctica.info
+Icon 69: Width = 42, Height = 42, Text Width = 92, Text Height = 13, Max Width = 92, Max Height = 57, x = 399, y = 2623, Text = TrainedAssassin.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TrainedAssassin.info
+Icon 70: Width = 42, Height = 42, Text Width = 75, Text Height = 13, Max Width = 75, Max Height = 57, x = 231, y = 2623, Text = TradersNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TradersNTSC.info
+Icon 71: Width = 42, Height = 42, Text Width = 58, Text Height = 13, Max Width = 58, Max Height = 57, x = 64, y = 2623, Text = TradersDe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TradersDe.info
+Icon 72: Width = 42, Height = 42, Text Width = 42, Text Height = 13, Max Width = 42, Max Height = 57, x = 776, y = 2556, Text = Tracker.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tracker.info
+Icon 73: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 600, y = 2556, Text = TRacer.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TRacer.info
+Icon 74: Width = 42, Height = 42, Text Width = 80, Text Height = 13, Max Width = 80, Max Height = 57, x = 405, y = 2556, Text = ToyottesImage.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ToyottesImage.info
+Icon 75: Width = 42, Height = 42, Text Width = 74, Text Height = 13, Max Width = 74, Max Height = 57, x = 232, y = 2556, Text = ToyottesFiles.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ToyottesFiles.info
+Icon 76: Width = 42, Height = 42, Text Width = 118, Text Height = 13, Max Width = 118, Max Height = 57, x = 34, y = 2556, Text = ToyotaCelicaGTRally.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ToyotaCelicaGTRally.info
+Icon 77: Width = 42, Height = 42, Text Width = 136, Text Height = 13, Max Width = 136, Max Height = 57, x = 729, y = 2489, Text = TownWithNoNameCDTV.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TownWithNoNameCDTV.info
+Icon 78: Width = 42, Height = 42, Text Width = 109, Text Height = 13, Max Width = 109, Max Height = 57, x = 566, y = 2489, Text = TowerTopplerNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TowerTopplerNTSC.info
+Icon 79: Width = 42, Height = 42, Text Width = 105, Text Height = 13, Max Width = 105, Max Height = 57, x = 392, y = 2489, Text = TowerOfSoulsAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TowerOfSoulsAGA.info
+Icon 80: Width = 42, Height = 42, Text Width = 79, Text Height = 13, Max Width = 79, Max Height = 57, x = 229, y = 2489, Text = TowerOfBabel.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TowerOfBabel.info
+Icon 81: Width = 42, Height = 42, Text Width = 87, Text Height = 13, Max Width = 87, Max Height = 57, x = 49, y = 2489, Text = TournamentGolf.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TournamentGolf.info
+Icon 82: Width = 42, Height = 42, Text Width = 95, Text Height = 13, Max Width = 95, Max Height = 57, x = 749, y = 2422, Text = TotalRecallImage.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TotalRecallImage.info
+Icon 83: Width = 42, Height = 42, Text Width = 89, Text Height = 13, Max Width = 89, Max Height = 57, x = 576, y = 2422, Text = TotalRecallFiles.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TotalRecallFiles.info
+Icon 84: Width = 42, Height = 42, Text Width = 72, Text Height = 13, Max Width = 72, Max Height = 57, x = 409, y = 2422, Text = TotalFootball.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TotalFootball.info
+Icon 85: Width = 42, Height = 42, Text Width = 101, Text Height = 13, Max Width = 101, Max Height = 57, x = 218, y = 2422, Text = TotalEclipseNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TotalEclipseNTSC.info
+Icon 86: Width = 42, Height = 42, Text Width = 68, Text Height = 13, Max Width = 68, Max Height = 57, x = 59, y = 2422, Text = TotalEclipse.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TotalEclipse.info
+Icon 87: Width = 42, Height = 42, Text Width = 102, Text Height = 13, Max Width = 102, Max Height = 57, x = 746, y = 2355, Text = TotalCarnageAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TotalCarnageAGA.info
+Icon 88: Width = 42, Height = 42, Text Width = 99, Text Height = 13, Max Width = 99, Max Height = 57, x = 571, y = 2355, Text = TorvakTheWarrior.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TorvakTheWarrior.info
+Icon 89: Width = 42, Height = 42, Text Width = 122, Text Height = 13, Max Width = 122, Max Height = 57, x = 384, y = 2355, Text = TornadoGroundAttack.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TornadoGroundAttack.info
+Icon 90: Width = 42, Height = 42, Text Width = 73, Text Height = 13, Max Width = 73, Max Height = 57, x = 232, y = 2355, Text = TornadoAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TornadoAGA.info
+Icon 91: Width = 42, Height = 42, Text Width = 46, Text Height = 13, Max Width = 46, Max Height = 57, x = 70, y = 2355, Text = Tornado.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tornado.info
+Icon 92: Width = 42, Height = 42, Text Width = 72, Text Height = 13, Max Width = 72, Max Height = 57, x = 761, y = 2288, Text = TopWrestling.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TopWrestling.info
+Icon 93: Width = 42, Height = 42, Text Width = 57, Text Height = 13, Max Width = 57, Max Height = 57, x = 592, y = 2288, Text = TopSecret.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TopSecret.info
+Icon 94: Width = 42, Height = 42, Text Width = 87, Text Height = 13, Max Width = 87, Max Height = 57, x = 401, y = 2288, Text = TopGear2CD32.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TopGear2CD32.info
+Icon 95: Width = 42, Height = 42, Text Width = 82, Text Height = 13, Max Width = 82, Max Height = 57, x = 228, y = 2288, Text = TopGear2AGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TopGear2AGA.info
+Icon 96: Width = 42, Height = 42, Text Width = 55, Text Height = 13, Max Width = 55, Max Height = 57, x = 65, y = 2288, Text = TopGear2.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TopGear2.info
+Icon 97: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 776, y = 2221, Text = TopCat.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TopCat.info
+Icon 98: Width = 42, Height = 42, Text Width = 64, Text Height = 13, Max Width = 64, Max Height = 57, x = 589, y = 2221, Text = TopBanana.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TopBanana.info
+Icon 99: Width = 42, Height = 42, Text Width = 38, Text Height = 13, Max Width = 42, Max Height = 57, x = 424, y = 2221, Text = Toobin.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Toobin.info
+Icon 100: Width = 42, Height = 42, Text Width = 95, Text Height = 13, Max Width = 95, Max Height = 57, x = 221, y = 2221, Text = Tony&FriendsDe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tony&FriendsDe.info
+Icon 101: Width = 42, Height = 42, Text Width = 62, Text Height = 13, Max Width = 62, Max Height = 57, x = 62, y = 2221, Text = TommyGun.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TommyGun.info
+Icon 102: Width = 42, Height = 42, Text Width = 146, Text Height = 13, Max Width = 146, Max Height = 57, x = 724, y = 2154, Text = TomLandryFootballDeluxe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TomLandryFootballDeluxe.info
+Icon 103: Width = 42, Height = 42, Text Width = 107, Text Height = 13, Max Width = 107, Max Height = 57, x = 567, y = 2154, Text = TomLandryFootball.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TomLandryFootball.info
+Icon 104: Width = 42, Height = 42, Text Width = 99, Text Height = 13, Max Width = 99, Max Height = 57, x = 395, y = 2154, Text = TomAndTheGhost.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TomAndTheGhost.info
+Icon 105: Width = 42, Height = 42, Text Width = 95, Text Height = 13, Max Width = 95, Max Height = 57, x = 221, y = 2154, Text = Tom&JerryHHAL.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tom&JerryHHAL.info
+Icon 106: Width = 42, Height = 42, Text Width = 68, Text Height = 13, Max Width = 68, Max Height = 57, x = 59, y = 2154, Text = Tom&Jerry2.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tom&Jerry2.info
+Icon 107: Width = 42, Height = 42, Text Width = 61, Text Height = 13, Max Width = 61, Max Height = 57, x = 766, y = 2087, Text = Tom&Jerry.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tom&Jerry.info
+Icon 108: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 600, y = 2087, Text = Tolteka.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tolteka.info
+Icon 109: Width = 42, Height = 42, Text Width = 23, Text Height = 13, Max Width = 42, Max Height = 57, x = 424, y = 2087, Text = Toki.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Toki.info
+Icon 110: Width = 42, Height = 42, Text Width = 68, Text Height = 13, Max Width = 68, Max Height = 57, x = 235, y = 2087, Text = TitusTheFox.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TitusTheFox.info
+Icon 111: Width = 42, Height = 42, Text Width = 71, Text Height = 13, Max Width = 71, Max Height = 57, x = 57, y = 2087, Text = TitanicBlinky.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TitanicBlinky.info
+Icon 112: Width = 42, Height = 42, Text Width = 27, Text Height = 13, Max Width = 42, Max Height = 57, x = 776, y = 2020, Text = Titan.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Titan.info
+Icon 113: Width = 42, Height = 42, Text Width = 66, Text Height = 13, Max Width = 66, Max Height = 57, x = 588, y = 2020, Text = TipOffNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TipOffNTSC.info
+Icon 114: Width = 42, Height = 42, Text Width = 81, Text Height = 13, Max Width = 81, Max Height = 57, x = 404, y = 2020, Text = TipOffDeEsFrIt.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TipOffDeEsFrIt.info
+Icon 115: Width = 42, Height = 42, Text Width = 33, Text Height = 13, Max Width = 42, Max Height = 57, x = 248, y = 2020, Text = TipOff.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TipOff.info
+Icon 116: Width = 42, Height = 42, Text Width = 37, Text Height = 13, Max Width = 42, Max Height = 57, x = 72, y = 2020, Text = Tinyus.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tinyus.info
+Icon 117: Width = 42, Height = 42, Text Width = 96, Text Height = 13, Max Width = 96, Max Height = 57, x = 749, y = 1953, Text = TinyTroopsCDDe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TinyTroopsCDDe.info
+Icon 118: Width = 42, Height = 42, Text Width = 80, Text Height = 13, Max Width = 80, Max Height = 57, x = 581, y = 1953, Text = TinyTroopsCD.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TinyTroopsCD.info
+Icon 119: Width = 42, Height = 42, Text Width = 62, Text Height = 13, Max Width = 62, Max Height = 57, x = 414, y = 1953, Text = TinyTroops.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TinyTroops.info
+Icon 120: Width = 42, Height = 42, Text Width = 73, Text Height = 13, Max Width = 73, Max Height = 57, x = 232, y = 1953, Text = TinySkweeks.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TinySkweeks.info
+Icon 121: Width = 42, Height = 42, Text Width = 72, Text Height = 13, Max Width = 72, Max Height = 57, x = 57, y = 1953, Text = TinyInvaders.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TinyInvaders.info
+Icon 122: Width = 42, Height = 42, Text Width = 64, Text Height = 13, Max Width = 64, Max Height = 57, x = 765, y = 1886, Text = TinyGalaga.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TinyGalaga.info
+Icon 123: Width = 42, Height = 42, Text Width = 63, Text Height = 13, Max Width = 63, Max Height = 57, x = 589, y = 1886, Text = TinyBobble.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TinyBobble.info
+Icon 124: Width = 42, Height = 42, Text Width = 123, Text Height = 13, Max Width = 123, Max Height = 57, x = 383, y = 1886, Text = TinToyAdventureAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TinToyAdventureAGA.info
+Icon 125: Width = 42, Height = 42, Text Width = 133, Text Height = 13, Max Width = 133, Max Height = 57, x = 202, y = 1886, Text = TintinOnTheMoonImage.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TintinOnTheMoonImage.info
+Icon 126: Width = 42, Height = 42, Text Width = 127, Text Height = 13, Max Width = 127, Max Height = 57, x = 29, y = 1886, Text = TintinOnTheMoonFiles.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TintinOnTheMoonFiles.info
+Icon 127: Width = 42, Height = 42, Text Width = 65, Text Height = 13, Max Width = 65, Max Height = 57, x = 764, y = 1819, Text = TimeSoldier.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeSoldier.info
+Icon 128: Width = 42, Height = 42, Text Width = 70, Text Height = 13, Max Width = 70, Max Height = 57, x = 586, y = 1819, Text = TimesOfLore.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimesOfLore.info
+Icon 129: Width = 42, Height = 42, Text Width = 73, Text Height = 13, Max Width = 73, Max Height = 57, x = 408, y = 1819, Text = TimeScanner.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeScanner.info
+Icon 130: Width = 42, Height = 42, Text Width = 107, Text Height = 13, Max Width = 107, Max Height = 57, x = 215, y = 1819, Text = TimeRunnersSeries.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunnersSeries.info
+Icon 131: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 50, y = 1819, Text = TimeRunners30.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners30.info
+Icon 132: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 754, y = 1752, Text = TimeRunners29.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners29.info
+Icon 133: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 578, y = 1752, Text = TimeRunners28.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners28.info
+Icon 134: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 402, y = 1752, Text = TimeRunners27.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners27.info
+Icon 135: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 226, y = 1752, Text = TimeRunners26.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners26.info
+Icon 136: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 50, y = 1752, Text = TimeRunners25.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners25.info
+Icon 137: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 754, y = 1685, Text = TimeRunners24.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners24.info
+Icon 138: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 578, y = 1685, Text = TimeRunners23.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners23.info
+Icon 139: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 402, y = 1685, Text = TimeRunners22.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners22.info
+Icon 140: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 226, y = 1685, Text = TimeRunners21.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners21.info
+Icon 141: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 50, y = 1685, Text = TimeRunners20.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners20.info
+Icon 142: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 754, y = 1618, Text = TimeRunners19.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners19.info
+Icon 143: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 578, y = 1618, Text = TimeRunners18.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners18.info
+Icon 144: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 402, y = 1618, Text = TimeRunners17.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners17.info
+Icon 145: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 226, y = 1618, Text = TimeRunners16.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners16.info
+Icon 146: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 50, y = 1618, Text = TimeRunners15.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners15.info
+Icon 147: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 754, y = 1551, Text = TimeRunners14.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners14.info
+Icon 148: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 578, y = 1551, Text = TimeRunners13.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners13.info
+Icon 149: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 402, y = 1551, Text = TimeRunners12.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners12.info
+Icon 150: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 226, y = 1551, Text = TimeRunners11.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners11.info
+Icon 151: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 50, y = 1551, Text = TimeRunners10.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners10.info
+Icon 152: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 754, y = 1484, Text = TimeRunners09.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners09.info
+Icon 153: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 578, y = 1484, Text = TimeRunners08.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners08.info
+Icon 154: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 402, y = 1484, Text = TimeRunners07.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners07.info
+Icon 155: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 226, y = 1484, Text = TimeRunners06.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners06.info
+Icon 156: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 50, y = 1484, Text = TimeRunners05.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners05.info
+Icon 157: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 754, y = 1417, Text = TimeRunners04.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners04.info
+Icon 158: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 578, y = 1417, Text = TimeRunners03.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners03.info
+Icon 159: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 402, y = 1417, Text = TimeRunners02.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners02.info
+Icon 160: Width = 42, Height = 42, Text Width = 86, Text Height = 13, Max Width = 86, Max Height = 57, x = 226, y = 1417, Text = TimeRunners01.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunners01.info
+Icon 161: Width = 42, Height = 42, Text Width = 66, Text Height = 13, Max Width = 66, Max Height = 57, x = 60, y = 1417, Text = TimeRunner.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRunner.info
+Icon 162: Width = 42, Height = 42, Text Width = 55, Text Height = 13, Max Width = 55, Max Height = 57, x = 769, y = 1350, Text = TimeRace.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeRace.info
+Icon 163: Width = 42, Height = 42, Text Width = 75, Text Height = 13, Max Width = 75, Max Height = 57, x = 583, y = 1350, Text = TimeMachine.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeMachine.info
+Icon 164: Width = 42, Height = 42, Text Width = 53, Text Height = 13, Max Width = 53, Max Height = 57, x = 418, y = 1350, Text = TimeLock.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeLock.info
+Icon 165: Width = 42, Height = 42, Text Width = 38, Text Height = 13, Max Width = 42, Max Height = 57, x = 248, y = 1350, Text = TimeFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeFr.info
+Icon 166: Width = 42, Height = 42, Text Width = 42, Text Height = 13, Max Width = 42, Max Height = 57, x = 72, y = 1350, Text = TimeDe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeDe.info
+Icon 167: Width = 42, Height = 42, Text Width = 61, Text Height = 13, Max Width = 61, Max Height = 57, x = 766, y = 1283, Text = TimeBandit.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeBandit.info
+Icon 168: Width = 42, Height = 42, Text Width = 83, Text Height = 13, Max Width = 83, Max Height = 57, x = 579, y = 1283, Text = TimeAndMagik.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TimeAndMagik.info
+Icon 169: Width = 42, Height = 42, Text Width = 26, Text Height = 13, Max Width = 42, Max Height = 57, x = 424, y = 1283, Text = Time.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Time.info
+Icon 170: Width = 42, Height = 42, Text Width = 57, Text Height = 13, Max Width = 57, Max Height = 57, x = 240, y = 1283, Text = TigerRoad.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TigerRoad.info
+Icon 171: Width = 42, Height = 42, Text Width = 49, Text Height = 13, Max Width = 49, Max Height = 57, x = 68, y = 1283, Text = TieBreak.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TieBreak.info
+Icon 172: Width = 42, Height = 42, Text Width = 77, Text Height = 13, Max Width = 77, Max Height = 57, x = 758, y = 1216, Text = ThunderStrike.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderStrike.info
+Icon 173: Width = 42, Height = 42, Text Width = 108, Text Height = 13, Max Width = 108, Max Height = 57, x = 567, y = 1216, Text = ThunderJawsImage.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderJawsImage.info
+Icon 174: Width = 42, Height = 42, Text Width = 102, Text Height = 13, Max Width = 102, Max Height = 57, x = 394, y = 1216, Text = ThunderJawsFiles.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderJawsFiles.info
+Icon 175: Width = 42, Height = 42, Text Width = 110, Text Height = 13, Max Width = 110, Max Height = 57, x = 214, y = 1216, Text = ThunderHawkNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderHawkNTSC.info
+Icon 176: Width = 42, Height = 42, Text Width = 89, Text Height = 13, Max Width = 89, Max Height = 57, x = 48, y = 1216, Text = ThunderHawkFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderHawkFr.info
+Icon 177: Width = 42, Height = 42, Text Width = 93, Text Height = 13, Max Width = 93, Max Height = 57, x = 750, y = 1149, Text = ThunderHawkDe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderHawkDe.info
+Icon 178: Width = 42, Height = 42, Text Width = 77, Text Height = 13, Max Width = 77, Max Height = 57, x = 582, y = 1149, Text = ThunderHawk.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderHawk.info
+Icon 179: Width = 42, Height = 42, Text Width = 71, Text Height = 13, Max Width = 71, Max Height = 57, x = 409, y = 1149, Text = ThunderCats.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderCats.info
+Icon 180: Width = 42, Height = 42, Text Width = 83, Text Height = 13, Max Width = 83, Max Height = 57, x = 227, y = 1149, Text = ThunderBurner.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderBurner.info
+Icon 181: Width = 42, Height = 42, Text Width = 68, Text Height = 13, Max Width = 68, Max Height = 57, x = 59, y = 1149, Text = ThunderBoy.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderBoy.info
+Icon 182: Width = 42, Height = 42, Text Width = 111, Text Height = 13, Max Width = 111, Max Height = 57, x = 741, y = 1082, Text = ThunderBladeNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderBladeNTSC.info
+Icon 183: Width = 42, Height = 42, Text Width = 78, Text Height = 13, Max Width = 78, Max Height = 57, x = 582, y = 1082, Text = ThunderBlade.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThunderBlade.info
+Icon 184: Width = 42, Height = 42, Text Width = 73, Text Height = 13, Max Width = 73, Max Height = 57, x = 408, y = 1082, Text = Thunderbirds.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Thunderbirds.info
+Icon 185: Width = 42, Height = 42, Text Width = 110, Text Height = 13, Max Width = 110, Max Height = 57, x = 214, y = 1082, Text = ThreeStoogesNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThreeStoogesNTSC.info
+Icon 186: Width = 42, Height = 42, Text Width = 77, Text Height = 13, Max Width = 77, Max Height = 57, x = 54, y = 1082, Text = ThreeStooges.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThreeStooges.info
+Icon 187: Width = 42, Height = 42, Text Width = 137, Text Height = 13, Max Width = 137, Max Height = 57, x = 728, y = 1015, Text = ThomasTheTankEngine2.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThomasTheTankEngine2.info
+Icon 188: Width = 42, Height = 42, Text Width = 130, Text Height = 13, Max Width = 130, Max Height = 57, x = 556, y = 1015, Text = ThomasTheTankEngine.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThomasTheTankEngine.info
+Icon 189: Width = 42, Height = 42, Text Width = 162, Text Height = 13, Max Width = 162, Max Height = 57, x = 364, y = 1015, Text = ThomasTankEngPinballCD32.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThomasTankEngPinballCD32.info
+Icon 190: Width = 42, Height = 42, Text Width = 157, Text Height = 13, Max Width = 157, Max Height = 57, x = 190, y = 1015, Text = ThomasTankEngPinballAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThomasTankEngPinballAGA.info
+Icon 191: Width = 42, Height = 42, Text Width = 69, Text Height = 13, Max Width = 69, Max Height = 57, x = 58, y = 1015, Text = ThirdCourier.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThirdCourier.info
+Icon 192: Width = 42, Height = 42, Text Width = 45, Text Height = 13, Max Width = 45, Max Height = 57, x = 774, y = 948, Text = Thexder.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Thexder.info
+Icon 193: Width = 42, Height = 42, Text Width = 140, Text Height = 13, Max Width = 140, Max Height = 57, x = 551, y = 948, Text = ThemeParkMysteryNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThemeParkMysteryNTSC.info
+Icon 194: Width = 42, Height = 42, Text Width = 107, Text Height = 13, Max Width = 107, Max Height = 57, x = 391, y = 948, Text = ThemeParkMystery.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThemeParkMystery.info
+Icon 195: Width = 42, Height = 42, Text Width = 94, Text Height = 13, Max Width = 94, Max Height = 57, x = 222, y = 948, Text = ThemeParkCD32.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThemeParkCD32.info
+Icon 196: Width = 42, Height = 42, Text Width = 89, Text Height = 13, Max Width = 89, Max Height = 57, x = 48, y = 948, Text = ThemeParkAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThemeParkAGA.info
+Icon 197: Width = 42, Height = 42, Text Width = 62, Text Height = 13, Max Width = 62, Max Height = 57, x = 766, y = 881, Text = ThemePark.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/ThemePark.info
+Icon 198: Width = 42, Height = 42, Text Width = 89, Text Height = 13, Max Width = 89, Max Height = 57, x = 576, y = 881, Text = TheirFinestHour.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TheirFinestHour.info
+Icon 199: Width = 42, Height = 42, Text Width = 147, Text Height = 13, Max Width = 147, Max Height = 57, x = 371, y = 881, Text = TheirFinestHour&Missions.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TheirFinestHour&Missions.info
+Icon 200: Width = 42, Height = 42, Text Width = 88, Text Height = 13, Max Width = 88, Max Height = 57, x = 225, y = 881, Text = TheatreOfDeath.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TheatreOfDeath.info
+Icon 201: Width = 42, Height = 42, Text Width = 51, Text Height = 13, Max Width = 51, Max Height = 57, x = 67, y = 881, Text = TFXAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TFXAGA.info
+Icon 202: Width = 42, Height = 42, Text Width = 129, Text Height = 13, Max Width = 129, Max Height = 57, x = 732, y = 814, Text = TexPiomboCaldoPart2It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TexPiomboCaldoPart2It.info
+Icon 203: Width = 42, Height = 42, Text Width = 129, Text Height = 13, Max Width = 129, Max Height = 57, x = 556, y = 814, Text = TexPiomboCaldoPart1It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TexPiomboCaldoPart1It.info
+Icon 204: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 424, y = 814, Text = Tex12It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex12It.info
+Icon 205: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 248, y = 814, Text = Tex11It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex11It.info
+Icon 206: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 72, y = 814, Text = Tex10It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex10It.info
+Icon 207: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 776, y = 747, Text = Tex09It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex09It.info
+Icon 208: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 600, y = 747, Text = Tex08It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex08It.info
+Icon 209: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 424, y = 747, Text = Tex07It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex07It.info
+Icon 210: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 248, y = 747, Text = Tex06It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex06It.info
+Icon 211: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 72, y = 747, Text = Tex05It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex05It.info
+Icon 212: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 776, y = 680, Text = Tex04It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex04It.info
+Icon 213: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 600, y = 680, Text = Tex03It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex03It.info
+Icon 214: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 424, y = 680, Text = Tex02It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex02It.info
+Icon 215: Width = 42, Height = 42, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 248, y = 680, Text = Tex01It.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tex01It.info
+Icon 216: Width = 42, Height = 42, Text Width = 30, Text Height = 13, Max Width = 42, Max Height = 57, x = 72, y = 680, Text = Tetrix.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tetrix.info
+Icon 217: Width = 42, Height = 42, Text Width = 49, Text Height = 13, Max Width = 49, Max Height = 57, x = 772, y = 613, Text = TetrisPro.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TetrisPro.info
+Icon 218: Width = 42, Height = 42, Text Width = 82, Text Height = 13, Max Width = 82, Max Height = 57, x = 580, y = 613, Text = TetrisMirrorsoft.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TetrisMirrorsoft.info
+Icon 219: Width = 42, Height = 42, Text Width = 90, Text Height = 13, Max Width = 90, Max Height = 57, x = 400, y = 613, Text = TetrisInfogrames.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TetrisInfogrames.info
+Icon 220: Width = 42, Height = 42, Text Width = 61, Text Height = 13, Max Width = 61, Max Height = 57, x = 238, y = 613, Text = TetraQuest.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TetraQuest.info
+Icon 221: Width = 42, Height = 42, Text Width = 60, Text Height = 13, Max Width = 60, Max Height = 57, x = 63, y = 613, Text = TestDrive2.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TestDrive2.info
+Icon 222: Width = 42, Height = 42, Text Width = 125, Text Height = 13, Max Width = 125, Max Height = 57, x = 734, y = 546, Text = TestDrive2&DataDisks.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TestDrive2&DataDisks.info
+Icon 223: Width = 42, Height = 42, Text Width = 53, Text Height = 13, Max Width = 53, Max Height = 57, x = 594, y = 546, Text = TestDrive.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TestDrive.info
+Icon 224: Width = 42, Height = 42, Text Width = 111, Text Height = 13, Max Width = 111, Max Height = 57, x = 389, y = 546, Text = TerrysBigAdventure.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TerrysBigAdventure.info
+Icon 225: Width = 42, Height = 42, Text Width = 60, Text Height = 13, Max Width = 60, Max Height = 57, x = 239, y = 546, Text = Terrorpods.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Terrorpods.info
+Icon 226: Width = 42, Height = 42, Text Width = 51, Text Height = 13, Max Width = 51, Max Height = 57, x = 67, y = 546, Text = Terramex.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Terramex.info
+Icon 227: Width = 42, Height = 42, Text Width = 142, Text Height = 13, Max Width = 142, Max Height = 57, x = 726, y = 479, Text = Terminator2JudgmentDay.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Terminator2JudgmentDay.info
+Icon 228: Width = 42, Height = 42, Text Width = 106, Text Height = 13, Max Width = 106, Max Height = 57, x = 568, y = 479, Text = Terminator2Arcade.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Terminator2Arcade.info
+Icon 229: Width = 42, Height = 42, Text Width = 69, Text Height = 13, Max Width = 69, Max Height = 57, x = 410, y = 479, Text = TensaiDemo.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TensaiDemo.info
+Icon 230: Width = 42, Height = 42, Text Width = 127, Text Height = 13, Max Width = 127, Max Height = 57, x = 205, y = 479, Text = TenPinBowlingArcadia.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TenPinBowlingArcadia.info
+Icon 231: Width = 42, Height = 42, Text Width = 108, Text Height = 13, Max Width = 108, Max Height = 57, x = 39, y = 479, Text = TennisCup512KbFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TennisCup512KbFr.info
+Icon 232: Width = 42, Height = 42, Text Width = 96, Text Height = 13, Max Width = 96, Max Height = 57, x = 749, y = 412, Text = TennisCup512Kb.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TennisCup512Kb.info
+Icon 233: Width = 42, Height = 42, Text Width = 67, Text Height = 13, Max Width = 67, Max Height = 57, x = 587, y = 412, Text = TennisCup2.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TennisCup2.info
+Icon 234: Width = 42, Height = 42, Text Width = 97, Text Height = 13, Max Width = 97, Max Height = 57, x = 396, y = 412, Text = TennisCup1MbFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TennisCup1MbFr.info
+Icon 235: Width = 42, Height = 42, Text Width = 85, Text Height = 13, Max Width = 85, Max Height = 57, x = 226, y = 412, Text = TennisCup1Mb.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TennisCup1Mb.info
+Icon 236: Width = 42, Height = 42, Text Width = 82, Text Height = 13, Max Width = 82, Max Height = 57, x = 52, y = 412, Text = TennisChamps.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TennisChamps.info
+Icon 237: Width = 42, Height = 42, Text Width = 113, Text Height = 13, Max Width = 113, Max Height = 57, x = 740, y = 345, Text = TemplosSagradosEs.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TemplosSagradosEs.info
+Icon 238: Width = 42, Height = 42, Text Width = 150, Text Height = 13, Max Width = 150, Max Height = 57, x = 546, y = 345, Text = TempleOfEnlightenedSouls.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TempleOfEnlightenedSouls.info
+Icon 239: Width = 42, Height = 42, Text Width = 130, Text Height = 13, Max Width = 130, Max Height = 57, x = 380, y = 345, Text = TempleOfApshaiTrilogy.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TempleOfApshaiTrilogy.info
+Icon 240: Width = 42, Height = 42, Text Width = 43, Text Height = 13, Max Width = 43, Max Height = 57, x = 247, y = 345, Text = TellerFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TellerFr.info
+Icon 241: Width = 42, Height = 42, Text Width = 87, Text Height = 13, Max Width = 87, Max Height = 57, x = 49, y = 345, Text = TeenageQueen.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeenageQueen.info
+Icon 242: Width = 42, Height = 42, Text Width = 139, Text Height = 13, Max Width = 139, Max Height = 57, x = 727, y = 278, Text = TeenageMtntNinjaTurtles.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeenageMtntNinjaTurtles.info
+Icon 243: Width = 42, Height = 42, Text Width = 163, Text Height = 13, Max Width = 163, Max Height = 57, x = 539, y = 278, Text = TeenageMtntHeroTurtlesCOp.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeenageMtntHeroTurtlesCOp.info
+Icon 244: Width = 42, Height = 42, Text Width = 137, Text Height = 13, Max Width = 137, Max Height = 57, x = 376, y = 278, Text = TeenageMtntHeroTurtles.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeenageMtntHeroTurtles.info
+Icon 245: Width = 42, Height = 42, Text Width = 55, Text Height = 13, Max Width = 55, Max Height = 57, x = 241, y = 278, Text = Tecnoball.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tecnoball.info
+Icon 246: Width = 42, Height = 42, Text Width = 73, Text Height = 13, Max Width = 73, Max Height = 57, x = 56, y = 278, Text = Technology2.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Technology2.info
+Icon 247: Width = 42, Height = 42, Text Width = 63, Text Height = 13, Max Width = 63, Max Height = 57, x = 765, y = 211, Text = Technocop.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Technocop.info
+Icon 248: Width = 42, Height = 42, Text Width = 28, Text Height = 13, Max Width = 42, Max Height = 57, x = 600, y = 211, Text = Tech.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tech.info
+Icon 249: Width = 42, Height = 42, Text Width = 98, Text Height = 13, Max Width = 98, Max Height = 57, x = 396, y = 211, Text = TearawayThomas.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TearawayThomas.info
+Icon 250: Width = 42, Height = 42, Text Width = 73, Text Height = 13, Max Width = 73, Max Height = 57, x = 232, y = 211, Text = TeamYankee.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeamYankee.info
+Icon 251: Width = 42, Height = 42, Text Width = 67, Text Height = 13, Max Width = 67, Max Height = 57, x = 59, y = 211, Text = TeamSuzuki.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeamSuzuki.info
+Icon 252: Width = 42, Height = 42, Text Width = 29, Text Height = 13, Max Width = 42, Max Height = 57, x = 776, y = 144, Text = TBird.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TBird.info
+Icon 253: Width = 42, Height = 42, Text Width = 122, Text Height = 13, Max Width = 122, Max Height = 57, x = 560, y = 144, Text = TassTimesInTonetown.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TassTimesInTonetown.info
+Icon 254: Width = 42, Height = 42, Text Width = 79, Text Height = 13, Max Width = 79, Max Height = 57, x = 405, y = 144, Text = TarghanNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TarghanNTSC.info
+Icon 255: Width = 42, Height = 42, Text Width = 58, Text Height = 13, Max Width = 58, Max Height = 57, x = 240, y = 144, Text = TarghanFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TarghanFr.info
+Icon 256: Width = 42, Height = 42, Text Width = 82, Text Height = 13, Max Width = 82, Max Height = 57, x = 52, y = 144, Text = TarghanFastFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TarghanFastFr.info
+Icon 257: Width = 42, Height = 42, Text Width = 70, Text Height = 13, Max Width = 70, Max Height = 57, x = 762, y = 77, Text = TarghanFast.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TarghanFast.info
+Icon 258: Width = 42, Height = 42, Text Width = 46, Text Height = 13, Max Width = 46, Max Height = 57, x = 598, y = 77, Text = Targhan.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Targhan.info
+Icon 259: Width = 42, Height = 42, Text Width = 62, Text Height = 13, Max Width = 62, Max Height = 57, x = 414, y = 77, Text = TankBuster.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TankBuster.info
+Icon 260: Width = 42, Height = 42, Text Width = 48, Text Height = 13, Max Width = 48, Max Height = 57, x = 245, y = 77, Text = Tangram.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tangram.info
+Icon 261: Width = 42, Height = 42, Text Width = 68, Text Height = 13, Max Width = 68, Max Height = 57, x = 59, y = 77, Text = Tanglewood.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tanglewood.info
+Icon 262: Width = 42, Height = 42, Text Width = 135, Text Height = 13, Max Width = 135, Max Height = 57, x = 729, y = 10, Text = TalkingStorybook3Bears.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TalkingStorybook3Bears.info
+Icon 263: Width = 42, Height = 42, Text Width = 64, Text Height = 13, Max Width = 64, Max Height = 57, x = 589, y = 10, Text = TakeEmOut.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TakeEmOut.info
+Icon 264: Width = 42, Height = 42, Text Width = 64, Text Height = 13, Max Width = 64, Max Height = 57, x = 413, y = 10, Text = Taekwondo.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Taekwondo.info
+Icon 265: Width = 42, Height = 42, Text Width = 125, Text Height = 13, Max Width = 125, Max Height = 57, x = 206, y = 10, Text = TableTennisSimulation.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TableTennisSimulation.info
+Icon 266: Width = 42, Height = 42, Text Width = 118, Text Height = 13, Max Width = 118, Max Height = 57, x = 34, y = 10, Text = TableHockeyArcadia.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TableHockeyArcadia.info
+Icon array created
+Array size 267
+X: 186, Y: 10, win width: 994, rowcount 0, Current endX 304, Centerx 34, lagest width: 166 
+X: 362, Y: 10, win width: 994, rowcount 0, Current endX 487, Centerx 206, lagest width: 166 
+X: 538, Y: 10, win width: 994, rowcount 0, Current endX 602, Centerx 413, lagest width: 166 
+X: 714, Y: 10, win width: 994, rowcount 0, Current endX 778, Centerx 589, lagest width: 166 
+X: 890, Y: 10, win width: 994, rowcount 0, Current endX 1025, Centerx 729, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 77, win width: 994, rowcount 1, Current endX 254, Centerx 59, lagest width: 166 
+X: 362, Y: 77, win width: 994, rowcount 1, Current endX 410, Centerx 245, lagest width: 166 
+X: 538, Y: 77, win width: 994, rowcount 1, Current endX 600, Centerx 414, lagest width: 166 
+X: 714, Y: 77, win width: 994, rowcount 1, Current endX 760, Centerx 598, lagest width: 166 
+X: 890, Y: 77, win width: 994, rowcount 1, Current endX 960, Centerx 762, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 144, win width: 994, rowcount 2, Current endX 268, Centerx 52, lagest width: 166 
+X: 362, Y: 144, win width: 994, rowcount 2, Current endX 420, Centerx 240, lagest width: 166 
+X: 538, Y: 144, win width: 994, rowcount 2, Current endX 617, Centerx 405, lagest width: 166 
+X: 714, Y: 144, win width: 994, rowcount 2, Current endX 836, Centerx 560, lagest width: 166 
+X: 890, Y: 144, win width: 994, rowcount 2, Current endX 932, Centerx 776, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 211, win width: 994, rowcount 3, Current endX 253, Centerx 59, lagest width: 166 
+X: 362, Y: 211, win width: 994, rowcount 3, Current endX 435, Centerx 232, lagest width: 166 
+X: 538, Y: 211, win width: 994, rowcount 3, Current endX 636, Centerx 396, lagest width: 166 
+X: 714, Y: 211, win width: 994, rowcount 3, Current endX 756, Centerx 600, lagest width: 166 
+X: 890, Y: 211, win width: 994, rowcount 3, Current endX 953, Centerx 765, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 278, win width: 994, rowcount 4, Current endX 259, Centerx 56, lagest width: 166 
+X: 362, Y: 278, win width: 994, rowcount 4, Current endX 417, Centerx 241, lagest width: 166 
+X: 538, Y: 278, win width: 994, rowcount 4, Current endX 675, Centerx 376, lagest width: 166 
+X: 714, Y: 278, win width: 994, rowcount 4, Current endX 877, Centerx 539, lagest width: 166 
+X: 890, Y: 278, win width: 994, rowcount 4, Current endX 1029, Centerx 727, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 345, win width: 994, rowcount 5, Current endX 273, Centerx 49, lagest width: 166 
+X: 362, Y: 345, win width: 994, rowcount 5, Current endX 405, Centerx 247, lagest width: 166 
+X: 538, Y: 345, win width: 994, rowcount 5, Current endX 668, Centerx 380, lagest width: 166 
+X: 714, Y: 345, win width: 994, rowcount 5, Current endX 864, Centerx 546, lagest width: 166 
+X: 890, Y: 345, win width: 994, rowcount 5, Current endX 1003, Centerx 740, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 412, win width: 994, rowcount 6, Current endX 268, Centerx 52, lagest width: 166 
+X: 362, Y: 412, win width: 994, rowcount 6, Current endX 447, Centerx 226, lagest width: 166 
+X: 538, Y: 412, win width: 994, rowcount 6, Current endX 635, Centerx 396, lagest width: 166 
+X: 714, Y: 412, win width: 994, rowcount 6, Current endX 781, Centerx 587, lagest width: 166 
+X: 890, Y: 412, win width: 994, rowcount 6, Current endX 986, Centerx 749, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 479, win width: 994, rowcount 7, Current endX 294, Centerx 39, lagest width: 166 
+X: 362, Y: 479, win width: 994, rowcount 7, Current endX 489, Centerx 205, lagest width: 166 
+X: 538, Y: 479, win width: 994, rowcount 7, Current endX 607, Centerx 410, lagest width: 166 
+X: 714, Y: 479, win width: 994, rowcount 7, Current endX 820, Centerx 568, lagest width: 166 
+X: 890, Y: 479, win width: 994, rowcount 7, Current endX 1032, Centerx 726, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 546, win width: 994, rowcount 8, Current endX 237, Centerx 67, lagest width: 166 
+X: 362, Y: 546, win width: 994, rowcount 8, Current endX 422, Centerx 239, lagest width: 166 
+X: 538, Y: 546, win width: 994, rowcount 8, Current endX 649, Centerx 389, lagest width: 166 
+X: 714, Y: 546, win width: 994, rowcount 8, Current endX 767, Centerx 594, lagest width: 166 
+X: 890, Y: 546, win width: 994, rowcount 8, Current endX 1015, Centerx 734, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 613, win width: 994, rowcount 9, Current endX 246, Centerx 63, lagest width: 166 
+X: 362, Y: 613, win width: 994, rowcount 9, Current endX 423, Centerx 238, lagest width: 166 
+X: 538, Y: 613, win width: 994, rowcount 9, Current endX 628, Centerx 400, lagest width: 166 
+X: 714, Y: 613, win width: 994, rowcount 9, Current endX 796, Centerx 580, lagest width: 166 
+X: 890, Y: 613, win width: 994, rowcount 9, Current endX 939, Centerx 772, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 680, win width: 994, rowcount 10, Current endX 228, Centerx 72, lagest width: 166 
+X: 362, Y: 680, win width: 994, rowcount 10, Current endX 404, Centerx 248, lagest width: 166 
+X: 538, Y: 680, win width: 994, rowcount 10, Current endX 580, Centerx 424, lagest width: 166 
+X: 714, Y: 680, win width: 994, rowcount 10, Current endX 756, Centerx 600, lagest width: 166 
+X: 890, Y: 680, win width: 994, rowcount 10, Current endX 932, Centerx 776, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 747, win width: 994, rowcount 11, Current endX 228, Centerx 72, lagest width: 166 
+X: 362, Y: 747, win width: 994, rowcount 11, Current endX 404, Centerx 248, lagest width: 166 
+X: 538, Y: 747, win width: 994, rowcount 11, Current endX 580, Centerx 424, lagest width: 166 
+X: 714, Y: 747, win width: 994, rowcount 11, Current endX 756, Centerx 600, lagest width: 166 
+X: 890, Y: 747, win width: 994, rowcount 11, Current endX 932, Centerx 776, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 814, win width: 994, rowcount 12, Current endX 228, Centerx 72, lagest width: 166 
+X: 362, Y: 814, win width: 994, rowcount 12, Current endX 404, Centerx 248, lagest width: 166 
+X: 538, Y: 814, win width: 994, rowcount 12, Current endX 580, Centerx 424, lagest width: 166 
+X: 714, Y: 814, win width: 994, rowcount 12, Current endX 843, Centerx 556, lagest width: 166 
+X: 890, Y: 814, win width: 994, rowcount 12, Current endX 1019, Centerx 732, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 881, win width: 994, rowcount 13, Current endX 237, Centerx 67, lagest width: 166 
+X: 362, Y: 881, win width: 994, rowcount 13, Current endX 450, Centerx 225, lagest width: 166 
+X: 538, Y: 881, win width: 994, rowcount 13, Current endX 685, Centerx 371, lagest width: 166 
+X: 714, Y: 881, win width: 994, rowcount 13, Current endX 803, Centerx 576, lagest width: 166 
+X: 890, Y: 881, win width: 994, rowcount 13, Current endX 952, Centerx 766, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 948, win width: 994, rowcount 14, Current endX 275, Centerx 48, lagest width: 166 
+X: 362, Y: 948, win width: 994, rowcount 14, Current endX 456, Centerx 222, lagest width: 166 
+X: 538, Y: 948, win width: 994, rowcount 14, Current endX 645, Centerx 391, lagest width: 166 
+X: 714, Y: 948, win width: 994, rowcount 14, Current endX 854, Centerx 551, lagest width: 166 
+X: 890, Y: 948, win width: 994, rowcount 14, Current endX 935, Centerx 774, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 1015, win width: 994, rowcount 15, Current endX 255, Centerx 58, lagest width: 166 
+X: 362, Y: 1015, win width: 994, rowcount 15, Current endX 519, Centerx 190, lagest width: 166 
+X: 538, Y: 1015, win width: 994, rowcount 15, Current endX 700, Centerx 364, lagest width: 166 
+X: 714, Y: 1015, win width: 994, rowcount 15, Current endX 844, Centerx 556, lagest width: 166 
+X: 890, Y: 1015, win width: 994, rowcount 15, Current endX 1027, Centerx 728, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 1082, win width: 994, rowcount 16, Current endX 263, Centerx 54, lagest width: 166 
+X: 362, Y: 1082, win width: 994, rowcount 16, Current endX 472, Centerx 214, lagest width: 166 
+X: 538, Y: 1082, win width: 994, rowcount 16, Current endX 611, Centerx 408, lagest width: 166 
+X: 714, Y: 1082, win width: 994, rowcount 16, Current endX 792, Centerx 582, lagest width: 166 
+X: 890, Y: 1082, win width: 994, rowcount 16, Current endX 1001, Centerx 741, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 1149, win width: 994, rowcount 17, Current endX 254, Centerx 59, lagest width: 166 
+X: 362, Y: 1149, win width: 994, rowcount 17, Current endX 445, Centerx 227, lagest width: 166 
+X: 538, Y: 1149, win width: 994, rowcount 17, Current endX 609, Centerx 409, lagest width: 166 
+X: 714, Y: 1149, win width: 994, rowcount 17, Current endX 791, Centerx 582, lagest width: 166 
+X: 890, Y: 1149, win width: 994, rowcount 17, Current endX 983, Centerx 750, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 1216, win width: 994, rowcount 18, Current endX 275, Centerx 48, lagest width: 166 
+X: 362, Y: 1216, win width: 994, rowcount 18, Current endX 472, Centerx 214, lagest width: 166 
+X: 538, Y: 1216, win width: 994, rowcount 18, Current endX 640, Centerx 394, lagest width: 166 
+X: 714, Y: 1216, win width: 994, rowcount 18, Current endX 822, Centerx 567, lagest width: 166 
+X: 890, Y: 1216, win width: 994, rowcount 18, Current endX 967, Centerx 758, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 1283, win width: 994, rowcount 19, Current endX 235, Centerx 68, lagest width: 166 
+X: 362, Y: 1283, win width: 994, rowcount 19, Current endX 419, Centerx 240, lagest width: 166 
+X: 538, Y: 1283, win width: 994, rowcount 19, Current endX 580, Centerx 424, lagest width: 166 
+X: 714, Y: 1283, win width: 994, rowcount 19, Current endX 797, Centerx 579, lagest width: 166 
+X: 890, Y: 1283, win width: 994, rowcount 19, Current endX 951, Centerx 766, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 1350, win width: 994, rowcount 20, Current endX 228, Centerx 72, lagest width: 166 
+X: 362, Y: 1350, win width: 994, rowcount 20, Current endX 404, Centerx 248, lagest width: 166 
+X: 538, Y: 1350, win width: 994, rowcount 20, Current endX 591, Centerx 418, lagest width: 166 
+X: 714, Y: 1350, win width: 994, rowcount 20, Current endX 789, Centerx 583, lagest width: 166 
+X: 890, Y: 1350, win width: 994, rowcount 20, Current endX 945, Centerx 769, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 1417, win width: 994, rowcount 21, Current endX 252, Centerx 60, lagest width: 166 
+X: 362, Y: 1417, win width: 994, rowcount 21, Current endX 448, Centerx 226, lagest width: 166 
+X: 538, Y: 1417, win width: 994, rowcount 21, Current endX 624, Centerx 402, lagest width: 166 
+X: 714, Y: 1417, win width: 994, rowcount 21, Current endX 800, Centerx 578, lagest width: 166 
+X: 890, Y: 1417, win width: 994, rowcount 21, Current endX 976, Centerx 754, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 1484, win width: 994, rowcount 22, Current endX 272, Centerx 50, lagest width: 166 
+X: 362, Y: 1484, win width: 994, rowcount 22, Current endX 448, Centerx 226, lagest width: 166 
+X: 538, Y: 1484, win width: 994, rowcount 22, Current endX 624, Centerx 402, lagest width: 166 
+X: 714, Y: 1484, win width: 994, rowcount 22, Current endX 800, Centerx 578, lagest width: 166 
+X: 890, Y: 1484, win width: 994, rowcount 22, Current endX 976, Centerx 754, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 1551, win width: 994, rowcount 23, Current endX 272, Centerx 50, lagest width: 166 
+X: 362, Y: 1551, win width: 994, rowcount 23, Current endX 448, Centerx 226, lagest width: 166 
+X: 538, Y: 1551, win width: 994, rowcount 23, Current endX 624, Centerx 402, lagest width: 166 
+X: 714, Y: 1551, win width: 994, rowcount 23, Current endX 800, Centerx 578, lagest width: 166 
+X: 890, Y: 1551, win width: 994, rowcount 23, Current endX 976, Centerx 754, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 1618, win width: 994, rowcount 24, Current endX 272, Centerx 50, lagest width: 166 
+X: 362, Y: 1618, win width: 994, rowcount 24, Current endX 448, Centerx 226, lagest width: 166 
+X: 538, Y: 1618, win width: 994, rowcount 24, Current endX 624, Centerx 402, lagest width: 166 
+X: 714, Y: 1618, win width: 994, rowcount 24, Current endX 800, Centerx 578, lagest width: 166 
+X: 890, Y: 1618, win width: 994, rowcount 24, Current endX 976, Centerx 754, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 1685, win width: 994, rowcount 25, Current endX 272, Centerx 50, lagest width: 166 
+X: 362, Y: 1685, win width: 994, rowcount 25, Current endX 448, Centerx 226, lagest width: 166 
+X: 538, Y: 1685, win width: 994, rowcount 25, Current endX 624, Centerx 402, lagest width: 166 
+X: 714, Y: 1685, win width: 994, rowcount 25, Current endX 800, Centerx 578, lagest width: 166 
+X: 890, Y: 1685, win width: 994, rowcount 25, Current endX 976, Centerx 754, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 1752, win width: 994, rowcount 26, Current endX 272, Centerx 50, lagest width: 166 
+X: 362, Y: 1752, win width: 994, rowcount 26, Current endX 448, Centerx 226, lagest width: 166 
+X: 538, Y: 1752, win width: 994, rowcount 26, Current endX 624, Centerx 402, lagest width: 166 
+X: 714, Y: 1752, win width: 994, rowcount 26, Current endX 800, Centerx 578, lagest width: 166 
+X: 890, Y: 1752, win width: 994, rowcount 26, Current endX 976, Centerx 754, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 1819, win width: 994, rowcount 27, Current endX 272, Centerx 50, lagest width: 166 
+X: 362, Y: 1819, win width: 994, rowcount 27, Current endX 469, Centerx 215, lagest width: 166 
+X: 538, Y: 1819, win width: 994, rowcount 27, Current endX 611, Centerx 408, lagest width: 166 
+X: 714, Y: 1819, win width: 994, rowcount 27, Current endX 784, Centerx 586, lagest width: 166 
+X: 890, Y: 1819, win width: 994, rowcount 27, Current endX 955, Centerx 764, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 1886, win width: 994, rowcount 28, Current endX 313, Centerx 29, lagest width: 166 
+X: 362, Y: 1886, win width: 994, rowcount 28, Current endX 495, Centerx 202, lagest width: 166 
+X: 538, Y: 1886, win width: 994, rowcount 28, Current endX 661, Centerx 383, lagest width: 166 
+X: 714, Y: 1886, win width: 994, rowcount 28, Current endX 777, Centerx 589, lagest width: 166 
+X: 890, Y: 1886, win width: 994, rowcount 28, Current endX 954, Centerx 765, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 1953, win width: 994, rowcount 29, Current endX 258, Centerx 57, lagest width: 166 
+X: 362, Y: 1953, win width: 994, rowcount 29, Current endX 435, Centerx 232, lagest width: 166 
+X: 538, Y: 1953, win width: 994, rowcount 29, Current endX 600, Centerx 414, lagest width: 166 
+X: 714, Y: 1953, win width: 994, rowcount 29, Current endX 794, Centerx 581, lagest width: 166 
+X: 890, Y: 1953, win width: 994, rowcount 29, Current endX 986, Centerx 749, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 2020, win width: 994, rowcount 30, Current endX 228, Centerx 72, lagest width: 166 
+X: 362, Y: 2020, win width: 994, rowcount 30, Current endX 404, Centerx 248, lagest width: 166 
+X: 538, Y: 2020, win width: 994, rowcount 30, Current endX 619, Centerx 404, lagest width: 166 
+X: 714, Y: 2020, win width: 994, rowcount 30, Current endX 780, Centerx 588, lagest width: 166 
+X: 890, Y: 2020, win width: 994, rowcount 30, Current endX 932, Centerx 776, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 2087, win width: 994, rowcount 31, Current endX 257, Centerx 57, lagest width: 166 
+X: 362, Y: 2087, win width: 994, rowcount 31, Current endX 430, Centerx 235, lagest width: 166 
+X: 538, Y: 2087, win width: 994, rowcount 31, Current endX 580, Centerx 424, lagest width: 166 
+X: 714, Y: 2087, win width: 994, rowcount 31, Current endX 756, Centerx 600, lagest width: 166 
+X: 890, Y: 2087, win width: 994, rowcount 31, Current endX 951, Centerx 766, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 2154, win width: 994, rowcount 32, Current endX 254, Centerx 59, lagest width: 166 
+X: 362, Y: 2154, win width: 994, rowcount 32, Current endX 457, Centerx 221, lagest width: 166 
+X: 538, Y: 2154, win width: 994, rowcount 32, Current endX 637, Centerx 395, lagest width: 166 
+X: 714, Y: 2154, win width: 994, rowcount 32, Current endX 821, Centerx 567, lagest width: 166 
+X: 890, Y: 2154, win width: 994, rowcount 32, Current endX 1036, Centerx 724, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 2221, win width: 994, rowcount 33, Current endX 248, Centerx 62, lagest width: 166 
+X: 362, Y: 2221, win width: 994, rowcount 33, Current endX 457, Centerx 221, lagest width: 166 
+X: 538, Y: 2221, win width: 994, rowcount 33, Current endX 580, Centerx 424, lagest width: 166 
+X: 714, Y: 2221, win width: 994, rowcount 33, Current endX 778, Centerx 589, lagest width: 166 
+X: 890, Y: 2221, win width: 994, rowcount 33, Current endX 932, Centerx 776, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 2288, win width: 994, rowcount 34, Current endX 241, Centerx 65, lagest width: 166 
+X: 362, Y: 2288, win width: 994, rowcount 34, Current endX 444, Centerx 228, lagest width: 166 
+X: 538, Y: 2288, win width: 994, rowcount 34, Current endX 625, Centerx 401, lagest width: 166 
+X: 714, Y: 2288, win width: 994, rowcount 34, Current endX 771, Centerx 592, lagest width: 166 
+X: 890, Y: 2288, win width: 994, rowcount 34, Current endX 962, Centerx 761, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 2355, win width: 994, rowcount 35, Current endX 232, Centerx 70, lagest width: 166 
+X: 362, Y: 2355, win width: 994, rowcount 35, Current endX 435, Centerx 232, lagest width: 166 
+X: 538, Y: 2355, win width: 994, rowcount 35, Current endX 660, Centerx 384, lagest width: 166 
+X: 714, Y: 2355, win width: 994, rowcount 35, Current endX 813, Centerx 571, lagest width: 166 
+X: 890, Y: 2355, win width: 994, rowcount 35, Current endX 992, Centerx 746, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 2422, win width: 994, rowcount 36, Current endX 254, Centerx 59, lagest width: 166 
+X: 362, Y: 2422, win width: 994, rowcount 36, Current endX 463, Centerx 218, lagest width: 166 
+X: 538, Y: 2422, win width: 994, rowcount 36, Current endX 610, Centerx 409, lagest width: 166 
+X: 714, Y: 2422, win width: 994, rowcount 36, Current endX 803, Centerx 576, lagest width: 166 
+X: 890, Y: 2422, win width: 994, rowcount 36, Current endX 985, Centerx 749, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 2489, win width: 994, rowcount 37, Current endX 273, Centerx 49, lagest width: 166 
+X: 362, Y: 2489, win width: 994, rowcount 37, Current endX 441, Centerx 229, lagest width: 166 
+X: 538, Y: 2489, win width: 994, rowcount 37, Current endX 643, Centerx 392, lagest width: 166 
+X: 714, Y: 2489, win width: 994, rowcount 37, Current endX 823, Centerx 566, lagest width: 166 
+X: 890, Y: 2489, win width: 994, rowcount 37, Current endX 1026, Centerx 729, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 2556, win width: 994, rowcount 38, Current endX 304, Centerx 34, lagest width: 166 
+X: 362, Y: 2556, win width: 994, rowcount 38, Current endX 436, Centerx 232, lagest width: 166 
+X: 538, Y: 2556, win width: 994, rowcount 38, Current endX 618, Centerx 405, lagest width: 166 
+X: 714, Y: 2556, win width: 994, rowcount 38, Current endX 756, Centerx 600, lagest width: 166 
+X: 890, Y: 2556, win width: 994, rowcount 38, Current endX 932, Centerx 776, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 2623, win width: 994, rowcount 39, Current endX 244, Centerx 64, lagest width: 166 
+X: 362, Y: 2623, win width: 994, rowcount 39, Current endX 437, Centerx 231, lagest width: 166 
+X: 538, Y: 2623, win width: 994, rowcount 39, Current endX 630, Centerx 399, lagest width: 166 
+X: 714, Y: 2623, win width: 994, rowcount 39, Current endX 783, Centerx 586, lagest width: 166 
+X: 890, Y: 2623, win width: 994, rowcount 39, Current endX 986, Centerx 749, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 2690, win width: 994, rowcount 40, Current endX 244, Centerx 64, lagest width: 166 
+X: 362, Y: 2690, win width: 994, rowcount 40, Current endX 439, Centerx 230, lagest width: 166 
+X: 538, Y: 2690, win width: 994, rowcount 40, Current endX 603, Centerx 412, lagest width: 166 
+X: 714, Y: 2690, win width: 994, rowcount 40, Current endX 809, Centerx 573, lagest width: 166 
+X: 890, Y: 2690, win width: 994, rowcount 40, Current endX 1001, Centerx 741, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 2757, win width: 994, rowcount 41, Current endX 299, Centerx 36, lagest width: 166 
+X: 362, Y: 2757, win width: 994, rowcount 41, Current endX 507, Centerx 196, lagest width: 166 
+X: 538, Y: 2757, win width: 994, rowcount 41, Current endX 692, Centerx 368, lagest width: 166 
+X: 714, Y: 2757, win width: 994, rowcount 41, Current endX 788, Centerx 584, lagest width: 166 
+X: 890, Y: 2757, win width: 994, rowcount 41, Current endX 954, Centerx 765, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 2824, win width: 994, rowcount 42, Current endX 233, Centerx 69, lagest width: 166 
+X: 362, Y: 2824, win width: 994, rowcount 42, Current endX 483, Centerx 208, lagest width: 166 
+X: 538, Y: 2824, win width: 994, rowcount 42, Current endX 580, Centerx 424, lagest width: 166 
+X: 714, Y: 2824, win width: 994, rowcount 42, Current endX 786, Centerx 585, lagest width: 166 
+X: 890, Y: 2824, win width: 994, rowcount 42, Current endX 988, Centerx 748, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 2891, win width: 994, rowcount 43, Current endX 300, Centerx 36, lagest width: 166 
+X: 362, Y: 2891, win width: 994, rowcount 43, Current endX 472, Centerx 214, lagest width: 166 
+X: 538, Y: 2891, win width: 994, rowcount 43, Current endX 626, Centerx 401, lagest width: 166 
+X: 714, Y: 2891, win width: 994, rowcount 43, Current endX 798, Centerx 579, lagest width: 166 
+X: 890, Y: 2891, win width: 994, rowcount 43, Current endX 969, Centerx 757, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 2958, win width: 994, rowcount 44, Current endX 271, Centerx 50, lagest width: 166 
+X: 362, Y: 2958, win width: 994, rowcount 44, Current endX 404, Centerx 248, lagest width: 166 
+X: 538, Y: 2958, win width: 994, rowcount 44, Current endX 657, Centerx 385, lagest width: 166 
+X: 714, Y: 2958, win width: 994, rowcount 44, Current endX 756, Centerx 600, lagest width: 166 
+X: 890, Y: 2958, win width: 994, rowcount 44, Current endX 947, Centerx 768, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 3025, win width: 994, rowcount 45, Current endX 248, Centerx 62, lagest width: 166 
+X: 362, Y: 3025, win width: 994, rowcount 45, Current endX 463, Centerx 218, lagest width: 166 
+X: 538, Y: 3025, win width: 994, rowcount 45, Current endX 644, Centerx 392, lagest width: 166 
+X: 714, Y: 3025, win width: 994, rowcount 45, Current endX 831, Centerx 562, lagest width: 166 
+X: 890, Y: 3025, win width: 994, rowcount 45, Current endX 997, Centerx 743, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 3092, win width: 994, rowcount 46, Current endX 228, Centerx 72, lagest width: 166 
+X: 362, Y: 3092, win width: 994, rowcount 46, Current endX 417, Centerx 241, lagest width: 166 
+X: 538, Y: 3092, win width: 994, rowcount 46, Current endX 605, Centerx 411, lagest width: 166 
+X: 714, Y: 3092, win width: 994, rowcount 46, Current endX 788, Centerx 584, lagest width: 166 
+X: 890, Y: 3092, win width: 994, rowcount 46, Current endX 997, Centerx 743, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 3159, win width: 994, rowcount 47, Current endX 262, Centerx 55, lagest width: 166 
+X: 362, Y: 3159, win width: 994, rowcount 47, Current endX 449, Centerx 225, lagest width: 166 
+X: 538, Y: 3159, win width: 994, rowcount 47, Current endX 661, Centerx 383, lagest width: 166 
+X: 714, Y: 3159, win width: 994, rowcount 47, Current endX 848, Centerx 554, lagest width: 166 
+X: 890, Y: 3159, win width: 994, rowcount 47, Current endX 950, Centerx 767, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 3226, win width: 994, rowcount 48, Current endX 232, Centerx 70, lagest width: 166 
+X: 362, Y: 3226, win width: 994, rowcount 48, Current endX 415, Centerx 242, lagest width: 166 
+X: 538, Y: 3226, win width: 994, rowcount 48, Current endX 625, Centerx 401, lagest width: 166 
+X: 714, Y: 3226, win width: 994, rowcount 48, Current endX 799, Centerx 578, lagest width: 166 
+X: 890, Y: 3226, win width: 994, rowcount 48, Current endX 975, Centerx 754, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 3293, win width: 994, rowcount 49, Current endX 266, Centerx 53, lagest width: 166 
+X: 362, Y: 3293, win width: 994, rowcount 49, Current endX 448, Centerx 226, lagest width: 166 
+X: 538, Y: 3293, win width: 994, rowcount 49, Current endX 618, Centerx 405, lagest width: 166 
+X: 714, Y: 3293, win width: 994, rowcount 49, Current endX 792, Centerx 582, lagest width: 166 
+X: 890, Y: 3293, win width: 994, rowcount 49, Current endX 969, Centerx 757, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 3360, win width: 994, rowcount 50, Current endX 228, Centerx 72, lagest width: 166 
+X: 362, Y: 3360, win width: 994, rowcount 50, Current endX 461, Centerx 219, lagest width: 166 
+X: 538, Y: 3360, win width: 994, rowcount 50, Current endX 646, Centerx 391, lagest width: 166 
+X: 714, Y: 3360, win width: 994, rowcount 50, Current endX 850, Centerx 553, lagest width: 166 
+X: 890, Y: 3360, win width: 994, rowcount 50, Current endX 1032, Centerx 726, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 3427, win width: 994, rowcount 51, Current endX 300, Centerx 36, lagest width: 166 
+X: 362, Y: 3427, win width: 994, rowcount 51, Current endX 451, Centerx 224, lagest width: 166 
+X: 538, Y: 3427, win width: 994, rowcount 51, Current endX 634, Centerx 397, lagest width: 166 
+X: 714, Y: 3427, win width: 994, rowcount 51, Current endX 756, Centerx 600, lagest width: 166 
+X: 890, Y: 3427, win width: 994, rowcount 51, Current endX 954, Centerx 765, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 3494, win width: 994, rowcount 52, Current endX 244, Centerx 64, lagest width: 166 
+X: 362, Y: 3494, win width: 994, rowcount 52, Current endX 405, Centerx 247, lagest width: 166 
+X: 538, Y: 3494, win width: 994, rowcount 52, Current endX 587, Centerx 420, lagest width: 166 
+X: 714, Y: 3494, win width: 994, rowcount 52, Current endX 880, Centerx 538, lagest width: 166 
+X: 890, Y: 3494, win width: 994, rowcount 52, Current endX 1029, Centerx 727, lagest width: 166 
+Reseting column, increasing row
+X: 186, Y: 3561, win width: 994, rowcount 53, Current endX 279, Centerx 46, lagest width: 166 
+X: 362, Y: 3561, win width: 994, rowcount 53, Current endX 506, Centerx 197, lagest width: 166 
 Calculated screen Height: 768, Screen Width: 1024
 Additional width: 30, Additional Height: 44
-Window resized to fit all icons: top = 323, left = 382, Width = 259, Height = 121
-folderPath: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TempleOfApshaiTrilogy
-newFolderInfo->left: 382
-newFolderInfo->top: 323
-newFolderInfo->width: 259
-newFolderInfo->height: 121
-entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeenageMtntNinjaTurtles
-Dumping Icon Array of 3 icons, max width is 139px
-Icon 0: Width = 120, Height = 96, Text Width = 139, Text Height = 13, Max Width = 139, Max Height = 111, x = 37, y = 4, Text = TeenageMtntNinjaTurtles.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeenageMtntNinjaTurtles/TeenageMtntNinjaTurtles.info
-Icon 1: Width = 42, Height = 46, Text Width = 47, Text Height = 13, Max Width = 47, Max Height = 61, x = 252, y = 4, Text = ReadMe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeenageMtntNinjaTurtles/ReadMe.info
-Icon 2: Width = 42, Height = 46, Text Width = 42, Text Height = 13, Max Width = 42, Max Height = 61, x = 198, y = 4, Text = Manual.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeenageMtntNinjaTurtles/Manual.info
-Max Width: 299, Max Height: 115 folder PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeenageMtntNinjaTurtles
-Calculated screen Height: 768, Screen Width: 1024
-Additional width: 30, Additional Height: 44
-Window resized to fit all icons: top = 304, left = 347, Width = 329, Height = 159
-folderPath: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeenageMtntNinjaTurtles
-newFolderInfo->left: 347
-newFolderInfo->top: 304
-newFolderInfo->width: 329
-newFolderInfo->height: 159
-entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tecnoball
-Dumping Icon Array of 2 icons, max width is 120px
-Icon 0: Width = 120, Height = 96, Text Width = 55, Text Height = 13, Max Width = 120, Max Height = 111, x = 5, y = 4, Text = Tecnoball.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tecnoball/Tecnoball.info
-Icon 1: Width = 42, Height = 46, Text Width = 47, Text Height = 13, Max Width = 47, Max Height = 61, x = 133, y = 4, Text = ReadMe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tecnoball/ReadMe.info
-Max Width: 180, Max Height: 115 folder PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tecnoball
-Calculated screen Height: 768, Screen Width: 1024
-Additional width: 30, Additional Height: 44
-Window resized to fit all icons: top = 304, left = 407, Width = 210, Height = 159
-folderPath: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tecnoball
-newFolderInfo->left: 407
-newFolderInfo->top: 304
-newFolderInfo->width: 210
-newFolderInfo->height: 159
-entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tech
-Dumping Icon Array of 2 icons, max width is 86px
-Icon 0: Width = 86, Height = 83, Text Width = 28, Text Height = 13, Max Width = 86, Max Height = 98, x = 5, y = 4, Text = Tech.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tech/Tech.info
-Icon 1: Width = 42, Height = 46, Text Width = 47, Text Height = 13, Max Width = 47, Max Height = 61, x = 99, y = 4, Text = ReadMe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tech/ReadMe.info
-Max Width: 146, Max Height: 102 folder PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tech
-Calculated screen Height: 768, Screen Width: 1024
-Additional width: 30, Additional Height: 44
-Window resized to fit all icons: top = 311, left = 424, Width = 176, Height = 146
-folderPath: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tech
-newFolderInfo->left: 424
-newFolderInfo->top: 311
-newFolderInfo->width: 176
-newFolderInfo->height: 146
-entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeamSuzuki
-Dumping Icon Array of 2 icons, max width is 93px
-Icon 0: Width = 93, Height = 93, Text Width = 67, Text Height = 13, Max Width = 93, Max Height = 108, x = 5, y = 4, Text = TeamSuzuki.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeamSuzuki/TeamSuzuki.info
-Icon 1: Width = 42, Height = 46, Text Width = 47, Text Height = 13, Max Width = 47, Max Height = 61, x = 106, y = 4, Text = ReadMe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeamSuzuki/ReadMe.info
-Max Width: 153, Max Height: 112 folder PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeamSuzuki
-Calculated screen Height: 768, Screen Width: 1024
-Additional width: 30, Additional Height: 44
-Window resized to fit all icons: top = 306, left = 420, Width = 183, Height = 156
-folderPath: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeamSuzuki
-newFolderInfo->left: 420
-newFolderInfo->top: 306
-newFolderInfo->width: 183
-newFolderInfo->height: 156
-entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TarghanFr
-Dumping Icon Array of 4 icons, max width is 77px
-Icon 0: Width = 77, Height = 93, Text Width = 58, Text Height = 13, Max Width = 77, Max Height = 108, x = 5, y = 4, Text = TarghanFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TarghanFr/TarghanFr.info
-Icon 1: Width = 39, Height = 35, Text Width = 45, Text Height = 13, Max Width = 45, Max Height = 50, x = 157, y = 4, Text = Solution.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TarghanFr/Solution.info
-Icon 2: Width = 39, Height = 35, Text Width = 47, Text Height = 13, Max Width = 47, Max Height = 50, x = 93, y = 52, Text = ReadMe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TarghanFr/ReadMe.info
-Icon 3: Width = 39, Height = 35, Text Width = 42, Text Height = 13, Max Width = 42, Max Height = 50, x = 93, y = 4, Text = Manual.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TarghanFr/Manual.info
-Max Width: 202, Max Height: 112 folder PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TarghanFr
-Calculated screen Height: 768, Screen Width: 1024
-Additional width: 30, Additional Height: 44
-Window resized to fit all icons: top = 306, left = 396, Width = 232, Height = 156
-folderPath: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TarghanFr
-newFolderInfo->left: 396
-newFolderInfo->top: 306
-newFolderInfo->width: 232
-newFolderInfo->height: 156
+Window resized to fit all icons: top = -1459, left = 62, Width = 900, Height = 3687
+folderPath: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T
+newFolderInfo->left: 62
+newFolderInfo->top: -1459
+newFolderInfo->width: 900
+newFolderInfo->height: 3687
+Saving array of 267 to disk
+folderPath: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T
+newFolderInfo->left: 0
+newFolderInfo->top: 0
+newFolderInfo->width: 0
+newFolderInfo->height: 0
+Freeing Icon Array
+Freeing Icon Array
 entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TZer0DemoNoMovieAGA
 Dumping Icon Array of 3 icons, max width is 144px
 Icon 0: Width = 120, Height = 96, Text Width = 144, Text Height = 13, Max Width = 144, Max Height = 111, x = 21, y = 4, Text = TZer0DemoNoMovieAGA.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TZer0DemoNoMovieAGA/TZer0DemoNoMovieAGA.info
@@ -787,7 +1045,7 @@ newFolderInfo->width: 195
 newFolderInfo->height: 109
 entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurboOutRunNTSC
 Dumping Icon Array of 3 icons, max width is 107px
-Icon 0: Width = 38, Height = 38, Text Width = 107, Text Height = 13, Max Width = 107, Max Height = 53, x = 19, y = 4, Text = TurboOutRunNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurboOutRunNTSC/TurboOutRunNTSC.info
+Icon 0: Width = 44, Height = 46, Text Width = 107, Text Height = 13, Max Width = 107, Max Height = 61, x = 19, y = 4, Text = TurboOutRunNTSC.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurboOutRunNTSC/TurboOutRunNTSC.info
 Icon 1: Width = 42, Height = 46, Text Width = 47, Text Height = 13, Max Width = 47, Max Height = 61, x = 188, y = 4, Text = ReadMe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurboOutRunNTSC/ReadMe.info
 Icon 2: Width = 42, Height = 46, Text Width = 42, Text Height = 13, Max Width = 42, Max Height = 61, x = 134, y = 4, Text = Manual.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurboOutRunNTSC/Manual.info
 Max Width: 235, Max Height: 65 folder PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TurboOutRunNTSC
@@ -3138,21 +3396,6 @@ newFolderInfo->left: 380
 newFolderInfo->top: 306
 newFolderInfo->width: 264
 newFolderInfo->height: 156
-entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TheirFinestHour&Missions
-Dumping Icon Array of 4 icons, max width is 147px
-Icon 0: Width = 120, Height = 96, Text Width = 147, Text Height = 13, Max Width = 147, Max Height = 111, x = 41, y = 4, Text = TheirFinestHour&Missions.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TheirFinestHour&Missions/TheirFinestHour&Missions.info
-Icon 1: Width = 42, Height = 46, Text Width = 47, Text Height = 13, Max Width = 47, Max Height = 61, x = 307, y = 4, Text = ReadMe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TheirFinestHour&Missions/ReadMe.info
-Icon 2: Width = 42, Height = 46, Text Width = 42, Text Height = 13, Max Width = 42, Max Height = 61, x = 253, y = 4, Text = Manual.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TheirFinestHour&Missions/Manual.info
-Icon 3: Width = 42, Height = 46, Text Width = 28, Text Height = 13, Max Width = 42, Max Height = 61, x = 203, y = 4, Text = Keys.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TheirFinestHour&Missions/Keys.info
-Max Width: 354, Max Height: 115 folder PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TheirFinestHour&Missions
-Calculated screen Height: 768, Screen Width: 1024
-Additional width: 30, Additional Height: 44
-Window resized to fit all icons: top = 304, left = 320, Width = 384, Height = 159
-folderPath: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TheirFinestHour&Missions
-newFolderInfo->left: 320
-newFolderInfo->top: 304
-newFolderInfo->width: 384
-newFolderInfo->height: 159
 entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TheirFinestHour
 Dumping Icon Array of 4 icons, max width is 120px
 Icon 0: Width = 120, Height = 96, Text Width = 89, Text Height = 13, Max Width = 120, Max Height = 111, x = 5, y = 4, Text = TheirFinestHour.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TheirFinestHour/TheirFinestHour.info
@@ -3167,6 +3410,21 @@ folderPath: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Their
 newFolderInfo->left: 356
 newFolderInfo->top: 304
 newFolderInfo->width: 311
+newFolderInfo->height: 159
+entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TheirFinestHour&Missions
+Dumping Icon Array of 4 icons, max width is 147px
+Icon 0: Width = 120, Height = 96, Text Width = 147, Text Height = 13, Max Width = 147, Max Height = 111, x = 41, y = 4, Text = TheirFinestHour&Missions.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TheirFinestHour&Missions/TheirFinestHour&Missions.info
+Icon 1: Width = 42, Height = 46, Text Width = 47, Text Height = 13, Max Width = 47, Max Height = 61, x = 307, y = 4, Text = ReadMe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TheirFinestHour&Missions/ReadMe.info
+Icon 2: Width = 42, Height = 46, Text Width = 42, Text Height = 13, Max Width = 42, Max Height = 61, x = 253, y = 4, Text = Manual.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TheirFinestHour&Missions/Manual.info
+Icon 3: Width = 42, Height = 46, Text Width = 28, Text Height = 13, Max Width = 42, Max Height = 61, x = 203, y = 4, Text = Keys.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TheirFinestHour&Missions/Keys.info
+Max Width: 354, Max Height: 115 folder PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TheirFinestHour&Missions
+Calculated screen Height: 768, Screen Width: 1024
+Additional width: 30, Additional Height: 44
+Window resized to fit all icons: top = 304, left = 320, Width = 384, Height = 159
+folderPath: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TheirFinestHour&Missions
+newFolderInfo->left: 320
+newFolderInfo->top: 304
+newFolderInfo->width: 384
 newFolderInfo->height: 159
 entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TheatreOfDeath
 Dumping Icon Array of 5 icons, max width is 120px
@@ -3685,6 +3943,19 @@ newFolderInfo->left: 370
 newFolderInfo->top: 320
 newFolderInfo->width: 283
 newFolderInfo->height: 128
+entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TempleOfApshaiTrilogy
+Dumping Icon Array of 2 icons, max width is 130px
+Icon 0: Width = 93, Height = 58, Text Width = 130, Text Height = 13, Max Width = 130, Max Height = 73, x = 43, y = 4, Text = TempleOfApshaiTrilogy.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TempleOfApshaiTrilogy/TempleOfApshaiTrilogy.info
+Icon 1: Width = 42, Height = 46, Text Width = 47, Text Height = 13, Max Width = 47, Max Height = 61, x = 182, y = 4, Text = ReadMe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TempleOfApshaiTrilogy/ReadMe.info
+Max Width: 229, Max Height: 77 folder PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TempleOfApshaiTrilogy
+Calculated screen Height: 768, Screen Width: 1024
+Additional width: 30, Additional Height: 44
+Window resized to fit all icons: top = 323, left = 382, Width = 259, Height = 121
+folderPath: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TempleOfApshaiTrilogy
+newFolderInfo->left: 382
+newFolderInfo->top: 323
+newFolderInfo->width: 259
+newFolderInfo->height: 121
 entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TellerFr
 Dumping Icon Array of 2 icons, max width is 86px
 Icon 0: Width = 86, Height = 83, Text Width = 43, Text Height = 13, Max Width = 86, Max Height = 98, x = 5, y = 4, Text = TellerFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TellerFr/TellerFr.info
@@ -3712,6 +3983,20 @@ newFolderInfo->left: 380
 newFolderInfo->top: 304
 newFolderInfo->width: 264
 newFolderInfo->height: 159
+entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeenageMtntNinjaTurtles
+Dumping Icon Array of 3 icons, max width is 139px
+Icon 0: Width = 120, Height = 96, Text Width = 139, Text Height = 13, Max Width = 139, Max Height = 111, x = 37, y = 4, Text = TeenageMtntNinjaTurtles.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeenageMtntNinjaTurtles/TeenageMtntNinjaTurtles.info
+Icon 1: Width = 42, Height = 46, Text Width = 47, Text Height = 13, Max Width = 47, Max Height = 61, x = 252, y = 4, Text = ReadMe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeenageMtntNinjaTurtles/ReadMe.info
+Icon 2: Width = 42, Height = 46, Text Width = 42, Text Height = 13, Max Width = 42, Max Height = 61, x = 198, y = 4, Text = Manual.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeenageMtntNinjaTurtles/Manual.info
+Max Width: 299, Max Height: 115 folder PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeenageMtntNinjaTurtles
+Calculated screen Height: 768, Screen Width: 1024
+Additional width: 30, Additional Height: 44
+Window resized to fit all icons: top = 304, left = 347, Width = 329, Height = 159
+folderPath: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeenageMtntNinjaTurtles
+newFolderInfo->left: 347
+newFolderInfo->top: 304
+newFolderInfo->width: 329
+newFolderInfo->height: 159
 entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeenageMtntHeroTurtlesCOp
 Dumping Icon Array of 2 icons, max width is 163px
 Icon 0: Width = 120, Height = 96, Text Width = 163, Text Height = 13, Max Width = 163, Max Height = 111, x = 45, y = 4, Text = TeenageMtntHeroTurtlesCOp.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeenageMtntHeroTurtlesCOp/TeenageMtntHeroTurtlesCOp.info
@@ -3738,6 +4023,19 @@ newFolderInfo->left: 378
 newFolderInfo->top: 306
 newFolderInfo->width: 267
 newFolderInfo->height: 156
+entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tecnoball
+Dumping Icon Array of 2 icons, max width is 120px
+Icon 0: Width = 120, Height = 96, Text Width = 55, Text Height = 13, Max Width = 120, Max Height = 111, x = 5, y = 4, Text = Tecnoball.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tecnoball/Tecnoball.info
+Icon 1: Width = 42, Height = 46, Text Width = 47, Text Height = 13, Max Width = 47, Max Height = 61, x = 133, y = 4, Text = ReadMe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tecnoball/ReadMe.info
+Max Width: 180, Max Height: 115 folder PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tecnoball
+Calculated screen Height: 768, Screen Width: 1024
+Additional width: 30, Additional Height: 44
+Window resized to fit all icons: top = 304, left = 407, Width = 210, Height = 159
+folderPath: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tecnoball
+newFolderInfo->left: 407
+newFolderInfo->top: 304
+newFolderInfo->width: 210
+newFolderInfo->height: 159
 entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Technology2
 Dumping Icon Array of 2 icons, max width is 120px
 Icon 0: Width = 120, Height = 96, Text Width = 73, Text Height = 13, Max Width = 120, Max Height = 111, x = 5, y = 4, Text = Technology2.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Technology2/Technology2.info
@@ -3765,6 +4063,19 @@ newFolderInfo->left: 380
 newFolderInfo->top: 304
 newFolderInfo->width: 264
 newFolderInfo->height: 159
+entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tech
+Dumping Icon Array of 2 icons, max width is 86px
+Icon 0: Width = 86, Height = 83, Text Width = 28, Text Height = 13, Max Width = 86, Max Height = 98, x = 5, y = 4, Text = Tech.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tech/Tech.info
+Icon 1: Width = 42, Height = 46, Text Width = 47, Text Height = 13, Max Width = 47, Max Height = 61, x = 99, y = 4, Text = ReadMe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tech/ReadMe.info
+Max Width: 146, Max Height: 102 folder PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tech
+Calculated screen Height: 768, Screen Width: 1024
+Additional width: 30, Additional Height: 44
+Window resized to fit all icons: top = 311, left = 424, Width = 176, Height = 146
+folderPath: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Tech
+newFolderInfo->left: 424
+newFolderInfo->top: 311
+newFolderInfo->width: 176
+newFolderInfo->height: 146
 entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TearawayThomas
 Dumping Icon Array of 2 icons, max width is 98px
 Icon 0: Width = 93, Height = 93, Text Width = 98, Text Height = 13, Max Width = 98, Max Height = 108, x = 15, y = 4, Text = TearawayThomas.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TearawayThomas/TearawayThomas.info
@@ -3791,6 +4102,19 @@ newFolderInfo->left: 420
 newFolderInfo->top: 323
 newFolderInfo->width: 183
 newFolderInfo->height: 121
+entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeamSuzuki
+Dumping Icon Array of 2 icons, max width is 93px
+Icon 0: Width = 93, Height = 93, Text Width = 67, Text Height = 13, Max Width = 93, Max Height = 108, x = 5, y = 4, Text = TeamSuzuki.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeamSuzuki/TeamSuzuki.info
+Icon 1: Width = 42, Height = 46, Text Width = 47, Text Height = 13, Max Width = 47, Max Height = 61, x = 106, y = 4, Text = ReadMe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeamSuzuki/ReadMe.info
+Max Width: 153, Max Height: 112 folder PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeamSuzuki
+Calculated screen Height: 768, Screen Width: 1024
+Additional width: 30, Additional Height: 44
+Window resized to fit all icons: top = 306, left = 420, Width = 183, Height = 156
+folderPath: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TeamSuzuki
+newFolderInfo->left: 420
+newFolderInfo->top: 306
+newFolderInfo->width: 183
+newFolderInfo->height: 156
 entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TBird
 Dumping Icon Array of 2 icons, max width is 64px
 Icon 0: Width = 64, Height = 93, Text Width = 29, Text Height = 13, Max Width = 64, Max Height = 108, x = 5, y = 4, Text = TBird.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TBird/TBird.info
@@ -3831,6 +4155,21 @@ folderPath: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/Targh
 newFolderInfo->left: 365
 newFolderInfo->top: 306
 newFolderInfo->width: 293
+newFolderInfo->height: 156
+entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TarghanFr
+Dumping Icon Array of 4 icons, max width is 77px
+Icon 0: Width = 77, Height = 93, Text Width = 58, Text Height = 13, Max Width = 77, Max Height = 108, x = 5, y = 4, Text = TarghanFr.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TarghanFr/TarghanFr.info
+Icon 1: Width = 39, Height = 35, Text Width = 45, Text Height = 13, Max Width = 45, Max Height = 50, x = 157, y = 4, Text = Solution.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TarghanFr/Solution.info
+Icon 2: Width = 39, Height = 35, Text Width = 47, Text Height = 13, Max Width = 47, Max Height = 50, x = 93, y = 52, Text = ReadMe.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TarghanFr/ReadMe.info
+Icon 3: Width = 39, Height = 35, Text Width = 42, Text Height = 13, Max Width = 42, Max Height = 50, x = 93, y = 4, Text = Manual.info, Path = PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TarghanFr/Manual.info
+Max Width: 202, Max Height: 112 folder PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TarghanFr
+Calculated screen Height: 768, Screen Width: 1024
+Additional width: 30, Additional Height: 44
+Window resized to fit all icons: top = 306, left = 396, Width = 232, Height = 156
+folderPath: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TarghanFr
+newFolderInfo->left: 396
+newFolderInfo->top: 306
+newFolderInfo->width: 232
 newFolderInfo->height: 156
 entry Processing directory: PC:MyProjects/Retroplay-WHDLoad-downloader-1/Extracted/Games/T/TarghanFastFr
 Dumping Icon Array of 4 icons, max width is 82px

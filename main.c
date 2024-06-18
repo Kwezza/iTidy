@@ -363,7 +363,7 @@ int FormatIconsAndWindow(const char *folder, int resizeOnly)
         {
             while (minAverageWidthPercent < -10 || loopCount < maxLoops)
             {
-
+                printf("Formatting actual folder - not a slove folder\n");
                 minAverageWidthPercent = ArrangeIcons(lock, folder, resizeOnly, CurrentWidth);
                 if (minAverageWidthPercent < -10 || minAverageWidthPercent > 10)
                 {
@@ -540,28 +540,35 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
     int textLength, fileCount = 0, maxWidth = 0;
     IconPosition iconPosition;
 
+    if (!iconArray)
+    {
+        fprintf(stderr, "Error: Failed to create icon array.\n");
+        return NULL;
+    }
+
     if (!(fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL)))
     {
-        printf("Failed to allocate FileInfoBlock.\n");
-        return 0;
+        fprintf(stderr, "Error: Failed to allocate FileInfoBlock.\n");
+        FreeIconArray(iconArray);
+        return NULL;
     }
 
     if (Examine(lock, fib))
     {
         while (ExNext(lock, fib))
         {
-            if (fib->fib_DirEntryType < 0 || fib->fib_DirEntryType > 0) /* It's a file or a directory */
+            if (fib->fib_DirEntryType < 0 || fib->fib_DirEntryType > 0) // It's a file or a directory
             {
                 const char *fileExtension = strrchr(fib->fib_FileName, '.');
 
                 if (fileExtension != NULL && strncasecmp_custom(fileExtension, ".info", 5) == 0)
                 {
-
                     GetFullPath(dirPath, fib, fullPathAndFile, sizeof(fullPathAndFile));
                     removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
                     CalculateTextExtent(fileNameNoInfo, &textExtent);
                     iconPosition = GetIconPositionFromPath(fullPathAndFile);
 
+                    // Determine icon size based on format
                     if (IsNewIconPath(fullPathAndFile))
                     {
                         GetNewIconSizePath(fullPathAndFile, &iconSize);
@@ -574,51 +581,74 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                     {
                         GetStandardIconSize(fullPathAndFile, &iconSize);
                     }
+
                     newIcon.icon_width = iconSize.width;
                     newIcon.icon_height = iconSize.height;
                     newIcon.text_width = textExtent.te_Width;
                     newIcon.text_height = textExtent.te_Height;
                     newIcon.icon_max_width = MAX(iconSize.width, textExtent.te_Width);
-                    newIcon.icon_max_height = iconSize.height + GAP_BETWEEN_ICON_AND_TEXT+ textExtent.te_Height;
+                    newIcon.icon_max_height = iconSize.height + GAP_BETWEEN_ICON_AND_TEXT + textExtent.te_Height;
                     newIcon.icon_x = iconPosition.x;
                     newIcon.icon_y = iconPosition.y;
 
-                    /* Determine if it's a folder or a file based on fib_DirEntryType */
+                    // Determine if it's a folder or a file
                     newIcon.is_folder = (fib->fib_DirEntryType > 0) ? TRUE : FALSE;
 
+                    // Allocate and copy the full path and icon text
                     newIcon.icon_full_path = (char *)AllocVec(strlen(fullPathAndFile) + 1, MEMF_CLEAR);
-                    if (newIcon.icon_full_path != NULL)
+                    if (!newIcon.icon_full_path)
                     {
-                        strncpy(newIcon.icon_full_path, fullPathAndFile, strlen(fullPathAndFile) + 1);
+                        fprintf(stderr, "Error: Failed to allocate memory for icon full path.\n");
+                        FreeIconArray(iconArray);
+                        FreeDosObject(DOS_FIB, fib);
+                        return NULL;
                     }
+                    strcpy(newIcon.icon_full_path, fullPathAndFile);
 
                     textLength = strlen(fib->fib_FileName) + 1;
-                    newIcon.icon_text = (char *)AllocVec(textLength * sizeof(char), MEMF_CLEAR);
-                    if (newIcon.icon_text != NULL)
+                    newIcon.icon_text = (char *)AllocVec(textLength, MEMF_CLEAR);
+                    if (!newIcon.icon_text)
                     {
-                        strncpy(newIcon.icon_text, fib->fib_FileName, textLength);
+                        fprintf(stderr, "Error: Failed to allocate memory for icon text.\n");
+                        FreeVec(newIcon.icon_full_path);
+                        FreeIconArray(iconArray);
+                        FreeDosObject(DOS_FIB, fib);
+                        return NULL;
                     }
+                    strcpy(newIcon.icon_text, fib->fib_FileName);
 
+                    // Update the maximum width
                     if (newIcon.icon_max_width > maxWidth)
                     {
                         maxWidth = newIcon.icon_max_width;
                     }
-                    /* Add new icon to the array */
+
+                    // Add new icon to the array
                     if (!AddIconToArray(iconArray, &newIcon))
                     {
-                        /* Handle the error of adding the icon */
-                        FreeVec(newIcon.icon_text); /* Free the icon text memory if adding fails */
-                        FreeIconArray(iconArray);   /* Free the entire array */
-                        return NULL;                /* Return or handle error */
-                    } /* if */
+                        fprintf(stderr, "Error: Failed to add icon to array.\n");
+                        FreeVec(newIcon.icon_text);
+                        FreeVec(newIcon.icon_full_path);
+                        FreeIconArray(iconArray);
+                        FreeDosObject(DOS_FIB, fib);
+                        return NULL;
+                    }
 
                     fileCount++;
                 }
             }
         }
     }
+
+    // Set the largest icon width
     iconArray->BiggestWidthPX = maxWidth;
+
+    // Optional: dump icon array to screen for debugging
     dumpIconArrayToScreen(iconArray);
+
+    // Free the FileInfoBlock before returning
+    FreeDosObject(DOS_FIB, fib);
+
     return iconArray;
 }
 
@@ -664,7 +694,7 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight)
 
     printf("Calculated screen Height: %d, Screen Width: %d\n", screenHight, screenWidth);
 
-    printf("Additional width: %d, Additional Height: %d\n", prefsIControl.currentBarWidth+ prefsIControl.currentLeftBarWidth + (PADDING_WIDTH * 2), prefsIControl.currentWindowBarHeight + prefsIControl.currentBarHeight + (PADDING_HEIGHT * 2));
+    printf("Additional width: %d, Additional Height: %d\n", prefsIControl.currentBarWidth + prefsIControl.currentLeftBarWidth + (PADDING_WIDTH * 2), prefsIControl.currentWindowBarHeight + prefsIControl.currentBarHeight + (PADDING_HEIGHT * 2));
 
     newFolderInfo.left = posLeft;
     newFolderInfo.top = posTop;
@@ -741,9 +771,53 @@ IconPosition GetIconPositionFromPath(const char *iconPath)
     return position;
 }
 
-int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
+int saveIconsPositionsToDisk(IconArray *iconArray)
 {
     struct DiskObject *diskObject;
+    int i;
+    char fileNameNoInfo[256];
+    int iconArraySize;
+    printf("Saving array of %d to disk\n", iconArray->size);
+
+    // Pre-calculate the size to avoid multiple dereferences
+    iconArraySize = iconArray->size;
+
+    for (i = 0; i < iconArraySize; i++)
+    {
+        // Access the icon's full path and coordinates once to reduce array access
+        FullIconDetails *currentIcon = &iconArray->array[i];
+
+        removeInfoExtension(currentIcon->icon_full_path, fileNameNoInfo);
+
+        // Use GetDiskObjectNew() for better performance if available
+        diskObject = GetDiskObject(fileNameNoInfo);
+
+        if (diskObject)
+        {
+            // Set the new positions
+            diskObject->do_CurrentX = currentIcon->icon_x;
+            diskObject->do_CurrentY = currentIcon->icon_y;
+
+            // Save the updated DiskObject back to disk
+            if (!PutDiskObject(fileNameNoInfo, diskObject))
+            {
+                fprintf(stderr, "Error: Failed to save icon position for file: %s\n", fileNameNoInfo);
+            }
+
+            // Always free the DiskObject to prevent memory leaks
+            FreeDiskObject(diskObject);
+        }
+        else
+        {
+            fprintf(stderr, "Error: Failed to get DiskObject for file: %s\n", currentIcon->icon_full_path);
+        }
+    }
+    return 0; // Return success or an error code as needed
+}
+
+int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
+{
+    // struct DiskObject *diskObject;
     LONG x;
     LONG y;
     LONG maxX;
@@ -766,84 +840,83 @@ int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
     maxY = 0;
 
     windowWidth = newWidth;
-    // Set the font to match the Workbench font
 
     printf("screen width: %d\n", screenWidth);
     printf("windowWidth: %d\n", windowWidth);
 
     iconArray = CreateIconArrayFromPath(lock, dirPath);
-    // dumpIconArrayToScreen(iconArray);
-    return 0;
-    if (!resizeOnly)
+    printf("Icon array created\n");
+
+    if (iconArray != NULL && iconArray->array != NULL && iconArray->size > 0)
     {
-        if (iconArray != NULL && iconArray->array != NULL && iconArray->size > 0)
-        {
-            qsort(iconArray->array, iconArray->size, sizeof(FullIconDetails), CompareByFolderAndName);
-        }
+
+        qsort(iconArray->array, iconArray->size, sizeof(FullIconDetails), CompareByFolderAndName);
     }
 
     if (iconArray->size > MAX_ICONS_TO_ALLIGN || newWidth > screenWidth - SCROLLBAR_WIDTH)
     {
-        windowWidth = screenWidth - SCROLLBAR_WIDTH; // Adjusted window width
+        windowWidth = screenWidth - prefsIControl.currentBarWidth - prefsIControl.currentLeftBarWidth - (PADDING_WIDTH * 2);
+        /* is it the root directory and does it have the size guage? */
+        if (prefsWorkbench.disableVolumeGauge && IsRootDirectorySimple(*dirPath))
+            windowWidth = windowWidth - prefsIControl.currentCGaugeWidth;
         SkipAutoResize = TRUE;
     }
 
     printf("Array size %d\n", iconArray->size);
+
+
+/*
+    //  Best fit - free for all style
     for (i = 0; i < iconArray->size; i++)
     {
         removeInfoExtension(iconArray->array[i].icon_full_path, fileNameNoInfo);
-        diskObject = GetDiskObject(fileNameNoInfo);
-
-        if (diskObject)
+        // printf("X: %d, Y: %d, win width: %d, rowcount %d, Current endX %d,  Saved icon: %s \n", x, y, windowWidth, rowcount, x + MAX(iconArray->array[i].text_width, iconArray->array[i].icon_width), iconArray->array[i].icon_full_path);
+        if (x + MAX(iconArray->array[i].text_width, iconArray->array[i].icon_width) > windowWidth)
         {
-            // Check if the icon text or icon itself exceeds the window width
-            printf("X: %d, Y: %d, win width: %d, rowcount %d, Current endX %d,  Saved icon: %s \n", x, y, windowWidth, rowcount, x + MAX(iconArray->array[i].text_width, iconArray->array[i].icon_width), iconArray->array[i].icon_full_path);
-            if (x + MAX(iconArray->array[i].text_width, iconArray->array[i].icon_width) > windowWidth)
+            if (rowcount < maxWidthsToCheck)
             {
-                if (rowcount < maxWidthsToCheck)
-                {
-                    iconWidths[rowcount] = x;
-                }
-                x = ICON_START_X;
-                y += iconArray->array[i].icon_max_height + ICON_SPACING_Y;
-                rowcount++;
+                iconWidths[rowcount] = x;
             }
-            // printf("3  X: %d, Y: %d, window width: %d, rowcount %d, Current endX %d,  Saved icon: %s \n", x, y, windowWidth, rowcount, x + MAX(iconArray->array[i].text_width, iconArray->array[i].icon_width), iconArray->array[i].icon_full_path);
-            //   Center the icon within the space calculated based on text width or icon width
-            centerX = x + (MAX(iconArray->array[i].text_width, iconArray->array[i].icon_width) - iconArray->array[i].icon_width) / 2;
-
-            if (!resizeOnly)
-            {
-                diskObject->do_CurrentX = centerX;
-                diskObject->do_CurrentY = y;
-
-                if (!PutDiskObject(fileNameNoInfo, diskObject))
-                {
-                    printf("Failed to save icon position for file: %s\n", fileNameNoInfo);
-                }
-                else
-                {
-                    printf("4  X: %d, Y: %d, window width: %d, Saved icon: %s \n", x, y, windowWidth, fileNameNoInfo);
-                }
-            }
-            else
-            {
-                x = diskObject->do_CurrentX;
-                y = diskObject->do_CurrentY;
-            }
-
-            maxX = MAX(maxX, (diskObject->do_CurrentX + iconArray->array[i].icon_max_width));
-            maxY = MAX(maxY, (diskObject->do_CurrentY + iconArray->array[i].icon_max_height));
-            x += iconArray->array[i].icon_max_width + ICON_SPACING_X;
-
-            FreeDiskObject(diskObject);
+            x = ICON_START_X;
+            y += iconArray->array[i].icon_max_height + ICON_SPACING_Y;
+            rowcount++;
         }
-        else
-        {
-            printf("Failed to get DiskObject for file: %s\n", iconArray->array[i].icon_full_path);
-        }
+        //   Center the icon within the space calculated based on text width or icon width
+        centerX = x + (MAX(iconArray->array[i].text_width, iconArray->array[i].icon_width) - iconArray->array[i].icon_width) / 2;
+        iconArray->array[i].icon_x = centerX;
+        iconArray->array[i].icon_y = y;
+
+        maxX = MAX(maxX, (iconArray->array[i].icon_x + iconArray->array[i].icon_max_width));
+        maxY = MAX(maxY, (iconArray->array[i].icon_y + iconArray->array[i].icon_max_height));
+        x += iconArray->array[i].icon_max_width + ICON_SPACING_X;
     }
+*/
+    //  fit to column style using the largest with of icon in array
+    for (i = 0; i < iconArray->size; i++)
+    {
+        removeInfoExtension(iconArray->array[i].icon_full_path, fileNameNoInfo);
+         
+        if (x + iconArray->BiggestWidthPX>windowWidth  )
+        {
+            if (rowcount < maxWidthsToCheck)
+            {
+                iconWidths[rowcount] = x;
+            }
+            x = ICON_START_X;
+            y += iconArray->array[i].icon_max_height + ICON_SPACING_Y;
+            rowcount++;
+            printf("Reseting column, increasing row\n");
+        }
+        //   Center the icon within the space calculated based on text width or icon width
+        centerX = x +  ((iconArray->BiggestWidthPX -iconArray->array[i].icon_max_width )  / 2);
+        iconArray->array[i].icon_x = centerX;
+        iconArray->array[i].icon_y = y;
 
+        maxX = MAX(maxX, (iconArray->array[i].icon_x + iconArray->array[i].icon_max_width));
+        maxY = MAX(maxY, (iconArray->array[i].icon_y + iconArray->array[i].icon_max_height));
+        x += iconArray->BiggestWidthPX + ICON_SPACING_X;
+        printf("X: %d, Y: %d, win width: %d, rowcount %d, Current endX %d, Centerx %d, lagest width: %d \n", x, y, windowWidth, rowcount, x + MAX(iconArray->array[i].text_width, iconArray->array[i].icon_width),centerX, iconArray->BiggestWidthPX);
+    }
     if (rowcount < maxWidthsToCheck)
     {
         iconWidths[rowcount] = x;
@@ -853,26 +926,9 @@ int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
     {
         maxY += 25;
     }
-    // Adjust the window size to fit all icons
 
     repoistionWindow(dirPath, maxX, maxY);
-    /*
-    posTop = (screenHight - maxY) / 2;
-    posLeft = (screenWidth - maxX) / 2;
-
-    maxX = maxX + SCROLLBAR_WIDTH;
-    maxY = maxY + SCROLLBAR_HEIGHT + WINDOW_TITLE_HEIGHT;
-
-    newFolderInfo.left = posTop;
-    newFolderInfo.top = posLeft;
-    newFolderInfo.width = maxX;
-    newFolderInfo.height = maxY;
-        */
-    // printf("Window resized to fit all icons: Width = %ld, Height = %ld\n", maxX, maxY);
-    // printf("Window position: Left =  %d, Top = %d \n", posTop, posLeft);
-    // printf("BorderLeft: %d, BorderRight: %d, BorderTop: %d,BorderBottom: %d\n", window->BorderLeft, window->BorderRight, window->BorderTop, window->BorderBottom);
-    // printf("Screen dimensions: Width = %ld, Height = %ld\n", screen->Width, screen->Height);
-
+    saveIconsPositionsToDisk(iconArray);
     SaveFolderSettings(dirPath, &newFolderInfo);
 
     for (i = 0; i <= iconArray->size; i++)
