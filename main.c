@@ -43,7 +43,6 @@
 
 #include <ctype.h>
 
-
 #include "Settings/IControlPrefs.h"
 #include "Settings/WorkbenchPrefs.h"
 
@@ -64,8 +63,10 @@ typedef struct
 #define WINDOW_TITLE_HEIGHT 30
 #define WORKBENCH_BAR 20
 
-#define PADDING_WIDTH 2
-#define PADDING_HEIGHT 2
+#define GAP_BETWEEN_ICON_AND_TEXT 2
+
+#define PADDING_WIDTH 4
+#define PADDING_HEIGHT 4
 
 #define FONT_PREFS_FILE "ENV:sys/font.prefs"
 #define const_fontIcon 0
@@ -212,6 +213,10 @@ int InitializeWindow()
     }
 
     rastPort = window->RPort;
+    if (!rastPort)
+    {
+        printf("RastPort failed to create.\n");
+    }
 
     // Use the default Workbench font directly from the screen's RastPort
     font = screen->RastPort.Font;
@@ -302,13 +307,11 @@ void ProcessDirectory(const char *path)
     if (HasSlaveFile(path))
     {
         // printf("Found .slave file in %s, resizing windows only and skipping.\n", path);
-        //FormatIconsAndWindow(path, TRUE);
+        // FormatIconsAndWindow(path, TRUE);
         resizeFolderToContents(path, CreateIconArrayFromPath(lock, path));
         UnLock(lock);
         return;
     }
-
-
 
     fib = (struct FileInfoBlock *)AllocMem(sizeof(struct FileInfoBlock), MEMF_PUBLIC | MEMF_CLEAR);
     if (fib == NULL)
@@ -534,7 +537,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
     IconArray *iconArray = CreateIconArray();
     char fullPathAndFile[512];
     char fileNameNoInfo[128];
-    int textLength, fileCount = 0,  maxWidth=0;
+    int textLength, fileCount = 0, maxWidth = 0;
     IconPosition iconPosition;
 
     if (!(fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL)))
@@ -559,7 +562,6 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                     CalculateTextExtent(fileNameNoInfo, &textExtent);
                     iconPosition = GetIconPositionFromPath(fullPathAndFile);
 
-
                     if (IsNewIconPath(fullPathAndFile))
                     {
                         GetNewIconSizePath(fullPathAndFile, &iconSize);
@@ -577,7 +579,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                     newIcon.text_width = textExtent.te_Width;
                     newIcon.text_height = textExtent.te_Height;
                     newIcon.icon_max_width = MAX(iconSize.width, textExtent.te_Width);
-                    newIcon.icon_max_height = iconSize.height + textExtent.te_Height;
+                    newIcon.icon_max_height = iconSize.height + GAP_BETWEEN_ICON_AND_TEXT+ textExtent.te_Height;
                     newIcon.icon_x = iconPosition.x;
                     newIcon.icon_y = iconPosition.y;
 
@@ -599,7 +601,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
 
                     if (newIcon.icon_max_width > maxWidth)
                     {
-                         maxWidth = newIcon.icon_max_width;
+                        maxWidth = newIcon.icon_max_width;
                     }
                     /* Add new icon to the array */
                     if (!AddIconToArray(iconArray, &newIcon))
@@ -615,16 +617,18 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
             }
         }
     }
-     iconArray->BiggestWidthPX =  maxWidth;
-     dumpIconArrayToScreen(iconArray);
+    iconArray->BiggestWidthPX = maxWidth;
+    dumpIconArrayToScreen(iconArray);
     return iconArray;
 }
 
-int IsRootDirectorySimple(const char *path) {
+int IsRootDirectorySimple(const char *path)
+{
     size_t length = strlen(path);
 
     // Check if the last character is a colon
-    if (length > 0 && path[length - 1] == ':') {
+    if (length > 0 && path[length - 1] == ':')
+    {
         return 1; // True - it is a root directory
     }
     return 0; // False - it is not a root directory
@@ -634,10 +638,10 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray)
 {
     int i, maxWidth = 0, maxHeight = 0;
 
-    for(i=0; i<iconArray->size; i++)
+    for (i = 0; i < iconArray->size; i++)
     {
         maxWidth = MAX(maxWidth, iconArray->array[i].icon_x + iconArray->array[i].icon_max_width);
-        maxHeight = MAX(maxHeight, iconArray->array[i].icon_y +iconArray->array[i].icon_max_height);
+        maxHeight = MAX(maxHeight, iconArray->array[i].icon_y + iconArray->array[i].icon_max_height);
     }
     printf("Max Width: %d, Max Height: %d folder %s\n", maxWidth, maxHeight, dirPath);
     repoistionWindow(dirPath, maxWidth, maxHeight);
@@ -648,23 +652,26 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight)
     int posTop = 0, posLeft = 0;
     folderWindowSize newFolderInfo;
 
-    winWidth = winWidth + prefsIControl.currentBarWidth + prefsIControl.currentLeftBarWidth + (PADDING_WIDTH*2);
-    /* is it the root directory and does it have the size guage? */ 
-    if (prefsWorkbench.disableVolumeGauge && IsRootDirectorySimple(*dirPath)) winWidth= winWidth + prefsIControl.currentCGaugeWidth;
+    winWidth = winWidth + prefsIControl.currentBarWidth + prefsIControl.currentLeftBarWidth + (PADDING_WIDTH * 2);
+    /* is it the root directory and does it have the size guage? */
+    if (prefsWorkbench.disableVolumeGauge && IsRootDirectorySimple(*dirPath))
+        winWidth = winWidth + prefsIControl.currentCGaugeWidth;
 
-    winHeight = winHeight + prefsIControl.currentWindowBarHeight + prefsIControl.currentBarHeight + (PADDING_HEIGHT*2); // SCROLLBAR_HEIGHT + WINDOW_TITLE_HEIGHT;
+    winHeight = winHeight + prefsIControl.currentWindowBarHeight + prefsIControl.currentBarHeight + (PADDING_HEIGHT * 2); // SCROLLBAR_HEIGHT + WINDOW_TITLE_HEIGHT;
 
     posTop = (screenHight - winHeight) / 2;
     posLeft = (screenWidth - winWidth) / 2;
 
     printf("Calculated screen Height: %d, Screen Width: %d\n", screenHight, screenWidth);
 
+    printf("Additional width: %d, Additional Height: %d\n", prefsIControl.currentBarWidth+ prefsIControl.currentLeftBarWidth + (PADDING_WIDTH * 2), prefsIControl.currentWindowBarHeight + prefsIControl.currentBarHeight + (PADDING_HEIGHT * 2));
+
     newFolderInfo.left = posLeft;
     newFolderInfo.top = posTop;
-    newFolderInfo.width = winWidth ;
+    newFolderInfo.width = winWidth;
     newFolderInfo.height = winHeight;
 
-    printf("Window resized to fit all icons: top = %d, left = %d, Width = %d, Height = %d\n",newFolderInfo.top, newFolderInfo.left, winWidth, winHeight);
+    printf("Window resized to fit all icons: top = %d, left = %d, Width = %d, Height = %d\n", newFolderInfo.top, newFolderInfo.left, winWidth, winHeight);
 
     SaveFolderSettings(dirPath, &newFolderInfo);
 }
@@ -675,17 +682,16 @@ void dumpIconArrayToScreen(IconArray *iconArray)
     printf("Dumping Icon Array of %d icons, max width is %dpx\n", iconArray->size, iconArray->BiggestWidthPX);
     for (i = 0; i < iconArray->size; i++)
     {
-        printf("Icon %d: Width = %d, Height = %d, Text Width = %d, Text Height = %d, Max Width = %d, Max Height = %d, x = %d, y = %d, Text = %s, Path = %s\n", i, iconArray->array[i].icon_width, iconArray->array[i].icon_height, iconArray->array[i].text_width, iconArray->array[i].text_height, iconArray->array[i].icon_max_width, iconArray->array[i].icon_max_height, iconArray->array[i].icon_x,iconArray->array[i].icon_y,  iconArray->array[i].icon_text, iconArray->array[i].icon_full_path);
+        printf("Icon %d: Width = %d, Height = %d, Text Width = %d, Text Height = %d, Max Width = %d, Max Height = %d, x = %d, y = %d, Text = %s, Path = %s\n", i, iconArray->array[i].icon_width, iconArray->array[i].icon_height, iconArray->array[i].text_width, iconArray->array[i].text_height, iconArray->array[i].icon_max_width, iconArray->array[i].icon_max_height, iconArray->array[i].icon_x, iconArray->array[i].icon_y, iconArray->array[i].icon_text, iconArray->array[i].icon_full_path);
     }
 }
-
 
 /* Function to get the X and Y position from an .info file */
 IconPosition GetIconPositionFromPath(const char *iconPath)
 {
-    IconPosition position;        /* Structure to hold X and Y positions */
-    char *pathCopy;               /* Copy of the icon path */
-    size_t pathLength;            /* Length of the icon path */
+    IconPosition position;         /* Structure to hold X and Y positions */
+    char *pathCopy;                /* Copy of the icon path */
+    size_t pathLength;             /* Length of the icon path */
     struct DiskObject *diskObject; /* Pointer to the DiskObject structure */
 
     /* Initialize the IconPosition structure with invalid coordinates */
@@ -759,8 +765,6 @@ int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
     maxX = 0;
     maxY = 0;
 
-
-
     windowWidth = newWidth;
     // Set the font to match the Workbench font
 
@@ -768,7 +772,7 @@ int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
     printf("windowWidth: %d\n", windowWidth);
 
     iconArray = CreateIconArrayFromPath(lock, dirPath);
-    //dumpIconArrayToScreen(iconArray);
+    // dumpIconArrayToScreen(iconArray);
     return 0;
     if (!resizeOnly)
     {
@@ -801,7 +805,7 @@ int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
                     iconWidths[rowcount] = x;
                 }
                 x = ICON_START_X;
-                y += iconArray->array[i].icon_max_height+ ICON_SPACING_Y;
+                y += iconArray->array[i].icon_max_height + ICON_SPACING_Y;
                 rowcount++;
             }
             // printf("3  X: %d, Y: %d, window width: %d, rowcount %d, Current endX %d,  Saved icon: %s \n", x, y, windowWidth, rowcount, x + MAX(iconArray->array[i].text_width, iconArray->array[i].icon_width), iconArray->array[i].icon_full_path);
@@ -893,7 +897,7 @@ int ArrangeIcons(BPTR lock, const char *dirPath, BOOL resizeOnly, int newWidth)
         if (iconWidths[i] == 0)
             break;
         // printf("Row %d against overall average: %d\n", i, iconWidths[i] - averageWidth);
-        minAverageWidthPercent = ( iconArray->array[i].icon_max_width - averageWidth) * 100 / averageWidth;
+        minAverageWidthPercent = (iconArray->array[i].icon_max_width - averageWidth) * 100 / averageWidth;
         // printf("minumum average row %d: %d\n", i, minAverageWidthPercent);
     }
 
