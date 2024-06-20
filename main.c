@@ -78,8 +78,6 @@ typedef struct
 #define CHUNK_SIZE 1024                                                  /* Size of the buffer to read in each iteration */
 #define HEADER_SIZE 12 /* Size of IFF header ("FORM" + size + "ICON") */ /* Size of IFF header ("FORM" + size + "ICON")  for OS3.5 Icons*/
 
-
-
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 typedef struct
@@ -92,6 +90,7 @@ typedef struct
 {
     int x;
     int y;
+    BOOL isBorderless;
 } IconPosition;
 
 typedef struct
@@ -154,6 +153,7 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray);
 void repoistionWindow(char *dirPath, int winWidth, int winHeight);
 IconPosition GetIconPositionFromPath(const char *iconPath);
 int IsRootDirectorySimple(const char *path);
+
 
 int main(int argc, char **argv)
 {
@@ -576,19 +576,31 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                     // Determine icon size based on format
                     if (IsNewIconPath(fullPathAndFile))
                     {
+                        printf("New Icon Format\n");
                         GetNewIconSizePath(fullPathAndFile, &iconSize);
                     }
                     else if (isOS35IconFormat(fullPathAndFile))
                     {
+                        printf("OS3.5 Icon Format\n");
                         getOS35IconSize(fullPathAndFile, &iconSize);
                     }
                     else
                     {
+                        printf("Standard Icon Format\n");
                         GetStandardIconSize(fullPathAndFile, &iconSize);
                     }
 
-                    newIcon.icon_width = iconSize.width;
-                    newIcon.icon_height = iconSize.height;
+                    if (prefsWorkbench.embossRectangleSize > 0)
+                    {
+                        newIcon.icon_height = iconSize.height + prefsWorkbench.embossRectangleSize;
+                        newIcon.icon_width = iconSize.width + prefsWorkbench.embossRectangleSize;
+                    }
+                    else
+                    {
+                        newIcon.icon_height = iconSize.height;
+                        newIcon.icon_width = iconSize.width;
+                    }
+
                     newIcon.text_width = textExtent.te_Width;
                     newIcon.text_height = textExtent.te_Height;
                     newIcon.icon_max_width = MAX(iconSize.width, textExtent.te_Width);
@@ -786,6 +798,7 @@ IconPosition GetIconPositionFromPath(const char *iconPath)
     return position;
 }
 
+
 int saveIconsPositionsToDisk(IconArray *iconArray)
 {
     struct DiskObject *diskObject;
@@ -842,12 +855,14 @@ int ArrangeIcons(BPTR lock, const char *dirPath, int newWidth)
     int largestIconWidth, columnWidths[100]; // Assuming a max of 100 columns for simplicity
     int centerX;
     int minIconsPerRow, maxIconsPerRow;
-    int screenWidth = 1024; // Example screen width
+    int screenWidth = 640;  // Standard Amiga Workbench resolution width
+    int screenHeight = 256; // Standard Amiga Workbench resolution height
 
-    int rowCount; // For tracking the number of rows
-    int dynamicPaddingY; // For dynamic bottom padding
-    int column; // For storing column index within the loop
-    
+    int rowCount;                    // For tracking the number of rows
+    int dynamicPaddingY;             // For dynamic bottom padding
+    int column;                      // For storing column index within the loop
+    int iconHeight;                  // For storing the height of the current icon
+    int rowStartIndex, maxRowHeight; // For storing the starting index and max height of the current row
 
     // Initialize variables
     x = ICON_START_X;
@@ -859,12 +874,14 @@ int ArrangeIcons(BPTR lock, const char *dirPath, int newWidth)
     SkipAutoResize = FALSE;
     minIconsPerRow = 3;
     rowCount = 0;
+    rowStartIndex = 0;
 
     printf("ArrangeIcons called with path: %s, newWidth: %d\n", dirPath, newWidth);
 
     iconArray = CreateIconArrayFromPath(lock, dirPath);
 
-    if (iconArray == NULL || iconArray->array == NULL || iconArray->size <= 0) {
+    if (iconArray == NULL || iconArray->array == NULL || iconArray->size <= 0)
+    {
         fprintf(stderr, "Error: No icons found or failed to load icons.\n");
         return -1;
     }
@@ -880,7 +897,8 @@ int ArrangeIcons(BPTR lock, const char *dirPath, int newWidth)
     printf("Largest icon width: %d\n", largestIconWidth);
 
     // Ensure the largest icon width is reasonable
-    if (largestIconWidth <= 0) {
+    if (largestIconWidth <= 0)
+    {
         fprintf(stderr, "Error: Invalid icon width.\n");
         FreeIconArray(iconArray);
         return -1;
@@ -891,7 +909,16 @@ int ArrangeIcons(BPTR lock, const char *dirPath, int newWidth)
     if (prefsWorkbench.disableVolumeGauge && IsRootDirectorySimple(*dirPath))
         maxWindowWidth = maxWindowWidth - prefsIControl.currentCGaugeWidth;
 
-    printf("Calculated max window width: %d\n", maxWindowWidth);
+    // Correct the max window width if it exceeds the screen width
+    if (maxWindowWidth > screenWidth)
+    {
+        maxWindowWidth = screenWidth - prefsIControl.currentBarWidth - prefsIControl.currentLeftBarWidth - (PADDING_WIDTH * 2);
+        printf("Adjusted max window width to fit screen: %d\n", maxWindowWidth);
+    }
+    else
+    {
+        printf("Calculated max window width: %d\n", maxWindowWidth);
+    }
 
     // Determine the optimal number of icons per row
     iconsPerRow = MAX((newWidth - ICON_START_X) / (largestIconWidth + iconSpacingX), minIconsPerRow);
@@ -902,26 +929,30 @@ int ArrangeIcons(BPTR lock, const char *dirPath, int newWidth)
     printf("Adjusted initial window width: %d\n", windowWidth);
 
     // Expand window width to fit more icons if necessary and possible
-    while (windowWidth < maxWindowWidth && (totalIcons / iconsPerRow) > (iconsPerRow / 2)) {
+    while (windowWidth < maxWindowWidth && (totalIcons / iconsPerRow) > (iconsPerRow / 2))
+    {
         iconsPerRow++;
         windowWidth = ICON_START_X + iconsPerRow * (largestIconWidth + iconSpacingX);
         printf("Expanding window width: %d, Icons per row: %d\n", windowWidth, iconsPerRow);
     }
 
     // Adjust window width to ensure it doesn't exceed maxWindowWidth
-    if (windowWidth > maxWindowWidth) {
+    if (windowWidth > maxWindowWidth)
+    {
         windowWidth = maxWindowWidth;
         iconsPerRow = MAX((maxWindowWidth - ICON_START_X) / (largestIconWidth + iconSpacingX), minIconsPerRow);
         printf("Adjusted to max window width: %d, Icons per row: %d\n", windowWidth, iconsPerRow);
     }
 
     // Initialize column widths
-    for (i = 0; i < iconsPerRow; i++) {
+    for (i = 0; i < iconsPerRow; i++)
+    {
         columnWidths[i] = 0;
     }
 
     // Determine the maximum width for each column
-    for (i = 0; i < totalIcons; i++) {
+    for (i = 0; i < totalIcons; i++)
+    {
         column = i % iconsPerRow;
         columnWidths[column] = MAX(columnWidths[column], iconArray->array[i].icon_max_width);
     }
@@ -929,45 +960,61 @@ int ArrangeIcons(BPTR lock, const char *dirPath, int newWidth)
     // Arrange the icons in rows and columns
     x = ICON_START_X;
     y = ICON_START_Y;
-    rowCount = 0; // Reset rowCount for tracking
+    rowCount = 0;      // Reset rowCount for tracking
+    rowStartIndex = 0; // Start index for the current row
 
-    for (i = 0; i < totalIcons; i++) {
-        column = i % iconsPerRow;
-
-        removeInfoExtension(iconArray->array[i].icon_full_path, fileNameNoInfo);
-
-        if (i > 0 && column == 0) {
-            // Move to the next row
-            x = ICON_START_X;
-            y += iconArray->array[i - 1].icon_max_height + iconSpacingY;
-            rowCount++;
+    while (rowStartIndex < totalIcons)
+    {
+        // Determine the maximum height of the current row
+        maxRowHeight = 0;
+        for (i = rowStartIndex; i < rowStartIndex + iconsPerRow && i < totalIcons; i++)
+        {
+            maxRowHeight = MAX(maxRowHeight, iconArray->array[i].icon_max_height);
         }
 
-        // Center the icon within the column width
-        centerX = ((columnWidths[column] - iconArray->array[i].icon_width) / 2);
-        iconArray->array[i].icon_x = x + centerX;
-        iconArray->array[i].icon_y = y;
+        printf("Row %d max height: %d\n", rowCount, maxRowHeight);
 
-        maxX = MAX(maxX, (iconArray->array[i].icon_x + iconArray->array[i].icon_max_width));
-        maxY = MAX(maxY, (iconArray->array[i].icon_y + iconArray->array[i].icon_max_height));
+        for (i = rowStartIndex; i < rowStartIndex + iconsPerRow && i < totalIcons; i++)
+        {
+            column = i % iconsPerRow;
+            iconHeight = iconArray->array[i].icon_max_height;
 
-        x += columnWidths[column] + iconSpacingX; // Use the specific width for this column
+            removeInfoExtension(iconArray->array[i].icon_full_path, fileNameNoInfo);
+
+            // Center the icon within the column width and adjust for max row height
+            centerX = ((columnWidths[column] - iconArray->array[i].icon_width) / 2);
+            iconArray->array[i].icon_x = x + centerX;
+            // Align to the bottom of the row by setting y based on maxRowHeight
+            iconArray->array[i].icon_y = y + (maxRowHeight - iconHeight);
+
+            printf("Placing icon %d at (x: %ld, y: %ld) with width %d and height %d\n",
+                   i, iconArray->array[i].icon_x, iconArray->array[i].icon_y,
+                   iconArray->array[i].icon_max_width, iconArray->array[i].icon_max_height);
+
+            maxX = MAX(maxX, (iconArray->array[i].icon_x + iconArray->array[i].icon_max_width));
+            maxY = MAX(maxY, (iconArray->array[i].icon_y + iconArray->array[i].icon_max_height));
+            printf("Updated maxX: %ld, maxY: %ld\n", maxX, maxY);
+
+            x += columnWidths[column] + iconSpacingX; // Use the specific width for this column
+        }
+
+        // Move to the next row
+        x = ICON_START_X;
+        y += maxRowHeight + iconSpacingY;
+        rowStartIndex += iconsPerRow;
+        rowCount++;
+        printf("Moving to next row: y = %ld, rowStartIndex = %d, rowCount = %d\n", y, rowStartIndex, rowCount);
     }
 
-    // Dynamically calculate the padding based on the content
-    dynamicPaddingY = MAX(10, ICON_START_Y / 2); // Dynamic padding, ensure at least 10 pixels
-
-    // Adjust maxY for remaining icons in the last row if any
-    if (remainingIcons > 0) {
-        maxY += iconArray->array[totalIcons - 1].icon_max_height + iconSpacingY;
-        rowCount++; // Include the last row if there are remaining icons
-    }
+    // Calculate dynamic padding
+    dynamicPaddingY = MAX(10, ICON_START_Y / 2); // Ensure at least 10 pixels padding
 
     // Adjust maxY to avoid excessive gap at the bottom
-    maxY += dynamicPaddingY; // Adding dynamic padding at the bottom
+    maxY += dynamicPaddingY; // Add dynamic padding at the bottom
+    printf("Final adjusted maxY with padding: %ld\n", maxY);
 
     // Reposition the window to accommodate all icons neatly
-    printf("Final maxX: %d, maxY: %d\n", maxX, maxY);
+    printf("Final maxX: %ld, maxY: %ld\n", maxX, maxY);
     repoistionWindow(dirPath, maxX, maxY);
 
     // Save the icon positions to disk
@@ -975,12 +1022,11 @@ int ArrangeIcons(BPTR lock, const char *dirPath, int newWidth)
 
     FreeIconArray(iconArray);
 
-    printf("!! Done. Icons arranged in %d rows with %d icons per row. Path: %s\n", 
-           rowCount + 1, iconsPerRow, dirPath); // Correct the row count display
+    printf("!! Done. Icons arranged in %d rows with %d icons per row. Path: %s\n",
+           rowCount, iconsPerRow, dirPath); // Correct the row count display
 
     return 0;
 }
-
 
 int Compare(const void *a, const void *b)
 {
@@ -1025,6 +1071,8 @@ BOOL IsNewIconPath(const STRPTR filePath)
     struct DiskObject *diskObject = NULL;
     STRPTR adjustedFilePath = NULL;
     STRPTR *toolTypes;
+
+
 
     /* Check if the provided filepath ends with ".info" */
     size_t len = strlen(filePath);
@@ -1073,11 +1121,16 @@ BOOL IsNewIconPath(const STRPTR filePath)
     {
         while (*toolTypes != NULL)
         {
+            
             if (strcmp(*toolTypes, "*** DON'T EDIT THE FOLLOWING LINES!! ***") == 0)
             {
                 newIconFormat = TRUE;
+                printf("New icon format detected.\n");
                 break;
             }
+            
+            
+        
             toolTypes++;
         }
     }

@@ -4,139 +4,6 @@ IControl prefs:  volume guage width: 19
 screen width: 1024
 Screen height: 768
 ArrangeIcons called with path: sys:prefs, newWidth: 320
-ToolType: (EDIT)
-ToolType: (SAVE)
-ToolType: (USE)
-ToolType: (CREATEICONS=<YES or NO>)
-ToolType: (PUBSCREEN=<public screen name>)
-OS3.5 Icon Format
-ToolType: (ACTION=EDIT|USE|SAVE)
-ToolType: (CREATEICONS=<YES or NO>)
-ToolType: (PUBSCREEN=<public screen name>)
-OS3.5 Icon Format
-ToolType: (ACTION=EDIT|USE|SAVE)
-ToolType: (CREATEICONS=<YES or NO>)
-ToolType: (PUBSCREEN=<public screen name>)
-OS3.5 Icon Format
-ToolType: (ACTION=EDIT|USE|SAVE)
-ToolType: (CREATEICONS=<YES or NO>)
-ToolType: (PUBSCREEN=<public screen name>)
-OS3.5 Icon Format
-ToolType: (ACTION=EDIT|USE|SAVE)
-ToolType: (CREATEICONS=<YES or NO>)
-ToolType: (PUBSCREEN=<public screen name>)
-OS3.5 Icon Format
-OS3.5 Icon Format
-ToolType: (PREFSFILE=<prefs filename>)
-ToolType: (TEXTEDITOR=<texteditor path>)
-ToolType: (NOPOPUPMENU)
-ToolType: (NOCTREQUEST)
-OS3.5 Icon Format
-ToolType: WINDOW=VNC:0/0/8/8/ViNCEd Preferences © 2000 THOR-Software/NOSHELL/NOBUTTONS/NOICONIFY/COSXY
-ToolType: ACTION=load global modify prefs
-ToolType: HELPPATH=HELP:english/ViNCEd.guide
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-ToolType: f\j`
-ToolType: fj)
-ToolType: fvž
-ToolType: f^0
-OS3.5 Icon Format
-ToolType: (EDIT)
-ToolType: (SAVE)
-ToolType: (USE)
-ToolType: (CREATEICONS=<YES or NO>)
-ToolType: (SCREEN)
-ToolType: (FONTNAME=<font name>)
-ToolType: (FONTSIZE=<font size>)
-ToolType: (WINDOW=<left>,<top>,<width>,<height>)
-ToolType: (REDBITS=<bits for red component>)
-ToolType: (GREENBITS=<bits for green component>)
-ToolType: (BLUEBITS=<bits for blue component>)
-OS3.5 Icon Format
-OS3.5 Icon Format
-ToolType: (EDIT)
-ToolType: (SAVE)
-ToolType: (USE)
-ToolType: (CREATEICONS=YES|NO)
-ToolType: (PUBSCREEN=public screen's name)
-ToolType: (SCREENFONT)
-ToolType: (CX_PRIORITY=0)
-OS3.5 Icon Format
-OS3.5 Icon Format
-ToolType: (ACTION=EDIT|USE|SAVE)
-ToolType: (CREATEICONS=<YES or NO>)
-ToolType: (PUBSCREEN=<public screen name>)
-OS3.5 Icon Format
-ToolType: (ACTION=EDIT|USE|SAVE)
-ToolType: (CREATEICONS=<YES or NO>)
-ToolType: (CLIPUNIT=<clipboard unit number>)
-ToolType: NOREMAP
-ToolType: (PUBSCREEN=<public screen name>)
-OS3.5 Icon Format
-ToolType: (ACTION=EDIT|USE|SAVE)
-ToolType: (CREATEICONS=<YES or NO>)
-ToolType: (PUBSCREEN=<public screen name>)
-ToolType: (UNIT)
-OS3.5 Icon Format
-ToolType: (ACTION=EDIT|USE|SAVE)
-ToolType: (CREATEICONS=<YES or NO>)
-ToolType: (PUBSCREEN=<public screen name>)
-ToolType: (UNIT)
-OS3.5 Icon Format
-ToolType: (ACTION=EDIT|USE|SAVE)
-ToolType: (CREATEICONS=<YES or NO>)
-ToolType: (PUBSCREEN=<public screen name>)
-ToolType: (UNIT)
-OS3.5 Icon Format
-ToolType: (ACTION=EDIT|USE|SAVE)
-ToolType: (CREATEICONS=YES|NO)
-ToolType: (PUBSCREEN=<public screen name>)
-ToolType: (ENABLEPREVIEW=Yes)
-OS3.5 Icon Format
-ToolType: (ACTION=EDIT|USE|SAVE)
-ToolType: (CREATEICONS=<YES or NO>)
-ToolType: (PUBSCREEN=<public screen name>)
-OS3.5 Icon Format
-ToolType: (ACTION=EDIT|USE|SAVE)
-ToolType: (CREATEICONS=<YES or NO>)
-ToolType: (PUBSCREEN=<public screen name>)
-ToolType: (UNIT)
-OS3.5 Icon Format
-ToolType: (ACTION=EDIT|USE|SAVE)
-ToolType: (CREATEICONS=<YES or NO>)
-ToolType: (PUBSCREEN=<public screen name>)
-OS3.5 Icon Format
-ToolType: (ACTION=EDIT|USE|SAVE)
-ToolType: (PUBSCREEN=<public screen name>)
-ToolType: (CREATEICONS=<YES or NO>)
-OS3.5 Icon Format
-ToolType: (ACTION=EDIT|USE|SAVE)
-ToolType: (CREATEICONS=<YES or NO>)
-ToolType: (PUBSCREEN=<public screen name>)
-OS3.5 Icon Format
-ToolType: (ACTION=EDIT|USE|SAVE)
-ToolType: (CREATEICONS=YES|NO)
-ToolType: (PUBSCREEN=<public screen name>)
-OS3.5 Icon Format
-ToolType: (ACTION=EDIT|USE|SAVE)
-ToolType: (CREATEICONS=<YES or NO>)
-ToolType: (CLIPUNIT=<clipboard unit number>)
-ToolType: (NOREMAP)
-ToolType: (PUBSCREEN=<public screen name>)
-OS3.5 Icon Format
-ToolType: (ACTION=EDIT|USE|SAVE)
-ToolType: (CREATEICONS=<YES or NO>)
-ToolType: (PUBSCREEN=<public screen name>)
-OS3.5 Icon Format
-ToolType: (SETTINGSFILE=SYS:Devs/Picasso96Settings)
-ToolType: (MONITORPATH=SYS:Devs/Monitors)
-ToolType: (HELPPATH=HELP:P96Prefs.guide)
-ToolType: SETTINGSFILE=SYS:Devs/Picasso96Settings
-ToolType: MONITORPATH=SYS:Devs/Monitors
-ToolType: HELPPATH=SYS:Picasso96/P96Prefs.guide
-Standard Icon Format
 Total icons: 30
 Largest icon width: 99
 Calculated max window width: 610
@@ -223,7 +90,6 @@ Final maxX: 473, maxY: 436
 !! Done. Icons arranged in 6 rows with 5 icons per row. Path: sys:prefs
 ArrangeIcons called with path: sys:prefs/Patterns, newWidth: 320
 ArrangeIcons called with path: sys:prefs/Env-Archive, newWidth: 320
-OS3.5 Icon Format
 Total icons: 1
 Largest icon width: 42
 Calculated max window width: 610
@@ -237,128 +103,6 @@ Final adjusted maxY with padding: 77
 Final maxX: 52, maxY: 77
 !! Done. Icons arranged in 1 rows with 5 icons per row. Path: sys:prefs/Env-Archive
 ArrangeIcons called with path: sys:prefs/Env-Archive/Sys, newWidth: 320
-OS3.5 Icon Format
-ToolType: DONOTWAIT
-OS3.5 Icon Format
-OS3.5 Icon Format
-ToolType: 
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-ToolType: CLI
-ToolType: DONOTPROMPT
-OS3.5 Icon Format
-OS3.5 Icon Format
-ToolType: ACTION=USE
-OS3.5 Icon Format
-ToolType: ACTION=USE
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-ToolType: 
-OS3.5 Icon Format
-ToolType: CLI
-ToolType: DONOTPROMPT
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-ToolType: 
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-ToolType: 
-OS3.5 Icon Format
-ToolType: 
-OS3.5 Icon Format
-ToolType: 
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-ToolType: 
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-ToolType: 
-OS3.5 Icon Format
-OS3.5 Icon Format
-ToolType: (WRITEPROTECTED=No)
-OS3.5 Icon Format
-ToolType: ACTION=USE
-OS3.5 Icon Format
-ToolType: ACTION=USE
-OS3.5 Icon Format
-ToolType: ACTION=USE
-OS3.5 Icon Format
-ToolType: ACTION=USE
-OS3.5 Icon Format
-ToolType: ACTION=USE
-OS3.5 Icon Format
-ToolType: ACTION=USE
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-ToolType: WINDOW=CON:75/150/500/150/ActivateCD-ROM/CLOSE
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-ToolType: (TAPE=RAW:0/0/100/1
-OS3.5 Icon Format
-ToolType: (TAPE=RAW:0/0/100/1
-OS3.5 Icon Format
-OS3.5 Icon Format
-ToolType: ACTION=USE
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
-OS3.5 Icon Format
 Total icons: 96
 Largest icon width: 117
 Calculated max window width: 610
@@ -618,8 +362,6 @@ ArrangeIcons called with path: sys:prefs/Env-Archive/MIAMI, newWidth: 320
 ArrangeIcons called with path: sys:prefs/Env-Archive/Picasso96, newWidth: 320
 ArrangeIcons called with path: sys:prefs/Env-Archive/sc, newWidth: 320
 ArrangeIcons called with path: sys:prefs/Presets, newWidth: 320
-OS3.5 Icon Format
-OS3.5 Icon Format
 Total icons: 2
 Largest icon width: 59
 Calculated max window width: 610
@@ -636,28 +378,6 @@ Final maxX: 125, maxY: 81
 !! Done. Icons arranged in 1 rows with 4 icons per row. Path: sys:prefs/Presets
 ArrangeIcons called with path: sys:prefs/Presets/Backdrops, newWidth: 320
 ArrangeIcons called with path: sys:prefs/Presets/Pointers, newWidth: 320
-ToolType: ACTION=USE
-OS3.5 Icon Format
-ToolType: ACTION=USE
-OS3.5 Icon Format
-ToolType: ACTION=USE
-OS3.5 Icon Format
-ToolType: ACTION=USE
-OS3.5 Icon Format
-ToolType: ACTION=USE
-OS3.5 Icon Format
-ToolType: ACTION=USE
-OS3.5 Icon Format
-ToolType: ACTION=USE
-OS3.5 Icon Format
-ToolType: ACTION=USE
-OS3.5 Icon Format
-ToolType: ACTION=USE
-OS3.5 Icon Format
-ToolType: ACTION=USE
-OS3.5 Icon Format
-ToolType: ACTION=USE
-OS3.5 Icon Format
 Total icons: 11
 Largest icon width: 117
 Calculated max window width: 610
@@ -696,18 +416,6 @@ Final adjusted maxY with padding: 223
 Final maxX: 491, maxY: 223
 !! Done. Icons arranged in 3 rows with 4 icons per row. Path: sys:prefs/Presets/Pointers
 ArrangeIcons called with path: sys:prefs/Presets/FullPalette, newWidth: 320
-ToolType: (EDIT)
-ToolType: (SAVE)
-ToolType: (USE)
-ToolType: (CREATEICONS=<YES or NO>)
-ToolType: (SCREEN)
-ToolType: (FONTNAME=<font name>)
-ToolType: (FONTSIZE=<font size>)
-ToolType: (WINDOW=<left>,<top>,<width>,<height>)
-ToolType: (REDBITS=<bits for red component>)
-ToolType: (GREENBITS=<bits for green component>)
-ToolType: (BLUEBITS=<bits for blue component>)
-Standard Icon Format
 Total icons: 1
 Largest icon width: 60
 Calculated max window width: 610

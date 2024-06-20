@@ -38,7 +38,7 @@ struct IControlPrefsDetails {
     BOOL titleBar_75;
     BOOL titleBar_100;
     BOOL squareProportionalLook; 
-        UWORD currentLeftBarWidth;
+    UWORD currentLeftBarWidth;
     UWORD currentBarWidth;
     UWORD currentBarHeight;
     UWORD currentCGaugeWidth;
