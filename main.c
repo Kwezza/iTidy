@@ -132,15 +132,15 @@ const MAX_ICONS_TO_ALLIGN = 50;
 int screenHight = 0;
 int screenWidth = 0;
 
-int ArrangeIcons(BPTR lock, const char *dirPath, int newWidth);
+int ArrangeIcons(BPTR lock, char *dirPath, int newWidth);
 int Compare(const void *a, const void *b);
 BOOL IsNewIcon(struct DiskObject *diskObject);
 BOOL IsNewIconPath(const STRPTR filePath);
 void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo);
 void pause_program(void);
-int FormatIconsAndWindow(const char *folder);
-void ProcessDirectory(const char *path, BOOL processSubDirs);
-int HasSlaveFile(const char *path);
+int FormatIconsAndWindow(char *folder);
+void ProcessDirectory(char *path, BOOL processSubDirs);
+int HasSlaveFile(char *path);
 int strncasecmp_custom(const char *s1, const char *s2, size_t n);
 void removeInfoExtension(const char *input, char *output);
 int isOS35IconFormat(const char *filename);
@@ -155,7 +155,7 @@ void dumpIconArrayToScreen(IconArray *iconArray);
 void resizeFolderToContents(char *dirPath, IconArray *iconArray);
 void repoistionWindow(char *dirPath, int winWidth, int winHeight);
 IconPosition GetIconPositionFromPath(const char *iconPath);
-int IsRootDirectorySimple(const char *path);
+int IsRootDirectorySimple(char *path);
 BOOL checkIconFrame(const char *iconName);
 
 int main(int argc, char **argv)
@@ -253,7 +253,7 @@ void CleanupWindow()
     }
 }
 
-int HasSlaveFile(const char *path)
+int HasSlaveFile(char *path)
 {
     BPTR lock;
     struct FileInfoBlock *fib;
@@ -295,7 +295,7 @@ int HasSlaveFile(const char *path)
 
     return hasSlave;
 }
-void ProcessDirectory(const char *path, BOOL processSubDirs)
+void ProcessDirectory(char *path, BOOL processSubDirs)
 {
     BPTR lock;
     struct FileInfoBlock *fib;
@@ -346,7 +346,7 @@ void ProcessDirectory(const char *path, BOOL processSubDirs)
     UnLock(lock);
 }
 
-int FormatIconsAndWindow(const char *folder)
+int FormatIconsAndWindow(char *folder)
 {
     BPTR lock;
 
@@ -686,7 +686,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
     return iconArray;
 }
 
-int IsRootDirectorySimple(const char *path)
+int IsRootDirectorySimple(char *path)
 {
     size_t length = strlen(path);
 
@@ -718,7 +718,7 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight)
 
     winWidth = winWidth + prefsIControl.currentBarWidth + prefsIControl.currentLeftBarWidth + (PADDING_WIDTH * 2);
     /* is it the root directory and does it have the size guage? */
-    if (prefsWorkbench.disableVolumeGauge && IsRootDirectorySimple(*dirPath))
+    if (prefsWorkbench.disableVolumeGauge && IsRootDirectorySimple(dirPath))
         winWidth = winWidth + prefsIControl.currentCGaugeWidth;
 
     winHeight = winHeight + prefsIControl.currentWindowBarHeight + prefsIControl.currentBarHeight + (PADDING_HEIGHT * 2); // SCROLLBAR_HEIGHT + WINDOW_TITLE_HEIGHT;
@@ -859,7 +859,7 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
     return 0; // Return success or an error code as needed
 }
 
-int ArrangeIcons(BPTR lock, const char *dirPath, int newWidth)
+int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
 {
     // Initial declarations
     LONG x, y, maxX, maxY, windowWidth, maxWindowWidth;
@@ -923,7 +923,7 @@ int ArrangeIcons(BPTR lock, const char *dirPath, int newWidth)
 
     // Calculate the maximum allowable window width based on screen width and preferences
     maxWindowWidth = screenWidth - prefsIControl.currentBarWidth - prefsIControl.currentLeftBarWidth - (PADDING_WIDTH * 2);
-    if (prefsWorkbench.disableVolumeGauge && IsRootDirectorySimple(*dirPath))
+    if (prefsWorkbench.disableVolumeGauge && IsRootDirectorySimple(dirPath))
         maxWindowWidth = maxWindowWidth - prefsIControl.currentCGaugeWidth;
 
     // Correct the max window width if it exceeds the screen width
