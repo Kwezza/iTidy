@@ -1,80 +1,151 @@
-IControl prefs:  border width: 18, border height: 18
-IControl prefs:  title height: 16, Window height: 18
-IControl prefs:  volume guage width: 19
-screen width: 1024
-Screen height: 768
-ArrangeIcons called with path: sys:, newWidth: 320
-Has only borderless icons: 0
-Total icons: 26
-Largest icon width: 79
-Calculated max window width: 610
-Initial icons per row calculated: 3
-Adjusted initial window width: 262
-Expanding window width: 346, Icons per row: 4
-Expanding window width: 430, Icons per row: 5
-Expanding window width: 514, Icons per row: 6
-Expanding window width: 598, Icons per row: 7
-Row 0 max height: 57
-Placing icon 0 at (x: 14, y: 10) with width 43 and height 58 name: C.info
-Updated maxX: 57, maxY: 67
-Placing icon 1 at (x: 67, y: 10) with width 45 and height 58 name: Classes.info
-Updated maxX: 112, maxY: 67
-Placing icon 2 at (x: 123, y: 10) with width 43 and height 58 name: Devs.info
-Updated maxX: 166, maxY: 67
-Placing icon 3 at (x: 186, y: 10) with width 59 and height 58 name: Expansion.info
-Updated maxX: 245, maxY: 67
-Placing icon 4 at (x: 249, y: 10) with width 43 and height 58 name: Fonts.info
-Updated maxX: 292, maxY: 67
-Placing icon 5 at (x: 312, y: 10) with width 43 and height 58 name: Iconian.info
-Updated maxX: 355, maxY: 67
-Placing icon 6 at (x: 377, y: 26) with width 80 and height 42 name: install_log_file.info
-Updated maxX: 457, maxY: 67
-Moving to next row: y = 72, rowStartIndex = 7, rowCount = 1
-Row 1 max height: 64
-Placing icon 7 at (x: 14, y: 79) with width 43 and height 58 name: Internet.info
-Updated maxX: 457, maxY: 136
-Placing icon 8 at (x: 67, y: 79) with width 43 and height 58 name: L.info
-Updated maxX: 457, maxY: 136
-Placing icon 9 at (x: 123, y: 79) with width 43 and height 58 name: Libs.info
-Updated maxX: 457, maxY: 136
-Placing icon 10 at (x: 186, y: 79) with width 43 and height 58 name: Locale.info
-Updated maxX: 457, maxY: 136
-Placing icon 11 at (x: 247, y: 75) with width 47 and height 62 name: OLD.info
-Updated maxX: 457, maxY: 136
-Placing icon 12 at (x: 312, y: 79) with width 59 and height 58 name: Picasso96.info
-Updated maxX: 457, maxY: 136
-Placing icon 13 at (x: 386, y: 79) with width 43 and height 58 name: Prefs.info
-Updated maxX: 457, maxY: 136
-Moving to next row: y = 141, rowStartIndex = 14, rowCount = 2
-Row 2 max height: 64
-Placing icon 14 at (x: 14, y: 148) with width 53 and height 58 name: Programs.info
-Updated maxX: 457, maxY: 205
-Placing icon 15 at (x: 67, y: 148) with width 43 and height 58 name: Rexxc.info
-Updated maxX: 457, maxY: 205
-Placing icon 16 at (x: 123, y: 148) with width 59 and height 58 name: Roadshow.info
-Updated maxX: 457, maxY: 205
-Placing icon 17 at (x: 186, y: 148) with width 43 and height 58 name: S.info
-Updated maxX: 457, maxY: 205
-Placing icon 18 at (x: 249, y: 148) with width 43 and height 58 name: sc.info
-Updated maxX: 457, maxY: 205
-Placing icon 19 at (x: 312, y: 148) with width 44 and height 58 name: Storage.info
-Updated maxX: 457, maxY: 205
-Placing icon 20 at (x: 386, y: 148) with width 43 and height 58 name: System.info
-Updated maxX: 457, maxY: 205
-Moving to next row: y = 210, rowStartIndex = 21, rowCount = 3
-Row 3 max height: 62
-Placing icon 21 at (x: 14, y: 215) with width 43 and height 58 name: T.info
-Updated maxX: 457, maxY: 272
-Placing icon 22 at (x: 67, y: 215) with width 43 and height 58 name: Temp.info
-Updated maxX: 457, maxY: 272
-Placing icon 23 at (x: 123, y: 215) with width 43 and height 58 name: Tools.info
-Updated maxX: 457, maxY: 272
-Placing icon 24 at (x: 186, y: 215) with width 43 and height 58 name: Utilities.info
-Updated maxX: 457, maxY: 272
-Placing icon 25 at (x: 249, y: 215) with width 59 and height 58 name: WBStartup.info
-Updated maxX: 457, maxY: 272
-Moving to next row: y = 277, rowStartIndex = 28, rowCount = 4
-Final adjusted maxY with padding: 282
-Final maxX: 457, maxY: 282
-!! Done. Icons arranged in 4 rows with 7 icons per row. Path: sys:
-Unable to load disk.info for folder: sys:
+	sc noicon StackExtend main.c Settings/IControlPrefs.c  Settings/WorkbenchPrefs.c icon_management.c
+SAS/C Amiga Compiler 6.58
+Copyright (c) 1988-1995 SAS Institute Inc.
+
+====================
+} IconPosition[33;7m;[0m
+icon_management.h 57 Warning 224: item "IconPosition" already defined
+                                  See line 18 file "icon_management.h"
+
+====================
+} FullIconDetails[33;7m;[0m
+main.c 105 Warning 224: item "FullIconDetails" already defined
+                        See line 35 file "icon_management.h"
+
+====================
+} IconArray[33;7m;[0m
+main.c 114 Warning 224: item "IconArray" already defined
+                        See line 44 file "icon_management.h"
+
+====================
+} IconPosition[33;7m;[0m
+icon_management.h 57 Warning 224: item "IconPosition" already defined
+                                  See line 18 file "icon_management.h"
+
+====================
+        fprintf[33;7m([0mstderr, "Error: Failed to create icon array.\n");
+icon_management.c 106 Warning 100: no prototype declared for function "fprintf"
+
+====================
+        fprintf([33;7mstderr[0m, "Error: Failed to create icon array.\n");
+icon_management.c 106 Error 9: undefined identifier "stderr"
+
+====================
+                if (strcmp[33;7m([0mfib->fib_FileName, "Disk.info") != 0)
+icon_management.c 123 Warning 100: no prototype declared for function "strcmp"
+
+====================
+                    const char *fileExtension = strrchr[33;7m([0mfib->fib_File
+icon_management.c 125 Warning 100: no prototype declared for function "strrchr"
+
+====================
+                    const char *fileExtension = strrchr(fib->fib_FileName, '.')[33;7m;[0m
+icon_management.c 125 Warning 225: pointer type mismatch
+                                   "char const *" does not match "int"
+
+====================
+                    if (fileExtension !=  0L  && strncasecmp_custom[33;7m([0mf
+icon_management.c 127 Warning 100: no prototype declared for function "strncasecmp_custom"
+
+====================
+                        GetFullPath[33;7m([0mdirPath, fib, fullPathAndFile, si
+icon_management.c 129 Warning 100: no prototype declared for function "GetFullPath"
+
+====================
+                        removeInfoExtension[33;7m([0mfib->fib_FileName, fileNa
+icon_management.c 130 Warning 100: no prototype declared for function "removeInfoExtension"
+
+====================
+                        CalculateTextExtent[33;7m([0mfileNameNoInfo, &textExte
+icon_management.c 131 Warning 100: no prototype declared for function "CalculateTextExtent"
+
+====================
+                        if ([33;7mprefsWorkbench[0m.embossRectangleSize > 0)
+icon_management.c 151 Error 9: undefined identifier "prefsWorkbench"
+
+====================
+                        newIcon.has_border = checkIconFrame[33;7m([0mfullPathA
+icon_management.c 162 Warning 100: no prototype declared for function "checkIconFrame"
+
+====================
+                        newIcon.icon_max_width = MAX[33;7m([0miconSize.width,
+icon_management.c 172 Warning 100: no prototype declared for function "MAX"
+
+====================
+      newIcon.icon_max_height = iconSize.height + [33;7mGAP_BETWEEN_ICON_AND_TE[0m
+icon_management.c 173 Error 9: undefined identifier "GAP_BETWEEN_ICON_AND_TEXT"
+
+====================
+                        newIcon.icon_full_path = (char *)AllocVec(strlen[33;7m([0m
+icon_management.c 181 Warning 100: no prototype declared for function "strlen"
+
+====================
+                        strcpy[33;7m([0mnewIcon.icon_full_path, fullPathAndFil
+icon_management.c 189 Warning 100: no prototype declared for function "strcpy"
+
+====================
+    printf[33;7m([0m"Has only borderless icons: %d\n", iconArray->hasOnlyBorde
+icon_management.c 236 Warning 100: no prototype declared for function "printf"
+
+====================
+    strncpy[33;7m([0mfilePathCopy, filePath, filePathLen);
+icon_management.c 265 Warning 100: no prototype declared for function "strncpy"
+
+====================
+        if (strncmp[33;7m([0mtoolType, prefix, strlen(prefix)) == 0)
+icon_management.c 294 Warning 100: no prototype declared for function "strncmp"
+
+====================
+    [33;7mFILE[0m *file;
+icon_management.c 483 Error 9: undefined identifier "FILE"
+
+====================
+    FILE *[33;7mfile[0m;
+icon_management.c 483 Error 9: undefined identifier "file"
+
+====================
+    [33;7mUBYTE[0m buffer[CHUNK_SIZE];
+icon_management.c 484 Error 218: declaration found in statement block
+
+====================
+    UBYTE buffer[[33;7mCHUNK_SIZE[0m];
+icon_management.c 484 Error 9: undefined identifier "CHUNK_SIZE"
+
+====================
+    UBYTE buffer[CHUNK_SIZE[33;7m][0m;
+icon_management.c 484 Error 20: invalid constant expression
+
+====================
+    file = fopen[33;7m([0mfilename, "rb");
+icon_management.c 493 Warning 100: no prototype declared for function "fopen"
+
+====================
+        perror[33;7m([0m"Error opening file");
+icon_management.c 497 Warning 100: no prototype declared for function "perror"
+
+====================
+    fseek[33;7m([0mfile, 0, SEEK_END);
+icon_management.c 502 Warning 100: no prototype declared for function "fseek"
+
+====================
+    fseek(file, 0, [33;7mSEEK_END[0m);
+icon_management.c 502 Error 9: undefined identifier "SEEK_END"
+
+====================
+    fileSize = ftell[33;7m([0mfile);
+icon_management.c 503 Warning 100: no prototype declared for function "ftell"
+
+====================
+    fseek(file, 0, [33;7mSEEK_SET[0m);
+icon_management.c 504 Error 9: undefined identifier "SEEK_SET"
+
+====================
+    if (fileSize < [33;7mHEADER_SIZE[0m)
+icon_management.c 507 Error 9: undefined identifier "HEADER_SIZE"
+
+====================
+    if (fileSize < [33;7mHEADER_SIZE[0m)
+icon_management.c 507 Error 166: unrecoverable error or too many errors
+                                 Terminating compilation
+*** Execution terminated
+sc failed returncode 20

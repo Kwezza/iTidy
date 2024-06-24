@@ -5,6 +5,7 @@
     ],
     "files.associations": {
         "icon.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "icon_management.h": "c"
     }
 }
