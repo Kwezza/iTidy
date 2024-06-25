@@ -8,8 +8,14 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <stddef.h>
+#include <exec/memory.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
+#include "main.h"
 #include "icon_management.h"
+#include "window_management.h"
 
 void FreeIconArray(IconArray *iconArray)
 {
@@ -653,4 +659,226 @@ int getOS35IconSize(const char *filename, IconSize *size)
 
     /* Return true if the "FACE" chunk was found and size was set */
     return foundFace;
+}
+/* Comparison function for sorting by is_folder and then by icon_text */
+int CompareByFolderAndName(const void *a, const void *b)
+{
+    const FullIconDetails *iconA = (const FullIconDetails *)a;
+    const FullIconDetails *iconB = (const FullIconDetails *)b;
+
+    /* Compare by is_folder */
+    if (iconA->is_folder != iconB->is_folder)
+    {
+        /* Sort folders (TRUE) before files (FALSE) */
+        return iconB->is_folder - iconA->is_folder;
+    }
+
+    /* If both have the same is_folder status, compare by icon_text */
+    return strncasecmp_custom(iconA->icon_text, iconB->icon_text, strlen(iconA->icon_text));
+}
+
+int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
+{
+    // Initial declarations
+    LONG x, y, maxX, maxY, windowWidth, maxWindowWidth;
+    IconArray *iconArray;
+    BOOL SkipAutoResize;
+    int i, totalIcons, iconsPerRow;
+    int iconSpacingX, iconSpacingY;
+    char fileNameNoInfo[256];
+    int largestIconWidth, columnWidths[100]; // Assuming a max of 100 columns for simplicity
+    int centerX;
+    int minIconsPerRow;
+    int screenWidth = 640;  // Standard Amiga Workbench resolution width
+
+
+    int rowCount;                    // For tracking the number of rows
+    int dynamicPaddingY;             // For dynamic bottom padding
+    int column;                      // For storing column index within the loop
+    int iconHeight;                  // For storing the height of the current icon
+    int rowStartIndex, maxRowHeight; // For storing the starting index and max height of the current row
+    int borderSpacingForIconsWithNoSpacing = 0;
+
+    // Initialize variables
+    x = ICON_START_X;
+    y = ICON_START_Y;
+    maxX = 0;
+    maxY = 0;
+    iconSpacingX = 5;
+    iconSpacingY = 5;
+    SkipAutoResize = FALSE;
+    minIconsPerRow = 3;
+    rowCount = 0;
+    rowStartIndex = 0;
+
+    printf("ArrangeIcons called with path: %s, newWidth: %d\n", dirPath, newWidth);
+
+    iconArray = CreateIconArrayFromPath(lock, dirPath);
+
+    if (iconArray == NULL || iconArray->array == NULL || iconArray->size <= 0)
+    {
+        return -1;
+    }
+
+    totalIcons = iconArray->size;
+    printf("Total icons: %d\n", totalIcons);
+
+    // Sort icons by name and folder for a consistent layout
+    qsort(iconArray->array, totalIcons, sizeof(FullIconDetails), CompareByFolderAndName);
+
+    // Check the largest width of any icon to determine spacing needs
+    largestIconWidth = iconArray->BiggestWidthPX;
+    printf("Largest icon width: %d\n", largestIconWidth);
+
+    // Ensure the largest icon width is reasonable
+    if (largestIconWidth <= 0)
+    {
+        fprintf(stderr, "Error: Invalid icon width.\n");
+        FreeIconArray(iconArray);
+        return -1;
+    }
+
+    // Calculate the maximum allowable window width based on screen width and preferences
+    maxWindowWidth = screenWidth - prefsIControl.currentBarWidth - prefsIControl.currentLeftBarWidth - (PADDING_WIDTH * 2);
+    if (prefsWorkbench.disableVolumeGauge && IsRootDirectorySimple(dirPath))
+        maxWindowWidth = maxWindowWidth - prefsIControl.currentCGaugeWidth;
+
+    // Correct the max window width if it exceeds the screen width
+    if (maxWindowWidth > screenWidth)
+    {
+        maxWindowWidth = screenWidth - prefsIControl.currentBarWidth - prefsIControl.currentLeftBarWidth - (PADDING_WIDTH * 2);
+        printf("Adjusted max window width to fit screen: %d\n", maxWindowWidth);
+    }
+    else
+    {
+        printf("Calculated max window width: %d\n", maxWindowWidth);
+    }
+
+    // Determine the optimal number of icons per row
+    iconsPerRow = MAX((newWidth - ICON_START_X) / (largestIconWidth + iconSpacingX), minIconsPerRow);
+    printf("Initial icons per row calculated: %d\n", iconsPerRow);
+
+    // Adjust window width to fit these icons evenly
+    windowWidth = ICON_START_X + iconsPerRow * (largestIconWidth + iconSpacingX);
+    printf("Adjusted initial window width: %d\n", windowWidth);
+
+    // Expand window width to fit more icons if necessary and possible
+    while (windowWidth < maxWindowWidth && (totalIcons / iconsPerRow) > (iconsPerRow / 2))
+    {
+        iconsPerRow++;
+        windowWidth = ICON_START_X + iconsPerRow * (largestIconWidth + iconSpacingX);
+        printf("Expanding window width: %d, Icons per row: %d\n", windowWidth, iconsPerRow);
+    }
+
+    // Adjust window width to ensure it doesn't exceed maxWindowWidth
+    if (windowWidth > maxWindowWidth)
+    {
+        windowWidth = maxWindowWidth;
+        iconsPerRow = MAX((maxWindowWidth - ICON_START_X) / (largestIconWidth + iconSpacingX), minIconsPerRow);
+        printf("Adjusted to max window width: %d, Icons per row: %d\n", windowWidth, iconsPerRow);
+    }
+
+    // Initialize column widths
+    for (i = 0; i < iconsPerRow; i++)
+    {
+        columnWidths[i] = 0;
+    }
+
+    // Determine the maximum width for each column
+    for (i = 0; i < totalIcons; i++)
+    {
+        column = i % iconsPerRow;
+        columnWidths[column] = MAX(columnWidths[column], iconArray->array[i].icon_max_width);
+    }
+
+    // Arrange the icons in rows and columns
+    x = ICON_START_X;
+    y = ICON_START_Y;
+    rowCount = 0;      // Reset rowCount for tracking
+    rowStartIndex = 0; // Start index for the current row
+
+    while (rowStartIndex < totalIcons)
+    {
+        // Determine the maximum height of the current row
+        maxRowHeight = 0;
+
+        // Determine the additional padding based on workbench and icon border settings
+
+        for (i = rowStartIndex; i < rowStartIndex + iconsPerRow && i < totalIcons; i++)
+        {
+            maxRowHeight = MAX(maxRowHeight, iconArray->array[i].icon_max_height) + borderSpacingForIconsWithNoSpacing;
+        }
+
+        printf("Row %d max height: %d\n", rowCount, maxRowHeight);
+
+        for (i = rowStartIndex; i < rowStartIndex + iconsPerRow && i < totalIcons; i++)
+        {
+            if (iconArray->hasOnlyBorderlessIcons == 0)
+            {
+
+                if (!prefsWorkbench.borderless && !iconArray->array[i].has_border)
+                {
+                    borderSpacingForIconsWithNoSpacing = 0;
+                }
+                else
+                {
+                    borderSpacingForIconsWithNoSpacing = prefsWorkbench.embossRectangleSize;
+                }
+            }
+            else
+            {
+                borderSpacingForIconsWithNoSpacing = 0;
+            }
+ 
+            column = i % iconsPerRow;
+            iconHeight = iconArray->array[i].icon_max_height + borderSpacingForIconsWithNoSpacing;
+
+            removeInfoExtension(iconArray->array[i].icon_full_path, fileNameNoInfo);
+
+            // Center the icon within the column width and adjust for max row height
+            centerX = ((columnWidths[column] - iconArray->array[i].icon_width) / 2);
+            iconArray->array[i].icon_x = x + centerX;
+            // Align to the bottom of the row by setting y based on maxRowHeight
+            iconArray->array[i].icon_y = y + (maxRowHeight - iconHeight);
+
+            printf("Placing icon %d at (x: %ld, y: %ld) with width %d and height %d name: %s\n",
+                   i, iconArray->array[i].icon_x, iconArray->array[i].icon_y + borderSpacingForIconsWithNoSpacing,
+                   iconArray->array[i].icon_max_width + borderSpacingForIconsWithNoSpacing, iconArray->array[i].icon_max_height + borderSpacingForIconsWithNoSpacing,
+                   iconArray->array[i].icon_text);
+
+            maxX = MAX(maxX, (iconArray->array[i].icon_x + iconArray->array[i].icon_max_width) + borderSpacingForIconsWithNoSpacing);
+            maxY = MAX(maxY, (iconArray->array[i].icon_y + iconArray->array[i].icon_max_height) + borderSpacingForIconsWithNoSpacing);
+            printf("Updated maxX: %ld, maxY: %ld\n", maxX, maxY);
+
+            x += columnWidths[column] + iconSpacingX; // Use the specific width for this column
+        }
+
+        // Move to the next row
+        x = ICON_START_X;
+        y += maxRowHeight + iconSpacingY;
+        rowStartIndex += iconsPerRow;
+        rowCount++;
+        printf("Moving to next row: y = %ld, rowStartIndex = %d, rowCount = %d\n", y, rowStartIndex, rowCount);
+    }
+
+    // Calculate dynamic padding
+    dynamicPaddingY = MAX(10, ICON_START_Y / 2); // Ensure at least 10 pixels padding
+
+    // Adjust maxY to avoid excessive gap at the bottom
+    maxY += dynamicPaddingY; // Add dynamic padding at the bottom
+    printf("Final adjusted maxY with padding: %ld\n", maxY);
+
+    // Reposition the window to accommodate all icons neatly
+    printf("Final maxX: %ld, maxY: %ld\n", maxX, maxY);
+    repoistionWindow(dirPath, maxX, maxY);
+
+    // Save the icon positions to disk
+    saveIconsPositionsToDisk(iconArray);
+
+    FreeIconArray(iconArray);
+
+    printf("!! Done. Icons arranged in %d rows with %d icons per row. Path: %s\n",
+           rowCount, iconsPerRow, dirPath); // Correct the row count display
+
+    return 0;
 }

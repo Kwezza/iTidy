@@ -6,6 +6,13 @@
     "files.associations": {
         "icon.h": "c",
         "stdio.h": "c",
-        "icon_management.h": "c"
+        "icon_management.h": "c",
+        "graphics.h": "c",
+        "workbenchprefs.h": "c",
+        "main.h": "c",
+        "diskfont.h": "c",
+        "stdlib.h": "c",
+        "window_management.h": "c",
+        "intuition.h": "c"
     }
 }
