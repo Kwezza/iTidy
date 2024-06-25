@@ -15,8 +15,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "main.h" // Ensure main.h is included to use IconArray
-#include "icon_management.h" // Include icon_management.h
+#include "main.h"
+#include "icon_management.h"
+#include "file_directory_handling.h"
 
 void CleanupWindow(void);
 int FormatIconsAndWindow(char *folder);

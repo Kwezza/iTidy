@@ -1,13 +1,44 @@
-	sc noicon StackExtend main.c Settings/IControlPrefs.c  Settings/WorkbenchPrefs.c icon_management.c
+	sc noicon StackExtend main.c Settings/IControlPrefs.c  Settings/WorkbenchPrefs.c icon_management.c window_management.c window_management.c
 SAS/C Amiga Compiler 6.58
 Copyright (c) 1988-1995 SAS Institute Inc.
-	sc link to main noicon StackExtend main.o  Settings/IControlPrefs.o  Settings/WorkbenchPrefs.o icon_management.o
+	sc link to main noicon StackExtend main.o  Settings/IControlPrefs.o  Settings/WorkbenchPrefs.o icon_management.o window_management.o window_management.o
 SAS/C Amiga Compiler 6.58
 Copyright (c) 1988-1995 SAS Institute Inc.
 Slink - Version 6.58
 Copyright (c) 1988-1995 SAS Institute, Inc.  All Rights Reserved.
 
+ERROR: Multiply defined symbol '_CleanupWindow'.
+       First defined in file 'window_management.o'.
+        Type = RELOCATABLE   Value = 0
+       Redefined in file 'window_management.o'.
+        Type = RELOCATABLE   Value = 0
+ERROR: Multiply defined symbol '_FormatIconsAndWindow'.
+       First defined in file 'window_management.o'.
+        Type = RELOCATABLE   Value = 70
+       Redefined in file 'window_management.o'.
+        Type = RELOCATABLE   Value = 70
+ERROR: Multiply defined symbol '_resizeFolderToContents'.
+       First defined in file 'window_management.o'.
+        Type = RELOCATABLE   Value = 156
+       Redefined in file 'window_management.o'.
+        Type = RELOCATABLE   Value = 156
+ERROR: Multiply defined symbol '_InitializeWindow'.
+       First defined in file 'window_management.o'.
+        Type = RELOCATABLE   Value = 320
+       Redefined in file 'window_management.o'.
+        Type = RELOCATABLE   Value = 320
+ERROR: Multiply defined symbol '_repoistionWindow'.
+       First defined in file 'window_management.o'.
+        Type = RELOCATABLE   Value = 588
+       Redefined in file 'window_management.o'.
+        Type = RELOCATABLE   Value = 588
+[4mUndefined symbols       [0m [4mFirst Referenced[0m
+_IsRootDirectorySimple   File 'icon_management.o'
+Enter a DEFINE value for _IsRootDirectorySimple (default ___stub): _GetFullPath             File 'icon_management.o'
+Enter a DEFINE value for _GetFullPath (default ___stub): _ProcessDirectory        File 'main.o'
+Enter a DEFINE value for _ProcessDirectory (default ___stub): 
+SLINK Complete - Maximum code size = 25824 ($000064e0) bytes
 
-SLINK Complete - Maximum code size = 25696 ($00006460) bytes
-
-Final output file size = 25764 ($000064a4) bytes
+Final output file size = 25908 ($00006534) bytes
+slink failed returncode 101
+sc failed returncode 101

@@ -16,6 +16,7 @@
 #include "main.h"
 #include "icon_management.h"
 #include "window_management.h"
+#include "file_directory_handling.h"
 
 void FreeIconArray(IconArray *iconArray)
 {

@@ -102,14 +102,10 @@ extern int screenWidth;
 
 BOOL checkIconFrame(const char *iconName);
 int Compare(const void *a, const void *b);
-int HasSlaveFile(char *path);
-int IsRootDirectorySimple(char *path);
 int strncasecmp_custom(const char *s1, const char *s2, size_t n);
 void CalculateTextExtent(const char *text, struct TextExtent *textExtent);
 void dumpIconArrayToScreen(IconArray *iconArray);
-void GetFullPath(const char *directory, struct FileInfoBlock *fib, char *fullPath, int fullPathSize);
 void pause_program(void);
-void ProcessDirectory(char *path, BOOL processSubDirs);
 void removeInfoExtension(const char *input, char *output);
 void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo);
 int saveIconsPositionsToDisk(IconArray *iconArray);

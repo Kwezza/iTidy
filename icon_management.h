@@ -11,8 +11,7 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <stdlib.h>
-#include "main.h" // Include the main.h header file
-#include "window_management.h"
+#include "main.h"
 
 BOOL AddIconToArray(IconArray *iconArray, const FullIconDetails *newIcon);
 BOOL GetStandardIconSize(const char *filePath, IconSize *iconSize);

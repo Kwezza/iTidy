@@ -13,6 +13,8 @@
         "diskfont.h": "c",
         "stdlib.h": "c",
         "window_management.h": "c",
-        "intuition.h": "c"
+        "intuition.h": "c",
+        "stddef.h": "c",
+        "file_directory_handling.h": "c"
     }
 }
