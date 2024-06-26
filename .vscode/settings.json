@@ -15,6 +15,9 @@
         "window_management.h": "c",
         "intuition.h": "c",
         "stddef.h": "c",
-        "file_directory_handling.h": "c"
+        "file_directory_handling.h": "c",
+        "exec.h": "c",
+        "workbench.h": "c",
+        "utilities.h": "c"
     }
 }

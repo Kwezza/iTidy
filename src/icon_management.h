@@ -12,18 +12,14 @@
 #include <proto/graphics.h>
 #include <stdlib.h>
 #include "main.h"
+#include "icon_types.h"
+#include "utilities.h"
 
 BOOL AddIconToArray(IconArray *iconArray, const FullIconDetails *newIcon);
-BOOL GetStandardIconSize(const char *filePath, IconSize *iconSize);
-BOOL IsNewIcon(struct DiskObject *diskObject);
-BOOL IsNewIconPath(const STRPTR filePath);
+BOOL checkIconFrame(const char *iconName);
 IconArray *CreateIconArray(void);
 IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath);
-IconPosition GetIconPositionFromPath(const char *iconPath);
-int getOS35IconSize(const char *filename, IconSize *size);
-int isOS35IconFormat(const char *filename);
 void FreeIconArray(IconArray *iconArray);
-void GetNewIconSizePath(const char *filePath, IconSize *newIconSize);
 int ArrangeIcons(BPTR lock, char *dirPath, int newWidth);
 int CompareByFolderAndName(const void *a, const void *b);
 

@@ -1,3 +1,5 @@
+//opens a small window to get the font width settings
+
 #include <exec/types.h>
 #include <libraries/dos.h>
 #include <workbench/workbench.h>
@@ -17,6 +19,8 @@
 #include "icon_management.h"
 #include "window_management.h"
 #include "file_directory_handling.h"
+#include "utilities.h"
+
 
 void CleanupWindow() {
     if (font) {

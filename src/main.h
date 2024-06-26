@@ -29,6 +29,10 @@
 #include <ctype.h>
 #include "Settings/IControlPrefs.h"
 #include "Settings/WorkbenchPrefs.h"
+#include "utilities.h"
+
+// Define the DEBUG macro to enable debug prints
+// #define DEBUG
 
 #define ICON_SPACING_X 10
 #define ICON_SPACING_Y 10
@@ -99,15 +103,13 @@ extern struct WorkbenchSettings prefsWorkbench;
 extern struct IControlPrefsDetails prefsIControl;
 extern int screenHight;
 extern int screenWidth;
+extern BOOL user_dontResize;
+extern BOOL user_cleanupWHDLoadFolders;
+extern BOOL user_folderViewMode;
+extern BOOL user_folderFlags;
 
-BOOL checkIconFrame(const char *iconName);
 int Compare(const void *a, const void *b);
 int strncasecmp_custom(const char *s1, const char *s2, size_t n);
 void CalculateTextExtent(const char *text, struct TextExtent *textExtent);
-void dumpIconArrayToScreen(IconArray *iconArray);
-void pause_program(void);
-void removeInfoExtension(const char *input, char *output);
-void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo);
-int saveIconsPositionsToDisk(IconArray *iconArray);
 
 #endif // MAIN_H

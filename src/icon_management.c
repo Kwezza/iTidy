@@ -17,6 +17,8 @@
 #include "icon_management.h"
 #include "window_management.h"
 #include "file_directory_handling.h"
+#include "icon_types.h"
+#include "utilities.h"
 
 void FreeIconArray(IconArray *iconArray)
 {
@@ -239,428 +241,13 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
 
     // Free the FileInfoBlock before returning
     FreeDosObject(DOS_FIB, fib);
-
+#ifdef DEBUG
     printf("Has only borderless icons: %d\n", iconArray->hasOnlyBorderlessIcons);
+#endif
     return iconArray;
 }
 
-void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
-{
-    struct DiskObject *diskObject;
-    STRPTR *toolTypes;
-    STRPTR toolType;
-    char *prefix = "IM1=";
-    int i;
-    char *filePathCopy;
-    size_t filePathLen;
 
-    if (!filePath || !newIconSize)
-    {
-        printf("Invalid filePath or newIconSize pointer.\n");
-        return;
-    }
-
-    // Make a copy of the file path to work with
-    filePathLen = strlen(filePath);
-    filePathCopy = (char *)AllocVec(filePathLen + 1, MEMF_CLEAR);
-    if (!filePathCopy)
-    {
-        printf("Memory allocation failed.\n");
-        return;
-    }
-
-    strncpy(filePathCopy, filePath, filePathLen);
-
-    // Remove the ".info" suffix if it exists
-    if (filePathLen > 5 && strcmp(filePathCopy + filePathLen - 5, ".info") == 0)
-    {
-        filePathCopy[filePathLen - 5] = '\0'; // Truncate the .info part
-    }
-
-    // Load the DiskObject from the file path
-    diskObject = GetDiskObject(filePathCopy);
-    if (!diskObject)
-    {
-        printf("Failed to get DiskObject for the file: %s\n", filePathCopy);
-        FreeVec(filePathCopy);
-        return;
-    }
-
-    toolTypes = diskObject->do_ToolTypes;
-    if (!toolTypes)
-    {
-        printf("Invalid or missing ToolTypes in DiskObject.\n");
-        FreeDiskObject(diskObject);
-        FreeVec(filePathCopy);
-        return;
-    }
-
-    // Process ToolTypes to find the "IM1=" prefix and get icon size
-    for (i = 0; (toolType = toolTypes[i]); i++)
-    {
-        if (strncmp(toolType, prefix, strlen(prefix)) == 0)
-        {
-            if (strlen(toolType) >= 7)
-            {
-                newIconSize->width = (int)toolType[4] - '!';
-                newIconSize->height = (int)toolType[5] - '!';
-               
-            }
-            break;
-        }
-    }
-
-    // Cleanup
-    FreeDiskObject(diskObject);
-    FreeVec(filePathCopy);
-}
-/* Function to get the standard icon size */
-BOOL GetStandardIconSize(const char *filePath, IconSize *iconSize)
-{
-    struct DiskObject *diskObject;
-    char filePathCopy[256]; /* Buffer to hold the modified file path */
-    int filePathLength;
-
-    /* Check for NULL pointers */
-    if (filePath == NULL || iconSize == NULL)
-    {
-        return FALSE;
-    }
-
-    /* Copy the file path to a local buffer */
-    strncpy(filePathCopy, filePath, sizeof(filePathCopy) - 1);
-    filePathCopy[sizeof(filePathCopy) - 1] = '\0'; /* Ensure null-termination */
-    filePathLength = strlen(filePathCopy);
-
-    /* Remove the ".info" suffix if present */
-    if (filePathLength > 5 && strcmp(filePathCopy + filePathLength - 5, ".info") == 0)
-    {
-        filePathCopy[filePathLength - 5] = '\0';
-    }
-
-    /* Attempt to get the DiskObject for the provided (or modified) file path */
-    diskObject = GetDiskObject(filePathCopy);
-    if (diskObject == NULL)
-    {
-        return FALSE; /* Failed to get the DiskObject */
-    }
-
-    /* Retrieve the width and height from the DiskObject's GfxImage structure */
-    iconSize->width = diskObject->do_Gadget.Width;
-    iconSize->height = diskObject->do_Gadget.Height;
-
-    /* Free the DiskObject to avoid memory leaks */
-    FreeDiskObject(diskObject);
-
-    return TRUE; /* Successfully retrieved and stored the icon size */
-}
-
-/* Function to get the X and Y position from an .info file */
-IconPosition GetIconPositionFromPath(const char *iconPath)
-{
-    IconPosition position;         /* Structure to hold X and Y positions */
-    char *pathCopy;                /* Copy of the icon path */
-    size_t pathLength;             /* Length of the icon path */
-    struct DiskObject *diskObject; /* Pointer to the DiskObject structure */
-
-    /* Initialize the IconPosition structure with invalid coordinates */
-    position.x = -1;
-    position.y = -1;
-
-    /* Determine the length of the provided path */
-    pathLength = strlen(iconPath);
-
-    /* Allocate memory for the path copy */
-    pathCopy = (char *)AllocVec(pathLength + 1, MEMF_CLEAR);
-    if (pathCopy == NULL)
-    {
-        printf("Failed to allocate memory for path copy.\n");
-        return position;
-    }
-
-    /* Copy the original icon path to the allocated memory */
-    strncpy(pathCopy, iconPath, pathLength);
-
-    /* Ensure the path copy is null-terminated */
-    pathCopy[pathLength] = '\0';
-
-    /* Check if the path ends with .info and remove it */
-    if (pathLength > 5 && strncasecmp_custom(pathCopy + pathLength - 5, ".info", 5) == 0)
-    {
-        pathCopy[pathLength - 5] = '\0'; /* Remove the .info extension */
-    }
-
-    /* Load the DiskObject from the modified path (without .info) */
-    diskObject = GetDiskObject(pathCopy);
-    if (diskObject == NULL)
-    {
-        printf("Failed to load .info file: %s.info\n", pathCopy);
-        FreeVec(pathCopy); /* Free the allocated memory */
-        return position;
-    }
-
-    /* Get the current X and Y positions */
-    position.x = diskObject->do_CurrentX;
-    position.y = diskObject->do_CurrentY;
-
-    /* Free the DiskObject and the path copy */
-    FreeDiskObject(diskObject);
-    FreeVec(pathCopy);
-
-    return position;
-}
-
-
-BOOL IsNewIconPath(const STRPTR filePath)
-{
-    BOOL newIconFormat = FALSE;
-    struct DiskObject *diskObject = NULL;
-    STRPTR adjustedFilePath = NULL;
-    STRPTR *toolTypes;
-
-    /* Check if the provided filepath ends with ".info" */
-    size_t len = strlen(filePath);
-    if (len >= 5 && strcmp(filePath + len - 5, ".info") == 0)
-    {
-        /* Allocate memory for the new path without ".info" */
-        adjustedFilePath = (STRPTR)AllocVec(len - 4, MEMF_CLEAR);
-        if (adjustedFilePath == NULL)
-        {
-            // Memory allocation failed
-            return FALSE;
-        }
-
-        /* Create a new string without the ".info" extension */
-        strncpy(adjustedFilePath, filePath, len - 5);
-        adjustedFilePath[len - 5] = '\0';
-    }
-    else
-    {
-        /* Allocate memory for the original path */
-        adjustedFilePath = (STRPTR)AllocVec(len + 1, MEMF_CLEAR);
-        if (adjustedFilePath == NULL)
-        {
-            // Memory allocation failed
-            return FALSE;
-        }
-
-        /* Copy the original filepath */
-        strncpy(adjustedFilePath, filePath, len);
-        adjustedFilePath[len] = '\0'; /* Ensure null-termination */
-    }
-
-    /* Load the DiskObject from the adjusted file path */
-    diskObject = GetDiskObject(adjustedFilePath);
-    if (diskObject == NULL)
-    {
-        FreeVec(adjustedFilePath);
-        return FALSE;
-    }
-
-    /* Get the ToolTypes */
-    toolTypes = diskObject->do_ToolTypes;
-
-    /* Check for the specific tool type indicating new icon format */
-    if (toolTypes != NULL)
-    {
-        while (*toolTypes != NULL)
-        {
-
-            if (strcmp(*toolTypes, "*** DON'T EDIT THE FOLLOWING LINES!! ***") == 0)
-            {
-                newIconFormat = TRUE;
-                printf("New icon format detected.\n");
-                break;
-            }
-
-            toolTypes++;
-        }
-    }
-
-    /* Clean up */
-    FreeDiskObject(diskObject);
-    FreeVec(adjustedFilePath);
-
-    /* Return the result */
-    return newIconFormat;
-} /* IsNewIcon */
-
-int isOS35IconFormat(const char *filename)
-{
-    FILE *file;
-    UBYTE buffer[CHUNK_SIZE];
-    size_t bytesRead;
-    long fileSize;
-    int foundForm = 0; /* Flag to indicate if "FORM" has been found */
-    int foundIcon = 0; /* Flag to indicate if "ICON" has been found after "FORM" */
-    long offset = 0;
-    size_t i;
-
-    /* Open the file in binary mode */
-    file = fopen(filename, "rb");
-    if (file == NULL)
-    {
-        printf("filename: %s\n", filename);
-        perror("Error opening file");
-        return 0; /* Return false on error */
-    }
-
-    /* Get the file size */
-    fseek(file, 0, SEEK_END);
-    fileSize = ftell(file);
-    fseek(file, 0, SEEK_SET);
-
-    /* Check if the file size is at least the size of the header */
-    if (fileSize < HEADER_SIZE)
-    {
-        fclose(file);
-        return 0; /* File too small to be OS3.5 icon */
-    }
-
-    /* Read the file in chunks and search for the headers */
-    while ((bytesRead = fread(buffer, 1, CHUNK_SIZE, file)) > 0)
-    {
-        for (i = 0; i < bytesRead - HEADER_SIZE; i++)
-        {
-            /* Check for "FORM" header */
-            if (!foundForm && memcmp(buffer + i, "FORM", 4) == 0)
-            {
-                foundForm = 1; /* Found "FORM" */
-                offset = ftell(file) - bytesRead + i;
-            }
-
-            /* If "FORM" was found, look for "ICON" */
-            if (foundForm && memcmp(buffer + i + 8, "ICON", 4) == 0)
-            {
-                foundIcon = 1; /* Found "ICON" */
-                break;         /* Break the loop as we've found the required headers */
-            }
-        }
-
-        if (foundIcon)
-        {
-            break; /* Exit the loop once "FORM" and "ICON" are found */
-        }
-    }
-
-    /* Close the file */
-    fclose(file);
-
-    /* Return true if both "FORM" and "ICON" were found */
-    return (foundForm && foundIcon);
-}
-
-BOOL IsNewIcon(struct DiskObject *diskObject)
-{
-    STRPTR *toolTypes;
-    BOOL newIconFormat = FALSE;
-
-    toolTypes = diskObject->do_ToolTypes;
-
-    /* Print all tooltypes */
-    if (toolTypes != NULL)
-    {
-
-        while (*toolTypes != NULL)
-        {
-            if (strcmp(*toolTypes, "*** DON'T EDIT THE FOLLOWING LINES!! ***") == 0)
-            {
-                newIconFormat = TRUE;
-            } /* if */
-            toolTypes++;
-        } /* while */
-    } /* if */
-
-    if (newIconFormat)
-    {
-        return TRUE;
-    } /* if */
-
-    return FALSE;
-} /* IsNewIcon */
-
-/* Function to check if the icon file is in the OS3.5 format and return its size */
-int getOS35IconSize(const char *filename, IconSize *size)
-{
-    FILE *file;
-    UBYTE buffer[CHUNK_SIZE];
-    size_t bytesRead;
-    long fileSize;
-    int foundForm = 0; /* Flag to indicate if "FORM" has been found */
-    int foundIcon = 0; /* Flag to indicate if "ICON" has been found after "FORM" */
-    int foundFace = 0; /* Flag to indicate if "FACE" chunk has been found */
-    long offset = 0;
-
-    /* Initialize the size */
-    size->width = 0;
-    size->height = 0;
-
-    /* Open the file in binary mode */
-    file = fopen(filename, "rb");
-    if (file == NULL)
-    {
-        printf("filename: %s\n", filename);
-        perror("Error opening file");
-        return 0; /* Return false on error */
-    }
-
-    /* Get the file size */
-    fseek(file, 0, SEEK_END);
-    fileSize = ftell(file);
-    fseek(file, 0, SEEK_SET);
-
-    /* Check if the file size is at least the size of the header */
-    if (fileSize < HEADER_SIZE)
-    {
-        fclose(file);
-        return 0; /* File too small to be OS3.5 icon */
-    }
-
-    /* Read the file in chunks and search for the headers */
-    while ((bytesRead = fread(buffer, 1, CHUNK_SIZE, file)) > 0)
-    {
-        int i;
-
-        for (i = 0; i < bytesRead - HEADER_SIZE; i++)
-        {
-            /* Check for "FORM" header */
-            if (!foundForm && memcmp(buffer + i, "FORM", 4) == 0)
-            {
-                foundForm = 1; /* Found "FORM" */
-                offset = ftell(file) - bytesRead + i;
-            }
-
-            /* If "FORM" was found, look for "ICON" */
-            if (foundForm && memcmp(buffer + i + 8, "ICON", 4) == 0)
-            {
-                foundIcon = 1; /* Found "ICON" */
-            }
-
-            /* If "ICON" was found, look for "FACE" */
-            if (foundIcon && memcmp(buffer + i, "FACE", 4) == 0)
-            {
-                foundFace = 1; /* Found "FACE" chunk */
-
-                /* Read the width and height from the "FACE" chunk */
-                size->width = (buffer[i + 8] & 0xFF) + 1;
-                size->height = (buffer[i + 9] & 0xFF) + 1;
-
-                break; /* We have what we need, so break the loop */
-            }
-        }
-
-        if (foundFace)
-        {
-            break; /* Exit the loop once "FACE" chunk is found */
-        }
-    }
-
-    /* Close the file */
-    fclose(file);
-
-    /* Return true if the "FACE" chunk was found and size was set */
-    return foundFace;
-}
 /* Comparison function for sorting by is_folder and then by icon_text */
 int CompareByFolderAndName(const void *a, const void *b)
 {
@@ -690,8 +277,7 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     int largestIconWidth, columnWidths[100]; // Assuming a max of 100 columns for simplicity
     int centerX;
     int minIconsPerRow;
-    int screenWidth = 640;  // Standard Amiga Workbench resolution width
-
+    int screenWidth = 640; // Standard Amiga Workbench resolution width
 
     int rowCount;                    // For tracking the number of rows
     int dynamicPaddingY;             // For dynamic bottom padding
@@ -712,7 +298,7 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     rowCount = 0;
     rowStartIndex = 0;
 
-    printf("ArrangeIcons called with path: %s, newWidth: %d\n", dirPath, newWidth);
+    printf("Formatting folder: %s\n", dirPath);
 
     iconArray = CreateIconArrayFromPath(lock, dirPath);
 
@@ -722,14 +308,18 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     }
 
     totalIcons = iconArray->size;
+#ifdef DEBUG
     printf("Total icons: %d\n", totalIcons);
+#endif
 
     // Sort icons by name and folder for a consistent layout
     qsort(iconArray->array, totalIcons, sizeof(FullIconDetails), CompareByFolderAndName);
 
     // Check the largest width of any icon to determine spacing needs
     largestIconWidth = iconArray->BiggestWidthPX;
+#ifdef DEBUG
     printf("Largest icon width: %d\n", largestIconWidth);
+#endif
 
     // Ensure the largest icon width is reasonable
     if (largestIconWidth <= 0)
@@ -748,27 +338,35 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     if (maxWindowWidth > screenWidth)
     {
         maxWindowWidth = screenWidth - prefsIControl.currentBarWidth - prefsIControl.currentLeftBarWidth - (PADDING_WIDTH * 2);
+#ifdef DEBUG
         printf("Adjusted max window width to fit screen: %d\n", maxWindowWidth);
+#endif
     }
     else
     {
+#ifdef DEBUG
         printf("Calculated max window width: %d\n", maxWindowWidth);
+#endif
     }
 
     // Determine the optimal number of icons per row
     iconsPerRow = MAX((newWidth - ICON_START_X) / (largestIconWidth + iconSpacingX), minIconsPerRow);
+#ifdef DEBUG
     printf("Initial icons per row calculated: %d\n", iconsPerRow);
-
+#endif
     // Adjust window width to fit these icons evenly
     windowWidth = ICON_START_X + iconsPerRow * (largestIconWidth + iconSpacingX);
+    #ifdef DEBUG
     printf("Adjusted initial window width: %d\n", windowWidth);
-
+#endif
     // Expand window width to fit more icons if necessary and possible
     while (windowWidth < maxWindowWidth && (totalIcons / iconsPerRow) > (iconsPerRow / 2))
     {
         iconsPerRow++;
         windowWidth = ICON_START_X + iconsPerRow * (largestIconWidth + iconSpacingX);
+#ifdef DEBUG
         printf("Expanding window width: %d, Icons per row: %d\n", windowWidth, iconsPerRow);
+#endif
     }
 
     // Adjust window width to ensure it doesn't exceed maxWindowWidth
@@ -776,7 +374,9 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     {
         windowWidth = maxWindowWidth;
         iconsPerRow = MAX((maxWindowWidth - ICON_START_X) / (largestIconWidth + iconSpacingX), minIconsPerRow);
+#ifdef DEBUG
         printf("Adjusted to max window width: %d, Icons per row: %d\n", windowWidth, iconsPerRow);
+#endif
     }
 
     // Initialize column widths
@@ -809,9 +409,9 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
         {
             maxRowHeight = MAX(maxRowHeight, iconArray->array[i].icon_max_height) + borderSpacingForIconsWithNoSpacing;
         }
-
+#ifdef DEBUG
         printf("Row %d max height: %d\n", rowCount, maxRowHeight);
-
+#endif
         for (i = rowStartIndex; i < rowStartIndex + iconsPerRow && i < totalIcons; i++)
         {
             if (iconArray->hasOnlyBorderlessIcons == 0)
@@ -830,7 +430,7 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
             {
                 borderSpacingForIconsWithNoSpacing = 0;
             }
- 
+
             column = i % iconsPerRow;
             iconHeight = iconArray->array[i].icon_max_height + borderSpacingForIconsWithNoSpacing;
 
@@ -841,15 +441,19 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
             iconArray->array[i].icon_x = x + centerX;
             // Align to the bottom of the row by setting y based on maxRowHeight
             iconArray->array[i].icon_y = y + (maxRowHeight - iconHeight);
-
+#ifdef DEBUG
             printf("Placing icon %d at (x: %ld, y: %ld) with width %d and height %d name: %s\n",
+
                    i, iconArray->array[i].icon_x, iconArray->array[i].icon_y + borderSpacingForIconsWithNoSpacing,
                    iconArray->array[i].icon_max_width + borderSpacingForIconsWithNoSpacing, iconArray->array[i].icon_max_height + borderSpacingForIconsWithNoSpacing,
                    iconArray->array[i].icon_text);
+#endif
 
             maxX = MAX(maxX, (iconArray->array[i].icon_x + iconArray->array[i].icon_max_width) + borderSpacingForIconsWithNoSpacing);
             maxY = MAX(maxY, (iconArray->array[i].icon_y + iconArray->array[i].icon_max_height) + borderSpacingForIconsWithNoSpacing);
+#ifdef DEBUG
             printf("Updated maxX: %ld, maxY: %ld\n", maxX, maxY);
+#endif
 
             x += columnWidths[column] + iconSpacingX; // Use the specific width for this column
         }
@@ -859,7 +463,9 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
         y += maxRowHeight + iconSpacingY;
         rowStartIndex += iconsPerRow;
         rowCount++;
+#ifdef DEBUG
         printf("Moving to next row: y = %ld, rowStartIndex = %d, rowCount = %d\n", y, rowStartIndex, rowCount);
+#endif
     }
 
     // Calculate dynamic padding
@@ -867,19 +473,106 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
 
     // Adjust maxY to avoid excessive gap at the bottom
     maxY += dynamicPaddingY; // Add dynamic padding at the bottom
+#ifdef DEBUG
     printf("Final adjusted maxY with padding: %ld\n", maxY);
-
-    // Reposition the window to accommodate all icons neatly
     printf("Final maxX: %ld, maxY: %ld\n", maxX, maxY);
-    repoistionWindow(dirPath, maxX, maxY);
+#endif
+    // Reposition the window to accommodate all icons neatly
+    if (user_dontResize==FALSE) repoistionWindow(dirPath, maxX, maxY);
 
     // Save the icon positions to disk
     saveIconsPositionsToDisk(iconArray);
 
     FreeIconArray(iconArray);
-
+#ifdef DEBUG
     printf("!! Done. Icons arranged in %d rows with %d icons per row. Path: %s\n",
            rowCount, iconsPerRow, dirPath); // Correct the row count display
-
+#endif
     return 0;
+}
+
+BOOL checkIconFrame(const char *iconName)
+{
+    struct DiskObject *icon = NULL;
+    LONG frameStatus;
+    LONG errorCode;
+    struct Library *IconBase = NULL;
+    const char *extension = ".info";
+    size_t len = strlen(iconName);
+    size_t ext_len = strlen(extension);
+
+    // Calculate the length of the new icon name without the ".info" extension if present
+    size_t new_len = (len >= ext_len && strcmp(iconName + len - ext_len, extension) == 0) ? len - ext_len : len;
+
+    // Allocate memory for the new icon name
+    char *newIconName = (char *)malloc((new_len + 1) * sizeof(char));
+    if (newIconName == NULL)
+    {
+        printf("Memory allocation failed\n");
+        return FALSE;
+    }
+
+    // Copy the icon name up to the new length and null-terminate it
+    strncpy(newIconName, iconName, new_len);
+    newIconName[new_len] = '\0';
+
+    // Open the icon.library
+    IconBase = OpenLibrary("icon.library", 0);
+    if (!IconBase)
+    {
+        printf("Failed to open icon.library\n");
+        free(newIconName);
+        return TRUE; // Assume it has a frame if library can't be opened
+    }
+
+    // Load the icon using the new name without the ".info" extension
+    icon = GetIconTags(newIconName, TAG_END);
+    if (!icon)
+    {
+        printf("Failed to load icon for border checks: %s\n", newIconName);
+        CloseLibrary(IconBase);
+        free(newIconName);
+        return TRUE; // Assume it has a frame if icon can't be loaded
+    }
+
+    // Use IconControl to check the frame status of the icon
+    if (IconControl(icon,
+                    ICONCTRLA_GetFrameless, &frameStatus,
+                    ICONA_ErrorCode, &errorCode,
+                    TAG_END) == 1)
+    {
+        // A frameStatus of 0 means it has a frame, any other value means it does not
+        BOOL hasFrame = (frameStatus == 0);
+
+        // Cleanup
+        FreeDiskObject(icon);
+        CloseLibrary(IconBase);
+        free(newIconName);
+
+        return hasFrame;
+    }
+    else
+    {
+        printf("Failed to retrieve frame information; error code: %ld\n", errorCode);
+        PrintFault(errorCode, NULL);
+    }
+
+    // Cleanup
+    if (icon)
+    {
+        FreeDiskObject(icon);
+    }
+    CloseLibrary(IconBase);
+    free(newIconName);
+    return TRUE; // Default to having a frame if there's an error
+}
+
+void dumpIconArrayToScreen(IconArray *iconArray)
+{
+    int i;
+    printf("Dumping Icon Array of %d icons, max width is %dpx\n", iconArray->size, iconArray->BiggestWidthPX);
+    for (i = 0; i < iconArray->size; i++)
+    {
+        printf("Icon %d: Width = %d, Height = %d, Text Width = %d, Text Height = %d, Max Width = %d, Max Height = %d, x = %d, y = %d, Text = %s, Path = %s\n", i, iconArray->array[i].icon_width, iconArray->array[i].icon_height, iconArray->array[i].text_width, iconArray->array[i].text_height, iconArray->array[i].icon_max_width, iconArray->array[i].icon_max_height, iconArray->array[i].icon_x, iconArray->array[i].icon_y, iconArray->array[i].icon_text, iconArray->array[i].icon_full_path);
+    }
 }

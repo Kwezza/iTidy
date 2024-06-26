@@ -14,10 +14,16 @@
 #include "main.h"
 #include "icon_management.h"
 #include "window_management.h"
+#include "utilities.h"
 
 int HasSlaveFile(char *path);
 void ProcessDirectory(char *path, BOOL processSubDirs);
 void GetFullPath(const char *directory, struct FileInfoBlock *fib, char *fullPath, int fullPathSize);
 int IsRootDirectorySimple(char *path);
+void removeInfoExtension(const char *input, char *output);
+int saveIconsPositionsToDisk(IconArray *iconArray);
+void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo);
+void dumpIconArrayToScreen(IconArray *iconArray);
+void sanitizeAmigaPath(char *path);
 
 #endif // FILE_DIRECTORY_HANDLING_H

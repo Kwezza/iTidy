@@ -18,6 +18,7 @@
 #include "main.h"
 #include "icon_management.h"
 #include "file_directory_handling.h"
+#include "utilities.h"
 
 void CleanupWindow(void);
 int FormatIconsAndWindow(char *folder);
