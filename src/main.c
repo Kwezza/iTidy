@@ -61,6 +61,10 @@ struct WorkbenchSettings prefsWorkbench;
 struct IControlPrefsDetails prefsIControl;
 int screenHight = 0;
 int screenWidth = 0;
+int WindowWidthTextOnly = 430;
+int WindowHeightTextOnly = 256;
+int ICON_SPACING_X = 10;
+int ICON_SPACING_Y = 10;
 BOOL user_dontResize;
 BOOL user_cleanupWHDLoadFolders;
 BOOL user_folderViewMode;
@@ -70,15 +74,34 @@ int main(int argc, char **argv)
 {
     char filePath[256];
     int i;
+    int workbenchVersion = GetWorkbenchVersion();
     BOOL iterateDIRs = FALSE;
     user_dontResize = FALSE;
     user_folderViewMode = DDVM_BYICON;
     user_folderFlags = DDFLAGS_SHOWICONS;
     user_cleanupWHDLoadFolders = FALSE;
 
+
+#ifdef DEBUG
+    printf("Debug build\n");
+#endif
+
+    printf("Workbench version: %d\n", workbenchVersion);
+    if (workbenchVersion < 37000)
+    {
+        printf("This program requires Workbench 2.0 or higher.\n"); // The official librarys dont give me access to the function i use to position icons
+        return RETURN_FAIL;                                         // I might be able to open the icon in binary mode and read the position data, but thats a ponder for another day.
+    }
+
+    if (workbenchVersion < 3)
+    {
+        ICON_SPACING_X = 15;   //  Limited icon library support pre workbench 3.1.4
+        ICON_SPACING_Y = 15;   //  Some functions are disabled
+    }
+
     if (argc < 2)
     {
-        Printf("Usage: %s <directory> -iterateSubDIRs -dontResize -folderViewShowAll -folderViewDefault -folderViewByName -folderViewByType -cleanupWHDFolders\n", argv[0]);
+        Printf("Usage: %s <directory> -iterateSubDIRs -dontResizeWindow -folderViewShowAll -folderViewDefault -folderViewByName -folderViewByType -cleanupWHDFolders\n", argv[0]);
         return RETURN_FAIL;
     }
     strcpy(filePath, argv[1]);
@@ -93,7 +116,7 @@ int main(int argc, char **argv)
     {
         if (strncasecmp_custom(argv[i], "-iterateSubDIRs", strlen(argv[i])) == 0) // walk through any subfolders from the parent folder
             iterateDIRs = TRUE;
-        if (strncasecmp_custom(argv[i], "-dontResize", strlen(argv[i])) == 0) // don't resize and center the workbence window to fit the icons
+        if (strncasecmp_custom(argv[i], "-dontResizeWindow", strlen(argv[i])) == 0) // don't resize and center the workbence window to fit the icons
             user_dontResize = TRUE;
         if (strncasecmp_custom(argv[i], "-folderViewShowAll", strlen(argv[i])) == 0) // set the workbench folder view all files, even those without icons
             user_folderFlags = DDFLAGS_SHOWALL;

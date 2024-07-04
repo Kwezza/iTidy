@@ -163,6 +163,9 @@ IconPosition GetIconPositionFromPath(const char *iconPath)
     {
         pathCopy[pathLength - 5] = '\0'; /* Remove the .info extension */
     }
+#ifdef DEBUG
+    printf("Getting disk Object: %s\n",pathCopy);
+#endif
 
     /* Load the DiskObject from the modified path (without .info) */
     diskObject = GetDiskObject(pathCopy);
@@ -172,15 +175,23 @@ IconPosition GetIconPositionFromPath(const char *iconPath)
         FreeVec(pathCopy); /* Free the allocated memory */
         return position;
     }
-
+#ifdef DEBUG
+    printf("Getting disk position x and y\n",pathCopy);
+#endif
     /* Get the current X and Y positions */
     position.x = diskObject->do_CurrentX;
     position.y = diskObject->do_CurrentY;
 
+#ifdef DEBUG
+    printf("x: %d and y: %d\n",pathCopy);
+#endif
+
     /* Free the DiskObject and the path copy */
     FreeDiskObject(diskObject);
     FreeVec(pathCopy);
-
+    #ifdef DEBUG
+    printf("Returning from GetIconPositionFromPath\n",pathCopy);
+#endif
     return position;
 }
 

@@ -36,7 +36,6 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/iffparse.h>
 
 #include <exec/types.h>
 #include <graphics/text.h>
@@ -53,10 +52,9 @@
 #include "utilities.h"
 
 // Define the DEBUG macro to enable debug prints
-// #define DEBUG
+#define DEBUG
 
-#define ICON_SPACING_X 10
-#define ICON_SPACING_Y 10
+
 #define ICON_START_X 10
 #define ICON_START_Y 10
 #define SCROLLBAR_WIDTH 50
@@ -75,6 +73,7 @@
 #define HEADER_SIZE 12
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MAX_ICONS_TO_ALLIGN 50
+
 
 typedef struct {
     int left;
@@ -124,6 +123,10 @@ extern struct WorkbenchSettings prefsWorkbench;
 extern struct IControlPrefsDetails prefsIControl;
 extern int screenHight;
 extern int screenWidth;
+extern int WindowWidthTextOnly;
+extern int WindowHeightTextOnly;
+extern int ICON_SPACING_X;
+extern int ICON_SPACING_Y;
 extern BOOL user_dontResize;
 extern BOOL user_cleanupWHDLoadFolders;
 extern BOOL user_folderViewMode;

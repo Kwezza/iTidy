@@ -1,8 +1,58 @@
 #include <exec/types.h>
 #include <graphics/rastport.h>
 #include <stddef.h>
+#include <exec/execbase.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <dos/dos.h>
+#include <math.h>
+
 #include "main.h"
 
+
+// Function to read Kickstart version from memory for Kickstart 1.3 and earlier
+UWORD GetKickstartVersion() {
+    return *((volatile UWORD*)0x00FC);
+}
+
+// Function to get Workbench version, compatible with older versions
+int GetWorkbenchVersion(void) {
+    struct Library *DOSBase;
+    int version;
+
+    // Check Kickstart version to determine if the system is pre-2.0
+    UWORD kickstartVersion = GetKickstartVersion();
+
+    // If the kickstart version is less than 36 and not an obviously incorrect value (like 0 or random low number)
+    if (kickstartVersion > 0 && kickstartVersion < 36) {
+        return 1000; // Assume Workbench 1.000 for Kickstart versions below 36
+    }
+
+    // Open the DOS library for Workbench 2.0 and higher
+    DOSBase = OpenLibrary("dos.library", 0);
+    if (!DOSBase) {
+        return -1000; // Failed to open dos.library
+    }
+
+    // Ensure SysBase is defined and accessible
+    if (!SysBase) {
+        CloseLibrary(DOSBase);
+        return -1000;
+    }
+
+    // Get the system version from SysBase
+    int libVersion = SysBase->LibNode.lib_Version;
+    int libRevision = SysBase->LibNode.lib_Revision;
+
+    // Combine version and revision into a single integer
+    // Ensuring revision is always treated as a three-digit number
+    version = libVersion * 1000 + libRevision * 10;
+
+    // Close the DOS library
+    CloseLibrary(DOSBase);
+
+    return version;
+}
 
 void CalculateTextExtent(const char *text, struct TextExtent *textExtent)
 {

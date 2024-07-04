@@ -18,6 +18,12 @@
         "file_directory_handling.h": "c",
         "exec.h": "c",
         "workbench.h": "c",
-        "utilities.h": "c"
+        "utilities.h": "c",
+        "memory.h": "c",
+        "dos.h": "c",
+        "wb.h": "c",
+        "string.h": "c",
+        "icontrolprefs.h": "c",
+        "execbase.h": "c"
     }
 }

@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <exec/libraries.h>
 
 #include "main.h"
 #include "icon_management.h"
@@ -122,7 +123,9 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
         FreeIconArray(iconArray);
         return NULL;
     }
-
+#ifdef DEBUG
+    printf("Starting dir scan to add icons to array.\n");
+#endif
     if (Examine(lock, fib))
     {
         while (ExNext(lock, fib))
@@ -135,9 +138,20 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
 
                     if (fileExtension != NULL && strncasecmp_custom(fileExtension, ".info", 5) == 0)
                     {
+
                         GetFullPath(dirPath, fib, fullPathAndFile, sizeof(fullPathAndFile));
+
+#ifdef DEBUG
+                        printf("Adding to %s Icon array.\n", fullPathAndFile);
+#endif
                         removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
+#ifdef DEBUG
+                        printf("Calculating text extent.\n", fullPathAndFile);
+#endif
                         CalculateTextExtent(fileNameNoInfo, &textExtent);
+#ifdef DEBUG
+                        printf("Getting current icon position.\n", fullPathAndFile);
+#endif
                         iconPosition = GetIconPositionFromPath(fullPathAndFile);
 
                         // Determine icon size based on format
@@ -167,9 +181,13 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                             newIcon.icon_height = iconSize.height;
                             newIcon.icon_width = iconSize.width;
                         }
-
+#ifdef DEBUG
+                        printf("Checking for icon frame\n");
+#endif
                         newIcon.has_border = checkIconFrame(fullPathAndFile);
-                        // printf("Icon %s has border: %d\n", fullPathAndFile, newIcon.has_border);
+#ifdef DEBUG
+                        printf("Icon %s has border: %d\n", fullPathAndFile, newIcon.has_border);
+#endif
                         if (newIcon.has_border == 0)
                         {
                             iconArray->hasOnlyBorderlessIcons = FALSE;
@@ -185,7 +203,10 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
 
                         // Determine if it's a folder or a file
                         newIcon.is_folder = (fib->fib_DirEntryType > 0) ? TRUE : FALSE;
-
+#ifdef DEBUG
+                        printf("Allocating memory for icon path.\n", fullPathAndFile, newIcon.has_border);
+                        ;
+#endif
                         // Allocate and copy the full path and icon text
                         newIcon.icon_full_path = (char *)AllocVec(strlen(fullPathAndFile) + 1, MEMF_CLEAR);
                         if (!newIcon.icon_full_path)
@@ -246,7 +267,6 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
 #endif
     return iconArray;
 }
-
 
 /* Comparison function for sorting by is_folder and then by icon_text */
 int CompareByFolderAndName(const void *a, const void *b)
@@ -356,7 +376,7 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
 #endif
     // Adjust window width to fit these icons evenly
     windowWidth = ICON_START_X + iconsPerRow * (largestIconWidth + iconSpacingX);
-    #ifdef DEBUG
+#ifdef DEBUG
     printf("Adjusted initial window width: %d\n", windowWidth);
 #endif
     // Expand window width to fit more icons if necessary and possible
@@ -478,7 +498,8 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     printf("Final maxX: %ld, maxY: %ld\n", maxX, maxY);
 #endif
     // Reposition the window to accommodate all icons neatly
-    if (user_dontResize==FALSE) repoistionWindow(dirPath, maxX, maxY);
+    if (user_dontResize == FALSE)
+        repoistionWindow(dirPath, maxX, maxY);
 
     // Save the icon positions to disk
     saveIconsPositionsToDisk(iconArray);
@@ -515,7 +536,9 @@ BOOL checkIconFrame(const char *iconName)
     // Copy the icon name up to the new length and null-terminate it
     strncpy(newIconName, iconName, new_len);
     newIconName[new_len] = '\0';
-
+#ifdef DEBUG
+    printf("Opening icon library\n");
+#endif
     // Open the icon.library
     IconBase = OpenLibrary("icon.library", 0);
     if (!IconBase)
@@ -525,7 +548,24 @@ BOOL checkIconFrame(const char *iconName)
         return TRUE; // Assume it has a frame if library can't be opened
     }
 
-    // Load the icon using the new name without the ".info" extension
+    if (IconBase->lib_Version < 44)
+    {
+        #ifdef DEBUG
+        printf("icon.library version: %ld.%ld\n", IconBase->lib_Version, IconBase->lib_Revision);
+        printf("icon.library version 44 or higher is required to check for frames.\n");
+        #endif
+        CloseLibrary(IconBase);
+        free(newIconName);
+        return TRUE; // Assume it has a frame if library version is too low
+    }
+
+// Load the icon using the new name without the ".info" extension
+#ifdef DEBUG
+    printf("icon.library version: %ld.%ld\n", IconBase->lib_Version, IconBase->lib_Revision);
+    printf("icon for border checks: %s\n", newIconName);
+    printf("Getting icon tags\n");
+#endif
+
     icon = GetIconTags(newIconName, TAG_END);
     if (!icon)
     {
@@ -534,7 +574,10 @@ BOOL checkIconFrame(const char *iconName)
         free(newIconName);
         return TRUE; // Assume it has a frame if icon can't be loaded
     }
+#ifdef DEBUG
 
+    printf("Checking to see if it has a border\n");
+#endif
     // Use IconControl to check the frame status of the icon
     if (IconControl(icon,
                     ICONCTRLA_GetFrameless, &frameStatus,
@@ -545,6 +588,9 @@ BOOL checkIconFrame(const char *iconName)
         BOOL hasFrame = (frameStatus == 0);
 
         // Cleanup
+#ifdef DEBUG
+        printf("Cleaning up checkIconFrame\n");
+#endif
         FreeDiskObject(icon);
         CloseLibrary(IconBase);
         free(newIconName);

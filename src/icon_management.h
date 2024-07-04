@@ -10,7 +10,13 @@
 #include <proto/icon.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
+#include <stddef.h>
+#include <exec/memory.h>
+#include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
+#include <exec/libraries.h>
+
 #include "main.h"
 #include "icon_types.h"
 #include "utilities.h"

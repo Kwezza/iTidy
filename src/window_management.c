@@ -1,4 +1,4 @@
-//opens a small window to get the font width settings
+// opens a small window to get the font width settings
 
 #include <exec/types.h>
 #include <libraries/dos.h>
@@ -21,51 +21,73 @@
 #include "file_directory_handling.h"
 #include "utilities.h"
 
-
-void CleanupWindow() {
-    if (font) {
+void CleanupWindow()
+{
+    if (font)
+    {
         CloseFont(font); // Close the opened font
     }
-    if (window) {
+    if (window)
+    {
         CloseWindow(window);
     }
-    if (screen) {
+    if (screen)
+    {
         UnlockPubScreen("Workbench", screen);
     }
 }
 
-int FormatIconsAndWindow(char *folder) {
+int FormatIconsAndWindow(char *folder)
+{
     BPTR lock;
     int newWidth = 320;
     int minAverageWidthPercent = -100;
 
     lock = Lock(folder, ACCESS_READ);
-    if (lock) {
+    if (lock)
+    {
         minAverageWidthPercent = ArrangeIcons(lock, folder, newWidth);
-    } else {
+    }
+    else
+    {
         printf("Failed to lock the directory: %s\n", folder);
         return 1;
     }
     return 0;
 }
 
-void resizeFolderToContents(char *dirPath, IconArray *iconArray) {
+void resizeFolderToContents(char *dirPath, IconArray *iconArray)
+{
     int i, maxWidth = 0, maxHeight = 0;
-    for (i = 0; i < iconArray->size; i++) {
-        maxWidth = MAX(maxWidth, iconArray->array[i].icon_x + iconArray->array[i].icon_max_width);
-        maxHeight = MAX(maxHeight, iconArray->array[i].icon_y + iconArray->array[i].icon_max_height);
+
+    if (user_folderViewMode == DDVM_BYICON)
+    {
+        for (i = 0; i < iconArray->size; i++)
+        {
+            maxWidth = MAX(maxWidth, iconArray->array[i].icon_x + iconArray->array[i].icon_max_width);
+            maxHeight = MAX(maxHeight, iconArray->array[i].icon_y + iconArray->array[i].icon_max_height);
+        }
     }
+    else
+
+    {
+        maxWidth = WindowWidthTextOnly;
+        maxHeight = WindowHeightTextOnly;
+    }
+
     repoistionWindow(dirPath, maxWidth, maxHeight);
 }
 
-int InitializeWindow() {
+int InitializeWindow()
+{
     int windowWidth = 1;
     int windowHeight = 1;
     int windowLeft;
     int windowTop;
 
     screen = LockPubScreen("Workbench");
-    if (!screen) {
+    if (!screen)
+    {
         printf("Failed to lock Workbench screen.\n");
         return 0;
     }
@@ -82,26 +104,32 @@ int InitializeWindow() {
                             WA_Flags, WFLG_BACKDROP,
                             WA_CustomScreen, screen,
                             TAG_DONE);
-    if (!window) {
+    if (!window)
+    {
         printf("Failed to open window.\n");
         UnlockPubScreen("Workbench", screen);
         return 0;
     }
 
     rastPort = window->RPort;
-    if (!rastPort) {
+    if (!rastPort)
+    {
         printf("RastPort failed to create.\n");
     }
     font = screen->RastPort.Font;
-    if (font) {
+    if (font)
+    {
         SetFont(rastPort, font);
-    } else {
+    }
+    else
+    {
         printf("Failed to get default font from screen.\n");
     }
     return 1;
 }
 
-void repoistionWindow(char *dirPath, int winWidth, int winHeight) {
+void repoistionWindow(char *dirPath, int winWidth, int winHeight)
+{
     int posTop = 0, posLeft = 0;
     folderWindowSize newFolderInfo;
 
