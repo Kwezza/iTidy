@@ -257,13 +257,11 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
     /* Set the largest icon width */
     iconArray->BiggestWidthPX = maxWidth;
 
-    /* Optional: dump icon array to screen for debugging */
-    /* dumpIconArrayToScreen(iconArray); */
-
     /* Free the FileInfoBlock before returning */
     FreeDosObject(DOS_FIB, fib);
 #ifdef DEBUG
     printf("Has only borderless icons: %d\n", iconArray->hasOnlyBorderlessIcons);
+    dumpIconArrayToScreen(iconArray);
 #endif
     return iconArray;
 }
@@ -297,13 +295,12 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     int largestIconWidth, columnWidths[100]; /* Assuming a max of 100 columns for simplicity */
     int centerX;
     int minIconsPerRow;
-    int screenWidth = 640; /* Standard Amiga Workbench resolution width */
-
-    int rowCount;                    /* For tracking the number of rows */
-    int dynamicPaddingY;             /* For dynamic bottom padding */
-    int column;                      /* For storing column index within the loop */
-    int iconHeight;                  /* For storing the height of the current icon */
-    int rowStartIndex, maxRowHeight; /* For storing the starting index and max height of the current row */
+    int screenWidth = 640;                   /* Standard Amiga Workbench resolution width */
+    int rowCount;                            /* For tracking the number of rows */
+    int dynamicPaddingY;                     /* For dynamic bottom padding */
+    int column;                              /* For storing column index within the loop */
+    int iconHeight;                          /* For storing the height of the current icon */
+    int rowStartIndex, maxRowHeight;         /* For storing the starting index and max height of the current row */
     int borderSpacingForIconsWithNoSpacing = 0;
 
     /* Initialize variables */
