@@ -3,7 +3,7 @@ SC = sc
 LINK = slink
 
 # Compilation flags
-CFLAGS = noicon StackExtend
+CFLAGS = noicon StackExtend 
 
 # Linker flags
 LFLAGS = 

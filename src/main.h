@@ -21,28 +21,13 @@
 #include <stdio.h>
 #include <exec/memory.h>
 #include <dos/dos.h>
-
-#include <exec/memory.h>
-#include <proto/dos.h>
-#include <proto/exec.h>
 #include <proto/utility.h>
-#include <proto/icon.h>
-
 #include <libraries/iffparse.h>
 #include <prefs/prefhdr.h>
 #include <prefs/font.h>
-#include <stdio.h>
-#include <string.h>
-
-#include <proto/exec.h>
-#include <proto/dos.h>
-
-#include <exec/types.h>
+#include <proto/iffparse.h>
 #include <graphics/text.h>
 #include <graphics/rastport.h>
-#include <graphics/gfxbase.h>
-#include <proto/graphics.h>
-
 #include <ctype.h>
 
 #include "Settings/IControlPrefs.h"

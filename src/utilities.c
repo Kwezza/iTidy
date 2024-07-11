@@ -1,3 +1,4 @@
+#include <graphics/text.h>
 #include <exec/types.h>
 #include <graphics/rastport.h>
 #include <stddef.h>
@@ -19,7 +20,8 @@ UWORD GetKickstartVersion() {
 int GetWorkbenchVersion(void) {
     struct Library *DOSBase;
     int version;
-
+    int libVersion;
+    int libRevision; 
     // Check Kickstart version to determine if the system is pre-2.0
     UWORD kickstartVersion = GetKickstartVersion();
 
@@ -41,8 +43,8 @@ int GetWorkbenchVersion(void) {
     }
 
     // Get the system version from SysBase
-    int libVersion = SysBase->LibNode.lib_Version;
-    int libRevision = SysBase->LibNode.lib_Revision;
+    libVersion = SysBase->LibNode.lib_Version;
+    libRevision = SysBase->LibNode.lib_Revision;
 
     // Combine version and revision into a single integer
     // Ensuring revision is always treated as a three-digit number
@@ -53,6 +55,133 @@ int GetWorkbenchVersion(void) {
 
     return version;
 }
+
+void LookupWorkbenchVersion(int revision, char *versionString) {
+    // Ensure versionString is valid
+    if (!versionString) {
+        return;
+    }
+
+    // Clear the versionString
+    versionString[0] = '\0';
+
+    // Map the revision to the Workbench version
+    switch (revision) {
+        case 30000:
+            strcpy(versionString, "1.0");
+            break;
+        case 31334:
+            strcpy(versionString, "1.1");
+            break;
+        case 33460:
+        case 33470:
+        case 33560:
+        case 33590:
+        case 33610:
+            strcpy(versionString, "1.2");
+            break;
+        case 34200:
+        case 34280:
+        case 34340:
+        case 34100: // A2024 specific
+            strcpy(versionString, "1.3");
+            break;
+        case 36680:
+            strcpy(versionString, "2.0");
+            break;
+        case 37670:
+            strcpy(versionString, "2.04");
+            break;
+        case 37710:
+        case 37720:
+            strcpy(versionString, "2.05");
+            break;
+        case 38360:
+            strcpy(versionString, "2.1");
+            break;
+        case 39290:
+            strcpy(versionString, "3.0");
+            break;
+        case 40420:
+            strcpy(versionString, "3.1");
+            break;
+        case 44200:
+        case 44400:
+        case 44500:
+            strcpy(versionString, "3.5");
+            break;
+        case 45100:
+        case 45200:
+        case 45300:
+            strcpy(versionString, "3.9");
+            break;
+        case 45194:
+            strcpy(versionString, "3.1.4");
+            break;
+        case 47100:
+            strcpy(versionString, "3.2");
+            break;
+        case 47200:
+            strcpy(versionString, "3.2.1");
+            break;
+        case 47300:
+            strcpy(versionString, "3.2.2");
+            break;
+        case 47400:
+            strcpy(versionString, "3.2.2.1");
+            break;
+        case 50000:
+            strcpy(versionString, "4.0");
+            break;
+        case 51000:
+            strcpy(versionString, "4.1");
+            break;
+        case 51100:
+            strcpy(versionString, "4.1 Update 1");
+            break;
+        case 51200:
+            strcpy(versionString, "4.1 Update 2");
+            break;
+        case 51300:
+            strcpy(versionString, "4.1 Update 3");
+            break;
+        case 51400:
+            strcpy(versionString, "4.1 Update 4");
+            break;
+        case 51500:
+            strcpy(versionString, "4.1 Update 5");
+            break;
+        case 51600:
+            strcpy(versionString, "4.1 Final Edition");
+            break;
+        default:
+            sprintf(versionString, "Unknown Workbench version %d", revision);
+            break;
+    }
+}
+char* convertWBVersionWithDot(int number) {
+    char buffer[16]; // Buffer to hold the number as a string
+    char *result; // Pointer to the result string
+
+    // Convert the integer to a string
+    sprintf(buffer, "%d", number);
+
+    // Allocate memory for the result string
+    result = (char*)malloc(strlen(buffer) + 2); // +2 for the dot and null terminator
+
+    // Check if memory allocation was successful
+    if (result == NULL) {
+        return NULL;
+    }
+
+    // Insert the dot after the first two digits
+    strncpy(result, buffer, 2);
+    result[2] = '.'; 
+    strcpy(result + 3, buffer + 2);
+
+    return result;
+}
+
 
 void CalculateTextExtent(const char *text, struct TextExtent *textExtent)
 {

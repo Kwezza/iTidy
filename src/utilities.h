@@ -1,6 +1,6 @@
 #ifndef utilities_h
 #define utilities_h
-
+#include <graphics/text.h>
 #include <exec/types.h>
 #include <graphics/rastport.h>
 #include <stddef.h>
@@ -21,4 +21,5 @@ void WaitChar(void);
 void remove_CR_LF_from_string(char *str);
 UWORD GetKickstartVersion(void);
 int GetWorkbenchVersion(void);
+char* convertWBVersionWithDot(int number);
 #endif // utilities_h

@@ -3,19 +3,15 @@
 
 #include <exec/types.h>
 #include <libraries/dos.h>
-#include <workbench/workbench.h>
-#include <workbench/icon.h>
+#include <exec/libraries.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/icon.h>
-#include <proto/intuition.h>
-#include <proto/graphics.h>
 #include <stddef.h>
 #include <exec/memory.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <exec/libraries.h>
 
 #include "main.h"
 #include "icon_types.h"
@@ -30,3 +26,4 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth);
 int CompareByFolderAndName(const void *a, const void *b);
 
 #endif // ICON_MANAGEMENT_H
+

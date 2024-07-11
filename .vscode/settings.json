@@ -24,6 +24,7 @@
         "wb.h": "c",
         "string.h": "c",
         "icontrolprefs.h": "c",
-        "execbase.h": "c"
+        "execbase.h": "c",
+        "gfxbase.h": "c"
     }
 }
