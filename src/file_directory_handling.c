@@ -174,9 +174,18 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
 
         if (diskObject)
         {
+
             // Set the new positions
-            diskObject->do_CurrentX = currentIcon->icon_x;
-            diskObject->do_CurrentY = currentIcon->icon_y;
+            if (user_stripIconPosition == FALSE)
+            {
+                diskObject->do_CurrentX = currentIcon->icon_x;
+                diskObject->do_CurrentY = currentIcon->icon_y;
+            }
+            else
+            {
+                diskObject->do_CurrentX = NO_ICON_POSITION;
+                diskObject->do_CurrentY = NO_ICON_POSITION;
+            }
 
             // Save the updated DiskObject back to disk
             if (!PutDiskObject(fileNameNoInfo, diskObject))

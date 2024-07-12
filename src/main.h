@@ -37,7 +37,7 @@
 #include "utilities.h"
 
 // Define the DEBUG macro to enable debug prints
-#define DEBUG
+//#define DEBUG
 
 
 #define ICON_START_X 10
@@ -116,6 +116,7 @@ extern BOOL user_dontResize;
 extern BOOL user_cleanupWHDLoadFolders;
 extern BOOL user_folderViewMode;
 extern BOOL user_folderFlags;
+extern BOOL user_stripIconPosition;
 
 int Compare(const void *a, const void *b);
 int strncasecmp_custom(const char *s1, const char *s2, size_t n);
