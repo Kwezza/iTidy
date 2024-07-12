@@ -1,6 +1,6 @@
-# Icon Cleanup
+# ICleanup
 
-Icon Cleanup is an Amiga CLI tool that tidies up icons, then centers and resizes windows to fit the icons.
+ICleanup is an Amiga CLI tool that tidies up icons, then centers and resizes windows to fit the icons.
 
 ## Features
 
@@ -9,36 +9,41 @@ Icon Cleanup is an Amiga CLI tool that tidies up icons, then centers and resizes
 - Supports Workbench 2.0 and higher
 - Takes the current font settings into account when working out icon widths
 - Considers any custom border, window, and title settings when calculating the window size
-- Has the option to skip WHDLoad folders if the author's layout is preferred (Window will still be resized and centered)
+- Has the option to skip WHDLoad folders if the author's layout is preferred (The window will still be resized and centered)
 - Can set folder view mode to View by icon, or view by name only
 
-I wrote this program because I wasn't happy with the default placement of icons when copied or extracted from archives.
-Also, I was not too fond of opening folders with a few icons and then having to scroll or resize the window to see them all.
-Originally designed to be used with an update to WHDArchiveExtractor (for extracting WHDLoad archives en masse), I have since
-found it useful for keeping my system tidy and decided to release it for others to, hopefully, find it useful. As it runs from
-the CLI, it can be incorporated into larger scripts that preinstall other software and then used to tidy up the icons and
-windows afterwards.
+I wrote this program because I wasn't happy with the default placement of icons when copied or extracted from archives. Also, I was not too fond of opening folders with a few icons and then having to scroll or resize the window to see them all. Although Workbench has built-in tools to tidy up folders, I needed something that could organize multiple folders at once. Originally designed to be used with an update to WHDArchiveExtractor (for extracting WHDLoad archives en masse), I have since found it useful for keeping my system tidy and decided to release it for others to, hopefully, find it useful. As it runs from the CLI, it can be incorporated into larger scripts that preinstall other software and then used to tidy up the icons and windows afterwards.
 
 ## Usage
 
 The program is designed to be run from the CLI and takes the following arguments:
-Usage: IconCleanup <directory> -iterateSubDIRs -dontResizeWindow -folderViewShowAll -folderViewDefault -folderViewByName
--folderViewByType -dontCleanupWHDFolders
-
+```
+`Usage: ICleanup <directory> -iterateSubDIRs -dontResizeWindow -folderViewShowAll -folderViewDefault -folderViewByName -folderViewByType -dontCleanupWHDFolders
+```
 Where:
 
 - `<directory>` is the folder to start the cleanup from
-- `-iterateSubDIRs` will walk through any subfolders from the parent folder
-- `-dontResizeWindow` will not resize and center the Workbench window to fit the icons
-- `-folderViewShowAll` will set the Workbench folder view to show all files, even those without icons
-- `-folderViewDefault` will set the Workbench folder view to default (inherit parent's view mode)
-- `-folderViewByName` will set the Workbench folder view as text, sorted by name
-- `-folderViewByType` will set the Workbench folder view as text, sorted by type
-- `-dontCleanupWHDFolders` will force the program to maintain the icon position in WHDLoad folders but will resize and center the window to fit the icons
+- `-iterateSubDIRs` Walk through all folders found in the parent folder and apply the operations recursively.
+- `-dontResizeWindow` Do not resize and center the Workbench window to fit after arranging icons.
+- `-folderViewShowAll` Set the Workbench folder view to show all files, including those without icons.
+- `-folderViewDefault` Set the Workbench folder view to the default mode, inheriting the parent folder's view mode.
+- `-folderViewByName` Set the Workbench folder view to text-only mode, sorted by name (no icons).
+- `-folderViewByType` Set the Workbench folder view to text-only mode, sorted by type (no icons). Useful for sorting directories first.
+- `-removeIconPositions` Remove each icon's x and y positions, instructing Workbench to place the icon automatically when opening the folder.
+- `-dontCleanupWHDFolders` By default, the program skips rearranging icons in WHDLoad folders to preserve the original author's layout. This option forces the program to rearrange the icons even if a .slave file is found in the folder. Without this option, the folder's window will only be resized and centered.
+
+## Example 
+```
+ICleanup PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted -iterateSubDIRs```
+```
+
+In this example, the folder "PC/Retroplay-WHDLoad-downloader/Extracted" will be cleaned up, its window will be resized and centered, and all subfolders will also be tidied.
+
+## Limitations
 
 I have been using this program on Workbench 3.2 and have only done limited testing on Workbench 2.
-Please let me know if you have any issues via email, or better still, open a ticket on the GitHub page.
-As always, although it works for me, this program is provided as is, and I take no responsibility for any issues it may cause.
+Please let me know if you have any issues via email, or better still, open a ticket on the project's GitHub page.
+As always, and although it works for me, this program is provided as is, and I take no responsibility for any issues it may cause.
 Please back up your system before running this program.
 
 ## Changelog
