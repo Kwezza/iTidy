@@ -32,9 +32,11 @@ Where:
 - `-removeIconPositions` Remove each icon's x and y positions, instructing Workbench to place the icon automatically when opening the folder.
 - `-dontCleanupWHDFolders` By default, the program skips rearranging icons in WHDLoad folders to preserve the original author's layout. This option forces the program to rearrange the icons even if a .slave file is found in the folder. Without this option, the folder's window will only be resized and centered.
 
+**Note:** if the directory contains spaces in the name, it will need to be inclosed in two speech marks "DH0:My DIR"
+
 ## Example 
 ```
-ICleanup PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted -iterateSubDIRs```
+ICleanup PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted -iterateSubDIRs
 ```
 
 In this example, the folder "PC/Retroplay-WHDLoad-downloader/Extracted" will be cleaned up, its window will be resized and centered, and all subfolders will also be tidied.
