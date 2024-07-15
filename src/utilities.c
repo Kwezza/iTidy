@@ -19,7 +19,7 @@ UWORD GetKickstartVersion() {
 // Function to get Workbench version, compatible with older versions
 int GetWorkbenchVersion(void) {
     struct Library *DOSBase;
-    int version;
+    int WBversion;
     int libVersion;
     int libRevision; 
     // Check Kickstart version to determine if the system is pre-2.0
@@ -48,12 +48,12 @@ int GetWorkbenchVersion(void) {
 
     // Combine version and revision into a single integer
     // Ensuring revision is always treated as a three-digit number
-    version = libVersion * 1000 + libRevision * 10;
+    WBversion = libVersion * 1000 + libRevision * 10;
 
     // Close the DOS library
     CloseLibrary(DOSBase);
 
-    return version;
+    return WBversion;
 }
 
 void LookupWorkbenchVersion(int revision, char *versionString) {

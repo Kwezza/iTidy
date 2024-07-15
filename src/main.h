@@ -60,6 +60,19 @@
 #define MAX_ICONS_TO_ALLIGN 50
 
 
+
+#define textBlack "\x1B[31m"
+#define textBlue "\x1B[33m"
+#define textBold "\x1B[1m"
+#define textGrey "\x1B[30m"
+#define textItalic "\x1B[3m"
+#define textReset "\x1B[0m"
+#define textReverse "\x1B[7m"
+#define textUnderline "\x1B[4m"
+#define textWhite "\x1B[32m"
+
+
+
 typedef struct {
     int left;
     int top;

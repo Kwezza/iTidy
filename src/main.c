@@ -11,30 +11,31 @@
     * Considers any custom border, window, and title settings when calculating the window size
     * Has the option to skip WHDLoad folders if the author's layout is preferred (Window will still be resized and centred)
     * Can set folder view mode to View by icon, or view by name only
-    
-    I wrote this program because I wasn't happy with the default placement of icons when copied or extracted from archives. 
-    Also, I was not too fond of opening folders with a few icons and then having to scroll or resize the window to see them all. 
-    Originally designed to be used with an update to WHDArchiveExtractor (for extracting WHDLoad archives en masse), I have since 
-    found it useful for keeping my system tidy and decided to release it for others to, hopefully, find it useful. As it runs from 
-    the CLI, it can be incorporated into larger scripts that preinstall other software and then used to tidy up the icons and 
+
+    I wrote this program because I wasn't happy with the default placement of icons when copied or extracted from archives.
+    Also, I was not too fond of opening folders with a few icons and then having to scroll or resize the window to see them all.
+    Originally designed to be used with an update to WHDArchiveExtractor (for extracting WHDLoad archives en masse), I have since
+    found it useful for keeping my system tidy and decided to release it for others to, hopefully, find it useful. As it runs from
+    the CLI, it can be incorporated into larger scripts that preinstall other software and then used to tidy up the icons and
     windows afterwards.
 
     The program is designed to be run from the CLI and takes the following arguments:
-    Usage: IconCleanup <directory> -iterateSubDIRs -dontResizeWindow -folderViewShowAll -folderViewDefault -folderViewByName 
+    Usage: IconCleanup <directory> -iterateSubDIRs -dontResizeWindow -folderViewShowAll -folderViewDefault -folderViewByName
                        -folderViewByType -dontCleanupWHDFolders
     Where:
         <directory> is the folder to start the cleanup from
-        -iterateSubDIRs will walk through any subfolders from the parent folder
-        -dontResizeWindow will not resize and centre the Workbench window to fit the icons
-        -folderViewShowAll will set the Workbench folder view to show all files, even those without icons
-        -folderViewDefault will set the Workbench folder view to default (inherit parent's view mode)
-        -folderViewByName will set the Workbench folder view as text, sorted by name
-        -folderViewByType will set the Workbench folder view as text, sorted by type
+        -subdirs will walk through any subfolders from the parent folder
+        -dontResize will not resize and centre the Workbench window to fit the icons
+        -ViewShowAll will set the Workbench folder view to show all files, even those without icons
+        -ViewDefault will set the Workbench folder view to default (inherit parent's view mode)
+        -ViewByName will set the Workbench folder view as text, sorted by name
+        -ViewByType will set the Workbench folder view as text, sorted by type
+        -resetIcons will remove saved icon positions.  Instructs Workbench to pick a reasonable place for the icon when it opens the folder
         -dontCleanupWHDFolders will force the program to maintain the icon position in WHDLoad folders but will resize and centre the window to fit the icons
-    
-    I have been using this program on Workbench 3.2, and have only done limited testing on Workbench 2. 
-    Please let me know if you have any issues via email, or better still, open a ticket on the GitHub page. 
-    As always, although it works for me, this program is provided as is, and I take no responsibility for any issues it may cause. 
+
+    I have been using this program on Workbench 3.2, and have only done limited testing on Workbench 2.
+    Please let me know if you have any issues via email, or better still, open a ticket on the GitHub page.
+    As always, although it works for me, this program is provided as is, and I take no responsibility for any issues it may cause.
     Please back up your system before running this program.
 
     v1.0.0 - 2024-07-11 - First public release.
@@ -69,7 +70,6 @@
 #include <graphics/rastport.h>
 #include <ctype.h>
 
-
 #include "Settings/IControlPrefs.h"
 #include "Settings/WorkbenchPrefs.h"
 #include "main.h"
@@ -97,10 +97,31 @@ BOOL user_folderViewMode;
 BOOL user_folderFlags;
 BOOL user_stripIconPosition;
 
+#define VERSION_STRING "$VER: ITidy 1.0 (15.07.2024)"
+const char version[] = VERSION_STRING;
+
 void print_usage(const char *program_name);
 
-void print_usage(const char *program_name) {
-    printf("Usage: %s <directory> -iterateSubDIRs -dontResizeWindow -folderViewShowAll -folderViewDefault -folderViewByName -folderViewByType -dontCleanupWHDFolders\n", program_name);
+void print_usage(const char *program_name)
+{
+    printf("\n");
+    printf("" textReset textBold "Icon Tidy V1.0" textReset ".  A program to tidy icons, and resize folder windows from CLI.\n");
+    printf("Usage: ITidy <directory> [options]\n");
+    printf("Where:\n");
+    printf("    <directory>   The folder to start the cleanup from (mandatory)\n");
+    printf("    -subdirs      Recursively process subfolders\n");
+    printf("    -dontResize   Do not resize and centre the folder\n");
+    printf("    -ViewShowAll  Show all files, including those without icons\n");
+    printf("    -ViewDefault  Use default view settings\n");
+    printf("    -ViewByName   Set folder view as text, sorted by name\n");
+    printf("    -ViewByType   Set folder view as text, sorted by type\n");
+    printf("    -resetIcons   Remove saved icon posistions.\n");
+    printf("    -skipWHD      Keep WHDLoad folder icon positions, but do resize\n");
+    printf("\n");
+    printf("This program is provided 'as is' without any warranty of any kind. The \n");
+    printf("author assumes no responsibility for any damage or issues that may arise \n");
+    printf("from using this program. It is strongly recommended that you back up your\n");
+    printf("system before running this program.\n\n");
 }
 
 int main(int argc, char **argv)
@@ -109,14 +130,14 @@ int main(int argc, char **argv)
     int i;
     int workbenchVersion = GetWorkbenchVersion();
     BOOL iterateDIRs = FALSE;
-    #ifdef DEBUG
+#ifdef DEBUG
     char *stringWBVersion;
 #endif
     user_dontResize = FALSE;
     user_folderViewMode = DDVM_BYICON;
     user_folderFlags = DDFLAGS_SHOWICONS;
     user_cleanupWHDLoadFolders = TRUE;
-    user_stripIconPosition=FALSE;  
+    user_stripIconPosition = FALSE;
 
 #ifdef DEBUG
     printf("Debug build\n");
@@ -155,21 +176,21 @@ int main(int argc, char **argv)
 
     for (i = 0; i < argc; i++)
     {
-        if (strncasecmp_custom(argv[i], "-iterateSubDIRs", strlen(argv[i])) == 0) /* Walk through all folders found in the the parent folder */
+        if (strncasecmp_custom(argv[i], "-subdirs", strlen(argv[i])) == 0) /* Walk through all folders found in the the parent folder */
             iterateDIRs = TRUE;
-        if (strncasecmp_custom(argv[i], "-dontResizeWindow", strlen(argv[i])) == 0) /* Don't resize and center the Workbench window to fit after arranging icons */
+        if (strncasecmp_custom(argv[i], "-dontResize", strlen(argv[i])) == 0) /* Don't resize and center the Workbench window to fit after arranging icons */
             user_dontResize = TRUE;
-        if (strncasecmp_custom(argv[i], "-folderViewShowAll", strlen(argv[i])) == 0) /* Set the Workbench folder view to show all files, even those without icons.  May require a  */
+        if (strncasecmp_custom(argv[i], "-ViewShowAll", strlen(argv[i])) == 0) /* Set the Workbench folder view to show all files, even those without icons.  May require a  */
             user_folderFlags = DDFLAGS_SHOWALL;
-        if (strncasecmp_custom(argv[i], "-folderViewDefault", strlen(argv[i])) == 0) /* Set the Workbench folder view to default (inherit parent's view mode) */
+        if (strncasecmp_custom(argv[i], "-ViewDefault", strlen(argv[i])) == 0) /* Set the Workbench folder view to default (inherit parent's view mode) */
             user_folderViewMode = DDFLAGS_SHOWDEFAULT;
-        if (strncasecmp_custom(argv[i], "-folderViewByName", strlen(argv[i])) == 0) /* Set the Workbench folder view as text only (no icons), sorted by name */
+        if (strncasecmp_custom(argv[i], "-ViewByName", strlen(argv[i])) == 0) /* Set the Workbench folder view as text only (no icons), sorted by name */
             user_folderViewMode = DDVM_BYNAME;
-        if (strncasecmp_custom(argv[i], "-folderViewByType", strlen(argv[i])) == 0) /* Set the Workbench folder view as text only (no icons), sorted by type.  Handy for sorting directories first.*/
+        if (strncasecmp_custom(argv[i], "-ViewByType", strlen(argv[i])) == 0) /* Set the Workbench folder view as text only (no icons), sorted by type.  Handy for sorting directories first.*/
             user_folderViewMode = DDVM_BYTYPE;
-        if (strncasecmp_custom(argv[i], "-removeIconPositions", strlen(argv[i])) == 0) /* Removes each icon's x and y position.  Instructs Workbench to pick a reasonable place for the icon whens it opends the folder*/
-            user_stripIconPosition= TRUE;
-        if (strncasecmp_custom(argv[i], "-dontCleanupWHDFolders", strlen(argv[i])) == 0) /* By design, this program was created to clean up extracted WHDLoad folders, and skip rearranging the original author's layout. 
+        if (strncasecmp_custom(argv[i], "-resetIcons", strlen(argv[i])) == 0) /* Removes each icon's x and y position.  Instructs Workbench to pick a reasonable place for the icon whens it opends the folder*/
+            user_stripIconPosition = TRUE;
+        if (strncasecmp_custom(argv[i], "-skipWHD", strlen(argv[i])) == 0) /* By design, this program was created to clean up extracted WHDLoad folders, and skip rearranging the original author's layout.
                                                                                             This option forces the program to rearrange the icons if it detects a .slave file is found in the folder.  Without this option,
                                                                                             the fodler's window will just be resized and centered. */
             user_cleanupWHDLoadFolders = FALSE;
