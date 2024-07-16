@@ -1,6 +1,6 @@
-# ICleanup
+# ITidy
 
-ICleanup is an Amiga CLI tool that tidies up icons, then centers and resizes windows to fit the icons.
+ITidy is an Amiga CLI tool that tidies up icons, then centers and resizes windows to fit the icons.
 
 ## Features
 
@@ -18,7 +18,7 @@ I wrote this program because I wasn't happy with the default placement of icons 
 
 The program is designed to be run from the CLI and takes the following arguments:
 ```
-`Usage: ICleanup <directory> -iterateSubDIRs -dontResizeWindow -folderViewShowAll -folderViewDefault -folderViewByName -folderViewByType -dontCleanupWHDFolders
+`Usage: ITidy <directory> -iterateSubDIRs -dontResizeWindow -folderViewShowAll -folderViewDefault -folderViewByName -folderViewByType -dontCleanupWHDFolders
 ```
 Where:
 
@@ -36,7 +36,7 @@ Where:
 
 ## Example 
 ```
-ICleanup PC:Extracted -iterateSubDIRs
+ITidy PC:Extracted -iterateSubDIRs
 ```
 
 In this example, the folder "PC:Extracted" will be tidied up, its window will be resized and centered, and all subfolders will be tidied.  If any folders are found to be WHDLoad game folders, the original icon layout by the auther is preserved and the folder window will be resized and centred.
