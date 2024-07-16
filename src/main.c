@@ -97,7 +97,7 @@ BOOL user_folderViewMode;
 BOOL user_folderFlags;
 BOOL user_stripIconPosition;
 
-#define VERSION_STRING "$VER: ITidy 1.0 (15.07.2024)"
+#define VERSION_STRING "$VER: iTidy 1.0 (15.07.2024)"
 const char version[] = VERSION_STRING;
 
 void print_usage(const char *program_name);
@@ -106,7 +106,7 @@ void print_usage(const char *program_name)
 {
     printf("\n");
     printf("" textReset textBold "Icon Tidy V1.0" textReset ".  A program to tidy icons, and resize folder windows from CLI.\n");
-    printf("Usage: ITidy <directory> [options]\n");
+    printf("Usage: iTidy <directory> [options]\n");
     printf("Where:\n");
     printf("    <directory>   The folder to start the cleanup from (mandatory)\n");
     printf("    -subdirs      Recursively process subfolders\n");

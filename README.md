@@ -1,6 +1,6 @@
-# ITidy
+# iTidy
 
-ITidy is an Amiga CLI tool that tidies up icons, then centres and resizes windows to fit the icons.
+iTidy is an Amiga CLI tool that tidies up icons, then centres and resizes windows to fit the icons.
 
 ## Features
 
@@ -18,7 +18,7 @@ I wrote this program because I wasn't happy with the default placement of icons 
 
 The program is designed to be run from the CLI and takes the following arguments:
 ```
-Usage: ITidy <directory> [options]
+Usage: iTidy <directory> [options]
 ```
 Where:
 
@@ -36,7 +36,7 @@ Where:
 
 ## Example 
 ```
-ITidy PC:Extracted -iterateSubDIRs
+iTidy PC:Extracted -iterateSubDIRs
 ```
 
 In this example, the folder "PC:Extracted" will be tidied up, its window will be resized and centred, and all subfolders will be tidied.  If any folders are found to be WHDLoad game folders, the original icon layout by the author is preserved and the folder window will be resized and centred.
