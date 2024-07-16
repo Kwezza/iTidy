@@ -18,7 +18,7 @@ I wrote this program because I wasn't happy with the default placement of icons 
 
 The program is designed to be run from the CLI and takes the following arguments:
 ```
-`Usage: ITidy <directory> -iterateSubDIRs -dontResizeWindow -folderViewShowAll -folderViewDefault -folderViewByName -folderViewByType -dontCleanupWHDFolders
+`Usage: ITidy <directory> [options]
 ```
 Where:
 
