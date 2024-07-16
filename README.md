@@ -18,7 +18,7 @@ I wrote this program because I wasn't happy with the default placement of icons 
 
 The program is designed to be run from the CLI and takes the following arguments:
 ```
-`Usage: ITidy <directory> [options]
+Usage: ITidy <directory> [options]
 ```
 Where:
 
@@ -32,7 +32,7 @@ Where:
 - `-resetIcons` Remove each icon's x and y positions, instructing Workbench to place the icon automatically when opening the folder.
 - `-skipWHD` By default, the program skips rearranging icons in WHDLoad folders to preserve the original author's layout. This option forces the program to rearrange the icons even if a .slave file is in the folder. Without this option, the folder's window will only be resized and centred.
 
-**Note:** If the directory contains spaces in the name, it will need to be enclosed in two speech marks "DH0:My DIR"
+**Note:** If the directory contains spaces in the path, it will need to be enclosed in speech marks "DH0:My DIR"
 
 ## Example 
 ```
