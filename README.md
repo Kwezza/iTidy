@@ -12,7 +12,7 @@ ICleanup is an Amiga CLI tool that tidies up icons, then centers and resizes win
 - Has the option to skip WHDLoad folders if the author's layout is preferred (The window will still be resized and centered)
 - Can set folder view mode to View by icon, or view by name only
 
-I wrote this program because I wasn't happy with the default placement of icons when copied or extracted from archives. Also, I was not too fond of opening folders with a few icons and then having to scroll or resize the window to see them all. Although Workbench has built-in tools to tidy up folders, I needed something that could organize multiple folders at once. Originally designed to be used with an update to WHDArchiveExtractor (for extracting WHDLoad archives en masse), I have since found it useful for keeping my system tidy and decided to release it for others to, hopefully, find it useful. As it runs from the CLI, it can be incorporated into larger scripts that preinstall other software and then used to tidy up the icons and windows afterwards.
+I wrote this program because I wasn't happy with the default placement of icons when copied or extracted from archives. Also, I was not too fond of opening folder after folder with lots of icons and then having to scroll or resize the window to see them all. Although Workbench has built-in tools to tidy up folders, I needed something that could organize multiple folders at once. Originally designed to be used with an update to WHDArchiveExtractor (for extracting WHDLoad archives en masse), I have since found it useful for keeping my system tidy and decided to release it for others to, hopefully, find it useful. As it runs from the CLI, it can be incorporated into larger scripts that preinstall other software and then used to tidy up the icons and windows afterwards.
 
 ## Usage
 
@@ -23,23 +23,23 @@ The program is designed to be run from the CLI and takes the following arguments
 Where:
 
 - `<directory>` is the folder to start the cleanup from
-- `-iterateSubDIRs` Walk through all folders found in the parent folder and apply the operations recursively.
-- `-dontResizeWindow` Do not resize and center the Workbench window to fit after arranging icons.
-- `-folderViewShowAll` Set the Workbench folder view to show all files, including those without icons.
-- `-folderViewDefault` Set the Workbench folder view to the default mode, inheriting the parent folder's view mode.
-- `-folderViewByName` Set the Workbench folder view to text-only mode, sorted by name (no icons).
-- `-folderViewByType` Set the Workbench folder view to text-only mode, sorted by type (no icons). Useful for sorting directories first.
-- `-removeIconPositions` Remove each icon's x and y positions, instructing Workbench to place the icon automatically when opening the folder.
-- `-dontCleanupWHDFolders` By default, the program skips rearranging icons in WHDLoad folders to preserve the original author's layout. This option forces the program to rearrange the icons even if a .slave file is found in the folder. Without this option, the folder's window will only be resized and centered.
+- `-subdirs` Walk through all folders in the parent folder and recursively apply the operations.
+- `-dontResize` Do not resize and center the Workbench window to fit after arranging icons.
+- `-ViewShowAll` Set the Workbench folder view to show all files, including those without icons.
+- `-ViewDefault` Set the Workbench folder view to the default mode, inheriting the parent folder's view mode.
+- `-ViewByName` Set the Workbench folder view to text-only mode, sorted by name (no icons).
+- `-ViewByType` Set the Workbench folder view to text-only mode, sorted by type (no icons). Useful for sorting directories first.
+- `-resetIcons` Remove each icon's x and y positions, instructing Workbench to place the icon automatically when opening the folder.
+- `-skipWHD` By default, the program skips rearranging icons in WHDLoad folders to preserve the original author's layout. This option forces the program to rearrange the icons even if a .slave file is in the folder. Without this option, the folder's window will only be resized and centered.
 
-**Note:** if the directory contains spaces in the name, it will need to be inclosed in two speech marks "DH0:My DIR"
+**Note:** If the directory contains spaces in the name, it will need to be enclosed in two speech marks "DH0:My DIR"
 
 ## Example 
 ```
-ICleanup PC:MyProjects/Retroplay-WHDLoad-downloader/Extracted -iterateSubDIRs
+ICleanup PC:Extracted -iterateSubDIRs
 ```
 
-In this example, the folder "PC/Retroplay-WHDLoad-downloader/Extracted" will be cleaned up, its window will be resized and centered, and all subfolders will also be tidied.
+In this example, the folder "PC:Extracted" will be tidied up, its window will be resized and centered, and all subfolders will be tidied.  If any folders are found to be WHDLoad game folders, the original icon layout by the auther is preserved and the folder window will be resized and centred.
 
 ## Limitations
 
