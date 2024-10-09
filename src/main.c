@@ -77,6 +77,7 @@
 #include "window_management.h"
 #include "file_directory_handling.h"
 #include "utilities.h"
+#include "spinner.h"
 
 /* Define global variables */
 struct Screen *screen = NULL;
@@ -108,15 +109,15 @@ void print_usage(const char *program_name)
     printf("" textReset textBold "Icon Tidy V1.0" textReset ".  A program to tidy icons, and resize folder windows from CLI.\n");
     printf("Usage: iTidy <directory> [options]\n");
     printf("Where:\n");
-    printf("    <directory>   The folder to start the cleanup from (mandatory)\n");
-    printf("    -subdirs      Recursively process subfolders\n");
-    printf("    -dontResize   Do not resize and centre the folder\n");
-    printf("    -ViewShowAll  Show all files, including those without icons\n");
-    printf("    -ViewDefault  Use default view settings\n");
-    printf("    -ViewByName   Set folder view as text, sorted by name\n");
-    printf("    -ViewByType   Set folder view as text, sorted by type\n");
-    printf("    -resetIcons   Remove saved icon posistions.\n");
-    printf("    -skipWHD      Keep WHDLoad folder icon positions, but do resize\n");
+    printf("    " textReset textBold "<directory>   " textReset "The folder to start the cleanup from (mandatory)\n");
+    printf("    " textReset textBold "-subdirs      " textReset "Recursively process subfolders\n");
+    printf("    " textReset textBold "-dontResize   " textReset "Do not resize and centre the folder\n");
+    printf("    " textReset textBold "-ViewShowAll  " textReset "Show all files, including those without icons\n");
+    printf("    " textReset textBold "-ViewDefault  " textReset "Use default view settings\n");
+    printf("    " textReset textBold "-ViewByName   " textReset "Set folder view as text, sorted by name\n");
+    printf("    " textReset textBold "-ViewByType   " textReset "Set folder view as text, sorted by type\n");
+    printf("    " textReset textBold "-resetIcons   " textReset "Remove saved icon posistions.\n");
+    printf("    " textReset textBold "-skipWHD      " textReset "Keep WHDLoad folder icon positions, but do resize\n");
     printf("\n");
     printf("This program is provided 'as is' without any warranty of any kind. The \n");
     printf("author assumes no responsibility for any damage or issues that may arise \n");
@@ -138,6 +139,11 @@ int main(int argc, char **argv)
     user_folderFlags = DDFLAGS_SHOWICONS;
     user_cleanupWHDLoadFolders = TRUE;
     user_stripIconPosition = FALSE;
+
+        if (setupTimer() != 0) {
+            printf("Failed to setup timer\n");
+        return 1;
+    }
 
 #ifdef DEBUG
     printf("Debug build\n");
@@ -208,5 +214,6 @@ int main(int argc, char **argv)
     InitializeWindow();
     ProcessDirectory(filePath, iterateDIRs);
     CleanupWindow();
+    disposeTimer();
     return RETURN_OK;
 }

@@ -1,5 +1,6 @@
 #include "file_directory_handling.h"
 #include "utilities.h"
+#include "spinner.h"
 
 int HasSlaveFile(char *path)
 {
@@ -164,9 +165,10 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
 
     for (i = 0; i < iconArraySize; i++)
     {
+        
         // Access the icon's full path and coordinates once to reduce array access
         FullIconDetails *currentIcon = &iconArray->array[i];
-
+        updateCursor();  /* update progress spinner */
         removeInfoExtension(currentIcon->icon_full_path, fileNameNoInfo);
 
         // Use GetDiskObjectNew() for better performance if available

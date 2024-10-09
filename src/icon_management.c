@@ -20,6 +20,7 @@
 #include "file_directory_handling.h"
 #include "icon_types.h"
 #include "utilities.h"
+#include "spinner.h"
 
 void FreeIconArray(IconArray *iconArray)
 {
@@ -130,6 +131,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
     {
         while (ExNext(lock, fib))
         {
+            updateCursor();  /* update progress spinner */
             if (fib->fib_DirEntryType < 0 || fib->fib_DirEntryType > 0) /* It's a file or a directory */
             {
                 if (strcmp(fib->fib_FileName, "Disk.info") != 0)
@@ -155,18 +157,30 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                         iconPosition = GetIconPositionFromPath(fullPathAndFile);
 
                         /* Determine icon size based on format */
+
                         if (IsNewIconPath(fullPathAndFile))
                         {
+                            #ifdef DEBUG
+                        printf("Getting New Icon details.\n", fullPathAndFile);
+#endif
                             /* printf("New Icon Format\n"); */
                             GetNewIconSizePath(fullPathAndFile, &iconSize);
                         }
-                        else if (isOS35IconFormat(fullPathAndFile))
+                        else if 
+
+                        (isOS35IconFormat(fullPathAndFile))
                         {
                             /* printf("OS3.5 Icon Format\n"); */
+                            #ifdef DEBUG
+                        printf("Getting OS35 icon details.\n", fullPathAndFile);
+#endif
                             getOS35IconSize(fullPathAndFile, &iconSize);
                         }
                         else
                         {
+                                                    #ifdef DEBUG
+                        printf("Seems to be a standard icon\n");
+                        #endif
                             /* printf("Standard Icon Format\n"); */
                             GetStandardIconSize(fullPathAndFile, &iconSize);
                         }
@@ -205,7 +219,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                         newIcon.is_folder = (fib->fib_DirEntryType > 0) ? TRUE : FALSE;
 #ifdef DEBUG
                         printf("Allocating memory for icon path.\n", fullPathAndFile, newIcon.has_border);
-                        ;
+                        
 #endif
                         /* Allocate and copy the full path and icon text */
                         newIcon.icon_full_path = (char *)AllocVec(strlen(fullPathAndFile) + 1, MEMF_CLEAR);
@@ -315,18 +329,21 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     rowCount = 0;
     rowStartIndex = 0;
 
-    printf("Formatting folder: %s\n", dirPath);
+    printf("Tidying folder: %s\n", dirPath);
 
     iconArray = CreateIconArrayFromPath(lock, dirPath);
 
     if (iconArray == NULL || iconArray->array == NULL || iconArray->size <= 0)
     {
+        fprintf(stderr, "Error: Failed to create icon array.\n");
         return -1;
     }
 
     totalIcons = iconArray->size;
 #ifdef DEBUG
-    printf("Total icons: %d\n", totalIcons);
+    printf("************************************\n");
+    printf("Arranging %d icons in %s\n", totalIcons, dirPath);
+    printf("Start of icon tidy routine\n");
 #endif
 
     /* Sort icons by name and folder for a consistent layout */
@@ -417,6 +434,7 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
 
     while (rowStartIndex < totalIcons)
     {
+        updateCursor();  /* update progress spinner */
         /* Determine the maximum height of the current row */
         maxRowHeight = 0;
 
@@ -503,7 +521,9 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
 
     FreeIconArray(iconArray);
 #ifdef DEBUG
-    printf("!! Done. Icons arranged in %d rows with %d icons per row. Path: %s\n",
+
+    printf("************************************\n");
+    printf("Done. Icons arranged in %d rows with %d icons per row. Path: %s\n",
            rowCount, iconsPerRow, dirPath); /* Correct the row count display */
 #endif
     return 0;

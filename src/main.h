@@ -35,9 +35,10 @@
 #include "Settings/IControlPrefs.h"
 #include "Settings/WorkbenchPrefs.h"
 #include "utilities.h"
+#include "spinner.h"
 
 // Define the DEBUG macro to enable debug prints
-//#define DEBUG
+#define DEBUG
 
 
 #define ICON_START_X 10
