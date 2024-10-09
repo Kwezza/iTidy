@@ -95,6 +95,7 @@ typedef struct {
     int text_height;
     int icon_max_width;
     int icon_max_height;
+    //convert to int?  store the size of the border if its a standard icon, and the workbench prefs are set to have a border - 0 for no border.  acts as an overide for old icons
     BOOL has_border;
     char *icon_text;
     char *icon_full_path;
