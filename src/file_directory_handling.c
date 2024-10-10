@@ -46,10 +46,11 @@ int HasSlaveFile(char *path)
 
 void ProcessDirectory(char *path, BOOL processSubDirs)
 {
+ 
     BPTR lock;
     struct FileInfoBlock *fib;
     char subdir[4096];
-
+   sanitizeAmigaPath(path);
     lock = Lock((STRPTR)path, ACCESS_READ);
     if (lock == 0)
     {
@@ -170,6 +171,10 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
         FullIconDetails *currentIcon = &iconArray->array[i];
         updateCursor();  /* update progress spinner */
         removeInfoExtension(currentIcon->icon_full_path, fileNameNoInfo);
+        if(currentIcon->is_write_protected)
+        {
+            setWriteProtection(fileNameNoInfo, FALSE);
+        }
 
         // Use GetDiskObjectNew() for better performance if available
         diskObject = GetDiskObject(fileNameNoInfo);
@@ -195,8 +200,15 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
                 fprintf(stderr, "Error: Failed to save icon position for file: %s\n", fileNameNoInfo);
             }
 
-            // Always free the DiskObject to prevent memory leaks
+            // Always free the DiskObject to prevent memory leaks!
             FreeDiskObject(diskObject);
+
+            // restore the write protection (if needed)
+            if(currentIcon->is_write_protected)
+            {
+                setWriteProtection(fileNameNoInfo, TRUE);
+                
+            }
         }
         else
         {
@@ -225,7 +237,7 @@ void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo)
     diskObject = GetDiskObject(diskInfoPath);
     if (diskObject == NULL)
     {
-        Printf("Unable to load disk.info for folder: %s\n", (ULONG)folderPath);
+        //Printf("Unable to load disk.info for folder: %s\n", (ULONG)folderPath);
         return;
     }
 
@@ -305,4 +317,105 @@ void sanitizeAmigaPath(char *path)
     /* Copy back to the original path and free the allocated memory */
     strcpy(path, sanitizedPath);
     FreeVec(sanitizedPath);
+}
+
+/* Function to check if a file is write-protected */
+BOOL isFileWriteProtected(const char *filename)
+{
+    struct FileInfoBlock *fib;
+    BPTR lock;
+    BOOL result = FALSE; /* Initialize as not write-protected */
+
+    /* Allocate the FileInfoBlock */
+    fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
+    if (fib == NULL)
+    {
+        printf("Error: Unable to allocate FileInfoBlock.\n");
+        return FALSE; /* Return false on error */
+    }
+
+    /* Lock the file */
+    lock = Lock(filename, ACCESS_READ);
+    if (lock == 0)
+    {
+        printf("Error: Unable to lock file: %s\n", filename);
+        FreeDosObject(DOS_FIB, fib);
+        return FALSE; /* Return false if the file couldn't be locked */
+    }
+
+    /* Examine the file to populate the FileInfoBlock */
+    if (Examine(lock, fib))
+    {
+        /* Check if the FIBF_WRITE bit is set */
+        if (fib->fib_Protection & FIBF_WRITE)
+        {
+            result = TRUE; /* File is write-protected */
+        }
+        else
+        {
+            result = FALSE; /* File is not write-protected */
+        }
+    }
+    else
+    {
+        printf("Error: Examine() failed.\n");
+    }
+
+    /* Unlock and clean up */
+    UnLock(lock);
+    FreeDosObject(DOS_FIB, fib);
+
+    return result;
+}
+
+/* Function to set or clear write protection on a file */
+void setWriteProtection(const char *filename, BOOL enableWriteProtection)
+{
+    struct FileInfoBlock *fib;
+    BPTR lock;
+
+    /* Allocate the FileInfoBlock */
+    fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
+    if (fib == NULL)
+    {
+        printf("Error: Unable to allocate FileInfoBlock.\n");
+        return;
+    }
+
+    /* Lock the file */
+    lock = Lock(filename, ACCESS_READ);
+    if (lock == 0)
+    {
+        printf("Error: Unable to lock file: %s\n", filename);
+        FreeDosObject(DOS_FIB, fib);
+        return;
+    }
+
+    /* Examine the file to populate the FileInfoBlock */
+    if (Examine(lock, fib))
+    {
+        /* Modify the protection bits */
+        if (enableWriteProtection)
+        {
+            fib->fib_Protection |= FIBF_WRITE;  /* Enable write protection */
+        }
+        else
+        {
+            fib->fib_Protection &= ~FIBF_WRITE; /* Disable write protection */
+        }
+
+        /* Apply the new protection bits using SetProtection() */
+        SetProtection(filename, fib->fib_Protection);
+
+        printf("Write protection %s for file: %s\n",
+               enableWriteProtection ? "enabled" : "disabled", filename);
+    }
+    else
+    {
+        printf("Error: Examine() failed.\n");
+    }
+
+    /* Unlock and clean up */
+    UnLock(lock);
+    FreeDosObject(DOS_FIB, fib);
 }

@@ -25,5 +25,7 @@ int saveIconsPositionsToDisk(IconArray *iconArray);
 void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo);
 void dumpIconArrayToScreen(IconArray *iconArray);
 void sanitizeAmigaPath(char *path);
+void setWriteProtection(const char *filename, BOOL enableWriteProtection);
+BOOL isFileWriteProtected(const char *filename);
 
 #endif // FILE_DIRECTORY_HANDLING_H

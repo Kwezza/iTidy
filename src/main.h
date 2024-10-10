@@ -38,7 +38,7 @@
 #include "spinner.h"
 
 // Define the DEBUG macro to enable debug prints
-#define DEBUG
+//#define DEBUG
 
 
 #define ICON_START_X 10
@@ -96,11 +96,11 @@ typedef struct {
     int icon_max_width;
     int icon_max_height;
     int icon_type;
-    //convert to int?  store the size of the border if its a standard icon, and the workbench prefs are set to have a border - 0 for no border.  acts as an overide for old icons
     int border_width;
     char *icon_text;
     char *icon_full_path;
     BOOL is_folder;
+    BOOL is_write_protected;
 } FullIconDetails;
 
 typedef struct {

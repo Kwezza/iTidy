@@ -141,7 +141,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                 {
                     const char *fileExtension = strrchr(fib->fib_FileName, '.');
 
-                    if (fileExtension != NULL && strncasecmp_custom(fileExtension, ".info", 5) == 0)
+                    if (fileExtension != NULL && strlen(fileExtension) == 5 && strncasecmp_custom(fileExtension, ".info", 5) == 0)
                     {
 
                         /* Reset newIcon to known defaults */
@@ -240,7 +240,7 @@ if(checkIconFrame(fullPathAndFile)==1 || newIcon.icon_type == icon_type_standard
                         if (newIcon.border_width == 0)
                         {
                             iconArray->hasOnlyBorderlessIcons = TRUE;
-                            printf("Global border check set no no borders\n"); 
+                            
                         }
 
                         newIcon.text_width = textExtent.te_Width;
@@ -249,6 +249,8 @@ if(checkIconFrame(fullPathAndFile)==1 || newIcon.icon_type == icon_type_standard
                         newIcon.icon_max_height = iconSize.height + GAP_BETWEEN_ICON_AND_TEXT + textExtent.te_Height;
                         newIcon.icon_x = iconPosition.x;
                         newIcon.icon_y = iconPosition.y;
+
+                        newIcon.is_write_protected = (fib->fib_Protection & FIBF_WRITE) ? TRUE : FALSE;
 
                         #ifdef DEBUG
                             printf("calculated border: %d\n", (newIcon.border_width*2));
@@ -376,7 +378,7 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
 
     if (iconArray == NULL || iconArray->array == NULL || iconArray->size <= 0)
     {
-        fprintf(stderr, "Error: Failed to create icon array.\n");
+        //fprintf(stderr, "Error: Failed to create icon array.\n");  //this often is the case if the folder has no icons
         return -1;
     }
 
@@ -636,7 +638,7 @@ BOOL checkIconFrame(const char *iconName)
     icon = GetIconTags(newIconName, TAG_END);
     if (!icon)
     {
-        printf("Failed to load icon for border checks: %s\n", newIconName);
+        //printf("Failed to load icon for border checks: %s\n", newIconName);
         CloseLibrary(IconBase);
         free(newIconName);
         return TRUE; /* Assume it has a frame if icon can't be loaded */
