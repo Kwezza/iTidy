@@ -134,7 +134,10 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
             updateCursor();  /* update progress spinner */
             if (fib->fib_DirEntryType < 0 || fib->fib_DirEntryType > 0) /* It's a file or a directory */
             {
-                if (strcmp(fib->fib_FileName, "Disk.info") != 0)
+                GetFullPath(dirPath, fib, fullPathAndFile, sizeof(fullPathAndFile));
+
+                //if (strcmp(fib->fib_FileName, "Disk.info") != 0)
+                if (isIconTypeDisk(fullPathAndFile,fib->fib_DirEntryType)==0)
                 {
                     const char *fileExtension = strrchr(fib->fib_FileName, '.');
 
@@ -157,7 +160,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                         newIcon.is_folder = FALSE;
 
 
-                        GetFullPath(dirPath, fib, fullPathAndFile, sizeof(fullPathAndFile));
+                        
 
 #ifdef DEBUG
                         printf("Adding to %s Icon array.\n", fullPathAndFile);
@@ -204,6 +207,10 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                             /* printf("Standard Icon Format\n"); */
                             GetStandardIconSize(fullPathAndFile, &iconSize);
                         }
+
+ #ifdef DEBUG
+                        printf("Icons size x: %d, y: %d\n",iconSize.width,iconSize.height);
+#endif                       
 
                         if (prefsWorkbench.embossRectangleSize > 0)
                         {
@@ -343,7 +350,7 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     int largestIconWidth, columnWidths[100]; /* Assuming a max of 100 columns for simplicity */
     int centerX;
     int minIconsPerRow;
-    int screenWidth = 640;                   /* Standard Amiga Workbench resolution width */
+    //int screenWidth =screenWidth ;                   /* Standard Amiga Workbench resolution width */
     int rowCount;                            /* For tracking the number of rows */
     int dynamicPaddingY;                     /* For dynamic bottom padding */
     int column;                              /* For storing column index within the loop */
@@ -376,6 +383,7 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     totalIcons = iconArray->size;
 #ifdef DEBUG
     printf("************************************\n");
+    printf("Screen width %d\n", screenWidth);
     printf("Arranging %d icons in %s\n", totalIcons, dirPath);
     printf("Start of icon tidy routine\n");
 #endif

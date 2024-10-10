@@ -291,6 +291,75 @@ BOOL IsNewIconPath(const STRPTR filePath)
 #define HEADER_SIZE 12
 
 
+int isIconTypeDisk(const char *filename,long fib_DirEntryType)
+{
+    FILE *file;
+    UBYTE ic_Type;
+    long fileSize;
+
+#ifdef DEBUG
+    printf("Checking if icon type is DISK for file: %s\n", filename);
+#endif
+if (fib_DirEntryType > 0) return 0;
+
+    /* Open the file in binary mode */
+    file = fopen(filename, "rb");
+    if (file == NULL)
+    {
+        perror("Error opening file");
+        return 0; /* Return false on error */
+    }
+
+    /* Get the file size */
+    fseek(file, 0, SEEK_END);
+    fileSize = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    /* Check if the file size is at least large enough to contain the ic_Type */
+    if (fileSize < 0x31) /* 0x30 is the offset of ic_Type, so the file must be at least this size */
+    {
+        fclose(file);
+#ifdef DEBUG
+        printf("File too small to contain ic_Type\n");
+#endif
+        return 0; /* File too small */
+    }
+
+    /* Seek to the ic_Type field (offset 0x30) */
+    fseek(file, 0x30, SEEK_SET);
+
+    /* Read the ic_Type byte */
+    if (fread(&ic_Type, 1, 1, file) != 1)
+    {
+        fclose(file);
+#ifdef DEBUG
+        printf("Error reading ic_Type from file\n");
+#endif
+        return 0; /* Error reading the file */
+    }
+
+    /* Close the file */
+    fclose(file);
+
+#ifdef DEBUG
+    printf("ic_Type read from file: %d\n", ic_Type);
+#endif
+
+    /* Check if ic_Type is DISK (1) */
+    if (ic_Type == 1) /* 1 corresponds to DISK */
+    {
+#ifdef DEBUG
+        printf("Icon type is DISK\n");
+#endif
+        return 1; /* Return true */
+    }
+
+#ifdef DEBUG
+    printf("Icon type is not DISK\n");
+#endif
+    return 0; /* Return false if it's not DISK */
+}
+
 int isOS35IconFormat(const char *filename)
 {
     FILE *file;
@@ -302,7 +371,7 @@ int isOS35IconFormat(const char *filename)
     long offset = 0;
     size_t i;
     int iterationCount = 0;
-
+    int lastBytes = 0; /* For handling overlap between buffer reads */
 
 #ifdef DEBUG
     printf("Checking if it is a OS35 icon: %s\n", filename);
@@ -312,7 +381,6 @@ int isOS35IconFormat(const char *filename)
     file = fopen(filename, "rb");
     if (file == NULL)
     {
-        printf("filename: %s\n", filename);
         perror("Error opening file");
         return 0; /* Return false on error */
     }
@@ -337,10 +405,12 @@ int isOS35IconFormat(const char *filename)
     }
 
     /* Read the file in chunks and search for the headers */
-    while ((bytesRead = fread(buffer, 1, CHUNK_SIZE, file)) > 0)
+    while ((bytesRead = fread(buffer + lastBytes, 1, CHUNK_SIZE - lastBytes, file)) > 0)
     {
+        bytesRead += lastBytes; /* Adjust for any leftover bytes from the last read */
+
 #ifdef DEBUG
-        printf("processing os35 file chunk, bytesRead: %lu, iterationCount: %d, current ftell: %ld\n",
+        printf("Processing OS35 file chunk, bytesRead: %lu, iterationCount: %d, current ftell: %ld\n",
                (unsigned long)bytesRead, iterationCount, ftell(file));
 #endif
 
@@ -349,12 +419,14 @@ int isOS35IconFormat(const char *filename)
             /* Check for "FORM" header */
             if (!foundForm && memcmp(buffer + i, "FORM", 4) == 0)
             {
-                foundForm = 1; /* Found "FORM" */
+                foundForm = 1;
                 offset = ftell(file) - bytesRead + i;
+
 #ifdef DEBUG
                 printf("\"FORM\" header found at offset: %ld (ftell: %ld, i: %zu, bytesRead: %lu)\n",
                        offset, ftell(file), i, (unsigned long)bytesRead);
 #endif
+
                 /* Additional sanity check */
                 if (offset < 0 || offset > fileSize)
                 {
@@ -362,7 +434,7 @@ int isOS35IconFormat(const char *filename)
                     printf("Error: Calculated offset out of bounds. offset: %ld, fileSize: %ld\n", offset, fileSize);
 #endif
                     fclose(file);
-                    return 0; /* Exit if offset calculation is invalid */
+                    return 0;
                 }
             }
 
@@ -371,25 +443,29 @@ int isOS35IconFormat(const char *filename)
             {
                 if (memcmp(buffer + i + 8, "ICON", 4) == 0)
                 {
-                    foundIcon = 1; /* Found "ICON" */
+                    foundIcon = 1;
 #ifdef DEBUG
-                    printf("\"ICON\" header found after \"FORM\" at position: %d\n", (int)i + 8);
+                    printf("\"ICON\" header found after \"FORM\" at position: %d\n", (int)(i + 8));
 #endif
-                    break; /* Break the loop as we've found the required headers */
+                    break;
                 }
+#ifdef DEBUG
                 else
                 {
-#ifdef DEBUG
-                    printf("Checked position %d, did not find \"ICON\"\n", (int)i + 8);
-#endif
+                    printf("Checked position %d, did not find \"ICON\"\n", (int)(i + 8));
                 }
+#endif
             }
         }
 
         if (foundIcon)
         {
-            break; /* Exit the loop once "FORM" and "ICON" are found */
+            break; /* Exit the loop once both "FORM" and "ICON" are found */
         }
+
+        /* Handle buffer overlap */
+        lastBytes = HEADER_SIZE; /* Keep last few bytes in case header is split */
+        memcpy(buffer, buffer + CHUNK_SIZE - lastBytes, lastBytes);
 
         iterationCount++;
         if (iterationCount > 10000)
@@ -426,7 +502,6 @@ int isOS35IconFormat(const char *filename)
     /* Return true if both "FORM" and "ICON" were found */
     return (foundForm && foundIcon);
 }
-
 BOOL IsNewIcon(struct DiskObject *diskObject)
 {
     STRPTR *toolTypes;
@@ -458,7 +533,6 @@ BOOL IsNewIcon(struct DiskObject *diskObject)
     return FALSE;
 } /* IsNewIcon */
 
-/* Function to check if the icon file is in the OS3.5 format and return its size */
 int getOS35IconSize(const char *filename, IconSize *size)
 {
     FILE *file;
@@ -469,6 +543,7 @@ int getOS35IconSize(const char *filename, IconSize *size)
     int foundIcon = 0; /* Flag to indicate if "ICON" has been found after "FORM" */
     int foundFace = 0; /* Flag to indicate if "FACE" chunk has been found */
     long offset = 0;
+    int lastBytes = 0; /* For handling overlap between buffer reads */
 
     /* Initialize the size */
     size->width = 0;
@@ -478,9 +553,6 @@ int getOS35IconSize(const char *filename, IconSize *size)
     file = fopen(filename, "rb");
     if (file == NULL)
     {
-#ifdef DEBUG
-        printf("filename: %s\n", filename);
-#endif
         perror("Error opening file");
         return 0; /* Return false on error */
     }
@@ -498,29 +570,30 @@ int getOS35IconSize(const char *filename, IconSize *size)
     }
 
     /* Read the file in chunks and search for the headers */
-    while ((bytesRead = fread(buffer, 1, CHUNK_SIZE, file)) > 0)
+    while ((bytesRead = fread(buffer + lastBytes, 1, CHUNK_SIZE - lastBytes, file)) > 0)
     {
         int i;
+        bytesRead += lastBytes; /* Adjust for any leftover bytes */
 
         for (i = 0; i < bytesRead - HEADER_SIZE; i++)
         {
             /* Check for "FORM" header */
             if (!foundForm && memcmp(buffer + i, "FORM", 4) == 0)
             {
-                foundForm = 1; /* Found "FORM" */
+                foundForm = 1;
                 offset = ftell(file) - bytesRead + i;
             }
 
             /* If "FORM" was found, look for "ICON" */
-            if (foundForm && memcmp(buffer + i + 8, "ICON", 4) == 0)
+            if (foundForm && !foundIcon && memcmp(buffer + i + 4, "ICON", 4) == 0)
             {
-                foundIcon = 1; /* Found "ICON" */
+                foundIcon = 1;
             }
 
             /* If "ICON" was found, look for "FACE" */
             if (foundIcon && memcmp(buffer + i, "FACE", 4) == 0)
             {
-                foundFace = 1; /* Found "FACE" chunk */
+                foundFace = 1;
 
                 /* Read the width and height from the "FACE" chunk */
                 size->width = (buffer[i + 8] & 0xFF) + 1;
@@ -529,6 +602,10 @@ int getOS35IconSize(const char *filename, IconSize *size)
                 break; /* We have what we need, so break the loop */
             }
         }
+
+        /* Handle buffer overlap */
+        lastBytes = HEADER_SIZE; /* Keep last few bytes in case header is split */
+        memcpy(buffer, buffer + CHUNK_SIZE - lastBytes, lastBytes);
 
         if (foundFace)
         {
