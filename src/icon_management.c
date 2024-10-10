@@ -110,7 +110,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
     int textLength, fileCount = 0, maxWidth = 0;
     IconPosition iconPosition;
 
-    iconArray->hasOnlyBorderlessIcons = TRUE;
+    iconArray->hasOnlyBorderlessIcons = FALSE;
 
     if (!iconArray)
     {
@@ -164,12 +164,15 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                         printf("Getting New Icon details.\n", fullPathAndFile);
 #endif
                             /* printf("New Icon Format\n"); */
+                            newIcon.icon_type = icon_type_newIcon;
                             GetNewIconSizePath(fullPathAndFile, &iconSize);
+
                         }
                         else if 
 
                         (isOS35IconFormat(fullPathAndFile))
                         {
+                            newIcon.icon_type = icon_type_os35;
                             /* printf("OS3.5 Icon Format\n"); */
                             #ifdef DEBUG
                         printf("Getting OS35 icon details.\n", fullPathAndFile);
@@ -178,6 +181,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                         }
                         else
                         {
+                            newIcon.icon_type = icon_type_standard;
                                                     #ifdef DEBUG
                         printf("Seems to be a standard icon\n");
                         #endif
@@ -197,28 +201,40 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                         }
 #ifdef DEBUG
                         printf("Checking for icon frame\n");
-#endif
-                        newIcon.has_border = checkIconFrame(fullPathAndFile);
-#ifdef DEBUG
-                        printf("Icon %s has border: %d\n", fullPathAndFile, newIcon.has_border);
-#endif
-                        if (newIcon.has_border == 0)
+#endif                  
+if(checkIconFrame(fullPathAndFile)==1 || newIcon.icon_type == icon_type_standard)
                         {
-                            iconArray->hasOnlyBorderlessIcons = FALSE;
-                            /* printf("!! saved as having an icon with a border\n"); */
+                            newIcon.border_width = prefsWorkbench.embossRectangleSize;
+                        }
+                        //else
+{
+
+}
+                        //newIcon.has_border = checkIconFrame(fullPathAndFile);
+#ifdef DEBUG
+                        printf("Icon %s has border: %d\n", fullPathAndFile, newIcon.border_width);
+#endif
+                        if (newIcon.border_width == 0)
+                        {
+                            iconArray->hasOnlyBorderlessIcons = TRUE;
+                            printf("Global border check set no no borders\n"); 
                         }
 
                         newIcon.text_width = textExtent.te_Width;
                         newIcon.text_height = textExtent.te_Height;
-                        newIcon.icon_max_width = MAX(iconSize.width, textExtent.te_Width);
+                        newIcon.icon_max_width = MAX(iconSize.width+(newIcon.border_width*2), textExtent.te_Width);
                         newIcon.icon_max_height = iconSize.height + GAP_BETWEEN_ICON_AND_TEXT + textExtent.te_Height;
                         newIcon.icon_x = iconPosition.x;
                         newIcon.icon_y = iconPosition.y;
 
+                        #ifdef DEBUG
+                            printf("calculated border: %d\n", (newIcon.border_width*2));
+                        #endif
+
                         /* Determine if it's a folder or a file */
                         newIcon.is_folder = (fib->fib_DirEntryType > 0) ? TRUE : FALSE;
 #ifdef DEBUG
-                        printf("Allocating memory for icon path.\n", fullPathAndFile, newIcon.has_border);
+                        printf("Allocating memory for icon path.\n");
                         
 #endif
                         /* Allocate and copy the full path and icon text */
@@ -277,6 +293,8 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
     printf("Has only borderless icons: %d\n", iconArray->hasOnlyBorderlessIcons);
     dumpIconArrayToScreen(iconArray);
 #endif
+
+
     return iconArray;
 }
 
@@ -452,13 +470,21 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
             if (iconArray->hasOnlyBorderlessIcons == 0)
             {
 
-                if (!prefsWorkbench.borderless && !iconArray->array[i].has_border)
+                if (!prefsWorkbench.borderless && iconArray->array[i].border_width==0)
                 {
                     borderSpacingForIconsWithNoSpacing = 0;
+
                 }
                 else
                 {
-                    borderSpacingForIconsWithNoSpacing = prefsWorkbench.embossRectangleSize;
+                    if (!prefsWorkbench.borderless && iconArray->array[i].border_width>0)
+                    {
+                        borderSpacingForIconsWithNoSpacing = iconArray->array[i].border_width;  
+                    }else
+                    {
+                      borderSpacingForIconsWithNoSpacing = prefsWorkbench.embossRectangleSize;  
+                    }
+                    
                 }
             }
             else
@@ -472,14 +498,14 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
             removeInfoExtension(iconArray->array[i].icon_full_path, fileNameNoInfo);
 
             /* Center the icon within the column width and adjust for max row height */
-            centerX = ((columnWidths[column] - iconArray->array[i].icon_width) / 2);
+            centerX = ((columnWidths[column] - (iconArray->array[i].icon_width+(+ borderSpacingForIconsWithNoSpacing*2))) / 2);
             iconArray->array[i].icon_x = x + centerX;
             /* Align to the bottom of the row by setting y based on maxRowHeight */
             iconArray->array[i].icon_y = y + (maxRowHeight - iconHeight);
 #ifdef DEBUG
-            printf("Placing icon %d at (x: %ld, y: %ld) with width %d and height %d name: %s\n",
+            printf("Placing icon %d at (x: %ld, y: %ld) with border of: %dpx, width %d and height %d name: %s\n",
 
-                   i, iconArray->array[i].icon_x, iconArray->array[i].icon_y + borderSpacingForIconsWithNoSpacing,
+                   i, iconArray->array[i].icon_x, iconArray->array[i].icon_y + borderSpacingForIconsWithNoSpacing,borderSpacingForIconsWithNoSpacing,
                    iconArray->array[i].icon_max_width + borderSpacingForIconsWithNoSpacing, iconArray->array[i].icon_max_height + borderSpacingForIconsWithNoSpacing,
                    iconArray->array[i].icon_text);
 #endif

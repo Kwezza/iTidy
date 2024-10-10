@@ -92,6 +92,9 @@ int WindowWidthTextOnly = 430;
 int WindowHeightTextOnly = 256;
 int ICON_SPACING_X = 5;
 int ICON_SPACING_Y = 5;
+    int icon_type_standard = 0;
+int icon_type_newIcon = 1;
+int icon_type_os35 = 2;
 BOOL user_dontResize;
 BOOL user_cleanupWHDLoadFolders;
 BOOL user_folderViewMode;
@@ -139,6 +142,7 @@ int main(int argc, char **argv)
     user_folderFlags = DDFLAGS_SHOWICONS;
     user_cleanupWHDLoadFolders = TRUE;
     user_stripIconPosition = FALSE;
+
 
         if (setupTimer() != 0) {
             printf("Failed to setup timer\n");

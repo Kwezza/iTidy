@@ -95,8 +95,9 @@ typedef struct {
     int text_height;
     int icon_max_width;
     int icon_max_height;
+    int icon_type;
     //convert to int?  store the size of the border if its a standard icon, and the workbench prefs are set to have a border - 0 for no border.  acts as an overide for old icons
-    BOOL has_border;
+    int border_width;
     char *icon_text;
     char *icon_full_path;
     BOOL is_folder;
@@ -115,6 +116,7 @@ typedef struct {
     int height;
 } IconSize;
 
+
 extern struct Screen *screen;
 extern struct Window *window;
 extern struct RastPort *rastPort;
@@ -127,6 +129,9 @@ extern int WindowWidthTextOnly;
 extern int WindowHeightTextOnly;
 extern int ICON_SPACING_X;
 extern int ICON_SPACING_Y;
+extern int icon_type_standard;
+extern int icon_type_newIcon;
+extern int icon_type_os35;
 extern BOOL user_dontResize;
 extern BOOL user_cleanupWHDLoadFolders;
 extern BOOL user_folderViewMode;
