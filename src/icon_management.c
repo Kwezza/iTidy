@@ -141,6 +141,22 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                     if (fileExtension != NULL && strncasecmp_custom(fileExtension, ".info", 5) == 0)
                     {
 
+                        /* Reset newIcon to known defaults */
+                        newIcon.icon_type = icon_type_standard;
+                        newIcon.icon_height = 0;
+                        newIcon.icon_width = 0;
+                        newIcon.border_width = 0;
+                        newIcon.text_width = 0;
+                        newIcon.text_height = 0;
+                        newIcon.icon_max_width = 0;
+                        newIcon.icon_max_height = 0;
+                        newIcon.icon_x = 0;
+                        newIcon.icon_y = 0;
+                        newIcon.icon_text = NULL;
+                        newIcon.icon_full_path = NULL;
+                        newIcon.is_folder = FALSE;
+
+
                         GetFullPath(dirPath, fib, fullPathAndFile, sizeof(fullPathAndFile));
 
 #ifdef DEBUG
