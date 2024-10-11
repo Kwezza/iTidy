@@ -419,3 +419,92 @@ void setWriteProtection(const char *filename, BOOL enableWriteProtection)
     UnLock(lock);
     FreeDosObject(DOS_FIB, fib);
 }
+
+/* Function to check if a given path is a folder, removing ".info" if present */
+BOOL isDirectory(const char *path)
+{
+    struct FileInfoBlock *fib;
+    BPTR lock;
+    BOOL result;
+    char *pathWithoutInfo;
+    const char *infoExtension;
+    size_t pathLen;
+    size_t infoLen;
+
+    /* Initialize variables */
+    result = FALSE;
+    pathWithoutInfo = NULL;
+    infoExtension = ".info";
+    pathLen = strlen(path);
+    infoLen = strlen(infoExtension);
+
+    /* Allocate a FileInfoBlock */
+    fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
+    if (fib == NULL)
+    {
+        printf("Error: Unable to allocate FileInfoBlock.\n");
+        return FALSE;
+    }
+
+    /* Check if the path ends with ".info" and remove it */
+    if (pathLen > infoLen && strncasecmp_custom(path + pathLen - infoLen, infoExtension, infoLen) == 0)
+    {
+        /* Allocate memory for the new path without ".info" */
+        pathWithoutInfo = (char *)malloc(pathLen - infoLen + 1);
+        if (pathWithoutInfo == NULL)
+        {
+            printf("Error: Unable to allocate memory for pathWithoutInfo.\n");
+            FreeDosObject(DOS_FIB, fib);
+            return FALSE;
+        }
+
+        /* Copy the path minus the ".info" */
+        strncpy(pathWithoutInfo, path, pathLen - infoLen);
+        pathWithoutInfo[pathLen - infoLen] = '\0'; /* Null-terminate the new string */
+    }
+    else
+    {
+        /* If no ".info" extension, just use the original path */
+        pathWithoutInfo = (char *)malloc(pathLen + 1);
+        if (pathWithoutInfo == NULL)
+        {
+            printf("Error: Unable to allocate memory for pathWithoutInfo.\n");
+            FreeDosObject(DOS_FIB, fib);
+            return FALSE;
+        }
+        strcpy(pathWithoutInfo, path); /* Copy the original path */
+    }
+
+    /* Lock the file/directory */
+    lock = Lock(pathWithoutInfo, ACCESS_READ);
+    if (lock == 0)
+    {
+        #ifdef DEBUG
+        printf("Error: Unable to lock path: %s\n", pathWithoutInfo);
+        #endif
+        FreeDosObject(DOS_FIB, fib);
+        free(pathWithoutInfo);
+        return FALSE;
+    }
+
+    /* Examine the lock to populate the FileInfoBlock */
+    if (Examine(lock, fib))
+    {
+        /* Check if it is a directory */
+        if (fib->fib_DirEntryType > 0) /* Directories have positive fib_DirEntryType */
+        {
+            result = TRUE;
+        }
+    }
+    else
+    {
+        printf("Error: Examine() failed.\n");
+    }
+
+    /* Unlock the path and free the FileInfoBlock */
+    UnLock(lock);
+    FreeDosObject(DOS_FIB, fib);
+    free(pathWithoutInfo); /* Free the allocated memory */
+
+    return result;
+}

@@ -52,7 +52,7 @@ void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
 #endif
 
     /* Remove the ".info" suffix if it exists */
-    if (filePathLen > 5 && strcmp(filePathCopy + filePathLen - 5, ".info") == 0)
+    if (filePathLen > 5 && stricmp(filePathCopy + filePathLen - 5, ".info") == 0)
     {
         filePathCopy[filePathLen - 5] = '\0'; /* Truncate the .info part */
 #ifdef DEBUG
@@ -102,12 +102,45 @@ void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
     FreeDiskObject(diskObject);
     FreeVec(filePathCopy);
 }
-/* Function to get the standard icon size */
-BOOL GetStandardIconSize(const char *filePath, IconSize *iconSize)
+
+/* Function to read the icon size directly from the file */
+BOOL GetIconSizeFromFile(const char *filePath, IconSize *iconSize)
+{
+    BPTR fileHandle;
+    UBYTE buffer[12];  /* Buffer to read the file header */
+    LONG bytesRead;
+
+    /* Open the icon file */
+    fileHandle = Open(filePath, MODE_OLDFILE);
+    if (fileHandle == 0)
+    {
+        return FALSE;  /* Failed to open the file */
+    }
+
+    /* Read the first 12 bytes (just enough to get the size at 0x08 and 0x0A) */
+    bytesRead = Read(fileHandle, buffer, sizeof(buffer));
+    if (bytesRead != sizeof(buffer))
+    {
+        Close(fileHandle);
+        return FALSE;  /* Failed to read the necessary bytes */
+    }
+
+    /* Extract the width and height from the file at offset 0x08 and 0x0A */
+    iconSize->width = (buffer[8] << 8) | buffer[9];
+    iconSize->height = (buffer[10] << 8) | buffer[11];
+#ifdef DEBUG
+    printf("Hex read of format size: width = %d, height = %d\n", iconSize->width, iconSize->height);
+#endif
+    Close(fileHandle);
+    return TRUE;
+}
+
+BOOL GetStandardIconSize(const char *filePath, IconSize *iconSize) 
 {
     struct DiskObject *diskObject;
     char filePathCopy[256]; /* Buffer to hold the modified file path */
     int filePathLength;
+    LONG error; /* To store the IoErr() value */
 
     /* Check for NULL pointers */
     if (filePath == NULL || iconSize == NULL)
@@ -120,16 +153,25 @@ BOOL GetStandardIconSize(const char *filePath, IconSize *iconSize)
     filePathCopy[sizeof(filePathCopy) - 1] = '\0'; /* Ensure null-termination */
     filePathLength = strlen(filePathCopy);
 
-    /* Remove the ".info" suffix if present */
-    if (filePathLength > 5 && strcmp(filePathCopy + filePathLength - 5, ".info") == 0)
+    /* Remove the ".info" suffix if present (case-insensitive check) */
+    if (filePathLength > 5 && stricmp(filePathCopy + filePathLength - 5, ".info") == 0)
     {
         filePathCopy[filePathLength - 5] = '\0';
     }
 
+#ifdef DEBUG
+    printf("Attempting to load DiskObject from path: %s\n", filePathCopy);
+#endif
     /* Attempt to get the DiskObject for the provided (or modified) file path */
     diskObject = GetDiskObject(filePathCopy);
     if (diskObject == NULL)
     {
+        #ifdef DEBUG
+        printf("Failed to get DiskObject for the file: %s\n", filePathCopy);
+        /* Use IoErr() to get more information about why it failed */
+        error = IoErr();
+        printf("GetDiskObject failed. IoErr: %ld\n", error);
+        #endif
         return FALSE; /* Failed to get the DiskObject */
     }
 
@@ -218,7 +260,7 @@ BOOL IsNewIconPath(const STRPTR filePath)
 
     /* Check if the provided filepath ends with ".info" */
     size_t len = strlen(filePath);
-    if (len >= 5 && strcmp(filePath + len - 5, ".info") == 0)
+    if (len >= 5 && stricmp(filePath + len - 5, ".info") == 0)
     {
         /* Allocate memory for the new path without ".info" */
         adjustedFilePath = (STRPTR)AllocVec(len - 4, MEMF_CLEAR);
@@ -264,7 +306,7 @@ BOOL IsNewIconPath(const STRPTR filePath)
         while (*toolTypes != NULL)
         {
 
-            if (strcmp(*toolTypes, "*** DON'T EDIT THE FOLLOWING LINES!! ***") == 0)
+            if (stricmp(*toolTypes, "*** DON'T EDIT THE FOLLOWING LINES!! ***") == 0)
             {
                 newIconFormat = TRUE;
 #ifdef DEBUG
@@ -517,7 +559,7 @@ BOOL IsNewIcon(struct DiskObject *diskObject)
 
         while (*toolTypes != NULL)
         {
-            if (strcmp(*toolTypes, "*** DON'T EDIT THE FOLLOWING LINES!! ***") == 0)
+            if (stricmp(*toolTypes, "*** DON'T EDIT THE FOLLOWING LINES!! ***") == 0)
             {
                 newIconFormat = TRUE;
             } /* if */

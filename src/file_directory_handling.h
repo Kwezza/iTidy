@@ -27,5 +27,6 @@ void dumpIconArrayToScreen(IconArray *iconArray);
 void sanitizeAmigaPath(char *path);
 void setWriteProtection(const char *filename, BOOL enableWriteProtection);
 BOOL isFileWriteProtected(const char *filename);
+BOOL isDirectory(const char *path);
 
 #endif // FILE_DIRECTORY_HANDLING_H

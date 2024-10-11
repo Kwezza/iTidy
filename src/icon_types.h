@@ -31,5 +31,6 @@ int isOS35IconFormat(const char *filename);
 BOOL IsNewIcon(struct DiskObject *diskObject);
 int getOS35IconSize(const char *filename, IconSize *size);
 int isIconTypeDisk(const char *filename,long fib_DirEntryType);
+BOOL GetIconSizeFromFile(const char *filePath, IconSize *iconSize);
 
 #endif // ICON_TYPES_H

@@ -201,7 +201,7 @@ void CalculateTextExtent(const char *text, struct TextExtent *textExtent)
 
 int Compare(const void *a, const void *b)
 {
-    return strcmp(*(const char **)a, *(const char **)b);
+    return stricmp(*(const char **)a, *(const char **)b);
 }
 
 int strncasecmp_custom(const char *s1, const char *s2, size_t n)

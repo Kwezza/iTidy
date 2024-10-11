@@ -136,7 +136,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
             {
                 GetFullPath(dirPath, fib, fullPathAndFile, sizeof(fullPathAndFile));
 
-                //if (strcmp(fib->fib_FileName, "Disk.info") != 0)
+                //if (stricmp(fib->fib_FileName, "Disk.info") != 0)
                 if (isIconTypeDisk(fullPathAndFile,fib->fib_DirEntryType)==0)
                 {
                     const char *fileExtension = strrchr(fib->fib_FileName, '.');
@@ -201,7 +201,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                         else
                         {
                             newIcon.icon_type = icon_type_standard;
-                                                    #ifdef DEBUG
+                        #ifdef DEBUG
                         printf("Seems to be a standard icon\n");
                         #endif
                             /* printf("Standard Icon Format\n"); */
@@ -221,6 +221,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                         {
                             newIcon.icon_height = iconSize.height;
                             newIcon.icon_width = iconSize.width;
+                   
                         }
 #ifdef DEBUG
                         printf("Checking for icon frame\n");
@@ -257,7 +258,7 @@ if(checkIconFrame(fullPathAndFile)==1 || newIcon.icon_type == icon_type_standard
                         #endif
 
                         /* Determine if it's a folder or a file */
-                        newIcon.is_folder = (fib->fib_DirEntryType > 0) ? TRUE : FALSE;
+                        newIcon.is_folder = isDirectory(fullPathAndFile);
 #ifdef DEBUG
                         printf("Allocating memory for icon path.\n");
                         
@@ -326,18 +327,33 @@ if(checkIconFrame(fullPathAndFile)==1 || newIcon.icon_type == icon_type_standard
 /* Comparison function for sorting by is_folder and then by icon_text */
 int CompareByFolderAndName(const void *a, const void *b)
 {
+    int nameComparisonResult;
     const FullIconDetails *iconA = (const FullIconDetails *)a;
     const FullIconDetails *iconB = (const FullIconDetails *)b;
 
-    /* Compare by is_folder */
+    /* Debug: Print comparison details /
+    printf("Comparing: %s (folder: %d) vs %s (folder: %d)\n", 
+           iconA->icon_text, iconA->is_folder, 
+           iconB->icon_text, iconB->is_folder);*
+
+    /* Compare by is_folder: folders should come before files */
     if (iconA->is_folder != iconB->is_folder)
     {
-        /* Sort folders (TRUE) before files (FALSE) */
-        return iconB->is_folder - iconA->is_folder;
+        int result = iconA->is_folder ? -1 : 1;
+        /*printf("Folder comparison result: %d\n", result);  Debug */
+        return result;
     }
 
-    /* If both have the same is_folder status, compare by icon_text */
-    return strncasecmp_custom(iconA->icon_text, iconB->icon_text, strlen(iconA->icon_text));
+    /* If both are either folders or files, compare by icon_text */
+    nameComparisonResult = strncasecmp_custom(iconA->icon_text, iconB->icon_text, 
+                                                  strlen(iconA->icon_text) > strlen(iconB->icon_text) ? 
+                                                  strlen(iconB->icon_text) : 
+                                                  strlen(iconA->icon_text));
+
+    /* Debug: Print name comparison result /
+    printf("Name comparison result for %s vs %s: %d\n", iconA->icon_text, iconB->icon_text, nameComparisonResult);*/
+
+    return nameComparisonResult;
 }
 
 int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
@@ -592,7 +608,7 @@ BOOL checkIconFrame(const char *iconName)
     size_t ext_len = strlen(extension);
 
     /* Calculate the length of the new icon name without the ".info" extension if present */
-    size_t new_len = (len >= ext_len && strcmp(iconName + len - ext_len, extension) == 0) ? len - ext_len : len;
+    size_t new_len = (len >= ext_len && stricmp(iconName + len - ext_len, extension) == 0) ? len - ext_len : len;
 
     /* Allocate memory for the new icon name */
     char *newIconName = (char *)malloc((new_len + 1) * sizeof(char));
