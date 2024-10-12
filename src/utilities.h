@@ -22,4 +22,5 @@ void remove_CR_LF_from_string(char *str);
 UWORD GetKickstartVersion(void);
 int GetWorkbenchVersion(void);
 char* convertWBVersionWithDot(int number);
+int endsWithInfo(const char *filePath);
 #endif // utilities_h

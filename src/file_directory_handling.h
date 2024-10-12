@@ -15,6 +15,7 @@
 #include "icon_management.h"
 #include "window_management.h"
 #include "utilities.h"
+#include <dos/dos.h>
 
 int HasSlaveFile(char *path);
 void ProcessDirectory(char *path, BOOL processSubDirs);
@@ -25,8 +26,12 @@ int saveIconsPositionsToDisk(IconArray *iconArray);
 void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo);
 void dumpIconArrayToScreen(IconArray *iconArray);
 void sanitizeAmigaPath(char *path);
-void setWriteProtection(const char *filename, BOOL enableWriteProtection);
-BOOL isFileWriteProtected(const char *filename);
+
 BOOL isDirectory(const char *path);
+BOOL does_file_or_folder_exist(const char *name, int isFile);
+BOOL GetWriteProtection(STRPTR filename);
+void SetWriteProtection(STRPTR filename, BOOL protect);
+void SetDeleteProtection(STRPTR filename, BOOL protect);
+BOOL GetDeleteProtection(STRPTR filename);
 
 #endif // FILE_DIRECTORY_HANDLING_H

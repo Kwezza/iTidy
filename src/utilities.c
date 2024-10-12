@@ -336,3 +336,24 @@ void remove_CR_LF_from_string(char *str)
 
     *dst = '\0'; // Null-terminate the modified string
 }
+
+int endsWithInfo(const char *filePath) {
+    const char *extension = ".info";
+    size_t pathLength = strlen(filePath);
+    size_t extLength = strlen(extension);
+    size_t i;
+
+    // Check if the filePath is shorter than the extension
+    if (pathLength < extLength) {
+        return FALSE;
+    }
+
+    // Compare the end of the filePath with ".info" (case-insensitive)
+    for (i = 0; i < extLength; i++) {
+        if (tolower(filePath[pathLength - extLength + i]) != tolower(extension[i])) {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}

@@ -254,6 +254,7 @@ if(checkIconFrame(fullPathAndFile)==1 || newIcon.icon_type == icon_type_standard
                         newIcon.is_write_protected = (fib->fib_Protection & FIBF_WRITE) ? TRUE : FALSE;
 
                         #ifdef DEBUG
+                            printf("Icon is write protected: %d\n", newIcon.is_write_protected);
                             printf("calculated border: %d\n", (newIcon.border_width*2));
                         #endif
 
