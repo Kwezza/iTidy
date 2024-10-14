@@ -181,6 +181,7 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
         if (is_delete_protected_icon)
             SetDeleteProtection(iconArray->array[i].icon_full_path, 0);
 
+/*
         if (does_file_or_folder_exist(fileNameNoInfo, 0) == 1)
         {
             is_write_protected = GetWriteProtection(fileNameNoInfo);
@@ -221,10 +222,11 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
             if (!PutDiskObject(fileNameNoInfo, diskObject))
             {
                 fprintf(stderr, "Error: Failed to save icon position for file: %s\n", fileNameNoInfo);
+                FreeDiskObject(diskObject);
             }
 
             // Always free the DiskObject to prevent memory leaks!
-            FreeDiskObject(diskObject);
+            
             /*
             printf("icon_full_path: %s\n", iconArray->array[i].icon_full_path);
             printf("is_write_protected: %d\n", is_write_protected);
@@ -239,10 +241,10 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
                 SetDeleteProtection(iconArray->array[i].icon_full_path, 1);
             if (does_file_or_folder_exist(fileNameNoInfo, 0) == 1)
             {
-                if (is_write_protected)
-                    SetWriteProtection(fileNameNoInfo, 1);
-                if (is_delete_protected)
-                    SetDeleteProtection(fileNameNoInfo, 1);
+                //if (is_write_protected)
+                //    SetWriteProtection(fileNameNoInfo, 1);
+                //if (is_delete_protected)
+                //    SetDeleteProtection(fileNameNoInfo, 1);
             }
 
             // restore the write protection (if needed)

@@ -53,6 +53,7 @@ int FormatIconsAndWindow(char *folder)
         printf("Failed to lock the directory: %s\n", folder);
         return 1;
     }
+    UnLock(lock);
     return 0;
 }
 
