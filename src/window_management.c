@@ -20,6 +20,7 @@
 #include "window_management.h"
 #include "file_directory_handling.h"
 #include "utilities.h"
+#include "writeLog.h"
 
 void CleanupWindow()
 {
@@ -44,6 +45,9 @@ int FormatIconsAndWindow(char *folder)
     int minAverageWidthPercent = -100;
 
     lock = Lock(folder, ACCESS_READ);
+        #ifdef DEBUGLocks
+    append_to_log("Locking directory (FormatIconsAndWindow): %s\n", folder);
+    #endif
     if (lock)
     {
         minAverageWidthPercent = ArrangeIcons(lock, folder, newWidth);
@@ -53,6 +57,9 @@ int FormatIconsAndWindow(char *folder)
         printf("Failed to lock the directory: %s\n", folder);
         return 1;
     }
+            #ifdef DEBUGLocks
+    append_to_log("Unlocking directory: %s\n", folder);
+    #endif
     UnLock(lock);
     return 0;
 }

@@ -9,6 +9,7 @@
 #include <math.h>
 
 #include "main.h"
+#include "writeLog.h"
 
 
 // Function to read Kickstart version from memory for Kickstart 1.3 and earlier
@@ -230,6 +231,7 @@ BOOL does_file_or_folder_exist(const char *filename, int appendWorkingDirectory)
     LONG errorCode = 0;
     char currentDir[256];
     char newFilePath[512] = {0}; /* Ensure buffer is initially empty */
+    
     /* Retrieve current directory */
     if (GetCurrentDirName(currentDir, sizeof(currentDir)) == DOSFALSE)
     {
@@ -246,26 +248,45 @@ BOOL does_file_or_folder_exist(const char *filename, int appendWorkingDirectory)
         }
         strncpy(newFilePath, currentDir, sizeof(newFilePath) - 1);
         lock = Lock(newFilePath, ACCESS_READ);
+        
+        #ifdef DEBUGLocks
+        append_to_log("Locking directory (does_file_or_folder_exist): %s\n", newFilePath);
+        #endif
+
         if (lock == NULL)
-            errorCode = IoErr();
+        {
+            //do nothing - no lock means the file doesnt exist or there is maybe some kind of issue.  Assume it cant be accessed either way.
+        }
     }
     else
     {
         strncpy(newFilePath, filename, sizeof(newFilePath) - 1);
-        lock = Lock(filename, ACCESS_READ);
+        lock = Lock(newFilePath, ACCESS_READ);
+        
+        #ifdef DEBUGLocks
+        append_to_log("Locking directory (does_file_or_folder_exist): %s\n", newFilePath);
+        #endif
+
         if (lock == NULL)
-            errorCode = IoErr();
+        {
+         //do nothing - no lock means the file doesnt exist or there is maybe some kind of issue.  Assume it cant be accessed either way.'
+           
+        }
     }
 
     /* Check if file lock was successful */
     if (lock)
     {
         exists = TRUE;
+        #ifdef DEBUGLocks
+        append_to_log("Unlocking directory: %s\n", newFilePath);
+        #endif
         UnLock(lock);
     }
 
     return exists;
 }
+
 void trim(char *str)
 {
     char *start, *end;

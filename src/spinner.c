@@ -6,6 +6,7 @@
 #include <clib/timer_protos.h>
 #include <clib/exec_protos.h>
 #include <proto/dos.h>
+#include "writeLog.h"
 
 // Global variables
 struct Device* TimerBase;
@@ -18,6 +19,7 @@ ULONG timer(void) {
     struct timeval t;
     GetSysTime(&t);
     return t.tv_secs * 1000 + t.tv_micro / 1000;
+    //return 0;
 }
 
 void updateCursor(void) {

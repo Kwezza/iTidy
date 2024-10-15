@@ -10,7 +10,7 @@
 #include <dos/dos.h>
 #include <math.h>
 #include "main.h"
-
+#include "writeLog.h"
 
 void CalculateTextExtent(const char *text, struct TextExtent *textExtent);
 int Compare(const void *a, const void *b);

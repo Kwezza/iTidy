@@ -15,10 +15,11 @@
 #include "icon_management.h"
 #include "window_management.h"
 #include "utilities.h"
+#include "writeLog.h"
 #include <dos/dos.h>
 
 int HasSlaveFile(char *path);
-void ProcessDirectory(char *path, BOOL processSubDirs);
+void ProcessDirectory(char *path, BOOL processSubDirs, int recursion_level);
 void GetFullPath(const char *directory, struct FileInfoBlock *fib, char *fullPath, int fullPathSize);
 int IsRootDirectorySimple(char *path);
 void removeInfoExtension(const char *input, char *output);

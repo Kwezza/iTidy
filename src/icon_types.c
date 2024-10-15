@@ -18,6 +18,7 @@
 #include "window_management.h"
 #include "file_directory_handling.h"
 #include "utilities.h"
+#include "writeLog.h"
 
 void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
 {

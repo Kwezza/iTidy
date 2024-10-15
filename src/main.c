@@ -78,6 +78,7 @@
 #include "file_directory_handling.h"
 #include "utilities.h"
 #include "spinner.h"
+#include "writeLog.h"
 
 /* Define global variables */
 struct Screen *screen = NULL;
@@ -216,7 +217,7 @@ int main(int argc, char **argv)
 #endif
 
     InitializeWindow();
-    ProcessDirectory(filePath, iterateDIRs);
+    ProcessDirectory(filePath, iterateDIRs,0);
     CleanupWindow();
     disposeTimer();
     return RETURN_OK;

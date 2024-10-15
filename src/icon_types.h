@@ -22,6 +22,7 @@
 #include "file_directory_handling.h"
 #include "icon_types.h"
 #include "utilities.h"
+#include "writeLog.h"
 
 void GetNewIconSizePath(const char *filePath, IconSize *newIconSize);
 BOOL GetStandardIconSize(const char *filePath, IconSize *iconSize);

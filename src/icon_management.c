@@ -21,6 +21,7 @@
 #include "icon_types.h"
 #include "utilities.h"
 #include "spinner.h"
+#include "writeLog.h"
 
 void FreeIconArray(IconArray *iconArray)
 {

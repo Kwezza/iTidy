@@ -26,6 +26,8 @@
         "icontrolprefs.h": "c",
         "execbase.h": "c",
         "gfxbase.h": "c",
-        "text.h": "c"
+        "text.h": "c",
+        "types.h": "c",
+        "writelog.h": "c"
     }
 }

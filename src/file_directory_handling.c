@@ -1,6 +1,7 @@
 #include "file_directory_handling.h"
 #include "utilities.h"
 #include "spinner.h"
+#include "writeLog.h"
 
 int HasSlaveFile(char *path)
 {
@@ -8,10 +9,14 @@ int HasSlaveFile(char *path)
     struct FileInfoBlock *fib;
     int hasSlave = 0;
 
+    #ifdef DEBUGLocks
+    append_to_log("Locking directory (HasSlaveFile): %s\n", path);
+    #endif
     lock = Lock((STRPTR)path, ACCESS_READ);
     if (lock == 0)
     {
-        Printf("Failed to lock directory: %s\n", path);
+        //Printf("Failed to lock directory: %s\n", path);
+        //Assume it has no slave file if we can't lock the directory
         return 0;
     }
 
@@ -19,6 +24,9 @@ int HasSlaveFile(char *path)
     if (fib == NULL)
     {
         Printf("Failed to allocate memory for FileInfoBlock\n");
+                #ifdef DEBUGLocks
+    append_to_log("Unlocking directory: %s\n", path);
+    #endif
         UnLock(lock);
         return 0;
     }
@@ -40,60 +48,88 @@ int HasSlaveFile(char *path)
     }
 
     FreeMem(fib, sizeof(struct FileInfoBlock));
+        #ifdef DEBUGLocks
+    append_to_log("Unlocking directory: %s\n", path);
+    #endif
     UnLock(lock);
     return hasSlave;
 }
 
-void ProcessDirectory(char *path, BOOL processSubDirs)
+void ProcessDirectory(char *path, BOOL processSubDirs, int recursion_level)
 {
-
-    BPTR lock;
-    struct FileInfoBlock *fib;
+    BPTR lock = NULL;
+    struct FileInfoBlock *fib = NULL;
     char subdir[4096];
+
+    // Sanitize the path to ensure it's in the correct format
     sanitizeAmigaPath(path);
+#ifdef DEBUGLocks
+    // Log the current directory and recursion level
+    append_to_log("Locking directory at level %d: %s\n", recursion_level, path);
+#endif
+    // Try to lock the directory
     lock = Lock((STRPTR)path, ACCESS_READ);
     if (lock == 0)
     {
-        Printf("Failed to lock directory: %s\n", path);
+        //Assume it has an error in the dir we can't lock the directory
+        //Printf("Failed to lock directory at level %d: %s\n", recursion_level, path);
         return;
     }
 
+    // If the user has enabled WHDLoad cleanup, check for .slave files
     if (user_cleanupWHDLoadFolders == TRUE)
     {
         if (HasSlaveFile(path))
         {
             if (user_dontResize == FALSE)
+            {
                 resizeFolderToContents(path, CreateIconArrayFromPath(lock, path));
-            UnLock(lock);
+            }
+            append_to_log("Unlocking directory at level %d: %s\n", recursion_level, path);
+            UnLock(lock);  // Always unlock before returning
             return;
         }
     }
 
+    // Allocate memory for FileInfoBlock
     fib = (struct FileInfoBlock *)AllocMem(sizeof(struct FileInfoBlock), MEMF_PUBLIC | MEMF_CLEAR);
     if (fib == NULL)
     {
-        Printf("Failed to allocate memory for FileInfoBlock\n");
-        UnLock(lock);
+        Printf("Failed to allocate memory for FileInfoBlock at level %d\n", recursion_level);
+        append_to_log("Unlocking directory at level %d: %s\n", recursion_level, path);
+        UnLock(lock);  // Make sure to unlock before returning
         return;
     }
 
+    // Examine the directory to see if it has contents
     if (Examine(lock, fib))
     {
-        FormatIconsAndWindow(path);
+        FormatIconsAndWindow(path);  // Format icons for this directory
+
+        // Process subdirectories if allowed
         if (processSubDirs == TRUE)
         {
             while (ExNext(lock, fib))
             {
-                if (fib->fib_DirEntryType > 0)
+                if (fib->fib_DirEntryType > 0)  // Only process directories
                 {
+                    // Recursively process subdirectories, increment recursion level
                     sprintf(subdir, "%s/%s", path, fib->fib_FileName);
-                    ProcessDirectory(subdir, TRUE);
+                    ProcessDirectory(subdir, TRUE, recursion_level + 1);
                 }
             }
         }
     }
+    else
+    {
+        Printf("Failed to examine directory at level %d: %s\n", recursion_level, path);  // Error message for failed Examine
+    }
 
+    // Cleanup: Free memory and unlock the directory
     FreeMem(fib, sizeof(struct FileInfoBlock));
+#ifdef DEBUGLocks
+    append_to_log("Unlocking directory at level %d: %s\n", recursion_level, path);
+    #endif
     UnLock(lock);
 }
 
@@ -221,7 +257,7 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
             // Save the updated DiskObject back to disk
             if (!PutDiskObject(fileNameNoInfo, diskObject))
             {
-                fprintf(stderr, "Error: Failed to save icon position for file: %s\n", fileNameNoInfo);
+                //fprintf(stderr, "Error: Failed to save icon position for file: %s\n", fileNameNoInfo);
                 FreeDiskObject(diskObject);
             }
 
@@ -377,6 +413,9 @@ BOOL GetWriteProtection(STRPTR filename)
 
     /* Lock the file to retrieve its protection bits */
     lock = Lock(filename, ACCESS_READ);
+        #ifdef DEBUGLocks
+    append_to_log("Locking directory (GetWriteProtection): %s\n", filename);
+    #endif
     if (lock == 0)
     {
         Printf("Error: Unable to lock the file '%s'.\n", filename);
@@ -388,6 +427,9 @@ BOOL GetWriteProtection(STRPTR filename)
     if (fib == NULL)
     {
         Printf("Error: Unable to allocate FileInfoBlock.\n");
+                #ifdef DEBUGLocks
+    append_to_log("Unlocking directory: %s\n", filename);
+    #endif
         UnLock(lock);
         return FALSE;
     }
@@ -397,6 +439,9 @@ BOOL GetWriteProtection(STRPTR filename)
     {
         Printf("Error: Examine failed for file '%s'.\n", filename);
         FreeDosObject(DOS_FIB, fib);
+                #ifdef DEBUGLocks
+    append_to_log("Unlocking directory: %s\n", filename);
+    #endif
         UnLock(lock);
         return FALSE;
     }
@@ -409,6 +454,9 @@ BOOL GetWriteProtection(STRPTR filename)
 
     /* Cleanup */
     FreeDosObject(DOS_FIB, fib);
+            #ifdef DEBUGLocks
+    append_to_log("Unlocking directory: %s\n", filename);
+    #endif
     UnLock(lock);
 
     return isProtected;
@@ -422,6 +470,9 @@ void SetWriteProtection(STRPTR filename, BOOL protect)
 
     /* Lock the file to retrieve its protection bits */
     lock = Lock(filename, ACCESS_READ);
+        #ifdef DEBUGLocks
+    append_to_log("Locking directory (SetWriteProtection): %s\n", filename);
+    #endif
     if (lock == 0)
     {
         Printf("Error: Unable to lock the file '%s'.\n", filename);
@@ -434,6 +485,9 @@ void SetWriteProtection(STRPTR filename, BOOL protect)
     {
         Printf("Error: Unable to allocate FileInfoBlock.\n");
         UnLock(lock);
+                #ifdef DEBUGLocks
+    append_to_log("Unlocking directory: %s\n", filename);
+    #endif
         return;
     }
 
@@ -442,6 +496,9 @@ void SetWriteProtection(STRPTR filename, BOOL protect)
     {
         Printf("Error: Examine failed for file '%s'.\n", filename);
         FreeDosObject(DOS_FIB, fib);
+                #ifdef DEBUGLocks
+    append_to_log("Unlocking directory: %s\n", filename);
+    #endif
         UnLock(lock);
         return;
     }
@@ -461,6 +518,9 @@ void SetWriteProtection(STRPTR filename, BOOL protect)
 
     /* Cleanup */
     FreeDosObject(DOS_FIB, fib);
+            #ifdef DEBUGLocks
+    append_to_log("Unlocking directory: %s\n", filename);
+    #endif
     UnLock(lock);
 }
 
@@ -473,6 +533,9 @@ BOOL GetDeleteProtection(STRPTR filename)
 
     /* Lock the file to retrieve its protection bits */
     lock = Lock(filename, ACCESS_READ);
+        #ifdef DEBUGLocks
+    append_to_log("Locking directory (GetDeleteProtection): %s\n", filename);
+    #endif
     if (lock == 0)
     {
         Printf("Error: Unable to lock the file '%s'.\n", filename);
@@ -484,6 +547,9 @@ BOOL GetDeleteProtection(STRPTR filename)
     if (fib == NULL)
     {
         Printf("Error: Unable to allocate FileInfoBlock.\n");
+                #ifdef DEBUGLocks
+    append_to_log("Unlocking directory: %s\n", filename);
+    #endif
         UnLock(lock);
         return FALSE;
     }
@@ -493,6 +559,9 @@ BOOL GetDeleteProtection(STRPTR filename)
     {
         Printf("Error: Examine failed for file '%s'.\n", filename);
         FreeDosObject(DOS_FIB, fib);
+                #ifdef DEBUGLocks
+    append_to_log("Unlocking directory: %s\n", filename);
+    #endif
         UnLock(lock);
         return FALSE;
     }
@@ -505,6 +574,9 @@ BOOL GetDeleteProtection(STRPTR filename)
 
     /* Cleanup */
     FreeDosObject(DOS_FIB, fib);
+            #ifdef DEBUGLocks
+    append_to_log("Unlocking directory: %s\n", filename);
+    #endif
     UnLock(lock);
 
     return isProtected;
@@ -518,6 +590,9 @@ void SetDeleteProtection(STRPTR filename, BOOL protect)
 
     /* Lock the file to retrieve its protection bits */
     lock = Lock(filename, ACCESS_READ);
+        #ifdef DEBUGLocks
+    append_to_log("Locking directory (SetDeleteProtection): %s\n", filename);
+    #endif
     if (lock == 0)
     {
         Printf("Error: Unable to lock the file '%s'.\n", filename);
@@ -529,6 +604,9 @@ void SetDeleteProtection(STRPTR filename, BOOL protect)
     if (fib == NULL)
     {
         Printf("Error: Unable to allocate FileInfoBlock.\n");
+                #ifdef DEBUGLocks
+    append_to_log("Unlocking directory: %s\n", filename);
+    #endif
         UnLock(lock);
         return;
     }
@@ -538,6 +616,9 @@ void SetDeleteProtection(STRPTR filename, BOOL protect)
     {
         Printf("Error: Examine failed for file '%s'.\n", filename);
         FreeDosObject(DOS_FIB, fib);
+                #ifdef DEBUGLocks
+    append_to_log("Unlocking directory: %s\n", filename);
+    #endif
         UnLock(lock);
         return;
     }
@@ -557,6 +638,9 @@ void SetDeleteProtection(STRPTR filename, BOOL protect)
 
     /* Cleanup */
     FreeDosObject(DOS_FIB, fib);
+            #ifdef DEBUGLocks
+    append_to_log("Unlocking directory: %s\n", filename);
+    #endif
     UnLock(lock);
 }
 
@@ -617,6 +701,9 @@ BOOL isDirectory(const char *path)
 
     /* Lock the file/directory */
     lock = Lock(pathWithoutInfo, ACCESS_READ);
+        #ifdef DEBUGLocks
+    append_to_log("Locking directory (isDirectory): %s\n", path);
+    #endif
     if (lock == 0)
     {
 #ifdef DEBUG
@@ -642,6 +729,9 @@ BOOL isDirectory(const char *path)
     }
 
     /* Unlock the path and free the FileInfoBlock */
+            #ifdef DEBUGLocks
+    append_to_log("Unlocking directory: %s\n", path);
+    #endif
     UnLock(lock);
     FreeDosObject(DOS_FIB, fib);
     free(pathWithoutInfo); /* Free the allocated memory */

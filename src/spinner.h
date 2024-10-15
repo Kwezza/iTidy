@@ -2,6 +2,7 @@
 #define SPINNER_H
 
 #include <exec/types.h>
+#include "writeLog.h"
 
 // Function prototypes
 ULONG timer(void);
