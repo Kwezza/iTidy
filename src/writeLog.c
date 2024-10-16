@@ -18,3 +18,19 @@ void append_to_log(const char *format, ...)
         printf("Error opening log file!\n");
     }
 }
+
+void initialize_logfile(void)
+{
+    FILE *logFile;
+
+    logFile = fopen("logfile.txt", "w");  /* Open the log file in write mode */
+
+    if (logFile != NULL)
+    {
+        fclose(logFile);  /* Close the log file */
+    }
+    else
+    {
+        printf("Error initializing log file!\n");
+    }
+}

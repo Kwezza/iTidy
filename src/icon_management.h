@@ -17,6 +17,7 @@
 #include "icon_types.h"
 #include "utilities.h"
 #include "writeLog.h"
+#include "icon_misc.h"
 
 BOOL AddIconToArray(IconArray *iconArray, const FullIconDetails *newIcon);
 BOOL checkIconFrame(const char *iconName);

@@ -10,6 +10,7 @@
 
 #include "main.h"
 #include "writeLog.h"
+#include "icon_misc.h"
 
 
 // Function to read Kickstart version from memory for Kickstart 1.3 and earlier

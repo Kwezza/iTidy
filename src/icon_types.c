@@ -19,6 +19,7 @@
 #include "file_directory_handling.h"
 #include "utilities.h"
 #include "writeLog.h"
+#include "icon_misc.h"
 
 void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
 {
@@ -49,7 +50,7 @@ void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
     filePathCopy[filePathLen] = '\0'; /* Ensure null termination */
 
 #ifdef DEBUG
-    printf("File path copy: %s\n", filePathCopy);
+    append_to_log("File path copy: %s\n", filePathCopy);
 #endif
 
     /* Remove the ".info" suffix if it exists */
@@ -57,7 +58,7 @@ void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
     {
         filePathCopy[filePathLen - 5] = '\0'; /* Truncate the .info part */
 #ifdef DEBUG
-        printf(".info suffix removed: %s\n", filePathCopy);
+        append_to_log(".info suffix removed: %s\n", filePathCopy);
 #endif
     }
 
@@ -83,7 +84,7 @@ void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
     for (i = 0; (toolType = toolTypes[i]); i++)
     {
 #ifdef DEBUG
-        printf("Processing ToolType: %s\n", toolType);
+        append_to_log("Processing ToolType: %s\n", toolType);
 #endif
         if (strncmp(toolType, prefix, strlen(prefix)) == 0)
         {
@@ -92,7 +93,7 @@ void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
                 newIconSize->width = (int)toolType[4] - '!';
                 newIconSize->height = (int)toolType[5] - '!';
 #ifdef DEBUG
-                printf("Found icon size: width = %d, height = %d\n", newIconSize->width, newIconSize->height);
+                append_to_log("Found icon size: width = %d, height = %d\n", newIconSize->width, newIconSize->height);
 #endif
             }
             break;
@@ -130,7 +131,7 @@ BOOL GetIconSizeFromFile(const char *filePath, IconSize *iconSize)
     iconSize->width = (buffer[8] << 8) | buffer[9];
     iconSize->height = (buffer[10] << 8) | buffer[11];
 #ifdef DEBUG
-    printf("Hex read of format size: width = %d, height = %d\n", iconSize->width, iconSize->height);
+    append_to_log("Hex read of format size: width = %d, height = %d\n", iconSize->width, iconSize->height);
 #endif
     Close(fileHandle);
     return TRUE;
@@ -161,17 +162,17 @@ BOOL GetStandardIconSize(const char *filePath, IconSize *iconSize)
     }
 
 #ifdef DEBUG
-    printf("Attempting to load DiskObject from path: %s\n", filePathCopy);
+    append_to_log("Attempting to load DiskObject from path: %s\n", filePathCopy);
 #endif
     /* Attempt to get the DiskObject for the provided (or modified) file path */
     diskObject = GetDiskObject(filePathCopy);
     if (diskObject == NULL)
     {
         #ifdef DEBUG
-        printf("Failed to get DiskObject for the file: %s\n", filePathCopy);
+        append_to_log("Failed to get DiskObject for the file: %s\n", filePathCopy);
         /* Use IoErr() to get more information about why it failed */
         error = IoErr();
-        printf("GetDiskObject failed. IoErr: %ld\n", error);
+        append_to_log("GetDiskObject failed. IoErr: %ld\n", error);
         #endif
         return FALSE; /* Failed to get the DiskObject */
     }
@@ -220,9 +221,6 @@ IconPosition GetIconPositionFromPath(const char *iconPath)
     {
         pathCopy[pathLength - 5] = '\0'; /* Remove the .info extension */
     }
-#ifdef DEBUG
-    printf("Getting disk Object: %s\n", pathCopy);
-#endif
 
     /* Load the DiskObject from the modified path (without .info) */
     diskObject = GetDiskObject(pathCopy);
@@ -232,23 +230,18 @@ IconPosition GetIconPositionFromPath(const char *iconPath)
         FreeVec(pathCopy); /* Free the allocated memory */
         return position;
     }
-#ifdef DEBUG
-    printf("Getting disk position x and y\n", pathCopy);
-#endif
     /* Get the current X and Y positions */
     position.x = diskObject->do_CurrentX;
     position.y = diskObject->do_CurrentY;
 
 #ifdef DEBUG
-    printf("x: %d and y: %d\n", position.x, position.y);
+    append_to_log("Icon position x: %d and y: %d for %s\n", position.x, position.y,iconPath);
 #endif
 
     /* Free the DiskObject and the path copy */
     FreeDiskObject(diskObject);
     FreeVec(pathCopy);
-#ifdef DEBUG
-    printf("Returning from GetIconPositionFromPath\n", pathCopy);
-#endif
+
     return position;
 }
 
@@ -311,7 +304,7 @@ BOOL IsNewIconPath(const STRPTR filePath)
             {
                 newIconFormat = TRUE;
 #ifdef DEBUG
-                printf("New icon format detected.\n");
+                append_to_log("New icon format detected.\n");
 #endif
                 break;
             }
@@ -340,9 +333,7 @@ int isIconTypeDisk(const char *filename,long fib_DirEntryType)
     UBYTE ic_Type;
     long fileSize;
 
-#ifdef DEBUG
-    printf("Checking if icon type is DISK for file: %s\n", filename);
-#endif
+
 if (fib_DirEntryType > 0) return 0;
 
     /* Open the file in binary mode */
@@ -362,9 +353,6 @@ if (fib_DirEntryType > 0) return 0;
     if (fileSize < 0x31) /* 0x30 is the offset of ic_Type, so the file must be at least this size */
     {
         fclose(file);
-#ifdef DEBUG
-        printf("File too small to contain ic_Type\n");
-#endif
         return 0; /* File too small */
     }
 
@@ -375,31 +363,18 @@ if (fib_DirEntryType > 0) return 0;
     if (fread(&ic_Type, 1, 1, file) != 1)
     {
         fclose(file);
-#ifdef DEBUG
-        printf("Error reading ic_Type from file\n");
-#endif
         return 0; /* Error reading the file */
     }
 
     /* Close the file */
     fclose(file);
 
-#ifdef DEBUG
-    printf("ic_Type read from file: %d\n", ic_Type);
-#endif
-
     /* Check if ic_Type is DISK (1) */
     if (ic_Type == 1) /* 1 corresponds to DISK */
     {
-#ifdef DEBUG
-        printf("Icon type is DISK\n");
-#endif
         return 1; /* Return true */
     }
 
-#ifdef DEBUG
-    printf("Icon type is not DISK\n");
-#endif
     return 0; /* Return false if it's not DISK */
 }
 
@@ -417,7 +392,7 @@ int isOS35IconFormat(const char *filename)
     int lastBytes = 0; /* For handling overlap between buffer reads */
 
 #ifdef DEBUG
-    printf("Checking if it is a OS35 icon: %s\n", filename);
+    append_to_log("Checking if it is a OS35 icon: %s\n", filename);
 #endif
 
     /* Open the file in binary mode */
@@ -434,7 +409,7 @@ int isOS35IconFormat(const char *filename)
     fseek(file, 0, SEEK_SET);
 
 #ifdef DEBUG
-    printf("icon size is: %ld\n", fileSize);
+    append_to_log("icon size is: %ld\n", fileSize);
 #endif
 
     /* Check if the file size is at least the size of the header */
@@ -442,7 +417,7 @@ int isOS35IconFormat(const char *filename)
     {
         fclose(file);
 #ifdef DEBUG
-        printf("File too small to be OS3.5 icon\n");
+        append_to_log("File too small to be OS3.5 icon\n");
 #endif
         return 0; /* File too small to be OS3.5 icon */
     }
@@ -453,8 +428,8 @@ int isOS35IconFormat(const char *filename)
         bytesRead += lastBytes; /* Adjust for any leftover bytes from the last read */
 
 #ifdef DEBUG
-        printf("Processing OS35 file chunk, bytesRead: %lu, iterationCount: %d, current ftell: %ld\n",
-               (unsigned long)bytesRead, iterationCount, ftell(file));
+        //append_to_log("Processing OS35 file chunk, bytesRead: %lu, iterationCount: %d, current ftell: %ld\n",
+        //       (unsigned long)bytesRead, iterationCount, ftell(file));
 #endif
 
         for (i = 0; i <= bytesRead - HEADER_SIZE; i++)
@@ -466,7 +441,7 @@ int isOS35IconFormat(const char *filename)
                 offset = ftell(file) - bytesRead + i;
 
 #ifdef DEBUG
-                printf("\"FORM\" header found at offset: %ld (ftell: %ld, i: %zu, bytesRead: %lu)\n",
+                append_to_log("\"FORM\" header found at offset: %ld (ftell: %ld, i: %zu, bytesRead: %lu)\n",
                        offset, ftell(file), i, (unsigned long)bytesRead);
 #endif
 
@@ -474,7 +449,7 @@ int isOS35IconFormat(const char *filename)
                 if (offset < 0 || offset > fileSize)
                 {
 #ifdef DEBUG
-                    printf("Error: Calculated offset out of bounds. offset: %ld, fileSize: %ld\n", offset, fileSize);
+                    append_to_log("Error: Calculated offset out of bounds. offset: %ld, fileSize: %ld\n", offset, fileSize);
 #endif
                     fclose(file);
                     return 0;
@@ -488,14 +463,14 @@ int isOS35IconFormat(const char *filename)
                 {
                     foundIcon = 1;
 #ifdef DEBUG
-                    printf("\"ICON\" header found after \"FORM\" at position: %d\n", (int)(i + 8));
+                    append_to_log("\"ICON\" header found after \"FORM\" at position: %d\n", (int)(i + 8));
 #endif
                     break;
                 }
 #ifdef DEBUG
                 else
                 {
-                    printf("Checked position %d, did not find \"ICON\"\n", (int)(i + 8));
+                    append_to_log("Checked position %d, did not find \"ICON\"\n", (int)(i + 8));
                 }
 #endif
             }
@@ -514,7 +489,7 @@ int isOS35IconFormat(const char *filename)
         if (iterationCount > 10000)
         {
 #ifdef DEBUG
-            printf("Maximum iteration count reached. Exiting loop.\n");
+            append_to_log("Maximum iteration count reached. Exiting loop.\n");
 #endif
             break; /* Force exit if maximum iteration count is reached */
         }
@@ -534,11 +509,11 @@ int isOS35IconFormat(const char *filename)
 #ifdef DEBUG
     if (!foundForm)
     {
-        printf("FORM header not found in the file.\n");
+        append_to_log("FORM header not found in the file.\n");
     }
     else if (!foundIcon)
     {
-        printf("ICON header not found after FORM header in the file.\n");
+        append_to_log("ICON header not found after FORM header in the file.\n");
     }
 #endif
 
@@ -552,7 +527,7 @@ BOOL IsNewIcon(struct DiskObject *diskObject)
 
     toolTypes = diskObject->do_ToolTypes;
 #ifdef DEBUG
-    printf("Is it a New Icon?\n");
+    append_to_log("Is it a New Icon?\n");
 #endif
     /* Print all tooltypes */
     if (toolTypes != NULL)

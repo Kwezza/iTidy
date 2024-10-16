@@ -16,6 +16,7 @@
 #include "window_management.h"
 #include "utilities.h"
 #include "writeLog.h"
+#include "icon_misc.h"
 #include <dos/dos.h>
 
 int HasSlaveFile(char *path);

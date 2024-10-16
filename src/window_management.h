@@ -20,6 +20,7 @@
 #include "file_directory_handling.h"
 #include "utilities.h"
 #include "writeLog.h"
+#include "icon_misc.h"
 
 void CleanupWindow(void);
 int FormatIconsAndWindow(char *folder);

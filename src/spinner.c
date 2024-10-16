@@ -7,6 +7,7 @@
 #include <clib/exec_protos.h>
 #include <proto/dos.h>
 #include "writeLog.h"
+#include "icon_misc.h"
 
 // Global variables
 struct Device* TimerBase;

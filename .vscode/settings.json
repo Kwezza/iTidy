@@ -28,6 +28,7 @@
         "gfxbase.h": "c",
         "text.h": "c",
         "types.h": "c",
-        "writelog.h": "c"
+        "writelog.h": "c",
+        "icon_misc.h": "c"
     }
 }

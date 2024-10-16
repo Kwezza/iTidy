@@ -79,6 +79,7 @@
 #include "utilities.h"
 #include "spinner.h"
 #include "writeLog.h"
+#include "icon_misc.h"
 
 /* Define global variables */
 struct Screen *screen = NULL;
@@ -101,6 +102,13 @@ BOOL user_cleanupWHDLoadFolders;
 BOOL user_folderViewMode;
 BOOL user_folderFlags;
 BOOL user_stripIconPosition;
+
+
+//used to store a list of icons that have been marked as to be left out on the workbench desktop
+char **left_out_icons = NULL;
+int left_out_count = 0;
+int left_out_size = 5;
+
 
 #define VERSION_STRING "$VER: iTidy 1.0 (15.07.2024)"
 const char version[] = VERSION_STRING;
@@ -151,10 +159,11 @@ int main(int argc, char **argv)
     }
 
 #ifdef DEBUG
-    printf("Debug build\n");
+initialize_logfile();
+    append_to_log("Debug build\n");
 
     stringWBVersion = convertWBVersionWithDot(workbenchVersion);
-    printf("Workbench version: %s\n", stringWBVersion);
+    append_to_log("Workbench version: %s\n", stringWBVersion);
     free(stringWBVersion);
 #endif
     if (workbenchVersion < 36000)
@@ -168,7 +177,7 @@ int main(int argc, char **argv)
         ICON_SPACING_X = 15; /*  Limited icon library support pre workbench 3.1.4 */
         ICON_SPACING_Y = 10; /*  Some functions are disabled */
 #ifdef DEBUG
-        printf("Workbench 2.x detected. Icon spacing increased to x: %d y: %d\n", ICON_SPACING_X, ICON_SPACING_Y);
+        append_to_log("Workbench 2.x detected. Icon spacing increased to x: %d y: %d\n", ICON_SPACING_X, ICON_SPACING_Y);
 #endif
     }
 
@@ -210,10 +219,16 @@ int main(int argc, char **argv)
     fetchWorkbenchSettings(&prefsWorkbench);
     fetchIControlSettings(&prefsIControl);
 
+    loadLeftOutIcons(filePath);
+
 #ifdef DEBUG
-    printf("IControl prefs:  border width: %d, border height: %d\n", prefsIControl.currentBarWidth, prefsIControl.currentBarHeight);
-    printf("IControl prefs:  title height: %d, Window height: %d\n", prefsIControl.currentTitleBarHeight, prefsIControl.currentWindowBarHeight);
-    printf("IControl prefs:  volume guage width: %d\n", prefsIControl.currentCGaugeWidth);
+    append_to_log("IControl prefs:  border width: %d, border height: %d\n", prefsIControl.currentBarWidth, prefsIControl.currentBarHeight);
+    append_to_log("IControl prefs:  title height: %d, Window height: %d\n", prefsIControl.currentTitleBarHeight, prefsIControl.currentWindowBarHeight);
+    append_to_log("IControl prefs:  volume guage width: %d\n", prefsIControl.currentCGaugeWidth);
+    // Print the loaded left out icons
+    if (left_out_count <1) {
+        append_to_log("No 'left out' icons found on device.\n");
+    }
 #endif
 
     InitializeWindow();

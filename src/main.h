@@ -37,6 +37,7 @@
 #include "utilities.h"
 #include "spinner.h"
 #include "writeLog.h"
+#include "icon_misc.h"
 
 // Define the DEBUG macro to enable debug prints
 #define DEBUG
@@ -134,11 +135,18 @@ extern int ICON_SPACING_Y;
 extern int icon_type_standard;
 extern int icon_type_newIcon;
 extern int icon_type_os35;
+
 extern BOOL user_dontResize;
 extern BOOL user_cleanupWHDLoadFolders;
 extern BOOL user_folderViewMode;
 extern BOOL user_folderFlags;
 extern BOOL user_stripIconPosition;
+
+//used to store a list of icons that have been marked as to be left out on the workbench desktop
+extern char **left_out_icons;
+extern int left_out_count;
+extern int left_out_size;
+
 
 int Compare(const void *a, const void *b);
 int strncasecmp_custom(const char *s1, const char *s2, size_t n);

@@ -3,6 +3,7 @@
 
 #include <exec/types.h>
 #include "writeLog.h"
+#include "icon_misc.h"
 
 // Function prototypes
 ULONG timer(void);

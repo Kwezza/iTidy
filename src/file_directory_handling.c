@@ -2,6 +2,7 @@
 #include "utilities.h"
 #include "spinner.h"
 #include "writeLog.h"
+#include "icon_misc.h"
 
 int HasSlaveFile(char *path)
 {
@@ -241,7 +242,7 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
                 diskObject->do_CurrentX = currentIcon->icon_x;
                 diskObject->do_CurrentY = currentIcon->icon_y;
                 #ifdef DEBUG
-                    Printf("Setting icon position for %s to %d, %d\n", fileNameNoInfo, currentIcon->icon_x, currentIcon->icon_y);
+                    append_to_log("Setting icon position for %s to %d, %d\n", fileNameNoInfo, currentIcon->icon_x, currentIcon->icon_y);
                 #endif
             }
             else
@@ -249,7 +250,7 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
                 diskObject->do_CurrentX = NO_ICON_POSITION;
                 diskObject->do_CurrentY = NO_ICON_POSITION;
                 #ifdef DEBUG
-                    Printf("Setting icon position for %s to NO_ICON_POSITION\n", fileNameNoInfo);
+                    append_to_log("Setting icon position for %s to NO_ICON_POSITION\n", fileNameNoInfo);
                 #endif
             }
 
@@ -257,11 +258,17 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
             if (!PutDiskObject(fileNameNoInfo, diskObject))
             {
                 #ifdef DEBUG
-                    Printf("Icon postition saved correctly for %s\n", fileNameNoInfo);
+                    append_to_log("!! Failed to save icon %s\n", fileNameNoInfo);
                 #endif
-                FreeDiskObject(diskObject);
+                
             }
-
+            else
+            {
+                #ifdef DEBUG
+                    append_to_log("Icon postition saved correctly for %s\n", fileNameNoInfo);
+                #endif
+            }
+FreeDiskObject(diskObject);
             /* Reinstate the original write and delete protection if it was modified. */
             if (is_write_protected_icon)
                 SetWriteProtection(iconArray->array[i].icon_full_path, 1);
@@ -269,7 +276,7 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
                 SetDeleteProtection(iconArray->array[i].icon_full_path, 1);
             #ifdef DEBUG
                 iconPosition = GetIconPositionFromPath(fileNameNoInfo); //get the current icon position
-                printf("Sanity check: Icon now reports position for %s to %d, %d\n", fileNameNoInfo, iconPosition.x, iconPosition.x);
+                append_to_log("Sanity check: x:%d y:%d reported for %s after saving\n", iconPosition.x, iconPosition.y, fileNameNoInfo);
             #endif
         }
         else
@@ -311,7 +318,7 @@ void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo)
     {
 
 #ifdef DEBUG
-        printf("Exisiting LeftEdge, TopEdge, Width, Height: %d, %d, %d, %d\n", diskObject->do_DrawerData->dd_NewWindow.LeftEdge, diskObject->do_DrawerData->dd_NewWindow.TopEdge, diskObject->do_DrawerData->dd_NewWindow.Width, diskObject->do_DrawerData->dd_NewWindow.Height);
+        append_to_log("Exisiting LeftEdge, TopEdge, Width, Height: %d, %d, %d, %d\n", diskObject->do_DrawerData->dd_NewWindow.LeftEdge, diskObject->do_DrawerData->dd_NewWindow.TopEdge, diskObject->do_DrawerData->dd_NewWindow.Width, diskObject->do_DrawerData->dd_NewWindow.Height);
 #endif
         drawerData = (struct DrawerData *)diskObject->do_DrawerData;
         drawerData->dd_ViewModes = user_folderViewMode;
@@ -686,7 +693,7 @@ BOOL isDirectory(const char *path)
     if (lock == 0)
     {
 #ifdef DEBUG
-        printf("Error: Unable to lock path: %s\n", pathWithoutInfo);
+        append_to_log("Error: Unable to lock path: %s\n", pathWithoutInfo);
 #endif
         FreeDosObject(DOS_FIB, fib);
         free(pathWithoutInfo);
