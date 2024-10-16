@@ -61,59 +61,67 @@ void ProcessDirectory(char *path, BOOL processSubDirs, int recursion_level)
     struct FileInfoBlock *fib = NULL;
     char subdir[4096];
 
-    // Sanitize the path to ensure it's in the correct format
+    // Sanitize the path to ensure it's properly formatted for the Amiga file system
     sanitizeAmigaPath(path);
 #ifdef DEBUGLocks
-    // Log the current directory and recursion level
+    // Log the current directory and recursion level for debugging purposes
     append_to_log("Locking directory at level %d: %s\n", recursion_level, path);
 #endif
-    // Try to lock the directory
+    // Attempt to lock the directory for reading
     lock = Lock((STRPTR)path, ACCESS_READ);
     if (lock == 0)
     {
-        //Assume it has an error in the dir we can't lock the directory
-        //Printf("Failed to lock directory at level %d: %s\n", recursion_level, path);
+        // If locking fails, assume an issue with the directory and return
         return;
     }
 
-    // If the user has enabled WHDLoad cleanup, check for .slave files
+    // If WHDLoad cleanup is enabled, check for .slave files in the directory
     if (user_cleanupWHDLoadFolders == TRUE)
     {
         if (HasSlaveFile(path))
         {
+            // Resize the folder to fit its contents if resizing is allowed
             if (user_dontResize == FALSE)
             {
                 resizeFolderToContents(path, CreateIconArrayFromPath(lock, path));
             }
+            #ifdef DEBUGLocks
             append_to_log("Unlocking directory at level %d: %s\n", recursion_level, path);
-            UnLock(lock);  // Always unlock before returning
+            #endif
+            // Always unlock the directory before returning
+            UnLock(lock);
             return;
         }
     }
 
-    // Allocate memory for FileInfoBlock
+    // Allocate memory for the FileInfoBlock to examine the directory contents
     fib = (struct FileInfoBlock *)AllocMem(sizeof(struct FileInfoBlock), MEMF_PUBLIC | MEMF_CLEAR);
     if (fib == NULL)
     {
+        // Log a message if memory allocation fails
         Printf("Failed to allocate memory for FileInfoBlock at level %d\n", recursion_level);
+        #ifdef DEBUGLocks
         append_to_log("Unlocking directory at level %d: %s\n", recursion_level, path);
-        UnLock(lock);  // Make sure to unlock before returning
+        #endif
+        // Unlock the directory before returning
+        UnLock(lock);
         return;
     }
 
-    // Examine the directory to see if it has contents
+    // Examine the directory to check for contents
     if (Examine(lock, fib))
     {
-        FormatIconsAndWindow(path);  // Format icons for this directory
+        // Format the icons for the current directory
+        FormatIconsAndWindow(path);
 
-        // Process subdirectories if allowed
+        // If processing subdirectories is allowed, handle them recursively
         if (processSubDirs == TRUE)
         {
             while (ExNext(lock, fib))
             {
-                if (fib->fib_DirEntryType > 0)  // Only process directories
+                if (fib->fib_DirEntryType > 0)  // Process only directories
                 {
-                    // Recursively process subdirectories, increment recursion level
+                    // Recursively process the subdirectory and increment the recursion level
                     sprintf(subdir, "%s/%s", path, fib->fib_FileName);
                     ProcessDirectory(subdir, TRUE, recursion_level + 1);
                 }
@@ -122,14 +130,15 @@ void ProcessDirectory(char *path, BOOL processSubDirs, int recursion_level)
     }
     else
     {
-        Printf("Failed to examine directory at level %d: %s\n", recursion_level, path);  // Error message for failed Examine
+        // Log an error message if directory examination fails
+        Printf("Failed to examine directory at level %d: %s\n", recursion_level, path);
     }
 
-    // Cleanup: Free memory and unlock the directory
+    // Cleanup: Free allocated memory and unlock the directory
     FreeMem(fib, sizeof(struct FileInfoBlock));
 #ifdef DEBUGLocks
     append_to_log("Unlocking directory at level %d: %s\n", recursion_level, path);
-    #endif
+#endif
     UnLock(lock);
 }
 
@@ -197,18 +206,21 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
     char fileNameNoInfo[256];
     int iconArraySize;
     int is_write_protected, is_delete_protected, is_write_protected_icon, is_delete_protected_icon;
+    IconPosition iconPosition; //Only used for debugging
 
-    // Pre-calculate the size to avoid multiple dereferences
+    // Precompute the array size to avoid redundant dereferencing
     iconArraySize = iconArray->size;
 
     for (i = 0; i < iconArraySize; i++)
     {
 
-        // Access the icon's full path and coordinates once to reduce array access
+        // Access the icon's full path and coordinates once to minimize array lookups
         FullIconDetails *currentIcon = &iconArray->array[i];
-        updateCursor(); /* update progress spinner */
+        updateCursor(); // Update the progress spinner
         removeInfoExtension(currentIcon->icon_full_path, fileNameNoInfo);
 
+        /* Temporarily enable write and delete permissions if they are disabled,
+           so the icon can be updated. */
         is_write_protected_icon = GetWriteProtection(iconArray->array[i].icon_full_path);
         if (is_write_protected_icon)
             SetWriteProtection(iconArray->array[i].icon_full_path, 0);
@@ -217,88 +229,55 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
         if (is_delete_protected_icon)
             SetDeleteProtection(iconArray->array[i].icon_full_path, 0);
 
-/*
-        if (does_file_or_folder_exist(fileNameNoInfo, 0) == 1)
-        {
-            is_write_protected = GetWriteProtection(fileNameNoInfo);
-            if (is_write_protected)
-                SetWriteProtection(fileNameNoInfo, 0);
-
-            is_delete_protected = GetDeleteProtection(fileNameNoInfo);
-            if (is_delete_protected)
-                SetDeleteProtection(fileNameNoInfo, 0);
-        }
-        /*
-                if(currentIcon->is_write_protected)
-                {
-                    setWriteProtection(currentIcon->icon_full_path, 0);
-                    setWriteProtection(fileNameNoInfo, 0);
-                }
-        */
-
-        // Use GetDiskObjectNew() for better performance if available
+        // Use GetDiskObjectNew() if available for improved performance
         diskObject = GetDiskObject(fileNameNoInfo);
 
         if (diskObject)
         {
 
-            // Set the new positions
+            // Set new icon coordinates unless stripping positions is enabled
             if (user_stripIconPosition == FALSE)
             {
                 diskObject->do_CurrentX = currentIcon->icon_x;
                 diskObject->do_CurrentY = currentIcon->icon_y;
+                #ifdef DEBUG
+                    Printf("Setting icon position for %s to %d, %d\n", fileNameNoInfo, currentIcon->icon_x, currentIcon->icon_y);
+                #endif
             }
             else
             {
                 diskObject->do_CurrentX = NO_ICON_POSITION;
                 diskObject->do_CurrentY = NO_ICON_POSITION;
+                #ifdef DEBUG
+                    Printf("Setting icon position for %s to NO_ICON_POSITION\n", fileNameNoInfo);
+                #endif
             }
 
             // Save the updated DiskObject back to disk
             if (!PutDiskObject(fileNameNoInfo, diskObject))
             {
-                //fprintf(stderr, "Error: Failed to save icon position for file: %s\n", fileNameNoInfo);
+                #ifdef DEBUG
+                    Printf("Icon postition saved correctly for %s\n", fileNameNoInfo);
+                #endif
                 FreeDiskObject(diskObject);
             }
 
-            // Always free the DiskObject to prevent memory leaks!
-            
-            /*
-            printf("icon_full_path: %s\n", iconArray->array[i].icon_full_path);
-            printf("is_write_protected: %d\n", is_write_protected);
-            printf("is_delete_protected: %d\n", is_delete_protected);
-            printf("is_write_protected_icon: %d\n", is_write_protected_icon);
-            printf("is_delete_protected_icon: %d\n", is_delete_protected_icon);
-            */
-
+            /* Reinstate the original write and delete protection if it was modified. */
             if (is_write_protected_icon)
                 SetWriteProtection(iconArray->array[i].icon_full_path, 1);
             if (is_delete_protected_icon)
                 SetDeleteProtection(iconArray->array[i].icon_full_path, 1);
-            if (does_file_or_folder_exist(fileNameNoInfo, 0) == 1)
-            {
-                //if (is_write_protected)
-                //    SetWriteProtection(fileNameNoInfo, 1);
-                //if (is_delete_protected)
-                //    SetDeleteProtection(fileNameNoInfo, 1);
-            }
-
-            // restore the write protection (if needed)
-            /*
-            if(currentIcon->is_write_protected)
-            {
-                setWriteProtection(currentIcon->icon_full_path, 1);
-                setWriteProtection(fileNameNoInfo, 1);
-
-            }
-            */
+            #ifdef DEBUG
+                iconPosition = GetIconPositionFromPath(fileNameNoInfo); //get the current icon position
+                printf("Sanity check: Icon now reports position for %s to %d, %d\n", fileNameNoInfo, iconPosition.x, iconPosition.x);
+            #endif
         }
         else
         {
-            fprintf(stderr, "Error: Failed to get DiskObject for file: %s\n", currentIcon->icon_full_path);
+            fprintf(stderr, "Error: Failed to retrieve DiskObject for file: %s\n", currentIcon->icon_full_path);
         }
     }
-    return 0; // Return success or an error code as needed
+    return 0; // Return success
 }
 
 void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo)

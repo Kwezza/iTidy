@@ -39,7 +39,7 @@
 #include "writeLog.h"
 
 // Define the DEBUG macro to enable debug prints
-//#define DEBUG
+#define DEBUG
 //#define DEBUGLocks
 
 

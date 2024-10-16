@@ -142,8 +142,11 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                 {
                     const char *fileExtension = strrchr(fib->fib_FileName, '.');
 
-                    if (fileExtension != NULL && strlen(fileExtension) == 5 && strncasecmp_custom(fileExtension, ".info", 5) == 0)
+                    if (fileExtension != NULL && strlen(fileExtension) == 5 && strncasecmp_custom(fileExtension, ".info", 5) == 0 && strlen(fib->fib_FileName) > 5)
                     {
+//                        continue;
+//                    }
+//                    {
 
                         /* Reset newIcon to known defaults */
                         newIcon.icon_type = icon_type_standard;
