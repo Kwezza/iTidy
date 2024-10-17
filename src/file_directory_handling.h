@@ -25,7 +25,7 @@ void GetFullPath(const char *directory, struct FileInfoBlock *fib, char *fullPat
 int IsRootDirectorySimple(char *path);
 void removeInfoExtension(const char *input, char *output);
 int saveIconsPositionsToDisk(IconArray *iconArray);
-void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo);
+void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo, int sanityCheck);
 void dumpIconArrayToScreen(IconArray *iconArray);
 void sanitizeAmigaPath(char *path);
 

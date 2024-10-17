@@ -207,6 +207,10 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
     char fileNameNoInfo[256];
     int iconArraySize;
     int is_write_protected, is_delete_protected, is_write_protected_icon, is_delete_protected_icon;
+
+    int sanityCheckX = 0;
+    int sanityCheckY = 0;
+
     IconPosition iconPosition; //Only used for debugging
 
     // Precompute the array size to avoid redundant dereferencing
@@ -241,6 +245,11 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
             {
                 diskObject->do_CurrentX = currentIcon->icon_x;
                 diskObject->do_CurrentY = currentIcon->icon_y;
+                
+                sanityCheckX = diskObject->do_CurrentX;
+                sanityCheckY = diskObject->do_CurrentY;
+
+
                 #ifdef DEBUG
                     append_to_log("Setting icon position for %s to %d, %d\n", fileNameNoInfo, currentIcon->icon_x, currentIcon->icon_y);
                 #endif
@@ -276,7 +285,15 @@ FreeDiskObject(diskObject);
                 SetDeleteProtection(iconArray->array[i].icon_full_path, 1);
             #ifdef DEBUG
                 iconPosition = GetIconPositionFromPath(fileNameNoInfo); //get the current icon position
-                append_to_log("Sanity check: x:%d y:%d reported for %s after saving\n", iconPosition.x, iconPosition.y, fileNameNoInfo);
+                if(sanityCheckX != iconPosition.x || sanityCheckY != iconPosition.y)
+                {
+                    append_to_log("!!! Sanity check failed: x: %d and y: %d reported for %s after saving. should have been x: %d and y: %d\n", iconPosition.x, iconPosition.y, fileNameNoInfo,sanityCheckX, sanityCheckY);
+                }
+                else
+                {
+                    append_to_log("Sanity check ok: x: %d and y: %d reported for %s after saving\n", iconPosition.x, iconPosition.y, fileNameNoInfo);
+                }
+
             #endif
         }
         else
@@ -287,19 +304,27 @@ FreeDiskObject(diskObject);
     return 0; // Return success
 }
 
-void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo)
+void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo, int sanityCheck)
 {
     char diskInfoPath[256]; // Buffer for the disk.info path
     struct DiskObject *diskObject;
     struct DrawerData *drawerData;
     int folderPathLen;
 
-    if (endsWithInfo(folderPath) == 0)
-        return;
+#ifdef DEBUG
+    append_to_log("Saving updated folder size and position for: %s\n", folderPath);
+#endif
 
+    if (endsWithInfo(folderPath) == 0)
+    {
+        #ifdef DEBUG
+            append_to_log("Aborting - ends with .info: %s\n", diskInfoPath);
+        #endif
+        //return;
+    }
     strcpy(diskInfoPath, folderPath);
 
-    // Check if folder path ends with a colon or slash
+    // Check if folder path ends with a colon
     folderPathLen = strlen(diskInfoPath);
     if (folderPathLen > 0 && diskInfoPath[folderPathLen - 1] == ':')
     {
@@ -309,16 +334,23 @@ void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo)
     diskObject = GetDiskObject(diskInfoPath);
     if (diskObject == NULL)
     {
-        // Printf("Unable to load disk.info for folder: %s\n", (ULONG)folderPath);
+        #ifdef DEBUG
+            append_to_log("Unable to load disk.info for folder: %s\n", diskInfoPath);
+#endif
+
         return;
     }
 
     // Modify the dd_ViewModes and dd_Flags to set 'Show only icons' and 'Show all files'
-    if ((diskObject->do_Type == WBDRAWER || diskObject->do_Type == WBDISK) && diskObject->do_DrawerData)
+    if (((diskObject->do_Type == WBDRAWER || diskObject->do_Type == WBDISK)) && diskObject->do_DrawerData)
     {
 
 #ifdef DEBUG
-        append_to_log("Exisiting LeftEdge, TopEdge, Width, Height: %d, %d, %d, %d\n", diskObject->do_DrawerData->dd_NewWindow.LeftEdge, diskObject->do_DrawerData->dd_NewWindow.TopEdge, diskObject->do_DrawerData->dd_NewWindow.Width, diskObject->do_DrawerData->dd_NewWindow.Height);
+        append_to_log("Existing folder LeftEdge, TopEdge, Width, Height: %d, %d, %d, %d\n",
+                      diskObject->do_DrawerData->dd_NewWindow.LeftEdge,
+                      diskObject->do_DrawerData->dd_NewWindow.TopEdge,
+                      diskObject->do_DrawerData->dd_NewWindow.Width,
+                      diskObject->do_DrawerData->dd_NewWindow.Height);
 #endif
         drawerData = (struct DrawerData *)diskObject->do_DrawerData;
         drawerData->dd_ViewModes = user_folderViewMode;
@@ -333,9 +365,88 @@ void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo)
         if (!PutDiskObject(diskInfoPath, diskObject))
         {
             Printf("Failed to save modified info for folder: %s\n", (ULONG)diskInfoPath);
+#ifdef DEBUG
+            append_to_log("FAILED to Save folder settings for %s\n", diskInfoPath);
+#endif
+        }
+        else
+        {
+#ifdef DEBUG
+            append_to_log("Saved folder settings for %s\n", diskInfoPath);
+#endif
+
+            // If sanityCheck is true, perform the sanity check
+            if (sanityCheck)
+            {
+                struct DiskObject *reloadedDiskObject;
+                struct DrawerData *reloadedDrawerData;
+
+                // Re-load the disk object from disk
+                reloadedDiskObject = GetDiskObject(diskInfoPath);
+                if (reloadedDiskObject == NULL)
+                {
+                    // Log that we failed to reload the disk object
+#ifdef DEBUG
+                    append_to_log("Sanity Check: Failed to reload disk object for %s\n", diskInfoPath);
+#endif
+                }
+                else
+                {
+                    // Perform the sanity check
+                    if ((reloadedDiskObject->do_Type == WBDRAWER || reloadedDiskObject->do_Type == WBDISK) && reloadedDiskObject->do_DrawerData)
+                    {
+                        reloadedDrawerData = (struct DrawerData *)reloadedDiskObject->do_DrawerData;
+
+                        // Compare the relevant fields
+                        if (reloadedDrawerData->dd_NewWindow.LeftEdge == newFolderInfo->left &&
+                            reloadedDrawerData->dd_NewWindow.TopEdge == newFolderInfo->top &&
+                            reloadedDrawerData->dd_NewWindow.Width == newFolderInfo->width &&
+                            reloadedDrawerData->dd_NewWindow.Height == newFolderInfo->height &&
+                            reloadedDrawerData->dd_ViewModes == user_folderViewMode &&
+                            reloadedDrawerData->dd_Flags == user_folderFlags)
+                        {
+                            // The settings match
+#ifdef DEBUG
+                            append_to_log("Sanity Check Passed for %s\n", diskInfoPath);
+#endif
+                        }
+                        else
+                        {
+                            // The settings do not match, log the differences
+#ifdef DEBUG
+                            append_to_log("Sanity Check Failed for %s\n", diskInfoPath);
+                            append_to_log("Expected LeftEdge: %d, Got: %d\n", newFolderInfo->left, reloadedDrawerData->dd_NewWindow.LeftEdge);
+                            append_to_log("Expected TopEdge: %d, Got: %d\n", newFolderInfo->top, reloadedDrawerData->dd_NewWindow.TopEdge);
+                            append_to_log("Expected Width: %d, Got: %d\n", newFolderInfo->width, reloadedDrawerData->dd_NewWindow.Width);
+                            append_to_log("Expected Height: %d, Got: %d\n", newFolderInfo->height, reloadedDrawerData->dd_NewWindow.Height);
+                            append_to_log("Expected ViewModes: %d, Got: %d\n", user_folderViewMode, reloadedDrawerData->dd_ViewModes);
+                            append_to_log("Expected Flags: %d, Got: %d\n", user_folderFlags, reloadedDrawerData->dd_Flags);
+#endif
+                        }
+                    }
+                    else
+                    {
+                        // Log that the reloaded disk object does not have the expected type or DrawerData
+#ifdef DEBUG
+                        append_to_log("Sanity Check: Unexpected disk object type or missing DrawerData for %s\n", diskInfoPath);
+#endif
+                    }
+
+                    // Free the reloaded disk object
+                    FreeDiskObject(reloadedDiskObject);
+                }
+            }
         }
     }
-
+else
+{
+   #ifdef DEBUG
+                        append_to_log("Requirements not met tp update folder. %s\n", folderPath);
+#endif 
+}
+#ifdef DEBUG
+                        append_to_log("Folder save completed for %s\n", folderPath);
+#endif
     FreeDiskObject(diskObject);
 }
 

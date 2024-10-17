@@ -139,9 +139,12 @@ int InitializeWindow()
 
 void repoistionWindow(char *dirPath, int winWidth, int winHeight)
 {
+
     int posTop = 0, posLeft = 0;
     folderWindowSize newFolderInfo;
-
+    #ifdef DEBUG
+    append_to_log("Repoistion window: %s\n", dirPath);
+    #endif
     winWidth += prefsIControl.currentBarWidth + prefsIControl.currentLeftBarWidth + (PADDING_WIDTH * 2);
     if (prefsWorkbench.disableVolumeGauge && IsRootDirectorySimple(dirPath))
         winWidth += prefsIControl.currentCGaugeWidth;
@@ -159,5 +162,10 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight)
     newFolderInfo.width = winWidth;
     newFolderInfo.height = winHeight;
 
-    SaveFolderSettings(dirPath, &newFolderInfo);
+
+        #ifdef DEBUG
+    append_to_log("posTop: %d, posLeft: %d, winWidth: %d, winHeight: %d\n", posTop, posLeft, winWidth, winHeight);
+    #endif
+
+    SaveFolderSettings(dirPath, &newFolderInfo,1);
 }
