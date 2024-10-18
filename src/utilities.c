@@ -229,7 +229,7 @@ BOOL does_file_or_folder_exist(const char *filename, int appendWorkingDirectory)
 {
     BPTR lock;
     BOOL exists = FALSE;
-    //LONG errorCode = 0;
+    LONG errorCode = 0;
     char currentDir[256];
     char newFilePath[512] = {0}; /* Ensure buffer is initially empty */
     

@@ -206,7 +206,7 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
     int i;
     char fileNameNoInfo[256];
     int iconArraySize;
-    int is_write_protected_icon, is_delete_protected_icon;
+    int is_write_protected, is_delete_protected, is_write_protected_icon, is_delete_protected_icon;
 
     int sanityCheckX = 0;
     int sanityCheckY = 0;
@@ -544,12 +544,12 @@ void sanitizeAmigaPath(char *path)
     FreeVec(sanitizedPath);
 }
 
-BOOL GetWriteProtection(const char *filename)
+BOOL GetWriteProtection(STRPTR filename)
 {
     struct FileInfoBlock *fib;
     BPTR lock;
     BOOL isProtected = FALSE;
-    if (!does_file_or_folder_exist(filename, 0)) return FALSE;
+    if (!does_file_or_folder_exist(filename, 0)) return;
     /* Lock the file to retrieve its protection bits */
     lock = Lock(filename, ACCESS_READ);
 #ifdef DEBUGLocks
@@ -602,7 +602,7 @@ BOOL GetWriteProtection(const char *filename)
 }
 
 /* Function to set or unset the write protection bit on a file */
-void SetWriteProtection(const char *filename, BOOL protect)
+void SetWriteProtection(STRPTR filename, BOOL protect)
 {
     struct FileInfoBlock *fib;
     BPTR lock;
@@ -664,12 +664,12 @@ void SetWriteProtection(const char *filename, BOOL protect)
 }
 
 /* Function to get the delete protection status of a file */
-BOOL GetDeleteProtection(const char *filename)
+BOOL GetDeleteProtection(STRPTR filename)
 {
     struct FileInfoBlock *fib;
     BPTR lock;
     BOOL isProtected = FALSE;
-    if (!does_file_or_folder_exist(filename, 0)) return FALSE;
+    if (!does_file_or_folder_exist(filename, 0)) return;
     /* Lock the file to retrieve its protection bits */
     lock = Lock(filename, ACCESS_READ);
 #ifdef DEBUGLocks
@@ -722,7 +722,7 @@ BOOL GetDeleteProtection(const char *filename)
 }
 
 /* Function to set or unset the delete protection bit on a file */
-void SetDeleteProtection(const char *filename, BOOL protect)
+void SetDeleteProtection(STRPTR filename, BOOL protect)
 {
     struct FileInfoBlock *fib;
     BPTR lock;
