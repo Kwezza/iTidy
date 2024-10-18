@@ -26,6 +26,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath);
 void FreeIconArray(IconArray *iconArray);
 int ArrangeIcons(BPTR lock, char *dirPath, int newWidth);
 int CompareByFolderAndName(const void *a, const void *b);
+BOOL IsValidIcon(const char *iconPath);
 
 #endif // ICON_MANAGEMENT_H
 

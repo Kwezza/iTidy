@@ -359,20 +359,41 @@ void remove_CR_LF_from_string(char *str)
     *dst = '\0'; // Null-terminate the modified string
 }
 
+
 int endsWithInfo(const char *filePath) {
     const char *extension = ".info";
     size_t pathLength = strlen(filePath);
     size_t extLength = strlen(extension);
-    size_t i;
+    const char *pathPtr;
+    const char *extPtr;
+    char c1, c2;
 
     // Check if the filePath is shorter than the extension
     if (pathLength < extLength) {
         return FALSE;
     }
 
-    // Compare the end of the filePath with ".info" (case-insensitive)
-    for (i = 0; i < extLength; i++) {
-        if (tolower(filePath[pathLength - extLength + i]) != tolower(extension[i])) {
+    // Set pointers to the end of filePath and extension
+    pathPtr = filePath + pathLength - extLength;
+    extPtr = extension;
+
+    // Compare each character in the extension with the corresponding character in the filePath
+    while (*extPtr) {
+        c1 = *pathPtr++;
+        c2 = *extPtr++;
+
+        // Convert c1 to lowercase if it's an uppercase letter
+        if (c1 >= 'A' && c1 <= 'Z') {
+            c1 = c1 + ('a' - 'A');
+        }
+
+        // Convert c2 to lowercase if it's an uppercase letter
+        if (c2 >= 'A' && c2 <= 'Z') {
+            c2 = c2 + ('a' - 'A');
+        }
+
+        // Compare the lowercase characters
+        if (c1 != c2) {
             return FALSE;
         }
     }

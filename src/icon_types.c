@@ -195,6 +195,13 @@ IconPosition GetIconPositionFromPath(const char *iconPath)
     size_t pathLength;             /* Length of the icon path */
     struct DiskObject *diskObject; /* Pointer to the DiskObject structure */
 
+    if(does_file_or_folder_exist(iconPath,0) == FALSE)
+    {
+        position.x = -1;
+        position.y = -1;
+        return position;
+    }
+
     /* Initialize the IconPosition structure with invalid coordinates */
     position.x = -1;
     position.y = -1;
@@ -226,7 +233,7 @@ IconPosition GetIconPositionFromPath(const char *iconPath)
     diskObject = GetDiskObject(pathCopy);
     if (diskObject == NULL)
     {
-        printf("Failed to load .info file: %s.info\n", pathCopy);
+        printf("Error: Unable to load icon. Corrupted or unknown format: %s.info\n", pathCopy);
         FreeVec(pathCopy); /* Free the allocated memory */
         return position;
     }

@@ -108,6 +108,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
     IconSize iconSize = {0, 0};
     IconArray *iconArray = CreateIconArray();
     char fullPathAndFile[512];
+    char fullPathAndFileNoInfo[512];
     char fileNameNoInfo[128];
     int textLength, fileCount = 0, maxWidth = 0;
     IconPosition iconPosition;
@@ -147,164 +148,169 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                     {
                         if (isIconLeftOut(fullPathAndFile) == FALSE)
                         {
-                            //                        continue;
-                            //                    }
-                            //                    {
-
-                            /* Reset newIcon to known defaults */
-                            newIcon.icon_type = icon_type_standard;
-                            newIcon.icon_height = 0;
-                            newIcon.icon_width = 0;
-                            newIcon.border_width = 0;
-                            newIcon.text_width = 0;
-                            newIcon.text_height = 0;
-                            newIcon.icon_max_width = 0;
-                            newIcon.icon_max_height = 0;
-                            newIcon.icon_x = 0;
-                            newIcon.icon_y = 0;
-                            newIcon.icon_text = NULL;
-                            newIcon.icon_full_path = NULL;
-                            newIcon.is_folder = FALSE;
-
-#ifdef DEBUG
-                            append_to_log("Adding to %s Icon array.\n", fullPathAndFile);
-#endif
-                            removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
-#ifdef DEBUG
-                            append_to_log("Calculating text extent.\n", fullPathAndFile);
-#endif
-                            CalculateTextExtent(fileNameNoInfo, &textExtent);
-#ifdef DEBUG
-                            append_to_log("Getting current icon position.\n", fullPathAndFile);
-#endif
-                            iconPosition = GetIconPositionFromPath(fullPathAndFile);
-
-                            /* Determine icon size based on format */
-
-                            if (IsNewIconPath(fullPathAndFile))
+                            removeInfoExtension(fullPathAndFile, fullPathAndFileNoInfo);
+                            if (IsValidIcon(fullPathAndFileNoInfo))
                             {
-#ifdef DEBUG
-                                append_to_log("Getting New Icon details.\n", fullPathAndFile);
-#endif
-                                /* printf("New Icon Format\n"); */
-                                newIcon.icon_type = icon_type_newIcon;
-                                GetNewIconSizePath(fullPathAndFile, &iconSize);
-                            }
-                            else if
+removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
+                                /* Reset newIcon to known defaults */
+                                newIcon.icon_type = icon_type_standard;
+                                newIcon.icon_height = 0;
+                                newIcon.icon_width = 0;
+                                newIcon.border_width = 0;
+                                newIcon.text_width = 0;
+                                newIcon.text_height = 0;
+                                newIcon.icon_max_width = 0;
+                                newIcon.icon_max_height = 0;
+                                newIcon.icon_x = 0;
+                                newIcon.icon_y = 0;
+                                newIcon.icon_text = NULL;
+                                newIcon.icon_full_path = NULL;
+                                newIcon.is_folder = FALSE;
 
-                                (isOS35IconFormat(fullPathAndFile))
-                            {
-                                newIcon.icon_type = icon_type_os35;
+#ifdef DEBUG
+                                append_to_log("Adding to %s Icon array.\n", fullPathAndFile);
+#endif
+                                removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
+#ifdef DEBUG
+                                append_to_log("Calculating text extent.\n", fullPathAndFile);
+#endif
+                                CalculateTextExtent(fileNameNoInfo, &textExtent);
+#ifdef DEBUG
+                                append_to_log("Getting current icon position.\n", fullPathAndFile);
+#endif
+                                iconPosition = GetIconPositionFromPath(fullPathAndFile);
+
+                                /* Determine icon size based on format */
+
+                                if (IsNewIconPath(fullPathAndFile))
+                                {
+#ifdef DEBUG
+                                    append_to_log("Getting New Icon details.\n", fullPathAndFile);
+#endif
+                                    /* printf("New Icon Format\n"); */
+                                    newIcon.icon_type = icon_type_newIcon;
+                                    GetNewIconSizePath(fullPathAndFile, &iconSize);
+                                }
+                                else if
+
+                                    (isOS35IconFormat(fullPathAndFile))
+                                {
+                                    newIcon.icon_type = icon_type_os35;
 /* printf("OS3.5 Icon Format\n"); */
 #ifdef DEBUG
-                                append_to_log("Getting OS35 icon details.\n", fullPathAndFile);
+                                    append_to_log("Getting OS35 icon details.\n", fullPathAndFile);
 #endif
-                                getOS35IconSize(fullPathAndFile, &iconSize);
+                                    getOS35IconSize(fullPathAndFile, &iconSize);
+                                }
+                                else
+                                {
+                                    newIcon.icon_type = icon_type_standard;
+#ifdef DEBUG
+                                    append_to_log("Seems to be a standard icon\n");
+#endif
+                                    /* printf("Standard Icon Format\n"); */
+                                    GetStandardIconSize(fullPathAndFile, &iconSize);
+                                }
+
+#ifdef DEBUG
+                                append_to_log("Icons size x: %d, y: %d\n", iconSize.width, iconSize.height);
+#endif
+
+                                if (prefsWorkbench.embossRectangleSize > 0)
+                                {
+                                    newIcon.icon_height = iconSize.height + prefsWorkbench.embossRectangleSize;
+                                    newIcon.icon_width = iconSize.width + prefsWorkbench.embossRectangleSize;
+                                }
+                                else
+                                {
+                                    newIcon.icon_height = iconSize.height;
+                                    newIcon.icon_width = iconSize.width;
+                                }
+#ifdef DEBUG
+                                append_to_log("Checking for icon frame\n");
+#endif
+                                if (checkIconFrame(fullPathAndFile) == 1 || newIcon.icon_type == icon_type_standard)
+                                {
+                                    newIcon.border_width = prefsWorkbench.embossRectangleSize;
+                                }
+                                // else
+                                {
+                                }
+                                // newIcon.has_border = checkIconFrame(fullPathAndFile);
+#ifdef DEBUG
+                                append_to_log("Icon %s has border: %d\n", fullPathAndFile, newIcon.border_width);
+#endif
+                                if (newIcon.border_width == 0)
+                                {
+                                    iconArray->hasOnlyBorderlessIcons = TRUE;
+                                }
+
+                                newIcon.text_width = textExtent.te_Width;
+                                newIcon.text_height = textExtent.te_Height;
+                                newIcon.icon_max_width = MAX(iconSize.width + (newIcon.border_width * 2), textExtent.te_Width);
+                                newIcon.icon_max_height = iconSize.height + GAP_BETWEEN_ICON_AND_TEXT + textExtent.te_Height;
+                                newIcon.icon_x = iconPosition.x;
+                                newIcon.icon_y = iconPosition.y;
+
+                                newIcon.is_write_protected = (fib->fib_Protection & FIBF_WRITE) ? TRUE : FALSE;
+
+#ifdef DEBUG
+                                append_to_log("Icon is write protected: %d\n", newIcon.is_write_protected);
+                                append_to_log("calculated border: %d\n", (newIcon.border_width * 2));
+#endif
+
+                                /* Determine if it's a folder or a file */
+                                newIcon.is_folder = isDirectory(fullPathAndFile);
+#ifdef DEBUG
+                                append_to_log("Allocating memory for icon path.\n");
+
+#endif
+                                /* Allocate and copy the full path and icon text */
+                                newIcon.icon_full_path = (char *)AllocVec(strlen(fullPathAndFile) + 1, MEMF_CLEAR);
+                                if (!newIcon.icon_full_path)
+                                {
+                                    fprintf(stderr, "Error: Failed to allocate memory for icon full path.\n");
+                                    FreeIconArray(iconArray);
+                                    FreeDosObject(DOS_FIB, fib);
+                                    return NULL;
+                                }
+                                strcpy(newIcon.icon_full_path, fullPathAndFile);
+
+                                textLength = strlen(fib->fib_FileName) + 1;
+                                newIcon.icon_text = (char *)AllocVec(textLength, MEMF_CLEAR);
+                                if (!newIcon.icon_text)
+                                {
+                                    fprintf(stderr, "Error: Failed to allocate memory for icon text.\n");
+                                    FreeVec(newIcon.icon_full_path);
+                                    FreeIconArray(iconArray);
+                                    FreeDosObject(DOS_FIB, fib);
+                                    return NULL;
+                                }
+                                strcpy(newIcon.icon_text, fib->fib_FileName);
+
+                                /* Update the maximum width */
+                                if (newIcon.icon_max_width > maxWidth)
+                                {
+                                    maxWidth = newIcon.icon_max_width;
+                                }
+
+                                /* Add new icon to the array */
+                                if (!AddIconToArray(iconArray, &newIcon))
+                                {
+                                    fprintf(stderr, "Error: Failed to add icon to array.\n");
+                                    FreeVec(newIcon.icon_text);
+                                    FreeVec(newIcon.icon_full_path);
+                                    FreeIconArray(iconArray);
+                                    FreeDosObject(DOS_FIB, fib);
+                                    return NULL;
+                                }
+
+                                fileCount++;
                             }
                             else
                             {
-                                newIcon.icon_type = icon_type_standard;
-#ifdef DEBUG
-                                append_to_log("Seems to be a standard icon\n");
-#endif
-                                /* printf("Standard Icon Format\n"); */
-                                GetStandardIconSize(fullPathAndFile, &iconSize);
+                                fprintf(stderr, "Error: Unknown or currputed icon file: %s\n", fullPathAndFile);
                             }
-
-#ifdef DEBUG
-                            append_to_log("Icons size x: %d, y: %d\n", iconSize.width, iconSize.height);
-#endif
-
-                            if (prefsWorkbench.embossRectangleSize > 0)
-                            {
-                                newIcon.icon_height = iconSize.height + prefsWorkbench.embossRectangleSize;
-                                newIcon.icon_width = iconSize.width + prefsWorkbench.embossRectangleSize;
-                            }
-                            else
-                            {
-                                newIcon.icon_height = iconSize.height;
-                                newIcon.icon_width = iconSize.width;
-                            }
-#ifdef DEBUG
-                            append_to_log("Checking for icon frame\n");
-#endif
-                            if (checkIconFrame(fullPathAndFile) == 1 || newIcon.icon_type == icon_type_standard)
-                            {
-                                newIcon.border_width = prefsWorkbench.embossRectangleSize;
-                            }
-                            // else
-                            {
-                            }
-                            // newIcon.has_border = checkIconFrame(fullPathAndFile);
-#ifdef DEBUG
-                            append_to_log("Icon %s has border: %d\n", fullPathAndFile, newIcon.border_width);
-#endif
-                            if (newIcon.border_width == 0)
-                            {
-                                iconArray->hasOnlyBorderlessIcons = TRUE;
-                            }
-
-                            newIcon.text_width = textExtent.te_Width;
-                            newIcon.text_height = textExtent.te_Height;
-                            newIcon.icon_max_width = MAX(iconSize.width + (newIcon.border_width * 2), textExtent.te_Width);
-                            newIcon.icon_max_height = iconSize.height + GAP_BETWEEN_ICON_AND_TEXT + textExtent.te_Height;
-                            newIcon.icon_x = iconPosition.x;
-                            newIcon.icon_y = iconPosition.y;
-
-                            newIcon.is_write_protected = (fib->fib_Protection & FIBF_WRITE) ? TRUE : FALSE;
-
-#ifdef DEBUG
-                            append_to_log("Icon is write protected: %d\n", newIcon.is_write_protected);
-                            append_to_log("calculated border: %d\n", (newIcon.border_width * 2));
-#endif
-
-                            /* Determine if it's a folder or a file */
-                            newIcon.is_folder = isDirectory(fullPathAndFile);
-#ifdef DEBUG
-                            append_to_log("Allocating memory for icon path.\n");
-
-#endif
-                            /* Allocate and copy the full path and icon text */
-                            newIcon.icon_full_path = (char *)AllocVec(strlen(fullPathAndFile) + 1, MEMF_CLEAR);
-                            if (!newIcon.icon_full_path)
-                            {
-                                fprintf(stderr, "Error: Failed to allocate memory for icon full path.\n");
-                                FreeIconArray(iconArray);
-                                FreeDosObject(DOS_FIB, fib);
-                                return NULL;
-                            }
-                            strcpy(newIcon.icon_full_path, fullPathAndFile);
-
-                            textLength = strlen(fib->fib_FileName) + 1;
-                            newIcon.icon_text = (char *)AllocVec(textLength, MEMF_CLEAR);
-                            if (!newIcon.icon_text)
-                            {
-                                fprintf(stderr, "Error: Failed to allocate memory for icon text.\n");
-                                FreeVec(newIcon.icon_full_path);
-                                FreeIconArray(iconArray);
-                                FreeDosObject(DOS_FIB, fib);
-                                return NULL;
-                            }
-                            strcpy(newIcon.icon_text, fib->fib_FileName);
-
-                            /* Update the maximum width */
-                            if (newIcon.icon_max_width > maxWidth)
-                            {
-                                maxWidth = newIcon.icon_max_width;
-                            }
-
-                            /* Add new icon to the array */
-                            if (!AddIconToArray(iconArray, &newIcon))
-                            {
-                                fprintf(stderr, "Error: Failed to add icon to array.\n");
-                                FreeVec(newIcon.icon_text);
-                                FreeVec(newIcon.icon_full_path);
-                                FreeIconArray(iconArray);
-                                FreeDosObject(DOS_FIB, fib);
-                                return NULL;
-                            }
-
-                            fileCount++;
                         }
                     }
                 }
@@ -700,5 +706,28 @@ void dumpIconArrayToScreen(IconArray *iconArray)
     for (i = 0; i < iconArray->size; i++)
     {
         append_to_log("Icon %d: Width = %d, Height = %d, Text Width = %d, Text Height = %d, Max Width = %d, Max Height = %d, x = %d, y = %d, Text = %s, Path = %s\n", i, iconArray->array[i].icon_width, iconArray->array[i].icon_height, iconArray->array[i].text_width, iconArray->array[i].text_height, iconArray->array[i].icon_max_width, iconArray->array[i].icon_max_height, iconArray->array[i].icon_x, iconArray->array[i].icon_y, iconArray->array[i].icon_text, iconArray->array[i].icon_full_path);
+    }
+}
+
+BOOL IsValidIcon(const char *iconPath)
+{
+    struct DiskObject *diskObj;
+
+    /* Attempt to get the DiskObject from the icon file */
+    diskObj = GetDiskObject(iconPath);
+    if (diskObj != NULL)
+    {
+#ifdef DEBUG
+        append_to_log("Icon is a valid icon: %s\n", iconPath);
+#endif
+        /* Successfully retrieved the DiskObject, so the icon is valid */
+        FreeDiskObject(diskObj); /* Clean up to prevent memory leaks */
+        return TRUE;
+    }
+    else
+    {
+        /* Failed to retrieve the DiskObject, so the icon is invalid */
+        append_to_log("Icon is NOT a valid icon: %s\n", iconPath);
+        return FALSE;
     }
 }
