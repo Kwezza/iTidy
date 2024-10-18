@@ -17,6 +17,8 @@
 #include "utilities.h"
 #include "writeLog.h"
 #include "icon_misc.h"
+
+
 #include <dos/dos.h>
 
 int HasSlaveFile(char *path);
@@ -31,9 +33,9 @@ void sanitizeAmigaPath(char *path);
 
 BOOL isDirectory(const char *path);
 BOOL does_file_or_folder_exist(const char *name, int isFile);
-BOOL GetWriteProtection(STRPTR filename);
-void SetWriteProtection(STRPTR filename, BOOL protect);
-void SetDeleteProtection(STRPTR filename, BOOL protect);
-BOOL GetDeleteProtection(STRPTR filename);
+BOOL GetWriteProtection(const char *filename);
+void SetWriteProtection(const char *filename, BOOL protect);
+void SetDeleteProtection(const char *filename, BOOL protect);
+BOOL GetDeleteProtection(const char *filename);
 
 #endif // FILE_DIRECTORY_HANDLING_H

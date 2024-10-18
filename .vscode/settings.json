@@ -29,6 +29,7 @@
         "text.h": "c",
         "types.h": "c",
         "writelog.h": "c",
-        "icon_misc.h": "c"
+        "icon_misc.h": "c",
+        "icon_types.h": "c"
     }
 }
