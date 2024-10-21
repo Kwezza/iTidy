@@ -137,6 +137,8 @@ int main(int argc, char **argv)
     char filePath[256];
     int i;
     int workbenchVersion = GetWorkbenchVersion();
+    int numLeftOutIcons = 0;
+    char deviceName[25];
     BOOL iterateDIRs = FALSE;
 #ifdef DEBUG
     char *stringWBVersion;
@@ -154,8 +156,10 @@ int main(int argc, char **argv)
     }
 
 
+printf( textBold "\niTidy" textReset " V%s by Kerry Thompson\n", VERSION);
+printf("Compiled %s at %s\n", __DATE__, __TIME__);
 
-printf("Compiled on %s at %s\n", __DATE__, __TIME__);
+
 
 #ifdef DEBUG
 initialize_logfile();
@@ -215,10 +219,18 @@ initialize_logfile();
             user_cleanupWHDLoadFolders = FALSE;
     }
 
+    getDeviceNameFromPath(filePath, deviceName,25);
+
     fetchWorkbenchSettings(&prefsWorkbench);
     fetchIControlSettings(&prefsIControl);
 
     loadLeftOutIcons(filePath);
+    numLeftOutIcons = countLeftOutIcons();
+
+    if (numLeftOutIcons > 0)
+    {
+        printf("\nFound %d icons 'left out' on device %s\n", numLeftOutIcons,deviceName);
+    }
 
 #ifdef DEBUG
     append_to_log("IControl prefs:  border width: %d, border height: %d\n", prefsIControl.currentBarWidth, prefsIControl.currentBarHeight);

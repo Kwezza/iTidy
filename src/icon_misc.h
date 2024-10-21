@@ -19,5 +19,7 @@ extern char left_out_icons[MAX_LEFT_OUT_ICONS][MAX_PATH_LENGTH];
 void loadLeftOutIcons(const char *file_path); 
 int isIconLeftOut(const char *icon_path);
 void dumpLeftOutIcons(void);
+int countLeftOutIcons(void);
+void getDeviceNameFromPath(const char *path, char *device_name, int max_length);
 
 #endif // ICON_MISC_H

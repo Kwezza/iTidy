@@ -131,10 +131,24 @@ int isIconLeftOut(const char *icon_path) {
 
 void dumpLeftOutIcons(void) {
     int i;
+#ifdef DEBUG
+    for (i = 0; i < MAX_LEFT_OUT_ICONS; i++) {
+        if (left_out_icons[i][0] != '\0') {
+            append_to_log("Left out icon: %s\n", left_out_icons[i]);
+        }
+    }
+    #endif
+}
+
+int countLeftOutIcons(void) {
+    int i;
+    int count = 0;
 
     for (i = 0; i < MAX_LEFT_OUT_ICONS; i++) {
         if (left_out_icons[i][0] != '\0') {
-            printf("Left out icon: %s\n", left_out_icons[i]);
+            count++;
         }
     }
+
+    return count;
 }

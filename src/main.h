@@ -43,6 +43,7 @@
 #define DEBUG
 //#define DEBUGLocks
 
+#define VERSION "1.0.0"
 
 #define ICON_START_X 10
 #define ICON_START_Y 10
