@@ -153,6 +153,10 @@ int main(int argc, char **argv)
         return 1;
     }
 
+
+
+printf("Compiled on %s at %s\n", __DATE__, __TIME__);
+
 #ifdef DEBUG
 initialize_logfile();
     append_to_log("Debug build\n");
@@ -221,6 +225,7 @@ initialize_logfile();
     append_to_log("IControl prefs:  title height: %d, Window height: %d\n", prefsIControl.currentTitleBarHeight, prefsIControl.currentWindowBarHeight);
     append_to_log("IControl prefs:  volume guage width: %d\n", prefsIControl.currentCGaugeWidth);
     // Print the loaded left out icons
+    dumpLeftOutIcons();
 #endif
 
     InitializeWindow();

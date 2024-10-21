@@ -26,10 +26,6 @@ ULONG timer(void) {
 void updateCursor(void) {
     ULONG currentTime = timer();
 
-#ifdef DEBUG
-return;
-#endif
-
     if ((currentTime - lastUpdateTime) >= 750) {
         // One second has passed, update the cursor
         lastUpdateTime = currentTime;

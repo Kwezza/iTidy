@@ -17,7 +17,7 @@
 extern char left_out_icons[MAX_LEFT_OUT_ICONS][MAX_PATH_LENGTH];
 
 void loadLeftOutIcons(const char *file_path); 
-void resizeLeftOutIconsArray();
 int isIconLeftOut(const char *icon_path);
+void dumpLeftOutIcons(void);
 
 #endif // ICON_MISC_H

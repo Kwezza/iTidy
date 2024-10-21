@@ -99,7 +99,7 @@ void loadLeftOutIcons(const char *file_path) {
         len = strlen(device_name) + 1 + strlen(buffer) + 5 + 1; /* device_name + ":" + buffer + ".info" + null terminator */
 
         if (len <= MAX_PATH_LENGTH) {
-            sprintf(left_out_icons[i], "%s:%s.info", device_name, buffer);
+            sprintf(left_out_icons[i], "%s%s.info", device_name, buffer);
 #ifdef DEBUG
             append_to_log("Found left out icon: %s\n", left_out_icons[i]);
 #endif
@@ -127,4 +127,14 @@ int isIconLeftOut(const char *icon_path) {
     }
 
     return FALSE;  /* Icon not found */
+}
+
+void dumpLeftOutIcons(void) {
+    int i;
+
+    for (i = 0; i < MAX_LEFT_OUT_ICONS; i++) {
+        if (left_out_icons[i][0] != '\0') {
+            printf("Left out icon: %s\n", left_out_icons[i]);
+        }
+    }
 }

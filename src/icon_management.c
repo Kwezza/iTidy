@@ -393,7 +393,7 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     rowCount = 0;
     rowStartIndex = 0;
 
-    printf("Tidying folder: %s\n", dirPath);
+    printf(textWhite "Tidying folder: " textReset "%s\n", dirPath);
 
     iconArray = CreateIconArrayFromPath(lock, dirPath);
 

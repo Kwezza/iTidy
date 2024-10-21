@@ -1,2 +1,1179 @@
 Debug build
 Workbench version: 47.100
+Getting any 'left out' icons for device: itidy
+Found left out icon: itidy:Downloads.info
+Found left out icon: itidy:Devs/DOSDrivers/CD0.info
+IControl prefs:  border width: 18, border height: 18
+IControl prefs:  title height: 16, Window height: 18
+IControl prefs:  volume guage width: 19
+Starting dir scan to add icons to array.
+Icon is a valid icon: itidy:Rexxc
+Adding to itidy:Rexxc.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 370 and y: 76 for itidy:Rexxc.info
+Checking if it is a OS35 icon: itidy:Rexxc.info
+icon size is: 1978
+"FORM" header found at offset: 516 (ftell: 1024, i: %zu, bytesRead: 516)
+"ICON" header found after "FORM" at position: 524
+Getting OS35 icon details.
+Icons size x: 42, y: 42
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:Rexxc
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:Rexxc.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Icon is a valid icon: itidy:S
+Adding to itidy:S.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 14 and y: 142 for itidy:S.info
+Checking if it is a OS35 icon: itidy:S.info
+icon size is: 2062
+"FORM" header found at offset: 516 (ftell: 1024, i: %zu, bytesRead: 516)
+"ICON" header found after "FORM" at position: 524
+Getting OS35 icon details.
+Icons size x: 42, y: 42
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:S
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:S.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Icon is a valid icon: itidy:sc
+Adding to itidy:sc.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 71 and y: 142 for itidy:sc.info
+Checking if it is a OS35 icon: itidy:sc.info
+icon size is: 2200
+"FORM" header found at offset: 516 (ftell: 1024, i: %zu, bytesRead: 516)
+"ICON" header found after "FORM" at position: 524
+Getting OS35 icon details.
+Icons size x: 42, y: 42
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:sc
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:sc.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Icon is a valid icon: itidy:Storage
+Adding to itidy:Storage.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 131 and y: 142 for itidy:Storage.info
+Checking if it is a OS35 icon: itidy:Storage.info
+icon size is: 2050
+"FORM" header found at offset: 516 (ftell: 1024, i: %zu, bytesRead: 516)
+"ICON" header found after "FORM" at position: 524
+Getting OS35 icon details.
+Icons size x: 42, y: 42
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:Storage
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:Storage.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Icon is a valid icon: itidy:System
+Adding to itidy:System.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 198 and y: 142 for itidy:System.info
+Checking if it is a OS35 icon: itidy:System.info
+icon size is: 2010
+"FORM" header found at offset: 516 (ftell: 1024, i: %zu, bytesRead: 516)
+"ICON" header found after "FORM" at position: 524
+Getting OS35 icon details.
+Icons size x: 42, y: 42
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:System
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:System.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Icon is a valid icon: itidy:T
+Adding to itidy:T.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 258 and y: 142 for itidy:T.info
+Checking if it is a OS35 icon: itidy:T.info
+icon size is: 2000
+"FORM" header found at offset: 516 (ftell: 1024, i: %zu, bytesRead: 516)
+"ICON" header found after "FORM" at position: 524
+Getting OS35 icon details.
+Icons size x: 42, y: 42
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:T
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:T.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Icon is a valid icon: itidy:Temp
+Adding to itidy:Temp.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 313 and y: 142 for itidy:Temp.info
+Checking if it is a OS35 icon: itidy:Temp.info
+icon size is: 1936
+"FORM" header found at offset: 516 (ftell: 1024, i: %zu, bytesRead: 516)
+"ICON" header found after "FORM" at position: 524
+Getting OS35 icon details.
+Icons size x: 42, y: 42
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:Temp
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:Temp.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Icon is a valid icon: itidy:Tools
+Adding to itidy:Tools.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 370 and y: 142 for itidy:Tools.info
+Checking if it is a OS35 icon: itidy:Tools.info
+icon size is: 1994
+"FORM" header found at offset: 516 (ftell: 1024, i: %zu, bytesRead: 516)
+"ICON" header found after "FORM" at position: 524
+Getting OS35 icon details.
+Icons size x: 42, y: 42
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:Tools
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:Tools.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Icon is a valid icon: itidy:Utilities
+Adding to itidy:Utilities.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 71 and y: 212 for itidy:Utilities.info
+Checking if it is a OS35 icon: itidy:Utilities.info
+icon size is: 2044
+"FORM" header found at offset: 516 (ftell: 1024, i: %zu, bytesRead: 516)
+"ICON" header found after "FORM" at position: 524
+Getting OS35 icon details.
+Icons size x: 42, y: 42
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:Utilities
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:Utilities.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Icon is a valid icon: itidy:WBStartup
+Adding to itidy:WBStartup.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 131 and y: 212 for itidy:WBStartup.info
+Checking if it is a OS35 icon: itidy:WBStartup.info
+icon size is: 1984
+"FORM" header found at offset: 516 (ftell: 1024, i: %zu, bytesRead: 516)
+"ICON" header found after "FORM" at position: 524
+Getting OS35 icon details.
+Icons size x: 42, y: 42
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:WBStartup
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:WBStartup.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Icon is a valid icon: itidy:Trashcan
+Adding to itidy:Trashcan.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 14 and y: 208 for itidy:Trashcan.info
+Checking if it is a OS35 icon: itidy:Trashcan.info
+icon size is: 2508
+"FORM" header found at offset: 900 (ftell: 1024, i: %zu, bytesRead: 900)
+"ICON" header found after "FORM" at position: 908
+Getting OS35 icon details.
+Icons size x: 43, y: 46
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:Trashcan
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:Trashcan.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Icon is a valid icon: itidy:C
+Adding to itidy:C.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 14 and y: 10 for itidy:C.info
+Checking if it is a OS35 icon: itidy:C.info
+icon size is: 2020
+"FORM" header found at offset: 516 (ftell: 1024, i: %zu, bytesRead: 516)
+"ICON" header found after "FORM" at position: 524
+Getting OS35 icon details.
+Icons size x: 42, y: 42
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:C
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:C.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Icon is a valid icon: itidy:Classes
+Adding to itidy:Classes.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 71 and y: 10 for itidy:Classes.info
+Checking if it is a OS35 icon: itidy:Classes.info
+icon size is: 1978
+"FORM" header found at offset: 516 (ftell: 1024, i: %zu, bytesRead: 516)
+"ICON" header found after "FORM" at position: 524
+Getting OS35 icon details.
+Icons size x: 42, y: 42
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:Classes
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:Classes.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Icon is a valid icon: itidy:Devs
+Adding to itidy:Devs.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 131 and y: 10 for itidy:Devs.info
+Checking if it is a OS35 icon: itidy:Devs.info
+icon size is: 2006
+"FORM" header found at offset: 516 (ftell: 1024, i: %zu, bytesRead: 516)
+"ICON" header found after "FORM" at position: 524
+Getting OS35 icon details.
+Icons size x: 42, y: 42
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:Devs
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:Devs.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Icon is a valid icon: itidy:Expansion
+Adding to itidy:Expansion.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 198 and y: 10 for itidy:Expansion.info
+Checking if it is a OS35 icon: itidy:Expansion.info
+icon size is: 2014
+"FORM" header found at offset: 516 (ftell: 1024, i: %zu, bytesRead: 516)
+"ICON" header found after "FORM" at position: 524
+Getting OS35 icon details.
+Icons size x: 42, y: 42
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:Expansion
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:Expansion.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Icon is a valid icon: itidy:Fonts
+Adding to itidy:Fonts.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 258 and y: 10 for itidy:Fonts.info
+Checking if it is a OS35 icon: itidy:Fonts.info
+icon size is: 2032
+"FORM" header found at offset: 516 (ftell: 1024, i: %zu, bytesRead: 516)
+"ICON" header found after "FORM" at position: 524
+Getting OS35 icon details.
+Icons size x: 42, y: 42
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:Fonts
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:Fonts.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Icon is a valid icon: itidy:Internet
+Adding to itidy:Internet.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 313 and y: 10 for itidy:Internet.info
+Checking if it is a OS35 icon: itidy:Internet.info
+icon size is: 1986
+"FORM" header found at offset: 516 (ftell: 1024, i: %zu, bytesRead: 516)
+"ICON" header found after "FORM" at position: 524
+Getting OS35 icon details.
+Icons size x: 42, y: 42
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:Internet
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:Internet.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Icon is a valid icon: itidy:L
+Adding to itidy:L.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 370 and y: 10 for itidy:L.info
+Checking if it is a OS35 icon: itidy:L.info
+icon size is: 2000
+"FORM" header found at offset: 516 (ftell: 1024, i: %zu, bytesRead: 516)
+"ICON" header found after "FORM" at position: 524
+Getting OS35 icon details.
+Icons size x: 42, y: 42
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:L
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:L.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Icon is a valid icon: itidy:Libs
+Adding to itidy:Libs.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 14 and y: 76 for itidy:Libs.info
+Checking if it is a OS35 icon: itidy:Libs.info
+icon size is: 2360
+"FORM" header found at offset: 516 (ftell: 1024, i: %zu, bytesRead: 516)
+"ICON" header found after "FORM" at position: 524
+Getting OS35 icon details.
+Icons size x: 42, y: 42
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:Libs
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:Libs.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Icon is a valid icon: itidy:Locale
+Adding to itidy:Locale.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 71 and y: 76 for itidy:Locale.info
+Checking if it is a OS35 icon: itidy:Locale.info
+icon size is: 2048
+"FORM" header found at offset: 516 (ftell: 1024, i: %zu, bytesRead: 516)
+"ICON" header found after "FORM" at position: 524
+Getting OS35 icon details.
+Icons size x: 42, y: 42
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:Locale
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:Locale.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Icon is a valid icon: itidy:OLD
+Adding to itidy:OLD.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 131 and y: 76 for itidy:OLD.info
+Checking if it is a OS35 icon: itidy:OLD.info
+icon size is: 2200
+"FORM" header found at offset: 516 (ftell: 1024, i: %zu, bytesRead: 516)
+"ICON" header found after "FORM" at position: 524
+Getting OS35 icon details.
+Icons size x: 42, y: 42
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:OLD
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:OLD.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Icon is a valid icon: itidy:Picasso96
+Adding to itidy:Picasso96.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 198 and y: 76 for itidy:Picasso96.info
+Checking if it is a OS35 icon: itidy:Picasso96.info
+icon size is: 2200
+"FORM" header found at offset: 516 (ftell: 1024, i: %zu, bytesRead: 516)
+"ICON" header found after "FORM" at position: 524
+Getting OS35 icon details.
+Icons size x: 42, y: 42
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:Picasso96
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:Picasso96.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Icon is a valid icon: itidy:Prefs
+Adding to itidy:Prefs.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 258 and y: 76 for itidy:Prefs.info
+Checking if it is a OS35 icon: itidy:Prefs.info
+icon size is: 1980
+"FORM" header found at offset: 516 (ftell: 1024, i: %zu, bytesRead: 516)
+"ICON" header found after "FORM" at position: 524
+Getting OS35 icon details.
+Icons size x: 42, y: 42
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:Prefs
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:Prefs.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Icon is a valid icon: itidy:Programs
+Adding to itidy:Programs.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 313 and y: 76 for itidy:Programs.info
+Checking if it is a OS35 icon: itidy:Programs.info
+icon size is: 2434
+"FORM" header found at offset: 516 (ftell: 1024, i: %zu, bytesRead: 516)
+"ICON" header found after "FORM" at position: 524
+Getting OS35 icon details.
+Icons size x: 42, y: 42
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:Programs
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:Programs.info has border: 0
+Icon is write protected: 0
+calculated border: 0
+Allocating memory for icon path.
+Has only borderless icons: 1
+Dumping Icon Array of 24 icons, max width is 58px
+Icon 0: Width = 43, Height = 43, Text Width = 34, Text Height = 13, Max Width = 42, Max Height = 57, x = 370, y = 76, Text = Rexxc.info, Path = itidy:Rexxc.info
+Icon 1: Width = 43, Height = 43, Text Width = 8, Text Height = 13, Max Width = 42, Max Height = 57, x = 14, y = 142, Text = S.info, Path = itidy:S.info
+Icon 2: Width = 43, Height = 43, Text Width = 13, Text Height = 13, Max Width = 42, Max Height = 57, x = 71, y = 142, Text = sc.info, Path = itidy:sc.info
+Icon 3: Width = 43, Height = 43, Text Width = 43, Text Height = 13, Max Width = 43, Max Height = 57, x = 131, y = 142, Text = Storage.info, Path = itidy:Storage.info
+Icon 4: Width = 43, Height = 43, Text Width = 40, Text Height = 13, Max Width = 42, Max Height = 57, x = 198, y = 142, Text = System.info, Path = itidy:System.info
+Icon 5: Width = 43, Height = 43, Text Width = 7, Text Height = 13, Max Width = 42, Max Height = 57, x = 258, y = 142, Text = T.info, Path = itidy:T.info
+Icon 6: Width = 43, Height = 43, Text Width = 30, Text Height = 13, Max Width = 42, Max Height = 57, x = 313, y = 142, Text = Temp.info, Path = itidy:Temp.info
+Icon 7: Width = 43, Height = 43, Text Width = 30, Text Height = 13, Max Width = 42, Max Height = 57, x = 370, y = 142, Text = Tools.info, Path = itidy:Tools.info
+Icon 8: Width = 43, Height = 43, Text Width = 39, Text Height = 13, Max Width = 42, Max Height = 57, x = 71, y = 212, Text = Utilities.info, Path = itidy:Utilities.info
+Icon 9: Width = 43, Height = 43, Text Width = 58, Text Height = 13, Max Width = 58, Max Height = 57, x = 131, y = 212, Text = WBStartup.info, Path = itidy:WBStartup.info
+Icon 10: Width = 44, Height = 47, Text Width = 52, Text Height = 13, Max Width = 52, Max Height = 61, x = 14, y = 208, Text = Trashcan.info, Path = itidy:Trashcan.info
+Icon 11: Width = 43, Height = 43, Text Width = 9, Text Height = 13, Max Width = 42, Max Height = 57, x = 14, y = 10, Text = C.info, Path = itidy:C.info
+Icon 12: Width = 43, Height = 43, Text Width = 44, Text Height = 13, Max Width = 44, Max Height = 57, x = 71, y = 10, Text = Classes.info, Path = itidy:Classes.info
+Icon 13: Width = 43, Height = 43, Text Width = 29, Text Height = 13, Max Width = 42, Max Height = 57, x = 131, y = 10, Text = Devs.info, Path = itidy:Devs.info
+Icon 14: Width = 43, Height = 43, Text Width = 58, Text Height = 13, Max Width = 58, Max Height = 57, x = 198, y = 10, Text = Expansion.info, Path = itidy:Expansion.info
+Icon 15: Width = 43, Height = 43, Text Width = 31, Text Height = 13, Max Width = 42, Max Height = 57, x = 258, y = 10, Text = Fonts.info, Path = itidy:Fonts.info
+Icon 16: Width = 43, Height = 43, Text Width = 41, Text Height = 13, Max Width = 42, Max Height = 57, x = 313, y = 10, Text = Internet.info, Path = itidy:Internet.info
+Icon 17: Width = 43, Height = 43, Text Width = 7, Text Height = 13, Max Width = 42, Max Height = 57, x = 370, y = 10, Text = L.info, Path = itidy:L.info
+Icon 18: Width = 43, Height = 43, Text Width = 23, Text Height = 13, Max Width = 42, Max Height = 57, x = 14, y = 76, Text = Libs.info, Path = itidy:Libs.info
+Icon 19: Width = 43, Height = 43, Text Width = 38, Text Height = 13, Max Width = 42, Max Height = 57, x = 71, y = 76, Text = Locale.info, Path = itidy:Locale.info
+Icon 20: Width = 43, Height = 43, Text Width = 26, Text Height = 13, Max Width = 42, Max Height = 57, x = 131, y = 76, Text = OLD.info, Path = itidy:OLD.info
+Icon 21: Width = 43, Height = 43, Text Width = 58, Text Height = 13, Max Width = 58, Max Height = 57, x = 198, y = 76, Text = Picasso96.info, Path = itidy:Picasso96.info
+Icon 22: Width = 43, Height = 43, Text Width = 28, Text Height = 13, Max Width = 42, Max Height = 57, x = 258, y = 76, Text = Prefs.info, Path = itidy:Prefs.info
+Icon 23: Width = 43, Height = 43, Text Width = 52, Text Height = 13, Max Width = 52, Max Height = 57, x = 313, y = 76, Text = Programs.info, Path = itidy:Programs.info
+************************************
+Screen width 1024
+Arranging 24 icons in itidy:
+Start of icon tidy routine
+Largest icon width: 58
+Calculated max window width: 994
+Initial icons per row calculated: 4
+Adjusted initial window width: 278
+Expanding window width: 345, Icons per row: 5
+Expanding window width: 412, Icons per row: 6
+Expanding window width: 479, Icons per row: 7
+Row 0 max height: 57
+Placing icon 0 at (x: 14, y: 10) with border of: 0px, width 42 and height 57 name: C.info
+Updated maxX: 56, maxY: 67
+Placing icon 1 at (x: 71, y: 10) with border of: 0px, width 44 and height 57 name: Classes.info
+Updated maxX: 115, maxY: 67
+Placing icon 2 at (x: 131, y: 10) with border of: 0px, width 42 and height 57 name: Devs.info
+Updated maxX: 173, maxY: 67
+Placing icon 3 at (x: 198, y: 10) with border of: 0px, width 58 and height 57 name: Expansion.info
+Updated maxX: 256, maxY: 67
+Placing icon 4 at (x: 258, y: 10) with border of: 0px, width 42 and height 57 name: Fonts.info
+Updated maxX: 300, maxY: 67
+Placing icon 5 at (x: 313, y: 10) with border of: 0px, width 42 and height 57 name: Internet.info
+Updated maxX: 355, maxY: 67
+Placing icon 6 at (x: 370, y: 10) with border of: 0px, width 42 and height 57 name: L.info
+Updated maxX: 412, maxY: 67
+Moving to next row: y = 76, rowStartIndex = 7, rowCount = 1
+Row 1 max height: 57
+Placing icon 7 at (x: 14, y: 76) with border of: 0px, width 42 and height 57 name: Libs.info
+Updated maxX: 412, maxY: 133
+Placing icon 8 at (x: 71, y: 76) with border of: 0px, width 42 and height 57 name: Locale.info
+Updated maxX: 412, maxY: 133
+Placing icon 9 at (x: 131, y: 76) with border of: 0px, width 42 and height 57 name: OLD.info
+Updated maxX: 412, maxY: 133
+Placing icon 10 at (x: 198, y: 76) with border of: 0px, width 58 and height 57 name: Picasso96.info
+Updated maxX: 412, maxY: 133
+Placing icon 11 at (x: 258, y: 76) with border of: 0px, width 42 and height 57 name: Prefs.info
+Updated maxX: 412, maxY: 133
+Placing icon 12 at (x: 313, y: 76) with border of: 0px, width 52 and height 57 name: Programs.info
+Updated maxX: 412, maxY: 133
+Placing icon 13 at (x: 370, y: 76) with border of: 0px, width 42 and height 57 name: Rexxc.info
+Updated maxX: 412, maxY: 133
+Moving to next row: y = 142, rowStartIndex = 14, rowCount = 2
+Row 2 max height: 57
+Placing icon 14 at (x: 14, y: 142) with border of: 0px, width 42 and height 57 name: S.info
+Updated maxX: 412, maxY: 199
+Placing icon 15 at (x: 71, y: 142) with border of: 0px, width 42 and height 57 name: sc.info
+Updated maxX: 412, maxY: 199
+Placing icon 16 at (x: 131, y: 142) with border of: 0px, width 43 and height 57 name: Storage.info
+Updated maxX: 412, maxY: 199
+Placing icon 17 at (x: 198, y: 142) with border of: 0px, width 42 and height 57 name: System.info
+Updated maxX: 412, maxY: 199
+Placing icon 18 at (x: 258, y: 142) with border of: 0px, width 42 and height 57 name: T.info
+Updated maxX: 412, maxY: 199
+Placing icon 19 at (x: 313, y: 142) with border of: 0px, width 42 and height 57 name: Temp.info
+Updated maxX: 412, maxY: 199
+Placing icon 20 at (x: 370, y: 142) with border of: 0px, width 42 and height 57 name: Tools.info
+Updated maxX: 412, maxY: 199
+Moving to next row: y = 208, rowStartIndex = 21, rowCount = 3
+Row 3 max height: 61
+Placing icon 21 at (x: 14, y: 208) with border of: 0px, width 52 and height 61 name: Trashcan.info
+Updated maxX: 412, maxY: 269
+Placing icon 22 at (x: 71, y: 212) with border of: 0px, width 42 and height 57 name: Utilities.info
+Updated maxX: 412, maxY: 269
+Placing icon 23 at (x: 131, y: 212) with border of: 0px, width 58 and height 57 name: WBStartup.info
+Updated maxX: 412, maxY: 269
+Moving to next row: y = 278, rowStartIndex = 28, rowCount = 4
+Final adjusted maxY with padding: 279
+Final maxX: 412, maxY: 279
+Repoistion window: itidy: Padding 4 disableVolumeGauge=0
+Root dir detected and VolumeGauge enabled. Adding CGauge width: 19
+posTop: 222, posLeft: 281, winWidth: 461, winHeight: 323
+Saving updated folder size and position for: itidy:
+Is folder write protected? 0
+Is folder delete protected? 0
+Is folder icon write protected? 0
+Is folder icon delete protected? 0
+endswithinfo output 0
+Existing folder LeftEdge, TopEdge, Width, Height: 281, 222, 461, 323
+Saved folder settings for itidy:Disk
+Sanity Check Passed for itidy:Disk
+Folder save completed for itidy:
+Setting icon position for itidy:C to 14, 10
+Icon postition saved correctly for itidy:C
+Icon position x: 14 and y: 10 for itidy:C
+Sanity check ok: x: 14 and y: 10 reported for itidy:C after saving
+Setting icon position for itidy:Classes to 71, 10
+Icon postition saved correctly for itidy:Classes
+Icon position x: 71 and y: 10 for itidy:Classes
+Sanity check ok: x: 71 and y: 10 reported for itidy:Classes after saving
+Setting icon position for itidy:Devs to 131, 10
+Icon postition saved correctly for itidy:Devs
+Icon position x: 131 and y: 10 for itidy:Devs
+Sanity check ok: x: 131 and y: 10 reported for itidy:Devs after saving
+Setting icon position for itidy:Expansion to 198, 10
+Icon postition saved correctly for itidy:Expansion
+Icon position x: 198 and y: 10 for itidy:Expansion
+Sanity check ok: x: 198 and y: 10 reported for itidy:Expansion after saving
+Setting icon position for itidy:Fonts to 258, 10
+Icon postition saved correctly for itidy:Fonts
+Icon position x: 258 and y: 10 for itidy:Fonts
+Sanity check ok: x: 258 and y: 10 reported for itidy:Fonts after saving
+Setting icon position for itidy:Internet to 313, 10
+Icon postition saved correctly for itidy:Internet
+Icon position x: 313 and y: 10 for itidy:Internet
+Sanity check ok: x: 313 and y: 10 reported for itidy:Internet after saving
+Setting icon position for itidy:L to 370, 10
+Icon postition saved correctly for itidy:L
+Icon position x: 370 and y: 10 for itidy:L
+Sanity check ok: x: 370 and y: 10 reported for itidy:L after saving
+Setting icon position for itidy:Libs to 14, 76
+Icon postition saved correctly for itidy:Libs
+Icon position x: 14 and y: 76 for itidy:Libs
+Sanity check ok: x: 14 and y: 76 reported for itidy:Libs after saving
+Setting icon position for itidy:Locale to 71, 76
+Icon postition saved correctly for itidy:Locale
+Icon position x: 71 and y: 76 for itidy:Locale
+Sanity check ok: x: 71 and y: 76 reported for itidy:Locale after saving
+Setting icon position for itidy:OLD to 131, 76
+Icon postition saved correctly for itidy:OLD
+Icon position x: 131 and y: 76 for itidy:OLD
+Sanity check ok: x: 131 and y: 76 reported for itidy:OLD after saving
+Setting icon position for itidy:Picasso96 to 198, 76
+Icon postition saved correctly for itidy:Picasso96
+Icon position x: 198 and y: 76 for itidy:Picasso96
+Sanity check ok: x: 198 and y: 76 reported for itidy:Picasso96 after saving
+Setting icon position for itidy:Prefs to 258, 76
+Icon postition saved correctly for itidy:Prefs
+Icon position x: 258 and y: 76 for itidy:Prefs
+Sanity check ok: x: 258 and y: 76 reported for itidy:Prefs after saving
+Setting icon position for itidy:Programs to 313, 76
+Icon postition saved correctly for itidy:Programs
+Icon position x: 313 and y: 76 for itidy:Programs
+Sanity check ok: x: 313 and y: 76 reported for itidy:Programs after saving
+Setting icon position for itidy:Rexxc to 370, 76
+Icon postition saved correctly for itidy:Rexxc
+Icon position x: 370 and y: 76 for itidy:Rexxc
+Sanity check ok: x: 370 and y: 76 reported for itidy:Rexxc after saving
+Setting icon position for itidy:S to 14, 142
+Icon postition saved correctly for itidy:S
+Icon position x: 14 and y: 142 for itidy:S
+Sanity check ok: x: 14 and y: 142 reported for itidy:S after saving
+Setting icon position for itidy:sc to 71, 142
+Icon postition saved correctly for itidy:sc
+Icon position x: 71 and y: 142 for itidy:sc
+Sanity check ok: x: 71 and y: 142 reported for itidy:sc after saving
+Setting icon position for itidy:Storage to 131, 142
+Icon postition saved correctly for itidy:Storage
+Icon position x: 131 and y: 142 for itidy:Storage
+Sanity check ok: x: 131 and y: 142 reported for itidy:Storage after saving
+Setting icon position for itidy:System to 198, 142
+Icon postition saved correctly for itidy:System
+Icon position x: 198 and y: 142 for itidy:System
+Sanity check ok: x: 198 and y: 142 reported for itidy:System after saving
+Setting icon position for itidy:T to 258, 142
+Icon postition saved correctly for itidy:T
+Icon position x: 258 and y: 142 for itidy:T
+Sanity check ok: x: 258 and y: 142 reported for itidy:T after saving
+Setting icon position for itidy:Temp to 313, 142
+Icon postition saved correctly for itidy:Temp
+Icon position x: 313 and y: 142 for itidy:Temp
+Sanity check ok: x: 313 and y: 142 reported for itidy:Temp after saving
+Setting icon position for itidy:Tools to 370, 142
+Icon postition saved correctly for itidy:Tools
+Icon position x: 370 and y: 142 for itidy:Tools
+Sanity check ok: x: 370 and y: 142 reported for itidy:Tools after saving
+Setting icon position for itidy:Trashcan to 14, 208
+Icon postition saved correctly for itidy:Trashcan
+Icon position x: 14 and y: 208 for itidy:Trashcan
+Sanity check ok: x: 14 and y: 208 reported for itidy:Trashcan after saving
+Setting icon position for itidy:Utilities to 71, 212
+Icon postition saved correctly for itidy:Utilities
+Icon position x: 71 and y: 212 for itidy:Utilities
+Sanity check ok: x: 71 and y: 212 reported for itidy:Utilities after saving
+Setting icon position for itidy:WBStartup to 131, 212
+Icon postition saved correctly for itidy:WBStartup
+Icon position x: 131 and y: 212 for itidy:WBStartup
+Sanity check ok: x: 131 and y: 212 reported for itidy:WBStartup after saving
+************************************
+Done. Icons arranged in 4 rows with 7 icons per row. Path: itidy:
+Starting dir scan to add icons to array.
+Has only borderless icons: 0
+Dumping Icon Array of 0 icons, max width is 0px
+Starting dir scan to add icons to array.
+Has only borderless icons: 0
+Dumping Icon Array of 0 icons, max width is 0px
+Starting dir scan to add icons to array.
+Has only borderless icons: 0
+Dumping Icon Array of 0 icons, max width is 0px
+Starting dir scan to add icons to array.
+Has only borderless icons: 0
+Dumping Icon Array of 0 icons, max width is 0px
+Starting dir scan to add icons to array.
+Has only borderless icons: 0
+Dumping Icon Array of 0 icons, max width is 0px
+Starting dir scan to add icons to array.
+Has only borderless icons: 0
+Dumping Icon Array of 0 icons, max width is 0px
+Starting dir scan to add icons to array.
+Icon is a valid icon: itidy:sc/c
+Adding to itidy:sc/c.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 18 and y: 9 for itidy:sc/c.info
+Checking if it is a OS35 icon: itidy:sc/c.info
+icon size is: 628
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: itidy:sc/c
+Icons size x: 57, y: 14
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:sc/c
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:sc/c.info has border: 1
+Icon is write protected: 0
+calculated border: 2
+Allocating memory for icon path.
+Icon is a valid icon: itidy:sc/examples
+Adding to itidy:sc/examples.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 101 and y: 9 for itidy:sc/examples.info
+Checking if it is a OS35 icon: itidy:sc/examples.info
+icon size is: 628
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: itidy:sc/examples
+Icons size x: 57, y: 14
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:sc/examples
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:sc/examples.info has border: 1
+Icon is write protected: 0
+calculated border: 2
+Allocating memory for icon path.
+Icon is a valid icon: itidy:sc/extras
+Adding to itidy:sc/extras.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 176 and y: 9 for itidy:sc/extras.info
+Checking if it is a OS35 icon: itidy:sc/extras.info
+icon size is: 628
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: itidy:sc/extras
+Icons size x: 57, y: 14
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:sc/extras
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:sc/extras.info has border: 1
+Icon is write protected: 0
+calculated border: 2
+Allocating memory for icon path.
+Icon is a valid icon: itidy:sc/help
+Adding to itidy:sc/help.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 253 and y: 9 for itidy:sc/help.info
+Checking if it is a OS35 icon: itidy:sc/help.info
+icon size is: 628
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: itidy:sc/help
+Icons size x: 57, y: 14
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:sc/help
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:sc/help.info has border: 1
+Icon is write protected: 0
+calculated border: 2
+Allocating memory for icon path.
+Icon is a valid icon: itidy:sc/icons
+Adding to itidy:sc/icons.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 18 and y: 51 for itidy:sc/icons.info
+Checking if it is a OS35 icon: itidy:sc/icons.info
+icon size is: 628
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: itidy:sc/icons
+Icons size x: 57, y: 14
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:sc/icons
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:sc/icons.info has border: 1
+Icon is write protected: 0
+calculated border: 2
+Allocating memory for icon path.
+Icon is a valid icon: itidy:sc/Manuals
+Adding to itidy:sc/Manuals.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 101 and y: 51 for itidy:sc/Manuals.info
+Checking if it is a OS35 icon: itidy:sc/Manuals.info
+icon size is: 628
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: itidy:sc/Manuals
+Icons size x: 57, y: 14
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:sc/Manuals
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:sc/Manuals.info has border: 1
+Icon is write protected: 0
+calculated border: 2
+Allocating memory for icon path.
+Icon is a valid icon: itidy:sc/Read.Me.6.55
+Adding to itidy:sc/Read.Me.6.55.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 21 and y: 92 for itidy:sc/Read.Me.6.55.info
+Checking if it is a OS35 icon: itidy:sc/Read.Me.6.55.info
+icon size is: 834
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: itidy:sc/Read.Me.6.55
+Icons size x: 52, y: 22
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:sc/Read.Me.6.55
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:sc/Read.Me.6.55.info has border: 1
+Icon is write protected: 0
+calculated border: 2
+Allocating memory for icon path.
+Icon is a valid icon: itidy:sc/read.me.6.58
+Adding to itidy:sc/read.me.6.58.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 104 and y: 92 for itidy:sc/read.me.6.58.info
+Checking if it is a OS35 icon: itidy:sc/read.me.6.58.info
+icon size is: 834
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: itidy:sc/read.me.6.58
+Icons size x: 52, y: 22
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:sc/read.me.6.58
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:sc/read.me.6.58.info has border: 1
+Icon is write protected: 0
+calculated border: 2
+Allocating memory for icon path.
+Icon is a valid icon: itidy:sc/READ.ME
+Adding to itidy:sc/READ.ME.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 178 and y: 92 for itidy:sc/READ.ME.info
+Checking if it is a OS35 icon: itidy:sc/READ.ME.info
+icon size is: 834
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: itidy:sc/READ.ME
+Icons size x: 52, y: 22
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:sc/READ.ME
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:sc/READ.ME.info has border: 1
+Icon is write protected: 0
+calculated border: 2
+Allocating memory for icon path.
+Icon is a valid icon: itidy:sc/source
+Adding to itidy:sc/source.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 176 and y: 51 for itidy:sc/source.info
+Checking if it is a OS35 icon: itidy:sc/source.info
+icon size is: 628
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: itidy:sc/source
+Icons size x: 57, y: 14
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:sc/source
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:sc/source.info has border: 1
+Icon is write protected: 0
+calculated border: 2
+Allocating memory for icon path.
+Icon is a valid icon: itidy:sc/starter_project
+Adding to itidy:sc/starter_project.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 253 and y: 51 for itidy:sc/starter_project.info
+Checking if it is a OS35 icon: itidy:sc/starter_project.info
+icon size is: 628
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: itidy:sc/starter_project
+Icons size x: 57, y: 14
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:sc/starter_project
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:sc/starter_project.info has border: 1
+Icon is write protected: 0
+calculated border: 2
+Allocating memory for icon path.
+Has only borderless icons: 0
+Dumping Icon Array of 11 icons, max width is 79px
+Icon 0: Width = 58, Height = 15, Text Width = 7, Text Height = 13, Max Width = 59, Max Height = 29, x = 18, y = 9, Text = c.info, Path = itidy:sc/c.info
+Icon 1: Width = 58, Height = 15, Text Width = 52, Text Height = 13, Max Width = 59, Max Height = 29, x = 101, y = 9, Text = examples.info, Path = itidy:sc/examples.info
+Icon 2: Width = 58, Height = 15, Text Width = 33, Text Height = 13, Max Width = 59, Max Height = 29, x = 176, y = 9, Text = extras.info, Path = itidy:sc/extras.info
+Icon 3: Width = 58, Height = 15, Text Width = 24, Text Height = 13, Max Width = 59, Max Height = 29, x = 253, y = 9, Text = help.info, Path = itidy:sc/help.info
+Icon 4: Width = 58, Height = 15, Text Width = 30, Text Height = 13, Max Width = 59, Max Height = 29, x = 18, y = 51, Text = icons.info, Path = itidy:sc/icons.info
+Icon 5: Width = 58, Height = 15, Text Width = 48, Text Height = 13, Max Width = 59, Max Height = 29, x = 101, y = 51, Text = Manuals.info, Path = itidy:sc/Manuals.info
+Icon 6: Width = 53, Height = 23, Text Width = 77, Text Height = 13, Max Width = 77, Max Height = 37, x = 21, y = 92, Text = Read.Me.6.55.info, Path = itidy:sc/Read.Me.6.55.info
+Icon 7: Width = 53, Height = 23, Text Width = 71, Text Height = 13, Max Width = 71, Max Height = 37, x = 104, y = 92, Text = read.me.6.58.info, Path = itidy:sc/read.me.6.58.info
+Icon 8: Width = 53, Height = 23, Text Width = 56, Text Height = 13, Max Width = 56, Max Height = 37, x = 178, y = 92, Text = READ.ME.info, Path = itidy:sc/READ.ME.info
+Icon 9: Width = 58, Height = 15, Text Width = 38, Text Height = 13, Max Width = 59, Max Height = 29, x = 176, y = 51, Text = source.info, Path = itidy:sc/source.info
+Icon 10: Width = 58, Height = 15, Text Width = 79, Text Height = 13, Max Width = 79, Max Height = 29, x = 253, y = 51, Text = starter_project.info, Path = itidy:sc/starter_project.info
+************************************
+Screen width 1024
+Arranging 11 icons in itidy:sc
+Start of icon tidy routine
+Largest icon width: 79
+Calculated max window width: 994
+Initial icons per row calculated: 3
+Adjusted initial window width: 274
+Expanding window width: 362, Icons per row: 4
+Row 0 max height: 29
+Placing icon 0 at (x: 18, y: 10) with border of: 1px, width 60 and height 30 name: c.info
+Updated maxX: 78, maxY: 39
+Placing icon 1 at (x: 101, y: 10) with border of: 1px, width 60 and height 30 name: examples.info
+Updated maxX: 161, maxY: 39
+Placing icon 2 at (x: 176, y: 10) with border of: 1px, width 60 and height 30 name: extras.info
+Updated maxX: 236, maxY: 39
+Placing icon 3 at (x: 253, y: 10) with border of: 1px, width 60 and height 30 name: help.info
+Updated maxX: 313, maxY: 39
+Moving to next row: y = 48, rowStartIndex = 4, rowCount = 1
+Row 1 max height: 33
+Placing icon 4 at (x: 18, y: 52) with border of: 1px, width 60 and height 30 name: icons.info
+Updated maxX: 313, maxY: 81
+Placing icon 5 at (x: 101, y: 52) with border of: 1px, width 60 and height 30 name: Manuals.info
+Updated maxX: 313, maxY: 81
+Placing icon 6 at (x: 176, y: 52) with border of: 1px, width 60 and height 30 name: source.info
+Updated maxX: 313, maxY: 81
+Placing icon 7 at (x: 253, y: 52) with border of: 1px, width 80 and height 30 name: starter_project.info
+Updated maxX: 333, maxY: 81
+Moving to next row: y = 90, rowStartIndex = 8, rowCount = 2
+Row 2 max height: 40
+Placing icon 8 at (x: 21, y: 93) with border of: 1px, width 78 and height 38 name: Read.Me.6.55.info
+Updated maxX: 333, maxY: 130
+Placing icon 9 at (x: 104, y: 93) with border of: 1px, width 72 and height 38 name: read.me.6.58.info
+Updated maxX: 333, maxY: 130
+Placing icon 10 at (x: 178, y: 93) with border of: 1px, width 57 and height 38 name: READ.ME.info
+Updated maxX: 333, maxY: 130
+Moving to next row: y = 139, rowStartIndex = 12, rowCount = 3
+Final adjusted maxY with padding: 140
+Final maxX: 333, maxY: 140
+Repoistion window: itidy:sc Padding 4 disableVolumeGauge=0
+No root dir detected or VolumeGauge disabled. CGauge width: 19
+posTop: 292, posLeft: 330, winWidth: 363, winHeight: 184
+Saving updated folder size and position for: itidy:sc
+Is folder write protected? 0
+Is folder delete protected? 0
+Is folder icon write protected? 0
+Is folder icon delete protected? 0
+endswithinfo output 0
+Existing folder LeftEdge, TopEdge, Width, Height: 330, 292, 363, 184
+Saved folder settings for itidy:sc
+Sanity Check Passed for itidy:sc
+Folder save completed for itidy:sc
+Setting icon position for itidy:sc/c to 18, 9
+Icon postition saved correctly for itidy:sc/c
+Icon position x: 18 and y: 9 for itidy:sc/c
+Sanity check ok: x: 18 and y: 9 reported for itidy:sc/c after saving
+Setting icon position for itidy:sc/examples to 101, 9
+Icon postition saved correctly for itidy:sc/examples
+Icon position x: 101 and y: 9 for itidy:sc/examples
+Sanity check ok: x: 101 and y: 9 reported for itidy:sc/examples after saving
+Setting icon position for itidy:sc/extras to 176, 9
+Icon postition saved correctly for itidy:sc/extras
+Icon position x: 176 and y: 9 for itidy:sc/extras
+Sanity check ok: x: 176 and y: 9 reported for itidy:sc/extras after saving
+Setting icon position for itidy:sc/help to 253, 9
+Icon postition saved correctly for itidy:sc/help
+Icon position x: 253 and y: 9 for itidy:sc/help
+Sanity check ok: x: 253 and y: 9 reported for itidy:sc/help after saving
+Setting icon position for itidy:sc/icons to 18, 51
+Icon postition saved correctly for itidy:sc/icons
+Icon position x: 18 and y: 51 for itidy:sc/icons
+Sanity check ok: x: 18 and y: 51 reported for itidy:sc/icons after saving
+Setting icon position for itidy:sc/Manuals to 101, 51
+Icon postition saved correctly for itidy:sc/Manuals
+Icon position x: 101 and y: 51 for itidy:sc/Manuals
+Sanity check ok: x: 101 and y: 51 reported for itidy:sc/Manuals after saving
+Setting icon position for itidy:sc/source to 176, 51
+Icon postition saved correctly for itidy:sc/source
+Icon position x: 176 and y: 51 for itidy:sc/source
+Sanity check ok: x: 176 and y: 51 reported for itidy:sc/source after saving
+Setting icon position for itidy:sc/starter_project to 253, 51
+Icon postition saved correctly for itidy:sc/starter_project
+Icon position x: 253 and y: 51 for itidy:sc/starter_project
+Sanity check ok: x: 253 and y: 51 reported for itidy:sc/starter_project after saving
+Setting icon position for itidy:sc/Read.Me.6.55 to 21, 92
+Icon postition saved correctly for itidy:sc/Read.Me.6.55
+Icon position x: 21 and y: 92 for itidy:sc/Read.Me.6.55
+Sanity check ok: x: 21 and y: 92 reported for itidy:sc/Read.Me.6.55 after saving
+Setting icon position for itidy:sc/read.me.6.58 to 104, 92
+Icon postition saved correctly for itidy:sc/read.me.6.58
+Icon position x: 104 and y: 92 for itidy:sc/read.me.6.58
+Sanity check ok: x: 104 and y: 92 reported for itidy:sc/read.me.6.58 after saving
+Setting icon position for itidy:sc/READ.ME to 178, 92
+Icon postition saved correctly for itidy:sc/READ.ME
+Icon position x: 178 and y: 92 for itidy:sc/READ.ME
+Sanity check ok: x: 178 and y: 92 reported for itidy:sc/READ.ME after saving
+************************************
+Done. Icons arranged in 3 rows with 4 icons per row. Path: itidy:sc
+Starting dir scan to add icons to array.
+Icon is a valid icon: itidy:sc/c/cpr
+Adding to itidy:sc/c/cpr.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 10 and y: 21 for itidy:sc/c/cpr.info
+Checking if it is a OS35 icon: itidy:sc/c/cpr.info
+icon size is: 822
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: itidy:sc/c/cpr
+Icons size x: 52, y: 22
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:sc/c/cpr
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:sc/c/cpr.info has border: 1
+Icon is write protected: 0
+calculated border: 2
+Allocating memory for icon path.
+Icon is a valid icon: itidy:sc/c/scsetup
+Adding to itidy:sc/c/scsetup.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 73 and y: 9 for itidy:sc/c/scsetup.info
+Checking if it is a OS35 icon: itidy:sc/c/scsetup.info
+icon size is: 1487
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: itidy:sc/c/scsetup
+Icons size x: 78, y: 34
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:sc/c/scsetup
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:sc/c/scsetup.info has border: 1
+Icon is write protected: 0
+calculated border: 2
+Allocating memory for icon path.
+Icon is a valid icon: itidy:sc/c/se
+Adding to itidy:sc/c/se.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 162 and y: 21 for itidy:sc/c/se.info
+Checking if it is a OS35 icon: itidy:sc/c/se.info
+icon size is: 834
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: itidy:sc/c/se
+Icons size x: 52, y: 22
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:sc/c/se
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:sc/c/se.info has border: 1
+Icon is write protected: 0
+calculated border: 2
+Allocating memory for icon path.
+Icon is a valid icon: itidy:sc/c/SMFind
+Adding to itidy:sc/c/SMFind.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 10 and y: 69 for itidy:sc/c/SMFind.info
+Checking if it is a OS35 icon: itidy:sc/c/SMFind.info
+icon size is: 838
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: itidy:sc/c/SMFind
+Icons size x: 52, y: 22
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
+icon for border checks: itidy:sc/c/SMFind
+Getting icon tags
+Checking to see if it has a border
+Icon itidy:sc/c/SMFind.info has border: 1
+Icon is write protected: 0
+calculated border: 2
+Allocating memory for icon path.
+Icon is a valid icon: itidy:sc/c/sprof
+Adding to itidy:sc/c/sprof.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 84 and y: 69 for itidy:sc/c/sprof.info
+Checking if it is a OS35 icon: itidy:sc/c/sprof.info
+icon size is: 2934
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: itidy:sc/c/sprof
+Icons size x: 54, y: 22
+Checking for icon frame
+Opening icon library
+icon.library version: 51.4
