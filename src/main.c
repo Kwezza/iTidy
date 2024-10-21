@@ -104,11 +104,6 @@ BOOL user_folderFlags;
 BOOL user_stripIconPosition;
 
 
-//used to store a list of icons that have been marked as to be left out on the workbench desktop
-char **left_out_icons = NULL;
-int left_out_count = 0;
-int left_out_size = 5;
-
 
 #define VERSION_STRING "$VER: iTidy 1.0 (15.07.2024)"
 const char version[] = VERSION_STRING;
@@ -226,9 +221,6 @@ initialize_logfile();
     append_to_log("IControl prefs:  title height: %d, Window height: %d\n", prefsIControl.currentTitleBarHeight, prefsIControl.currentWindowBarHeight);
     append_to_log("IControl prefs:  volume guage width: %d\n", prefsIControl.currentCGaugeWidth);
     // Print the loaded left out icons
-    if (left_out_count <1) {
-        append_to_log("No 'left out' icons found on device.\n");
-    }
 #endif
 
     InitializeWindow();

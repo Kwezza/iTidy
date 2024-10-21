@@ -142,11 +142,6 @@ extern BOOL user_folderViewMode;
 extern BOOL user_folderFlags;
 extern BOOL user_stripIconPosition;
 
-//used to store a list of icons that have been marked as to be left out on the workbench desktop
-extern char **left_out_icons;
-extern int left_out_count;
-extern int left_out_size;
-
 
 int Compare(const void *a, const void *b);
 int strncasecmp_custom(const char *s1, const char *s2, size_t n);
