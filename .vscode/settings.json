@@ -30,6 +30,9 @@
         "types.h": "c",
         "writelog.h": "c",
         "icon_misc.h": "c",
-        "icon_types.h": "c"
+        "icon_types.h": "c",
+        "rastport.h": "c",
+        "ctype.h": "c",
+        "font.h": "c"
     }
 }

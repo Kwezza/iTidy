@@ -6,7 +6,7 @@
 #include "icon_misc.h"
 
 // Function prototypes
-ULONG timer(void);
+ULONG spinnerTimer(void);
 void updateCursor(void);
 int setupTimer(void);
 void disposeTimer(void);

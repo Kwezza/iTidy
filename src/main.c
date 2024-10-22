@@ -69,6 +69,7 @@
 #include <graphics/text.h>
 #include <graphics/rastport.h>
 #include <ctype.h>
+#include <time.h>
 
 #include "Settings/IControlPrefs.h"
 #include "Settings/WorkbenchPrefs.h"
@@ -88,6 +89,7 @@ struct RastPort *rastPort = NULL;
 struct TextFont *font = NULL;
 struct WorkbenchSettings prefsWorkbench;
 struct IControlPrefsDetails prefsIControl;
+struct IconErrorTrackerStruct iconsErrorTracker;
 int screenHight = 0;
 int screenWidth = 0;
 int WindowWidthTextOnly = 430;
@@ -97,21 +99,94 @@ int ICON_SPACING_Y = 9;
 int icon_type_standard = 0;
 int icon_type_newIcon = 1;
 int icon_type_os35 = 2;
+
+int count_icon_type_standard = 0;
+int count_icon_type_newIcon = 0;
+int count_icon_type_os35 = 0;
+int count_icon_corrupted = 0;
+
 BOOL user_dontResize;
 BOOL user_cleanupWHDLoadFolders;
 BOOL user_folderViewMode;
 BOOL user_folderFlags;
 BOOL user_stripIconPosition;
 
-
-
 #define VERSION_STRING "$VER: iTidy 1.0 (15.07.2024)"
 const char version[] = VERSION_STRING;
 
 void print_usage(const char *program_name);
 
+/* Function to add an icon file path to the error list */
+void AddIconError(IconErrorTrackerStruct *tracker, STRPTR filePath)
+{
+    STRPTR *newList;
+    ULONG i;
+
+    /* Check if we need to expand the list */
+    if (tracker->count == tracker->size)
+    {
+        /* Double the size of the array */
+        ULONG newSize = tracker->size * 2;
+        newList = AllocVec(newSize * sizeof(STRPTR), MEMF_CLEAR);
+        if (newList == NULL)
+        {
+            printf("Error reallocating memory for icon error list\n");
+            return;
+        }
+
+        /* Copy old data */
+        for (i = 0; i < tracker->count; i++)
+        {
+            newList[i] = tracker->list[i];
+        }
+
+        /* Free the old array */
+        FreeVec(tracker->list);
+
+        /* Update tracker */
+        tracker->list = newList;
+        tracker->size = newSize;
+    }
+
+    /* Allocate memory for the file path and store it */
+    tracker->list[tracker->count] = AllocVec(strlen(filePath) + 1, MEMF_CLEAR);
+    if (tracker->list[tracker->count] != NULL)
+    {
+        strcpy(tracker->list[tracker->count], filePath);
+        tracker->count++;
+    }
+    else
+    {
+        printf("Error allocating memory for icon file path\n");
+    }
+}
+
+/* Function to free the memory used by the error list */
+void FreeIconErrorList(IconErrorTrackerStruct *tracker)
+{
+    ULONG i;
+
+    /* Free all the strings */
+    for (i = 0; i < tracker->count; i++)
+    {
+        if (tracker->list[i] != NULL)
+        {
+            FreeVec(tracker->list[i]);
+        }
+    }
+
+    /* Free the array */
+    FreeVec(tracker->list);
+
+    /* Reset tracker fields */
+    tracker->list = NULL;
+    tracker->size = 0;
+    tracker->count = 0;
+}
+
 void print_usage(const char *program_name)
 {
+ /*
     printf("\n");
     printf("" textReset textBold "Icon Tidy V1.0" textReset ".  A program to tidy icons, and resize folder windows from CLI.\n");
     printf("Usage: iTidy <directory> [options]\n");
@@ -129,7 +204,34 @@ void print_usage(const char *program_name)
     printf("This program is provided 'as is' without any warranty of any kind. The \n");
     printf("author assumes no responsibility for any damage or issues that may arise \n");
     printf("from using this program. It is strongly recommended that you back up your\n");
-    printf("system before running this program.\n\n");
+    printf("system before running this program.\n\n");*/
+printf("iTidy V1.0.0 - Tidy icons and resize folder windows from the CLI.\n");
+printf("\n");
+printf("Usage:\n");
+printf("  iTidy <directory> [options]\n");
+printf("\n");
+printf("Options:\n");
+printf("  <directory>    (Mandatory) The folder to start the cleanup from.\n");
+printf("  -subdirs       Recursively process subfolders.\n");
+printf("  -dontResize    Do not resize and center the window.\n");
+printf("  -viewShowAll   Show all files, including those without icons.\n");
+printf("  -viewDefault   Use default view settings.\n");
+printf("  -viewByName    Set view to list mode, sorted by name.\n");
+printf("  -viewByType    Set view to list mode, sorted by type.\n");
+printf("  -resetIcons    Remove saved icon positions.\n");
+printf("  -skipWHD       Keep WHDLoad icon positions but do resize.\n");
+printf("\n");
+printf("Examples:\n");
+printf("  iTidy Work:Projects -subdirs\n");
+printf("    Recursively tidy 'Work:Projects' and its subfolders.\n");
+printf("\n");
+printf("  iTidy DF0: -viewByName -resetIcons\n");
+printf("    Tidy 'DF0:' folder, set view by name, and remove icon positions.\n");
+printf("\n");
+printf("Important: Back up your system before running.\n");
+printf("\n");
+printf("Disclaimer: This program is provided 'as is' without any warranty.\n");
+printf("The author assumes no responsibility for any issues that may arise.\n");
 }
 
 int main(int argc, char **argv)
@@ -140,6 +242,8 @@ int main(int argc, char **argv)
     int numLeftOutIcons = 0;
     char deviceName[25];
     BOOL iterateDIRs = FALSE;
+    long elapsed_seconds, hours, minutes, seconds, start_time;
+
 #ifdef DEBUG
     char *stringWBVersion;
 #endif
@@ -149,20 +253,33 @@ int main(int argc, char **argv)
     user_cleanupWHDLoadFolders = TRUE;
     user_stripIconPosition = FALSE;
 
-
-        if (setupTimer() != 0) {
-            printf("Failed to setup timer\n");
+    if (setupTimer() != 0)
+    {
+        printf("Failed to setup timer\n");
         return 1;
     }
 
+    /* Initialize the error tracker */
+    iconsErrorTracker.size = ERROR_LIST_INITIAL_SIZE;
+    iconsErrorTracker.count = 0;
+    iconsErrorTracker.list = AllocVec(iconsErrorTracker.size * sizeof(STRPTR), MEMF_CLEAR);
 
-printf( textBold "\niTidy" textReset " V%s by Kerry Thompson\n", VERSION);
-printf("Compiled %s at %s\n", __DATE__, __TIME__);
+    if (iconsErrorTracker.list == NULL)
+    {
+        printf("Error allocating memory for icon error list\n");
+        return 1;
+    }
 
+    /* Example of adding errors */
+    // AddIconError(&iconsErrorTracker, "TH0:bad_icon.info");
+    // AddIconError(&iconsErrorTracker, "TH0:corrupt_icon.info");
+    // count_icon_corrupted=2;
 
+    printf(textBold "\niTidy" textReset " V%s\nby Kerry Thompson\n", VERSION);
+    printf("Version compiled on %s at %s\n\n", __DATE__, __TIME__);
 
 #ifdef DEBUG
-initialize_logfile();
+    initialize_logfile();
     append_to_log("Debug build\n");
 
     stringWBVersion = convertWBVersionWithDot(workbenchVersion);
@@ -219,7 +336,10 @@ initialize_logfile();
             user_cleanupWHDLoadFolders = FALSE;
     }
 
-    getDeviceNameFromPath(filePath, deviceName,25);
+    /* Start timer */
+    start_time = time(NULL);
+
+    getDeviceNameFromPath(filePath, deviceName, 25);
 
     fetchWorkbenchSettings(&prefsWorkbench);
     fetchIControlSettings(&prefsIControl);
@@ -229,7 +349,7 @@ initialize_logfile();
 
     if (numLeftOutIcons > 0)
     {
-        printf("\nFound %d icons 'left out' on device %s\n", numLeftOutIcons,deviceName);
+        printf("\nFound %d icons left out on the Workbench on device '%s'\n\n", numLeftOutIcons, deviceName);
     }
 
 #ifdef DEBUG
@@ -241,8 +361,77 @@ initialize_logfile();
 #endif
 
     InitializeWindow();
-    ProcessDirectory(filePath, iterateDIRs,0);
+    ProcessDirectory(filePath, iterateDIRs, 0);
     CleanupWindow();
     disposeTimer();
+
+    /* Calculate elapsed time */
+    elapsed_seconds = time(NULL) - start_time;
+    hours = elapsed_seconds / 3600;
+    minutes = (elapsed_seconds % 3600) / 60;
+    seconds = elapsed_seconds % 60;
+
+    printf("\n\nTotal icons tidied: %d\n" textReset, count_icon_type_newIcon + count_icon_type_standard + count_icon_type_os35);
+    printf(textWhite "  -" textReset " Standard icons:    %d\n", count_icon_type_standard);
+    printf(textWhite "  -" textReset " NewIcon icons:     %d\n", count_icon_type_newIcon);
+    printf(textWhite "  -" textReset " OS3.5 style icons: %d\n", count_icon_type_os35);
+    if (iconsErrorTracker.count > 0)
+    {
+        printf("\nTotal corrupted icons found: %d\n" textReset, iconsErrorTracker.count);
+        for (i = 0; i < iconsErrorTracker.count; i++)
+        {
+            printf(textWhite "  -" textReset " %s\n", iconsErrorTracker.list[i]);
+        }
+
+        printf("\nPossible issues:\n");
+        printf(textWhite "  -" textReset " Files may be unreadable or corrupted.\n\n");
+
+        printf("Suggested actions:\n");
+        printf(textWhite "  1" textReset " Replace the icon files.\n");
+        printf(textWhite "  2" textReset " Restore from a backup if available.\n");
+    }
+
+    /* Clean up memory */
+    
+
+    printf("\niTidy completed");
+    if (iconsErrorTracker.count > 0)
+    {
+        printf(", with some errors, in ");
+    }
+    else
+    {
+        printf(" successfully in ");
+    }
+
+    if (hours > 0)
+    {
+        printf("%ld hour", hours);
+        if (hours > 1)
+        {
+            printf("s ");
+        }
+        {
+            printf(" ");
+        }
+    }
+
+    if (minutes > 0 || hours > 0)
+    {
+        printf("%ld minutes and", minutes);
+        if (minutes > 1)
+        {
+            printf("s and");
+        }
+        {
+            printf(" and ");
+        }
+    }
+
+    printf("%ld seconds", seconds);
+    printf("\n\n");
+
+    FreeIconErrorList(&iconsErrorTracker);
+
     return RETURN_OK;
 }

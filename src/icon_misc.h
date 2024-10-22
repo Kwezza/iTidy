@@ -1,8 +1,8 @@
 #ifndef ICON_MISC_H
 #define ICON_MISC_H
 
-#include <dos/dos.h>
 #include <exec/types.h>
+#include <dos/dos.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <string.h>

@@ -1,3 +1,4 @@
+#include <exec/types.h>
 #include <dos/dos.h>
 #include <exec/types.h>
 #include <proto/dos.h>
@@ -70,7 +71,7 @@ void loadLeftOutIcons(const char *file_path) {
     file = Open(backdrop_path, MODE_OLDFILE);
     if (!file) {
 #ifdef DEBUG
-        printf("Could not open %s\n", backdrop_path);
+        append_to_log("Could not open %s\n", backdrop_path);
 #endif
         return;
     }

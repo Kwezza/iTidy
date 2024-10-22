@@ -16,7 +16,7 @@ ULONG lastUpdateTime = 0;
 UBYTE currentCursor = 0;
 const char cursorChars[] = {'/', '-', '\\', '|'};
 
-ULONG timer(void) {
+ULONG spinnerTimer(void) {
     struct timeval t;
     GetSysTime(&t);
     return t.tv_secs * 1000 + t.tv_micro / 1000;
@@ -24,7 +24,7 @@ ULONG timer(void) {
 }
 
 void updateCursor(void) {
-    ULONG currentTime = timer();
+    ULONG currentTime = spinnerTimer();
 
     if ((currentTime - lastUpdateTime) >= 750) {
         // One second has passed, update the cursor
@@ -46,7 +46,7 @@ int setupTimer(void) {
     TimerBase = timereq.tr_node.io_Device;
 
     // Initialize the timer
-    lastUpdateTime = timer();
+    lastUpdateTime = spinnerTimer();
     return 0;
 }
 

@@ -29,6 +29,7 @@
 #include <graphics/text.h>
 #include <graphics/rastport.h>
 #include <ctype.h>
+#include <time.h>
 
 #include "Settings/IControlPrefs.h"
 #include "Settings/WorkbenchPrefs.h"
@@ -38,6 +39,7 @@
 #include "spinner.h"
 #include "writeLog.h"
 #include "icon_misc.h"
+
 
 // Define the DEBUG macro to enable debug prints
 #define DEBUG
@@ -63,7 +65,7 @@
 #define HEADER_SIZE 12
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MAX_ICONS_TO_ALLIGN 50
-
+#define ERROR_LIST_INITIAL_SIZE 10
 
 
 #define textBlack "\x1B[31m"
@@ -120,6 +122,12 @@ typedef struct {
     int height;
 } IconSize;
 
+typedef struct IconErrorTrackerStruct {
+    STRPTR *list;   // Array of string pointers
+    ULONG size;     // Allocated size of the list
+    ULONG count;    // Number of errors stored
+} IconErrorTrackerStruct;
+
 
 extern struct Screen *screen;
 extern struct Window *window;
@@ -127,6 +135,8 @@ extern struct RastPort *rastPort;
 extern struct TextFont *font;
 extern struct WorkbenchSettings prefsWorkbench;
 extern struct IControlPrefsDetails prefsIControl;
+extern struct IconErrorTrackerStruct iconsErrorTracker;
+
 extern int screenHight;
 extern int screenWidth;
 extern int WindowWidthTextOnly;
@@ -137,15 +147,19 @@ extern int icon_type_standard;
 extern int icon_type_newIcon;
 extern int icon_type_os35;
 
+extern int count_icon_type_standard;
+extern int count_icon_type_newIcon;
+extern int count_icon_type_os35;
+extern int count_icon_corrupted;
+
 extern BOOL user_dontResize;
 extern BOOL user_cleanupWHDLoadFolders;
 extern BOOL user_folderViewMode;
 extern BOOL user_folderFlags;
 extern BOOL user_stripIconPosition;
 
+void AddIconError(IconErrorTrackerStruct *tracker, STRPTR filePath);
+void FreeIconErrorList(IconErrorTrackerStruct *tracker);
 
-int Compare(const void *a, const void *b);
-int strncasecmp_custom(const char *s1, const char *s2, size_t n);
-void CalculateTextExtent(const char *text, struct TextExtent *textExtent);
 
 #endif // MAIN_H

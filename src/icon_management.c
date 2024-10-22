@@ -190,6 +190,7 @@ removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
                                     /* printf("New Icon Format\n"); */
                                     newIcon.icon_type = icon_type_newIcon;
                                     GetNewIconSizePath(fullPathAndFile, &iconSize);
+                                    count_icon_type_newIcon++;
                                 }
                                 else if
 
@@ -201,6 +202,7 @@ removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
                                     append_to_log("Getting OS35 icon details.\n", fullPathAndFile);
 #endif
                                     getOS35IconSize(fullPathAndFile, &iconSize);
+                                    count_icon_type_os35++;
                                 }
                                 else
                                 {
@@ -210,6 +212,7 @@ removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
 #endif
                                     /* printf("Standard Icon Format\n"); */
                                     GetStandardIconSize(fullPathAndFile, &iconSize);
+                                    count_icon_type_standard++;
                                 }
 
 #ifdef DEBUG
@@ -309,7 +312,10 @@ removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
                             }
                             else
                             {
-                                fprintf(stderr, "Error: Unknown or currputed icon file: %s\n", fullPathAndFile);
+                                fprintf(stderr, "Error: Unknown or corrupted icon file: %s\n", fullPathAndFile);
+                                
+                                //iconsErrorTracker.count++;
+                                AddIconError(&iconsErrorTracker, fullPathAndFile);
                             }
                         }
                     }
