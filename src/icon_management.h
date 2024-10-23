@@ -18,7 +18,7 @@
 #include "utilities.h"
 #include "writeLog.h"
 #include "icon_misc.h"
-
+#include "dos/getDiskDetails.h"
 BOOL AddIconToArray(IconArray *iconArray, const FullIconDetails *newIcon);
 BOOL checkIconFrame(const char *iconName);
 IconArray *CreateIconArray(void);

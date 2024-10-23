@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 #include "main.h"
+#include "dos/getDiskDetails.h"
 
 #define MAX_LEFT_OUT_ICONS 20
 #define MAX_PATH_LENGTH 128

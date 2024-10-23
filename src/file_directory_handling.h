@@ -1,6 +1,8 @@
 #ifndef FILE_DIRECTORY_HANDLING_H
 #define FILE_DIRECTORY_HANDLING_H
 
+
+
 #include <exec/types.h>
 #include <libraries/dos.h>
 #include <workbench/workbench.h>
@@ -11,12 +13,14 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <stdlib.h>
+#include <devices/trackdisk.h>
 #include "main.h"
 #include "icon_management.h"
 #include "window_management.h"
 #include "utilities.h"
 #include "writeLog.h"
 #include "icon_misc.h"
+#include "dos/getDiskDetails.h"
 #include <dos/dos.h>
 
 int HasSlaveFile(char *path);
@@ -35,5 +39,6 @@ BOOL GetWriteProtection(const char *filename);
 void SetWriteProtection(const char *filename, BOOL protect);
 void SetDeleteProtection(const char *filename, BOOL protect);
 BOOL GetDeleteProtection(const char *filename);
+BOOL IsDeviceReadOnly(const char *deviceName);
 
 #endif // FILE_DIRECTORY_HANDLING_H

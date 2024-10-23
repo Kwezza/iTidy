@@ -1,8 +1,13 @@
+#include <devices/trackdisk.h>
 #include "file_directory_handling.h"
 #include "utilities.h"
 #include "spinner.h"
 #include "writeLog.h"
 #include "icon_misc.h"
+#include "dos/getDiskDetails.h"
+
+
+#define MAX_DEVICE_NAME_LEN 24  // Define a maximum size for the device name buffer
 
 int HasSlaveFile(char *path)
 {

@@ -81,6 +81,7 @@
 #include "spinner.h"
 #include "writeLog.h"
 #include "icon_misc.h"
+#include "dos/getDiskDetails.h"
 
 /* Define global variables */
 struct Screen *screen = NULL;
@@ -243,6 +244,7 @@ int main(int argc, char **argv)
     char deviceName[25];
     BOOL iterateDIRs = FALSE;
     long elapsed_seconds, hours, minutes, seconds, start_time;
+    DeviceInfo diskInfo;
 
 #ifdef DEBUG
     char *stringWBVersion;
@@ -336,11 +338,29 @@ int main(int argc, char **argv)
             user_cleanupWHDLoadFolders = FALSE;
     }
 
+    
+    diskInfo = GetDeviceInfo(filePath);
+    if (diskInfo.writeProtected)
+    {
+        printf("Device %s is read-only.  Exiting.\n\n", diskInfo.deviceName);
+        return RETURN_FAIL;
+    }
+    printf("Tidying icons in %s\n", filePath);
+
+    //printf("\ntest Device %s has %d%s\n", diskInfo.deviceName,diskInfo.free,diskInfo.storageUnits);
+
     /* Start timer */
     start_time = time(NULL);
 
-    getDeviceNameFromPath(filePath, deviceName, 25);
+    /*getDeviceNameFromPath(filePath, deviceName, 25);
+printf("is device %s read only? %d\n",deviceName,IsDeviceReadOnly(deviceName));
 
+    if (IsDeviceReadOnly(deviceName))
+    {
+        printf("\nDevice %s is read-only.  Exiting.\n", deviceName);
+        return RETURN_FAIL;
+    }
+*/
     fetchWorkbenchSettings(&prefsWorkbench);
     fetchIControlSettings(&prefsIControl);
 
@@ -359,6 +379,8 @@ int main(int argc, char **argv)
     // Print the loaded left out icons
     dumpLeftOutIcons();
 #endif
+
+
 
     InitializeWindow();
     ProcessDirectory(filePath, iterateDIRs, 0);

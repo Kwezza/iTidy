@@ -33,6 +33,8 @@
         "icon_types.h": "c",
         "rastport.h": "c",
         "ctype.h": "c",
-        "font.h": "c"
+        "font.h": "c",
+        "trackdisk.h": "c",
+        "getdiskdetails.h": "c"
     }
 }

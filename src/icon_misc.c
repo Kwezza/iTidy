@@ -8,7 +8,7 @@
 
 #include "icon_misc.h"
 #include "main.h"
-
+#include "dos/getDiskDetails.h"
 
 
 char left_out_icons[MAX_LEFT_OUT_ICONS][MAX_PATH_LENGTH];

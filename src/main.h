@@ -39,6 +39,7 @@
 #include "spinner.h"
 #include "writeLog.h"
 #include "icon_misc.h"
+#include "dos/getDiskDetails.h"
 
 
 // Define the DEBUG macro to enable debug prints
