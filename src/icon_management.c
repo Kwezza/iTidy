@@ -182,7 +182,7 @@ removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
 
                                 /* Determine icon size based on format */
 
-                                if (IsNewIconPath(fullPathAndFile))
+                                if (IsNewIconPath(fullPathAndFile) && user_forceStandardIcons==0)
                                 {
 #ifdef DEBUG
                                     append_to_log("Getting New Icon details.\n", fullPathAndFile);
@@ -194,7 +194,7 @@ removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
                                 }
                                 else if
 
-                                    (isOS35IconFormat(fullPathAndFile))
+                                    (isOS35IconFormat(fullPathAndFile) && user_forceStandardIcons==0)
                                 {
                                     newIcon.icon_type = icon_type_os35;
 /* printf("OS3.5 Icon Format\n"); */

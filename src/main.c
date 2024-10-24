@@ -111,6 +111,7 @@ BOOL user_cleanupWHDLoadFolders;
 BOOL user_folderViewMode;
 BOOL user_folderFlags;
 BOOL user_stripIconPosition;
+BOOL user_forceStandardIcons;
 
 #define VERSION_STRING "$VER: iTidy 1.0 (15.07.2024)"
 const char version[] = VERSION_STRING;
@@ -206,33 +207,40 @@ void print_usage(const char *program_name)
     printf("author assumes no responsibility for any damage or issues that may arise \n");
     printf("from using this program. It is strongly recommended that you back up your\n");
     printf("system before running this program.\n\n");*/
-printf("iTidy V1.0.0 - Tidy icons and resize folder windows from the CLI.\n");
-printf("\n");
-printf("Usage:\n");
-printf("  iTidy <directory> [options]\n");
-printf("\n");
-printf("Options:\n");
-printf("  <directory>    (Mandatory) The folder to start the cleanup from.\n");
-printf("  -subdirs       Recursively process subfolders.\n");
-printf("  -dontResize    Do not resize and center the window.\n");
-printf("  -viewShowAll   Show all files, including those without icons.\n");
-printf("  -viewDefault   Use default view settings.\n");
-printf("  -viewByName    Set view to list mode, sorted by name.\n");
-printf("  -viewByType    Set view to list mode, sorted by type.\n");
-printf("  -resetIcons    Remove saved icon positions.\n");
-printf("  -skipWHD       Keep WHDLoad icon positions but do resize.\n");
-printf("\n");
-printf("Examples:\n");
-printf("  iTidy Work:Projects -subdirs\n");
-printf("    Recursively tidy 'Work:Projects' and its subfolders.\n");
-printf("\n");
-printf("  iTidy DF0: -viewByName -resetIcons\n");
-printf("    Tidy 'DF0:' folder, set view by name, and remove icon positions.\n");
-printf("\n");
-printf("Important: Back up your system before running.\n");
-printf("\n");
-printf("Disclaimer: This program is provided 'as is' without any warranty.\n");
-printf("The author assumes no responsibility for any issues that may arise.\n");
+
+    // Program Title
+    printf(textBold textBlue "iTidy V1.0.0" textReset " - Tidy icons and resize folder windows from CLI.\n\n");
+    
+    // Usage Section
+    printf(textBold "Usage:\n" textReset);
+    printf("  " textWhite "iTidy <directory> [options]" textReset "\n\n");
+    
+    // Options Section
+    printf(textBold "Options:\n" textReset);
+    printf("  " textBold "-subdirs     " textReset "Recursively process subfolders.\n");
+    printf("  " textBold "-dontResize  " textReset "Do not resize and center the window.\n");
+    printf("  " textBold "-viewIcons   " textReset "Only show files with icons.\n");
+    printf("  " textBold "-viewShowAll " textReset "Show all files, including those without icons.\n");
+    printf("  " textBold "-viewDefault " textReset "Use default view settings.\n");
+    printf("  " textBold "-viewByName  " textReset "List mode sorted by name.\n");
+    printf("  " textBold "-viewByType  " textReset "List mode sorted by type.\n");
+    printf("  " textBold "-resetIcons  " textReset "Remove saved icon positions.\n");
+    printf("  " textBold "-skipWHD     " textReset "Keep WHDLoad positions but resize.\n");
+    printf("  " textBold "-forceStd    " textReset "Ignore advanced icon sizes, use classic size for machines \n");
+    printf("               " textBlack "without NewIcons support. May remove some NewIcon data." textReset "\n\n");
+    
+    
+    // Examples Section
+    printf(textBold "Examples:\n" textReset);
+    printf("  " textWhite "iTidy Work:Projects -subdirs" textReset " " textBlack "Recursively tidy Work:Projects and subfolders\n"
+           "  " textWhite "iTidy DF0: -viewByName -viewShowAll" textReset " " textBlack "Tidy DF0:, change the folder view to\n                                      text, and show all files\n\n");
+    
+    // Important Note and Disclaimer Combined
+    printf(textBold "Important & Disclaimer:\n" textReset);
+    printf("  " textBlack "Back up your system before running." textReset "\n");
+    printf("  " textItalic "Provided 'as is' without any warranty. No responsibility for issues." textReset "\n");
+    
+    return 0;
 }
 
 int main(int argc, char **argv)
@@ -332,6 +340,8 @@ int main(int argc, char **argv)
             user_folderViewMode = DDVM_BYTYPE;
         if (strncasecmp_custom(argv[i], "-resetIcons", strlen(argv[i])) == 0) /* Removes each icon's x and y position.  Instructs Workbench to pick a reasonable place for the icon whens it opends the folder*/
             user_stripIconPosition = TRUE;
+        if (strncasecmp_custom(argv[i], "-forceStandardIcons", strlen(argv[i])) == 0) /* test on Workbench 2 that didnt have NewIcons or OS3.5 support meant that any NewIcons were postioien using icon sizes that werent visible.  this uses only the original height and width of the icon. */
+            user_forceStandardIcons=true;
         if (strncasecmp_custom(argv[i], "-skipWHD", strlen(argv[i])) == 0) /* By design, this program was created to clean up extracted WHDLoad folders, and skip rearranging the original author's layout.
                                                                                             This option forces the program to rearrange the icons if it detects a .slave file is found in the folder.  Without this option,
                                                                                             the fodler's window will just be resized and centered. */

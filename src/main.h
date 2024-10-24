@@ -158,6 +158,7 @@ extern BOOL user_cleanupWHDLoadFolders;
 extern BOOL user_folderViewMode;
 extern BOOL user_folderFlags;
 extern BOOL user_stripIconPosition;
+extern BOOL user_forceStandardIcons;
 
 void AddIconError(IconErrorTrackerStruct *tracker, STRPTR filePath);
 void FreeIconErrorList(IconErrorTrackerStruct *tracker);
