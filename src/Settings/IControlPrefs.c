@@ -189,3 +189,48 @@ int fetchIControlSettings(struct IControlPrefsDetails *details)
     }
     return rc;
 }
+
+void dumpIControlPrefs(const struct IControlPrefsDetails *prefs) {
+    append_to_log("IControl Preferences Dump:\n");
+    append_to_log("--------------------------\n");
+    append_to_log("Flags: 0x%08X\n", prefs->flags);
+    
+    append_to_log("Boolean Settings:\n");
+    append_to_log("  Coerce Colors: %s\n", prefs->coerceColors ? "Yes" : "No");
+    append_to_log("  Coerce Lace: %s\n", prefs->coerceLace ? "Yes" : "No");
+    append_to_log("  String Gadget Filter: %s\n", prefs->strGadFilter ? "Yes" : "No");
+    append_to_log("  Menu Snap: %s\n", prefs->menuSnap ? "Yes" : "No");
+    append_to_log("  Mode Promote: %s\n", prefs->modePromote ? "Yes" : "No");
+    append_to_log("  Correct Ratio: %s\n", prefs->correctRatio ? "Yes" : "No");
+    append_to_log("  Off-Screen Windows: %s\n", prefs->offScrnWin ? "Yes" : "No");
+    append_to_log("  More Size Gadgets: %s\n", prefs->moreSizeGadgets ? "Yes" : "No");
+    append_to_log("  Versioned: %s\n", prefs->versioned ? "Yes" : "No");
+    append_to_log("  Legacy Look: %s\n", prefs->legacyLook ? "Yes" : "No");
+
+    append_to_log("Aspect Ratios Enabled:\n");
+    if (prefs->ratio_9_7) append_to_log("  9:7\n");
+    if (prefs->ratio_9_8) append_to_log("  9:8\n");
+    if (prefs->ratio_1_1) append_to_log("  1:1\n");
+    if (prefs->ratio_8_9) append_to_log("  8:9\n");
+
+    append_to_log("Title Bar Heights:\n");
+    append_to_log("  Screen Extra Height: %d\n", prefs->screenTitleBarExtraHeight);
+    append_to_log("  Window Extra Height: %d\n", prefs->windowTitleBarExtraHeight);
+
+    append_to_log("Title Bar Settings:\n");
+    append_to_log("  Title Bar 50: %s\n", prefs->titleBar_50 ? "Yes" : "No");
+    append_to_log("  Title Bar 67: %s\n", prefs->titleBar_67 ? "Yes" : "No");
+    append_to_log("  Title Bar 75: %s\n", prefs->titleBar_75 ? "Yes" : "No");
+    append_to_log("  Title Bar 100: %s\n", prefs->titleBar_100 ? "Yes" : "No");
+
+    append_to_log("Square Proportional Look: %s\n", prefs->squareProportionalLook ? "Yes" : "No");
+
+    append_to_log("UI Element Dimensions:\n");
+    append_to_log("  Left Bar Width: %d\n", prefs->currentLeftBarWidth);
+    append_to_log("  Border Width: %d, Border Height: %d\n", prefs->currentBarWidth, prefs->currentBarHeight);
+    append_to_log("  Title Height: %d, Window Height: %d\n", prefs->currentTitleBarHeight, prefs->currentWindowBarHeight);
+    append_to_log("  Volume Gauge Width: %d\n", prefs->currentCGaugeWidth);
+    
+    append_to_log("--------------------------\n");
+}
+

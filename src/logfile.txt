@@ -1,3 +1,404 @@
 Debug build
-Workbench version: 38.320
-Workbench 2.x detected. Icon spacing increased to x: 15 y: 10
+Workbench version: 47.080
+-------------------------
+Workbench Settings Dump:
+-------------------------
+Borderless: No
+Emboss Rectangle Size: 0
+Max Name Length: 0
+New Icons Support: No
+Color Icon Support: No
+Disable Title Bar: No
+Disable Volume Gauge: No
+-------------------------
+Initialized default workbench settings
+Failed to open workbench settings file.  Possibly not yet set.  Defaults assumed.
+-------------------------
+Workbench Settings Dump:
+-------------------------
+Borderless: No
+Emboss Rectangle Size: 3
+Max Name Length: 25
+New Icons Support: Yes
+Color Icon Support: Yes
+Disable Title Bar: No
+Disable Volume Gauge: No
+-------------------------
+IControl Preferences Dump:
+--------------------------
+Flags: 0x8001801E
+Boolean Settings:
+  Coerce Colors: No
+  Coerce Lace: Yes
+  String Gadget Filter: Yes
+  Menu Snap: Yes
+  Mode Promote: Yes
+  Correct Ratio: No
+  Off-Screen Windows: Yes
+  More Size Gadgets: Yes
+  Versioned: Yes
+  Legacy Look: No
+Aspect Ratios Enabled:
+  9:7
+Title Bar Heights:
+  Screen Extra Height: 0
+  Window Extra Height: 0
+Title Bar Settings:
+  Title Bar 50: No
+  Title Bar 67: No
+  Title Bar 75: No
+  Title Bar 100: No
+Square Proportional Look: No
+UI Element Dimensions:
+  Left Bar Width: 4
+  Border Width: 18, Border Height: 14
+  Title Height: 16, Window Height: 16
+  Volume Gauge Width: 19
+--------------------------
+Getting any 'left out' icons for device: dh0
+Found left out icon: dh0:Programs/Roadie.info
+Found left out icon: dh0:Programs/DOpus/DirectoryOpus.info
+Left out icon: dh0:Programs/Roadie.info
+Left out icon: dh0:Programs/DOpus/DirectoryOpus.info
+Starting dir scan to add icons to array.
+Icon is a valid icon: dh0:Prefs
+Adding to dh0:Prefs.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 208 and y: 10 for dh0:Prefs.info
+Checking if it is a OS35 icon: dh0:Prefs.info
+icon size is: 1233
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: dh0:Prefs
+Icons size x: 57, y: 21
+Checking for icon frame
+Opening icon library
+icon.library version: 47.5
+icon for border checks: dh0:Prefs
+Getting icon tags
+Checking to see if it has a border
+Icon dh0:Prefs.info has border: 3
+Icon is write protected: 0
+calculated border: 6
+Allocating memory for icon path.
+Icon is a valid icon: dh0:Storage
+Adding to dh0:Storage.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 142 and y: 53 for dh0:Storage.info
+Checking if it is a OS35 icon: dh0:Storage.info
+icon size is: 1233
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: dh0:Storage
+Icons size x: 57, y: 21
+Checking for icon frame
+Opening icon library
+icon.library version: 47.5
+icon for border checks: dh0:Storage
+Getting icon tags
+Checking to see if it has a border
+Icon dh0:Storage.info has border: 3
+Icon is write protected: 0
+calculated border: 6
+Allocating memory for icon path.
+Icon is a valid icon: dh0:Devs
+Adding to dh0:Devs.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 10 and y: 10 for dh0:Devs.info
+Checking if it is a OS35 icon: dh0:Devs.info
+icon size is: 1233
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: dh0:Devs
+Icons size x: 57, y: 21
+Checking for icon frame
+Opening icon library
+icon.library version: 47.5
+icon for border checks: dh0:Devs
+Getting icon tags
+Checking to see if it has a border
+Icon dh0:Devs.info has border: 3
+Icon is write protected: 0
+calculated border: 6
+Allocating memory for icon path.
+Icon is a valid icon: dh0:Expansion
+Adding to dh0:Expansion.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 76 and y: 10 for dh0:Expansion.info
+Checking if it is a OS35 icon: dh0:Expansion.info
+icon size is: 1233
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: dh0:Expansion
+Icons size x: 57, y: 21
+Checking for icon frame
+Opening icon library
+icon.library version: 47.5
+icon for border checks: dh0:Expansion
+Getting icon tags
+Checking to see if it has a border
+Icon dh0:Expansion.info has border: 3
+Icon is write protected: 0
+calculated border: 6
+Allocating memory for icon path.
+Icon is a valid icon: dh0:System
+Adding to dh0:System.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 208 and y: 53 for dh0:System.info
+Checking if it is a OS35 icon: dh0:System.info
+icon size is: 1233
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: dh0:System
+Icons size x: 57, y: 21
+Checking for icon frame
+Opening icon library
+icon.library version: 47.5
+icon for border checks: dh0:System
+Getting icon tags
+Checking to see if it has a border
+Icon dh0:System.info has border: 3
+Icon is write protected: 0
+calculated border: 6
+Allocating memory for icon path.
+Icon is a valid icon: dh0:Utilities
+Adding to dh0:Utilities.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 76 and y: 96 for dh0:Utilities.info
+Checking if it is a OS35 icon: dh0:Utilities.info
+icon size is: 1233
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: dh0:Utilities
+Icons size x: 57, y: 21
+Checking for icon frame
+Opening icon library
+icon.library version: 47.5
+icon for border checks: dh0:Utilities
+Getting icon tags
+Checking to see if it has a border
+Icon dh0:Utilities.info has border: 3
+Icon is write protected: 0
+calculated border: 6
+Allocating memory for icon path.
+Icon is a valid icon: dh0:WBStartup
+Adding to dh0:WBStartup.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 142 and y: 96 for dh0:WBStartup.info
+Checking if it is a OS35 icon: dh0:WBStartup.info
+icon size is: 1233
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: dh0:WBStartup
+Icons size x: 57, y: 21
+Checking for icon frame
+Opening icon library
+icon.library version: 47.5
+icon for border checks: dh0:WBStartup
+Getting icon tags
+Checking to see if it has a border
+Icon dh0:WBStartup.info has border: 3
+Icon is write protected: 0
+calculated border: 6
+Allocating memory for icon path.
+Icon is a valid icon: dh0:Tools
+Adding to dh0:Tools.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 10 and y: 96 for dh0:Tools.info
+Checking if it is a OS35 icon: dh0:Tools.info
+icon size is: 1233
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: dh0:Tools
+Icons size x: 57, y: 21
+Checking for icon frame
+Opening icon library
+icon.library version: 47.5
+icon for border checks: dh0:Tools
+Getting icon tags
+Checking to see if it has a border
+Icon dh0:Tools.info has border: 3
+Icon is write protected: 0
+calculated border: 6
+Allocating memory for icon path.
+Icon is a valid icon: dh0:Help
+Adding to dh0:Help.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 142 and y: 10 for dh0:Help.info
+Checking if it is a OS35 icon: dh0:Help.info
+icon size is: 1233
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: dh0:Help
+Icons size x: 57, y: 21
+Checking for icon frame
+Opening icon library
+icon.library version: 47.5
+icon for border checks: dh0:Help
+Getting icon tags
+Checking to see if it has a border
+Icon dh0:Help.info has border: 3
+Icon is write protected: 0
+calculated border: 6
+Allocating memory for icon path.
+Icon is a valid icon: dh0:Programs
+Adding to dh0:Programs.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 10 and y: 53 for dh0:Programs.info
+Checking if it is a OS35 icon: dh0:Programs.info
+icon size is: 1233
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: dh0:Programs
+Icons size x: 57, y: 21
+Checking for icon frame
+Opening icon library
+icon.library version: 47.5
+icon for border checks: dh0:Programs
+Getting icon tags
+Checking to see if it has a border
+Icon dh0:Programs.info has border: 3
+Icon is write protected: 0
+calculated border: 6
+Allocating memory for icon path.
+Icon is a valid icon: dh0:sc
+Adding to dh0:sc.info Icon array.
+Calculating text extent.
+Getting current icon position.
+Icon position x: 76 and y: 53 for dh0:sc.info
+Checking if it is a OS35 icon: dh0:sc.info
+icon size is: 1233
+FORM header not found in the file.
+Seems to be a standard icon
+Attempting to load DiskObject from path: dh0:sc
+Icons size x: 57, y: 21
+Checking for icon frame
+Opening icon library
+icon.library version: 47.5
+icon for border checks: dh0:sc
+Getting icon tags
+Checking to see if it has a border
+Icon dh0:sc.info has border: 3
+Icon is write protected: 0
+calculated border: 6
+Allocating memory for icon path.
+Has only borderless icons: 0
+Dumping Icon Array of 11 icons, max width is 63px
+Icon 0: Width = 60, Height = 24, Text Width = 26, Text Height = 11, Max Width = 63, Max Height = 34, x = 208, y = 10, Text = Prefs.info, Path = dh0:Prefs.info
+Icon 1: Width = 60, Height = 24, Text Width = 39, Text Height = 11, Max Width = 63, Max Height = 34, x = 142, y = 53, Text = Storage.info, Path = dh0:Storage.info
+Icon 2: Width = 60, Height = 24, Text Width = 24, Text Height = 11, Max Width = 63, Max Height = 34, x = 10, y = 10, Text = Devs.info, Path = dh0:Devs.info
+Icon 3: Width = 60, Height = 24, Text Width = 49, Text Height = 11, Max Width = 63, Max Height = 34, x = 76, y = 10, Text = Expansion.info, Path = dh0:Expansion.info
+Icon 4: Width = 60, Height = 24, Text Width = 35, Text Height = 11, Max Width = 63, Max Height = 34, x = 208, y = 53, Text = System.info, Path = dh0:System.info
+Icon 5: Width = 60, Height = 24, Text Width = 34, Text Height = 11, Max Width = 63, Max Height = 34, x = 76, y = 96, Text = Utilities.info, Path = dh0:Utilities.info
+Icon 6: Width = 60, Height = 24, Text Width = 53, Text Height = 11, Max Width = 63, Max Height = 34, x = 142, y = 96, Text = WBStartup.info, Path = dh0:WBStartup.info
+Icon 7: Width = 60, Height = 24, Text Width = 25, Text Height = 11, Max Width = 63, Max Height = 34, x = 10, y = 96, Text = Tools.info, Path = dh0:Tools.info
+Icon 8: Width = 60, Height = 24, Text Width = 21, Text Height = 11, Max Width = 63, Max Height = 34, x = 142, y = 10, Text = Help.info, Path = dh0:Help.info
+Icon 9: Width = 60, Height = 24, Text Width = 47, Text Height = 11, Max Width = 63, Max Height = 34, x = 10, y = 53, Text = Programs.info, Path = dh0:Programs.info
+Icon 10: Width = 60, Height = 24, Text Width = 11, Text Height = 11, Max Width = 63, Max Height = 34, x = 76, y = 53, Text = sc.info, Path = dh0:sc.info
+************************************
+Screen width 686
+Arranging 11 icons in dh0:
+Start of icon tidy routine
+Largest icon width: 63
+Calculated max window width: 656
+Initial icons per row calculated: 4
+Adjusted initial window width: 298
+Row 0 max height: 34
+Placing icon 0 at (x: 9, y: 10) with border of: 3px, width 66 and height 37 name: Devs.info
+Updated maxX: 75, maxY: 44
+Placing icon 1 at (x: 81, y: 10) with border of: 3px, width 66 and height 37 name: Expansion.info
+Updated maxX: 147, maxY: 44
+Placing icon 2 at (x: 153, y: 10) with border of: 3px, width 66 and height 37 name: Help.info
+Updated maxX: 219, maxY: 44
+Placing icon 3 at (x: 225, y: 10) with border of: 3px, width 66 and height 37 name: Prefs.info
+Updated maxX: 291, maxY: 44
+Moving to next row: y = 53, rowStartIndex = 4, rowCount = 1
+Row 1 max height: 46
+Placing icon 4 at (x: 9, y: 65) with border of: 3px, width 66 and height 37 name: Programs.info
+Updated maxX: 291, maxY: 99
+Placing icon 5 at (x: 81, y: 65) with border of: 3px, width 66 and height 37 name: sc.info
+Updated maxX: 291, maxY: 99
+Placing icon 6 at (x: 153, y: 65) with border of: 3px, width 66 and height 37 name: Storage.info
+Updated maxX: 291, maxY: 99
+Placing icon 7 at (x: 225, y: 65) with border of: 3px, width 66 and height 37 name: System.info
+Updated maxX: 291, maxY: 99
+Moving to next row: y = 108, rowStartIndex = 8, rowCount = 2
+Row 2 max height: 43
+Placing icon 8 at (x: 9, y: 117) with border of: 3px, width 66 and height 37 name: Tools.info
+Updated maxX: 291, maxY: 151
+Placing icon 9 at (x: 81, y: 117) with border of: 3px, width 66 and height 37 name: Utilities.info
+Updated maxX: 291, maxY: 151
+Placing icon 10 at (x: 153, y: 117) with border of: 3px, width 66 and height 37 name: WBStartup.info
+Updated maxX: 291, maxY: 151
+Moving to next row: y = 160, rowStartIndex = 12, rowCount = 3
+Final adjusted maxY with padding: 161
+Final maxX: 291, maxY: 161
+Repoistion window: dh0: Padding 4 disableVolumeGauge=0
+Root dir detected and VolumeGauge enabled. Adding CGauge width: 19
+posTop: 35, posLeft: 173, winWidth: 340, winHeight: 199
+Saving updated folder size and position for: dh0:
+Is folder write protected? 0
+Is folder delete protected? 0
+Is folder icon write protected? 0
+Is folder icon delete protected? 0
+endswithinfo output 0
+Existing folder LeftEdge, TopEdge, Width, Height: 186, 45, 314, 178
+Saved folder settings for dh0:Disk
+Sanity Check Passed for dh0:Disk
+Folder save completed for dh0:
+Setting icon position for dh0:Devs to 9, 7
+Icon postition saved correctly for dh0:Devs
+Icon position x: 9 and y: 7 for dh0:Devs
+Sanity check ok: x: 9 and y: 7 reported for dh0:Devs after saving
+Setting icon position for dh0:Expansion to 81, 7
+Icon postition saved correctly for dh0:Expansion
+Icon position x: 81 and y: 7 for dh0:Expansion
+Sanity check ok: x: 81 and y: 7 reported for dh0:Expansion after saving
+Setting icon position for dh0:Help to 153, 7
+Icon postition saved correctly for dh0:Help
+Icon position x: 153 and y: 7 for dh0:Help
+Sanity check ok: x: 153 and y: 7 reported for dh0:Help after saving
+Setting icon position for dh0:Prefs to 225, 7
+Icon postition saved correctly for dh0:Prefs
+Icon position x: 225 and y: 7 for dh0:Prefs
+Sanity check ok: x: 225 and y: 7 reported for dh0:Prefs after saving
+Setting icon position for dh0:Programs to 9, 62
+Icon postition saved correctly for dh0:Programs
+Icon position x: 9 and y: 62 for dh0:Programs
+Sanity check ok: x: 9 and y: 62 reported for dh0:Programs after saving
+Setting icon position for dh0:sc to 81, 62
+Icon postition saved correctly for dh0:sc
+Icon position x: 81 and y: 62 for dh0:sc
+Sanity check ok: x: 81 and y: 62 reported for dh0:sc after saving
+Setting icon position for dh0:Storage to 153, 62
+Icon postition saved correctly for dh0:Storage
+Icon position x: 153 and y: 62 for dh0:Storage
+Sanity check ok: x: 153 and y: 62 reported for dh0:Storage after saving
+Setting icon position for dh0:System to 225, 62
+Icon postition saved correctly for dh0:System
+Icon position x: 225 and y: 62 for dh0:System
+Sanity check ok: x: 225 and y: 62 reported for dh0:System after saving
+Setting icon position for dh0:Tools to 9, 114
+Icon postition saved correctly for dh0:Tools
+Icon position x: 9 and y: 114 for dh0:Tools
+Sanity check ok: x: 9 and y: 114 reported for dh0:Tools after saving
+Setting icon position for dh0:Utilities to 81, 114
+Icon postition saved correctly for dh0:Utilities
+Icon position x: 81 and y: 114 for dh0:Utilities
+Sanity check ok: x: 81 and y: 114 reported for dh0:Utilities after saving
+Setting icon position for dh0:WBStartup to 153, 114
+Icon postition saved correctly for dh0:WBStartup
+Icon position x: 153 and y: 114 for dh0:WBStartup
+Sanity check ok: x: 153 and y: 114 reported for dh0:WBStartup after saving
+************************************
+Done. Icons arranged in 3 rows with 4 icons per row. Path: dh0:

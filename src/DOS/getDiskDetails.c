@@ -81,7 +81,8 @@ DeviceInfo GetDeviceInfo(const char *path) {
 
         /* Adjust size based on unit (K, M, or G) */
         sizeUnit = toupper((unsigned char)sizeUnit);
-        strcpy(sizeUnit,deviceInfo.storageUnits);
+        deviceInfo.storageUnits[0] = sizeUnit;
+        deviceInfo.storageUnits[1] = '\0';
         /*
         if (sizeUnit == 'M') {
             deviceInfo.size *= 1024; 

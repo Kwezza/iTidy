@@ -2,6 +2,8 @@
 #define WORKBENCH_PREFS_H
 
 #include <exec/types.h>
+#include "main.h"
+#include "writeLog.h"
 
 /* Define the WorkbenchSettings structure */
 struct WorkbenchSettings {
@@ -16,5 +18,6 @@ struct WorkbenchSettings {
 
 /* Function to fetch Workbench settings */
 void fetchWorkbenchSettings(struct WorkbenchSettings *settings);
-
+//void InitializeDefaultWorkbenchSettings(struct WorkbenchSettings *settings);
+void DumpWorkbenchSettings(const struct WorkbenchSettings *settings);
 #endif /* WORKBENCH_PREFS_H */

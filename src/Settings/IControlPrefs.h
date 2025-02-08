@@ -14,6 +14,9 @@
 #include <proto/iffparse.h>
 #include <math.h>
 
+#include "main.h"
+#include "writeLog.h"
+
 // Define the IControlPrefsDetails structure
 struct IControlPrefsDetails {
     ULONG flags;
@@ -48,5 +51,6 @@ struct IControlPrefsDetails {
 
 // Declare the fetchIControlSettings function
 int fetchIControlSettings(struct IControlPrefsDetails *details);
+void dumpIControlPrefs(const struct IControlPrefsDetails *prefs);
 
 #endif // ICONTROLPREFS_H

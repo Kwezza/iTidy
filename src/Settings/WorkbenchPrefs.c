@@ -10,7 +10,7 @@
 #define PREFS_FILE "ENV:sys/Workbench.prefs"
 
 /* Function to initialize settings with default values */
-static void InitializeDefaultSettings(struct WorkbenchSettings *settings) {
+void InitializeDefaultWorkbenchSettings(struct WorkbenchSettings *settings) {
     settings->borderless = FALSE;  // Borderless: No
     settings->embossRectangleSize = 3;  // Emboss Rectangle Size: 3
     settings->maxNameLength = 25;  // Max Name Length: 25
@@ -18,6 +18,9 @@ static void InitializeDefaultSettings(struct WorkbenchSettings *settings) {
     settings->colorIconSupport = TRUE;  // Color Icon Support: Yes
     settings->disableTitleBar = FALSE;  // Disable Title Bar: No
     settings->disableVolumeGauge = FALSE;  // Disable Volume Gauge: No
+    #ifdef DEBUG
+    append_to_log("Initialized default workbench settings\n");
+#endif
 }
 
 /* Function to read and extract Workbench settings */
@@ -30,10 +33,13 @@ static BOOL ReadWorkbenchSettings(BPTR file, struct WorkbenchSettings *settings)
     UBYTE *chunkData;
 
     /* Initialize with default settings */
-    InitializeDefaultSettings(settings);
+    InitializeDefaultWorkbenchSettings(settings);
 
     /* Check if file is valid before reading */
     if (file == 0) {
+        #ifdef DEBUG
+         append_to_log("Opened and found invalid workbench settings!\n");
+#endif
         return FALSE;
     }
 
@@ -88,6 +94,7 @@ static BOOL ReadWorkbenchSettings(BPTR file, struct WorkbenchSettings *settings)
 void fetchWorkbenchSettings(struct WorkbenchSettings *settings) {
     BPTR file;
 
+    DumpWorkbenchSettings(settings);
     /* Clear the structure to ensure no garbage values */
     memset(settings, 0, sizeof(struct WorkbenchSettings));
     file = Open(PREFS_FILE, MODE_OLDFILE);
@@ -95,4 +102,25 @@ void fetchWorkbenchSettings(struct WorkbenchSettings *settings) {
         ReadWorkbenchSettings(file, settings);
         Close(file);
     }
+    else {
+        InitializeDefaultWorkbenchSettings(settings);
+        #ifdef DEBUG
+
+         append_to_log("Failed to open workbench settings file.  Possibly not yet set.  Defaults assumed.\n");
+         #endif
+    }
+}
+
+void DumpWorkbenchSettings(const struct WorkbenchSettings *settings) {
+    append_to_log("-------------------------\n");
+    append_to_log("Workbench Settings Dump:\n");
+    append_to_log("-------------------------\n");
+    append_to_log("Borderless: %s\n", settings->borderless ? "Yes" : "No");
+    append_to_log("Emboss Rectangle Size: %d\n", settings->embossRectangleSize);
+    append_to_log("Max Name Length: %d\n", settings->maxNameLength);
+    append_to_log("New Icons Support: %s\n", settings->newIconsSupport ? "Yes" : "No");
+    append_to_log("Color Icon Support: %s\n", settings->colorIconSupport ? "Yes" : "No");
+    append_to_log("Disable Title Bar: %s\n", settings->disableTitleBar ? "Yes" : "No");
+    append_to_log("Disable Volume Gauge: %s\n", settings->disableVolumeGauge ? "Yes" : "No");
+    append_to_log("-------------------------\n");
 }

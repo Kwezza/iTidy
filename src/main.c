@@ -240,7 +240,7 @@ void print_usage(const char *program_name)
     printf("  " textBlack "Back up your system before running." textReset "\n");
     printf("  " textItalic "Provided 'as is' without any warranty. No responsibility for issues." textReset "\n");
     
-    return 0;
+
 }
 
 int main(int argc, char **argv)
@@ -371,8 +371,16 @@ printf("is device %s read only? %d\n",deviceName,IsDeviceReadOnly(deviceName));
         return RETURN_FAIL;
     }
 */
+//InitializeDefaultWorkbenchSettings(&prefsWorkbench);
+
     fetchWorkbenchSettings(&prefsWorkbench);
+    #ifdef DEBUG
+    DumpWorkbenchSettings(&prefsWorkbench);
+    #endif
     fetchIControlSettings(&prefsIControl);
+    #ifdef DEBUG
+    dumpIControlPrefs(&prefsIControl);
+    #endif
 
     loadLeftOutIcons(filePath);
     numLeftOutIcons = countLeftOutIcons();
@@ -383,9 +391,11 @@ printf("is device %s read only? %d\n",deviceName,IsDeviceReadOnly(deviceName));
     }
 
 #ifdef DEBUG
-    append_to_log("IControl prefs:  border width: %d, border height: %d\n", prefsIControl.currentBarWidth, prefsIControl.currentBarHeight);
-    append_to_log("IControl prefs:  title height: %d, Window height: %d\n", prefsIControl.currentTitleBarHeight, prefsIControl.currentWindowBarHeight);
-    append_to_log("IControl prefs:  volume guage width: %d\n", prefsIControl.currentCGaugeWidth);
+    //append_to_log("Wokbench Icon border:  %d\n",prefsWorkbench.embossRectangleSize);
+    //append_to_log("IControl prefs:  Window: border width: %d, border height: %d\n", prefsIControl.currentBarWidth, prefsIControl.currentBarHeight);
+    //append_to_log("IControl prefs:  title height: %d, Window height: %d\n", prefsIControl.currentTitleBarHeight, prefsIControl.currentWindowBarHeight);
+    //append_to_log("IControl prefs:  volume guage width: %d\n", prefsIControl.currentCGaugeWidth);
+    
     // Print the loaded left out icons
     dumpLeftOutIcons();
 #endif
