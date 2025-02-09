@@ -1,0 +1,41 @@
+	sc noicon StackExtend main.c icon_misc.c dos/getDiskDetails.c writeLog.c Settings/IControlPrefs.c  Settings/WorkbenchPrefs.c icon_types.c icon_management.c window_management.c window_management.c file_directory_handling.c  utilities.c spinner.c
+SAS/C Amiga Compiler 6.58
+Copyright (c) 1988-1995 SAS Institute Inc.
+
+====================
+    [33;7mtime_t[0m rawtime;
+writeLog.c 5 Error 9: undefined identifier "time_t"
+
+====================
+    time_t [33;7mrawtime[0m;
+writeLog.c 5 Error 57: semi-colon expected
+
+====================
+    time_t [33;7mrawtime[0m;
+writeLog.c 5 Error 9: undefined identifier "rawtime"
+
+====================
+    [33;7mstruct[0m tm *timeinfo;
+writeLog.c 6 Error 218: declaration found in statement block
+
+====================
+    time[33;7m([0m&rawtime);                      // Get current time
+writeLog.c 8 Warning 100: no prototype declared for function "time"
+
+====================
+    timeinfo = localtime[33;7m([0m&rawtime);      // Convert to local time
+writeLog.c 9 Warning 100: no prototype declared for function "localtime"
+
+====================
+    timeinfo = localtime(&rawtime)[33;7m;[0m      // Convert to local time
+writeLog.c 9 Warning 225: pointer type mismatch
+                          "struct tm *" does not match "int"
+
+====================
+                timeinfo[33;7m->[0mtm_hour, 
+writeLog.c 14 Error 61: undefined struct/union tag "tm"
+
+====================
+        [33;7mva_list[0m args;
+writeLog.c 36 Error 218: declaration found in statement block
+sc failed returncode 20

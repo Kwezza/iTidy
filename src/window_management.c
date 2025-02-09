@@ -142,7 +142,7 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight)
 
     int posTop = 0, posLeft = 0;
     folderWindowSize newFolderInfo;
-    #ifdef DEBUG
+    #ifdef DEBUG_MAX
     append_to_log("Repoistion window: %s Padding %d disableVolumeGauge=%d\n", dirPath, PADDING_WIDTH, prefsWorkbench.disableVolumeGauge);
     #endif
     winWidth += prefsIControl.currentBarWidth + prefsIControl.currentLeftBarWidth + (PADDING_WIDTH * 2);
@@ -150,13 +150,15 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight)
     {
         winWidth += prefsIControl.currentCGaugeWidth;
         
-    #ifdef DEBUG
+    #ifdef DEBUG_MAX
         append_to_log("Root dir detected and VolumeGauge enabled. Adding CGauge width: %d\n", prefsIControl.currentCGaugeWidth);
     #endif
     }
     else
     {
+        #ifdef DEBUG_MAX
         append_to_log("No root dir detected or VolumeGauge disabled. CGauge width: %d\n", prefsIControl.currentCGaugeWidth);
+        #endif
     }
     winHeight += prefsIControl.currentWindowBarHeight + prefsIControl.currentBarHeight + (PADDING_HEIGHT * 2);
     if (winWidth > screenWidth)
@@ -173,9 +175,9 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight)
     newFolderInfo.height = winHeight;
 
 
-        #ifdef DEBUG
+        #ifdef DEBUG_MAX
     append_to_log("posTop: %d, posLeft: %d, winWidth: %d, winHeight: %d\n", posTop, posLeft, winWidth, winHeight);
     #endif
 
-    SaveFolderSettings(dirPath, &newFolderInfo,1);
+    SaveFolderSettings(dirPath, &newFolderInfo,0);
 }

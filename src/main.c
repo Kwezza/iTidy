@@ -285,11 +285,14 @@ int main(int argc, char **argv)
     // AddIconError(&iconsErrorTracker, "TH0:corrupt_icon.info");
     // count_icon_corrupted=2;
 
-    printf(textBold "\niTidy" textReset " V%s\nby Kerry Thompson\n", VERSION);
+    printf(textBold "iTidy" textReset " V%s\nby Kerry Thompson\n", VERSION);
     printf("Version compiled on %s at %s\n\n", __DATE__, __TIME__);
 
 #ifdef DEBUG
     initialize_logfile();
+    append_to_log("iTidy V%s\n", VERSION);
+    append_to_log("by Kerry Thompson\n");
+    append_to_log("Version compiled on %s at %s\n", __DATE__, __TIME__);
     append_to_log("Debug build\n");
 
     stringWBVersion = convertWBVersionWithDot(workbenchVersion);
@@ -403,6 +406,9 @@ printf("is device %s read only? %d\n",deviceName,IsDeviceReadOnly(deviceName));
 
 
     InitializeWindow();
+    #ifdef DEBUG
+    append_to_log("Workbench screen width %d, height %d\n", screenWidth,screenHight);
+    #endif
     ProcessDirectory(filePath, iterateDIRs, 0);
     CleanupWindow();
     disposeTimer();
@@ -472,6 +478,67 @@ printf("is device %s read only? %d\n",deviceName,IsDeviceReadOnly(deviceName));
 
     printf("%ld seconds", seconds);
     printf("\n\n");
+
+#ifdef DEBUG
+// Log total icons tidied
+append_to_log("\n\nTotal icons tidied: %d\n", count_icon_type_newIcon + count_icon_type_standard + count_icon_type_os35);
+append_to_log("  - Standard icons:    %d\n", count_icon_type_standard);
+append_to_log("  - NewIcon icons:     %d\n", count_icon_type_newIcon);
+append_to_log("  - OS3.5 style icons: %d\n", count_icon_type_os35);
+
+if (iconsErrorTracker.count > 0)
+{
+    append_to_log("\nTotal corrupted icons found: %d\n", iconsErrorTracker.count);
+    
+    for (i = 0; i < iconsErrorTracker.count; i++)
+    {
+        append_to_log("  - %s\n", iconsErrorTracker.list[i]);
+    }
+
+    append_to_log("\nPossible issues:\n");
+    append_to_log("  - Files may be unreadable or corrupted.\n\n");
+
+    append_to_log("Suggested actions:\n");
+    append_to_log("  1. Replace the icon files.\n");
+    append_to_log("  2. Restore from a backup if available.\n");
+}
+
+// Log completion message
+append_to_log("\niTidy completed");
+
+if (iconsErrorTracker.count > 0)
+{
+    append_to_log(", with some errors, in ");
+}
+else
+{
+    append_to_log(" successfully in ");
+}
+
+// Log time taken
+if (hours > 0)
+{
+    append_to_log("%ld hour", hours);
+    if (hours > 1)
+    {
+        append_to_log("s");
+    }
+    append_to_log(" ");
+}
+
+if (minutes > 0 || hours > 0)
+{
+    append_to_log("%ld minute", minutes);
+    if (minutes > 1)
+    {
+        append_to_log("s");
+    }
+    append_to_log(" and ");
+}
+
+append_to_log("%ld seconds\n", seconds);
+#endif
+
 
     FreeIconErrorList(&iconsErrorTracker);
 

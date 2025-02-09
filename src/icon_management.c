@@ -127,8 +127,8 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
         FreeIconArray(iconArray);
         return NULL;
     }
-#ifdef DEBUG
-    append_to_log("Starting dir scan to add icons to array.\n");
+#ifdef DEBUG_MAX
+    append_to_log("Starting to process folder %s.\n", dirPath);
 #endif
     if (Examine(lock, fib))
     {
@@ -167,16 +167,17 @@ removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
                                 newIcon.icon_full_path = NULL;
                                 newIcon.is_folder = FALSE;
 
-#ifdef DEBUG
-                                append_to_log("Adding to %s Icon array.\n", fullPathAndFile);
+#ifdef DEBUG_MAX
+append_to_log("-------------------------\n");
+                                append_to_log("Adding to %s Icon array.\n ", fullPathAndFile);
 #endif
                                 removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
-#ifdef DEBUG
-                                append_to_log("Calculating text extent.\n", fullPathAndFile);
+#ifdef DEBUG_MAX
+                                append_to_log("\nCalculating text extent.\n", fullPathAndFile);
 #endif
                                 CalculateTextExtent(fileNameNoInfo, &textExtent);
-#ifdef DEBUG
-                                append_to_log("Getting current icon position.\n", fullPathAndFile);
+#ifdef DEBUG_MAX
+                                append_to_log("\nGetting current icon position.\n", fullPathAndFile);
 #endif
                                 iconPosition = GetIconPositionFromPath(fullPathAndFile);
 
@@ -184,8 +185,8 @@ removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
 
                                 if (IsNewIconPath(fullPathAndFile) && user_forceStandardIcons==0)
                                 {
-#ifdef DEBUG
-                                    append_to_log("Getting New Icon details.\n", fullPathAndFile);
+#ifdef DEBUG_MAX
+                                    append_to_log("Seems to be a NewIcon.\n", fullPathAndFile);
 #endif
                                     /* printf("New Icon Format\n"); */
                                     newIcon.icon_type = icon_type_newIcon;
@@ -198,8 +199,8 @@ removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
                                 {
                                     newIcon.icon_type = icon_type_os35;
 /* printf("OS3.5 Icon Format\n"); */
-#ifdef DEBUG
-                                    append_to_log("Getting OS35 icon details.\n", fullPathAndFile);
+#ifdef DEBUG_MAX
+                                    append_to_log("Seems to be a OS35 icon.\n", fullPathAndFile);
 #endif
                                     getOS35IconSize(fullPathAndFile, &iconSize);
                                     count_icon_type_os35++;
@@ -207,7 +208,7 @@ removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
                                 else
                                 {
                                     newIcon.icon_type = icon_type_standard;
-#ifdef DEBUG
+#ifdef DEBUG_MAX
                                     append_to_log("Seems to be a standard icon\n");
 #endif
                                     /* printf("Standard Icon Format\n"); */
@@ -215,9 +216,7 @@ removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
                                     count_icon_type_standard++;
                                 }
 
-#ifdef DEBUG
-                                append_to_log("Icons size x: %d, y: %d\n", iconSize.width, iconSize.height);
-#endif
+
 
                                 if (prefsWorkbench.embossRectangleSize > 0)
                                 {
@@ -229,7 +228,7 @@ removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
                                     newIcon.icon_height = iconSize.height;
                                     newIcon.icon_width = iconSize.width;
                                 }
-#ifdef DEBUG
+#ifdef DEBUG_MAX
                                 append_to_log("Checking for icon frame\n");
 #endif
                                 if (checkIconFrame(fullPathAndFile) == 1 || newIcon.icon_type == icon_type_standard)
@@ -240,9 +239,11 @@ removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
                                 {
                                 }
                                 // newIcon.has_border = checkIconFrame(fullPathAndFile);
-#ifdef DEBUG
-                                append_to_log("Icon %s has border: %d\n", fullPathAndFile, newIcon.border_width);
-#endif
+                                #ifdef DEBUG_MAX
+                                append_to_log("Icons size x: %d, y: %d, current at pos x: %d, y: %d border size:%d\n", iconSize.width, iconSize.height,newIcon.icon_x ,newIcon.icon_y,newIcon.border_width);
+                            
+                                #endif
+
                                 if (newIcon.border_width == 0)
                                 {
                                     iconArray->hasOnlyBorderlessIcons = TRUE;
@@ -257,14 +258,16 @@ removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
 
                                 newIcon.is_write_protected = (fib->fib_Protection & FIBF_WRITE) ? TRUE : FALSE;
 
-#ifdef DEBUG
+#ifdef DEBUG_MAX
                                 append_to_log("Icon is write protected: %d\n", newIcon.is_write_protected);
+                                #endif
+#ifdef DEBUG_MAX   
                                 append_to_log("calculated border: %d\n", (newIcon.border_width * 2));
 #endif
 
                                 /* Determine if it's a folder or a file */
                                 newIcon.is_folder = isDirectory(fullPathAndFile);
-#ifdef DEBUG
+#ifdef DEBUG_MAX
                                 append_to_log("Allocating memory for icon path.\n");
 
 #endif
@@ -329,8 +332,11 @@ removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
 
     /* Free the FileInfoBlock before returning */
     FreeDosObject(DOS_FIB, fib);
+#ifdef DEBUG_MAX
+append_to_log("Has only borderless icons: %d\n", iconArray->hasOnlyBorderlessIcons);
+#endif
 #ifdef DEBUG
-    append_to_log("Has only borderless icons: %d\n", iconArray->hasOnlyBorderlessIcons);
+    
     dumpIconArrayToScreen(iconArray);
 #endif
 
@@ -400,6 +406,11 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     rowStartIndex = 0;
 
     printf(textWhite "Tidying folder: " textReset "%s\n", dirPath);
+    #ifdef DEBUG
+        append_to_log("======================================================\n");
+        append_to_log("Tidying folder: %s\n", dirPath);
+        append_to_log("======================================================\n", dirPath);
+    #endif
 
     iconArray = CreateIconArrayFromPath(lock, dirPath);
 
@@ -410,9 +421,8 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     }
 
     totalIcons = iconArray->size;
-#ifdef DEBUG
-    append_to_log("************************************\n");
-    append_to_log("Screen width %d\n", screenWidth);
+
+    #ifdef DEBUG_MAX
     append_to_log("Arranging %d icons in %s\n", totalIcons, dirPath);
     append_to_log("Start of icon tidy routine\n");
 #endif
@@ -422,7 +432,7 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
 
     /* Check the largest width of any icon to determine spacing needs */
     largestIconWidth = iconArray->BiggestWidthPX;
-#ifdef DEBUG
+#ifdef DEBUG_MAX
     append_to_log("Largest icon width: %d\n", largestIconWidth);
 #endif
 
@@ -443,25 +453,25 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     if (maxWindowWidth > screenWidth)
     {
         maxWindowWidth = screenWidth - prefsIControl.currentBarWidth - prefsIControl.currentLeftBarWidth - (PADDING_WIDTH * 2);
-#ifdef DEBUG
+#ifdef DEBUG_MAX
         append_to_log("Adjusted max window width to fit screen: %d\n", maxWindowWidth);
 #endif
     }
     else
     {
-#ifdef DEBUG
+#ifdef DEBUG_MAX
         append_to_log("Calculated max window width: %d\n", maxWindowWidth);
 #endif
     }
 
     /* Determine the optimal number of icons per row */
     iconsPerRow = MAX((newWidth - ICON_START_X) / (largestIconWidth + iconSpacingX), minIconsPerRow);
-#ifdef DEBUG
+#ifdef DEBUG_MAX
     append_to_log("Initial icons per row calculated: %d\n", iconsPerRow);
 #endif
     /* Adjust window width to fit these icons evenly */
     windowWidth = ICON_START_X + iconsPerRow * (largestIconWidth + iconSpacingX);
-#ifdef DEBUG
+#ifdef DEBUG_MAX
     append_to_log("Adjusted initial window width: %d\n", windowWidth);
 #endif
     /* Expand window width to fit more icons if necessary and possible */
@@ -469,7 +479,7 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     {
         iconsPerRow++;
         windowWidth = ICON_START_X + iconsPerRow * (largestIconWidth + iconSpacingX);
-#ifdef DEBUG
+#ifdef DEBUG_MAX
         append_to_log("Expanding window width: %d, Icons per row: %d\n", windowWidth, iconsPerRow);
 #endif
     }
@@ -479,7 +489,7 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     {
         windowWidth = maxWindowWidth;
         iconsPerRow = MAX((maxWindowWidth - ICON_START_X) / (largestIconWidth + iconSpacingX), minIconsPerRow);
-#ifdef DEBUG
+#ifdef DEBUG_MAX
         append_to_log("Adjusted to max window width: %d, Icons per row: %d\n", windowWidth, iconsPerRow);
 #endif
     }
@@ -515,7 +525,7 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
         {
             maxRowHeight = MAX(maxRowHeight, iconArray->array[i].icon_max_height) + borderSpacingForIconsWithNoSpacing;
         }
-#ifdef DEBUG
+#ifdef DEBUG_MAX
         append_to_log("Row %d max height: %d\n", rowCount, maxRowHeight);
 #endif
         for (i = rowStartIndex; i < rowStartIndex + iconsPerRow && i < totalIcons; i++)
@@ -554,7 +564,7 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
             iconArray->array[i].icon_x = x + centerX;
             /* Align to the bottom of the row by setting y based on maxRowHeight */
             iconArray->array[i].icon_y = y + (maxRowHeight - iconHeight);
-#ifdef DEBUG
+#ifdef DEBUG_MAX
             append_to_log("Placing icon %d at (x: %ld, y: %ld) with border of: %dpx, width %d and height %d name: %s\n",
 
                           i, iconArray->array[i].icon_x, iconArray->array[i].icon_y + borderSpacingForIconsWithNoSpacing, borderSpacingForIconsWithNoSpacing,
@@ -564,7 +574,7 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
 
             maxX = MAX(maxX, (iconArray->array[i].icon_x + iconArray->array[i].icon_max_width) + borderSpacingForIconsWithNoSpacing);
             maxY = MAX(maxY, (iconArray->array[i].icon_y + iconArray->array[i].icon_max_height) + borderSpacingForIconsWithNoSpacing);
-#ifdef DEBUG
+#ifdef DEBUG_MAX
             append_to_log("Updated maxX: %ld, maxY: %ld\n", maxX, maxY);
 #endif
 
@@ -576,7 +586,7 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
         y += maxRowHeight + iconSpacingY;
         rowStartIndex += iconsPerRow;
         rowCount++;
-#ifdef DEBUG
+#ifdef DEBUG_MAX
         append_to_log("Moving to next row: y = %ld, rowStartIndex = %d, rowCount = %d\n", y, rowStartIndex, rowCount);
 #endif
     }
@@ -586,7 +596,7 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
 
     /* Adjust maxY to avoid excessive gap at the bottom */
     maxY += dynamicPaddingY; /* Add dynamic padding at the bottom */
-#ifdef DEBUG
+#ifdef DEBUG_MAX
     append_to_log("Final adjusted maxY with padding: %ld\n", maxY);
     append_to_log("Final maxX: %ld, maxY: %ld\n", maxX, maxY);
 #endif
@@ -600,8 +610,8 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     FreeIconArray(iconArray);
 #ifdef DEBUG
 
-    append_to_log("************************************\n");
-    append_to_log("Done. Icons arranged in %d rows with %d icons per row. Path: %s\n",
+
+    append_to_log("Completed arranging icons in %d rows with %d icons per row. Path: %s\n",
                   rowCount, iconsPerRow, dirPath); /* Correct the row count display */
 #endif
     return 0;
@@ -631,7 +641,7 @@ BOOL checkIconFrame(const char *iconName)
     /* Copy the icon name up to the new length and null-terminate it */
     strncpy(newIconName, iconName, new_len);
     newIconName[new_len] = '\0';
-#ifdef DEBUG
+#ifdef DEBUG_MAX
     append_to_log("Opening icon library\n");
 #endif
     /* Open the icon.library */
@@ -655,7 +665,7 @@ BOOL checkIconFrame(const char *iconName)
     }
 
     /* Load the icon using the new name without the ".info" extension */
-#ifdef DEBUG
+#ifdef DEBUG_MAX
     append_to_log("icon.library version: %ld.%ld\n", IconBase->lib_Version, IconBase->lib_Revision);
     append_to_log("icon for border checks: %s\n", newIconName);
     append_to_log("Getting icon tags\n");
@@ -669,7 +679,7 @@ BOOL checkIconFrame(const char *iconName)
         free(newIconName);
         return TRUE; /* Assume it has a frame if icon can't be loaded */
     }
-#ifdef DEBUG
+#ifdef DEBUG_MAX
 
     append_to_log("Checking to see if it has a border\n");
 #endif
@@ -704,16 +714,73 @@ BOOL checkIconFrame(const char *iconName)
     free(newIconName);
     return TRUE; /* Default to having a frame if there's an error */
 }
-
 void dumpIconArrayToScreen(IconArray *iconArray)
 {
     int i;
-    append_to_log("Dumping Icon Array of %d icons, max width is %dpx\n", iconArray->size, iconArray->BiggestWidthPX);
+    const char *iconTypeStr;
+    char xStr[12], yStr[12]; // Buffers for X and Y, can hold "None" or numbers
+
+    #ifdef DEBUG
+    if(iconArray->size==0)
+    {
+        append_to_log("No icons in the folder that can be arranged\n");
+    }
+    else
+    {
+    append_to_log("%-3s | %-6s | %-6s | %-6s | %-6s | %-6s | %-6s | %-8s | %-8s | %-6s | %-8s | %-20s\n",
+                  "ID", "Width", "Height", "TxtW", "TxtH", "MaxW", "MaxH", "X", "Y", "Border", "Type", "Icon");
+    append_to_log("----------------------------------------------------------------------------------------------------------------\n");
+    }
+#endif
+
     for (i = 0; i < iconArray->size; i++)
     {
-        append_to_log("Icon %d: Width = %d, Height = %d, Text Width = %d, Text Height = %d, Max Width = %d, Max Height = %d, x = %d, y = %d, Text = %s, Path = %s\n", i, iconArray->array[i].icon_width, iconArray->array[i].icon_height, iconArray->array[i].text_width, iconArray->array[i].text_height, iconArray->array[i].icon_max_width, iconArray->array[i].icon_max_height, iconArray->array[i].icon_x, iconArray->array[i].icon_y, iconArray->array[i].icon_text, iconArray->array[i].icon_full_path);
+        // Determine the icon type string
+        switch (iconArray->array[i].icon_type)
+        {
+            case 1:
+                iconTypeStr = "NewIcon";
+                break;
+            case 2:
+                iconTypeStr = "OS3.5";
+                break;
+            default:
+                iconTypeStr = "Standard";
+                break;
+        }
+
+        // Convert X and Y to "None" if they are -2147483648, otherwise store the number
+        if (iconArray->array[i].icon_x == -2147483648)
+            strcpy(xStr, "None");
+        else
+            sprintf(xStr, "%d", iconArray->array[i].icon_x);
+
+        if (iconArray->array[i].icon_y == -2147483648)
+            strcpy(yStr, "None");
+        else
+            sprintf(yStr, "%d", iconArray->array[i].icon_y);
+
+        append_to_log("%-3d | %-6d | %-6d | %-6d | %-6d | %-6d | %-6d | %-8s | %-8s | %-6d | %-8s | %-20s\n",
+                      i,
+                      iconArray->array[i].icon_width,
+                      iconArray->array[i].icon_height,
+                      iconArray->array[i].text_width,
+                      iconArray->array[i].text_height,
+                      iconArray->array[i].icon_max_width,
+                      iconArray->array[i].icon_max_height,
+                      xStr,  // X position (or "None")
+                      yStr,  // Y position (or "None")
+                      iconArray->array[i].border_width,
+                      iconTypeStr,
+                      iconArray->array[i].icon_text);
     }
 }
+
+
+
+
+
+
 
 BOOL IsValidIcon(const char *iconPath)
 {
@@ -723,7 +790,7 @@ BOOL IsValidIcon(const char *iconPath)
     diskObj = GetDiskObject(iconPath);
     if (diskObj != NULL)
     {
-#ifdef DEBUG
+#ifdef DEBUG_MAX
         append_to_log("Icon is a valid icon: %s\n", iconPath);
 #endif
         /* Successfully retrieved the DiskObject, so the icon is valid */

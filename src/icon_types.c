@@ -57,7 +57,7 @@ void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
     if (filePathLen > 5 && stricmp(filePathCopy + filePathLen - 5, ".info") == 0)
     {
         filePathCopy[filePathLen - 5] = '\0'; /* Truncate the .info part */
-#ifdef DEBUG
+#ifdef DEBUG_MAX
         append_to_log(".info suffix removed: %s\n", filePathCopy);
 #endif
     }
@@ -83,7 +83,7 @@ void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
     /* Process ToolTypes to find the "IM1=" prefix and get icon size */
     for (i = 0; (toolType = toolTypes[i]); i++)
     {
-#ifdef DEBUG
+#ifdef DEBUG_MAX
         append_to_log("Processing ToolType: %s\n", toolType);
 #endif
         if (strncmp(toolType, prefix, strlen(prefix)) == 0)
@@ -130,7 +130,7 @@ BOOL GetIconSizeFromFile(const char *filePath, IconSize *iconSize)
     /* Extract the width and height from the file at offset 0x08 and 0x0A */
     iconSize->width = (buffer[8] << 8) | buffer[9];
     iconSize->height = (buffer[10] << 8) | buffer[11];
-#ifdef DEBUG
+#ifdef DEBUG_MAX
     append_to_log("Hex read of format size: width = %d, height = %d\n", iconSize->width, iconSize->height);
 #endif
     Close(fileHandle);
@@ -161,7 +161,7 @@ BOOL GetStandardIconSize(const char *filePath, IconSize *iconSize)
         filePathCopy[filePathLength - 5] = '\0';
     }
 
-#ifdef DEBUG
+#ifdef DEBUG_MAX
     append_to_log("Attempting to load DiskObject from path: %s\n", filePathCopy);
 #endif
     /* Attempt to get the DiskObject for the provided (or modified) file path */
@@ -241,7 +241,7 @@ IconPosition GetIconPositionFromPath(const char *iconPath)
     position.x = diskObject->do_CurrentX;
     position.y = diskObject->do_CurrentY;
 
-#ifdef DEBUG
+#ifdef DEBUG_MAX
     append_to_log("Icon position x: %d and y: %d for %s\n", position.x, position.y,iconPath);
 #endif
 
@@ -398,7 +398,7 @@ int isOS35IconFormat(const char *filename)
     int iterationCount = 0;
     int lastBytes = 0; /* For handling overlap between buffer reads */
 
-#ifdef DEBUG
+#ifdef DEBUG_MAX
     append_to_log("Checking if it is a OS35 icon: %s\n", filename);
 #endif
 
@@ -415,7 +415,7 @@ int isOS35IconFormat(const char *filename)
     fileSize = ftell(file);
     fseek(file, 0, SEEK_SET);
 
-#ifdef DEBUG
+#ifdef DEBUG_MAX
     append_to_log("icon size is: %ld\n", fileSize);
 #endif
 
@@ -447,7 +447,7 @@ int isOS35IconFormat(const char *filename)
                 foundForm = 1;
                 offset = ftell(file) - bytesRead + i;
 
-#ifdef DEBUG
+#ifdef DEBUG_MAX
                 append_to_log("\"FORM\" header found at offset: %ld (ftell: %ld, i: %zu, bytesRead: %lu)\n",
                        offset, ftell(file), i, (unsigned long)bytesRead);
 #endif
@@ -455,7 +455,7 @@ int isOS35IconFormat(const char *filename)
                 /* Additional sanity check */
                 if (offset < 0 || offset > fileSize)
                 {
-#ifdef DEBUG
+#ifdef DEBUG_MAX
                     append_to_log("Error: Calculated offset out of bounds. offset: %ld, fileSize: %ld\n", offset, fileSize);
 #endif
                     fclose(file);
@@ -469,12 +469,12 @@ int isOS35IconFormat(const char *filename)
                 if (memcmp(buffer + i + 8, "ICON", 4) == 0)
                 {
                     foundIcon = 1;
-#ifdef DEBUG
+#ifdef DEBUG_MAX
                     append_to_log("\"ICON\" header found after \"FORM\" at position: %d\n", (int)(i + 8));
 #endif
                     break;
                 }
-#ifdef DEBUG
+#ifdef DEBUG_MAX
                 else
                 {
                     append_to_log("Checked position %d, did not find \"ICON\"\n", (int)(i + 8));
@@ -495,7 +495,7 @@ int isOS35IconFormat(const char *filename)
         iterationCount++;
         if (iterationCount > 10000)
         {
-#ifdef DEBUG
+#ifdef DEBUG_MAX
             append_to_log("Maximum iteration count reached. Exiting loop.\n");
 #endif
             break; /* Force exit if maximum iteration count is reached */
@@ -513,7 +513,7 @@ int isOS35IconFormat(const char *filename)
     /* Close the file */
     fclose(file);
 
-#ifdef DEBUG
+#ifdef DEBUG_MAX
     if (!foundForm)
     {
         append_to_log("FORM header not found in the file.\n");
@@ -533,7 +533,7 @@ BOOL IsNewIcon(struct DiskObject *diskObject)
     BOOL newIconFormat = FALSE;
 
     toolTypes = diskObject->do_ToolTypes;
-#ifdef DEBUG
+#ifdef DEBUG_MAX
     append_to_log("Is it a New Icon?\n");
 #endif
     /* Print all tooltypes */

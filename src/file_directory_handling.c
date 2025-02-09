@@ -216,10 +216,18 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
     int sanityCheckX = 0;
     int sanityCheckY = 0;
 
+    #ifdef DEBUG
     IconPosition iconPosition; // Only used for debugging
+    #endif
 
     // Precompute the array size to avoid redundant dereferencing
     iconArraySize = iconArray->size;
+    #ifdef DEBUG
+    
+    // Print the header
+append_to_log("%-3s | %-4s | %-4s | %-40s\n", "ID", "X", "Y", "Icon");
+append_to_log("--------------------------------------------------------------\n");
+#endif
 
     for (i = 0; i < iconArraySize; i++)
     {
@@ -255,7 +263,7 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
                 sanityCheckY = diskObject->do_CurrentY;
 
 #ifdef DEBUG
-                append_to_log("Setting icon position for %s to %d, %d\n", fileNameNoInfo, currentIcon->icon_x, currentIcon->icon_y);
+append_to_log("%-3d | %-4d | %-4d | %-40s\n", i, currentIcon->icon_x, currentIcon->icon_y, currentIcon->icon_text);
 #endif
             }
             else
@@ -276,7 +284,7 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
             }
             else
             {
-#ifdef DEBUG
+#ifdef DEBUG_MAX
                 append_to_log("Icon postition saved correctly for %s\n", fileNameNoInfo);
 #endif
             }
@@ -286,7 +294,7 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
                 SetWriteProtection(iconArray->array[i].icon_full_path, 1);
             if (is_delete_protected_icon)
                 SetDeleteProtection(iconArray->array[i].icon_full_path, 1);
-#ifdef DEBUG
+#ifdef DEBUG_MAX
             iconPosition = GetIconPositionFromPath(fileNameNoInfo); // get the current icon position
             if (sanityCheckX != iconPosition.x || sanityCheckY != iconPosition.y)
             {
@@ -340,7 +348,7 @@ void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo,
 
     
 
-#ifdef DEBUG
+#ifdef DEBUG_MAX
     append_to_log("Saving updated folder size and position for: %s\n", folderPath);
 
     append_to_log("Is folder write protected? %d\n", is_write_protected);
@@ -349,13 +357,13 @@ void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo,
     append_to_log("Is folder icon delete protected? %d\n", is_delete_protected_icon);
 #endif
 
-#ifdef DEBUG
+#ifdef DEBUG_MAX
     append_to_log("endswithinfo output %d\n", endsWithInfo(folderPath));
 #endif
 
     if (!endsWithInfo(folderPath) == 0)
     {
-#ifdef DEBUG
+#ifdef DEBUG_MAX
         append_to_log("Aborting - ends with .info: %s\n", folderPath);
 #endif
         // return;
@@ -383,7 +391,7 @@ void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo,
     if (((diskObject->do_Type == WBDRAWER || diskObject->do_Type == WBDISK)) && diskObject->do_DrawerData)
     {
 
-#ifdef DEBUG
+#ifdef DEBUG_MAX
         append_to_log("Existing folder LeftEdge, TopEdge, Width, Height: %d, %d, %d, %d\n",
                       diskObject->do_DrawerData->dd_NewWindow.LeftEdge,
                       diskObject->do_DrawerData->dd_NewWindow.TopEdge,
@@ -410,7 +418,7 @@ void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo,
         else
         {
 #ifdef DEBUG
-            append_to_log("Saved folder settings for %s\n", diskInfoPath);
+            append_to_log("Saved folder settings ok for %s\n", diskInfoPath);
 #endif
 
             // If sanityCheck is true, perform the sanity check
@@ -479,10 +487,10 @@ void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo,
     else
     {
 #ifdef DEBUG
-        append_to_log("Requirements not met tp update folder. %s\n", folderPath);
+        append_to_log("Requirements not met to update folder. %s\n", folderPath);
 #endif
     }
-#ifdef DEBUG
+#ifdef DEBUG_MAX
     append_to_log("Folder save completed for %s\n", folderPath);
 #endif
     FreeDiskObject(diskObject);
