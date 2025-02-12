@@ -185,6 +185,7 @@ char* convertWBVersionWithDot(int number) {
 }
 
 
+
 void CalculateTextExtent(const char *text, struct TextExtent *textExtent)
 {
     // struct TextExtent textExtent;

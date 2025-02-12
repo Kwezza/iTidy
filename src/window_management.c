@@ -14,6 +14,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <proto/intuition.h>
+#include <proto/diskfont.h>
+#include <intuition/intuition.h>
+#include <graphics/text.h>
+#include <prefs/font.h>
 
 #include "main.h"
 #include "icon_management.h"
@@ -22,6 +27,11 @@
 #include "utilities.h"
 #include "writeLog.h"
 #include "icon_misc.h"
+
+struct TextFont *iconFont;
+
+
+#define FP_WBFONT 0
 
 void CleanupWindow()
 {
@@ -87,6 +97,105 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray)
     repoistionWindow(dirPath, maxWidth, maxHeight);
 }
 
+void GetWorkbenchIconFont(char *fontName, int *fontSize)
+{
+    struct IFFHandle *iff;
+    struct ContextNode *cn;
+    struct FontPrefs fontPrefs;
+    BPTR file;
+
+    // Default fallback font
+    strcpy(fontName, "topaz.font");
+    *fontSize = 8;
+
+    // Allocate IFF parser
+    iff = AllocIFF();
+    if (!iff)
+    {
+        printf("Failed to allocate IFF parser.\n");
+        return;
+    }
+
+    // Open Workbench font preferences file
+    file = Open("ENV:sys/font.prefs", MODE_OLDFILE);
+    if (!file)
+    {
+        printf("Failed to open ENV:sys/font.prefs. Using default: %s, size: %d\n", fontName, *fontSize);
+        FreeIFF(iff);
+        return;
+    }
+
+    iff->iff_Stream = file;
+    InitIFFasDOS(iff);
+
+    if (OpenIFF(iff, IFFF_READ) != 0)
+    {
+        printf("Failed to open IFF structure.\n");
+        Close(file);
+        FreeIFF(iff);
+        return;
+    }
+
+    // Scan IFF chunks
+    while ((cn = CurrentChunk(iff)) != NULL)
+    {
+        if (cn->cn_ID == ID_FONT)  // Found a FONT chunk
+        {
+            if (ReadChunkBytes(iff, &fontPrefs, sizeof(struct FontPrefs)) == sizeof(struct FontPrefs))
+            {
+                if (fontPrefs.fp_Type == FP_WBFONT)  // Workbench Icon Font
+                {
+                    strncpy(fontName, fontPrefs.fp_Name, FONTNAMESIZE - 1);
+                    fontName[FONTNAMESIZE - 1] = '\0';  // Ensure null termination
+                    *fontSize = fontPrefs.fp_TextAttr.ta_YSize;
+                    break;
+                }
+            }
+        }
+        if (ParseIFF(iff, IFFPARSE_STEP) == IFFERR_EOF)
+            break;
+    }
+
+    CloseIFF(iff);
+    Close(file);
+    FreeIFF(iff);
+
+    // Debug Output
+    printf("Workbench Icon Font: %s, Size: %d\n", fontName, *fontSize);
+}
+
+// Function to load and apply the Workbench Icon Font
+void SetIconFont()
+{
+    char fontName[32];
+    int fontSize;
+    struct TextAttr textAttr; // Declare separately (no C99 struct init)
+
+    // Get the Workbench icon font settings
+    GetWorkbenchIconFont(fontName, &fontSize);
+
+    // Set up TextAttr struct
+    textAttr.ta_Name = fontName;
+    textAttr.ta_YSize = fontSize;
+    textAttr.ta_Style = 0;
+    textAttr.ta_Flags = 0;
+
+    // Load the font
+    iconFont = OpenDiskFont(&textAttr);
+
+    if (iconFont)
+    {
+        SetFont(rastPort, iconFont);
+        printf("Applied Workbench Icon Font: %s, Size: %d\n", fontName, fontSize);
+    }
+    else
+    {
+        printf("Failed to load Workbench Icon Font, using default screen font.\n");
+        SetFont(rastPort, screen->RastPort.Font);
+    }
+}
+
+// Function to initialize a window and apply the Workbench Icon Font
 int InitializeWindow()
 {
     int windowWidth = 1;
@@ -100,8 +209,7 @@ int InitializeWindow()
         printf("Failed to lock Workbench screen.\n");
         return 0;
     }
-    screenHight = screen->Height;
-    screenWidth = screen->Width;
+
     windowLeft = screen->Width - windowWidth;
     windowTop = screen->Height - windowHeight;
 
@@ -124,16 +232,12 @@ int InitializeWindow()
     if (!rastPort)
     {
         printf("RastPort failed to create.\n");
+        return 0;
     }
-    font = screen->RastPort.Font;
-    if (font)
-    {
-        SetFont(rastPort, font);
-    }
-    else
-    {
-        printf("Failed to get default font from screen.\n");
-    }
+
+    // Apply Workbench Icon Font
+    SetIconFont();
+
     return 1;
 }
 

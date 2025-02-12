@@ -555,7 +555,7 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
             }
 
             column = i % iconsPerRow;
-            iconHeight = iconArray->array[i].icon_max_height + borderSpacingForIconsWithNoSpacing;
+            iconHeight = iconArray->array[i].icon_max_height + (borderSpacingForIconsWithNoSpacing); // experimenting with icon spacing by dividing the y height by 2
 
             removeInfoExtension(iconArray->array[i].icon_full_path, fileNameNoInfo);
 

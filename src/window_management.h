@@ -15,6 +15,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <proto/intuition.h>
+#include <proto/diskfont.h>
+#include <intuition/intuition.h>
+#include <graphics/text.h>
+
 #include "main.h"
 #include "icon_management.h"
 #include "file_directory_handling.h"
@@ -27,5 +32,6 @@ int FormatIconsAndWindow(char *folder);
 void resizeFolderToContents(char *dirPath, IconArray *iconArray);
 int InitializeWindow(void);
 void repoistionWindow(char *dirPath, int winWidth, int winHeight);
+void SetIconFont(void); 
 
 #endif // WINDOW_MANAGEMENT_H
