@@ -216,7 +216,7 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
     int sanityCheckX = 0;
     int sanityCheckY = 0;
 
-    #ifdef DEBUG
+    #ifdef DEBUG_MAX
     IconPosition iconPosition; // Only used for debugging
     #endif
 
