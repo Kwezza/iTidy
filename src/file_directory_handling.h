@@ -14,6 +14,7 @@
 #include <proto/graphics.h>
 #include <stdlib.h>
 #include <devices/trackdisk.h>
+#include <dos/dos.h>
 #include "main.h"
 #include "icon_management.h"
 #include "window_management.h"
@@ -21,7 +22,7 @@
 #include "writeLog.h"
 #include "icon_misc.h"
 #include "dos/getDiskDetails.h"
-#include <dos/dos.h>
+
 
 int HasSlaveFile(char *path);
 void ProcessDirectory(char *path, BOOL processSubDirs, int recursion_level);

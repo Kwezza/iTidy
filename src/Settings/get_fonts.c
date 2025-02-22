@@ -5,8 +5,24 @@
 #include <exec/types.h>
 #include <proto/dos.h>
 #include "get_fonts.h"
-#include "file_directory_handling.h"
+#include "main.h"
+//#include "file_directory_handling.h"
 
+
+FontPref *getIconFont(void) {
+
+    FontPref *ret;
+    //set to default topaz.font 8pt first just in case no font preferences are found
+    ret=defaultFont();
+    // workbench 3.x font prefs
+    if (does_file_or_folder_exist("ENV:sys/font.prefs", 0))
+        ret = extractFonts("ENV:sys/font.prefs");
+    // workbench 2.x font prefs
+    else if (does_file_or_folder_exist("ENV:sys/wbfont.prefs", 0))
+        ret = extractFonts("ENV:sys/wbfont.prefs");
+
+    return ret;
+}
 
 
 /* Helper function to return the default font.

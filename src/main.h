@@ -40,7 +40,7 @@
 #include "writeLog.h"
 #include "icon_misc.h"
 #include "dos/getDiskDetails.h"
-
+#include "Settings/get_fonts.h"
 
 // Define the DEBUG macro to enable debug prints
 #define DEBUG
@@ -68,7 +68,6 @@
 #define MAX_ICONS_TO_ALLIGN 50
 #define ERROR_LIST_INITIAL_SIZE 10
 
-
 #define textBlack "\x1B[31m"
 #define textBlue "\x1B[33m"
 #define textBold "\x1B[1m"
@@ -78,8 +77,6 @@
 #define textReverse "\x1B[7m"
 #define textUnderline "\x1B[4m"
 #define textWhite "\x1B[32m"
-
-
 
 typedef struct {
     int left;
@@ -129,7 +126,6 @@ typedef struct IconErrorTrackerStruct {
     ULONG count;    // Number of errors stored
 } IconErrorTrackerStruct;
 
-
 extern struct Screen *screen;
 extern struct Window *window;
 extern struct RastPort *rastPort;
@@ -137,7 +133,6 @@ extern struct TextFont *font;
 extern struct WorkbenchSettings prefsWorkbench;
 extern struct IControlPrefsDetails prefsIControl;
 extern struct IconErrorTrackerStruct iconsErrorTracker;
-
 extern int screenHight;
 extern int screenWidth;
 extern int WindowWidthTextOnly;
@@ -160,8 +155,6 @@ extern BOOL user_folderFlags;
 extern BOOL user_stripIconPosition;
 extern BOOL user_forceStandardIcons;
 
-void AddIconError(IconErrorTrackerStruct *tracker, STRPTR filePath);
-void FreeIconErrorList(IconErrorTrackerStruct *tracker);
-
+//extern FontPref *fontPrefs;
 
 #endif // MAIN_H

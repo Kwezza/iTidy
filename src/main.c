@@ -83,6 +83,7 @@
 #include "icon_misc.h"
 #include "dos/getDiskDetails.h"
 
+
 /* Define global variables */
 struct Screen *screen = NULL;
 struct Window *window = NULL;
@@ -96,7 +97,7 @@ int screenWidth = 0;
 int WindowWidthTextOnly = 430;
 int WindowHeightTextOnly = 256;
 int ICON_SPACING_X = 9;
-int ICON_SPACING_Y = 9;
+int ICON_SPACING_Y = 7;
 int icon_type_standard = 0;
 int icon_type_newIcon = 1;
 int icon_type_os35 = 2;
@@ -112,6 +113,8 @@ BOOL user_folderViewMode;
 BOOL user_folderFlags;
 BOOL user_stripIconPosition;
 BOOL user_forceStandardIcons;
+
+FontPref *fontPrefs = NULL;
 
 #define VERSION_STRING "$VER: iTidy 1.0 (15.07.2024)"
 const char version[] = VERSION_STRING;
@@ -253,6 +256,8 @@ int main(int argc, char **argv)
     BOOL iterateDIRs = FALSE;
     long elapsed_seconds, hours, minutes, seconds, start_time;
     DeviceInfo diskInfo;
+    int fontNameSet = 0;
+    int fontSizeSet = 0;
 
 #ifdef DEBUG
     char *stringWBVersion;
@@ -262,10 +267,18 @@ int main(int argc, char **argv)
     user_folderFlags = DDFLAGS_SHOWICONS;
     user_cleanupWHDLoadFolders = TRUE;
     user_stripIconPosition = FALSE;
+    fontPrefs->overRide = 0;
 
     if (setupTimer() != 0)
     {
         printf("Failed to setup timer\n");
+        return 1;
+    }
+
+    //used to store the current font the user has set in the workbench prefs
+    fontPrefs = (FontPref *)malloc(sizeof(FontPref));
+    if (!fontPrefs) {
+        printf("Error: Failed to allocate memory for fontPrefs\n");
         return 1;
     }
 
@@ -349,7 +362,79 @@ int main(int argc, char **argv)
                                                                                             This option forces the program to rearrange the icons if it detects a .slave file is found in the folder.  Without this option,
                                                                                             the fodler's window will just be resized and centered. */
             user_cleanupWHDLoadFolders = FALSE;
+
+                // Handle xPadding and yPadding
+        if (strncasecmp_custom(argv[i], "-xPadding:", 10) == 0)
+        {
+            int value = atoi(argv[i] + 10);
+            if (value >= 0 && value <= 30)
+            {
+                ICON_SPACING_X = value;
+                printf("xPadding overridden: %d\n", ICON_SPACING_X);
+            }
+            else
+            {
+                printf("Error: -xPadding value must be between 0 and 30.\n");
+                return 1; // Exit with an error
+            }
+        }
+
+        if (strncasecmp_custom(argv[i], "-yPadding:", 10) == 0)
+        {
+            int value = atoi(argv[i] + 10);
+            if (value >= 0 && value <= 30)
+            {
+                ICON_SPACING_Y = value;
+                printf("yPadding overridden: %d\n", ICON_SPACING_Y);
+            }
+            else
+            {
+                printf("Error: -yPadding value must be between 0 and 30.\n");
+                return 1; // Exit with an error
+            }
+        }
+        if (strncasecmp_custom(argv[i], "-fontName:", 10) == 0) {
+            char *fontValue = argv[i] + 10;
+            if (endsWithFont(fontValue)) {
+                strncpy(fontPrefs->name, fontValue, 255);
+                fontPrefs->name[31] = '\0';  // Ensure null termination
+                fontPrefs->overRide = 1;
+            } else {
+                printf("Error: -fontName must end with '.font'.\n");
+                return 1;
+            }
+        }
+
+        if (strncasecmp_custom(argv[i], "-fontSize:", 10) == 0) {
+            int value = atoi(argv[i] + 10);
+            if (value >= 1 && value <= 30) {
+                fontPrefs->size = value;
+                fontPrefs->overRide = 1;
+            } else {
+                printf("Error: -fontSize must be between 1 and 30.\n");
+                return 1;
+            }
+        }
+    
+
     }
+
+    // Ensure both fontName and fontSize are set together
+    if ((fontNameSet && !fontSizeSet) || (!fontNameSet && fontSizeSet)) {
+        printf("Error: Both -fontName and -fontSize must be set together.\n");
+        return 1;
+    }
+
+    // Debug output
+
+    if (fontNameSet && fontSizeSet) {
+        printf("Font: %s, Size: %d\n", fontPrefs->name, fontPrefs->size);
+        append_to_log("Font: %s, Size: %d\n", fontPrefs->name, fontPrefs->size);
+    }
+
+    append_to_log("ICON_SPACING_Y: %d\n", ICON_SPACING_Y);
+    append_to_log("ICON_SPACING_X: %d\n", ICON_SPACING_X);
+
 
     
     diskInfo = GetDeviceInfo(filePath);
@@ -365,15 +450,16 @@ int main(int argc, char **argv)
     /* Start timer */
     start_time = time(NULL);
 
-    /*getDeviceNameFromPath(filePath, deviceName, 25);
-printf("is device %s read only? %d\n",deviceName,IsDeviceReadOnly(deviceName));
+    getDeviceNameFromPath(filePath, deviceName, 25);
+//printf("is device %s read only? %d\n",deviceName,IsDeviceReadOnly(deviceName));
 
     if (IsDeviceReadOnly(deviceName))
     {
         printf("\nDevice %s is read-only.  Exiting.\n", deviceName);
+        append_to_log("\nDevice %s is read-only.  Exiting.\n", deviceName);
         return RETURN_FAIL;
     }
-*/
+//*/
 //InitializeDefaultWorkbenchSettings(&prefsWorkbench);
 
     fetchWorkbenchSettings(&prefsWorkbench);
@@ -543,4 +629,10 @@ append_to_log("%ld seconds\n", seconds);
     FreeIconErrorList(&iconsErrorTracker);
 
     return RETURN_OK;
+}
+
+// Check if string ends with ".font"
+int endsWithFont(const char *str) {
+    size_t len = strlen(str);
+    return (len > 5 && strcmp(str + len - 5, ".font") == 0);
 }

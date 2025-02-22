@@ -4,7 +4,9 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "C:/Amiga/AmigaIncludes/**"
+                "C:/Amiga/AmigaIncludes/**",
+                "C:/Amiga/SDK/Include_H**",
+                "C:/VBCC/targets/m68k-amigaos/include**"
             ],
             "defines": [],
             "windowsSdkVersion": "10.0.18362.0",
