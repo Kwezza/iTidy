@@ -27,8 +27,10 @@
 #include "utilities.h"
 #include "writeLog.h"
 #include "icon_misc.h"
+#include "Settings/get_fonts.h"
 
 struct TextFont *iconFont;
+
 
 
 #define FP_WBFONT 0
@@ -167,16 +169,21 @@ void GetWorkbenchIconFont(char *fontName, int *fontSize)
 // Function to load and apply the Workbench Icon Font
 void SetIconFont()
 {
-    char fontName[32];
-    int fontSize;
-    struct TextAttr textAttr; // Declare separately (no C99 struct init)
+    //char fontName[32];
+    //int fontSize;
+    struct TextAttr textAttr;
 
     // Get the Workbench icon font settings
-    GetWorkbenchIconFont(fontName, &fontSize);
+    //    GetWorkbenchIconFont(fontName, &fontSize);
+    //fontPrefs = (FontPref *)malloc(sizeof(FontPref));
+    //fontPrefs = get_fonts();
+    //strncpy(fontName, fontPrefs->name, 31);
+    //fontSize = fontPrefs->size;
+
 
     // Set up TextAttr struct
-    textAttr.ta_Name = fontName;
-    textAttr.ta_YSize = fontSize;
+    textAttr.ta_Name = fontPrefs->name;
+    textAttr.ta_YSize = fontPrefs->size;
     textAttr.ta_Style = 0;
     textAttr.ta_Flags = 0;
 
@@ -186,7 +193,7 @@ void SetIconFont()
     if (iconFont)
     {
         SetFont(rastPort, iconFont);
-        printf("Applied Workbench Icon Font: %s, Size: %d\n", fontName, fontSize);
+        printf("Workbench Icon Font: %s (%dpt) Applied\n", fontPrefs->name, fontPrefs->size);
     }
     else
     {

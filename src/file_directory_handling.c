@@ -1,10 +1,14 @@
 #include <devices/trackdisk.h>
+
+
 #include "file_directory_handling.h"
 #include "utilities.h"
 #include "spinner.h"
 #include "writeLog.h"
 #include "icon_misc.h"
 #include "dos/getDiskDetails.h"
+#include "icon_management.h"
+
 
 
 #define MAX_DEVICE_NAME_LEN 24  // Define a maximum size for the device name buffer
@@ -891,4 +895,33 @@ BOOL isDirectory(const char *path)
     free(pathWithoutInfo); /* Free the allocated memory */
 
     return result;
+}
+
+BOOL IsDeviceReadOnly(const char *deviceName) {
+    BPTR lock;
+    struct InfoData infoData;
+    BOOL isReadOnly = FALSE;
+
+    // Attempt to lock the device with a shared lock
+    lock = Lock(deviceName, SHARED_LOCK);
+    if (lock) {
+        // Get disk information
+        if (Info(lock, &infoData)) {
+            // Check if the disk state indicates write-protection
+            if (infoData.id_DiskState == ID_WRITE_PROTECTED) {
+                isReadOnly = TRUE;  // Disk is write-protected
+            } else {
+                isReadOnly = FALSE;  // Disk is not write-protected
+            }
+        } else {
+            // Info() failed; assume not read-only unless proven otherwise
+            isReadOnly = FALSE;
+        }
+        UnLock(lock);
+    } else {
+        // Lock failed (e.g., device not present); treat as not read-only
+        isReadOnly = FALSE;
+    }
+
+    return isReadOnly;
 }

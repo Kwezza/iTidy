@@ -1,102 +1,107 @@
-[13:47:44] iTidy V1.0.0
-[13:47:44] by Kerry Thompson
-[13:47:44] Version compiled on Feb 11 2025 at 13:47:18
-[13:47:44] Debug build
-[13:47:44] Workbench version: 47.100
-[13:47:44] -------------------------
-[13:47:44] Workbench Settings Dump:
-[13:47:44] -------------------------
-[13:47:44] Borderless: No
-[13:47:44] Emboss Rectangle Size: 0
-[13:47:44] Max Name Length: 0
-[13:47:44] New Icons Support: No
-[13:47:44] Color Icon Support: No
-[13:47:44] Disable Title Bar: No
-[13:47:44] Disable Volume Gauge: No
-[13:47:44] -------------------------
-[13:47:44] Initialized default workbench settings
-[13:47:44] -------------------------
-[13:47:44] Workbench Settings Dump:
-[13:47:44] -------------------------
-[13:47:44] Borderless: No
-[13:47:44] Emboss Rectangle Size: 3
-[13:47:44] Max Name Length: 25
-[13:47:44] New Icons Support: Yes
-[13:47:44] Color Icon Support: Yes
-[13:47:44] Disable Title Bar: No
-[13:47:44] Disable Volume Gauge: No
-[13:47:44] -------------------------
-[13:47:44] IControl Preferences Dump:
-[13:47:44] --------------------------
-[13:47:44] Flags: 0x8001801E
-[13:47:44] Boolean Settings:
-[13:47:44]   Coerce Colors: No
-[13:47:44]   Coerce Lace: Yes
-[13:47:44]   String Gadget Filter: Yes
-[13:47:44]   Menu Snap: Yes
-[13:47:44]   Mode Promote: Yes
-[13:47:44]   Correct Ratio: No
-[13:47:44]   Off-Screen Windows: Yes
-[13:47:44]   More Size Gadgets: Yes
-[13:47:44]   Versioned: Yes
-[13:47:44]   Legacy Look: No
-[13:47:44] Aspect Ratios Enabled:
-[13:47:44]   9:7
-[13:47:44] Title Bar Heights:
-[13:47:44]   Screen Extra Height: 0
-[13:47:44]   Window Extra Height: 0
-[13:47:44] Title Bar Settings:
-[13:47:44]   Title Bar 50: No
-[13:47:44]   Title Bar 67: No
-[13:47:44]   Title Bar 75: No
-[13:47:44]   Title Bar 100: No
-[13:47:44] Square Proportional Look: No
-[13:47:44] UI Element Dimensions:
-[13:47:44]   Left Bar Width: 4
-[13:47:44]   Border Width: 18, Border Height: 14
-[13:47:44]   Title Height: 16, Window Height: 16
-[13:47:44]   Volume Gauge Width: 19
-[13:47:44] --------------------------
-[13:47:44] Getting any 'left out' icons for device: dh0
-[13:47:44] Found left out icon: dh0:Programs/Roadie.info
-[13:47:44] Found left out icon: dh0:Programs/DOpus/DirectoryOpus.info
-[13:47:45] Workbench screen width 0, height 0
-[13:47:45] ======================================================
-[13:47:45] Tidying folder: dh0:
-[13:47:45] ======================================================
-[13:47:45] ID  | Width  | Height | TxtW   | TxtH   | MaxW   | MaxH   | X        | Y        | Border | Type     | Icon                
-[13:47:45] ----------------------------------------------------------------------------------------------------------------
-[13:47:45] 0   | 60     | 24     | 40     | 8      | 63     | 31     | 13       | 56       | 3      | Standard | Prefs.info          
-[13:47:45] 1   | 60     | 24     | 56     | 8      | 63     | 31     | 13       | 105      | 3      | Standard | Storage.info        
-[13:47:45] 2   | 60     | 24     | 32     | 8      | 63     | 31     | 13       | 7        | 3      | Standard | Devs.info           
-[13:47:45] 3   | 60     | 24     | 72     | 8      | 72     | 31     | 94       | 7        | 3      | Standard | Expansion.info      
-[13:47:45] 4   | 60     | 24     | 48     | 8      | 63     | 31     | 94       | 105      | 3      | Standard | System.info         
-[13:47:45] 5   | 60     | 24     | 72     | 8      | 72     | 31     | 13       | 151      | 3      | Standard | Utilities.info      
-[13:47:45] 6   | 60     | 24     | 72     | 8      | 72     | 31     | 94       | 151      | 3      | Standard | WBStartup.info      
-[13:47:45] 7   | 60     | 24     | 40     | 8      | 63     | 31     | 171      | 105      | 3      | Standard | Tools.info          
-[13:47:45] 8   | 60     | 24     | 32     | 8      | 63     | 31     | 171      | 7        | 3      | Standard | Help.info           
-[13:47:45] 9   | 60     | 24     | 64     | 8      | 64     | 31     | 94       | 56       | 3      | Standard | Programs.info       
-[13:47:45] 10  | 60     | 24     | 16     | 8      | 63     | 31     | 171      | 56       | 3      | Standard | sc.info             
-[13:47:45] Saved folder settings ok for dh0:Disk
-[13:47:45] ID  | X    | Y    | Icon                                    
-[13:47:45] --------------------------------------------------------------
-[13:47:45] 0   | 13   | 7    | Devs.info                               
-[13:47:45] 1   | 94   | 7    | Expansion.info                          
-[13:47:45] 2   | 171  | 7    | Help.info                               
-[13:47:45] 3   | 13   | 56   | Prefs.info                              
-[13:47:45] 4   | 94   | 56   | Programs.info                           
-[13:47:45] 5   | 171  | 56   | sc.info                                 
-[13:47:45] 6   | 13   | 105  | Storage.info                            
-[13:47:45] 7   | 94   | 105  | System.info                             
-[13:47:45] 8   | 171  | 105  | Tools.info                              
-[13:47:45] 9   | 13   | 151  | Utilities.info                          
-[13:47:45] 10  | 94   | 151  | WBStartup.info                          
-[13:47:45] Completed arranging icons in 4 rows with 3 icons per row. Path: dh0:
-[13:47:46] 
+[13:58:49] iTidy V1.0.0
+[13:58:49] by Kerry Thompson
+[13:58:49] Version compiled on Feb 24 2025 at 13:57:37
+[13:58:49] Debug build
+[13:58:49] Workbench version: 47.100
+[13:58:49] ICON_SPACING_Y: 7
+[13:58:49] ICON_SPACING_X: 9
+[13:58:49] Found font: XEN.font, size: 8
+[13:58:49] Workbench Icon Font (getIconFont): XEN.font, Size: 8
+[13:58:49] -------------------------
+[13:58:49] Workbench Settings Dump:
+[13:58:49] -------------------------
+[13:58:49] Borderless: No
+[13:58:49] Emboss Rectangle Size: 0
+[13:58:49] Max Name Length: 0
+[13:58:49] New Icons Support: No
+[13:58:49] Color Icon Support: No
+[13:58:49] Disable Title Bar: No
+[13:58:49] Disable Volume Gauge: No
+[13:58:49] -------------------------
+[13:58:49] Initialized default workbench settings
+[13:58:49] Failed to open workbench settings file.  Possibly not yet set.  Defaults assumed.
+[13:58:49] -------------------------
+[13:58:49] Workbench Settings Dump:
+[13:58:49] -------------------------
+[13:58:49] Borderless: No
+[13:58:49] Emboss Rectangle Size: 3
+[13:58:49] Max Name Length: 25
+[13:58:49] New Icons Support: Yes
+[13:58:49] Color Icon Support: Yes
+[13:58:49] Disable Title Bar: No
+[13:58:49] Disable Volume Gauge: No
+[13:58:49] -------------------------
+[13:58:49] IControl Preferences Dump:
+[13:58:49] --------------------------
+[13:58:49] Flags: 0x8001801E
+[13:58:49] Boolean Settings:
+[13:58:49]   Coerce Colors: No
+[13:58:49]   Coerce Lace: Yes
+[13:58:49]   String Gadget Filter: Yes
+[13:58:49]   Menu Snap: Yes
+[13:58:49]   Mode Promote: Yes
+[13:58:49]   Correct Ratio: No
+[13:58:49]   Off-Screen Windows: Yes
+[13:58:49]   More Size Gadgets: Yes
+[13:58:49]   Versioned: Yes
+[13:58:49]   Legacy Look: No
+[13:58:49] Aspect Ratios Enabled:
+[13:58:49]   9:7
+[13:58:49] Title Bar Heights:
+[13:58:49]   Screen Extra Height: 0
+[13:58:49]   Window Extra Height: 0
+[13:58:49] Title Bar Settings:
+[13:58:49]   Title Bar 50: No
+[13:58:49]   Title Bar 67: No
+[13:58:49]   Title Bar 75: No
+[13:58:49]   Title Bar 100: No
+[13:58:49] Square Proportional Look: No
+[13:58:49] UI Element Dimensions:
+[13:58:49]   Left Bar Width: 4
+[13:58:49]   Border Width: 18, Border Height: 14
+[13:58:49]   Title Height: 16, Window Height: 16
+[13:58:49]   Volume Gauge Width: 19
+[13:58:49] --------------------------
+[13:58:49] Getting any 'left out' icons for device: sys
+[13:58:49] Found left out icon: sys:Programs/Roadie.info
+[13:58:49] Found left out icon: sys:Programs/DOpus/DirectoryOpus.info
+[13:58:49] Workbench screen width 0, height 0
+[13:58:49] ======================================================
+[13:58:49] Tidying folder: sys:
+[13:58:49] ======================================================
+[13:58:49] ID  | Width  | Height | TxtW   | TxtH   | MaxW   | MaxH   | X        | Y        | Border | Type     | Icon                
+[13:58:49] ----------------------------------------------------------------------------------------------------------------
+[13:58:49] 0   | 60     | 24     | 30     | 8      | 63     | 31     | 9        | 54       | 3      | Standard | Prefs.info          
+[13:58:49] 1   | 60     | 24     | 42     | 8      | 63     | 31     | 9        | 101      | 3      | Standard | Storage.info        
+[13:58:49] 2   | 60     | 24     | 24     | 8      | 63     | 31     | 9        | 7        | 3      | Standard | Devs.info           
+[13:58:49] 3   | 60     | 24     | 54     | 8      | 63     | 31     | 81       | 7        | 3      | Standard | Expansion.info      
+[13:58:49] 4   | 60     | 24     | 36     | 8      | 63     | 31     | 81       | 101      | 3      | Standard | System.info         
+[13:58:49] 5   | 60     | 24     | 54     | 8      | 63     | 31     | 9        | 145      | 3      | Standard | Utilities.info      
+[13:58:49] 6   | 60     | 24     | 54     | 8      | 63     | 31     | 81       | 145      | 3      | Standard | WBStartup.info      
+[13:58:49] 7   | 60     | 24     | 30     | 8      | 63     | 31     | 153      | 101      | 3      | Standard | Tools.info          
+[13:58:49] 8   | 60     | 24     | 24     | 8      | 63     | 31     | 153      | 7        | 3      | Standard | Help.info           
+[13:58:49] 9   | 60     | 24     | 48     | 8      | 63     | 31     | 81       | 54       | 3      | Standard | Programs.info       
+[13:58:49] 10  | 60     | 24     | 12     | 8      | 63     | 31     | 153      | 54       | 3      | Standard | sc.info             
+[13:58:49] Saved folder settings ok for sys:Disk
+[13:58:49] ID  | X    | Y    | Icon                                    
+[13:58:49] --------------------------------------------------------------
+[13:58:49] 0   | 9    | 7    | Devs.info                               
+[13:58:49] 1   | 81   | 7    | Expansion.info                          
+[13:58:49] 2   | 153  | 7    | Help.info                               
+[13:58:49] 3   | 9    | 54   | Prefs.info                              
+[13:58:49] 4   | 81   | 54   | Programs.info                           
+[13:58:49] 5   | 153  | 54   | sc.info                                 
+[13:58:49] 6   | 9    | 101  | Storage.info                            
+[13:58:49] 7   | 81   | 101  | System.info                             
+[13:58:49] 8   | 153  | 101  | Tools.info                              
+[13:58:49] 9   | 9    | 145  | Utilities.info                          
+[13:58:49] 10  | 81   | 145  | WBStartup.info                          
+[13:58:49] Completed arranging icons in 4 rows with 3 icons per row. Path: sys:
+[13:58:50] 
 
 Total icons tidied: 11
-[13:47:46]   - Standard icons:    11
-[13:47:46]   - NewIcon icons:     0
-[13:47:46]   - OS3.5 style icons: 0
-[13:47:46] 
-iTidy completed[13:47:46]  successfully in [13:47:46] 1 seconds
+[13:58:50]   - Standard icons:    11
+[13:58:50]   - NewIcon icons:     0
+[13:58:50]   - OS3.5 style icons: 0
+[13:58:50] 
+iTidy completed[13:58:50]  successfully in [13:58:50] 0 seconds

@@ -42,6 +42,9 @@
 #include "dos/getDiskDetails.h"
 #include "Settings/get_fonts.h"
 
+//#include "icon_management.h"
+//#include "file_directory_handling.h"
+
 // Define the DEBUG macro to enable debug prints
 #define DEBUG
 //#define DEBUGLocks
@@ -155,6 +158,9 @@ extern BOOL user_folderFlags;
 extern BOOL user_stripIconPosition;
 extern BOOL user_forceStandardIcons;
 
-//extern FontPref *fontPrefs;
 
+
+void AddIconError(IconErrorTrackerStruct *tracker, STRPTR filePath);
+void FreeIconErrorList(IconErrorTrackerStruct *tracker);
+int endsWithFont(const char *str) ;
 #endif // MAIN_H

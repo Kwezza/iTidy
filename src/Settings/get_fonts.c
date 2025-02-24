@@ -7,7 +7,7 @@
 #include "get_fonts.h"
 #include "main.h"
 //#include "file_directory_handling.h"
-
+FontPref *fontPrefs = NULL;
 
 FontPref *getIconFont(void) {
 
@@ -20,7 +20,9 @@ FontPref *getIconFont(void) {
     // workbench 2.x font prefs
     else if (does_file_or_folder_exist("ENV:sys/wbfont.prefs", 0))
         ret = extractFonts("ENV:sys/wbfont.prefs");
-
+    #ifdef DEBUG
+    append_to_log("Workbench Icon Font (getIconFont): %s, Size: %d\n", ret->name, ret->size);
+    #endif
     return ret;
 }
 
@@ -111,6 +113,11 @@ FontPref *extractFonts(const char *filename) {
         /* No FONT section was found in the file; return the default font. */
         return defaultFont();
     }
+
+    #ifdef DEBUG
+        append_to_log("Found font: %s, size: %d\n", selectedFont->name, selectedFont->size);
+    #endif
+
     return selectedFont;
 }
 

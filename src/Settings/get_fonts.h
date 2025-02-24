@@ -19,6 +19,7 @@ typedef struct FontPref {
     unsigned int size;
     int overRide;
 } FontPref;
+//extern FontPref *fontPrefs;
 extern FontPref *fontPrefs;
 
 FontPref *getIconFont(void);

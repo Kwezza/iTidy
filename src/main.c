@@ -74,14 +74,15 @@
 #include "Settings/IControlPrefs.h"
 #include "Settings/WorkbenchPrefs.h"
 #include "main.h"
-#include "icon_management.h"
+//#include "icon_management.h"
 #include "window_management.h"
-#include "file_directory_handling.h"
 #include "utilities.h"
 #include "spinner.h"
 #include "writeLog.h"
 #include "icon_misc.h"
 #include "dos/getDiskDetails.h"
+#include "Settings/get_fonts.h"
+//#include "file_directory_handling.h"
 
 
 /* Define global variables */
@@ -114,7 +115,11 @@ BOOL user_folderFlags;
 BOOL user_stripIconPosition;
 BOOL user_forceStandardIcons;
 
-FontPref *fontPrefs = NULL;
+
+
+
+// Forward declaration for IsDeviceReadOnly
+BOOL IsDeviceReadOnly(const char *deviceName);
 
 #define VERSION_STRING "$VER: iTidy 1.0 (15.07.2024)"
 const char version[] = VERSION_STRING;
@@ -267,7 +272,7 @@ int main(int argc, char **argv)
     user_folderFlags = DDFLAGS_SHOWICONS;
     user_cleanupWHDLoadFolders = TRUE;
     user_stripIconPosition = FALSE;
-    fontPrefs->overRide = 0;
+    //fontPrefs->overRide = 0;
 
     if (setupTimer() != 0)
     {
@@ -276,8 +281,8 @@ int main(int argc, char **argv)
     }
 
     //used to store the current font the user has set in the workbench prefs
-    fontPrefs = (FontPref *)malloc(sizeof(FontPref));
-    if (!fontPrefs) {
+    fontPrefs = AllocVec(sizeof(struct FontPrefs), MEMF_CLEAR);
+   if (!fontPrefs) {
         printf("Error: Failed to allocate memory for fontPrefs\n");
         return 1;
     }
@@ -437,30 +442,44 @@ int main(int argc, char **argv)
 
 
     
-    diskInfo = GetDeviceInfo(filePath);
-    if (diskInfo.writeProtected)
-    {
-        printf("Device %s is read-only.  Exiting.\n\n", diskInfo.deviceName);
-        return RETURN_FAIL;
-    }
-    printf("Tidying icons in %s\n", filePath);
+ //   diskInfo = GetDeviceInfo(filePath);
+ //   if (diskInfo.writeProtected)
+ //   {
+ //       printf("Device %s is read-only.  Exiting.\n\n", diskInfo.deviceName);
+ //       return RETURN_FAIL;
+ //   }
+ //   printf("Tidying icons in %s\n", filePath);
 
     //printf("\ntest Device %s has %d%s\n", diskInfo.deviceName,diskInfo.free,diskInfo.storageUnits);
 
     /* Start timer */
-    start_time = time(NULL);
+
 
     getDeviceNameFromPath(filePath, deviceName, 25);
+    if (deviceName[0] == '\0') {
+        printf("\nError: unable to get the device name from the file path '%s'.  PLease use a full file path.  For example DF0:MyDir %s\n", filePath);
+        #ifdef DEBUG
+        append_to_log("\nUnable to find the device in the user supplied path of '%s'\n", deviceName);
+        #endif
+        return RETURN_FAIL;
+        // String is empty
+    }
 //printf("is device %s read only? %d\n",deviceName,IsDeviceReadOnly(deviceName));
 
     if (IsDeviceReadOnly(deviceName))
     {
         printf("\nDevice %s is read-only.  Exiting.\n", deviceName);
-        append_to_log("\nDevice %s is read-only.  Exiting.\n", deviceName);
+        #ifdef DEBUG
+            append_to_log("\nDevice %s is read-only.  Exiting.\n", deviceName);
+        #endif
         return RETURN_FAIL;
     }
+
+    start_time = time(NULL);
 //*/
 //InitializeDefaultWorkbenchSettings(&prefsWorkbench);
+
+    fontPrefs=getIconFont();
 
     fetchWorkbenchSettings(&prefsWorkbench);
     #ifdef DEBUG

@@ -35,6 +35,7 @@
         "ctype.h": "c",
         "font.h": "c",
         "trackdisk.h": "c",
-        "getdiskdetails.h": "c"
+        "getdiskdetails.h": "c",
+        "get_fonts.h": "c"
     }
 }
