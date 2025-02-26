@@ -46,7 +46,7 @@
 //#include "file_directory_handling.h"
 
 // Define the DEBUG macro to enable debug prints
-#define DEBUG
+//#define DEBUG
 //#define DEBUGLocks
 
 #define VERSION "1.0.0"
@@ -150,6 +150,8 @@ extern int count_icon_type_standard;
 extern int count_icon_type_newIcon;
 extern int count_icon_type_os35;
 extern int count_icon_corrupted;
+
+extern char filePath[256];
 
 extern BOOL user_dontResize;
 extern BOOL user_cleanupWHDLoadFolders;

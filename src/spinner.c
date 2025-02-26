@@ -37,6 +37,11 @@ void updateCursor(void) {
     }
 }
 
+void eraseSpinner(void) {
+    printf("\r  \r");
+    fflush(stdout);
+}
+
 int setupTimer(void) {
     // Open the timer device
     if (OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest *)&timereq, 0) != 0) {

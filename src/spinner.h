@@ -10,5 +10,6 @@ ULONG spinnerTimer(void);
 void updateCursor(void);
 int setupTimer(void);
 void disposeTimer(void);
+void eraseSpinner(void);
 
 #endif // SPINNER_H

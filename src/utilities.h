@@ -1,5 +1,7 @@
 #ifndef utilities_h
 #define utilities_h
+
+#define utilities_h
 #include <graphics/text.h>
 #include <exec/types.h>
 #include <graphics/rastport.h>
@@ -24,4 +26,5 @@ UWORD GetKickstartVersion(void);
 int GetWorkbenchVersion(void);
 char* convertWBVersionWithDot(int number);
 int endsWithInfo(const char *filePath);
+char *removeTextFromStartOfString(const char *str, const char *prefix);
 #endif // utilities_h

@@ -103,6 +103,9 @@ int icon_type_standard = 0;
 int icon_type_newIcon = 1;
 int icon_type_os35 = 2;
 
+
+char filePath[256];
+
 int count_icon_type_standard = 0;
 int count_icon_type_newIcon = 0;
 int count_icon_type_os35 = 0;
@@ -253,14 +256,14 @@ void print_usage(const char *program_name)
 
 int main(int argc, char **argv)
 {
-    char filePath[256];
+    
     int i;
     int workbenchVersion = GetWorkbenchVersion();
     int numLeftOutIcons = 0;
     char deviceName[25];
     BOOL iterateDIRs = FALSE;
     long elapsed_seconds, hours, minutes, seconds, start_time;
-    DeviceInfo diskInfo;
+    //DeviceInfo diskInfo;
     int fontNameSet = 0;
     int fontSizeSet = 0;
 
@@ -273,6 +276,7 @@ int main(int argc, char **argv)
     user_cleanupWHDLoadFolders = TRUE;
     user_stripIconPosition = FALSE;
     //fontPrefs->overRide = 0;
+    printf("\n");
 
     if (setupTimer() != 0)
     {
@@ -302,13 +306,17 @@ int main(int argc, char **argv)
     // AddIconError(&iconsErrorTracker, "TH0:bad_icon.info");
     // AddIconError(&iconsErrorTracker, "TH0:corrupt_icon.info");
     // count_icon_corrupted=2;
+    printf( "==================================================\n" );
+    printf(textBold "   iTidy" textReset " V%s - Amiga Workbench Icon Tidier\n", VERSION);
+    printf("==================================================\n\n" );
+    printf("   by Kerry Thompson\n");
+    printf("   compiled: %s at %s\n\n", __DATE__, __TIME__);
 
-    printf(textBold "iTidy" textReset " V%s\nby Kerry Thompson\n", VERSION);
-    printf("Version compiled on %s at %s\n\n", __DATE__, __TIME__);
 
+    initialize_logfile();
 #ifdef DEBUG
     initialize_logfile();
-    append_to_log("iTidy V%s\n", VERSION);
+    append_to_log("iTidy V%s\n - Amiga Workbench Icon Tidier", VERSION);
     append_to_log("by Kerry Thompson\n");
     append_to_log("Version compiled on %s at %s\n", __DATE__, __TIME__);
     append_to_log("Debug build\n");
@@ -434,12 +442,15 @@ int main(int argc, char **argv)
 
     if (fontNameSet && fontSizeSet) {
         printf("Font: %s, Size: %d\n", fontPrefs->name, fontPrefs->size);
+        #ifdef DEBUG
         append_to_log("Font: %s, Size: %d\n", fontPrefs->name, fontPrefs->size);
+        #endif
     }
 
+    #ifdef DEBUG
     append_to_log("ICON_SPACING_Y: %d\n", ICON_SPACING_Y);
     append_to_log("ICON_SPACING_X: %d\n", ICON_SPACING_X);
-
+    #endif
 
     
  //   diskInfo = GetDeviceInfo(filePath);
@@ -495,7 +506,7 @@ int main(int argc, char **argv)
 
     if (numLeftOutIcons > 0)
     {
-        printf("\nFound %d icons left out on the Workbench on device '%s'\n\n", numLeftOutIcons, deviceName);
+        printf("Found %d icons placed on Workbench from '%s'\n\n", numLeftOutIcons, deviceName);
     }
 
 #ifdef DEBUG
@@ -514,6 +525,7 @@ int main(int argc, char **argv)
     #ifdef DEBUG
     append_to_log("Workbench screen width %d, height %d\n", screenWidth,screenHight);
     #endif
+    printf("\nTidying folders under: %s\n",filePath);
     ProcessDirectory(filePath, iterateDIRs, 0);
     CleanupWindow();
     disposeTimer();
@@ -524,10 +536,11 @@ int main(int argc, char **argv)
     minutes = (elapsed_seconds % 3600) / 60;
     seconds = elapsed_seconds % 60;
 
-    printf("\n\nTotal icons tidied: %d\n" textReset, count_icon_type_newIcon + count_icon_type_standard + count_icon_type_os35);
-    printf(textWhite "  -" textReset " Standard icons:    %d\n", count_icon_type_standard);
-    printf(textWhite "  -" textReset " NewIcon icons:     %d\n", count_icon_type_newIcon);
-    printf(textWhite "  -" textReset " OS3.5 style icons: %d\n", count_icon_type_os35);
+    printf( "\n\n==================================================\n" );
+    printf(textBold "Icons Tidied Summary:\n" textReset);
+    printf(textWhite "  " textReset " Standard icons:    %d\n", count_icon_type_standard);
+    printf(textWhite "  " textReset " NewIcon icons:     %d\n", count_icon_type_newIcon);
+    printf(textWhite "  " textReset " OS3.5 style icons: %d\n", count_icon_type_os35);
     if (iconsErrorTracker.count > 0)
     {
         printf("\nTotal corrupted icons found: %d\n" textReset, iconsErrorTracker.count);
@@ -543,18 +556,18 @@ int main(int argc, char **argv)
         printf(textWhite "  1" textReset " Replace the icon files.\n");
         printf(textWhite "  2" textReset " Restore from a backup if available.\n");
     }
-
+    printf( "==================================================\n\n" );
     /* Clean up memory */
     
 
-    printf("\niTidy completed");
+    printf("\niTidy ");
     if (iconsErrorTracker.count > 0)
     {
-        printf(", with some errors, in ");
+        printf("completed, with some errors, in ");
     }
     else
     {
-        printf(" successfully in ");
+        printf(textBold "completed successfully " textReset "in ");
     }
 
     if (hours > 0)

@@ -142,7 +142,7 @@ BOOL GetStandardIconSize(const char *filePath, IconSize *iconSize)
     struct DiskObject *diskObject;
     char filePathCopy[256]; /* Buffer to hold the modified file path */
     int filePathLength;
-    LONG error; /* To store the IoErr() value */
+    //LONG error; /* To store the IoErr() value */
 
     /* Check for NULL pointers */
     if (filePath == NULL || iconSize == NULL)

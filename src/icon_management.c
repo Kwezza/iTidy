@@ -24,6 +24,7 @@
 #include "writeLog.h"
 #include "icon_misc.h"
 #include "dos/getDiskDetails.h"
+
 void FreeIconArray(IconArray *iconArray)
 {
 
@@ -324,6 +325,7 @@ append_to_log("-------------------------\n");
                     }
                 }
             }
+            eraseSpinner();
         }
     }
 
@@ -393,6 +395,9 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     int rowStartIndex, maxRowHeight; /* For storing the starting index and max height of the current row */
     int borderSpacingForIconsWithNoSpacing = 0;
 
+    char *temp1;
+    char *adjustedTemp ;
+
     /* Initialize variables */
     x = ICON_START_X;
     y = ICON_START_Y;
@@ -405,7 +410,21 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     rowCount = 0;
     rowStartIndex = 0;
 
-    printf(textWhite "Tidying folder: " textReset "%s\n", dirPath);
+
+
+    temp1= removeTextFromStartOfString(dirPath, filePath);
+    if (temp1 && *temp1 != '\0') {  /* Ensure temp1 is not NULL and not empty */
+        /* If the first character is '/', adjust the pointer */
+        adjustedTemp = (*temp1 == '/') ? temp1 + 1 : temp1;
+    
+        printf("  - %s\n", adjustedTemp);
+    }
+    
+    if (temp1) {
+        FreeVec(temp1);  /* Free allocated memory */
+    }
+
+    //printf("  %s\n", dirPath);
     #ifdef DEBUG
         append_to_log("======================================================\n");
         append_to_log("Tidying folder: %s\n", dirPath);
@@ -590,6 +609,7 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
         append_to_log("Moving to next row: y = %ld, rowStartIndex = %d, rowCount = %d\n", y, rowStartIndex, rowCount);
 #endif
     }
+    eraseSpinner();
 
     /* Calculate dynamic padding */
     dynamicPaddingY = MAX(10, ICON_START_Y / 2); /* Ensure at least 10 pixels padding */

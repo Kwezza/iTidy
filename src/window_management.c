@@ -163,7 +163,9 @@ void GetWorkbenchIconFont(char *fontName, int *fontSize)
     FreeIFF(iff);
 
     // Debug Output
+    #ifdef DEBUG
     printf("Workbench Icon Font: %s, Size: %d\n", fontName, *fontSize);
+    #endif
 }
 
 // Function to load and apply the Workbench Icon Font
@@ -193,7 +195,7 @@ void SetIconFont()
     if (iconFont)
     {
         SetFont(rastPort, iconFont);
-        printf("Workbench Icon Font: %s (%dpt) Applied\n", fontPrefs->name, fontPrefs->size);
+        printf( textBold "Workbench Icon Font:" textReset " %s (%dpt) loaded\n", fontPrefs->name, fontPrefs->size);
     }
     else
     {

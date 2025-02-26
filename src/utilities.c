@@ -7,6 +7,9 @@
 #include <proto/dos.h>
 #include <dos/dos.h>
 #include <math.h>
+#include <exec/memory.h>
+#include <string.h>
+
 
 #include "main.h"
 #include "writeLog.h"
@@ -400,4 +403,49 @@ int endsWithInfo(const char *filePath) {
     }
 
     return TRUE;
+}
+
+/**
+ * Removes a specified prefix from the start of a string.
+ * If the prefix is found at the beginning, the function returns a new string
+ * with the prefix removed. Otherwise, it returns a copy of the original string.
+ *
+ * The returned string is allocated using AllocVec(), so the caller must free it
+ * with FreeVec().
+ *
+ * @param str The original string.
+ * @param prefix The prefix to remove.
+ * @return A new string with the prefix removed, or a copy of the original if no match.
+ */
+char *removeTextFromStartOfString(const char *str, const char *prefix) {
+    size_t strLen;
+    size_t prefixLen;
+    char *copy;
+    char *newStr;
+
+    /* Validate input */
+    if (!str || !prefix) {
+        return NULL;
+    }
+
+    strLen = strlen(str);
+    prefixLen = strlen(prefix);
+
+    /* Check if the prefix matches */
+    if (prefixLen > strLen || strncmp(str, prefix, prefixLen) != 0) {
+        /* Prefix not found, return a copy of the original string */
+        copy = (char *)AllocVec(strLen + 1, MEMF_CLEAR);
+        if (copy) {
+            strcpy(copy, str);
+        }
+        return copy;
+    }
+
+    /* Create new string with prefix removed */
+    newStr = (char *)AllocVec(strLen - prefixLen + 1, MEMF_CLEAR);
+    if (newStr) {
+        strcpy(newStr, str + prefixLen);
+    }
+
+    return newStr;
 }

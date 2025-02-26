@@ -316,6 +316,7 @@ append_to_log("%-3d | %-4d | %-4d | %-40s\n", i, currentIcon->icon_x, currentIco
             fprintf(stderr, "Error: Invalid icon: %s\n", currentIcon->icon_full_path);
         }
     }
+    eraseSpinner();
     return 0; // Return success
 }
 
