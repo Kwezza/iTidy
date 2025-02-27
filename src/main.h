@@ -41,6 +41,7 @@
 #include "icon_misc.h"
 #include "dos/getDiskDetails.h"
 #include "Settings/get_fonts.h"
+#include "cli_utilities.h"
 
 //#include "icon_management.h"
 //#include "file_directory_handling.h"
@@ -80,6 +81,7 @@
 #define textReverse "\x1B[7m"
 #define textUnderline "\x1B[4m"
 #define textWhite "\x1B[32m"
+#define textClearLine "\x1B[1G\x1B[K"
 
 typedef struct {
     int left;

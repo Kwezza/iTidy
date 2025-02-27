@@ -82,6 +82,7 @@
 #include "icon_misc.h"
 #include "dos/getDiskDetails.h"
 #include "Settings/get_fonts.h"
+#include "cli_utilities.h"
 //#include "file_directory_handling.h"
 
 
@@ -118,6 +119,36 @@ BOOL user_folderFlags;
 BOOL user_stripIconPosition;
 BOOL user_forceStandardIcons;
 
+/* Define the help text as an array of strings. Each element represents a line. */
+static const char *help_text[] = {
+    textBold textBlue "iTidy V1.0.0" textReset " - Tidy icons and resize folder windows from CLI.",
+    "",
+    textBold "Usage:" textReset,
+    "  " textWhite "iTidy <directory> [options]" textReset,
+    "",
+    textBold "Options:" textReset,
+    "  " textBold "-subdirs     " textReset "Recursively process subfolders.",
+    "  " textBold "-dontResize  " textReset "Do not resize and center the window.",
+    "  " textBold "-viewIcons   " textReset "Only show files with icons.",
+    "  " textBold "-viewShowAll " textReset "Show all files, including those without icons.",
+    "  " textBold "-viewDefault " textReset "Use default view settings.",
+    "  " textBold "-viewByName  " textReset "List mode sorted by name.",
+    "  " textBold "-viewByType  " textReset "List mode sorted by type.",
+    "  " textBold "-resetIcons  " textReset "Remove saved icon positions.",
+    "  " textBold "-skipWHD     " textReset "Keep WHDLoad positions but resize.",
+    "  " textBold "-forceStd    " textReset "Ignore advanced icon sizes, use classic size for machines",
+    "               " textBlack "without NewIcons support. May remove some NewIcon data." textReset,
+    "",
+    textBold "Examples:" textReset,
+    "  " textWhite "iTidy Work:Projects -subdirs" textReset " " textBlack "Recursively tidy Work:Projects and subfolders",
+    "  " textWhite "iTidy DF0: -viewByName -viewShowAll" textReset " " textBlack "Tidy DF0:, change the folder view to",
+    "                                      text, and show all files",
+    "",
+    textBold "Important & Disclaimer:" textReset,
+    "  " textBlack "Back up your system before running." textReset,
+    "  " textItalic "Provided 'as is' without any warranty. No responsibility for issues." textReset,
+    NULL  /* Marks the end of the array */
+};
 
 
 
@@ -199,28 +230,9 @@ void FreeIconErrorList(IconErrorTrackerStruct *tracker)
 
 void print_usage(const char *program_name)
 {
- /*
-    printf("\n");
-    printf("" textReset textBold "Icon Tidy V1.0" textReset ".  A program to tidy icons, and resize folder windows from CLI.\n");
-    printf("Usage: iTidy <directory> [options]\n");
-    printf("Where:\n");
-    printf("    " textReset textBold "<directory>   " textReset "The folder to start the cleanup from (mandatory)\n");
-    printf("    " textReset textBold "-subdirs      " textReset "Recursively process subfolders\n");
-    printf("    " textReset textBold "-dontResize   " textReset "Do not resize and centre the folder\n");
-    printf("    " textReset textBold "-ViewShowAll  " textReset "Show all files, including those without icons\n");
-    printf("    " textReset textBold "-ViewDefault  " textReset "Use default view settings\n");
-    printf("    " textReset textBold "-ViewByName   " textReset "Set folder view as text, sorted by name\n");
-    printf("    " textReset textBold "-ViewByType   " textReset "Set folder view as text, sorted by type\n");
-    printf("    " textReset textBold "-resetIcons   " textReset "Remove saved icon posistions.\n");
-    printf("    " textReset textBold "-skipWHD      " textReset "Keep WHDLoad folder icon positions, but do resize\n");
-    printf("\n");
-    printf("This program is provided 'as is' without any warranty of any kind. The \n");
-    printf("author assumes no responsibility for any damage or issues that may arise \n");
-    printf("from using this program. It is strongly recommended that you back up your\n");
-    printf("system before running this program.\n\n");*/
 
     // Program Title
-    printf(textBold textBlue "iTidy V1.0.0" textReset " - Tidy icons and resize folder windows from CLI.\n\n");
+    printf(textReverse textItalic  "iTidy V1.0.0" textReset " - Tidy icons and resize folder windows from CLI.\n\n");
     
     // Usage Section
     printf(textBold "Usage:\n" textReset);
@@ -253,6 +265,8 @@ void print_usage(const char *program_name)
     
 
 }
+
+
 
 int main(int argc, char **argv)
 {
@@ -342,7 +356,8 @@ int main(int argc, char **argv)
 
     if (argc < 2)
     {
-        print_usage(argv[0]);
+        display_help(help_text);
+        //print_usage(argv[0]);
         return RETURN_FAIL;
     }
     strcpy(filePath, argv[1]);
