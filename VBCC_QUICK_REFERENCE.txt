@@ -1,0 +1,326 @@
+================================================================================
+                    iTidy - VBCC Migration Quick Reference
+================================================================================
+
+COMPILATION COMMANDS
+--------------------
+Build for Amiga:       make amiga
+Build for Host PC:     make host
+Clean current target:  make clean
+Clean all:             make clean-all
+Show help:             make help
+Verify VBCC:           test_vbcc_setup.cmd
+Test Stage 1:          test_stage1_build.cmd
+
+COMMON VBCC FLAGS
+-----------------
++aos68k         Target AmigaOS 68k
+-c99            Enable C99 features (with C89 base)
+-cpu=68000      68000 CPU (broad compatibility)
+-cpu=68020      68020 CPU (better performance)
+-cpu=68030      68030 CPU with FPU
+-I<path>        Include directory
+-D<macro>       Define preprocessor macro
+-g              Generate debug info
+-O0             No optimization (debug)
+-O1             Basic optimization
+-O2             Full optimization
+-lamiga         Link with amiga.lib
+-lauto          Auto-initialize library bases
+-lmieee         IEEE math library
+
+TYPE CONVERSIONS
+----------------
+SAS/C           VBCC/AmigaOS        Notes
+-----------     ----------------    ---------------------------------
+void*           BPTR                For DOS file handles
+int32_t         LONG                32-bit signed
+uint32_t        ULONG               32-bit unsigned
+int16_t         WORD                16-bit signed
+uint16_t        UWORD               16-bit unsigned
+int8_t          BYTE                8-bit signed
+uint8_t         UBYTE               8-bit unsigned
+size_t          SIZE_T              Size type (use carefully)
+
+STRUCT INITIALIZATION
+---------------------
+❌ AVOID (may cause issues):
+    struct Foo bar = {1, 2, 3};
+
+✅ PREFER (C89 compliant):
+    struct Foo bar;
+    bar.field1 = 1;
+    bar.field2 = 2;
+    bar.field3 = 3;
+
+VARIABLE DECLARATIONS
+---------------------
+❌ WRONG (mixed with code):
+    int i;
+    printf("test");
+    int j;        /* Error! */
+
+✅ CORRECT (all at top):
+    int i;
+    int j;
+    printf("test");
+
+PLATFORM GUARDS
+---------------
+All Amiga-specific code:
+
+    #ifdef __AMIGA__
+        /* Amiga-specific code */
+        BPTR fh = Open("file", MODE_OLDFILE);
+        /* ... */
+        Close(fh);
+    #else
+        /* Host platform code */
+        FILE *fh = fopen("file", "r");
+        /* ... */
+        fclose(fh);
+    #endif
+
+HEADER ORGANIZATION
+-------------------
+Standard order for includes:
+
+    /* Standard C headers */
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <string.h>
+    
+    /* Platform abstraction */
+    #include <platform/platform.h>
+    #include <platform/amiga_headers.h>
+    
+    /* Amiga-specific headers */
+    #ifdef __AMIGA__
+    #include <exec/types.h>
+    #include <proto/dos.h>
+    /* ... more Amiga headers ... */
+    #endif
+    
+    /* Project headers */
+    #include "main.h"
+    #include "utilities.h"
+
+COMMON DOS FUNCTIONS
+--------------------
+Function            Type        Description
+----------------    --------    ----------------------------
+Open()              BPTR        Open a file
+Close()             void        Close a file
+Read()              LONG        Read from file
+Write()             LONG        Write to file
+Seek()              LONG        Seek in file
+Lock()              BPTR        Lock a directory/file
+UnLock()            void        Unlock
+CurrentDir()        BPTR        Change directory
+IoErr()             LONG        Get last DOS error
+SetMode()           BOOL        Set console mode
+Delay()             void        Wait (50ths of a second)
+
+MEMORY FUNCTIONS
+----------------
+Function            Type        Description
+----------------    --------    ----------------------------
+AllocVec()          APTR        Allocate memory
+FreeVec()           void        Free memory
+AllocMem()          APTR        Allocate (older)
+FreeMem()           void        Free (older)
+
+Memory Flags:
+    MEMF_CLEAR      Clear memory to zero
+    MEMF_PUBLIC     Public memory
+    MEMF_CHIP       Chip memory
+    MEMF_FAST       Fast memory
+
+COMMON MISTAKES
+---------------
+1. Using wrong file handle type:
+   ❌ void *fh = Open(...)
+   ✅ BPTR fh = Open(...)
+
+2. Returning wrong type:
+   ❌ int32_t len = Read(...)
+   ✅ LONG len = Read(...)
+
+3. Mixed declarations:
+   ❌ int i; DoSomething(); int j;
+   ✅ int i; int j; DoSomething();
+
+4. Aggregate initialization:
+   ❌ struct Foo f = {a, b};
+   ✅ struct Foo f; f.a = a; f.b = b;
+
+5. Missing NULL checks:
+   ❌ struct Foo *f = Allocate(); f->bar = 1;
+   ✅ struct Foo *f = Allocate(); if (f) { f->bar = 1; }
+
+MIGRATION CHECKLIST
+-------------------
+For each .c file:
+
+[ ] Standard C headers first
+[ ] Platform abstraction includes
+[ ] Amiga headers wrapped in #ifdef __AMIGA__
+[ ] Project headers last
+[ ] All variables declared at top of block
+[ ] No aggregate struct initialization
+[ ] Proper AmigaOS types (BPTR, LONG, etc.)
+[ ] NULL checks on all allocations
+[ ] Platform guards around OS-specific code
+[ ] Forward declarations for all functions
+[ ] All changes marked with /* VBCC MIGRATION NOTE: ... */
+
+For each .h file:
+
+[ ] Header guards (#ifndef/#define/#endif)
+[ ] Standard C headers before platform headers
+[ ] Platform abstraction includes
+[ ] Amiga types wrapped in #ifdef __AMIGA__
+[ ] Function prototypes use proper types
+[ ] No global variables in headers (use extern)
+
+TESTING STRATEGY
+----------------
+1. Verify VBCC setup:
+   test_vbcc_setup.cmd
+
+2. Compile single file:
+   vc +aos68k -c99 -cpu=68020 -Iinclude -Isrc -c src/myfile.c -o build/amiga/myfile.o
+
+3. Check syntax only (no link):
+   vc +aos68k -c99 -cpu=68020 -Iinclude -Isrc -c src/myfile.c
+
+4. Full build:
+   make amiga
+
+5. Capture build log:
+   make amiga > build/logs/build.txt 2>&1
+
+6. Test on Amiga:
+   Copy Bin/Amiga/iTidy to Amiga
+   Run from CLI
+
+DEBUGGING TIPS
+--------------
+1. Enable verbose output:
+   vc -v +aos68k ...
+
+2. Preprocessor output only:
+   vc -E +aos68k ... > preprocessed.c
+
+3. Assembly output:
+   vc -S +aos68k ...
+
+4. Check symbol table:
+   objdump -t file.o
+
+5. Common error meanings:
+   "syntax error"           → C89 violation, check declarations
+   "undefined reference"    → Missing function/library
+   "incompatible types"     → Wrong pointer/type used
+   "conflicting types"      → Prototype mismatch
+
+VBCC vs SAS/C PRAGMA CONVERSIONS
+---------------------------------
+SAS/C Pragma                    VBCC Equivalent
+---------------------------     -------------------------------
+#pragma libcall                 Use proto/ includes instead
+#pragma amicall                 __saveds __regargs (rarely needed)
+#pragma tagcall                 Use varargs properly
+
+In VBCC, most pragmas are handled automatically by including the
+correct proto/ headers (e.g., <proto/dos.h>).
+
+USEFUL VBCC ENVIRONMENT VARIABLES
+----------------------------------
+VBCC          Path to VBCC installation
+VBCCPATH      Alternate path variable
+PATH          Must include %VBCC%\bin
+
+Example setup (PowerShell):
+$env:VBCC = "C:\vbcc"
+$env:PATH += ";C:\vbcc\bin"
+
+Example setup (CMD):
+set VBCC=C:\vbcc
+set PATH=%PATH%;C:\vbcc\bin
+
+LIBRARY BASE DECLARATIONS
+-------------------------
+If using libraries directly without auto-init:
+
+    #ifdef __AMIGA__
+    extern struct Library *SysBase;      /* Always present */
+    extern struct Library *DOSBase;      /* dos.library */
+    extern struct Library *IconBase;     /* icon.library */
+    extern struct Library *IntuitionBase;/* intuition.library */
+    extern struct Library *GfxBase;      /* graphics.library */
+    #endif
+
+With -lauto, these are initialized automatically.
+
+RETURN CODES
+------------
+AmigaOS standard return codes:
+
+    RETURN_OK      0      Success
+    RETURN_WARN    5      Warning
+    RETURN_ERROR   10     Error
+    RETURN_FAIL    20     Failure
+
+Use in main():
+    return RETURN_OK;
+    return RETURN_FAIL;
+
+USEFUL LINKS
+------------
+VBCC:              http://www.compilers.de/vbcc.html
+VBCC Docs:         http://www.compilers.de/vbcc_doc.html
+AmigaOS Dev:       http://amigadev.elowar.com/
+NDK 3.2:           Search for "Amiga NDK 3.2"
+Includes Online:   https://github.com/bebbo/amiga-gcc
+
+MIGRATION NOTES TEMPLATE
+------------------------
+Copy this to each migrated file:
+
+/* VBCC MIGRATION NOTE: <description of change>
+ * Original: <original code/approach>
+ * Changed:  <new code/approach>
+ * Reason:   <why this change was necessary>
+ */
+
+Example:
+/* VBCC MIGRATION NOTE: Changed file handle type for VBCC compatibility
+ * Original: void *fh
+ * Changed:  BPTR fh
+ * Reason:   VBCC requires proper AmigaOS types for DOS functions
+ */
+
+QUICK COMMAND REFERENCE
+-----------------------
+Clean and rebuild:
+    make clean-all && make amiga
+
+Build with verbose output:
+    vc -v +aos68k -c99 -cpu=68020 -Iinclude -Isrc src/main.c -o build/amiga/main.o
+
+Compile single file (test syntax):
+    vc +aos68k -c99 -cpu=68020 -Iinclude -Isrc -c src/main.c
+
+Generate preprocessed output:
+    vc -E +aos68k -c99 -Iinclude -Isrc src/main.c > main.i
+
+Check executable size:
+    dir Bin\Amiga\iTidy
+
+Run on Amiga:
+    Bin/Amiga/iTidy --help
+
+================================================================================
+                            End of Quick Reference
+================================================================================

@@ -41,36 +41,46 @@
     v1.0.0 - 2024-07-11 - First public release.
     */
 
+/* VBCC MIGRATION NOTE: Standard C headers */
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <ctype.h>
+#include <time.h>
+
+/* VBCC MIGRATION NOTE: Platform abstraction */
+#include <platform/platform.h>
+#include <platform/amiga_headers.h>
+
+/* VBCC MIGRATION NOTE: Amiga-specific headers wrapped in guard */
+#ifdef __AMIGA__
 #include <exec/types.h>
+#include <exec/memory.h>
 #include <libraries/dos.h>
+#include <dos/dos.h>
 #include <workbench/workbench.h>
 #include <workbench/startup.h>
 #include <workbench/icon.h>
 #include <graphics/gfxbase.h>
+#include <graphics/text.h>
+#include <graphics/rastport.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
+#include <libraries/iffparse.h>
+#include <prefs/prefhdr.h>
+#include <prefs/font.h>
 #include <proto/dos.h>
 #include <proto/icon.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/wb.h>
-#include <proto/diskfont.h> // Include diskfont library
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <exec/memory.h>
-#include <dos/dos.h>
+#include <proto/diskfont.h>
 #include <proto/utility.h>
-#include <libraries/iffparse.h>
-#include <prefs/prefhdr.h>
-#include <prefs/font.h>
 #include <proto/iffparse.h>
-#include <graphics/text.h>
-#include <graphics/rastport.h>
-#include <ctype.h>
-#include <time.h>
+#endif
 
+/* VBCC MIGRATION NOTE: Project headers */
 #include "Settings/IControlPrefs.h"
 #include "Settings/WorkbenchPrefs.h"
 #include "main.h"
@@ -118,6 +128,13 @@ BOOL user_folderViewMode;
 BOOL user_folderFlags;
 BOOL user_stripIconPosition;
 BOOL user_forceStandardIcons;
+
+/* VBCC MIGRATION NOTE: Forward declarations for proper ANSI C compliance */
+static void print_usage(const char *program_name);
+static int endsWithFont(const char *str);
+#ifdef __AMIGA__
+static BOOL IsDeviceReadOnly(const char *deviceName);
+#endif
 
 /* Define the help text as an array of strings. Each element represents a line. */
 static const char *help_text2[] = {
@@ -193,15 +210,14 @@ static const char *help_text[] = {
 };
 
 
-
-
 // Forward declaration for IsDeviceReadOnly
-BOOL IsDeviceReadOnly(const char *deviceName);
+/* VBCC MIGRATION NOTE: Removed redundant forward declaration - now at top of file */
 
 #define VERSION_STRING "$VER: iTidy 1.0 (15.07.2024)"
 const char version[] = VERSION_STRING;
 
-void print_usage(const char *program_name);
+/* VBCC MIGRATION NOTE: Function prototype moved to forward declarations section */
+/* void print_usage(const char *program_name); */
 
 /* Function to add an icon file path to the error list */
 void AddIconError(IconErrorTrackerStruct *tracker, STRPTR filePath)
@@ -721,8 +737,15 @@ append_to_log("%ld seconds\n", seconds);
     return RETURN_OK;
 }
 
+/* VBCC MIGRATION NOTE: Function implementation for font name validation */
 // Check if string ends with ".font"
 int endsWithFont(const char *str) {
-    size_t len = strlen(str);
+    size_t len;
+    
+    if (str == NULL) {
+        return 0;
+    }
+    
+    len = strlen(str);
     return (len > 5 && strcmp(str + len - 5, ".font") == 0);
 }

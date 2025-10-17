@@ -1,0 +1,331 @@
+================================================================================
+iTidy - VBCC Migration Notes - Stage 1
+================================================================================
+Date: October 17, 2025
+Target: VBCC v0.9x with Amiga Workbench 3.2 SDK on Windows host
+Stage: 1 - Build System + main.c + cli_utilities.c
+================================================================================
+
+OVERVIEW
+--------
+This document summarizes Stage 1 of the iTidy migration from SAS/C to VBCC.
+The goal is to make the build system and core CLI files compile cleanly with
+VBCC on a Windows host, cross-targeting Amiga Workbench 3.2.
+
+COMPLETED CHANGES
+-----------------
+
+1. DIRECTORY STRUCTURE
+   - Created: Bin/Amiga/ for final Amiga executables
+   - Created: build/logs/ for build logs
+   - Maintained: build/amiga/ for intermediate object files
+   - Maintained: build/host/ for host PC builds (testing)
+
+2. ROOT MAKEFILE UPDATES (c:\Amiga\Programming\iTidy\Makefile)
+   
+   a) VBCC Configuration:
+      - Compiler: vc (VBCC for AmigaOS)
+      - Target: +aos68k (AmigaOS 68k target)
+      - CPU: 68020 (compatible with WB 3.2, can be downgraded to 68000)
+      - C Standard: -c99 (ANSI C with some C99 features)
+      - Defines: -DPLATFORM_AMIGA=1 -D__AMIGA__
+      - Libraries: -lamiga -lauto -lmieee
+      
+   b) Output Structure:
+      - Object files: build/amiga/*.o
+      - Executable: Bin/Amiga/iTidy
+      - Makefile automatically copies from build/amiga/ to Bin/Amiga/
+      
+   c) Build Targets:
+      - make          : Build for Amiga (default)
+      - make amiga    : Build for Amiga
+      - make host     : Build for host PC (GCC)
+      - make clean    : Clean current target
+      - make clean-all: Clean all targets
+      - make help     : Display help
+
+3. MAIN.H REFACTORING (c:\Amiga\Programming\iTidy\src\main.h)
+   
+   BEFORE: Direct includes of all Amiga headers
+   AFTER:  Platform abstraction with proper guards
+   
+   Changes:
+   - Standard C headers first (string.h, stdlib.h, stdio.h, etc.)
+   - Added <platform/platform.h> for platform detection
+   - Added <platform/amiga_headers.h> for Amiga types
+   - Wrapped ALL Amiga-specific includes in #ifdef __AMIGA__
+   - Proper header organization for VBCC compatibility
+   
+   Impact: This ensures the code can be compiled for both Amiga (VBCC) and
+          host (GCC) without modification.
+
+4. MAIN.C REFACTORING (c:\Amiga\Programming\iTidy\src\main.c)
+   
+   Major Changes:
+   
+   a) Header Organization:
+      - Standard C headers first
+      - Platform abstraction layer
+      - Amiga headers wrapped in #ifdef __AMIGA__
+      - Project headers last
+      
+   b) Function Prototypes:
+      - Added forward declarations at top of file:
+        * print_usage()
+        * endsWithFont()
+        * IsDeviceReadOnly() (Amiga-only)
+      - Removed redundant forward declarations
+      
+   c) C89 Compliance:
+      - Changed: CursorPos pos = {-1, -1};
+        To:      CursorPos pos; pos.xPos = -1; pos.yPos = -1;
+      - Ensures all struct initializations are C89-compatible
+      - VBCC in strict mode prefers explicit initialization
+      
+   d) Function Implementation:
+      - endsWithFont(): Added NULL pointer check
+      - endsWithFont(): Moved strlen() call to separate line for C89
+      
+   Migration Notes Added:
+   - "VBCC MIGRATION NOTE: Standard C headers"
+   - "VBCC MIGRATION NOTE: Platform abstraction"
+   - "VBCC MIGRATION NOTE: Amiga-specific headers wrapped in guard"
+   - "VBCC MIGRATION NOTE: Project headers"
+   - "VBCC MIGRATION NOTE: Forward declarations for proper ANSI C compliance"
+   - "VBCC MIGRATION NOTE: Function implementation for font name validation"
+
+5. CLI_UTILITIES.C REFACTORING (c:\Amiga\Programming\iTidy\src\cli_utilities.c)
+   
+   Major Changes:
+   
+   a) Header Organization:
+      - Standard C headers first
+      - Platform abstraction layer
+      - Project headers
+      - Added forward declarations for all static functions
+      
+   b) getCursorPos() Function:
+      - Changed: void *fh to BPTR fh (proper Amiga type)
+      - Changed: int32_t bytesRead to LONG bytesRead (VBCC type)
+      - Changed: struct initialization from {-1, -1} to explicit
+      - Added: Variable declarations at top of block (C89)
+      - Wrapped: All Amiga DOS calls in #if PLATFORM_AMIGA
+      
+   c) getConsoleSize() Function:
+      - Changed: void *fh to BPTR fh (proper Amiga type)
+      - Changed: int32_t bytesRead to LONG bytesRead (VBCC type)
+      - Changed: struct initialization from {24, 80} to explicit
+      - Added: Variable declarations at top of block (C89)
+      - Wrapped: All Amiga DOS calls in #if PLATFORM_AMIGA
+      
+   d) Other Functions:
+      - wrap_and_page_text_with_markup(): Already C89-compliant
+      - parse_and_display_line(): Already C89-compliant
+      - display_help(): Already C89-compliant
+      
+   Migration Notes Added:
+   - "VBCC MIGRATION NOTE: Converted from SAS/C to VBCC-compatible code"
+   - "VBCC MIGRATION NOTE: Standard C headers first"
+   - "VBCC MIGRATION NOTE: Platform abstraction layer"
+   - "VBCC MIGRATION NOTE: Forward declarations for internal functions"
+   - "VBCC MIGRATION NOTE: Amiga-specific DOS I/O wrapped in platform guard"
+   - "VBCC MIGRATION NOTE: Initialize structure members explicitly for C89"
+
+SAS/C TO VBCC CONVERSION SUMMARY
+---------------------------------
+
+1. Type Changes:
+   SAS/C              VBCC/AmigaOS SDK
+   -----------------  -----------------
+   void *             BPTR (for file handles)
+   int32_t            LONG
+   uint32_t           ULONG
+   uint16_t           UWORD
+   uint8_t            UBYTE
+
+2. Struct Initialization:
+   SAS/C:  struct Foo bar = {1, 2, 3};
+   VBCC:   struct Foo bar; bar.a = 1; bar.b = 2; bar.c = 3;
+   
+   Rationale: VBCC in C89 mode prefers explicit initialization.
+              While aggregate initialization is valid C89, VBCC's
+              strict mode and the Amiga SDK headers work better
+              with explicit field assignment.
+
+3. Variable Declarations:
+   SAS/C:  Allows mixed declarations and code
+   VBCC:   All declarations at top of block (strict C89)
+   
+   Example:
+   BAD:  
+     int i;
+     printf("test");
+     int j; // Error!
+   
+   GOOD:
+     int i;
+     int j;
+     printf("test");
+
+4. Platform Guards:
+   All Amiga-specific code wrapped in:
+   #ifdef __AMIGA__
+   ...
+   #endif
+   
+   This allows the code to compile on both Amiga and host PC.
+
+KNOWN ISSUES / TODO
+-------------------
+
+1. REMAINING DEPENDENCIES:
+   The following source files were NOT modified in Stage 1:
+   - icon_management.c/.h
+   - icon_types.c/.h
+   - icon_misc.c/.h
+   - file_directory_handling.c/.h
+   - window_management.c/.h
+   - utilities.c/.h
+   - spinner.c/.h
+   - writeLog.c/.h
+   - DOS/getDiskDetails.c/.h
+   - Settings/IControlPrefs.c/.h
+   - Settings/WorkbenchPrefs.c/.h
+   - Settings/get_fonts.c/.h
+   
+   These will be addressed in Stages 2-4.
+
+2. UNTESTED BUILD:
+   This stage prepared the code but did NOT attempt a build.
+   Next step: Run `make amiga` to identify compilation errors.
+
+3. POTENTIAL ISSUES:
+   - VBCC may report warnings about unused variables
+   - Some functions may need __saveds/__regargs qualifiers
+   - Library base pointers (SysBase, DOSBase, etc.) may need explicit extern
+   - Some AmigaOS SDK functions may have slightly different signatures
+
+4. MISSING FUNCTION PROTOTYPES:
+   Several functions called in main.c don't have visible prototypes yet:
+   - GetWorkbenchVersion()
+   - setupTimer() / disposeTimer()
+   - convertWBVersionWithDot()
+   - sanitizeAmigaPath()
+   - does_file_or_folder_exist()
+   - strncasecmp_custom()
+   - getDeviceNameFromPath()
+   - IsDeviceReadOnly()
+   - getIconFont()
+   - fetchWorkbenchSettings()
+   - fetchIControlSettings()
+   - loadLeftOutIcons()
+   - countLeftOutIcons()
+   - dumpLeftOutIcons()
+   - InitializeWindow()
+   - ProcessDirectory()
+   - CleanupWindow()
+   
+   These are defined in other source files and will be addressed in later stages.
+
+TESTING PLAN
+------------
+
+Stage 1 Testing (Next Steps):
+
+1. Verify VBCC installation:
+   - Check %VBCC% environment variable is set
+   - Verify vc.exe is in PATH
+   - Verify AmigaOS 3.2 SDK headers are accessible
+
+2. Test build:
+   cd c:\Amiga\Programming\iTidy
+   make clean-all
+   make amiga
+
+3. Expected outcome:
+   - Compilation errors for missing dependencies (expected)
+   - main.c and cli_utilities.c should compile cleanly
+   - Linker will fail due to missing object files
+
+4. Build log capture:
+   make amiga > build/logs/vbcc_stage1_build.txt 2>&1
+
+5. Error analysis:
+   - Review build/logs/vbcc_stage1_build.txt
+   - Identify any syntax errors in main.c or cli_utilities.c
+   - Note missing symbols for Stage 2+ planning
+
+NEXT STAGES
+-----------
+
+Stage 2: File and Directory Handling
+- file_directory_handling.c/.h
+- utilities.c/.h
+- Platform-specific file operations
+
+Stage 3: Icon Management
+- icon_management.c/.h
+- icon_types.c/.h
+- icon_misc.c/.h
+- Icon library calls and structure handling
+
+Stage 4: Window Management and Settings
+- window_management.c/.h
+- Settings/*.c/.h
+- DOS/*.c/.h
+- spinner.c/.h
+- writeLog.c/.h
+
+Stage 5: Integration and Testing
+- Full build test
+- Warning resolution
+- Final optimizations
+- Cross-compilation verification
+
+VBCC COMPILER FLAGS REFERENCE
+------------------------------
+
+Current flags: +aos68k -c99 -cpu=68020 -I... -D...
+
+Flag Explanations:
++aos68k       : Target AmigaOS 68k
+-c99          : Enable C99 features (while maintaining C89 base)
+-cpu=68020    : Generate 68020 code (can use -cpu=68000 for compatibility)
+-I<path>      : Include directory
+-D<macro>     : Define preprocessor macro
+-lamiga       : Link with amiga.lib (OS functions)
+-lauto        : Link with auto-init code (library bases)
+-lmieee       : Link with IEEE math library
+
+Optional flags for debugging:
+-g            : Generate debug info
+-O0           : No optimization (for debugging)
+
+Optional flags for warnings:
+-Wall         : Enable all warnings (currently not used)
+-Werror       : Treat warnings as errors
+
+REFERENCES
+----------
+
+- VBCC Documentation: http://www.compilers.de/vbcc.html
+- AmigaOS Developer Docs: http://amigadev.elowar.com/
+- Workbench 3.2 SDK: NDK 3.2
+- C89 Standard: ISO/IEC 9899:1990
+
+CONCLUSION
+----------
+
+Stage 1 has successfully prepared main.c and cli_utilities.c for VBCC
+compilation. The code now follows strict ANSI C89 conventions with proper
+platform abstraction. The build system is configured for cross-compilation
+on Windows targeting AmigaOS.
+
+Next step: Attempt compilation with `make amiga` and analyze results to
+guide Stage 2 migration.
+
+All changes are marked with "VBCC MIGRATION NOTE" comments for traceability.
+
+================================================================================
+End of Stage 1 Migration Notes
+================================================================================

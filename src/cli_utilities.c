@@ -5,18 +5,26 @@
  * for AmigaOS CLI environments. It makes use of ANSI escape sequences
  * and works on Amiga Workbench 2.04 and later.
  *
- * Compiles with SAS/C.
+ * VBCC MIGRATION NOTE: Converted from SAS/C to VBCC-compatible code.
+ * Uses platform abstraction layer for cross-platform compatibility.
  */
 
-#include "cli_utilities.h"
-#include <exec/types.h>
-#include <dos/dos.h>
-#include <proto/dos.h>
+/* VBCC MIGRATION NOTE: Standard C headers first */
 #include <stdio.h>
+#include <string.h>
+#include <ctype.h>
 
+/* VBCC MIGRATION NOTE: Platform abstraction layer */
+#include <platform/platform.h>
+#include <platform/amiga_headers.h>
+
+#include "cli_utilities.h"
 #include "main.h"
 
+/* VBCC MIGRATION NOTE: Forward declarations for internal functions */
 static void wrap_and_page_text_with_markup(const char *text, int indent, int width, int maxRows, int *printedRows);
+static int matchTag(const char *text, int i, const char *tag);
+static void parse_and_display_line(const char *line, int width, int maxRows, int *printedRows);
 
 /*
  * matchTag:
@@ -283,14 +291,21 @@ void display_help(const char **helpText)
 }
 
 /* Function to retrieve the cursor position in the Amiga CLI */
+/* VBCC MIGRATION NOTE: Amiga-specific DOS I/O wrapped in platform guard */
 CursorPos getCursorPos(void)
 {
+#if PLATFORM_AMIGA
     BPTR fh;
-    CursorPos pos = {-1, -1};
+    CursorPos pos;
     char buffer[32];
-    int i = 0;
+    int i;
     char ch;
     LONG bytesRead;
+    
+    /* VBCC MIGRATION NOTE: Initialize structure members explicitly for C89 */
+    pos.xPos = -1;
+    pos.yPos = -1;
+    i = 0;
 
     /* Open the console for direct communication */
     fh = Open("CONSOLE:", MODE_OLDFILE);
@@ -341,17 +356,30 @@ CursorPos getCursorPos(void)
     }
 
     return pos;
+#else
+    CursorPos pos;
+    pos.xPos = -1;
+    pos.yPos = -1;
+    return pos;
+#endif
 }
 
 /* Function to retrieve the console window size */
+/* VBCC MIGRATION NOTE: Amiga-specific DOS I/O wrapped in platform guard */
 ConsoleSize getConsoleSize(void)
 {
+#if PLATFORM_AMIGA
     BPTR fh;
-    ConsoleSize size = {24, 80};
+    ConsoleSize size;
     char buffer[64];
-    int i = 0;
+    int i;
     char ch;
     LONG bytesRead;
+    
+    /* VBCC MIGRATION NOTE: Initialize structure members explicitly for C89 */
+    size.rows = 24;
+    size.columns = 80;
+    i = 0;
 
     /* Open the console for reading and writing */
     fh = Open("CONSOLE:", MODE_OLDFILE);
@@ -399,4 +427,10 @@ ConsoleSize getConsoleSize(void)
     }
 
     return size;
+#else
+    ConsoleSize size;
+    size.rows = 24;
+    size.columns = 80;
+    return size;
+#endif
 }

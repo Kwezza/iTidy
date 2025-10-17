@@ -1,35 +1,44 @@
 #ifndef MAIN_H
 #define MAIN_H
 
+/* VBCC MIGRATION NOTE: Standard C headers first */
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <ctype.h>
+#include <time.h>
+
+/* VBCC MIGRATION NOTE: Platform abstraction layer */
+#include <platform/platform.h>
+#include <platform/amiga_headers.h>
+
+/* VBCC MIGRATION NOTE: Amiga-specific includes wrapped in platform guard */
+#ifdef __AMIGA__
 #include <exec/types.h>
+#include <exec/memory.h>
 #include <libraries/dos.h>
+#include <dos/dos.h>
 #include <workbench/workbench.h>
 #include <workbench/startup.h>
 #include <workbench/icon.h>
 #include <graphics/gfxbase.h>
+#include <graphics/text.h>
+#include <graphics/rastport.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
+#include <libraries/iffparse.h>
+#include <prefs/prefhdr.h>
+#include <prefs/font.h>
 #include <proto/dos.h>
 #include <proto/icon.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/wb.h>
-#include <proto/diskfont.h> // Include diskfont library
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <exec/memory.h>
-#include <dos/dos.h>
+#include <proto/diskfont.h>
 #include <proto/utility.h>
-#include <libraries/iffparse.h>
-#include <prefs/prefhdr.h>
-#include <prefs/font.h>
 #include <proto/iffparse.h>
-#include <graphics/text.h>
-#include <graphics/rastport.h>
-#include <ctype.h>
-#include <time.h>
+#endif
 
 #include "Settings/IControlPrefs.h"
 #include "Settings/WorkbenchPrefs.h"
