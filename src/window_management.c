@@ -45,7 +45,8 @@ void CleanupWindow(void)
 int FormatIconsAndWindow(char *folder)
 {
 #if PLATFORM_AMIGA
-    void *lock;
+    /* VBCC MIGRATION NOTE (Stage 4): Fixed BPTR type for lock */
+    BPTR lock;
     int newWidth = 320;
     int minAverageWidthPercent = -100;
 
@@ -78,6 +79,11 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray)
 #if PLATFORM_AMIGA
     int i, maxWidth = 0, maxHeight = 0;
 
+#ifdef DEBUG
+    append_to_log("DEBUG: resizeFolderToContents ENTRY: dirPath='%s', iconArray->size=%d\n", 
+                  dirPath, iconArray ? iconArray->size : -1);
+#endif
+
     if (user_folderViewMode == DDVM_BYICON)
     {
         for (i = 0; i < iconArray->size; i++)
@@ -93,6 +99,20 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray)
         maxHeight = WindowHeightTextOnly;
     }
 
+#ifdef DEBUG
+    append_to_log("DEBUG: Calculated maxWidth=%d, maxHeight=%d before calling repoistionWindow\n", 
+                  maxWidth, maxHeight);
+#endif
+
+    /* Safety check: Don't call repoistionWindow with 0 dimensions when no icons found */
+    if (iconArray->size == 0 && user_folderViewMode == DDVM_BYICON)
+    {
+#ifdef DEBUG
+        append_to_log("DEBUG: Skipping repoistionWindow - no icons in folder\n");
+#endif
+        return;
+    }
+
     repoistionWindow(dirPath, maxWidth, maxHeight);
 #else
     (void)dirPath;
@@ -103,10 +123,11 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray)
 void GetWorkbenchIconFont(char *fontName, int *fontSize)
 {
 #if PLATFORM_AMIGA
+    /* VBCC MIGRATION NOTE (Stage 4): Fixed BPTR type for file handle */
     struct IFFHandle *iff;
     struct ContextNode *cn;
     struct FontPrefs fontPrefs;
-    void *file;
+    BPTR file;
 
     // Default fallback font
     strcpy(fontName, "topaz.font");

@@ -99,8 +99,9 @@ bool AddIconToArray(IconArray *iconArray, const FullIconDetails *newIcon)
     return true;
 }
 
-IconArray *CreateIconArrayFromPath(void *lock, const char *dirPath)
+IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
 {
+    /* VBCC MIGRATION NOTE (Stage 4): Fixed BPTR type for lock parameter */
     struct TextExtent textExtent;
     FullIconDetails newIcon;
     struct FileInfoBlock *fib;
@@ -112,31 +113,62 @@ IconArray *CreateIconArrayFromPath(void *lock, const char *dirPath)
     int textLength, fileCount = 0, maxWidth = 0;
     IconPosition iconPosition;
 
+#ifdef DEBUG
+    append_to_log("CreateIconArrayFromPath ENTRY: lock=%ld, dirPath='%s'\n", (LONG)lock, dirPath);
+#endif
+
     iconArray->hasOnlyBorderlessIcons = false;
 
     if (!iconArray)
     {
         fprintf(stderr, "Error: Failed to create icon array.\n");
+#ifdef DEBUG
+        append_to_log("ERROR: Failed to create icon array\n");
+#endif
         return NULL;
     }
+
+#ifdef DEBUG
+    append_to_log("Icon array created successfully\n");
+#endif
 
     if (!(fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL)))
     {
         fprintf(stderr, "Error: Failed to allocate FileInfoBlock.\n");
+#ifdef DEBUG
+        append_to_log("ERROR: Failed to allocate FileInfoBlock\n");
+#endif
         FreeIconArray(iconArray);
         return NULL;
     }
+    
+#ifdef DEBUG
+    append_to_log("FileInfoBlock allocated successfully, calling Examine()\n");
+#endif
+
 #ifdef DEBUG_MAX
     append_to_log("Starting to process folder %s.\n", dirPath);
 #endif
     if (Examine(lock, fib))
     {
+#ifdef DEBUG
+        append_to_log("Examine() successful, starting ExNext() loop\n");
+#endif
         while (ExNext(lock, fib))
         {
+#ifdef DEBUG
+            append_to_log("DEBUG: ExNext returned, processing file: '%s'\n", fib->fib_FileName);
+#endif
             updateCursor();                                             /* update progress spinner */
             if (fib->fib_DirEntryType < 0 || fib->fib_DirEntryType > 0) /* It's a file or a directory */
             {
+#ifdef DEBUG
+                append_to_log("DEBUG: File/dir type check passed, calling GetFullPath()\n");
+#endif
                 GetFullPath(dirPath, fib, fullPathAndFile, sizeof(fullPathAndFile));
+#ifdef DEBUG
+                append_to_log("DEBUG: GetFullPath() returned: '%s'\n", fullPathAndFile);
+#endif
 
                 // if (stricmp(fib->fib_FileName, "Disk.info") != 0)
                 if (isIconTypeDisk(fullPathAndFile, fib->fib_DirEntryType) == 0)
@@ -391,8 +423,9 @@ int CompareByFolderAndName(const void *a, const void *b)
     return nameComparisonResult;
 }
 
-int ArrangeIcons(void *lock, char *dirPath, int newWidth)
+int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
 {
+    /* VBCC MIGRATION NOTE (Stage 4): Fixed BPTR type for lock parameter */
     /* Initial declarations */
     int32_t x, y, maxX, maxY, windowWidth, maxWindowWidth;
     IconArray *iconArray;

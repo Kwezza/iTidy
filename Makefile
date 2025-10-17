@@ -25,8 +25,9 @@ else
     # Amiga build configuration (vbcc cross-compiler)
     # VBCC MIGRATION NOTE: Changed to use VBCC v0.9x with Workbench 3.2 SDK
     # Output now goes to Bin/Amiga/ for clean separation
+    # VBCC MIGRATION NOTE (Stage 4): Added -DDEBUG for debug logging
     CC = vc
-    CFLAGS = +aos68k -c99 -cpu=68020 -I$(INC_DIR) -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__
+    CFLAGS = +aos68k -c99 -cpu=68020 -I$(INC_DIR) -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG
     LDFLAGS = +aos68k -cpu=68020 -lamiga -lauto -lmieee
     OUT_DIR = $(BUILD_DIR)/amiga
     BIN_DIR = Bin/Amiga

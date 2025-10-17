@@ -37,9 +37,9 @@
 /*---------------------------------------------------------------------------*/
 
 #if PLATFORM_AMIGA
-    /* Amiga has stricmp built-in */
-    #define platform_stricmp    stricmp
-    #define platform_strnicmp   strnicmp
+    /* VBCC MIGRATION NOTE (Stage 4): VBCC uses Stricmp (capital S) not stricmp */
+    #define platform_stricmp    Stricmp
+    #define platform_strnicmp   Strnicmp
 #else
     /* Host platforms use different names */
     #ifdef _WIN32

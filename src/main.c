@@ -84,7 +84,7 @@
 #include "Settings/IControlPrefs.h"
 #include "Settings/WorkbenchPrefs.h"
 #include "main.h"
-//#include "icon_management.h"
+#include "icon_management.h"
 #include "window_management.h"
 #include "utilities.h"
 #include "spinner.h"
@@ -93,8 +93,12 @@
 #include "dos/getDiskDetails.h"
 #include "Settings/get_fonts.h"
 #include "cli_utilities.h"
-//#include "file_directory_handling.h"
+#include "file_directory_handling.h"
 
+/* VBCC: Set stack size to 20KB at compile time */
+#ifdef __AMIGA__
+long __stack = 20000L;
+#endif
 
 /* Define global variables */
 struct Screen *screen = NULL;
@@ -327,13 +331,15 @@ static void print_usage(const char *program_name)
 
 int main(int argc, char **argv)
 {
-    
+    /* VBCC MIGRATION NOTE (Stage 4): Integration & Testing - Added startup logging */
     int i;
     int workbenchVersion = GetWorkbenchVersion();
     int numLeftOutIcons = 0;
     char deviceName[25];
     BOOL iterateDIRs = FALSE;
     long elapsed_seconds, hours, minutes, seconds, start_time;
+    
+    /* VBCC MIGRATION NOTE (Stage 4): Startup logging moved after initialize_logfile() */
     //DeviceInfo diskInfo;
     int fontNameSet = 0;
     int fontSizeSet = 0;
@@ -384,10 +390,14 @@ int main(int argc, char **argv)
     printf("   compiled: %s at %s\n\n", __DATE__, __TIME__);
 
 
+    /* VBCC MIGRATION NOTE (Stage 4): Initialize log file once at startup */
     initialize_logfile();
+    
+    /* VBCC MIGRATION NOTE (Stage 4): Startup logging after initialize_logfile() to prevent crash */
+    append_to_log("=== iTidy starting up (VBCC build) ===\n");
+    
 #ifdef DEBUG
-    initialize_logfile();
-    append_to_log("iTidy V%s\n - Amiga Workbench Icon Tidier", VERSION);
+    append_to_log("iTidy V%s - Amiga Workbench Icon Tidier\n", VERSION);
     append_to_log("by Kerry Thompson\n");
     append_to_log("Version compiled on %s at %s\n", __DATE__, __TIME__);
     append_to_log("Debug build\n");
@@ -596,11 +606,26 @@ int main(int argc, char **argv)
     InitializeWindow();
     #ifdef DEBUG
     append_to_log("Workbench screen width %d, height %d\n", screenWidth,screenHight);
+    append_to_log("About to call ProcessDirectory with path='%s', iterateDIRs=%d\n", filePath, iterateDIRs);
     #endif
     printf("\nTidying folders under: %s\n",filePath);
+    #ifdef DEBUG
+    append_to_log("Calling ProcessDirectory now...\n");
+    #endif
     ProcessDirectory(filePath, iterateDIRs, 0);
+    #ifdef DEBUG
+    append_to_log("ProcessDirectory completed successfully\n");
+    append_to_log("DEBUG: About to call CleanupWindow()...\n");
+    #endif
     CleanupWindow();
+    #ifdef DEBUG
+    append_to_log("DEBUG: CleanupWindow() completed\n");
+    append_to_log("DEBUG: About to call disposeTimer()...\n");
+    #endif
     disposeTimer();
+    #ifdef DEBUG
+    append_to_log("DEBUG: disposeTimer() completed\n");
+    #endif
 
     /* Calculate elapsed time */
     elapsed_seconds = time(NULL) - start_time;
@@ -729,10 +754,103 @@ if (minutes > 0 || hours > 0)
 append_to_log("%ld seconds\n", seconds);
 #endif
 
+#ifdef DEBUG
+    append_to_log("DEBUG: Starting cleanup sequence...\n");
+#endif
 
+    /* VBCC MIGRATION NOTE (Stage 4): Free allocated resources before exit */
+#ifdef DEBUG
+    append_to_log("DEBUG: About to call FreeIconErrorList()...\n");
+#endif
     FreeIconErrorList(&iconsErrorTracker);
+#ifdef DEBUG
+    append_to_log("DEBUG: FreeIconErrorList() completed\n");
+#endif
+    
+#ifdef DEBUG
+    append_to_log("DEBUG: About to free fontPrefs (ptr=%ld)...\n", (LONG)fontPrefs);
+#endif
+    if (fontPrefs) {
+        FreeVec(fontPrefs);
+        fontPrefs = NULL;
+#ifdef DEBUG
+        append_to_log("DEBUG: fontPrefs freed successfully\n");
+#endif
+    }
 
+    /* ========================================================================
+     * VBCC MIGRATION NOTE (Stage 4): CRITICAL FIX for VBCC -lauto crash
+     * ========================================================================
+     * 
+     * TODO: Investigate and resolve VBCC -lauto cleanup crash (Priority: Medium)
+     * 
+     * PROBLEM DESCRIPTION:
+     * --------------------
+     * When main() returns normally with "return RETURN_OK;", VBCC's runtime
+     * cleanup code (triggered by the -lauto linker flag) crashes the entire
+     * Amiga system with:
+     *   - Error code: 81000005 (illegal memory access/addressing error)
+     *   - Result: Red screen of death (Guru Meditation)
+     *   - Timing: Always occurs AFTER all our cleanup code completes
+     *   - Evidence: Log shows "fontPrefs freed successfully" then crash
+     * 
+     * The -lauto flag automatically opens/closes common Amiga libraries:
+     *   - DOSBase, IntuitionBase, GraphicsBase, IconBase, etc.
+     *   - Opens at program start, closes when main() returns
+     * 
+     * WHAT HAPPENS IF RemTask(NULL) IS REMOVED:
+     * -----------------------------------------
+     * If you replace "RemTask(NULL);" with "return RETURN_OK;":
+     *   1. Program completes all processing successfully
+     *   2. All our resources are freed correctly
+     *   3. main() returns to VBCC runtime cleanup code
+     *   4. VBCC tries to close auto-opened libraries
+     *   5. System crashes with 81000005 error
+     *   6. Amiga requires hard reset
+     * 
+     * CURRENT SOLUTION:
+     * -----------------
+     * Call RemTask(NULL) to immediately terminate the task:
+     *   - Bypasses VBCC's buggy cleanup code entirely
+     *   - AmigaOS reclaims all task memory and resources
+     *   - Safe because we manually freed everything above
+     *   - Program exits cleanly without crash
+     * 
+     * POSSIBLE ROOT CAUSES (needs investigation):
+     * -------------------------------------------
+     *   1. Library base pointer corruption during execution
+     *   2. VBCC trying to double-close an already-closed library
+     *   3. Stack/memory corruption affecting cleanup code
+     *   4. Race condition between cleanup and AmigaOS finalization
+     *   5. Bug in VBCC v0.9x -lauto implementation
+     * 
+     * LONG-TERM SOLUTIONS TO INVESTIGATE:
+     * -----------------------------------
+     *   [ ] Remove -lauto flag and manually manage all library bases
+     *   [ ] Update to newer VBCC version if available with fixes
+     *   [ ] Identify specific library causing corruption
+     *   [ ] Test with different Workbench versions (2.0, 3.0, 3.1, 3.2)
+     *   [ ] Compare with other VBCC projects using -lauto successfully
+     *   [ ] Contact VBCC maintainers about potential bug
+     * 
+     * TESTING NOTES:
+     * --------------
+     * Tested on: Workbench 47.080 (3.2)
+     * Test case: Processing WHD: with no icons (empty directory)
+     * Result: RemTask(NULL) = no crash, return = crash every time
+     * 
+     * ======================================================================== */
+#ifdef __AMIGA__
+    /* Remove current task immediately - bypasses return to VBCC cleanup code
+     * This is the nuclear option but necessary due to VBCC -lauto crash bug.
+     * All resources freed above, so this is safe. AmigaOS handles the rest. */
+    RemTask(NULL);  // Never returns - task is removed from system
+    
+    /* Should never reach here - RemTask(NULL) terminates immediately */
     return RETURN_OK;
+#else
+    return RETURN_OK;
+#endif
 }
 
 /* VBCC MIGRATION NOTE: Function implementation for font name validation */

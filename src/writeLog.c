@@ -5,10 +5,14 @@
  * - Replaced fopen() with Open(filename, MODE_NEWFILE)
  * - Replaced fprintf()/vfprintf() with vsnprintf() + Write()
  * - Replaced fclose() with Close()
- * - Added fallback path logic: Bin/Amiga/logs/iTidy.log -> T:iTidy.log
+ * - Log location: PROGDIR:iTidy.log (same directory as executable)
  * - Improved error handling with IoErr()
  * - Used C99 features: inline, //, mixed declarations
  * - Used snprintf for safe string formatting
+ * 
+ * VBCC MIGRATION NOTE (Stage 4): Changed log location from T: to PROGDIR:
+ * - T: is RAM-based and lost on crashes/resets
+ * - PROGDIR:iTidy.log persists and is easy to find
  */
 
 #include "writeLog.h"
@@ -34,21 +38,33 @@ void getTimestamp(char *buffer, int bufferSize)
     }
 }
 
-// Helper function to open log file with fallback
+// Helper function to open log file for appending
 // Returns BPTR to opened file, or 0 on failure
+// VBCC MIGRATION NOTE (Stage 4): Uses PROGDIR: so log survives crashes
+// Opens in append mode (MODE_READWRITE) to preserve existing log data
 static inline BPTR OpenLogFile(const char *preferredPath, const char *fallbackPath)
 {
     BPTR logFile;
     
-    // Try preferred path first
+    // Try preferred path first (PROGDIR: - same directory as executable)
+    // MODE_READWRITE opens existing file, or returns 0 if doesn't exist
+    logFile = Open(preferredPath, MODE_READWRITE);
+    if (logFile) {
+        return logFile;
+    }
+    
+    // If file doesn't exist, create it with MODE_NEWFILE
     logFile = Open(preferredPath, MODE_NEWFILE);
     if (logFile) {
         return logFile;
     }
     
-    // If preferred path failed, try fallback
+    // If preferred path failed completely, try fallback (current directory)
     if (fallbackPath) {
-        logFile = Open(fallbackPath, MODE_NEWFILE);
+        logFile = Open(fallbackPath, MODE_READWRITE);
+        if (!logFile) {
+            logFile = Open(fallbackPath, MODE_NEWFILE);
+        }
     }
     
     return logFile;
@@ -71,8 +87,8 @@ void append_to_log(const char *format, ...)
     vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
 
-    // Try to open log file (primary path with fallback)
-    logFile = OpenLogFile("Bin/Amiga/logs/iTidy.log", "T:iTidy.log");
+    // Try to open log file (PROGDIR: = same directory as executable, fallback to current dir)
+    logFile = OpenLogFile("PROGDIR:iTidy.log", "iTidy.log");
     if (!logFile) {
         // Could not open log file at all
         LONG error = IoErr();
@@ -111,15 +127,28 @@ void append_to_log(const char *format, ...)
 void initialize_logfile(void)
 {
     BPTR logFile;
+    char startMarker[] = "\n\n========================================\n";
 
-    // Try primary path first
-    logFile = Open("Bin/Amiga/logs/iTidy.log", MODE_NEWFILE);
+    // VBCC MIGRATION NOTE (Stage 4): Initialize log with marker, preserving existing content
+    // Open for append if exists, create if doesn't exist
+    logFile = Open("PROGDIR:iTidy.log", MODE_READWRITE);
     if (!logFile) {
-        // Try fallback path
-        logFile = Open("T:iTidy.log", MODE_NEWFILE);
+        // File doesn't exist, create it
+        logFile = Open("PROGDIR:iTidy.log", MODE_NEWFILE);
+    }
+    
+    if (!logFile) {
+        // Try fallback to current directory
+        logFile = Open("iTidy.log", MODE_READWRITE);
+        if (!logFile) {
+            logFile = Open("iTidy.log", MODE_NEWFILE);
+        }
     }
 
     if (logFile) {
+        // Seek to end and write session marker
+        Seek(logFile, 0, OFFSET_END);
+        Write(logFile, startMarker, strlen(startMarker));
         Close(logFile);
     } else {
         LONG error = IoErr();

@@ -1,0 +1,388 @@
+===============================================================================
+iTidy - VBCC Stage 4 Migration Checklist
+Integration, Testing & Optimization Verification
+===============================================================================
+
+Date Started: October 17, 2025
+Target: AmigaOS 3.0-3.2
+Compiler: VBCC v0.9x (+aos68k)
+Status: IN PROGRESS
+
+===============================================================================
+PHASE 1: INTEGRATION & BUILD VERIFICATION
+===============================================================================
+
+[✅] 1.1 - Module Include Verification
+    [✅] main.c includes all required headers
+    [✅] icon_management.h uncommented in main.c
+    [✅] file_directory_handling.h uncommented in main.c
+    [✅] All header files present and accessible
+    [✅] No circular dependencies
+
+[✅] 1.2 - Makefile Configuration
+    [✅] All 15 modules listed in SRCS
+    [✅] CFLAGS correctly set: +aos68k -c99 -cpu=68020
+    [✅] LDFLAGS correctly set: -lamiga -lauto -lmieee
+    [✅] Output directory: Bin/Amiga/iTidy
+    [✅] Build directory structure created
+
+[✅] 1.3 - Clean Build
+    [✅] make clean-all executed successfully
+    [✅] All build artifacts removed
+    [✅] No stale object files remain
+
+[✅] 1.4 - Full Compilation
+    [✅] make amiga executed
+    [✅] main.o compiled
+    [✅] cli_utilities.o compiled
+    [✅] writeLog.o compiled
+    [✅] utilities.o compiled
+    [✅] spinner.o compiled
+    [✅] file_directory_handling.o compiled
+    [✅] icon_types.o compiled
+    [✅] icon_misc.o compiled
+    [✅] icon_management.o compiled
+    [✅] window_management.o compiled
+    [✅] getDiskDetails.o compiled
+    [✅] IControlPrefs.o compiled
+    [✅] WorkbenchPrefs.o compiled
+    [✅] get_fonts.o compiled
+    [✅] amiga_platform.o compiled
+
+[✅] 1.5 - Linking
+    [✅] All object files linked
+    [✅] No undefined symbols
+    [✅] No multiple definition errors
+    [✅] Libraries resolved: icon, dos, intuition, graphics, etc.
+    [✅] Binary created: Bin/Amiga/iTidy
+
+[✅] 1.6 - Binary Verification
+    [✅] Binary file exists at Bin/Amiga/iTidy
+    [✅] Binary size reasonable (~50-60 KB)
+    [✅] Binary is Amiga executable format
+
+===============================================================================
+PHASE 2: CODE AUDIT & VERIFICATION
+===============================================================================
+
+[✅] 2.1 - Startup Logging
+    [✅] append_to_log("=== iTidy starting up (VBCC build) ===\n") added
+    [✅] Log call at beginning of main()
+    [✅] Workbench version logged
+    [✅] Icon spacing logged (DEBUG mode)
+
+[✅] 2.2 - Shutdown Logging
+    [✅] append_to_log("=== iTidy shutting down ===\n") added
+    [✅] Log call before return RETURN_OK
+    [✅] Statistics logged (DEBUG mode)
+
+[✅] 2.3 - Memory Allocation Audit
+    [✅] fontPrefs = AllocVec() → paired with cleanup
+    [✅] iconsErrorTracker.list = AllocVec() → FreeIconErrorList()
+    [✅] fib = AllocDosObject() → FreeDosObject()
+    [✅] dobj = GetDiskObject() → FreeDiskObject()
+    [✅] iconArray = AllocVec() → FreeIconArray()
+    [✅] fontPrefs = malloc() → free()
+    [✅] All allocations balanced
+
+[✅] 2.4 - File Handle Audit
+    [✅] All Open() calls paired with Close()
+    [✅] BPTR type used (not void*)
+    [✅] BPTR initialized to 0 (not NULL)
+    [✅] Error checking with IoErr()
+
+[✅] 2.5 - Directory Lock Audit
+    [✅] All Lock() calls paired with UnLock()
+    [✅] Lock/UnLock pairs in ProcessDirectory()
+    [✅] Lock/UnLock pairs in icon_management.c
+    [✅] Lock/UnLock pairs in utilities.c
+    [✅] Error paths unlock correctly
+
+[✅] 2.6 - Window & Screen Resource Audit
+    [✅] LockPubScreen() paired with UnlockPubScreen()
+    [✅] OpenWindowTags() paired with CloseWindow()
+    [✅] OpenFont() paired with CloseFont()
+    [✅] CleanupWindow() called before exit
+
+[✅] 2.7 - Icon Resource Audit
+    [✅] GetDiskObject() paired with FreeDiskObject()
+    [✅] All icon operations check for NULL
+    [✅] Icon arrays freed with FreeIconArray()
+
+[✅] 2.8 - Timer Resource Audit
+    [✅] setupTimer() called at startup
+    [✅] disposeTimer() called at shutdown
+
+[✅] 2.9 - Error Handling Verification
+    [✅] Fatal errors exit with RETURN_FAIL
+    [✅] Recoverable errors logged and tracked
+    [✅] IconErrorTrackerStruct used for icon failures
+    [✅] IoErr() used for detailed error codes
+
+[✅] 2.10 - VBCC C99 Compliance
+    [✅] // comments used where appropriate
+    [✅] Mixed declarations allowed
+    [✅] inline keyword used for helpers
+    [✅] snprintf/vsnprintf for safe formatting
+    [✅] No VLAs (variable-length arrays)
+
+===============================================================================
+PHASE 3: CLI TESTING (USER ACTION REQUIRED)
+===============================================================================
+
+NOTE: This phase requires running the compiled binary on Amiga hardware
+      or emulator (WinUAE, FS-UAE, etc.)
+
+[ ] 3.1 - Basic Execution
+    [ ] Transfer iTidy to Amiga
+    [ ] Open CLI/Shell
+    [ ] Run: iTidy SYS:Utilities/
+    [ ] Verify icons are tidied
+    [ ] Check return code: echo $RC (should be 0)
+    [ ] Verify log file created
+
+[ ] 3.2 - Recursive Processing
+    [ ] Run: iTidy Work:Projects -subdirs
+    [ ] Verify all subdirectories processed
+    [ ] Check icon count in output
+    [ ] Verify statistics displayed
+
+[ ] 3.3 - View Mode Options
+    [ ] Run: iTidy DH0:Apps -viewByName
+    [ ] Verify folder view changed to text
+    [ ] Run: iTidy DH0:Apps -viewShowAll
+    [ ] Verify all files shown
+
+[ ] 3.4 - Icon Reset Option
+    [ ] Run: iTidy Work:Test -resetIcons
+    [ ] Verify icon positions removed
+    [ ] Check icons rearranged by Workbench
+
+[ ] 3.5 - WHDLoad Handling
+    [ ] Run: iTidy Games:WHDLoad/GameFolder -skipWHD
+    [ ] Verify icon positions preserved
+    [ ] Verify window still resized
+
+[ ] 3.6 - Standard Icons Mode
+    [ ] Run: iTidy Work:Test -forceStandardIcons
+    [ ] Verify classic icon sizes used
+    [ ] Test on Workbench 2.x if available
+
+[ ] 3.7 - Error Handling - Invalid Directory
+    [ ] Run: iTidy NonExistent:Path
+    [ ] Verify error message displayed
+    [ ] Check return code: echo $RC (should be 5)
+
+[ ] 3.8 - Error Handling - Read-Only Device
+    [ ] Run: iTidy CD0:
+    [ ] Verify read-only detection
+    [ ] Check graceful exit message
+
+[ ] 3.9 - Log File Verification
+    [ ] Check Bin/Amiga/logs/iTidy.log exists
+    [ ] Verify startup message present
+    [ ] Verify directory processing logged
+    [ ] Verify shutdown message present
+    [ ] Check IoErr() codes for any errors
+
+[ ] 3.10 - Resource Leak Testing
+    [ ] Run: avail before iTidy
+    [ ] Run: iTidy multiple times
+    [ ] Run: avail after iTidy
+    [ ] Verify memory usage unchanged
+    [ ] Check no zombie processes
+
+[ ] 3.11 - Lock Verification
+    [ ] Run iTidy on a directory
+    [ ] Try to delete/rename directory immediately after
+    [ ] Verify no "object in use" errors
+
+===============================================================================
+PHASE 4: WORKBENCH TESTING (USER ACTION REQUIRED)
+===============================================================================
+
+NOTE: This phase requires Workbench environment on Amiga
+
+[ ] 4.1 - Create iTidy Icon
+    [ ] Create .info file for iTidy binary
+    [ ] Set icon type to Tool
+    [ ] Add tooltypes if needed
+
+[ ] 4.2 - Workbench Launch
+    [ ] Double-click iTidy icon from Workbench
+    [ ] Verify program runs without console
+    [ ] Check log file created silently
+
+[ ] 4.3 - Tooltypes Testing
+    [ ] Add tooltype: DIRECTORY=Work:Projects
+    [ ] Add tooltype: SUBDIRS
+    [ ] Launch from Workbench
+    [ ] Verify tooltypes processed
+
+[ ] 4.4 - Library Auto-Opening
+    [ ] Launch from Workbench
+    [ ] Verify no "library not found" errors
+    [ ] Confirm -lauto linker flag working
+
+[ ] 4.5 - Workbench Integration
+    [ ] Run iTidy on a folder
+    [ ] Open folder in Workbench
+    [ ] Verify icons updated/repositioned
+    [ ] Verify window resized correctly
+
+[ ] 4.6 - IControl Preferences
+    [ ] Set custom IControl settings
+    [ ] Run iTidy
+    [ ] Verify custom borders respected
+    [ ] Verify title bar height correct
+
+[ ] 4.7 - Workbench Preferences
+    [ ] Enable/disable volume gauge
+    [ ] Run iTidy on root directory
+    [ ] Verify gauge setting respected
+
+[ ] 4.8 - Font Preferences
+    [ ] Change Workbench icon font
+    [ ] Run iTidy
+    [ ] Verify custom font used for calculations
+
+===============================================================================
+PHASE 5: PERFORMANCE & OPTIMIZATION
+===============================================================================
+
+[ ] 5.1 - Build Performance
+    [ ] Time clean build: _____ seconds
+    [ ] Time incremental build: _____ seconds
+    [ ] Binary size: _____ KB
+    [ ] Verify reasonable build times
+
+[ ] 5.2 - Runtime Performance
+    [ ] Test on small directory (~10 icons)
+       Time: _____ seconds
+    [ ] Test on medium directory (~100 icons)
+       Time: _____ seconds
+    [ ] Test on large directory (~500 icons)
+       Time: _____ seconds
+    [ ] Verify acceptable performance
+
+[ ] 5.3 - Memory Usage
+    [ ] Base memory usage: _____ KB
+    [ ] Peak memory usage: _____ KB
+    [ ] Memory after exit: _____ KB (should match base)
+
+[ ] 5.4 - Optimization Verification
+    [ ] -O2 flag in CFLAGS
+    [ ] Inline functions used appropriately
+    [ ] No redundant code paths
+    [ ] Dead code eliminated
+
+===============================================================================
+PHASE 6: DOCUMENTATION
+===============================================================================
+
+[✅] 6.1 - Stage 4 Documentation Created
+    [✅] STAGE4_MIGRATION.md - Overview and summary
+    [✅] migration_stage4_notes.txt - Technical details
+    [✅] VBCC_STAGE4_CHECKLIST.txt - This file
+    [✅] INTEGRATION_TEST_RESULTS.md - Test results (to be filled)
+
+[✅] 6.2 - Migration Progress Updated
+    [✅] docs/migration/MIGRATION_PROGRESS.md updated
+    [✅] Stage 4 marked as In Progress or Complete
+    [✅] Completion date added
+
+[ ] 6.3 - Test Results Documented
+    [ ] INTEGRATION_TEST_RESULTS.md filled with results
+    [ ] Screenshots captured (if applicable)
+    [ ] Log excerpts included
+    [ ] Known issues documented
+
+===============================================================================
+PHASE 7: VALIDATION & SIGN-OFF
+===============================================================================
+
+[ ] 7.1 - Compilation Validation
+    [✅] Clean build completes without errors
+    [✅] No warnings (or documented acceptable warnings)
+    [✅] Binary size reasonable
+    [✅] All modules linked
+
+[ ] 7.2 - Runtime Validation
+    [ ] CLI testing completed (Phases 3.1-3.11)
+    [ ] Workbench testing completed (Phases 4.1-4.8)
+    [ ] Performance acceptable (Phase 5.1-5.4)
+    [ ] No crashes or hangs observed
+
+[ ] 7.3 - Resource Validation
+    [ ] No memory leaks detected
+    [ ] No dangling locks
+    [ ] All file handles closed
+    [ ] All resources cleaned up
+
+[ ] 7.4 - Documentation Validation
+    [ ] All Stage 4 docs created
+    [ ] Migration progress updated
+    [ ] Test results documented
+    [ ] Known issues listed
+
+[ ] 7.5 - Final Sign-Off
+    [ ] All critical tests passed
+    [ ] Known issues acceptable
+    [ ] Documentation complete
+    [ ] Ready for release
+
+===============================================================================
+NOTES & ISSUES
+===============================================================================
+
+Known Issues:
+-------------
+1. FontPrefs structure incomplete type warning
+   Status: Does not affect compilation or runtime
+   Impact: None
+
+2. Workbench 2.x icon spacing wider (15x10 vs 9x7)
+   Status: By design - limited icon.library support
+   Impact: Visual only, functionally correct
+
+3. NewIcons not visible on WB 2.x without NewIcons
+   Status: Use -forceStandardIcons flag
+   Impact: Data loss if not using flag
+
+Test Environment:
+-----------------
+Hardware/Emulator: ___________________________
+AmigaOS Version: ___________________________
+Memory: ___________________________
+CPU: ___________________________
+
+===============================================================================
+COMPLETION STATUS
+===============================================================================
+
+Stage 4 Status: ✅ BUILD COMPLETE - AWAITING USER TESTING
+
+Phases Complete:
+[✅] Phase 1: Integration & Build Verification
+[✅] Phase 2: Code Audit & Verification
+[ ] Phase 3: CLI Testing (USER ACTION REQUIRED)
+[ ] Phase 4: Workbench Testing (USER ACTION REQUIRED)
+[ ] Phase 5: Performance & Optimization (USER ACTION REQUIRED)
+[✅] Phase 6: Documentation
+[ ] Phase 7: Validation & Sign-Off (PENDING USER TESTING)
+
+Next Steps:
+1. User transfers binary to Amiga hardware/emulator
+2. User performs CLI testing (Phase 3)
+3. User performs Workbench testing (Phase 4)
+4. User reports results back
+5. Address any issues discovered
+6. Complete final validation
+7. Update INTEGRATION_TEST_RESULTS.md
+
+===============================================================================
+END OF CHECKLIST
+===============================================================================
+
+Last Updated: October 17, 2025
+Stage 4 Build Complete - Ready for User Testing

@@ -39,7 +39,8 @@ void getDeviceNameFromPath(const char *path, char *device_name, int max_length) 
 }
 
 void loadLeftOutIcons(const char *file_path) {
-    void *file;
+    /* VBCC MIGRATION NOTE (Stage 4): Fixed BPTR type for file handle */
+    BPTR file;
     char device_name[MAX_DEVICE_NAME_LENGTH];
     char backdrop_path[256];
     char buffer[256];

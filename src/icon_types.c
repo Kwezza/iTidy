@@ -103,7 +103,8 @@ void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
 /* Function to read the icon size directly from the file */
 bool GetIconSizeFromFile(const char *filePath, IconSize *iconSize)
 {
-    void *fileHandle;
+    /* VBCC MIGRATION NOTE (Stage 4): Fixed BPTR type for file handle */
+    BPTR fileHandle;
     uint8_t buffer[12];  /* Buffer to read the file header */
     int32_t bytesRead;
 
@@ -164,6 +165,8 @@ bool GetStandardIconSize(const char *filePath, IconSize *iconSize)
     if (diskObject == NULL)
     {
         #ifdef DEBUG
+        /* VBCC MIGRATION NOTE (Stage 4): Added error variable for debug logging */
+        LONG error;
         append_to_log("Failed to get DiskObject for the file: %s\n", filePathCopy);
         /* Use IoErr() to get more information about why it failed */
         error = IoErr();
