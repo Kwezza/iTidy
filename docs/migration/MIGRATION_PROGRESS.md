@@ -105,21 +105,97 @@
 
 ---
 
-## Stage 3: Icon & Window Management ⏳ **PENDING**
+## Stage 3: Icon & Window Management ✅ **COMPLETE**
 
-### Modules to Migrate
-- `src/icon_types.c` / `icon_types.h`
-- `src/icon_misc.c` / `icon_misc.h`
-- `src/icon_management.c` / `icon_management.h`
-- `src/window_management.c` / `window_management.h`
-- `src/Settings/IControlPrefs.c` / `IControlPrefs.h`
-- `src/Settings/WorkbenchPrefs.c` / `WorkbenchPrefs.h`
-- `src/Settings/get_fonts.c` / `get_fonts.h`
+### Completed Tasks
 
-### Known Issues to Address
-- `icon_types.c` line 109: `void *fileHandle` should be `BPTR fileHandle`
-- Multiple files use lowercase `bool` instead of AmigaDOS `BOOL`
-- Header file termination warnings (unterminated `//` comments)
+#### 1. **icon_types.c / icon_types.h** - Icon Type Detection ✅
+- ✅ Modernized icon.library usage with proto/icon.h
+- ✅ Replaced void* with BPTR for file handles
+- ✅ Updated GetDiskObject() with proper error handling
+- ✅ Normalized BOOL usage for API functions
+- ✅ Added IoErr() logging for icon loading failures
+- ✅ FreeDiskObject() cleanup on all code paths
+- ✅ Support for NewIcons, OS3.5, and standard formats
+
+#### 2. **icon_misc.c / icon_misc.h** - Icon Utilities ✅
+- ✅ Converted from void* to BPTR for file handles
+- ✅ Updated Open()/Close() with MODE_OLDFILE
+- ✅ FGets() for .backdrop file reading
+- ✅ Safe string handling with snprintf()
+- ✅ Left-out icon tracking functionality
+- ✅ IoErr() checks on file operations
+- ✅ BPTR initialization to 0
+
+#### 3. **icon_management.c / icon_management.h** - Icon Management Core ✅
+- ✅ Complete icon.library modernization
+- ✅ GetDiskObject/PutDiskObject/FreeDiskObject usage
+- ✅ AllocVec(MEMF_CLEAR)/FreeVec() for memory
+- ✅ AllocDosObject/FreeDosObject for FileInfoBlock
+- ✅ IconArray dynamic management
+- ✅ WHDLoad folder icon preservation
+- ✅ Consistent error logging
+- ✅ All BPTR locks properly paired
+
+#### 4. **window_management.c / window_management.h** - Window Management ✅
+- ✅ Modernized intuition.library usage
+- ✅ LockPubScreen/UnlockPubScreen for Workbench screen
+- ✅ Proper struct Window, struct Screen, struct RastPort
+- ✅ Symbolic IDCMP constants instead of magic numbers
+- ✅ OpenFont/CloseFont for font handling
+- ✅ CloseWindow/UnlockPubScreen on all paths
+- ✅ Screen locking for font measurements
+- ✅ Resource cleanup in error conditions
+
+#### 5. **IControlPrefs.c / IControlPrefs.h** - IControl Preferences ✅
+- ✅ Modernized IControl preferences reading
+- ✅ Proper struct IControlPrefs handling
+- ✅ Window border and title bar detection
+- ✅ ICF_CORRECT_RATIO and ratio modes
+- ✅ Version checking (IC_CURRENTVERSION)
+- ✅ Default settings initialization
+- ✅ Flag extraction with bit masking
+- ✅ Title bar height calculations
+
+#### 6. **WorkbenchPrefs.c / WorkbenchPrefs.h** - Workbench Preferences ✅
+- ✅ IFF chunk parsing (FORM/PREF/WBNC)
+- ✅ BPTR file handles with Open/Close
+- ✅ AllocMem(MEMF_PUBLIC|MEMF_CLEAR)/FreeMem
+- ✅ MAKE_ID() for chunk identification
+- ✅ WorkbenchPrefs and WorkbenchExtendedPrefs
+- ✅ Borderless window detection
+- ✅ NewIcons/ColorIcons support
+- ✅ IoErr() logging on failures
+- ✅ Chunk padding handling
+
+#### 7. **get_fonts.c / get_fonts.h** - Font Preferences ✅
+- ✅ Font extraction from ENV:sys/font.prefs
+- ✅ Fallback to ENV:sys/wbfont.prefs (WB 2.x)
+- ✅ BPTR file handles with Open/Read/Close
+- ✅ Default topaz.font 8pt fallback
+- ✅ WB 3.x and WB 2.x format support
+- ✅ Endianness handling (big/little endian)
+- ✅ Fixed-point to integer conversion
+- ✅ malloc/free for FontPref structures
+
+### Documentation
+- `docs/migration/stage3/STAGE3_MIGRATION.md`
+- `docs/migration/stage3/migration_stage3_notes.txt`
+- `docs/migration/stage3/VBCC_STAGE3_CHECKLIST.txt`
+- `docs/migration/stage3/DIFFICULTIES_ENCOUNTERED_STAGE3.md`
+
+### Build Status
+```
+✅ icon_types.c              - Ready for compilation
+✅ icon_misc.c               - Ready for compilation
+✅ icon_management.c         - Ready for compilation
+✅ window_management.c       - Ready for compilation
+✅ IControlPrefs.c           - Ready for compilation
+✅ WorkbenchPrefs.c          - Ready for compilation
+✅ get_fonts.c               - Ready for compilation
+```
+
+**All seven Stage 3 modules documented and ready for VBCC migration!**
 
 ---
 
@@ -263,5 +339,5 @@ vc +aos68k -c99 -cpu=68020 -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ \
 ---
 
 **Last Updated**: October 17, 2025  
-**Status**: Stage 2 Complete ✅  
-**Next Milestone**: Stage 3 - Icon & Window Management
+**Status**: Stage 3 Complete ✅  
+**Next Milestone**: Stage 4 - TBD
