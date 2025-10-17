@@ -8,28 +8,36 @@
  * Compiles with SAS/C.
  */
 
- #ifndef CLI_UTILITIES_H
- #define CLI_UTILITIES_H
- 
- #include <exec/types.h>
- 
- /* Structure to hold cursor position */
- typedef struct {
-     int xPos;
-     int yPos;
- } CursorPos;
- 
- /* Structure to hold console size */
- typedef struct {
-     int rows;
-     int columns;
- } ConsoleSize;
- 
- /* Function prototypes */
- CursorPos getCursorPos(void);
- ConsoleSize getConsoleSize(void);
- void display_help(const char **text);
- int print_wrapped_line(const char *line, int width);
- 
- #endif /* CLI_UTILITIES_H */
- 
+#ifndef CLI_UTILITIES_H
+#define CLI_UTILITIES_H
+
+#include <exec/types.h>
+
+/* Structure to hold cursor position */
+typedef struct
+{
+    int xPos;
+    int yPos;
+} CursorPos;
+
+/* Structure to hold console size */
+typedef struct
+{
+    int rows;
+    int columns;
+} ConsoleSize;
+
+/* Simple struct to track paging & indentation state between calls. */
+typedef struct
+{
+    int printedRows; /* how many rows have been printed so far */
+    int isIndented;  /* 0 = normal, 1 = inside <p> ... </p> block */
+} PrintState;
+
+/* Function prototypes */
+CursorPos getCursorPos(void);
+ConsoleSize getConsoleSize(void);
+void display_help(const char **text);
+
+
+#endif /* CLI_UTILITIES_H */

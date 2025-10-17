@@ -120,7 +120,7 @@ BOOL user_stripIconPosition;
 BOOL user_forceStandardIcons;
 
 /* Define the help text as an array of strings. Each element represents a line. */
-static const char *help_text[] = {
+static const char *help_text2[] = {
     textBold textBlue "iTidy V1.0.0" textReset " - Tidy icons and resize folder windows from CLI.",
     "",
     textBold "Usage:" textReset,
@@ -149,6 +149,49 @@ static const char *help_text[] = {
     "  " textItalic "Provided 'as is' without any warranty. No responsibility for issues." textReset,
     NULL  /* Marks the end of the array */
 };
+
+static const char *help_text4[] = {
+    textBold textBlue "iTidy V1.0.0" textReset " - Tidy icons and resize folder windows from CLI.",
+    "",
+    textBold "Usage:" textReset,
+    "  " textWhite "iTidy <directory> [options]" textReset,
+    "",
+    "iTidy is a versatile command-line tool designed for the Amiga environment. It helps you "
+    "organize your Workbench by tidying icon placements and adjusting folder window sizes. "
+    "Whether you're working on personal projects or managing large work directories, iTidy offers "
+    "a range of options to suit your needs.",
+    "",
+    textBold "Options:" textReset,
+    "<b>-subdirs</b><p>Recursively process subfolders from the specified directory, ensuring that every nested folder is tidied automatically.</p>",
+    "<b>-dontResize</b><p>Run iTidy without resizing or centering the folder window, preserving your current layout.</p>",
+    "<b>-viewShowAll</b><p>Display all files in the folder, including those without icons, so you never miss a file.</p>",
+    "<b>-viewDefault</b><p>Restore the folder's view settings to their default configuration, giving you a familiar look and feel.</p>",
+    "<b>-viewByName</b><p>Arrange the folder's contents in a list sorted by file name, making it easier to locate items.</p>",
+    "<b>-viewByType</b><p>Organize files by type, grouping similar items together for better clarity.</p>",
+    "<b>-resetIcons</b><p>Remove any custom icon positions and revert to default placements.</p>",
+    "<b>-skipWHD</b><p> Retain WHDLoad-set icon positions while still resizing the folder window.</p>",
+    "<b>-forceStd</b><p>Ignore advanced icon sizes and use the classic size for systems without NewIcons support. May remove extra icon data.</p>",
+    "<b>-subdirs</b><p>Recursively process subfolders from the specified directory, ensuring that every nested folder is tidied automatically.</p>",
+    "<b>-dontResize</b><p>Run iTidy without resizing or centering the folder window, preserving your current layout.</p>",
+    "",
+    textBold "Examples:" textReset,
+    "  " textWhite "iTidy Work:Projects -subdirs" textReset "    This command recursively tidies the 'Work:Projects' folder "
+    "and all its subdirectories, ensuring a neat workspace.",
+    "  " textWhite "iTidy DF0: -viewByName -resetIcons" textReset "    Use this command to arrange the 'DF0:' folder by name "
+    "and remove custom icon placements, restoring default settings.",
+    "",
+    textBold "Important & Disclaimer:" textReset,
+    "  Please back up your system before running iTidy. This tool is provided as-is without any warranty, "
+    "and the author accepts no responsibility for any issues that may occur.",
+    NULL  /* Marks the end of the array */
+};
+
+static const char *help_text[] = {
+    "<b>-subdirs</b><p>Recursively process .</p>",
+    "<b>-dontResize</b><p>Run iTidy without .</p>",
+    NULL  /* Marks the end of the array */
+};
+
 
 
 
@@ -249,7 +292,7 @@ void print_usage(const char *program_name)
     printf("  " textBold "-viewByType  " textReset "List mode sorted by type.\n");
     printf("  " textBold "-resetIcons  " textReset "Remove saved icon positions.\n");
     printf("  " textBold "-skipWHD     " textReset "Keep WHDLoad positions but resize.\n");
-    printf("  " textBold "-forceStd    " textReset "Ignore advanced icon sizes, use classic size for machines \n");
+    printf("  " textBold "-forceStd    " textReset "Ignore advanced icon sizes, use classic size for machines without NewIcons support. May remove some NewIcon data.\n");
     printf("               " textBlack "without NewIcons support. May remove some NewIcon data." textReset "\n\n");
     
     
