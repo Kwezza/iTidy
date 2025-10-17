@@ -1,15 +1,17 @@
+#include <platform/platform.h>
+#include <platform/platform_io.h>
+
+#if PLATFORM_AMIGA
+#include <platform/amiga_headers.h>
 #include <graphics/text.h>
-#include <exec/types.h>
 #include <graphics/rastport.h>
-#include <stddef.h>
 #include <exec/execbase.h>
-#include <proto/exec.h>
-#include <proto/dos.h>
 #include <dos/dos.h>
 #include <math.h>
-#include <exec/memory.h>
-#include <string.h>
+#endif
 
+#include <stddef.h>
+#include <string.h>
 
 #include "main.h"
 #include "writeLog.h"
@@ -17,16 +19,24 @@
 
 
 // Function to read Kickstart version from memory for Kickstart 1.3 and earlier
-UWORD GetKickstartVersion() {
+uint16_t GetKickstartVersion(void)
+{
+#if PLATFORM_AMIGA
     return *((volatile UWORD*)0x00FC);
+#else
+    /* Host stub - return a default version */
+    return 36; /* Simulate Workbench 2.0+ */
+#endif
 }
 
 // Function to get Workbench version, compatible with older versions
-int GetWorkbenchVersion(void) {
+int GetWorkbenchVersion(void)
+{
+#if PLATFORM_AMIGA
     struct Library *DOSBase;
     int WBversion;
     int libVersion;
-    int libRevision; 
+    int libRevision;
     // Check Kickstart version to determine if the system is pre-2.0
     UWORD kickstartVersion = GetKickstartVersion();
 
@@ -59,6 +69,10 @@ int GetWorkbenchVersion(void) {
     CloseLibrary(DOSBase);
 
     return WBversion;
+#else
+    /* Host stub - return a default Workbench version */
+    return 40420; /* Simulate Workbench 3.1 */
+#endif
 }
 
 void LookupWorkbenchVersion(int revision, char *versionString) {
@@ -172,7 +186,7 @@ char* convertWBVersionWithDot(int number) {
     sprintf(buffer, "%d", number);
 
     // Allocate memory for the result string
-    result = (char*)malloc(strlen(buffer) + 2); // +2 for the dot and null terminator
+    result = (char*)whd_malloc(strlen(buffer) + 2); // +2 for the dot and null terminator
 
     // Check if memory allocation was successful
     if (result == NULL) {
@@ -181,7 +195,7 @@ char* convertWBVersionWithDot(int number) {
 
     // Insert the dot after the first two digits
     strncpy(result, buffer, 2);
-    result[2] = '.'; 
+    result[2] = '.';
     strcpy(result + 3, buffer + 2);
 
     return result;
@@ -191,8 +205,9 @@ char* convertWBVersionWithDot(int number) {
 
 void CalculateTextExtent(const char *text, struct TextExtent *textExtent)
 {
+#if PLATFORM_AMIGA
     // struct TextExtent textExtent;
-    ULONG textLength = strlen(text);
+    uint32_t textLength = strlen(text);
 
     if (!rastPort)
     {
@@ -202,12 +217,16 @@ void CalculateTextExtent(const char *text, struct TextExtent *textExtent)
 
     // Calculate text extent
     TextExtent(rastPort, text, textLength, textExtent);
+#else
+    (void)text;
+    (void)textExtent;
+#endif
 }
 
 
 int Compare(const void *a, const void *b)
 {
-    return stricmp(*(const char **)a, *(const char **)b);
+    return platform_stricmp(*(const char **)a, *(const char **)b);
 }
 
 int strncasecmp_custom(const char *s1, const char *s2, size_t n)
@@ -229,14 +248,15 @@ int strncasecmp_custom(const char *s1, const char *s2, size_t n)
     return 0;
 }
 
-BOOL does_file_or_folder_exist(const char *filename, int appendWorkingDirectory)
+bool does_file_or_folder_exist(const char *filename, int appendWorkingDirectory)
 {
-    BPTR lock;
-    BOOL exists = FALSE;
+#if PLATFORM_AMIGA
+    void *lock;
+    bool exists = false;
     //LONG errorCode = 0;
     char currentDir[256];
     char newFilePath[512] = {0}; /* Ensure buffer is initially empty */
-    
+
     /* Retrieve current directory */
     if (GetCurrentDirName(currentDir, sizeof(currentDir)) == DOSFALSE)
     {
@@ -249,11 +269,11 @@ BOOL does_file_or_folder_exist(const char *filename, int appendWorkingDirectory)
         if (!AddPart(currentDir, filename, sizeof(currentDir)))
         {
             printf("Failed to append filename to current directory\n");
-            return FALSE;
+            return false;
         }
         strncpy(newFilePath, currentDir, sizeof(newFilePath) - 1);
         lock = Lock(newFilePath, ACCESS_READ);
-        
+
         #ifdef DEBUGLocks
         append_to_log("Locking directory (does_file_or_folder_exist): %s\n", newFilePath);
         #endif
@@ -267,7 +287,7 @@ BOOL does_file_or_folder_exist(const char *filename, int appendWorkingDirectory)
     {
         strncpy(newFilePath, filename, sizeof(newFilePath) - 1);
         lock = Lock(newFilePath, ACCESS_READ);
-        
+
         #ifdef DEBUGLocks
         append_to_log("Locking directory (does_file_or_folder_exist): %s\n", newFilePath);
         #endif
@@ -275,14 +295,14 @@ BOOL does_file_or_folder_exist(const char *filename, int appendWorkingDirectory)
         if (lock == NULL)
         {
          //do nothing - no lock means the file doesnt exist or there is maybe some kind of issue.  Assume it cant be accessed either way.'
-           
+
         }
     }
 
     /* Check if file lock was successful */
     if (lock)
     {
-        exists = TRUE;
+        exists = true;
         #ifdef DEBUGLocks
         append_to_log("Unlocking directory: %s\n", newFilePath);
         #endif
@@ -290,6 +310,24 @@ BOOL does_file_or_folder_exist(const char *filename, int appendWorkingDirectory)
     }
 
     return exists;
+#else
+    /* Host implementation using standard C */
+    FILE *file;
+    char fullPath[512];
+
+    (void)appendWorkingDirectory; /* Ignore for now on host */
+
+    strncpy(fullPath, filename, sizeof(fullPath) - 1);
+    fullPath[sizeof(fullPath) - 1] = '\0';
+
+    file = fopen(fullPath, "r");
+    if (file)
+    {
+        fclose(file);
+        return true;
+    }
+    return false;
+#endif
 }
 
 void trim(char *str)
@@ -324,9 +362,8 @@ void trim(char *str)
 }
 
 void WaitChar(void)
-{   
-//getchar();
-
+{
+#if PLATFORM_AMIGA
     /* The BPTR to the input file handle */
     BPTR inputHandle;
     struct FileHandle *fh;
@@ -344,6 +381,10 @@ void WaitChar(void)
 
     /* Restore the console to normal mode */
     SetMode(inputHandle, 0);
+#else
+    /* Host implementation - simple getchar */
+    getchar();
+#endif
 }
 
 void remove_CR_LF_from_string(char *str)
@@ -374,7 +415,7 @@ int endsWithInfo(const char *filePath) {
 
     // Check if the filePath is shorter than the extension
     if (pathLength < extLength) {
-        return FALSE;
+        return false;
     }
 
     // Set pointers to the end of filePath and extension
@@ -398,11 +439,11 @@ int endsWithInfo(const char *filePath) {
 
         // Compare the lowercase characters
         if (c1 != c2) {
-            return FALSE;
+            return false;
         }
     }
 
-    return TRUE;
+    return true;
 }
 
 /**
@@ -434,7 +475,7 @@ char *removeTextFromStartOfString(const char *str, const char *prefix) {
     /* Check if the prefix matches */
     if (prefixLen > strLen || strncmp(str, prefix, prefixLen) != 0) {
         /* Prefix not found, return a copy of the original string */
-        copy = (char *)AllocVec(strLen + 1, MEMF_CLEAR);
+        copy = (char *)whd_malloc(strLen + 1);
         if (copy) {
             strcpy(copy, str);
         }
@@ -442,7 +483,7 @@ char *removeTextFromStartOfString(const char *str, const char *prefix) {
     }
 
     /* Create new string with prefix removed */
-    newStr = (char *)AllocVec(strLen - prefixLen + 1, MEMF_CLEAR);
+    newStr = (char *)whd_malloc(strLen - prefixLen + 1);
     if (newStr) {
         strcpy(newStr, str + prefixLen);
     }

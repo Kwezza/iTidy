@@ -1,24 +1,13 @@
 // opens a small window to get the font width settings
 
-#include <exec/types.h>
-#include <libraries/dos.h>
-#include <workbench/workbench.h>
-#include <workbench/icon.h>
-#include <proto/exec.h>
-#include <proto/dos.h>
-#include <proto/icon.h>
-#include <proto/intuition.h>
-#include <proto/graphics.h>
+#include <platform/platform.h>
+#include <platform/platform_io.h>
+#include <platform/amiga_headers.h>
+
 #include <stddef.h>
-#include <exec/memory.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <proto/intuition.h>
-#include <proto/diskfont.h>
-#include <intuition/intuition.h>
-#include <graphics/text.h>
-#include <prefs/font.h>
 
 #include "main.h"
 #include "icon_management.h"
@@ -35,8 +24,9 @@ struct TextFont *iconFont;
 
 #define FP_WBFONT 0
 
-void CleanupWindow()
+void CleanupWindow(void)
 {
+#if PLATFORM_AMIGA
     if (font)
     {
         CloseFont(font); // Close the opened font
@@ -49,11 +39,13 @@ void CleanupWindow()
     {
         UnlockPubScreen("Workbench", screen);
     }
+#endif
 }
 
 int FormatIconsAndWindow(char *folder)
 {
-    BPTR lock;
+#if PLATFORM_AMIGA
+    void *lock;
     int newWidth = 320;
     int minAverageWidthPercent = -100;
 
@@ -75,10 +67,15 @@ int FormatIconsAndWindow(char *folder)
     #endif
     UnLock(lock);
     return 0;
+#else
+    (void)folder;
+    return 0;
+#endif
 }
 
 void resizeFolderToContents(char *dirPath, IconArray *iconArray)
 {
+#if PLATFORM_AMIGA
     int i, maxWidth = 0, maxHeight = 0;
 
     if (user_folderViewMode == DDVM_BYICON)
@@ -97,14 +94,19 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray)
     }
 
     repoistionWindow(dirPath, maxWidth, maxHeight);
+#else
+    (void)dirPath;
+    (void)iconArray;
+#endif
 }
 
 void GetWorkbenchIconFont(char *fontName, int *fontSize)
 {
+#if PLATFORM_AMIGA
     struct IFFHandle *iff;
     struct ContextNode *cn;
     struct FontPrefs fontPrefs;
-    BPTR file;
+    void *file;
 
     // Default fallback font
     strcpy(fontName, "topaz.font");
@@ -166,11 +168,16 @@ void GetWorkbenchIconFont(char *fontName, int *fontSize)
     #ifdef DEBUG
     printf("Workbench Icon Font: %s, Size: %d\n", fontName, *fontSize);
     #endif
+#else
+    (void)fontName;
+    (void)fontSize;
+#endif
 }
 
 // Function to load and apply the Workbench Icon Font
-void SetIconFont()
+void SetIconFont(void)
 {
+#if PLATFORM_AMIGA
     //char fontName[32];
     //int fontSize;
     struct TextAttr textAttr;
@@ -202,11 +209,13 @@ void SetIconFont()
         printf("Failed to load Workbench Icon Font, using default screen font.\n");
         SetFont(rastPort, screen->RastPort.Font);
     }
+#endif
 }
 
 // Function to initialize a window and apply the Workbench Icon Font
-int InitializeWindow()
+int InitializeWindow(void)
 {
+#if PLATFORM_AMIGA
     int windowWidth = 1;
     int windowHeight = 1;
     int windowLeft;
@@ -248,11 +257,14 @@ int InitializeWindow()
     SetIconFont();
 
     return 1;
+#else
+    return 0;
+#endif
 }
 
 void repoistionWindow(char *dirPath, int winWidth, int winHeight)
 {
-
+#if PLATFORM_AMIGA
     int posTop = 0, posLeft = 0;
     folderWindowSize newFolderInfo;
     #ifdef DEBUG_MAX
@@ -262,7 +274,7 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight)
     if (!prefsWorkbench.disableVolumeGauge && IsRootDirectorySimple(dirPath))
     {
         winWidth += prefsIControl.currentCGaugeWidth;
-        
+
     #ifdef DEBUG_MAX
         append_to_log("Root dir detected and VolumeGauge enabled. Adding CGauge width: %d\n", prefsIControl.currentCGaugeWidth);
     #endif
@@ -293,4 +305,9 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight)
     #endif
 
     SaveFolderSettings(dirPath, &newFolderInfo,0);
+#else
+    (void)dirPath;
+    (void)winWidth;
+    (void)winHeight;
+#endif
 }

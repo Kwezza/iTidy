@@ -1,8 +1,6 @@
-#include <exec/types.h>
-#include <dos/dos.h>
-#include <exec/types.h>
-#include <proto/dos.h>
-#include <proto/exec.h>
+#include <platform/platform.h>
+#include <platform/amiga_headers.h>
+
 #include <stdio.h>
 #include <string.h>
 
@@ -41,7 +39,7 @@ void getDeviceNameFromPath(const char *path, char *device_name, int max_length) 
 }
 
 void loadLeftOutIcons(const char *file_path) {
-    BPTR file;
+    void *file;
     char device_name[MAX_DEVICE_NAME_LENGTH];
     char backdrop_path[256];
     char buffer[256];
@@ -83,7 +81,11 @@ void loadLeftOutIcons(const char *file_path) {
 
     /* Read each line in the file and store it in the array */
     i = 0;
+#if PLATFORM_AMIGA
     while (FGets(file, buffer, sizeof(buffer))) {
+#else
+    while (fgets(buffer, sizeof(buffer), (FILE*)file)) {
+#endif
         /* Remove the newline character */
         line = strchr(buffer, '\n');
         if (line) {
@@ -123,15 +125,15 @@ int isIconLeftOut(const char *icon_path) {
             break;
         }
         if (strcmp(left_out_icons[i], icon_path) == 0) {
-            return TRUE;  /* Icon found in the list */
+            return true;  /* Icon found in the list */
         }
     }
 
-    return FALSE;  /* Icon not found */
+    return false;  /* Icon not found */
 }
 
 void dumpLeftOutIcons(void) {
-    
+
 #ifdef DEBUG_MAX
 int i;
     for (i = 0; i < MAX_LEFT_OUT_ICONS; i++) {

@@ -1,14 +1,8 @@
-#include <exec/types.h>
-#include <libraries/dos.h>
-#include <workbench/workbench.h>
-#include <workbench/icon.h>
-#include <proto/exec.h>
-#include <proto/dos.h>
-#include <proto/icon.h>
-#include <proto/intuition.h>
-#include <proto/graphics.h>
+#include <platform/platform.h>
+#include <platform/platform_io.h>
+#include <platform/amiga_headers.h>
+
 #include <stddef.h>
-#include <exec/memory.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -24,8 +18,8 @@
 void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
 {
     struct DiskObject *diskObject;
-    STRPTR *toolTypes;
-    STRPTR toolType;
+    char **toolTypes;
+    char *toolType;
     char *prefix = "IM1=";
     int i;
     char *filePathCopy;
@@ -39,13 +33,14 @@ void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
 
     /* Make a copy of the file path to work with */
     filePathLen = strlen(filePath);
-    filePathCopy = (char *)AllocVec(filePathLen + 1, MEMF_CLEAR);
+    filePathCopy = (char *)whd_malloc(filePathLen + 1);
     if (!filePathCopy)
     {
         printf("Memory allocation failed.\n");
         return;
     }
 
+    memset(filePathCopy, 0, filePathLen + 1);
     strncpy(filePathCopy, filePath, filePathLen);
     filePathCopy[filePathLen] = '\0'; /* Ensure null termination */
 
@@ -54,7 +49,7 @@ void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
 #endif
 
     /* Remove the ".info" suffix if it exists */
-    if (filePathLen > 5 && stricmp(filePathCopy + filePathLen - 5, ".info") == 0)
+    if (filePathLen > 5 && platform_stricmp(filePathCopy + filePathLen - 5, ".info") == 0)
     {
         filePathCopy[filePathLen - 5] = '\0'; /* Truncate the .info part */
 #ifdef DEBUG_MAX
@@ -67,7 +62,7 @@ void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
     if (!diskObject)
     {
         printf("Failed to get DiskObject for the file: %s\n", filePathCopy);
-        FreeVec(filePathCopy);
+        whd_free(filePathCopy);
         return;
     }
 
@@ -76,7 +71,7 @@ void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
     {
         printf("Invalid or missing ToolTypes in DiskObject.\n");
         FreeDiskObject(diskObject);
-        FreeVec(filePathCopy);
+        whd_free(filePathCopy);
         return;
     }
 
@@ -102,21 +97,21 @@ void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
 
     /* Cleanup */
     FreeDiskObject(diskObject);
-    FreeVec(filePathCopy);
+    whd_free(filePathCopy);
 }
 
 /* Function to read the icon size directly from the file */
-BOOL GetIconSizeFromFile(const char *filePath, IconSize *iconSize)
+bool GetIconSizeFromFile(const char *filePath, IconSize *iconSize)
 {
-    BPTR fileHandle;
-    UBYTE buffer[12];  /* Buffer to read the file header */
-    LONG bytesRead;
+    void *fileHandle;
+    uint8_t buffer[12];  /* Buffer to read the file header */
+    int32_t bytesRead;
 
     /* Open the icon file */
     fileHandle = Open(filePath, MODE_OLDFILE);
     if (fileHandle == 0)
     {
-        return FALSE;  /* Failed to open the file */
+        return false;  /* Failed to open the file */
     }
 
     /* Read the first 12 bytes (just enough to get the size at 0x08 and 0x0A) */
@@ -124,7 +119,7 @@ BOOL GetIconSizeFromFile(const char *filePath, IconSize *iconSize)
     if (bytesRead != sizeof(buffer))
     {
         Close(fileHandle);
-        return FALSE;  /* Failed to read the necessary bytes */
+        return false;  /* Failed to read the necessary bytes */
     }
 
     /* Extract the width and height from the file at offset 0x08 and 0x0A */
@@ -134,20 +129,20 @@ BOOL GetIconSizeFromFile(const char *filePath, IconSize *iconSize)
     append_to_log("Hex read of format size: width = %d, height = %d\n", iconSize->width, iconSize->height);
 #endif
     Close(fileHandle);
-    return TRUE;
+    return true;
 }
 
-BOOL GetStandardIconSize(const char *filePath, IconSize *iconSize) 
+bool GetStandardIconSize(const char *filePath, IconSize *iconSize)
 {
     struct DiskObject *diskObject;
     char filePathCopy[256]; /* Buffer to hold the modified file path */
     int filePathLength;
-    //LONG error; /* To store the IoErr() value */
+    //int32_t error; /* To store the IoErr() value */
 
     /* Check for NULL pointers */
     if (filePath == NULL || iconSize == NULL)
     {
-        return FALSE;
+        return false;
     }
 
     /* Copy the file path to a local buffer */
@@ -156,7 +151,7 @@ BOOL GetStandardIconSize(const char *filePath, IconSize *iconSize)
     filePathLength = strlen(filePathCopy);
 
     /* Remove the ".info" suffix if present (case-insensitive check) */
-    if (filePathLength > 5 && stricmp(filePathCopy + filePathLength - 5, ".info") == 0)
+    if (filePathLength > 5 && platform_stricmp(filePathCopy + filePathLength - 5, ".info") == 0)
     {
         filePathCopy[filePathLength - 5] = '\0';
     }
@@ -174,7 +169,7 @@ BOOL GetStandardIconSize(const char *filePath, IconSize *iconSize)
         error = IoErr();
         append_to_log("GetDiskObject failed. IoErr: %ld\n", error);
         #endif
-        return FALSE; /* Failed to get the DiskObject */
+        return false; /* Failed to get the DiskObject */
     }
 
     /* Retrieve the width and height from the DiskObject's GfxImage structure */
@@ -184,7 +179,7 @@ BOOL GetStandardIconSize(const char *filePath, IconSize *iconSize)
     /* Free the DiskObject to avoid memory leaks */
     FreeDiskObject(diskObject);
 
-    return TRUE; /* Successfully retrieved and stored the icon size */
+    return true; /* Successfully retrieved and stored the icon size */
 }
 
 /* Function to get the X and Y position from an .info file */
@@ -195,7 +190,7 @@ IconPosition GetIconPositionFromPath(const char *iconPath)
     size_t pathLength;             /* Length of the icon path */
     struct DiskObject *diskObject; /* Pointer to the DiskObject structure */
 
-    if(does_file_or_folder_exist(iconPath,0) == FALSE)
+    if(does_file_or_folder_exist(iconPath,0) == false)
     {
         position.x = -1;
         position.y = -1;
@@ -210,13 +205,14 @@ IconPosition GetIconPositionFromPath(const char *iconPath)
     pathLength = strlen(iconPath);
 
     /* Allocate memory for the path copy */
-    pathCopy = (char *)AllocVec(pathLength + 1, MEMF_CLEAR);
+    pathCopy = (char *)whd_malloc(pathLength + 1);
     if (pathCopy == NULL)
     {
         printf("Failed to allocate memory for path copy.\n");
         return position;
     }
 
+    memset(pathCopy, 0, pathLength + 1);
     /* Copy the original icon path to the allocated memory */
     strncpy(pathCopy, iconPath, pathLength);
 
@@ -234,7 +230,7 @@ IconPosition GetIconPositionFromPath(const char *iconPath)
     if (diskObject == NULL)
     {
         printf("Error: Unable to load icon. Corrupted or unknown format: %s.info\n", pathCopy);
-        FreeVec(pathCopy); /* Free the allocated memory */
+        whd_free(pathCopy); /* Free the allocated memory */
         return position;
     }
     /* Get the current X and Y positions */
@@ -247,30 +243,31 @@ IconPosition GetIconPositionFromPath(const char *iconPath)
 
     /* Free the DiskObject and the path copy */
     FreeDiskObject(diskObject);
-    FreeVec(pathCopy);
+    whd_free(pathCopy);
 
     return position;
 }
 
-BOOL IsNewIconPath(const STRPTR filePath)
+bool IsNewIconPath(const char *filePath)
 {
-    BOOL newIconFormat = FALSE;
+    bool newIconFormat = false;
     struct DiskObject *diskObject = NULL;
-    STRPTR adjustedFilePath = NULL;
-    STRPTR *toolTypes;
+    char *adjustedFilePath = NULL;
+    char **toolTypes;
 
     /* Check if the provided filepath ends with ".info" */
     size_t len = strlen(filePath);
-    if (len >= 5 && stricmp(filePath + len - 5, ".info") == 0)
+    if (len >= 5 && platform_stricmp(filePath + len - 5, ".info") == 0)
     {
         /* Allocate memory for the new path without ".info" */
-        adjustedFilePath = (STRPTR)AllocVec(len - 4, MEMF_CLEAR);
+        adjustedFilePath = (char *)whd_malloc(len - 4);
         if (adjustedFilePath == NULL)
         {
             /* Memory allocation failed */
-            return FALSE;
+            return false;
         }
 
+        memset(adjustedFilePath, 0, len - 4);
         /* Create a new string without the ".info" extension */
         strncpy(adjustedFilePath, filePath, len - 5);
         adjustedFilePath[len - 5] = '\0';
@@ -278,13 +275,14 @@ BOOL IsNewIconPath(const STRPTR filePath)
     else
     {
         /* Allocate memory for the original path */
-        adjustedFilePath = (STRPTR)AllocVec(len + 1, MEMF_CLEAR);
+        adjustedFilePath = (char *)whd_malloc(len + 1);
         if (adjustedFilePath == NULL)
         {
             /* Memory allocation failed */
-            return FALSE;
+            return false;
         }
 
+        memset(adjustedFilePath, 0, len + 1);
         /* Copy the original filepath */
         strncpy(adjustedFilePath, filePath, len);
         adjustedFilePath[len] = '\0'; /* Ensure null-termination */
@@ -294,8 +292,8 @@ BOOL IsNewIconPath(const STRPTR filePath)
     diskObject = GetDiskObject(adjustedFilePath);
     if (diskObject == NULL)
     {
-        FreeVec(adjustedFilePath);
-        return FALSE;
+        whd_free(adjustedFilePath);
+        return false;
     }
 
     /* Get the ToolTypes */
@@ -307,9 +305,9 @@ BOOL IsNewIconPath(const STRPTR filePath)
         while (*toolTypes != NULL)
         {
 
-            if (stricmp(*toolTypes, "*** DON'T EDIT THE FOLLOWING LINES!! ***") == 0)
+            if (platform_stricmp(*toolTypes, "*** DON'T EDIT THE FOLLOWING LINES!! ***") == 0)
             {
-                newIconFormat = TRUE;
+                newIconFormat = true;
 #ifdef DEBUG
                 append_to_log("New icon format detected.\n");
 #endif
@@ -322,11 +320,11 @@ BOOL IsNewIconPath(const STRPTR filePath)
 
     /* Clean up */
     FreeDiskObject(diskObject);
-    FreeVec(adjustedFilePath);
+    whd_free(adjustedFilePath);
 
     /* Return the result */
     return newIconFormat;
-} /* IsNewIcon */
+} /* IsNewIconPath */
 
 
 
@@ -337,7 +335,7 @@ BOOL IsNewIconPath(const STRPTR filePath)
 int isIconTypeDisk(const char *filename,long fib_DirEntryType)
 {
     FILE *file;
-    UBYTE ic_Type;
+    uint8_t ic_Type;
     long fileSize;
 
 
@@ -388,7 +386,7 @@ if (fib_DirEntryType > 0) return 0;
 int isOS35IconFormat(const char *filename)
 {
     FILE *file;
-    UBYTE buffer[CHUNK_SIZE];
+    uint8_t buffer[CHUNK_SIZE];
     size_t bytesRead;
     long fileSize;
     int foundForm = 0; /* Flag to indicate if "FORM" has been found */
@@ -527,10 +525,10 @@ int isOS35IconFormat(const char *filename)
     /* Return true if both "FORM" and "ICON" were found */
     return (foundForm && foundIcon);
 }
-BOOL IsNewIcon(struct DiskObject *diskObject)
+bool IsNewIcon(struct DiskObject *diskObject)
 {
-    STRPTR *toolTypes;
-    BOOL newIconFormat = FALSE;
+    char **toolTypes;
+    bool newIconFormat = false;
 
     toolTypes = diskObject->do_ToolTypes;
 #ifdef DEBUG_MAX
@@ -542,9 +540,9 @@ BOOL IsNewIcon(struct DiskObject *diskObject)
 
         while (*toolTypes != NULL)
         {
-            if (stricmp(*toolTypes, "*** DON'T EDIT THE FOLLOWING LINES!! ***") == 0)
+            if (platform_stricmp(*toolTypes, "*** DON'T EDIT THE FOLLOWING LINES!! ***") == 0)
             {
-                newIconFormat = TRUE;
+                newIconFormat = true;
             } /* if */
             toolTypes++;
         } /* while */
@@ -552,16 +550,16 @@ BOOL IsNewIcon(struct DiskObject *diskObject)
 
     if (newIconFormat)
     {
-        return TRUE;
+        return true;
     } /* if */
 
-    return FALSE;
+    return false;
 } /* IsNewIcon */
 
 int getOS35IconSize(const char *filename, IconSize *size)
 {
     FILE *file;
-    UBYTE buffer[CHUNK_SIZE];
+    uint8_t buffer[CHUNK_SIZE];
     size_t bytesRead;
     long fileSize;
     int foundForm = 0; /* Flag to indicate if "FORM" has been found */

@@ -1,18 +1,11 @@
-#include <exec/types.h>
-#include <libraries/dos.h>
-#include <workbench/workbench.h>
-#include <workbench/icon.h>
-#include <proto/exec.h>
-#include <proto/dos.h>
-#include <proto/icon.h>
-#include <proto/intuition.h>
-#include <proto/graphics.h>
+#include <platform/platform.h>
+#include <platform/platform_io.h>
+#include <platform/amiga_headers.h>
+
 #include <stddef.h>
-#include <exec/memory.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <exec/libraries.h>
 
 #include "main.h"
 #include "icon_management.h"
@@ -24,6 +17,8 @@
 #include "writeLog.h"
 #include "icon_misc.h"
 #include "dos/getDiskDetails.h"
+#include "Settings/WorkbenchPrefs.h"
+#include "Settings/IControlPrefs.h"
 
 void FreeIconArray(IconArray *iconArray)
 {
@@ -38,24 +33,25 @@ void FreeIconArray(IconArray *iconArray)
             {
                 if (iconArray->array[i].icon_text != NULL)
                 {
-                    FreeVec(iconArray->array[i].icon_text);
+                    whd_free(iconArray->array[i].icon_text);
                 } /* if */
                 if (iconArray->array[i].icon_full_path != NULL)
                 {
-                    FreeVec(iconArray->array[i].icon_full_path);
+                    whd_free(iconArray->array[i].icon_full_path);
                 } /* if */
             } /* for */
-            FreeVec(iconArray->array);
+            whd_free(iconArray->array);
         } /* if */
-        FreeVec(iconArray);
+        whd_free(iconArray);
     } /* if */
 }
 
 IconArray *CreateIconArray(void)
 {
-    IconArray *iconArray = (IconArray *)AllocVec(sizeof(IconArray), MEMF_CLEAR);
+    IconArray *iconArray = (IconArray *)whd_malloc(sizeof(IconArray));
     if (iconArray != NULL)
     {
+        memset(iconArray, 0, sizeof(IconArray));
         iconArray->array = NULL; /* Start with no allocated array */
         iconArray->size = 0;
         iconArray->capacity = 0;
@@ -63,31 +59,33 @@ IconArray *CreateIconArray(void)
     return iconArray;
 }
 
-BOOL AddIconToArray(IconArray *iconArray, const FullIconDetails *newIcon)
+bool AddIconToArray(IconArray *iconArray, const FullIconDetails *newIcon)
 {
     FullIconDetails *newArray;
     size_t newCapacity;
 
     if (iconArray == NULL || newIcon == NULL)
     {
-        return FALSE;
+        return false;
     } /* if */
 
     if (iconArray->size >= iconArray->capacity)
     {
         /* Increase capacity (start with 1 if currently 0) */
         newCapacity = (iconArray->capacity == 0) ? 1 : iconArray->capacity * 2;
-        newArray = (FullIconDetails *)AllocVec(newCapacity * sizeof(FullIconDetails), MEMF_CLEAR);
+        newArray = (FullIconDetails *)whd_malloc(newCapacity * sizeof(FullIconDetails));
         if (newArray == NULL)
         {
-            return FALSE;
+            return false;
         } /* if */
+
+        memset(newArray, 0, newCapacity * sizeof(FullIconDetails));
 
         /* Copy existing elements to new array */
         if (iconArray->array != NULL)
         {
-            CopyMem(iconArray->array, newArray, iconArray->size * sizeof(FullIconDetails));
-            FreeVec(iconArray->array);
+            memcpy(newArray, iconArray->array, iconArray->size * sizeof(FullIconDetails));
+            whd_free(iconArray->array);
         } /* if */
 
         iconArray->array = newArray;
@@ -98,10 +96,10 @@ BOOL AddIconToArray(IconArray *iconArray, const FullIconDetails *newIcon)
     iconArray->array[iconArray->size] = *newIcon;
     iconArray->size += 1;
 
-    return TRUE;
+    return true;
 }
 
-IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
+IconArray *CreateIconArrayFromPath(void *lock, const char *dirPath)
 {
     struct TextExtent textExtent;
     FullIconDetails newIcon;
@@ -114,7 +112,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
     int textLength, fileCount = 0, maxWidth = 0;
     IconPosition iconPosition;
 
-    iconArray->hasOnlyBorderlessIcons = FALSE;
+    iconArray->hasOnlyBorderlessIcons = false;
 
     if (!iconArray)
     {
@@ -147,7 +145,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
 
                     if (fileExtension != NULL && strlen(fileExtension) == 5 && strncasecmp_custom(fileExtension, ".info", 5) == 0 && strlen(fib->fib_FileName) > 5)
                     {
-                        if (isIconLeftOut(fullPathAndFile) == FALSE)
+                        if (isIconLeftOut(fullPathAndFile) == false)
                         {
                             removeInfoExtension(fullPathAndFile, fullPathAndFileNoInfo);
                             if (IsValidIcon(fullPathAndFileNoInfo))
@@ -166,7 +164,7 @@ removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
                                 newIcon.icon_y = 0;
                                 newIcon.icon_text = NULL;
                                 newIcon.icon_full_path = NULL;
-                                newIcon.is_folder = FALSE;
+                                newIcon.is_folder = false;
 
 #ifdef DEBUG_MAX
 append_to_log("-------------------------\n");
@@ -242,12 +240,12 @@ append_to_log("-------------------------\n");
                                 // newIcon.has_border = checkIconFrame(fullPathAndFile);
                                 #ifdef DEBUG_MAX
                                 append_to_log("Icons size x: %d, y: %d, current at pos x: %d, y: %d border size:%d\n", iconSize.width, iconSize.height,newIcon.icon_x ,newIcon.icon_y,newIcon.border_width);
-                            
+
                                 #endif
 
                                 if (newIcon.border_width == 0)
                                 {
-                                    iconArray->hasOnlyBorderlessIcons = TRUE;
+                                    iconArray->hasOnlyBorderlessIcons = true;
                                 }
 
                                 newIcon.text_width = textExtent.te_Width;
@@ -257,12 +255,16 @@ append_to_log("-------------------------\n");
                                 newIcon.icon_x = iconPosition.x;
                                 newIcon.icon_y = iconPosition.y;
 
-                                newIcon.is_write_protected = (fib->fib_Protection & FIBF_WRITE) ? TRUE : FALSE;
+#if PLATFORM_AMIGA
+                                newIcon.is_write_protected = (fib->fib_Protection & FIBF_WRITE) ? true : false;
+#else
+                                newIcon.is_write_protected = false; /* Host stub */
+#endif
 
 #ifdef DEBUG_MAX
                                 append_to_log("Icon is write protected: %d\n", newIcon.is_write_protected);
                                 #endif
-#ifdef DEBUG_MAX   
+#ifdef DEBUG_MAX
                                 append_to_log("calculated border: %d\n", (newIcon.border_width * 2));
 #endif
 
@@ -273,26 +275,36 @@ append_to_log("-------------------------\n");
 
 #endif
                                 /* Allocate and copy the full path and icon text */
-                                newIcon.icon_full_path = (char *)AllocVec(strlen(fullPathAndFile) + 1, MEMF_CLEAR);
+                                newIcon.icon_full_path = (char *)whd_malloc(strlen(fullPathAndFile) + 1);
                                 if (!newIcon.icon_full_path)
                                 {
                                     fprintf(stderr, "Error: Failed to allocate memory for icon full path.\n");
                                     FreeIconArray(iconArray);
+#if PLATFORM_AMIGA
                                     FreeDosObject(DOS_FIB, fib);
+#else
+                                    whd_free(fib);
+#endif
                                     return NULL;
                                 }
+                                memset(newIcon.icon_full_path, 0, strlen(fullPathAndFile) + 1);
                                 strcpy(newIcon.icon_full_path, fullPathAndFile);
 
                                 textLength = strlen(fib->fib_FileName) + 1;
-                                newIcon.icon_text = (char *)AllocVec(textLength, MEMF_CLEAR);
+                                newIcon.icon_text = (char *)whd_malloc(textLength);
                                 if (!newIcon.icon_text)
                                 {
                                     fprintf(stderr, "Error: Failed to allocate memory for icon text.\n");
-                                    FreeVec(newIcon.icon_full_path);
+                                    whd_free(newIcon.icon_full_path);
                                     FreeIconArray(iconArray);
+#if PLATFORM_AMIGA
                                     FreeDosObject(DOS_FIB, fib);
+#else
+                                    whd_free(fib);
+#endif
                                     return NULL;
                                 }
+                                memset(newIcon.icon_text, 0, textLength);
                                 strcpy(newIcon.icon_text, fib->fib_FileName);
 
                                 /* Update the maximum width */
@@ -305,10 +317,14 @@ append_to_log("-------------------------\n");
                                 if (!AddIconToArray(iconArray, &newIcon))
                                 {
                                     fprintf(stderr, "Error: Failed to add icon to array.\n");
-                                    FreeVec(newIcon.icon_text);
-                                    FreeVec(newIcon.icon_full_path);
+                                    whd_free(newIcon.icon_text);
+                                    whd_free(newIcon.icon_full_path);
                                     FreeIconArray(iconArray);
+#if PLATFORM_AMIGA
                                     FreeDosObject(DOS_FIB, fib);
+#else
+                                    whd_free(fib);
+#endif
                                     return NULL;
                                 }
 
@@ -317,7 +333,7 @@ append_to_log("-------------------------\n");
                             else
                             {
                                 fprintf(stderr, "Error: Unknown or corrupted icon file: %s\n", fullPathAndFile);
-                                
+
                                 //iconsErrorTracker.count++;
                                 AddIconError(&iconsErrorTracker, fullPathAndFile);
                             }
@@ -338,7 +354,7 @@ append_to_log("-------------------------\n");
 append_to_log("Has only borderless icons: %d\n", iconArray->hasOnlyBorderlessIcons);
 #endif
 #ifdef DEBUG
-    
+
     dumpIconArrayToScreen(iconArray);
 #endif
 
@@ -375,12 +391,12 @@ int CompareByFolderAndName(const void *a, const void *b)
     return nameComparisonResult;
 }
 
-int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
+int ArrangeIcons(void *lock, char *dirPath, int newWidth)
 {
     /* Initial declarations */
-    LONG x, y, maxX, maxY, windowWidth, maxWindowWidth;
+    int32_t x, y, maxX, maxY, windowWidth, maxWindowWidth;
     IconArray *iconArray;
-    BOOL SkipAutoResize;
+    bool SkipAutoResize;
     int i, totalIcons, iconsPerRow;
     int iconSpacingX, iconSpacingY;
     char fileNameNoInfo[256];
@@ -405,7 +421,7 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     maxY = 0;
     iconSpacingX = ICON_SPACING_X;
     iconSpacingY = ICON_SPACING_Y;
-    SkipAutoResize = FALSE;
+    SkipAutoResize = false;
     minIconsPerRow = 3;
     rowCount = 0;
     rowStartIndex = 0;
@@ -416,12 +432,12 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     if (temp1 && *temp1 != '\0') {  /* Ensure temp1 is not NULL and not empty */
         /* If the first character is '/', adjust the pointer */
         adjustedTemp = (*temp1 == '/') ? temp1 + 1 : temp1;
-    
+
         printf("  - %s\n", adjustedTemp);
     }
-    
+
     if (temp1) {
-        FreeVec(temp1);  /* Free allocated memory */
+        whd_free(temp1);  /* Free allocated memory */
     }
 
     //printf("  %s\n", dirPath);
@@ -621,7 +637,7 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     append_to_log("Final maxX: %ld, maxY: %ld\n", maxX, maxY);
 #endif
     /* Reposition the window to accommodate all icons neatly */
-    if (user_dontResize == FALSE)
+    if (user_dontResize == false)
         repoistionWindow(dirPath, maxX, maxY);
 
     /* Save the icon positions to disk */
@@ -637,25 +653,26 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     return 0;
 }
 
-BOOL checkIconFrame(const char *iconName)
+bool checkIconFrame(const char *iconName)
 {
+#if PLATFORM_AMIGA
     struct DiskObject *icon = NULL;
-    LONG frameStatus;
-    LONG errorCode;
+    int32_t frameStatus;
+    int32_t errorCode;
     struct Library *IconBase = NULL;
     const char *extension = ".info";
     size_t len = strlen(iconName);
     size_t ext_len = strlen(extension);
 
     /* Calculate the length of the new icon name without the ".info" extension if present */
-    size_t new_len = (len >= ext_len && stricmp(iconName + len - ext_len, extension) == 0) ? len - ext_len : len;
+    size_t new_len = (len >= ext_len && platform_stricmp(iconName + len - ext_len, extension) == 0) ? len - ext_len : len;
 
     /* Allocate memory for the new icon name */
     char *newIconName = (char *)malloc((new_len + 1) * sizeof(char));
     if (newIconName == NULL)
     {
         printf("Memory allocation failed\n");
-        return FALSE;
+        return false;
     }
 
     /* Copy the icon name up to the new length and null-terminate it */
@@ -670,7 +687,7 @@ BOOL checkIconFrame(const char *iconName)
     {
         printf("Failed to open icon.library\n");
         free(newIconName);
-        return TRUE; /* Assume it has a frame if library can't be opened */
+        return true; /* Assume it has a frame if library can't be opened */
     }
 
     if (IconBase->lib_Version < 44)
@@ -681,7 +698,7 @@ BOOL checkIconFrame(const char *iconName)
 #endif
         CloseLibrary(IconBase);
         free(newIconName);
-        return TRUE; /* Assume it has a frame if library version is too low */
+        return true; /* Assume it has a frame if library version is too low */
     }
 
     /* Load the icon using the new name without the ".info" extension */
@@ -697,7 +714,7 @@ BOOL checkIconFrame(const char *iconName)
         // printf("Failed to load icon for border checks: %s\n", newIconName);
         CloseLibrary(IconBase);
         free(newIconName);
-        return TRUE; /* Assume it has a frame if icon can't be loaded */
+        return true; /* Assume it has a frame if icon can't be loaded */
     }
 #ifdef DEBUG_MAX
 
@@ -710,7 +727,7 @@ BOOL checkIconFrame(const char *iconName)
                     TAG_END) == 1)
     {
         /* A frameStatus of 0 means it has a frame, any other value means it does not */
-        BOOL hasFrame = (frameStatus == 0);
+        bool hasFrame = (frameStatus == 0);
 
         /* Cleanup */
         FreeDiskObject(icon);
@@ -732,7 +749,12 @@ BOOL checkIconFrame(const char *iconName)
     }
     CloseLibrary(IconBase);
     free(newIconName);
-    return TRUE; /* Default to having a frame if there's an error */
+    return true; /* Default to having a frame if there's an error */
+#else
+    /* Host build stub - assume frames */
+    (void)iconName;
+    return true;
+#endif
 }
 void dumpIconArrayToScreen(IconArray *iconArray)
 {
@@ -802,7 +824,7 @@ void dumpIconArrayToScreen(IconArray *iconArray)
 
 
 
-BOOL IsValidIcon(const char *iconPath)
+bool IsValidIcon(const char *iconPath)
 {
     struct DiskObject *diskObj;
 
@@ -815,12 +837,12 @@ BOOL IsValidIcon(const char *iconPath)
 #endif
         /* Successfully retrieved the DiskObject, so the icon is valid */
         FreeDiskObject(diskObj); /* Clean up to prevent memory leaks */
-        return TRUE;
+        return true;
     }
     else
     {
         /* Failed to retrieve the DiskObject, so the icon is invalid */
         append_to_log("Icon is NOT a valid icon: %s\n", iconPath);
-        return FALSE;
+        return false;
     }
 }

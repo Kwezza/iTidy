@@ -5,6 +5,7 @@
 #include <string.h>
 #include <math.h>
 
+#if PLATFORM_AMIGA
 // Function to initialize default IControlPrefs settings
 static void initializeDefaultIControlPrefs(struct IControlPrefs *prefs)
 {
@@ -21,22 +22,22 @@ static void initializeDefaultIControlPrefs(struct IControlPrefs *prefs)
 // Function to extract and save IControlPrefs details into the struct
 static void saveIControlPrefsDetails(struct IControlPrefs *prefs, struct IControlPrefsDetails *details)
 {
-    ULONG ratioMask;
+    uint32_t ratioMask;
     details->flags = prefs->ic_Flags;
-    details->coerceColors = (prefs->ic_Flags & ICF_COERCE_COLORS) ? TRUE : FALSE;
-    details->coerceLace = (prefs->ic_Flags & ICF_COERCE_LACE) ? TRUE : FALSE;
-    details->strGadFilter = (prefs->ic_Flags & ICF_STRGAD_FILTER) ? TRUE : FALSE;
-    details->menuSnap = (prefs->ic_Flags & ICF_MENUSNAP) ? TRUE : FALSE;
-    details->modePromote = (prefs->ic_Flags & ICF_MODEPROMOTE) ? TRUE : FALSE;
-    details->correctRatio = (prefs->ic_Flags & ICF_CORRECT_RATIO) ? TRUE : FALSE;
-    details->offScrnWin = (prefs->ic_Flags & ICF_OFFSCRNWIN) ? TRUE : FALSE;
-    details->moreSizeGadgets = (prefs->ic_Flags & ICF_MORESIZEGADGETS) ? TRUE : FALSE;
-    details->versioned = (prefs->ic_Flags & ICF_VERSIONED) ? TRUE : FALSE;
+    details->coerceColors = (prefs->ic_Flags & ICF_COERCE_COLORS) ? true : false;
+    details->coerceLace = (prefs->ic_Flags & ICF_COERCE_LACE) ? true : false;
+    details->strGadFilter = (prefs->ic_Flags & ICF_STRGAD_FILTER) ? true : false;
+    details->menuSnap = (prefs->ic_Flags & ICF_MENUSNAP) ? true : false;
+    details->modePromote = (prefs->ic_Flags & ICF_MODEPROMOTE) ? true : false;
+    details->correctRatio = (prefs->ic_Flags & ICF_CORRECT_RATIO) ? true : false;
+    details->offScrnWin = (prefs->ic_Flags & ICF_OFFSCRNWIN) ? true : false;
+    details->moreSizeGadgets = (prefs->ic_Flags & ICF_MORESIZEGADGETS) ? true : false;
+    details->versioned = (prefs->ic_Flags & ICF_VERSIONED) ? true : false;
     ratioMask = prefs->ic_Flags & ICF_RATIO_MASK;
-    details->ratio_9_7 = (ratioMask == ICF_RATIO_9_7) ? TRUE : FALSE;
-    details->ratio_9_8 = (ratioMask == ICF_RATIO_9_8) ? TRUE : FALSE;
-    details->ratio_1_1 = (ratioMask == ICF_RATIO_1_1) ? TRUE : FALSE;
-    details->ratio_8_9 = (ratioMask == ICF_RATIO_8_9) ? TRUE : FALSE;
+    details->ratio_9_7 = (ratioMask == ICF_RATIO_9_7) ? true : false;
+    details->ratio_9_8 = (ratioMask == ICF_RATIO_9_8) ? true : false;
+    details->ratio_1_1 = (ratioMask == ICF_RATIO_1_1) ? true : false;
+    details->ratio_8_9 = (ratioMask == ICF_RATIO_8_9) ? true : false;
     details->legacyLook = !(details->correctRatio) && (ratioMask == 0x1E);
     details->screenTitleBarExtraHeight = 0;
     details->windowTitleBarExtraHeight = 0;
@@ -52,10 +53,10 @@ static void saveIControlPrefsDetails(struct IControlPrefs *prefs, struct IContro
     details->squareProportionalLook = details->titleBar_50 || details->titleBar_67 || details->titleBar_75 || details->titleBar_100;
     if (details->squareProportionalLook)
     {
-        details->ratio_9_7 = FALSE;
-        details->ratio_9_8 = FALSE;
-        details->ratio_1_1 = FALSE;
-        details->ratio_8_9 = FALSE;
+        details->ratio_9_7 = false;
+        details->ratio_9_8 = false;
+        details->ratio_1_1 = false;
+        details->ratio_8_9 = false;
     }
 
     if (details->legacyLook)
@@ -95,12 +96,12 @@ static void saveIControlPrefsDetails(struct IControlPrefs *prefs, struct IContro
     }
     else if (details->titleBar_67)
     {
-        details->currentBarHeight = (UWORD)((details->currentWindowBarHeight * 67) / 100);
+        details->currentBarHeight = (uint16_t)((details->currentWindowBarHeight * 67) / 100);
         details->currentBarWidth = details->currentBarHeight;
     }
     else if (details->titleBar_50)
     {
-        details->currentBarHeight = (UWORD)((details->currentWindowBarHeight * 1) / 2);
+        details->currentBarHeight = (uint16_t)((details->currentWindowBarHeight * 1) / 2);
         details->currentBarWidth = details->currentBarHeight;
     }
     else if (details->titleBar_100)
@@ -110,15 +111,17 @@ static void saveIControlPrefsDetails(struct IControlPrefs *prefs, struct IContro
     }
 
 }
+#endif
 
 int fetchIControlSettings(struct IControlPrefsDetails *details)
 {
+#if PLATFORM_AMIGA
     struct IFFHandle *iffhandle;
     struct IControlPrefs prefs;
     struct ContextNode *cnode;
     struct StoredProperty *sp;
-    LONG ifferror;
-    LONG rc = RETURN_OK;
+    int32_t ifferror;
+    int32_t rc = RETURN_OK;
     struct Library *IFFParseBase = OpenLibrary("iffparse.library", 0);
 
     /*  set some defaults for workbench 3.2 at least */
@@ -188,13 +191,45 @@ int fetchIControlSettings(struct IControlPrefsDetails *details)
         rc = RETURN_FAIL;
     }
     return rc;
+#else
+    /* Host stub - set default values */
+    details->currentBarWidth = 18;
+    details->currentBarHeight = 10;
+    details->currentCGaugeWidth = 19;
+    details->currentTitleBarHeight = 16;
+    details->currentWindowBarHeight = 16;
+    details->currentLeftBarWidth = 4;
+    details->flags = 0x8000001e;
+    details->coerceColors = false;
+    details->coerceLace = false;
+    details->strGadFilter = false;
+    details->menuSnap = false;
+    details->modePromote = false;
+    details->correctRatio = false;
+    details->offScrnWin = false;
+    details->moreSizeGadgets = false;
+    details->versioned = false;
+    details->legacyLook = false;
+    details->ratio_9_7 = true;
+    details->ratio_9_8 = false;
+    details->ratio_1_1 = false;
+    details->ratio_8_9 = false;
+    details->screenTitleBarExtraHeight = 0;
+    details->windowTitleBarExtraHeight = 0;
+    details->titleBar_50 = false;
+    details->titleBar_67 = false;
+    details->titleBar_75 = false;
+    details->titleBar_100 = false;
+    details->squareProportionalLook = false;
+    return 0;
+#endif
 }
 
 void dumpIControlPrefs(const struct IControlPrefsDetails *prefs) {
     append_to_log("IControl Preferences Dump:\n");
     append_to_log("--------------------------\n");
     append_to_log("Flags: 0x%08X\n", prefs->flags);
-    
+
     append_to_log("Boolean Settings:\n");
     append_to_log("  Coerce Colors: %s\n", prefs->coerceColors ? "Yes" : "No");
     append_to_log("  Coerce Lace: %s\n", prefs->coerceLace ? "Yes" : "No");
@@ -230,7 +265,7 @@ void dumpIControlPrefs(const struct IControlPrefsDetails *prefs) {
     append_to_log("  Border Width: %d, Border Height: %d\n", prefs->currentBarWidth, prefs->currentBarHeight);
     append_to_log("  Title Height: %d, Window Height: %d\n", prefs->currentTitleBarHeight, prefs->currentWindowBarHeight);
     append_to_log("  Volume Gauge Width: %d\n", prefs->currentCGaugeWidth);
-    
+
     append_to_log("--------------------------\n");
 }
 
