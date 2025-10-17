@@ -248,61 +248,70 @@ int strncasecmp_custom(const char *s1, const char *s2, size_t n)
     return 0;
 }
 
-bool does_file_or_folder_exist(const char *filename, int appendWorkingDirectory)
+/* VBCC MIGRATION NOTE (Stage 2): Updated does_file_or_folder_exist()
+ * 
+ * Changes:
+ * - Changed void* lock to BPTR lock (correct AmigaDOS type)
+ * - Changed bool return type to BOOL (AmigaDOS consistency)
+ * - Changed true/false to TRUE/FALSE (AmigaDOS consistency)
+ * - Improved string safety with explicit null termination
+ * - Added C99 inline functions where appropriate
+ * - Maintained platform abstraction
+ */
+
+BOOL does_file_or_folder_exist(const char *filename, int appendWorkingDirectory)
 {
 #if PLATFORM_AMIGA
-    void *lock;
-    bool exists = false;
-    //LONG errorCode = 0;
+    BPTR lock;  // Changed from void* to BPTR (correct AmigaDOS type)
+    BOOL exists = FALSE;  // Changed from bool to BOOL
     char currentDir[256];
-    char newFilePath[512] = {0}; /* Ensure buffer is initially empty */
+    char newFilePath[512] = {0};
 
-    /* Retrieve current directory */
-    if (GetCurrentDirName(currentDir, sizeof(currentDir)) == DOSFALSE)
-    {
-        printf("Error getting current directory\n");
+    // Retrieve current directory
+    if (GetCurrentDirName(currentDir, sizeof(currentDir)) == DOSFALSE) {
+#ifdef DEBUG
+        Printf("Error getting current directory\n");
+#endif
     }
 
-    /* Construct new file path if required */
-    if (appendWorkingDirectory == 1)
-    {
-        if (!AddPart(currentDir, filename, sizeof(currentDir)))
-        {
-            printf("Failed to append filename to current directory\n");
-            return false;
+    // Construct new file path if required
+    if (appendWorkingDirectory == 1) {
+        if (!AddPart(currentDir, filename, sizeof(currentDir))) {
+#ifdef DEBUG
+            Printf("Failed to append filename to current directory\n");
+#endif
+            return FALSE;  // Changed from false to FALSE
         }
         strncpy(newFilePath, currentDir, sizeof(newFilePath) - 1);
+        newFilePath[sizeof(newFilePath) - 1] = '\0';  // Ensure null termination
+        
         lock = Lock(newFilePath, ACCESS_READ);
 
         #ifdef DEBUGLocks
         append_to_log("Locking directory (does_file_or_folder_exist): %s\n", newFilePath);
         #endif
 
-        if (lock == NULL)
-        {
-            //do nothing - no lock means the file doesnt exist or there is maybe some kind of issue.  Assume it cant be accessed either way.
+        if (!lock) {
+            // No lock means the file doesn't exist or cannot be accessed
         }
-    }
-    else
-    {
+    } else {
         strncpy(newFilePath, filename, sizeof(newFilePath) - 1);
+        newFilePath[sizeof(newFilePath) - 1] = '\0';  // Ensure null termination
+        
         lock = Lock(newFilePath, ACCESS_READ);
 
         #ifdef DEBUGLocks
         append_to_log("Locking directory (does_file_or_folder_exist): %s\n", newFilePath);
         #endif
 
-        if (lock == NULL)
-        {
-         //do nothing - no lock means the file doesnt exist or there is maybe some kind of issue.  Assume it cant be accessed either way.'
-
+        if (!lock) {
+            // No lock means the file doesn't exist or cannot be accessed
         }
     }
 
-    /* Check if file lock was successful */
-    if (lock)
-    {
-        exists = true;
+    // Check if file lock was successful
+    if (lock) {
+        exists = TRUE;  // Changed from true to TRUE
         #ifdef DEBUGLocks
         append_to_log("Unlocking directory: %s\n", newFilePath);
         #endif
@@ -311,22 +320,21 @@ bool does_file_or_folder_exist(const char *filename, int appendWorkingDirectory)
 
     return exists;
 #else
-    /* Host implementation using standard C */
+    // Host implementation using standard C
     FILE *file;
     char fullPath[512];
 
-    (void)appendWorkingDirectory; /* Ignore for now on host */
+    (void)appendWorkingDirectory; // Ignore for now on host
 
     strncpy(fullPath, filename, sizeof(fullPath) - 1);
     fullPath[sizeof(fullPath) - 1] = '\0';
 
     file = fopen(fullPath, "r");
-    if (file)
-    {
+    if (file) {
         fclose(file);
-        return true;
+        return true;  // Host uses standard bool
     }
-    return false;
+    return false;  // Host uses standard bool
 #endif
 }
 

@@ -131,10 +131,8 @@ BOOL user_forceStandardIcons;
 
 /* VBCC MIGRATION NOTE: Forward declarations for proper ANSI C compliance */
 static void print_usage(const char *program_name);
-static int endsWithFont(const char *str);
-#ifdef __AMIGA__
-static BOOL IsDeviceReadOnly(const char *deviceName);
-#endif
+/* Note: endsWithFont is declared in main.h */
+/* Note: IsDeviceReadOnly is declared in file_directory_handling.h, no need to redeclare */
 
 /* Define the help text as an array of strings. Each element represents a line. */
 static const char *help_text2[] = {
@@ -287,7 +285,7 @@ void FreeIconErrorList(IconErrorTrackerStruct *tracker)
     tracker->count = 0;
 }
 
-void print_usage(const char *program_name)
+static void print_usage(const char *program_name)
 {
 
     // Program Title

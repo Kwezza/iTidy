@@ -1,107 +1,151 @@
 /* getDiskDetails.c */
 
+/* VBCC MIGRATION NOTE (Stage 2): Complete rewrite using native AmigaDOS API
+ * 
+ * Changes:
+ * - Removed system() command approach entirely
+ * - Implemented GetDeviceInfo() using Info() and Lock() directly
+ * - Removed temporary file creation (RAM:info_output.txt)
+ * - Removed text parsing with sscanf()
+ * - Used struct InfoData for disk information
+ * - Added proper error handling with IoErr()
+ * - Used AmigaDOS types: BPTR, LONG, BOOL
+ * - Used AllocVec/FreeVec for memory management
+ * - Used C99 features: inline, //, mixed declarations
+ */
+
 #include "getDiskDetails.h"
-#include <string.h>
-#include <stdlib.h>
 #include <ctype.h>
+#include <proto/exec.h>
 
-#define TEMP_FILE "RAM:info_output.txt"
-
-/* Function to execute the "info" command and save the output to a temporary file */
-static void GetInfoOutput(const char *deviceOrVolume) {
-    char command[256];
-    int len;
-
-    /* Prepare the command string */
-    strcpy(command, "info ");
-    len = strlen(command);
-
-    /* Ensure that we don't overflow the buffer */
-    if (len + strlen(deviceOrVolume) + strlen(TEMP_FILE) + 4 < sizeof(command)) {
-        /* Append the device or volume name and the redirection to the temporary file */
-        strcat(command, deviceOrVolume);
-        strcat(command, " > ");
-        strcat(command, TEMP_FILE);
-
-        /* Execute the command */
-        system(command);
+// Helper function to determine appropriate storage unit (K, M, G) and scale value
+static inline void FormatStorageSize(LONG sizeInKB, LONG *scaledSize, char *unit)
+{
+    if (sizeInKB >= 1024 * 1024) {
+        // Gigabytes
+        *scaledSize = sizeInKB / (1024 * 1024);
+        *unit = 'G';
+    } else if (sizeInKB >= 1024) {
+        // Megabytes
+        *scaledSize = sizeInKB / 1024;
+        *unit = 'M';
     } else {
-        printf("Error: Command string too long\n");
+        // Kilobytes
+        *scaledSize = sizeInKB;
+        *unit = 'K';
     }
 }
 
-/* Function to parse the "info" output file and extract relevant information into the structure */
-DeviceInfo GetDeviceInfo(const char *path) {
-    FILE *file;
-    char line[256];
+// Helper function to extract device name from path
+static inline void ExtractDeviceName(const char *path, char *deviceName, int maxLen)
+{
+    int i = 0;
+    
+    // Copy until we hit a colon or slash, or reach max length
+    while (path[i] != '\0' && path[i] != '/' && i < maxLen - 1) {
+        deviceName[i] = path[i];
+        i++;
+    }
+    
+    // Add colon if the path had one
+    if (path[i] == ':' && i < maxLen - 1) {
+        deviceName[i] = ':';
+        i++;
+    }
+    
+    deviceName[i] = '\0';
+}
+
+/* Function to get device information using native AmigaDOS Info() API */
+DeviceInfo GetDeviceInfo(const char *path)
+{
     DeviceInfo deviceInfo = {0};
-    char status[64]; /* For storing read/write status */
-    int errors;
-    char sizeUnit = '\0';  /* For storing whether the size is in K, M, or G */
-    int usedSpace = 0, freeSpace = 0;
-    char *statusPos;
-    int numParsed;
-
-    strcpy(deviceInfo.deviceName, "Unknown");
-
-    /* Get info from the specified path */
-    GetInfoOutput(path);
-
-    /* Open the temporary file in RAM: */
-    file = fopen(TEMP_FILE, "r");
-    if (file == NULL) {
-        fprintf(stderr, "Error: Could not open temporary file %s\n", TEMP_FILE);
+    struct InfoData *infoData;
+    BPTR lock;
+    LONG totalBytes, usedBytes, freeBytes;
+    LONG totalKB, usedKB, freeKB;
+    LONG scaledSize;
+    char unit;
+    
+    // Initialize with defaults
+    strncpy(deviceInfo.deviceName, "Unknown", sizeof(deviceInfo.deviceName) - 1);
+    deviceInfo.deviceName[sizeof(deviceInfo.deviceName) - 1] = '\0';
+    strncpy(deviceInfo.storageUnits, "K", sizeof(deviceInfo.storageUnits) - 1);
+    deviceInfo.storageUnits[sizeof(deviceInfo.storageUnits) - 1] = '\0';
+    
+    // Allocate InfoData structure
+    infoData = (struct InfoData *)AllocVec(sizeof(struct InfoData), MEMF_CLEAR);
+    if (!infoData) {
+#ifdef DEBUG
+        Printf("Error: Unable to allocate InfoData structure\n");
+#endif
         return deviceInfo;
     }
-
-    /* Read through the file and find the relevant line */
-    while (fgets(line, sizeof(line), file)) {
-        /* Locate the position of "Read Only" or "Read/Write" in the line */
-        if ((statusPos = strstr(line, "Read Only")) != NULL) {
-            strcpy(status, "Read Only");
-            deviceInfo.writeProtected = true;
-        } else if ((statusPos = strstr(line, "Read/Write")) != NULL) {
-            strcpy(status, "Read/Write");
-            deviceInfo.writeProtected = false;
-        } else {
-            continue;
-        }
-
-        /* Extract size, used, free, and full percentage */
-        numParsed = sscanf(line, "%s %d%c %d %d %d%% %d", deviceInfo.deviceName,
-                           &deviceInfo.size, &sizeUnit, &usedSpace, &freeSpace,
-                           &deviceInfo.full, &errors);
-
-        if (numParsed < 7) {
-            fprintf(stderr, "Error: Failed to parse the info output.\n");
-            fclose(file);
-            remove(TEMP_FILE);
-            return deviceInfo;
-        }
-
-        /* Adjust size based on unit (K, M, or G) */
-        sizeUnit = toupper((unsigned char)sizeUnit);
-        deviceInfo.storageUnits[0] = sizeUnit;
-        deviceInfo.storageUnits[1] = '\0';
-        /*
-        if (sizeUnit == 'M') {
-            deviceInfo.size *= 1024; 
-        } else if (sizeUnit == 'G') {
-            deviceInfo.size *= 1024 * 1024; 
-        } else if (sizeUnit != 'K') {
-            fprintf(stderr, "Error: Unknown size unit '%c'.\n", sizeUnit);
-        }*/
-
-        deviceInfo.used = usedSpace;
-        deviceInfo.free = freeSpace;
-
-        /* We have successfully extracted the data, so we can break out of the loop */
-        break;
+    
+    // Lock the device/volume with shared lock
+    lock = Lock(path, SHARED_LOCK);
+    if (!lock) {
+        LONG error = IoErr();
+#ifdef DEBUG
+        Printf("Error: Unable to lock path '%s' (error: %ld)\n", path, error);
+#endif
+        FreeVec(infoData);
+        return deviceInfo;
     }
-
-    /* Close and delete the temporary file */
-    fclose(file);
-    remove(TEMP_FILE);
-
+    
+    // Get disk information using Info()
+    if (Info(lock, infoData)) {
+        // Calculate sizes in bytes
+        totalBytes = infoData->id_NumBlocks * infoData->id_BytesPerBlock;
+        usedBytes = infoData->id_NumBlocksUsed * infoData->id_BytesPerBlock;
+        freeBytes = totalBytes - usedBytes;
+        
+        // Convert to kilobytes
+        totalKB = totalBytes / 1024;
+        usedKB = usedBytes / 1024;
+        freeKB = freeBytes / 1024;
+        
+        // Store sizes in KB
+        deviceInfo.used = usedKB;
+        deviceInfo.free = freeKB;
+        
+        // Format size with appropriate unit (K, M, or G)
+        FormatStorageSize(totalKB, &scaledSize, &unit);
+        deviceInfo.size = scaledSize;
+        
+        // Store the unit
+        deviceInfo.storageUnits[0] = unit;
+        deviceInfo.storageUnits[1] = '\0';
+        
+        // Calculate percentage full
+        if (totalBytes > 0) {
+            deviceInfo.full = (LONG)((usedBytes * 100) / totalBytes);
+        } else {
+            deviceInfo.full = 0;
+        }
+        
+        // Check write protection
+        deviceInfo.writeProtected = (infoData->id_DiskState == ID_WRITE_PROTECTED) ? TRUE : FALSE;
+        
+        // Extract device name from path
+        ExtractDeviceName(path, deviceInfo.deviceName, sizeof(deviceInfo.deviceName));
+        
+#ifdef DEBUG
+        Printf("Device: %s, Size: %ld%s, Used: %ldK, Free: %ldK, Full: %ld%%, WP: %s\n",
+               deviceInfo.deviceName, deviceInfo.size, deviceInfo.storageUnits,
+               deviceInfo.used, deviceInfo.free, deviceInfo.full,
+               deviceInfo.writeProtected ? "Yes" : "No");
+#endif
+    } else {
+        LONG error = IoErr();
+#ifdef DEBUG
+        Printf("Error: Info() failed for path '%s' (error: %ld)\n", path, error);
+#endif
+    }
+    
+    // Cleanup
+    UnLock(lock);
+    FreeVec(infoData);
+    
     return deviceInfo;
 }

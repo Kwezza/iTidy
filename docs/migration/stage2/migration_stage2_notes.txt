@@ -1,0 +1,715 @@
+================================================================================
+iTidy - VBCC Migration Stage 2 - Detailed Technical Notes
+================================================================================
+Date Started: October 17, 2025
+Target: AmigaOS 3.2 (Workbench 3.2 NDK)
+Compiler: VBCC v0.9x (+aos68k)
+Standard: C99 subset (no VLAs, but bool/inline/mixed declarations OK)
+================================================================================
+
+OVERVIEW
+────────────────────────────────────────────────────────────────────────────
+Stage 2 focuses on migrating file I/O, disk utilities, and core utility 
+functions to use modern AmigaDOS APIs and VBCC-compatible C99 features.
+
+Four modules are being migrated:
+1. src/writeLog.c / writeLog.h          - Logging system
+2. src/DOS/getDiskDetails.c / .h        - Disk information queries
+3. src/utilities.c / utilities.h        - Core utility functions
+4. src/file_directory_handling.c / .h   - File/directory operations
+
+================================================================================
+
+MODULE 1: writeLog.c / writeLog.h
+────────────────────────────────────────────────────────────────────────────
+
+CURRENT STATE:
+- Uses standard C FILE* operations (fopen, fprintf, vfprintf, fclose)
+- Hardcoded log file path: "logfile.txt"
+- Uses time() and localtime() for timestamps
+- Simple append-only logging
+
+MIGRATION CHANGES:
+1. Replace FILE* with BPTR for AmigaDOS file handles
+2. Replace fopen() with Open(filename, MODE_NEWFILE or MODE_OLDFILE)
+3. Replace fprintf()/vfprintf() with custom formatting + Write()
+4. Replace fclose() with Close()
+5. Add path fallback logic:
+   - Try "Bin/Amiga/logs/iTidy.log" first
+   - Fall back to "T:iTidy.log" if directory doesn't exist
+6. Keep timestamp functionality using standard C time functions
+7. Add error handling using IoErr()
+
+VBCC-SPECIFIC NOTES:
+- VBCC supports C99 features: bool, inline, // comments, mixed declarations
+- Can use <stdbool.h> if needed, or stick with AmigaOS BOOL
+- snprintf() available for safe string formatting
+- Include <proto/dos.h> for AmigaDOS functions
+- Use -lauto linker flag (already in Makefile)
+
+CODE STRUCTURE:
+```c
+#include <proto/dos.h>
+#include <dos/dos.h>
+#include <time.h>
+#include <stdarg.h>
+#include <string.h>
+
+// Use AmigaDOS BPTR instead of FILE*
+static BPTR OpenLogFile(const char *preferredPath, const char *fallbackPath);
+
+void append_to_log(const char *format, ...) {
+    BPTR logFile;
+    char buffer[1024];
+    char timestamp[16];
+    va_list args;
+    
+    getTimestamp(timestamp, sizeof(timestamp));
+    
+    // Try primary path, fall back if needed
+    logFile = OpenLogFile("Bin/Amiga/logs/iTidy.log", "T:iTidy.log");
+    if (!logFile) {
+        return; // Could not open log
+    }
+    
+    // Format message
+    va_start(args, format);
+    vsnprintf(buffer, sizeof(buffer), format, args);
+    va_end(args);
+    
+    // Write timestamp + message
+    Write(logFile, timestamp, strlen(timestamp));
+    Write(logFile, " ", 1);
+    Write(logFile, buffer, strlen(buffer));
+    
+    Close(logFile);
+}
+```
+
+TESTING CHECKLIST:
+- Verify log writes to Bin/Amiga/logs/iTidy.log when directory exists
+- Verify fallback to T:iTidy.log works
+- Test with long messages (buffer overflow protection)
+- Verify timestamps are correct
+- Test error handling when disk is full/write-protected
+
+================================================================================
+
+MODULE 2: getDiskDetails.c / getDiskDetails.h
+────────────────────────────────────────────────────────────────────────────
+
+CURRENT STATE:
+- Uses system("info device > RAM:info_output.txt") - VERY outdated!
+- Parses text output from info command
+- Uses custom bool typedef (conflicts with C99 stdbool.h)
+- Creates temporary file in RAM:
+- Complex text parsing with sscanf()
+
+PROBLEMS WITH CURRENT APPROACH:
+- system() is inefficient and fragile
+- Text parsing is error-prone
+- Temporary file creates unnecessary I/O
+- Custom bool typedef conflicts with modern C
+- No proper error handling
+
+MIGRATION CHANGES:
+1. Replace system() call with direct Info() API call
+2. Use struct InfoData to get disk information
+3. Replace custom bool with AmigaDOS BOOL or <stdbool.h>
+4. Calculate sizes directly from InfoData fields
+5. Use Info() and Lock() for device queries
+6. Add proper error handling with IoErr()
+7. Remove temporary file creation entirely
+
+AMIGADOS Info() API:
+```c
+#include <proto/dos.h>
+#include <dos/dos.h>
+
+struct InfoData {
+    LONG   id_NumSoftErrors;    // Number of soft errors
+    LONG   id_UnitNumber;       // Unit number
+    LONG   id_DiskState;        // State (ID_WRITE_PROTECTED, etc.)
+    LONG   id_NumBlocks;        // Total blocks
+    LONG   id_NumBlocksUsed;    // Blocks used
+    LONG   id_BytesPerBlock;    // Bytes per block
+    LONG   id_DiskType;         // Disk type
+    BPTR   id_VolumeNode;       // Volume node
+    LONG   id_InUse;            // In use flag
+};
+```
+
+NEW IMPLEMENTATION:
+```c
+DeviceInfo GetDeviceInfo(const char *path) {
+    DeviceInfo deviceInfo = {0};
+    struct InfoData *infoData;
+    BPTR lock;
+    LONG totalBytes, usedBytes, freeBytes;
+    
+    // Allocate InfoData structure
+    infoData = AllocVec(sizeof(struct InfoData), MEMF_CLEAR);
+    if (!infoData) {
+        strcpy(deviceInfo.deviceName, "Unknown");
+        return deviceInfo;
+    }
+    
+    // Lock the device/volume
+    lock = Lock(path, SHARED_LOCK);
+    if (!lock) {
+        FreeVec(infoData);
+        strcpy(deviceInfo.deviceName, "Unknown");
+        return deviceInfo;
+    }
+    
+    // Get disk information
+    if (Info(lock, infoData)) {
+        // Calculate sizes
+        totalBytes = infoData->id_NumBlocks * infoData->id_BytesPerBlock;
+        usedBytes = infoData->id_NumBlocksUsed * infoData->id_BytesPerBlock;
+        freeBytes = totalBytes - usedBytes;
+        
+        // Convert to KB/MB/GB as needed
+        deviceInfo.size = totalBytes / 1024;
+        deviceInfo.used = usedBytes / 1024;
+        deviceInfo.free = freeBytes / 1024;
+        
+        // Calculate percentage
+        if (totalBytes > 0) {
+            deviceInfo.full = (usedBytes * 100) / totalBytes;
+        }
+        
+        // Check write protection
+        deviceInfo.writeProtected = (infoData->id_DiskState == ID_WRITE_PROTECTED);
+        
+        // Extract device name from path
+        strncpy(deviceInfo.deviceName, path, sizeof(deviceInfo.deviceName) - 1);
+    }
+    
+    UnLock(lock);
+    FreeVec(infoData);
+    return deviceInfo;
+}
+```
+
+TYPE CHANGES:
+- Remove: typedef int bool; #define true 1; #define false 0;
+- Use: AmigaDOS BOOL (TRUE/FALSE) or C99 bool (true/false)
+- Ensure consistency across project
+
+TESTING CHECKLIST:
+- Test with hard disk devices (DH0:, Work:, etc.)
+- Test with floppy drives (DF0:, DF1:)
+- Test with RAM: disk
+- Test with write-protected media
+- Test with invalid/non-existent devices
+- Verify size calculations are correct
+- Verify percentage calculation is accurate
+
+================================================================================
+
+MODULE 3: utilities.c / utilities.h
+────────────────────────────────────────────────────────────────────────────
+
+CURRENT STATE:
+- Mix of platform-specific and generic code
+- does_file_or_folder_exist() uses void* for lock (should be BPTR)
+- Returns bool (should return BOOL for AmigaDOS consistency)
+- Good platform abstraction with #if PLATFORM_AMIGA
+
+MIGRATION CHANGES:
+1. Fix does_file_or_folder_exist():
+   - Change void* lock to BPTR lock
+   - Change bool return to BOOL
+   - Ensure proper Lock()/UnLock() usage
+   
+2. Add C99 improvements:
+   - Use inline for small helper functions where appropriate
+   - Use // comments consistently
+   - Use mixed declarations where it improves readability
+   - Add bool where it makes sense internally
+   
+3. Ensure string safety:
+   - Use strncpy instead of strcpy where needed
+   - Use strncat instead of strcat where needed
+   - Bounds checking on all buffer operations
+
+DETAILED CHANGES - does_file_or_folder_exist():
+
+BEFORE:
+```c
+bool does_file_or_folder_exist(const char *filename, int appendWorkingDirectory)
+{
+#if PLATFORM_AMIGA
+    void *lock;  // WRONG TYPE!
+    bool exists = false;  // Use BOOL instead
+    //...
+    lock = Lock(newFilePath, ACCESS_READ);
+    if (lock) {
+        exists = true;
+        UnLock(lock);
+    }
+    return exists;
+#endif
+}
+```
+
+AFTER:
+```c
+BOOL does_file_or_folder_exist(const char *filename, int appendWorkingDirectory)
+{
+#if PLATFORM_AMIGA
+    BPTR lock;  // CORRECT TYPE for AmigaDOS
+    BOOL exists = FALSE;
+    char currentDir[256];
+    char newFilePath[512] = {0};
+    
+    // Get current directory if needed
+    if (appendWorkingDirectory == 1) {
+        if (GetCurrentDirName(currentDir, sizeof(currentDir)) == DOSFALSE) {
+            return FALSE;
+        }
+        if (!AddPart(currentDir, filename, sizeof(currentDir))) {
+            return FALSE;
+        }
+        strncpy(newFilePath, currentDir, sizeof(newFilePath) - 1);
+        newFilePath[sizeof(newFilePath) - 1] = '\0';
+    } else {
+        strncpy(newFilePath, filename, sizeof(newFilePath) - 1);
+        newFilePath[sizeof(newFilePath) - 1] = '\0';
+    }
+    
+    // Try to lock the path
+    lock = Lock(newFilePath, ACCESS_READ);
+    
+    #ifdef DEBUGLocks
+    append_to_log("Locking directory (does_file_or_folder_exist): %s\n", newFilePath);
+    #endif
+    
+    if (lock) {
+        exists = TRUE;
+        #ifdef DEBUGLocks
+        append_to_log("Unlocking directory: %s\n", newFilePath);
+        #endif
+        UnLock(lock);
+    }
+    
+    return exists;
+#else
+    // Host implementation unchanged
+    //...
+#endif
+}
+```
+
+HEADER FILE CHANGES:
+```c
+// utilities.h
+// Change signature:
+BOOL does_file_or_folder_exist(const char *filename, int appendWorkingDirectory);
+// Previously: bool does_file_or_folder_exist(...)
+```
+
+OTHER IMPROVEMENTS:
+- Review all string operations for buffer safety
+- Add inline keyword to small helpers like strncasecmp_custom
+- Use C99 mixed declarations where it improves clarity
+- Ensure all platform guards are correct
+
+TESTING CHECKLIST:
+- Test does_file_or_folder_exist() with various paths
+- Test with appendWorkingDirectory = 0 and 1
+- Test with files, directories, and non-existent paths
+- Verify no memory leaks
+- Verify proper lock cleanup on all code paths
+
+================================================================================
+
+MODULE 4: file_directory_handling.c / file_directory_handling.h
+────────────────────────────────────────────────────────────────────────────
+
+CURRENT STATE:
+- Uses AmigaDOS API (Lock, Examine, ExNext, etc.)
+- Mix of AllocMem/FreeMem and AllocDosObject
+- Uses sprintf() instead of snprintf() (unsafe)
+- Uses strcpy/strcat instead of safe variants
+- Good overall structure with proper Lock/UnLock
+
+MIGRATION CHANGES:
+
+1. Memory Allocation:
+   REPLACE: AllocMem(sizeof(struct FileInfoBlock), MEMF_PUBLIC | MEMF_CLEAR)
+   WITH:    AllocVec(sizeof(struct FileInfoBlock), MEMF_CLEAR)
+   
+   REPLACE: FreeMem(fib, sizeof(struct FileInfoBlock))
+   WITH:    FreeVec(fib)
+   
+   NOTE: AllocDosObject(DOS_FIB, NULL) is even better for FileInfoBlock!
+   Use: FreeDosObject(DOS_FIB, fib) to free
+
+2. String Safety:
+   REPLACE: sprintf(subdir, "%s/%s", path, fib->fib_FileName)
+   WITH:    snprintf(subdir, sizeof(subdir), "%s/%s", path, fib->fib_FileName)
+   
+   REPLACE: strcpy(path, sanitizedPath)
+   WITH:    strncpy(path, sanitizedPath, maxPathLen)
+   
+   REPLACE: strcat(fullPath, "/")
+   WITH:    strncat(fullPath, "/", fullPathSize - strlen(fullPath) - 1)
+
+3. Error Handling:
+   - Add IoErr() calls after failed Lock/Examine/ExNext
+   - Log errors appropriately
+   - Ensure cleanup on all error paths
+
+4. Function Improvements:
+
+ProcessDirectory():
+```c
+void ProcessDirectory(char *path, BOOL processSubDirs, int recursion_level)
+{
+    BPTR lock = NULL;
+    struct FileInfoBlock *fib = NULL;
+    char subdir[4096];
+
+    sanitizeAmigaPath(path);
+    
+    #ifdef DEBUGLocks
+    append_to_log("Locking directory at level %d: %s\n", recursion_level, path);
+    #endif
+    
+    lock = Lock((STRPTR)path, ACCESS_READ);
+    if (!lock) {
+        LONG error = IoErr();
+        #ifdef DEBUG
+        append_to_log("Failed to lock %s, error: %ld\n", path, error);
+        #endif
+        return;
+    }
+
+    // Check for WHDLoad slave files
+    if (user_cleanupWHDLoadFolders == TRUE) {
+        if (HasSlaveFile(path)) {
+            if (user_dontResize == FALSE) {
+                resizeFolderToContents(path, CreateIconArrayFromPath(lock, path));
+            }
+            #ifdef DEBUGLocks
+            append_to_log("Unlocking directory at level %d: %s\n", recursion_level, path);
+            #endif
+            UnLock(lock);
+            return;
+        }
+    }
+
+    // Use AllocDosObject for FileInfoBlock
+    fib = AllocDosObject(DOS_FIB, NULL);
+    if (!fib) {
+        Printf("Failed to allocate FileInfoBlock at level %d\n", recursion_level);
+        #ifdef DEBUGLocks
+        append_to_log("Unlocking directory at level %d: %s\n", recursion_level, path);
+        #endif
+        UnLock(lock);
+        return;
+    }
+
+    if (Examine(lock, fib)) {
+        FormatIconsAndWindow(path);
+
+        if (processSubDirs == TRUE) {
+            while (ExNext(lock, fib)) {
+                if (fib->fib_DirEntryType > 0) {
+                    // Use snprintf for safety
+                    snprintf(subdir, sizeof(subdir), "%s/%s", path, fib->fib_FileName);
+                    ProcessDirectory(subdir, TRUE, recursion_level + 1);
+                }
+            }
+        }
+    } else {
+        LONG error = IoErr();
+        Printf("Failed to examine directory at level %d: %s (error: %ld)\n", 
+               recursion_level, path, error);
+    }
+
+    FreeDosObject(DOS_FIB, fib);
+    #ifdef DEBUGLocks
+    append_to_log("Unlocking directory at level %d: %s\n", recursion_level, path);
+    #endif
+    UnLock(lock);
+}
+```
+
+HasSlaveFile():
+```c
+int HasSlaveFile(char *path)
+{
+    BPTR lock;
+    struct FileInfoBlock *fib;
+    int hasSlave = 0;
+
+    #ifdef DEBUGLocks
+    append_to_log("Locking directory (HasSlaveFile): %s\n", path);
+    #endif
+    
+    lock = Lock((STRPTR)path, ACCESS_READ);
+    if (!lock) {
+        return 0;
+    }
+
+    // Use AllocDosObject instead of AllocMem
+    fib = AllocDosObject(DOS_FIB, NULL);
+    if (!fib) {
+        Printf("Failed to allocate memory for FileInfoBlock\n");
+        #ifdef DEBUGLocks
+        append_to_log("Unlocking directory: %s\n", path);
+        #endif
+        UnLock(lock);
+        return 0;
+    }
+
+    if (Examine(lock, fib)) {
+        while (ExNext(lock, fib)) {
+            if (fib->fib_DirEntryType < 0) {  // File
+                const char *ext = strrchr(fib->fib_FileName, '.');
+                if (ext && strncasecmp_custom(ext, ".slave", 6) == 0) {
+                    hasSlave = 1;
+                    break;
+                }
+            }
+        }
+    }
+
+    FreeDosObject(DOS_FIB, fib);
+    #ifdef DEBUGLocks
+    append_to_log("Unlocking directory: %s\n", path);
+    #endif
+    UnLock(lock);
+    return hasSlave;
+}
+```
+
+sanitizeAmigaPath():
+```c
+void sanitizeAmigaPath(char *path)
+{
+    char *sanitizedPath;
+    int i = 0, j = 0;
+    int length = strlen(path);
+
+    // Allocate with AllocVec instead of AllocMem
+    sanitizedPath = (char *)AllocVec(length + 1, MEMF_CLEAR);
+    if (!sanitizedPath) {
+        Printf("Failed to allocate memory for path sanitization\n");
+        return;
+    }
+
+    while (i < length) {
+        if (path[i] == '/' && path[i + 1] == '/') {
+            i++; // Skip duplicate slashes
+        } else {
+            sanitizedPath[j++] = path[i++];
+        }
+    }
+
+    sanitizedPath[j] = '\0';
+
+    // Use strncpy for safety
+    strncpy(path, sanitizedPath, length + 1);
+    path[length] = '\0';
+    
+    FreeVec(sanitizedPath);
+}
+```
+
+5. Protection Functions (GetWriteProtection, SetWriteProtection, etc.):
+   - Already using AllocDosObject(DOS_FIB, NULL) - Good!
+   - Already using FreeDosObject(DOS_FIB, fib) - Good!
+   - Ensure proper error handling with IoErr()
+   - Verify all Lock/UnLock pairs
+
+TESTING CHECKLIST:
+- Test ProcessDirectory() with various directory structures
+- Test recursive subdirectory processing
+- Test WHDLoad folder detection
+- Test path sanitization with double slashes
+- Test protection bit functions
+- Verify no memory leaks with AllocVec/FreeVec
+- Test with write-protected and delete-protected files
+- Verify proper cleanup on all error paths
+
+================================================================================
+
+C99 FEATURES ALLOWED IN VBCC
+────────────────────────────────────────────────────────────────────────────
+
+VBCC v0.9x with -c99 flag supports:
+
+✅ ALLOWED:
+- // single-line comments
+- Mixed declarations (variables declared anywhere in block)
+- Inline functions (inline keyword)
+- <stdbool.h> and bool/true/false types
+- Long long integers
+- Variadic macros
+- snprintf() and vsnprintf()
+- Flexible array members in structs (with limitations)
+
+❌ NOT ALLOWED / AVOID:
+- Variable Length Arrays (VLAs) - explicitly forbidden in requirements
+- Designated initializers - can cause issues
+- Compound literals - limited support
+- Complex number types - not needed for this project
+
+RECOMMENDED USAGE:
+- Use // comments for single-line comments
+- Use inline for small helper functions (< 5 lines)
+- Use bool for internal logic, BOOL for AmigaDOS API consistency
+- Use mixed declarations sparingly (where it improves clarity)
+- Always use snprintf/vsnprintf instead of sprintf/vsprintf
+- Prefer AllocVec/FreeVec over AllocMem/FreeMem
+
+================================================================================
+
+AMIGADOS API TYPES REFERENCE
+────────────────────────────────────────────────────────────────────────────
+
+CORRECT TYPES TO USE:
+
+BPTR        - File/directory lock, file handle (32-bit, shifted pointer)
+LONG        - 32-bit signed integer
+ULONG       - 32-bit unsigned integer
+WORD        - 16-bit signed integer
+UWORD       - 16-bit unsigned integer
+BYTE        - 8-bit signed integer
+UBYTE       - 8-bit unsigned integer
+STRPTR      - Pointer to null-terminated string (char *)
+APTR        - Generic pointer (void *)
+BOOL        - Boolean (TRUE/FALSE, not 0/1)
+
+RETURN VALUES:
+RETURN_OK       = 0     // Success
+RETURN_WARN     = 5     // Warning
+RETURN_ERROR    = 10    // Error
+RETURN_FAIL     = 20    // Failure
+
+FUNCTIONS:
+Lock(name, mode)              -> BPTR (0 = failure)
+UnLock(lock)                  -> void
+Open(name, mode)              -> BPTR (0 = failure)
+Close(file)                   -> BOOL
+Read(file, buffer, length)    -> LONG (bytes read, -1 = error)
+Write(file, buffer, length)   -> LONG (bytes written, -1 = error)
+Examine(lock, fib)            -> BOOL
+ExNext(lock, fib)             -> BOOL
+Info(lock, infoData)          -> BOOL
+IoErr()                       -> LONG (error code)
+
+LOCK MODES:
+ACCESS_READ     = -2    // Shared read lock
+ACCESS_WRITE    = -1    // Exclusive write lock (rarely used)
+SHARED_LOCK     = -2    // Same as ACCESS_READ
+
+FILE MODES:
+MODE_OLDFILE    = 1005  // Open existing file for read
+MODE_NEWFILE    = 1006  // Create new file or truncate existing
+MODE_READWRITE  = 1004  // Open for read/write (rarely used)
+
+PROTECTION BITS:
+FIBF_DELETE     = 0x01  // Delete protection
+FIBF_WRITE      = 0x02  // Write protection
+FIBF_READ       = 0x04  // Read protection
+FIBF_EXECUTE    = 0x08  // Execute protection
+
+DISK STATES:
+ID_WRITE_PROTECTED  = 80    // Disk is write-protected
+ID_VALIDATED        = 82    // Disk is validated
+ID_VALIDATING       = 83    // Disk is being validated
+
+================================================================================
+
+COMMON PITFALLS TO AVOID
+────────────────────────────────────────────────────────────────────────────
+
+1. WRONG: void *lock = Lock(...);
+   RIGHT: BPTR lock = Lock(...);
+
+2. WRONG: if (lock == NULL)
+   RIGHT: if (!lock) or if (lock == 0)
+   NOTE: BPTR is not a real pointer, it's a shifted value
+
+3. WRONG: sprintf(buffer, "%s/%s", path, name);
+   RIGHT: snprintf(buffer, sizeof(buffer), "%s/%s", path, name);
+
+4. WRONG: strcpy(dest, src);
+   RIGHT: strncpy(dest, src, destSize - 1); dest[destSize - 1] = '\0';
+
+5. WRONG: strcat(dest, src);
+   RIGHT: strncat(dest, src, destSize - strlen(dest) - 1);
+
+6. WRONG: AllocMem(size, flags); ... FreeMem(ptr, size);
+   RIGHT: AllocVec(size, flags); ... FreeVec(ptr);
+   BEST:  AllocDosObject(DOS_FIB, NULL); ... FreeDosObject(DOS_FIB, ptr);
+
+7. WRONG: Forgetting to UnLock() on error paths
+   RIGHT: Always UnLock() before every return statement
+
+8. WRONG: Forgetting to check allocation results
+   RIGHT: Always check if AllocVec/AllocDosObject returned NULL
+
+9. WRONG: Using bool for AmigaDOS return values
+   RIGHT: Use BOOL (TRUE/FALSE) for consistency with AmigaDOS
+
+10. WRONG: Ignoring IoErr() after failures
+    RIGHT: Call IoErr() and log/handle the error code
+
+================================================================================
+
+BUILD AND TEST PROCEDURE
+────────────────────────────────────────────────────────────────────────────
+
+1. Make changes to one module at a time
+2. Test build after each module:
+   make clean-all
+   make amiga
+
+3. Check for warnings:
+   VBCC should produce no warnings with -c99 flag
+
+4. Check linker output:
+   Ensure all symbols resolve correctly with -lauto -lamiga -lmieee
+
+5. If build fails:
+   - Check error message carefully
+   - Verify all includes are correct
+   - Ensure types match AmigaDOS API
+   - Check for missing prototypes
+
+6. After successful build:
+   - Test on actual Amiga or emulator
+   - Verify logging works
+   - Test disk information queries
+   - Test file/directory operations
+   - Check for memory leaks
+
+================================================================================
+
+EXPECTED OUTCOMES
+────────────────────────────────────────────────────────────────────────────
+
+After Stage 2 migration:
+
+✓ All four modules compile cleanly with VBCC
+✓ No warnings with -c99 flag
+✓ All AmigaDOS operations use correct types
+✓ All filesystem operations are AmigaDOS-native
+✓ Logging uses AmigaDOS file I/O with fallback
+✓ Disk info uses direct Info() API calls
+✓ Memory operations use AllocVec/FreeVec
+✓ String operations use safe variants
+✓ Error handling uses IoErr()
+✓ Platform abstraction retained
+✓ C99 features used appropriately
+✓ Code is more maintainable and safer
+
+================================================================================
+End of Stage 2 Technical Notes
+================================================================================

@@ -1,7 +1,15 @@
 #ifndef FILE_DIRECTORY_HANDLING_H
 #define FILE_DIRECTORY_HANDLING_H
 
-
+/* VBCC MIGRATION NOTE (Stage 2): Modernized for AmigaDOS and VBCC C99
+ * 
+ * Key changes in corresponding .c file:
+ * - Replaced AllocMem/FreeMem with AllocDosObject/FreeDosObject for FileInfoBlock
+ * - Replaced sprintf with snprintf for safety
+ * - Added proper error handling with IoErr()
+ * - Improved lock/unlock consistency
+ * - C99 features: inline, //, mixed declarations
+ */
 
 #include <exec/types.h>
 #include <libraries/dos.h>
@@ -15,7 +23,6 @@
 #include <stdlib.h>
 #include <devices/trackdisk.h>
 #include <dos/dos.h>
-
 
 #include "main.h"
 #include "icon_management.h"

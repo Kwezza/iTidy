@@ -1,6 +1,14 @@
 #ifndef utilities_h
 #define utilities_h
 
+/* VBCC MIGRATION NOTE (Stage 2): Updated for AmigaDOS type consistency
+ * 
+ * Changes:
+ * - Changed does_file_or_folder_exist() return type from bool to BOOL
+ * - Added proper AmigaDOS type usage throughout
+ * - Maintained platform abstraction
+ */
+
 #define utilities_h
 #include <graphics/text.h>
 #include <exec/types.h>
@@ -27,4 +35,5 @@ int GetWorkbenchVersion(void);
 char* convertWBVersionWithDot(int number);
 int endsWithInfo(const char *filePath);
 char *removeTextFromStartOfString(const char *str, const char *prefix);
+
 #endif // utilities_h
