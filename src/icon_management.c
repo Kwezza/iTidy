@@ -59,14 +59,14 @@ IconArray *CreateIconArray(void)
     return iconArray;
 }
 
-bool AddIconToArray(IconArray *iconArray, const FullIconDetails *newIcon)
+BOOL AddIconToArray(IconArray *iconArray, const FullIconDetails *newIcon)
 {
     FullIconDetails *newArray;
     size_t newCapacity;
 
     if (iconArray == NULL || newIcon == NULL)
     {
-        return false;
+        return FALSE;
     } /* if */
 
     if (iconArray->size >= iconArray->capacity)
@@ -76,7 +76,7 @@ bool AddIconToArray(IconArray *iconArray, const FullIconDetails *newIcon)
         newArray = (FullIconDetails *)whd_malloc(newCapacity * sizeof(FullIconDetails));
         if (newArray == NULL)
         {
-            return false;
+            return FALSE;
         } /* if */
 
         memset(newArray, 0, newCapacity * sizeof(FullIconDetails));
@@ -96,7 +96,7 @@ bool AddIconToArray(IconArray *iconArray, const FullIconDetails *newIcon)
     iconArray->array[iconArray->size] = *newIcon;
     iconArray->size += 1;
 
-    return true;
+    return TRUE;
 }
 
 IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
@@ -213,11 +213,13 @@ append_to_log("-------------------------\n");
                                 iconPosition = GetIconPositionFromPath(fullPathAndFile);
 
                                 /* Determine icon size based on format */
-
+#ifdef DEBUG
+                                append_to_log("Detecting icon type for: %s\n", fullPathAndFile);
+#endif
                                 if (IsNewIconPath(fullPathAndFile) && user_forceStandardIcons==0)
                                 {
-#ifdef DEBUG_MAX
-                                    append_to_log("Seems to be a NewIcon.\n", fullPathAndFile);
+#ifdef DEBUG
+                                    append_to_log("  -> Detected as NewIcon format\n");
 #endif
                                     /* printf("New Icon Format\n"); */
                                     newIcon.icon_type = icon_type_newIcon;
@@ -230,8 +232,8 @@ append_to_log("-------------------------\n");
                                 {
                                     newIcon.icon_type = icon_type_os35;
 /* printf("OS3.5 Icon Format\n"); */
-#ifdef DEBUG_MAX
-                                    append_to_log("Seems to be a OS35 icon.\n", fullPathAndFile);
+#ifdef DEBUG
+                                    append_to_log("  -> Detected as OS3.5 icon format\n");
 #endif
                                     getOS35IconSize(fullPathAndFile, &iconSize);
                                     count_icon_type_os35++;
@@ -239,8 +241,8 @@ append_to_log("-------------------------\n");
                                 else
                                 {
                                     newIcon.icon_type = icon_type_standard;
-#ifdef DEBUG_MAX
-                                    append_to_log("Seems to be a standard icon\n");
+#ifdef DEBUG
+                                    append_to_log("  -> Detected as standard Workbench icon format\n");
 #endif
                                     /* printf("Standard Icon Format\n"); */
                                     GetStandardIconSize(fullPathAndFile, &iconSize);
@@ -686,7 +688,7 @@ int ArrangeIcons(BPTR lock, char *dirPath, int newWidth)
     return 0;
 }
 
-bool checkIconFrame(const char *iconName)
+BOOL checkIconFrame(const char *iconName)
 {
 #if PLATFORM_AMIGA
     struct DiskObject *icon = NULL;
@@ -705,7 +707,7 @@ bool checkIconFrame(const char *iconName)
     if (newIconName == NULL)
     {
         printf("Memory allocation failed\n");
-        return false;
+        return FALSE;
     }
 
     /* Copy the icon name up to the new length and null-terminate it */
@@ -720,7 +722,7 @@ bool checkIconFrame(const char *iconName)
     {
         printf("Failed to open icon.library\n");
         free(newIconName);
-        return true; /* Assume it has a frame if library can't be opened */
+        return TRUE; /* Assume it has a frame if library can't be opened */
     }
 
     if (IconBase->lib_Version < 44)
@@ -731,7 +733,7 @@ bool checkIconFrame(const char *iconName)
 #endif
         CloseLibrary(IconBase);
         free(newIconName);
-        return true; /* Assume it has a frame if library version is too low */
+        return TRUE; /* Assume it has a frame if library version is too low */
     }
 
     /* Load the icon using the new name without the ".info" extension */
@@ -747,7 +749,7 @@ bool checkIconFrame(const char *iconName)
         // printf("Failed to load icon for border checks: %s\n", newIconName);
         CloseLibrary(IconBase);
         free(newIconName);
-        return true; /* Assume it has a frame if icon can't be loaded */
+        return TRUE; /* Assume it has a frame if icon can't be loaded */
     }
 #ifdef DEBUG_MAX
 
@@ -760,7 +762,7 @@ bool checkIconFrame(const char *iconName)
                     TAG_END) == 1)
     {
         /* A frameStatus of 0 means it has a frame, any other value means it does not */
-        bool hasFrame = (frameStatus == 0);
+        BOOL hasFrame = (frameStatus == 0) ? TRUE : FALSE;
 
         /* Cleanup */
         FreeDiskObject(icon);
@@ -782,11 +784,11 @@ bool checkIconFrame(const char *iconName)
     }
     CloseLibrary(IconBase);
     free(newIconName);
-    return true; /* Default to having a frame if there's an error */
+    return TRUE; /* Default to having a frame if there's an error */
 #else
     /* Host build stub - assume frames */
     (void)iconName;
-    return true;
+    return TRUE;
 #endif
 }
 void dumpIconArrayToScreen(IconArray *iconArray)
@@ -857,7 +859,7 @@ void dumpIconArrayToScreen(IconArray *iconArray)
 
 
 
-bool IsValidIcon(const char *iconPath)
+BOOL IsValidIcon(const char *iconPath)
 {
     struct DiskObject *diskObj;
 
@@ -870,12 +872,12 @@ bool IsValidIcon(const char *iconPath)
 #endif
         /* Successfully retrieved the DiskObject, so the icon is valid */
         FreeDiskObject(diskObj); /* Clean up to prevent memory leaks */
-        return true;
+        return TRUE;
     }
     else
     {
         /* Failed to retrieve the DiskObject, so the icon is invalid */
         append_to_log("Icon is NOT a valid icon: %s\n", iconPath);
-        return false;
+        return FALSE;
     }
 }

@@ -78,17 +78,27 @@ void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
     /* Process ToolTypes to find the "IM1=" prefix and get icon size */
     for (i = 0; (toolType = toolTypes[i]); i++)
     {
-#ifdef DEBUG_MAX
-        append_to_log("Processing ToolType: %s\n", toolType);
+#ifdef DEBUG
+        if (strncmp(toolType, "IM", 2) == 0)
+        {
+            append_to_log("Found IM tooltype: '%s' (length: %d)\n", toolType, strlen(toolType));
+        }
 #endif
         if (strncmp(toolType, prefix, strlen(prefix)) == 0)
         {
             if (strlen(toolType) >= 7)
             {
-                newIconSize->width = (int)toolType[4] - '!';
-                newIconSize->height = (int)toolType[5] - '!';
+                /* NewIcon format: "IM1=" (4 chars) + Transparency (1 char) + Width (1 char) + Height (1 char) + ...
+                 * Position [4] = Transparency ('B' or 'C')
+                 * Position [5] = Width character (decode by subtracting '!' which is 0x21 or 33)
+                 * Position [6] = Height character (decode by subtracting '!')
+                 */
+                newIconSize->width = (int)toolType[5] - '!';
+                newIconSize->height = (int)toolType[6] - '!';
 #ifdef DEBUG
-                append_to_log("Found icon size: width = %d, height = %d\n", newIconSize->width, newIconSize->height);
+                append_to_log("Found icon size from IM1=: width = %d (char '%c'=0x%02X), height = %d (char '%c'=0x%02X)\n", 
+                             newIconSize->width, toolType[5], (unsigned char)toolType[5],
+                             newIconSize->height, toolType[6], (unsigned char)toolType[6]);
 #endif
             }
             break;
@@ -101,7 +111,7 @@ void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
 }
 
 /* Function to read the icon size directly from the file */
-bool GetIconSizeFromFile(const char *filePath, IconSize *iconSize)
+BOOL GetIconSizeFromFile(const char *filePath, IconSize *iconSize)
 {
     /* VBCC MIGRATION NOTE (Stage 4): Fixed BPTR type for file handle */
     BPTR fileHandle;
@@ -112,7 +122,7 @@ bool GetIconSizeFromFile(const char *filePath, IconSize *iconSize)
     fileHandle = Open(filePath, MODE_OLDFILE);
     if (fileHandle == 0)
     {
-        return false;  /* Failed to open the file */
+        return FALSE;  /* Failed to open the file */
     }
 
     /* Read the first 12 bytes (just enough to get the size at 0x08 and 0x0A) */
@@ -120,7 +130,7 @@ bool GetIconSizeFromFile(const char *filePath, IconSize *iconSize)
     if (bytesRead != sizeof(buffer))
     {
         Close(fileHandle);
-        return false;  /* Failed to read the necessary bytes */
+        return FALSE;  /* Failed to read the necessary bytes */
     }
 
     /* Extract the width and height from the file at offset 0x08 and 0x0A */
@@ -130,10 +140,10 @@ bool GetIconSizeFromFile(const char *filePath, IconSize *iconSize)
     append_to_log("Hex read of format size: width = %d, height = %d\n", iconSize->width, iconSize->height);
 #endif
     Close(fileHandle);
-    return true;
+    return TRUE;
 }
 
-bool GetStandardIconSize(const char *filePath, IconSize *iconSize)
+BOOL GetStandardIconSize(const char *filePath, IconSize *iconSize)
 {
     struct DiskObject *diskObject;
     char filePathCopy[256]; /* Buffer to hold the modified file path */
@@ -143,7 +153,7 @@ bool GetStandardIconSize(const char *filePath, IconSize *iconSize)
     /* Check for NULL pointers */
     if (filePath == NULL || iconSize == NULL)
     {
-        return false;
+        return FALSE;
     }
 
     /* Copy the file path to a local buffer */
@@ -172,7 +182,7 @@ bool GetStandardIconSize(const char *filePath, IconSize *iconSize)
         error = IoErr();
         append_to_log("GetDiskObject failed. IoErr: %ld\n", error);
         #endif
-        return false; /* Failed to get the DiskObject */
+        return FALSE; /* Failed to get the DiskObject */
     }
 
     /* Retrieve the width and height from the DiskObject's GfxImage structure */
@@ -182,7 +192,7 @@ bool GetStandardIconSize(const char *filePath, IconSize *iconSize)
     /* Free the DiskObject to avoid memory leaks */
     FreeDiskObject(diskObject);
 
-    return true; /* Successfully retrieved and stored the icon size */
+    return TRUE; /* Successfully retrieved and stored the icon size */
 }
 
 /* Function to get the X and Y position from an .info file */
@@ -251,9 +261,9 @@ IconPosition GetIconPositionFromPath(const char *iconPath)
     return position;
 }
 
-bool IsNewIconPath(const char *filePath)
+BOOL IsNewIconPath(const char *filePath)
 {
-    bool newIconFormat = false;
+    BOOL newIconFormat = FALSE;
     struct DiskObject *diskObject = NULL;
     char *adjustedFilePath = NULL;
     char **toolTypes;
@@ -267,7 +277,7 @@ bool IsNewIconPath(const char *filePath)
         if (adjustedFilePath == NULL)
         {
             /* Memory allocation failed */
-            return false;
+            return FALSE;
         }
 
         memset(adjustedFilePath, 0, len - 4);
@@ -282,7 +292,7 @@ bool IsNewIconPath(const char *filePath)
         if (adjustedFilePath == NULL)
         {
             /* Memory allocation failed */
-            return false;
+            return FALSE;
         }
 
         memset(adjustedFilePath, 0, len + 1);
@@ -296,7 +306,7 @@ bool IsNewIconPath(const char *filePath)
     if (diskObject == NULL)
     {
         whd_free(adjustedFilePath);
-        return false;
+        return FALSE;
     }
 
     /* Get the ToolTypes */
@@ -305,20 +315,31 @@ bool IsNewIconPath(const char *filePath)
     /* Check for the specific tool type indicating new icon format */
     if (toolTypes != NULL)
     {
+#ifdef DEBUG
+        append_to_log("Checking tooltypes for NewIcon signature...\n");
+#endif
         while (*toolTypes != NULL)
         {
-
+#ifdef DEBUG
+            append_to_log("  ToolType: '%s'\n", *toolTypes);
+#endif
             if (platform_stricmp(*toolTypes, "*** DON'T EDIT THE FOLLOWING LINES!! ***") == 0)
             {
-                newIconFormat = true;
+                newIconFormat = TRUE;
 #ifdef DEBUG
-                append_to_log("New icon format detected.\n");
+                append_to_log("  -> NewIcon signature found!\n");
 #endif
                 break;
             }
 
             toolTypes++;
         }
+#ifdef DEBUG
+        if (!newIconFormat)
+        {
+            append_to_log("  -> No NewIcon signature found (standard icon)\n");
+        }
+#endif
     }
 
     /* Clean up */
@@ -528,10 +549,10 @@ int isOS35IconFormat(const char *filename)
     /* Return true if both "FORM" and "ICON" were found */
     return (foundForm && foundIcon);
 }
-bool IsNewIcon(struct DiskObject *diskObject)
+BOOL IsNewIcon(struct DiskObject *diskObject)
 {
     char **toolTypes;
-    bool newIconFormat = false;
+    BOOL newIconFormat = FALSE;
 
     toolTypes = diskObject->do_ToolTypes;
 #ifdef DEBUG_MAX
@@ -545,7 +566,7 @@ bool IsNewIcon(struct DiskObject *diskObject)
         {
             if (platform_stricmp(*toolTypes, "*** DON'T EDIT THE FOLLOWING LINES!! ***") == 0)
             {
-                newIconFormat = true;
+                newIconFormat = TRUE;
             } /* if */
             toolTypes++;
         } /* while */
@@ -553,10 +574,10 @@ bool IsNewIcon(struct DiskObject *diskObject)
 
     if (newIconFormat)
     {
-        return true;
+        return TRUE;
     } /* if */
 
-    return false;
+    return FALSE;
 } /* IsNewIcon */
 
 int getOS35IconSize(const char *filename, IconSize *size)

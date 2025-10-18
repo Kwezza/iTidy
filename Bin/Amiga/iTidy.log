@@ -1,746 +1,1021 @@
 
 
 ========================================
-[23:27:11] === iTidy starting up (VBCC build) ===
-[23:27:11] iTidy V1.0.0 - Amiga Workbench Icon Tidier
-[23:27:11] by Kerry Thompson
-[23:27:11] Version compiled on Oct 17 2025 at 23:23:53
-[23:27:11] Debug build
-[23:27:11] Workbench version: 47.080
-[23:27:11] ICON_SPACING_Y: 7
-[23:27:11] ICON_SPACING_X: 9
-[23:27:11] Found font: XHelvetica.font, size: 9
-[23:27:11] Workbench Icon Font (getIconFont): XHelvetica.font, Size: 9
-[23:27:11] -------------------------
-[23:27:11] Workbench Settings Dump:
-[23:27:11] -------------------------
-[23:27:11] Borderless: No
-[23:27:11] Emboss Rectangle Size: 0
-[23:27:11] Max Name Length: 0
-[23:27:11] New Icons Support: No
-[23:27:11] Color Icon Support: No
-[23:27:11] Disable Title Bar: No
-[23:27:11] Disable Volume Gauge: No
-[23:27:11] -------------------------
-[23:27:11] Initialized default workbench settings
-[23:27:11] Failed to open workbench settings file.  Possibly not yet set.  Defaults assumed.
-[23:27:11] -------------------------
-[23:27:11] Workbench Settings Dump:
-[23:27:11] -------------------------
-[23:27:11] Borderless: No
-[23:27:11] Emboss Rectangle Size: 3
-[23:27:11] Max Name Length: 25
-[23:27:11] New Icons Support: Yes
-[23:27:11] Color Icon Support: Yes
-[23:27:11] Disable Title Bar: No
-[23:27:11] Disable Volume Gauge: No
-[23:27:11] -------------------------
-[23:27:11] IControl Preferences Dump:
-[23:27:11] --------------------------
-[23:27:11] Flags: 0x8001801E
-[23:27:11] Boolean Settings:
-[23:27:11]   Coerce Colors: No
-[23:27:11]   Coerce Lace: Yes
-[23:27:11]   String Gadget Filter: Yes
-[23:27:11]   Menu Snap: Yes
-[23:27:11]   Mode Promote: Yes
-[23:27:11]   Correct Ratio: No
-[23:27:11]   Off-Screen Windows: Yes
-[23:27:11]   More Size Gadgets: Yes
-[23:27:11]   Versioned: Yes
-[23:27:11]   Legacy Look: No
-[23:27:11] Aspect Ratios Enabled:
-[23:27:11]   9:7
-[23:27:11] Title Bar Heights:
-[23:27:11]   Screen Extra Height: 0
-[23:27:11]   Window Extra Height: 0
-[23:27:11] Title Bar Settings:
-[23:27:11]   Title Bar 50: No
-[23:27:11]   Title Bar 67: No
-[23:27:11]   Title Bar 75: No
-[23:27:11]   Title Bar 100: No
-[23:27:11] Square Proportional Look: No
-[23:27:11] UI Element Dimensions:
-[23:27:11]   Left Bar Width: 4
-[23:27:11]   Border Width: 18, Border Height: 14
-[23:27:11]   Title Height: 16, Window Height: 16
-[23:27:11]   Volume Gauge Width: 19
-[23:27:11] --------------------------
-[23:27:11] Getting any 'left out' icons for device: whd
-[23:27:11] Could not open whd:.backdrop
-[23:27:11] Workbench screen width 0, height 0
-[23:27:11] About to call ProcessDirectory with path='whd:', iterateDIRs=0
-[23:27:11] Calling ProcessDirectory now...
-[23:27:11] ProcessDirectory ENTRY: path='whd:', processSubDirs=0, recursion_level=0
-[23:27:11] After sanitizeAmigaPath: path='whd:'
-[23:27:11] Lock() returned: 269321766
-[23:27:11] Lock successful, checking WHDLoad cleanup flag: 1
-[23:27:11] Calling HasSlaveFile('whd:')
-[23:27:11] DEBUG: HasSlaveFile ENTRY: path='whd:'
-[23:27:11] DEBUG: HasSlaveFile - calling Examine()
-[23:27:11] DEBUG: HasSlaveFile - Examine() successful, starting ExNext() loop
-[23:27:11] DEBUG: HasSlaveFile - ExNext() loop completed, checked 5 entries
-[23:27:11] ======================================================
-[23:27:12] Tidying folder: whd:
-[23:27:12] ======================================================
-[23:27:12] CreateIconArrayFromPath ENTRY: lock=269321936, dirPath='whd:'
-[23:27:12] Icon array created successfully
-[23:27:12] FileInfoBlock allocated successfully, calling Examine()
-[23:27:12] Examine() successful, starting ExNext() loop
-[23:27:12] DEBUG: ExNext returned, processing file: 'Demos'
-[23:27:12] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:27:12] DEBUG: GetFullPath() returned: 'whd:Demos'
-[23:27:12] DEBUG: ExNext returned, processing file: 'Magazines'
-[23:27:12] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:27:12] DEBUG: GetFullPath() returned: 'whd:Magazines'
-[23:27:12] DEBUG: ExNext returned, processing file: 'Beta-Game'
-[23:27:12] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:27:12] DEBUG: GetFullPath() returned: 'whd:Beta-Game'
-[23:27:12] DEBUG: ExNext returned, processing file: 'Beta-Demo'
-[23:27:12] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:27:12] DEBUG: GetFullPath() returned: 'whd:Beta-Demo'
-[23:27:12] DEBUG: ExNext returned, processing file: 'Games'
-[23:27:12] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:27:12] DEBUG: GetFullPath() returned: 'whd:Games'
-[23:27:12] No icons in the folder that can be arranged
-[23:27:12] ProcessDirectory completed successfully
-[23:27:12] DEBUG: About to call CleanupWindow()...
-[23:27:12] DEBUG: CleanupWindow() completed
-[23:27:12] DEBUG: About to call disposeTimer()...
-[23:27:12] DEBUG: disposeTimer() completed
-[23:27:12] 
+[23:30:20] === iTidy starting up (VBCC build) ===
+[23:30:20] iTidy V1.0.0 - Amiga Workbench Icon Tidier
+[23:30:20] by Kerry Thompson
+[23:30:20] Version compiled on Oct 18 2025 at 22:54:07
+[23:30:20] Debug build
+[23:30:20] Workbench version: 47.080
+[23:30:20] ICON_SPACING_Y: 7
+[23:30:20] ICON_SPACING_X: 9
+[23:30:20] Found font: XHelvetica.font, size: 9
+[23:30:20] Workbench Icon Font (getIconFont): XHelvetica.font, Size: 9
+[23:30:20] -------------------------
+[23:30:20] Workbench Settings Dump:
+[23:30:20] -------------------------
+[23:30:20] Borderless: No
+[23:30:20] Emboss Rectangle Size: 0
+[23:30:20] Max Name Length: 0
+[23:30:20] New Icons Support: No
+[23:30:20] Color Icon Support: No
+[23:30:20] Disable Title Bar: No
+[23:30:20] Disable Volume Gauge: No
+[23:30:20] -------------------------
+[23:30:20] Initialized default workbench settings
+[23:30:20] Failed to open workbench settings file.  Possibly not yet set.  Defaults assumed.
+[23:30:20] -------------------------
+[23:30:20] Workbench Settings Dump:
+[23:30:20] -------------------------
+[23:30:20] Borderless: No
+[23:30:20] Emboss Rectangle Size: 3
+[23:30:20] Max Name Length: 25
+[23:30:20] New Icons Support: Yes
+[23:30:20] Color Icon Support: Yes
+[23:30:20] Disable Title Bar: No
+[23:30:20] Disable Volume Gauge: No
+[23:30:20] -------------------------
+[23:30:20] IControl Preferences Dump:
+[23:30:20] --------------------------
+[23:30:20] Flags: 0x8001801E
+[23:30:20] Boolean Settings:
+[23:30:20]   Coerce Colors: No
+[23:30:20]   Coerce Lace: Yes
+[23:30:20]   String Gadget Filter: Yes
+[23:30:20]   Menu Snap: Yes
+[23:30:20]   Mode Promote: Yes
+[23:30:20]   Correct Ratio: No
+[23:30:20]   Off-Screen Windows: Yes
+[23:30:20]   More Size Gadgets: Yes
+[23:30:20]   Versioned: Yes
+[23:30:20]   Legacy Look: No
+[23:30:20] Aspect Ratios Enabled:
+[23:30:20]   9:7
+[23:30:20] Title Bar Heights:
+[23:30:20]   Screen Extra Height: 0
+[23:30:20]   Window Extra Height: 0
+[23:30:20] Title Bar Settings:
+[23:30:20]   Title Bar 50: No
+[23:30:20]   Title Bar 67: No
+[23:30:20]   Title Bar 75: No
+[23:30:20]   Title Bar 100: No
+[23:30:20] Square Proportional Look: No
+[23:30:20] UI Element Dimensions:
+[23:30:20]   Left Bar Width: 4
+[23:30:20]   Border Width: 18, Border Height: 14
+[23:30:20]   Title Height: 16, Window Height: 16
+[23:30:20]   Volume Gauge Width: 19
+[23:30:20] --------------------------
+[23:30:20] Getting any 'left out' icons for device: whd
+[23:30:20] Could not open whd:.backdrop
+[23:30:20] Workbench screen width 0, height 0
+[23:30:20] About to call ProcessDirectory with path='whd:', iterateDIRs=0
+[23:30:20] Calling ProcessDirectory now...
+[23:30:20] ProcessDirectory ENTRY: path='whd:', processSubDirs=0, recursion_level=0
+[23:30:20] After sanitizeAmigaPath: path='whd:'
+[23:30:20] Lock() returned: 269313978
+[23:30:20] Lock successful, checking WHDLoad cleanup flag: 1
+[23:30:20] Calling HasSlaveFile('whd:')
+[23:30:20] DEBUG: HasSlaveFile ENTRY: path='whd:'
+[23:30:20] DEBUG: HasSlaveFile - calling Examine()
+[23:30:20] DEBUG: HasSlaveFile - Examine() successful, starting ExNext() loop
+[23:30:20] DEBUG: HasSlaveFile - ExNext() loop completed, checked 10 entries
+[23:30:20] ======================================================
+[23:30:20] Tidying folder: whd:
+[23:30:20] ======================================================
+[23:30:20] CreateIconArrayFromPath ENTRY: lock=269314636, dirPath='whd:'
+[23:30:20] Icon array created successfully
+[23:30:20] FileInfoBlock allocated successfully, calling Examine()
+[23:30:20] Examine() successful, starting ExNext() loop
+[23:30:20] DEBUG: ExNext returned, processing file: 'Demos'
+[23:30:20] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:30:20] DEBUG: GetFullPath() returned: 'whd:Demos'
+[23:30:20] DEBUG: ExNext returned, processing file: 'Magazines'
+[23:30:20] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:30:20] DEBUG: GetFullPath() returned: 'whd:Magazines'
+[23:30:20] DEBUG: ExNext returned, processing file: 'Beta-Game'
+[23:30:20] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:30:20] DEBUG: GetFullPath() returned: 'whd:Beta-Game'
+[23:30:20] DEBUG: ExNext returned, processing file: 'Beta-Demo'
+[23:30:20] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:30:20] DEBUG: GetFullPath() returned: 'whd:Beta-Demo'
+[23:30:20] DEBUG: ExNext returned, processing file: 'Games.info'
+[23:30:20] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:30:20] DEBUG: GetFullPath() returned: 'whd:Games.info'
+[23:30:20] Detecting icon type for: whd:Games.info
+[23:30:20] Checking tooltypes for NewIcon signature...
+[23:30:20]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[23:30:20]   -> No NewIcon signature found (standard icon)
+[23:30:20]   -> Detected as standard Workbench icon format
+[23:30:20] DEBUG: ExNext returned, processing file: 'Beta-Demo.info'
+[23:30:20] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:30:20] DEBUG: GetFullPath() returned: 'whd:Beta-Demo.info'
+[23:30:20] Detecting icon type for: whd:Beta-Demo.info
+[23:30:20] Checking tooltypes for NewIcon signature...
+[23:30:20]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[23:30:20]   -> No NewIcon signature found (standard icon)
+[23:30:21]   -> Detected as standard Workbench icon format
+[23:30:21] DEBUG: ExNext returned, processing file: 'Beta-Game.info'
+[23:30:21] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:30:21] DEBUG: GetFullPath() returned: 'whd:Beta-Game.info'
+[23:30:21] Detecting icon type for: whd:Beta-Game.info
+[23:30:21] Checking tooltypes for NewIcon signature...
+[23:30:21]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[23:30:21]   -> No NewIcon signature found (standard icon)
+[23:30:21]   -> Detected as standard Workbench icon format
+[23:30:21] DEBUG: ExNext returned, processing file: 'Magazines.info'
+[23:30:21] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:30:21] DEBUG: GetFullPath() returned: 'whd:Magazines.info'
+[23:30:21] Detecting icon type for: whd:Magazines.info
+[23:30:21] Checking tooltypes for NewIcon signature...
+[23:30:21]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[23:30:21]   -> No NewIcon signature found (standard icon)
+[23:30:21]   -> Detected as standard Workbench icon format
+[23:30:21] DEBUG: ExNext returned, processing file: 'Demos.info'
+[23:30:21] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:30:21] DEBUG: GetFullPath() returned: 'whd:Demos.info'
+[23:30:21] Detecting icon type for: whd:Demos.info
+[23:30:21] Checking tooltypes for NewIcon signature...
+[23:30:21]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[23:30:21]   -> No NewIcon signature found (standard icon)
+[23:30:21]   -> Detected as standard Workbench icon format
+[23:30:21] DEBUG: ExNext returned, processing file: 'Games'
+[23:30:21] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:30:21] DEBUG: GetFullPath() returned: 'whd:Games'
+[23:30:21] ID  | Width  | Height | TxtW   | TxtH   | MaxW   | MaxH   | X        | Y        | Border | Type     | Icon                
+[23:30:21] ----------------------------------------------------------------------------------------------------------------
+[23:30:21] 0   | 60     | 24     | 24     | 9      | 63     | 32     | 30       | 28       | 3      | Standard | Games.info          
+[23:30:21] 1   | 60     | 24     | 44     | 9      | 63     | 32     | 30       | 10       | 3      | Standard | Beta-Demo.info      
+[23:30:21] 2   | 60     | 24     | 43     | 9      | 63     | 32     | 83       | 10       | 3      | Standard | Beta-Game.info      
+[23:30:21] 3   | 60     | 24     | 40     | 9      | 63     | 32     | 83       | 28       | 3      | Standard | Magazines.info      
+[23:30:21] 4   | 60     | 24     | 25     | 9      | 63     | 32     | 126      | 10       | 3      | Standard | Demos.info          
+[23:30:21] Unable to load disk.info for folder: whd:Disk
+[23:30:21] ID  | X    | Y    | Icon                                    
+[23:30:21] --------------------------------------------------------------
+[23:30:21] 0   | 9    | 7    | Beta-Demo.info                          
+[23:30:21] 1   | 81   | 7    | Beta-Game.info                          
+[23:30:21] 2   | 153  | 7    | Demos.info                              
+[23:30:21] 3   | 9    | 52   | Games.info                              
+[23:30:21] 4   | 81   | 52   | Magazines.info                          
+[23:30:21] Completed arranging icons in 2 rows with 3 icons per row. Path: whd:
+[23:30:21] ProcessDirectory completed successfully
+[23:30:21] DEBUG: About to call CleanupWindow()...
+[23:30:21] DEBUG: CleanupWindow() completed
+[23:30:21] DEBUG: About to call disposeTimer()...
+[23:30:21] DEBUG: disposeTimer() completed
+[23:30:21] 
 
-Total icons tidied: 0
-[23:27:12]   - Standard icons:    0
-[23:27:12]   - NewIcon icons:     0
-[23:27:12]   - OS3.5 style icons: 0
-[23:27:12] 
-iTidy completed[23:27:12]  successfully in [23:27:12] 1 seconds
-[23:27:12] DEBUG: Starting cleanup sequence...
-[23:27:12] DEBUG: About to call FreeIconErrorList()...
-[23:27:12] DEBUG: FreeIconErrorList() completed
-[23:27:12] DEBUG: About to free fontPrefs (ptr=1077837548)...
-[23:27:12] DEBUG: fontPrefs freed successfully
-[23:27:12] === iTidy shutting down ===
-[23:27:12] DEBUG: About to exit program (using exit() to bypass VBCC cleanup crash)...
-
-
-========================================
-[23:35:30] === iTidy starting up (VBCC build) ===
-[23:35:30] iTidy V1.0.0 - Amiga Workbench Icon Tidier
-[23:35:30] by Kerry Thompson
-[23:35:30] Version compiled on Oct 17 2025 at 23:33:31
-[23:35:30] Debug build
-[23:35:30] Workbench version: 47.080
-[23:35:30] No arguments provided - defaulting to WHD:
-[23:35:30] ICON_SPACING_Y: 7
-[23:35:30] ICON_SPACING_X: 9
-[23:35:30] Found font: XHelvetica.font, size: 9
-[23:35:30] Workbench Icon Font (getIconFont): XHelvetica.font, Size: 9
-[23:35:30] -------------------------
-[23:35:30] Workbench Settings Dump:
-[23:35:30] -------------------------
-[23:35:30] Borderless: No
-[23:35:30] Emboss Rectangle Size: 0
-[23:35:30] Max Name Length: 0
-[23:35:30] New Icons Support: No
-[23:35:30] Color Icon Support: No
-[23:35:30] Disable Title Bar: No
-[23:35:30] Disable Volume Gauge: No
-[23:35:30] -------------------------
-[23:35:30] Initialized default workbench settings
-[23:35:30] Failed to open workbench settings file.  Possibly not yet set.  Defaults assumed.
-[23:35:30] -------------------------
-[23:35:30] Workbench Settings Dump:
-[23:35:30] -------------------------
-[23:35:30] Borderless: No
-[23:35:30] Emboss Rectangle Size: 3
-[23:35:30] Max Name Length: 25
-[23:35:30] New Icons Support: Yes
-[23:35:30] Color Icon Support: Yes
-[23:35:30] Disable Title Bar: No
-[23:35:30] Disable Volume Gauge: No
-[23:35:30] -------------------------
-[23:35:30] IControl Preferences Dump:
-[23:35:30] --------------------------
-[23:35:30] Flags: 0x8001801E
-[23:35:30] Boolean Settings:
-[23:35:30]   Coerce Colors: No
-[23:35:30]   Coerce Lace: Yes
-[23:35:30]   String Gadget Filter: Yes
-[23:35:30]   Menu Snap: Yes
-[23:35:30]   Mode Promote: Yes
-[23:35:30]   Correct Ratio: No
-[23:35:30]   Off-Screen Windows: Yes
-[23:35:30]   More Size Gadgets: Yes
-[23:35:30]   Versioned: Yes
-[23:35:30]   Legacy Look: No
-[23:35:30] Aspect Ratios Enabled:
-[23:35:30]   9:7
-[23:35:30] Title Bar Heights:
-[23:35:30]   Screen Extra Height: 0
-[23:35:30]   Window Extra Height: 0
-[23:35:30] Title Bar Settings:
-[23:35:30]   Title Bar 50: No
-[23:35:30]   Title Bar 67: No
-[23:35:30]   Title Bar 75: No
-[23:35:30]   Title Bar 100: No
-[23:35:30] Square Proportional Look: No
-[23:35:30] UI Element Dimensions:
-[23:35:30]   Left Bar Width: 4
-[23:35:30]   Border Width: 18, Border Height: 14
-[23:35:30]   Title Height: 16, Window Height: 16
-[23:35:30]   Volume Gauge Width: 19
-[23:35:30] --------------------------
-[23:35:30] Getting any 'left out' icons for device: WHD
-[23:35:30] Could not open WHD:.backdrop
-[23:35:30] Workbench screen width 0, height 0
-[23:35:30] About to call ProcessDirectory with path='WHD:', iterateDIRs=0
-[23:35:30] Calling ProcessDirectory now...
-[23:35:30] ProcessDirectory ENTRY: path='WHD:', processSubDirs=0, recursion_level=0
-[23:35:30] After sanitizeAmigaPath: path='WHD:'
-[23:35:30] Lock() returned: 269326162
-[23:35:30] Lock successful, checking WHDLoad cleanup flag: 1
-[23:35:30] Calling HasSlaveFile('WHD:')
-[23:35:30] DEBUG: HasSlaveFile ENTRY: path='WHD:'
-[23:35:30] DEBUG: HasSlaveFile - calling Examine()
-[23:35:30] DEBUG: HasSlaveFile - Examine() successful, starting ExNext() loop
-[23:35:30] DEBUG: HasSlaveFile - ExNext() loop completed, checked 5 entries
-[23:35:30] ======================================================
-[23:35:30] Tidying folder: WHD:
-[23:35:30] ======================================================
-[23:35:30] CreateIconArrayFromPath ENTRY: lock=269358624, dirPath='WHD:'
-[23:35:30] Icon array created successfully
-[23:35:30] FileInfoBlock allocated successfully, calling Examine()
-[23:35:30] Examine() successful, starting ExNext() loop
-[23:35:30] DEBUG: ExNext returned, processing file: 'Demos'
-[23:35:30] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:35:30] DEBUG: GetFullPath() returned: 'WHD:Demos'
-[23:35:30] DEBUG: ExNext returned, processing file: 'Magazines'
-[23:35:30] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:35:30] DEBUG: GetFullPath() returned: 'WHD:Magazines'
-[23:35:30] DEBUG: ExNext returned, processing file: 'Beta-Game'
-[23:35:30] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:35:30] DEBUG: GetFullPath() returned: 'WHD:Beta-Game'
-[23:35:30] DEBUG: ExNext returned, processing file: 'Beta-Demo'
-[23:35:30] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:35:30] DEBUG: GetFullPath() returned: 'WHD:Beta-Demo'
-[23:35:30] DEBUG: ExNext returned, processing file: 'Games'
-[23:35:30] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:35:30] DEBUG: GetFullPath() returned: 'WHD:Games'
-[23:35:30] No icons in the folder that can be arranged
-[23:35:30] ProcessDirectory completed successfully
-[23:35:30] DEBUG: About to call CleanupWindow()...
-[23:35:30] DEBUG: CleanupWindow() completed
-[23:35:30] DEBUG: About to call disposeTimer()...
-[23:35:30] DEBUG: disposeTimer() completed
-[23:35:30] 
-
-Total icons tidied: 0
-[23:35:30]   - Standard icons:    0
-[23:35:30]   - NewIcon icons:     0
-[23:35:30]   - OS3.5 style icons: 0
-[23:35:30] 
-iTidy completed[23:35:30]  successfully in [23:35:30] 0 seconds
-[23:35:30] DEBUG: Starting cleanup sequence...
-[23:35:30] DEBUG: About to call FreeIconErrorList()...
-[23:35:30] DEBUG: FreeIconErrorList() completed
-[23:35:30] DEBUG: About to free fontPrefs (ptr=1078069940)...
-[23:35:30] DEBUG: fontPrefs freed successfully
-[23:35:30] === iTidy shutting down ===
+Total icons tidied: 5
+[23:30:21]   - Standard icons:    5
+[23:30:21]   - NewIcon icons:     0
+[23:30:21]   - OS3.5 style icons: 0
+[23:30:21] 
+iTidy completed[23:30:21]  successfully in [23:30:21] 1 seconds
+[23:30:21] DEBUG: Starting cleanup sequence...
+[23:30:21] DEBUG: About to call FreeIconErrorList()...
+[23:30:21] DEBUG: FreeIconErrorList() completed
+[23:30:21] DEBUG: About to free fontPrefs (ptr=1078819860)...
+[23:30:21] DEBUG: fontPrefs freed successfully
 
 
 ========================================
-[23:37:56] === iTidy starting up (VBCC build) ===
-[23:37:56] iTidy V1.0.0 - Amiga Workbench Icon Tidier
-[23:37:56] by Kerry Thompson
-[23:37:56] Version compiled on Oct 17 2025 at 23:37:19
-[23:37:56] Debug build
-[23:37:56] Workbench version: 47.080
-[23:37:56] No arguments provided - defaulting to WHD:
-[23:37:56] ICON_SPACING_Y: 7
-[23:37:56] ICON_SPACING_X: 9
-[23:37:56] Found font: XHelvetica.font, size: 9
-[23:37:56] Workbench Icon Font (getIconFont): XHelvetica.font, Size: 9
-[23:37:56] -------------------------
-[23:37:56] Workbench Settings Dump:
-[23:37:56] -------------------------
-[23:37:56] Borderless: No
-[23:37:56] Emboss Rectangle Size: 0
-[23:37:56] Max Name Length: 0
-[23:37:56] New Icons Support: No
-[23:37:56] Color Icon Support: No
-[23:37:56] Disable Title Bar: No
-[23:37:56] Disable Volume Gauge: No
-[23:37:56] -------------------------
-[23:37:56] Initialized default workbench settings
-[23:37:56] Failed to open workbench settings file.  Possibly not yet set.  Defaults assumed.
-[23:37:56] -------------------------
-[23:37:56] Workbench Settings Dump:
-[23:37:56] -------------------------
-[23:37:56] Borderless: No
-[23:37:56] Emboss Rectangle Size: 3
-[23:37:56] Max Name Length: 25
-[23:37:56] New Icons Support: Yes
-[23:37:56] Color Icon Support: Yes
-[23:37:56] Disable Title Bar: No
-[23:37:56] Disable Volume Gauge: No
-[23:37:56] -------------------------
-[23:37:56] IControl Preferences Dump:
-[23:37:56] --------------------------
-[23:37:56] Flags: 0x8001801E
-[23:37:56] Boolean Settings:
-[23:37:56]   Coerce Colors: No
-[23:37:56]   Coerce Lace: Yes
-[23:37:56]   String Gadget Filter: Yes
-[23:37:56]   Menu Snap: Yes
-[23:37:56]   Mode Promote: Yes
-[23:37:56]   Correct Ratio: No
-[23:37:56]   Off-Screen Windows: Yes
-[23:37:56]   More Size Gadgets: Yes
-[23:37:56]   Versioned: Yes
-[23:37:56]   Legacy Look: No
-[23:37:56] Aspect Ratios Enabled:
-[23:37:56]   9:7
-[23:37:56] Title Bar Heights:
-[23:37:56]   Screen Extra Height: 0
-[23:37:56]   Window Extra Height: 0
-[23:37:56] Title Bar Settings:
-[23:37:56]   Title Bar 50: No
-[23:37:56]   Title Bar 67: No
-[23:37:56]   Title Bar 75: No
-[23:37:56]   Title Bar 100: No
-[23:37:56] Square Proportional Look: No
-[23:37:56] UI Element Dimensions:
-[23:37:56]   Left Bar Width: 4
-[23:37:56]   Border Width: 18, Border Height: 14
-[23:37:56]   Title Height: 16, Window Height: 16
-[23:37:56]   Volume Gauge Width: 19
-[23:37:56] --------------------------
-[23:37:56] Getting any 'left out' icons for device: WHD
-[23:37:56] Could not open WHD:.backdrop
-[23:37:56] Workbench screen width 0, height 0
-[23:37:56] About to call ProcessDirectory with path='WHD:', iterateDIRs=0
-[23:37:56] Calling ProcessDirectory now...
-[23:37:56] ProcessDirectory ENTRY: path='WHD:', processSubDirs=0, recursion_level=0
-[23:37:56] After sanitizeAmigaPath: path='WHD:'
-[23:37:56] Lock() returned: 269328070
-[23:37:56] Lock successful, checking WHDLoad cleanup flag: 1
-[23:37:56] Calling HasSlaveFile('WHD:')
-[23:37:56] DEBUG: HasSlaveFile ENTRY: path='WHD:'
-[23:37:56] DEBUG: HasSlaveFile - calling Examine()
-[23:37:56] DEBUG: HasSlaveFile - Examine() successful, starting ExNext() loop
-[23:37:56] DEBUG: HasSlaveFile - ExNext() loop completed, checked 5 entries
-[23:37:56] ======================================================
-[23:37:56] Tidying folder: WHD:
-[23:37:56] ======================================================
-[23:37:56] CreateIconArrayFromPath ENTRY: lock=269328078, dirPath='WHD:'
-[23:37:56] Icon array created successfully
-[23:37:56] FileInfoBlock allocated successfully, calling Examine()
-[23:37:56] Examine() successful, starting ExNext() loop
-[23:37:56] DEBUG: ExNext returned, processing file: 'Demos'
-[23:37:56] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:37:56] DEBUG: GetFullPath() returned: 'WHD:Demos'
-[23:37:56] DEBUG: ExNext returned, processing file: 'Magazines'
-[23:37:56] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:37:56] DEBUG: GetFullPath() returned: 'WHD:Magazines'
-[23:37:56] DEBUG: ExNext returned, processing file: 'Beta-Game'
-[23:37:56] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:37:56] DEBUG: GetFullPath() returned: 'WHD:Beta-Game'
-[23:37:56] DEBUG: ExNext returned, processing file: 'Beta-Demo'
-[23:37:56] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:37:56] DEBUG: GetFullPath() returned: 'WHD:Beta-Demo'
-[23:37:56] DEBUG: ExNext returned, processing file: 'Games'
-[23:37:56] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:37:56] DEBUG: GetFullPath() returned: 'WHD:Games'
-[23:37:56] No icons in the folder that can be arranged
-[23:37:56] ProcessDirectory completed successfully
-[23:37:56] DEBUG: About to call CleanupWindow()...
-[23:37:56] DEBUG: CleanupWindow() completed
-[23:37:56] DEBUG: About to call disposeTimer()...
-[23:37:56] DEBUG: disposeTimer() completed
-[23:37:56] 
+[23:37:15] === iTidy starting up (VBCC build) ===
+[23:37:15] iTidy V1.0.0 - Amiga Workbench Icon Tidier
+[23:37:15] by Kerry Thompson
+[23:37:15] Version compiled on Oct 18 2025 at 23:36:53
+[23:37:15] Debug build
+[23:37:15] Workbench version: 47.080
+[23:37:15] ICON_SPACING_Y: 7
+[23:37:15] ICON_SPACING_X: 9
+[23:37:15] Found font: XHelvetica.font, size: 9
+[23:37:15] Workbench Icon Font (getIconFont): XHelvetica.font, Size: 9
+[23:37:15] -------------------------
+[23:37:15] Workbench Settings Dump:
+[23:37:15] -------------------------
+[23:37:15] Borderless: No
+[23:37:15] Emboss Rectangle Size: 0
+[23:37:15] Max Name Length: 0
+[23:37:15] New Icons Support: No
+[23:37:15] Color Icon Support: No
+[23:37:15] Disable Title Bar: No
+[23:37:15] Disable Volume Gauge: No
+[23:37:15] -------------------------
+[23:37:15] Initialized default workbench settings
+[23:37:15] Failed to open workbench settings file.  Possibly not yet set.  Defaults assumed.
+[23:37:15] -------------------------
+[23:37:15] Workbench Settings Dump:
+[23:37:15] -------------------------
+[23:37:15] Borderless: No
+[23:37:15] Emboss Rectangle Size: 3
+[23:37:15] Max Name Length: 25
+[23:37:15] New Icons Support: Yes
+[23:37:15] Color Icon Support: Yes
+[23:37:15] Disable Title Bar: No
+[23:37:15] Disable Volume Gauge: No
+[23:37:15] -------------------------
+[23:37:15] IControl Preferences Dump:
+[23:37:15] --------------------------
+[23:37:15] Flags: 0x8001801E
+[23:37:15] Boolean Settings:
+[23:37:15]   Coerce Colors: No
+[23:37:15]   Coerce Lace: Yes
+[23:37:15]   String Gadget Filter: Yes
+[23:37:15]   Menu Snap: Yes
+[23:37:15]   Mode Promote: Yes
+[23:37:15]   Correct Ratio: No
+[23:37:15]   Off-Screen Windows: Yes
+[23:37:15]   More Size Gadgets: Yes
+[23:37:15]   Versioned: Yes
+[23:37:15]   Legacy Look: No
+[23:37:15] Aspect Ratios Enabled:
+[23:37:15]   9:7
+[23:37:15] Title Bar Heights:
+[23:37:15]   Screen Extra Height: 0
+[23:37:15]   Window Extra Height: 0
+[23:37:15] Title Bar Settings:
+[23:37:15]   Title Bar 50: No
+[23:37:15]   Title Bar 67: No
+[23:37:15]   Title Bar 75: No
+[23:37:15]   Title Bar 100: No
+[23:37:15] Square Proportional Look: No
+[23:37:15] UI Element Dimensions:
+[23:37:15]   Left Bar Width: 4
+[23:37:15]   Border Width: 18, Border Height: 14
+[23:37:15]   Title Height: 16, Window Height: 16
+[23:37:15]   Volume Gauge Width: 19
+[23:37:15] --------------------------
+[23:37:15] Getting any 'left out' icons for device: whd
+[23:37:15] Could not open whd:.backdrop
+[23:37:15] Workbench screen width 0, height 0
+[23:37:15] About to call ProcessDirectory with path='whd:', iterateDIRs=0
+[23:37:15] Calling ProcessDirectory now...
+[23:37:15] ProcessDirectory ENTRY: path='whd:', processSubDirs=0, recursion_level=0
+[23:37:15] After sanitizeAmigaPath: path='whd:'
+[23:37:15] Lock() returned: 269320024
+[23:37:15] Lock successful, checking WHDLoad cleanup flag: 1
+[23:37:15] Calling HasSlaveFile('whd:')
+[23:37:15] DEBUG: HasSlaveFile ENTRY: path='whd:'
+[23:37:15] DEBUG: HasSlaveFile - calling Examine()
+[23:37:15] DEBUG: HasSlaveFile - Examine() successful, starting ExNext() loop
+[23:37:15] DEBUG: HasSlaveFile - ExNext() loop completed, checked 10 entries
+[23:37:15] ======================================================
+[23:37:15] Tidying folder: whd:
+[23:37:15] ======================================================
+[23:37:15] CreateIconArrayFromPath ENTRY: lock=269320116, dirPath='whd:'
+[23:37:15] Icon array created successfully
+[23:37:15] FileInfoBlock allocated successfully, calling Examine()
+[23:37:15] Examine() successful, starting ExNext() loop
+[23:37:15] DEBUG: ExNext returned, processing file: 'Demos'
+[23:37:15] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:15] DEBUG: GetFullPath() returned: 'whd:Demos'
+[23:37:15] DEBUG: ExNext returned, processing file: 'Magazines'
+[23:37:15] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:15] DEBUG: GetFullPath() returned: 'whd:Magazines'
+[23:37:15] DEBUG: ExNext returned, processing file: 'Beta-Game'
+[23:37:15] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:15] DEBUG: GetFullPath() returned: 'whd:Beta-Game'
+[23:37:15] DEBUG: ExNext returned, processing file: 'Beta-Demo'
+[23:37:15] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:15] DEBUG: GetFullPath() returned: 'whd:Beta-Demo'
+[23:37:15] DEBUG: ExNext returned, processing file: 'Games.info'
+[23:37:15] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:15] DEBUG: GetFullPath() returned: 'whd:Games.info'
+[23:37:15] Detecting icon type for: whd:Games.info
+[23:37:15] Checking tooltypes for NewIcon signature...
+[23:37:15]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[23:37:15]   -> No NewIcon signature found (standard icon)
+[23:37:15]   -> Detected as standard Workbench icon format
+[23:37:15] DEBUG: ExNext returned, processing file: 'Beta-Demo.info'
+[23:37:15] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:15] DEBUG: GetFullPath() returned: 'whd:Beta-Demo.info'
+[23:37:15] Detecting icon type for: whd:Beta-Demo.info
+[23:37:15] Checking tooltypes for NewIcon signature...
+[23:37:15]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[23:37:15]   -> No NewIcon signature found (standard icon)
+[23:37:15]   -> Detected as standard Workbench icon format
+[23:37:15] DEBUG: ExNext returned, processing file: 'Beta-Game.info'
+[23:37:15] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:15] DEBUG: GetFullPath() returned: 'whd:Beta-Game.info'
+[23:37:15] Detecting icon type for: whd:Beta-Game.info
+[23:37:15] Checking tooltypes for NewIcon signature...
+[23:37:15]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[23:37:15]   -> No NewIcon signature found (standard icon)
+[23:37:15]   -> Detected as standard Workbench icon format
+[23:37:15] DEBUG: ExNext returned, processing file: 'Magazines.info'
+[23:37:15] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:15] DEBUG: GetFullPath() returned: 'whd:Magazines.info'
+[23:37:15] Detecting icon type for: whd:Magazines.info
+[23:37:15] Checking tooltypes for NewIcon signature...
+[23:37:15]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[23:37:15]   -> No NewIcon signature found (standard icon)
+[23:37:15]   -> Detected as standard Workbench icon format
+[23:37:15] DEBUG: ExNext returned, processing file: 'Demos.info'
+[23:37:15] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:15] DEBUG: GetFullPath() returned: 'whd:Demos.info'
+[23:37:15] Detecting icon type for: whd:Demos.info
+[23:37:15] Checking tooltypes for NewIcon signature...
+[23:37:15]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[23:37:15]   -> No NewIcon signature found (standard icon)
+[23:37:15]   -> Detected as standard Workbench icon format
+[23:37:15] DEBUG: ExNext returned, processing file: 'Games'
+[23:37:15] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:15] DEBUG: GetFullPath() returned: 'whd:Games'
+[23:37:15] ID  | Width  | Height | TxtW   | TxtH   | MaxW   | MaxH   | X        | Y        | Border | Type     | Icon                
+[23:37:15] ----------------------------------------------------------------------------------------------------------------
+[23:37:15] 0   | 60     | 24     | 24     | 9      | 63     | 32     | 9        | 52       | 3      | Standard | Games.info          
+[23:37:15] 1   | 60     | 24     | 44     | 9      | 63     | 32     | 9        | 7        | 3      | Standard | Beta-Demo.info      
+[23:37:15] 2   | 60     | 24     | 43     | 9      | 63     | 32     | 81       | 7        | 3      | Standard | Beta-Game.info      
+[23:37:15] 3   | 60     | 24     | 40     | 9      | 63     | 32     | 81       | 52       | 3      | Standard | Magazines.info      
+[23:37:15] 4   | 60     | 24     | 25     | 9      | 63     | 32     | 153      | 7        | 3      | Standard | Demos.info          
+[23:37:15] Unable to load disk.info for folder: whd:Disk
+[23:37:15] ID  | X    | Y    | Icon                                    
+[23:37:15] --------------------------------------------------------------
+[23:37:15] 0   | 9    | 7    | Beta-Demo.info                          
+[23:37:15] 1   | 81   | 7    | Beta-Game.info                          
+[23:37:15] 2   | 153  | 7    | Demos.info                              
+[23:37:15] 3   | 9    | 52   | Games.info                              
+[23:37:15] 4   | 81   | 52   | Magazines.info                          
+[23:37:15] Completed arranging icons in 2 rows with 3 icons per row. Path: whd:
+[23:37:15] ProcessDirectory completed successfully
+[23:37:15] DEBUG: About to call CleanupWindow()...
+[23:37:15] DEBUG: CleanupWindow() completed
+[23:37:15] DEBUG: About to call disposeTimer()...
+[23:37:15] DEBUG: disposeTimer() completed
+[23:37:15] 
 
-Total icons tidied: 0
-[23:37:56]   - Standard icons:    0
-[23:37:56]   - NewIcon icons:     0
-[23:37:56]   - OS3.5 style icons: 0
-[23:37:56] 
-iTidy completed[23:37:56]  successfully in [23:37:56] 0 seconds
-[23:37:56] DEBUG: Starting cleanup sequence...
-[23:37:56] DEBUG: About to call FreeIconErrorList()...
-[23:37:56] DEBUG: FreeIconErrorList() completed
-[23:37:56] DEBUG: About to free fontPrefs (ptr=1078071100)...
-[23:37:56] DEBUG: fontPrefs freed successfully
-
-
-========================================
-[23:42:40] === iTidy starting up (VBCC build) ===
-[23:42:40] iTidy V1.0.0 - Amiga Workbench Icon Tidier
-[23:42:40] by Kerry Thompson
-[23:42:40] Version compiled on Oct 17 2025 at 23:39:07
-[23:42:40] Debug build
-[23:42:40] Workbench version: 47.080
-[23:42:40] No arguments provided - defaulting to WHD:
-[23:42:40] ICON_SPACING_Y: 7
-[23:42:40] ICON_SPACING_X: 9
-[23:42:40] Found font: XHelvetica.font, size: 9
-[23:42:40] Workbench Icon Font (getIconFont): XHelvetica.font, Size: 9
-[23:42:40] -------------------------
-[23:42:40] Workbench Settings Dump:
-[23:42:40] -------------------------
-[23:42:40] Borderless: No
-[23:42:40] Emboss Rectangle Size: 0
-[23:42:40] Max Name Length: 0
-[23:42:40] New Icons Support: No
-[23:42:40] Color Icon Support: No
-[23:42:40] Disable Title Bar: No
-[23:42:40] Disable Volume Gauge: No
-[23:42:40] -------------------------
-[23:42:40] Initialized default workbench settings
-[23:42:40] Failed to open workbench settings file.  Possibly not yet set.  Defaults assumed.
-[23:42:40] -------------------------
-[23:42:40] Workbench Settings Dump:
-[23:42:40] -------------------------
-[23:42:40] Borderless: No
-[23:42:40] Emboss Rectangle Size: 3
-[23:42:40] Max Name Length: 25
-[23:42:40] New Icons Support: Yes
-[23:42:40] Color Icon Support: Yes
-[23:42:40] Disable Title Bar: No
-[23:42:40] Disable Volume Gauge: No
-[23:42:40] -------------------------
-[23:42:40] IControl Preferences Dump:
-[23:42:40] --------------------------
-[23:42:40] Flags: 0x8001801E
-[23:42:40] Boolean Settings:
-[23:42:40]   Coerce Colors: No
-[23:42:40]   Coerce Lace: Yes
-[23:42:40]   String Gadget Filter: Yes
-[23:42:40]   Menu Snap: Yes
-[23:42:40]   Mode Promote: Yes
-[23:42:40]   Correct Ratio: No
-[23:42:40]   Off-Screen Windows: Yes
-[23:42:40]   More Size Gadgets: Yes
-[23:42:40]   Versioned: Yes
-[23:42:40]   Legacy Look: No
-[23:42:40] Aspect Ratios Enabled:
-[23:42:40]   9:7
-[23:42:40] Title Bar Heights:
-[23:42:40]   Screen Extra Height: 0
-[23:42:40]   Window Extra Height: 0
-[23:42:40] Title Bar Settings:
-[23:42:40]   Title Bar 50: No
-[23:42:40]   Title Bar 67: No
-[23:42:40]   Title Bar 75: No
-[23:42:40]   Title Bar 100: No
-[23:42:40] Square Proportional Look: No
-[23:42:40] UI Element Dimensions:
-[23:42:40]   Left Bar Width: 4
-[23:42:40]   Border Width: 18, Border Height: 14
-[23:42:40]   Title Height: 16, Window Height: 16
-[23:42:40]   Volume Gauge Width: 19
-[23:42:40] --------------------------
-[23:42:40] Getting any 'left out' icons for device: WHD
-[23:42:40] Could not open WHD:.backdrop
-[23:42:40] Workbench screen width 0, height 0
-[23:42:40] About to call ProcessDirectory with path='WHD:', iterateDIRs=0
-[23:42:40] Calling ProcessDirectory now...
-[23:42:40] ProcessDirectory ENTRY: path='WHD:', processSubDirs=0, recursion_level=0
-[23:42:40] After sanitizeAmigaPath: path='WHD:'
-[23:42:40] Lock() returned: 269319188
-[23:42:40] Lock successful, checking WHDLoad cleanup flag: 1
-[23:42:40] Calling HasSlaveFile('WHD:')
-[23:42:40] DEBUG: HasSlaveFile ENTRY: path='WHD:'
-[23:42:40] DEBUG: HasSlaveFile - calling Examine()
-[23:42:40] DEBUG: HasSlaveFile - Examine() successful, starting ExNext() loop
-[23:42:40] DEBUG: HasSlaveFile - ExNext() loop completed, checked 5 entries
-[23:42:40] ======================================================
-[23:42:40] Tidying folder: WHD:
-[23:42:40] ======================================================
-[23:42:40] CreateIconArrayFromPath ENTRY: lock=269319768, dirPath='WHD:'
-[23:42:40] Icon array created successfully
-[23:42:40] FileInfoBlock allocated successfully, calling Examine()
-[23:42:40] Examine() successful, starting ExNext() loop
-[23:42:40] DEBUG: ExNext returned, processing file: 'Demos'
-[23:42:40] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:42:40] DEBUG: GetFullPath() returned: 'WHD:Demos'
-[23:42:40] DEBUG: ExNext returned, processing file: 'Magazines'
-[23:42:40] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:42:40] DEBUG: GetFullPath() returned: 'WHD:Magazines'
-[23:42:40] DEBUG: ExNext returned, processing file: 'Beta-Game'
-[23:42:40] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:42:40] DEBUG: GetFullPath() returned: 'WHD:Beta-Game'
-[23:42:40] DEBUG: ExNext returned, processing file: 'Beta-Demo'
-[23:42:40] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:42:40] DEBUG: GetFullPath() returned: 'WHD:Beta-Demo'
-[23:42:40] DEBUG: ExNext returned, processing file: 'Games'
-[23:42:40] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:42:40] DEBUG: GetFullPath() returned: 'WHD:Games'
-[23:42:40] No icons in the folder that can be arranged
-[23:42:40] ProcessDirectory completed successfully
-[23:42:40] DEBUG: About to call CleanupWindow()...
-[23:42:40] DEBUG: CleanupWindow() completed
-[23:42:40] DEBUG: About to call disposeTimer()...
-[23:42:40] DEBUG: disposeTimer() completed
-[23:42:40] 
-
-Total icons tidied: 0
-[23:42:40]   - Standard icons:    0
-[23:42:40]   - NewIcon icons:     0
-[23:42:40]   - OS3.5 style icons: 0
-[23:42:40] 
-iTidy completed[23:42:40]  successfully in [23:42:40] 0 seconds
-[23:42:40] DEBUG: Starting cleanup sequence...
-[23:42:40] DEBUG: About to call FreeIconErrorList()...
-[23:42:40] DEBUG: FreeIconErrorList() completed
-[23:42:40] DEBUG: About to free fontPrefs (ptr=1078069044)...
-[23:42:40] DEBUG: fontPrefs freed successfully
+Total icons tidied: 5
+[23:37:15]   - Standard icons:    5
+[23:37:15]   - NewIcon icons:     0
+[23:37:15]   - OS3.5 style icons: 0
+[23:37:15] 
+iTidy completed[23:37:15]  successfully in [23:37:15] 0 seconds
+[23:37:15] DEBUG: Starting cleanup sequence...
+[23:37:15] DEBUG: About to call FreeIconErrorList()...
+[23:37:15] DEBUG: FreeIconErrorList() completed
+[23:37:15] DEBUG: About to free fontPrefs (ptr=1079150540)...
+[23:37:15] DEBUG: fontPrefs freed successfully
 
 
 ========================================
-[23:42:46] === iTidy starting up (VBCC build) ===
-[23:42:46] iTidy V1.0.0 - Amiga Workbench Icon Tidier
-[23:42:46] by Kerry Thompson
-[23:42:46] Version compiled on Oct 17 2025 at 23:39:07
-[23:42:46] Debug build
-[23:42:46] Workbench version: 47.080
-[23:42:46] No arguments provided - defaulting to WHD:
-[23:42:46] ICON_SPACING_Y: 7
-[23:42:46] ICON_SPACING_X: 9
-[23:42:46] Found font: XHelvetica.font, size: 9
-[23:42:46] Workbench Icon Font (getIconFont): XHelvetica.font, Size: 9
-[23:42:46] -------------------------
-[23:42:46] Workbench Settings Dump:
-[23:42:46] -------------------------
-[23:42:46] Borderless: No
-[23:42:46] Emboss Rectangle Size: 0
-[23:42:46] Max Name Length: 0
-[23:42:46] New Icons Support: No
-[23:42:46] Color Icon Support: No
-[23:42:46] Disable Title Bar: No
-[23:42:46] Disable Volume Gauge: No
-[23:42:46] -------------------------
-[23:42:46] Initialized default workbench settings
-[23:42:46] Failed to open workbench settings file.  Possibly not yet set.  Defaults assumed.
-[23:42:46] -------------------------
-[23:42:46] Workbench Settings Dump:
-[23:42:46] -------------------------
-[23:42:46] Borderless: No
-[23:42:46] Emboss Rectangle Size: 3
-[23:42:46] Max Name Length: 25
-[23:42:46] New Icons Support: Yes
-[23:42:46] Color Icon Support: Yes
-[23:42:46] Disable Title Bar: No
-[23:42:46] Disable Volume Gauge: No
-[23:42:46] -------------------------
-[23:42:46] IControl Preferences Dump:
-[23:42:46] --------------------------
-[23:42:46] Flags: 0x8001801E
-[23:42:46] Boolean Settings:
-[23:42:46]   Coerce Colors: No
-[23:42:46]   Coerce Lace: Yes
-[23:42:46]   String Gadget Filter: Yes
-[23:42:46]   Menu Snap: Yes
-[23:42:46]   Mode Promote: Yes
-[23:42:46]   Correct Ratio: No
-[23:42:46]   Off-Screen Windows: Yes
-[23:42:46]   More Size Gadgets: Yes
-[23:42:46]   Versioned: Yes
-[23:42:46]   Legacy Look: No
-[23:42:46] Aspect Ratios Enabled:
-[23:42:46]   9:7
-[23:42:46] Title Bar Heights:
-[23:42:46]   Screen Extra Height: 0
-[23:42:46]   Window Extra Height: 0
-[23:42:46] Title Bar Settings:
-[23:42:46]   Title Bar 50: No
-[23:42:46]   Title Bar 67: No
-[23:42:46]   Title Bar 75: No
-[23:42:46]   Title Bar 100: No
-[23:42:46] Square Proportional Look: No
-[23:42:46] UI Element Dimensions:
-[23:42:46]   Left Bar Width: 4
-[23:42:46]   Border Width: 18, Border Height: 14
-[23:42:46]   Title Height: 16, Window Height: 16
-[23:42:46]   Volume Gauge Width: 19
-[23:42:46] --------------------------
-[23:42:46] Getting any 'left out' icons for device: WHD
-[23:42:46] Could not open WHD:.backdrop
-[23:42:46] Workbench screen width 0, height 0
-[23:42:46] About to call ProcessDirectory with path='WHD:', iterateDIRs=0
-[23:42:46] Calling ProcessDirectory now...
-[23:42:46] ProcessDirectory ENTRY: path='WHD:', processSubDirs=0, recursion_level=0
-[23:42:46] After sanitizeAmigaPath: path='WHD:'
-[23:42:46] Lock() returned: 269318536
-[23:42:46] Lock successful, checking WHDLoad cleanup flag: 1
-[23:42:46] Calling HasSlaveFile('WHD:')
-[23:42:46] DEBUG: HasSlaveFile ENTRY: path='WHD:'
-[23:42:46] DEBUG: HasSlaveFile - calling Examine()
-[23:42:46] DEBUG: HasSlaveFile - Examine() successful, starting ExNext() loop
-[23:42:46] DEBUG: HasSlaveFile - ExNext() loop completed, checked 5 entries
-[23:42:46] ======================================================
-[23:42:46] Tidying folder: WHD:
-[23:42:46] ======================================================
-[23:42:46] CreateIconArrayFromPath ENTRY: lock=269319788, dirPath='WHD:'
-[23:42:46] Icon array created successfully
-[23:42:46] FileInfoBlock allocated successfully, calling Examine()
-[23:42:46] Examine() successful, starting ExNext() loop
-[23:42:46] DEBUG: ExNext returned, processing file: 'Demos'
-[23:42:46] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:42:46] DEBUG: GetFullPath() returned: 'WHD:Demos'
-[23:42:46] DEBUG: ExNext returned, processing file: 'Magazines'
-[23:42:46] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:42:46] DEBUG: GetFullPath() returned: 'WHD:Magazines'
-[23:42:46] DEBUG: ExNext returned, processing file: 'Beta-Game'
-[23:42:46] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:42:46] DEBUG: GetFullPath() returned: 'WHD:Beta-Game'
-[23:42:46] DEBUG: ExNext returned, processing file: 'Beta-Demo'
-[23:42:46] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:42:46] DEBUG: GetFullPath() returned: 'WHD:Beta-Demo'
-[23:42:46] DEBUG: ExNext returned, processing file: 'Games'
-[23:42:46] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:42:47] DEBUG: GetFullPath() returned: 'WHD:Games'
-[23:42:47] No icons in the folder that can be arranged
-[23:42:47] ProcessDirectory completed successfully
-[23:42:47] DEBUG: About to call CleanupWindow()...
-[23:42:47] DEBUG: CleanupWindow() completed
-[23:42:47] DEBUG: About to call disposeTimer()...
-[23:42:47] DEBUG: disposeTimer() completed
-[23:42:47] 
+[23:37:38] === iTidy starting up (VBCC build) ===
+[23:37:38] iTidy V1.0.0 - Amiga Workbench Icon Tidier
+[23:37:38] by Kerry Thompson
+[23:37:38] Version compiled on Oct 18 2025 at 23:36:53
+[23:37:38] Debug build
+[23:37:38] Workbench version: 47.080
+[23:37:38] ICON_SPACING_Y: 7
+[23:37:38] ICON_SPACING_X: 9
+[23:37:38] Found font: XHelvetica.font, size: 9
+[23:37:38] Workbench Icon Font (getIconFont): XHelvetica.font, Size: 9
+[23:37:38] -------------------------
+[23:37:38] Workbench Settings Dump:
+[23:37:38] -------------------------
+[23:37:38] Borderless: No
+[23:37:38] Emboss Rectangle Size: 0
+[23:37:38] Max Name Length: 0
+[23:37:38] New Icons Support: No
+[23:37:38] Color Icon Support: No
+[23:37:38] Disable Title Bar: No
+[23:37:38] Disable Volume Gauge: No
+[23:37:38] -------------------------
+[23:37:38] Initialized default workbench settings
+[23:37:38] Failed to open workbench settings file.  Possibly not yet set.  Defaults assumed.
+[23:37:38] -------------------------
+[23:37:38] Workbench Settings Dump:
+[23:37:38] -------------------------
+[23:37:38] Borderless: No
+[23:37:38] Emboss Rectangle Size: 3
+[23:37:38] Max Name Length: 25
+[23:37:38] New Icons Support: Yes
+[23:37:38] Color Icon Support: Yes
+[23:37:38] Disable Title Bar: No
+[23:37:38] Disable Volume Gauge: No
+[23:37:38] -------------------------
+[23:37:38] IControl Preferences Dump:
+[23:37:38] --------------------------
+[23:37:38] Flags: 0x8001801E
+[23:37:38] Boolean Settings:
+[23:37:38]   Coerce Colors: No
+[23:37:38]   Coerce Lace: Yes
+[23:37:38]   String Gadget Filter: Yes
+[23:37:38]   Menu Snap: Yes
+[23:37:38]   Mode Promote: Yes
+[23:37:38]   Correct Ratio: No
+[23:37:38]   Off-Screen Windows: Yes
+[23:37:38]   More Size Gadgets: Yes
+[23:37:38]   Versioned: Yes
+[23:37:38]   Legacy Look: No
+[23:37:38] Aspect Ratios Enabled:
+[23:37:38]   9:7
+[23:37:38] Title Bar Heights:
+[23:37:38]   Screen Extra Height: 0
+[23:37:38]   Window Extra Height: 0
+[23:37:38] Title Bar Settings:
+[23:37:38]   Title Bar 50: No
+[23:37:38]   Title Bar 67: No
+[23:37:38]   Title Bar 75: No
+[23:37:38]   Title Bar 100: No
+[23:37:38] Square Proportional Look: No
+[23:37:38] UI Element Dimensions:
+[23:37:38]   Left Bar Width: 4
+[23:37:38]   Border Width: 18, Border Height: 14
+[23:37:38]   Title Height: 16, Window Height: 16
+[23:37:38]   Volume Gauge Width: 19
+[23:37:38] --------------------------
+[23:37:38] Getting any 'left out' icons for device: os3.2
+[23:37:38] Could not open os3.2:.backdrop
+[23:37:38] Workbench screen width 0, height 0
+[23:37:38] About to call ProcessDirectory with path='os3.2:', iterateDIRs=0
+[23:37:38] Calling ProcessDirectory now...
+[23:37:38] ProcessDirectory ENTRY: path='os3.2:', processSubDirs=0, recursion_level=0
+[23:37:38] After sanitizeAmigaPath: path='os3.2:'
+[23:37:38] Lock() returned: 269596696
+[23:37:38] Lock successful, checking WHDLoad cleanup flag: 1
+[23:37:38] Calling HasSlaveFile('os3.2:')
+[23:37:38] DEBUG: HasSlaveFile ENTRY: path='os3.2:'
+[23:37:38] DEBUG: HasSlaveFile - calling Examine()
+[23:37:38] DEBUG: HasSlaveFile - Examine() successful, starting ExNext() loop
+[23:37:38] DEBUG: HasSlaveFile - ExNext() loop completed, checked 43 entries
+[23:37:38] ======================================================
+[23:37:38] Tidying folder: os3.2:
+[23:37:38] ======================================================
+[23:37:38] CreateIconArrayFromPath ENTRY: lock=269598764, dirPath='os3.2:'
+[23:37:38] Icon array created successfully
+[23:37:38] FileInfoBlock allocated successfully, calling Examine()
+[23:37:38] Examine() successful, starting ExNext() loop
+[23:37:38] DEBUG: ExNext returned, processing file: 'Trashcan'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Trashcan'
+[23:37:38] DEBUG: ExNext returned, processing file: 'Trashcan.info'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Trashcan.info'
+[23:37:38] Detecting icon type for: os3.2:Trashcan.info
+[23:37:38]   -> Detected as OS3.5 icon format
+[23:37:38] DEBUG: ExNext returned, processing file: 'C'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:C'
+[23:37:38] DEBUG: ExNext returned, processing file: 'Classes'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Classes'
+[23:37:38] DEBUG: ExNext returned, processing file: 'Devs'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Devs'
+[23:37:38] DEBUG: ExNext returned, processing file: 'Expansion'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Expansion'
+[23:37:38] DEBUG: ExNext returned, processing file: 'Fonts'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Fonts'
+[23:37:38] DEBUG: ExNext returned, processing file: 'Internet'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Internet'
+[23:37:38] DEBUG: ExNext returned, processing file: 'L'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:L'
+[23:37:38] DEBUG: ExNext returned, processing file: 'Libs'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Libs'
+[23:37:38] DEBUG: ExNext returned, processing file: 'Locale'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Locale'
+[23:37:38] DEBUG: ExNext returned, processing file: 'Prefs'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Prefs'
+[23:37:38] DEBUG: ExNext returned, processing file: 'Programs'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Programs'
+[23:37:38] DEBUG: ExNext returned, processing file: 'Rexxc'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Rexxc'
+[23:37:38] DEBUG: ExNext returned, processing file: 'S'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:S'
+[23:37:38] DEBUG: ExNext returned, processing file: 'Storage'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Storage'
+[23:37:38] DEBUG: ExNext returned, processing file: 'System'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:System'
+[23:37:38] DEBUG: ExNext returned, processing file: 'T'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:T'
+[23:37:38] DEBUG: ExNext returned, processing file: 'Tools'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Tools'
+[23:37:38] DEBUG: ExNext returned, processing file: 'Utilities'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Utilities'
+[23:37:38] DEBUG: ExNext returned, processing file: 'WBStartup'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:WBStartup'
+[23:37:38] DEBUG: ExNext returned, processing file: 'C.info'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:C.info'
+[23:37:38] Detecting icon type for: os3.2:C.info
+[23:37:38]   -> Detected as OS3.5 icon format
+[23:37:38] DEBUG: ExNext returned, processing file: 'Classes.info'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Classes.info'
+[23:37:38] Detecting icon type for: os3.2:Classes.info
+[23:37:38]   -> Detected as OS3.5 icon format
+[23:37:38] DEBUG: ExNext returned, processing file: 'Devs.info'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Devs.info'
+[23:37:38] Detecting icon type for: os3.2:Devs.info
+[23:37:38]   -> Detected as OS3.5 icon format
+[23:37:38] DEBUG: ExNext returned, processing file: 'Disk.info'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Disk.info'
+[23:37:38] DEBUG: ExNext returned, processing file: 'Expansion.info'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Expansion.info'
+[23:37:38] Detecting icon type for: os3.2:Expansion.info
+[23:37:38]   -> Detected as OS3.5 icon format
+[23:37:38] DEBUG: ExNext returned, processing file: 'Fonts.info'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Fonts.info'
+[23:37:38] Detecting icon type for: os3.2:Fonts.info
+[23:37:38]   -> Detected as OS3.5 icon format
+[23:37:38] DEBUG: ExNext returned, processing file: 'Internet.info'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Internet.info'
+[23:37:38] Detecting icon type for: os3.2:Internet.info
+[23:37:38]   -> Detected as OS3.5 icon format
+[23:37:38] DEBUG: ExNext returned, processing file: 'L.info'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:L.info'
+[23:37:38] Detecting icon type for: os3.2:L.info
+[23:37:38]   -> Detected as OS3.5 icon format
+[23:37:38] DEBUG: ExNext returned, processing file: 'Libs.info'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Libs.info'
+[23:37:38] Detecting icon type for: os3.2:Libs.info
+[23:37:38]   -> Detected as OS3.5 icon format
+[23:37:38] DEBUG: ExNext returned, processing file: 'Locale.info'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Locale.info'
+[23:37:38] Detecting icon type for: os3.2:Locale.info
+[23:37:38]   -> Detected as OS3.5 icon format
+[23:37:38] DEBUG: ExNext returned, processing file: 'Prefs.info'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Prefs.info'
+[23:37:38] Detecting icon type for: os3.2:Prefs.info
+[23:37:38]   -> Detected as OS3.5 icon format
+[23:37:38] DEBUG: ExNext returned, processing file: 'Programs.info'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Programs.info'
+[23:37:38] Detecting icon type for: os3.2:Programs.info
+[23:37:38]   -> Detected as OS3.5 icon format
+[23:37:38] DEBUG: ExNext returned, processing file: 'Rexxc.info'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Rexxc.info'
+[23:37:38] Detecting icon type for: os3.2:Rexxc.info
+[23:37:38]   -> Detected as OS3.5 icon format
+[23:37:38] DEBUG: ExNext returned, processing file: 'S.info'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:S.info'
+[23:37:38] Detecting icon type for: os3.2:S.info
+[23:37:38]   -> Detected as OS3.5 icon format
+[23:37:38] DEBUG: ExNext returned, processing file: 'Storage.info'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Storage.info'
+[23:37:38] Detecting icon type for: os3.2:Storage.info
+[23:37:38]   -> Detected as OS3.5 icon format
+[23:37:38] DEBUG: ExNext returned, processing file: 'System.info'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:System.info'
+[23:37:38] Detecting icon type for: os3.2:System.info
+[23:37:38]   -> Detected as OS3.5 icon format
+[23:37:38] DEBUG: ExNext returned, processing file: 'T.info'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:T.info'
+[23:37:38] Detecting icon type for: os3.2:T.info
+[23:37:38]   -> Detected as OS3.5 icon format
+[23:37:38] DEBUG: ExNext returned, processing file: 'Temp'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Temp'
+[23:37:38] DEBUG: ExNext returned, processing file: 'Temp.info'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Temp.info'
+[23:37:38] Detecting icon type for: os3.2:Temp.info
+[23:37:38]   -> Detected as OS3.5 icon format
+[23:37:38] DEBUG: ExNext returned, processing file: 'Tools.info'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Tools.info'
+[23:37:38] Detecting icon type for: os3.2:Tools.info
+[23:37:38]   -> Detected as OS3.5 icon format
+[23:37:38] DEBUG: ExNext returned, processing file: 'Utilities.info'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:Utilities.info'
+[23:37:38] Detecting icon type for: os3.2:Utilities.info
+[23:37:38]   -> Detected as OS3.5 icon format
+[23:37:38] DEBUG: ExNext returned, processing file: 'WBStartup.info'
+[23:37:38] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:37:38] DEBUG: GetFullPath() returned: 'os3.2:WBStartup.info'
+[23:37:38] Detecting icon type for: os3.2:WBStartup.info
+[23:37:38]   -> Detected as OS3.5 icon format
+[23:37:38] ID  | Width  | Height | TxtW   | TxtH   | MaxW   | MaxH   | X        | Y        | Border | Type     | Icon                
+[23:37:38] ----------------------------------------------------------------------------------------------------------------
+[23:37:38] 0   | 49     | 49     | 36     | 9      | 52     | 57     | None     | None     | 3      | OS3.5    | Trashcan.info       
+[23:37:38] 1   | 45     | 45     | 5      | 9      | 42     | 53     | 5        | 4        | 0      | OS3.5    | C.info              
+[23:37:38] 2   | 45     | 45     | 28     | 9      | 42     | 53     | 63       | 60       | 0      | OS3.5    | Classes.info        
+[23:37:38] 3   | 49     | 49     | 18     | 9      | 52     | 57     | 273      | 60       | 3      | OS3.5    | Devs.info           
+[23:37:38] 4   | 49     | 49     | 40     | 9      | 52     | 57     | 399      | 60       | 3      | OS3.5    | Expansion.info      
+[23:37:38] 5   | 45     | 45     | 23     | 9      | 42     | 53     | 334      | 64       | 0      | OS3.5    | Fonts.info          
+[23:37:38] 6   | 45     | 45     | 34     | 9      | 42     | 53     | 401      | 4        | 0      | OS3.5    | Internet.info       
+[23:37:38] 7   | 45     | 45     | 5      | 9      | 42     | 53     | 401      | 120      | 0      | OS3.5    | L.info              
+[23:37:38] 8   | 45     | 45     | 16     | 9      | 42     | 53     | 463      | 4        | 0      | OS3.5    | Libs.info           
+[23:37:38] 9   | 45     | 45     | 25     | 9      | 42     | 53     | 5        | 120      | 0      | OS3.5    | Locale.info         
+[23:37:38] 10  | 49     | 49     | 22     | 9      | 52     | 57     | 3        | 60       | 3      | OS3.5    | Prefs.info          
+[23:37:38] 11  | 45     | 45     | 37     | 9      | 42     | 53     | 130      | 64       | 0      | OS3.5    | Programs.info       
+[23:37:38] 12  | 45     | 45     | 24     | 9      | 42     | 53     | 275      | 4        | 0      | OS3.5    | Rexxc.info          
+[23:37:38] 13  | 45     | 45     | 5      | 9      | 42     | 53     | 334      | 120      | 0      | OS3.5    | S.info              
+[23:37:38] 14  | 49     | 49     | 32     | 9      | 52     | 57     | 332      | 4        | 3      | OS3.5    | Storage.info        
+[23:37:38] 15  | 49     | 49     | 29     | 9      | 52     | 57     | 205      | 4        | 3      | OS3.5    | System.info         
+[23:37:38] 16  | 45     | 45     | 6      | 9      | 42     | 53     | 463      | 60       | 0      | OS3.5    | T.info              
+[23:37:38] 17  | 45     | 45     | 22     | 9      | 42     | 53     | 63       | 4        | 0      | OS3.5    | Temp.info           
+[23:37:38] 18  | 49     | 49     | 22     | 9      | 52     | 57     | 128      | 4        | 3      | OS3.5    | Tools.info          
+[23:37:38] 19  | 49     | 49     | 30     | 9      | 52     | 57     | 61       | 116      | 3      | OS3.5    | Utilities.info      
+[23:37:38] 20  | 49     | 49     | 42     | 9      | 52     | 57     | 205      | 64       | 3      | OS3.5    | WBStartup.info      
+[23:37:38] Saved folder settings ok for os3.2:Disk
+[23:37:38] ID  | X    | Y    | Icon                                    
+[23:37:38] --------------------------------------------------------------
+[23:37:38] 0   | 13   | 14   | C.info                                  
+[23:37:38] 1   | 74   | 14   | Classes.info                            
+[23:37:38] 2   | 133  | 10   | Devs.info                               
+[23:37:38] 3   | 11   | 74   | Expansion.info                          
+[23:37:38] 4   | 74   | 78   | Fonts.info                              
+[23:37:38] 5   | 135  | 78   | Internet.info                           
+[23:37:38] 6   | 13   | 138  | L.info                                  
+[23:37:38] 7   | 74   | 138  | Libs.info                               
+[23:37:38] 8   | 135  | 138  | Locale.info                             
+[23:37:38] 9   | 11   | 198  | Prefs.info                              
+[23:37:38] 10  | 74   | 202  | Programs.info                           
+[23:37:38] 11  | 135  | 202  | Rexxc.info                              
+[23:37:38] 12  | 13   | 266  | S.info                                  
+[23:37:38] 13  | 72   | 262  | Storage.info                            
+[23:37:38] 14  | 133  | 262  | System.info                             
+[23:37:38] 15  | 13   | 330  | T.info                                  
+[23:37:38] 16  | 72   | 326  | Tools.info                              
+[23:37:38] 17  | 133  | 326  | Trashcan.info                           
+[23:37:38] 18  | 11   | 390  | Utilities.info                          
+[23:37:38] 19  | 72   | 390  | WBStartup.info                          
+[23:37:38] 20  | 135  | 394  | Temp.info                               
+[23:37:38] Completed arranging icons in 7 rows with 3 icons per row. Path: os3.2:
+[23:37:38] ProcessDirectory completed successfully
+[23:37:38] DEBUG: About to call CleanupWindow()...
+[23:37:38] DEBUG: CleanupWindow() completed
+[23:37:38] DEBUG: About to call disposeTimer()...
+[23:37:38] DEBUG: disposeTimer() completed
+[23:37:38] 
 
-Total icons tidied: 0
-[23:42:47]   - Standard icons:    0
-[23:42:47]   - NewIcon icons:     0
-[23:42:47]   - OS3.5 style icons: 0
-[23:42:47] 
-iTidy completed[23:42:47]  successfully in [23:42:47] 1 seconds
-[23:42:47] DEBUG: Starting cleanup sequence...
-[23:42:47] DEBUG: About to call FreeIconErrorList()...
-[23:42:47] DEBUG: FreeIconErrorList() completed
-[23:42:47] DEBUG: About to free fontPrefs (ptr=1078359052)...
-[23:42:47] DEBUG: fontPrefs freed successfully
+Total icons tidied: 21
+[23:37:38]   - Standard icons:    0
+[23:37:38]   - NewIcon icons:     0
+[23:37:38]   - OS3.5 style icons: 21
+[23:37:38] 
+iTidy completed[23:37:38]  successfully in [23:37:38] 0 seconds
+[23:37:38] DEBUG: Starting cleanup sequence...
+[23:37:38] DEBUG: About to call FreeIconErrorList()...
+[23:37:38] DEBUG: FreeIconErrorList() completed
+[23:37:38] DEBUG: About to free fontPrefs (ptr=1079491756)...
+[23:37:38] DEBUG: fontPrefs freed successfully
 
 
 ========================================
-[23:42:52] === iTidy starting up (VBCC build) ===
-[23:42:52] iTidy V1.0.0 - Amiga Workbench Icon Tidier
-[23:42:52] by Kerry Thompson
-[23:42:52] Version compiled on Oct 17 2025 at 23:39:07
-[23:42:52] Debug build
-[23:42:52] Workbench version: 47.080
-[23:42:52] No arguments provided - defaulting to WHD:
-[23:42:52] ICON_SPACING_Y: 7
-[23:42:52] ICON_SPACING_X: 9
-[23:42:52] Found font: XHelvetica.font, size: 9
-[23:42:52] Workbench Icon Font (getIconFont): XHelvetica.font, Size: 9
-[23:42:52] -------------------------
-[23:42:52] Workbench Settings Dump:
-[23:42:52] -------------------------
-[23:42:52] Borderless: No
-[23:42:52] Emboss Rectangle Size: 0
-[23:42:52] Max Name Length: 0
-[23:42:52] New Icons Support: No
-[23:42:52] Color Icon Support: No
-[23:42:52] Disable Title Bar: No
-[23:42:52] Disable Volume Gauge: No
-[23:42:52] -------------------------
-[23:42:52] Initialized default workbench settings
-[23:42:52] Failed to open workbench settings file.  Possibly not yet set.  Defaults assumed.
-[23:42:52] -------------------------
-[23:42:52] Workbench Settings Dump:
-[23:42:52] -------------------------
-[23:42:52] Borderless: No
-[23:42:52] Emboss Rectangle Size: 3
-[23:42:52] Max Name Length: 25
-[23:42:52] New Icons Support: Yes
-[23:42:52] Color Icon Support: Yes
-[23:42:52] Disable Title Bar: No
-[23:42:52] Disable Volume Gauge: No
-[23:42:52] -------------------------
-[23:42:52] IControl Preferences Dump:
-[23:42:52] --------------------------
-[23:42:52] Flags: 0x8001801E
-[23:42:52] Boolean Settings:
-[23:42:52]   Coerce Colors: No
-[23:42:52]   Coerce Lace: Yes
-[23:42:52]   String Gadget Filter: Yes
-[23:42:52]   Menu Snap: Yes
-[23:42:52]   Mode Promote: Yes
-[23:42:52]   Correct Ratio: No
-[23:42:52]   Off-Screen Windows: Yes
-[23:42:52]   More Size Gadgets: Yes
-[23:42:52]   Versioned: Yes
-[23:42:52]   Legacy Look: No
-[23:42:52] Aspect Ratios Enabled:
-[23:42:52]   9:7
-[23:42:52] Title Bar Heights:
-[23:42:52]   Screen Extra Height: 0
-[23:42:52]   Window Extra Height: 0
-[23:42:52] Title Bar Settings:
-[23:42:52]   Title Bar 50: No
-[23:42:52]   Title Bar 67: No
-[23:42:52]   Title Bar 75: No
-[23:42:52]   Title Bar 100: No
-[23:42:52] Square Proportional Look: No
-[23:42:52] UI Element Dimensions:
-[23:42:52]   Left Bar Width: 4
-[23:42:52]   Border Width: 18, Border Height: 14
-[23:42:52]   Title Height: 16, Window Height: 16
-[23:42:52]   Volume Gauge Width: 19
-[23:42:52] --------------------------
-[23:42:52] Getting any 'left out' icons for device: WHD
-[23:42:52] Could not open WHD:.backdrop
-[23:42:52] Workbench screen width 0, height 0
-[23:42:52] About to call ProcessDirectory with path='WHD:', iterateDIRs=0
-[23:42:52] Calling ProcessDirectory now...
-[23:42:52] ProcessDirectory ENTRY: path='WHD:', processSubDirs=0, recursion_level=0
-[23:42:52] After sanitizeAmigaPath: path='WHD:'
-[23:42:52] Lock() returned: 269320038
-[23:42:52] Lock successful, checking WHDLoad cleanup flag: 1
-[23:42:52] Calling HasSlaveFile('WHD:')
-[23:42:52] DEBUG: HasSlaveFile ENTRY: path='WHD:'
-[23:42:52] DEBUG: HasSlaveFile - calling Examine()
-[23:42:52] DEBUG: HasSlaveFile - Examine() successful, starting ExNext() loop
-[23:42:52] DEBUG: HasSlaveFile - ExNext() loop completed, checked 5 entries
-[23:42:52] ======================================================
-[23:42:52] Tidying folder: WHD:
-[23:42:52] ======================================================
-[23:42:52] CreateIconArrayFromPath ENTRY: lock=269366594, dirPath='WHD:'
-[23:42:52] Icon array created successfully
-[23:42:52] FileInfoBlock allocated successfully, calling Examine()
-[23:42:52] Examine() successful, starting ExNext() loop
-[23:42:52] DEBUG: ExNext returned, processing file: 'Demos'
-[23:42:52] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:42:52] DEBUG: GetFullPath() returned: 'WHD:Demos'
-[23:42:52] DEBUG: ExNext returned, processing file: 'Magazines'
-[23:42:52] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:42:52] DEBUG: GetFullPath() returned: 'WHD:Magazines'
-[23:42:52] DEBUG: ExNext returned, processing file: 'Beta-Game'
-[23:42:52] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:42:52] DEBUG: GetFullPath() returned: 'WHD:Beta-Game'
-[23:42:52] DEBUG: ExNext returned, processing file: 'Beta-Demo'
-[23:42:52] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:42:52] DEBUG: GetFullPath() returned: 'WHD:Beta-Demo'
-[23:42:52] DEBUG: ExNext returned, processing file: 'Games'
-[23:42:52] DEBUG: File/dir type check passed, calling GetFullPath()
-[23:42:52] DEBUG: GetFullPath() returned: 'WHD:Games'
-[23:42:52] No icons in the folder that can be arranged
-[23:42:52] ProcessDirectory completed successfully
-[23:42:52] DEBUG: About to call CleanupWindow()...
-[23:42:52] DEBUG: CleanupWindow() completed
-[23:42:52] DEBUG: About to call disposeTimer()...
-[23:42:52] DEBUG: disposeTimer() completed
-[23:42:52] 
+[23:38:12] === iTidy starting up (VBCC build) ===
+[23:38:12] iTidy V1.0.0 - Amiga Workbench Icon Tidier
+[23:38:12] by Kerry Thompson
+[23:38:12] Version compiled on Oct 18 2025 at 23:36:53
+[23:38:12] Debug build
+[23:38:12] Workbench version: 47.080
+[23:38:12] ICON_SPACING_Y: 7
+[23:38:12] ICON_SPACING_X: 9
+[23:38:12] Found font: XHelvetica.font, size: 9
+[23:38:12] Workbench Icon Font (getIconFont): XHelvetica.font, Size: 9
+[23:38:12] -------------------------
+[23:38:12] Workbench Settings Dump:
+[23:38:12] -------------------------
+[23:38:12] Borderless: No
+[23:38:12] Emboss Rectangle Size: 0
+[23:38:12] Max Name Length: 0
+[23:38:12] New Icons Support: No
+[23:38:12] Color Icon Support: No
+[23:38:12] Disable Title Bar: No
+[23:38:12] Disable Volume Gauge: No
+[23:38:12] -------------------------
+[23:38:12] Initialized default workbench settings
+[23:38:12] Failed to open workbench settings file.  Possibly not yet set.  Defaults assumed.
+[23:38:12] -------------------------
+[23:38:12] Workbench Settings Dump:
+[23:38:12] -------------------------
+[23:38:12] Borderless: No
+[23:38:12] Emboss Rectangle Size: 3
+[23:38:12] Max Name Length: 25
+[23:38:12] New Icons Support: Yes
+[23:38:12] Color Icon Support: Yes
+[23:38:12] Disable Title Bar: No
+[23:38:12] Disable Volume Gauge: No
+[23:38:12] -------------------------
+[23:38:12] IControl Preferences Dump:
+[23:38:12] --------------------------
+[23:38:12] Flags: 0x8001801E
+[23:38:12] Boolean Settings:
+[23:38:12]   Coerce Colors: No
+[23:38:12]   Coerce Lace: Yes
+[23:38:12]   String Gadget Filter: Yes
+[23:38:12]   Menu Snap: Yes
+[23:38:12]   Mode Promote: Yes
+[23:38:12]   Correct Ratio: No
+[23:38:12]   Off-Screen Windows: Yes
+[23:38:12]   More Size Gadgets: Yes
+[23:38:12]   Versioned: Yes
+[23:38:12]   Legacy Look: No
+[23:38:12] Aspect Ratios Enabled:
+[23:38:12]   9:7
+[23:38:12] Title Bar Heights:
+[23:38:12]   Screen Extra Height: 0
+[23:38:12]   Window Extra Height: 0
+[23:38:12] Title Bar Settings:
+[23:38:12]   Title Bar 50: No
+[23:38:12]   Title Bar 67: No
+[23:38:12]   Title Bar 75: No
+[23:38:12]   Title Bar 100: No
+[23:38:12] Square Proportional Look: No
+[23:38:12] UI Element Dimensions:
+[23:38:12]   Left Bar Width: 4
+[23:38:12]   Border Width: 18, Border Height: 14
+[23:38:12]   Title Height: 16, Window Height: 16
+[23:38:12]   Volume Gauge Width: 19
+[23:38:12] --------------------------
+[23:38:12] Getting any 'left out' icons for device: os3.2
+[23:38:12] Could not open os3.2:.backdrop
+[23:38:12] Workbench screen width 0, height 0
+[23:38:12] About to call ProcessDirectory with path='os3.2:', iterateDIRs=0
+[23:38:12] Calling ProcessDirectory now...
+[23:38:12] ProcessDirectory ENTRY: path='os3.2:', processSubDirs=0, recursion_level=0
+[23:38:12] After sanitizeAmigaPath: path='os3.2:'
+[23:38:12] Lock() returned: 269516394
+[23:38:12] Lock successful, checking WHDLoad cleanup flag: 1
+[23:38:12] Calling HasSlaveFile('os3.2:')
+[23:38:12] DEBUG: HasSlaveFile ENTRY: path='os3.2:'
+[23:38:12] DEBUG: HasSlaveFile - calling Examine()
+[23:38:12] DEBUG: HasSlaveFile - Examine() successful, starting ExNext() loop
+[23:38:12] DEBUG: HasSlaveFile - ExNext() loop completed, checked 45 entries
+[23:38:12] ======================================================
+[23:38:12] Tidying folder: os3.2:
+[23:38:12] ======================================================
+[23:38:12] CreateIconArrayFromPath ENTRY: lock=269547902, dirPath='os3.2:'
+[23:38:12] Icon array created successfully
+[23:38:12] FileInfoBlock allocated successfully, calling Examine()
+[23:38:12] Examine() successful, starting ExNext() loop
+[23:38:12] DEBUG: ExNext returned, processing file: 'Trashcan'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Trashcan'
+[23:38:12] DEBUG: ExNext returned, processing file: 'Trashcan.info'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Trashcan.info'
+[23:38:12] Detecting icon type for: os3.2:Trashcan.info
+[23:38:12]   -> Detected as OS3.5 icon format
+[23:38:12] DEBUG: ExNext returned, processing file: 'C'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:C'
+[23:38:12] DEBUG: ExNext returned, processing file: 'Classes'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Classes'
+[23:38:12] DEBUG: ExNext returned, processing file: 'Devs'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Devs'
+[23:38:12] DEBUG: ExNext returned, processing file: 'Expansion'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Expansion'
+[23:38:12] DEBUG: ExNext returned, processing file: 'Fonts'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Fonts'
+[23:38:12] DEBUG: ExNext returned, processing file: 'Internet'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Internet'
+[23:38:12] DEBUG: ExNext returned, processing file: 'L'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:L'
+[23:38:12] DEBUG: ExNext returned, processing file: 'Libs'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Libs'
+[23:38:12] DEBUG: ExNext returned, processing file: 'Locale'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Locale'
+[23:38:12] DEBUG: ExNext returned, processing file: 'Prefs'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Prefs'
+[23:38:12] DEBUG: ExNext returned, processing file: 'Programs'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Programs'
+[23:38:12] DEBUG: ExNext returned, processing file: 'Rexxc'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Rexxc'
+[23:38:12] DEBUG: ExNext returned, processing file: 'S'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:S'
+[23:38:12] DEBUG: ExNext returned, processing file: 'Storage'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Storage'
+[23:38:12] DEBUG: ExNext returned, processing file: 'System'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:System'
+[23:38:12] DEBUG: ExNext returned, processing file: 'T'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:T'
+[23:38:12] DEBUG: ExNext returned, processing file: 'Tools'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Tools'
+[23:38:12] DEBUG: ExNext returned, processing file: 'Utilities'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Utilities'
+[23:38:12] DEBUG: ExNext returned, processing file: 'WBStartup'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:WBStartup'
+[23:38:12] DEBUG: ExNext returned, processing file: 'C.info'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:C.info'
+[23:38:12] Detecting icon type for: os3.2:C.info
+[23:38:12]   -> Detected as OS3.5 icon format
+[23:38:12] DEBUG: ExNext returned, processing file: 'Classes.info'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Classes.info'
+[23:38:12] Detecting icon type for: os3.2:Classes.info
+[23:38:12]   -> Detected as OS3.5 icon format
+[23:38:12] DEBUG: ExNext returned, processing file: 'Devs.info'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Devs.info'
+[23:38:12] Detecting icon type for: os3.2:Devs.info
+[23:38:12]   -> Detected as OS3.5 icon format
+[23:38:12] DEBUG: ExNext returned, processing file: 'Disk.info'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Disk.info'
+[23:38:12] DEBUG: ExNext returned, processing file: 'Expansion.info'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Expansion.info'
+[23:38:12] Detecting icon type for: os3.2:Expansion.info
+[23:38:12]   -> Detected as OS3.5 icon format
+[23:38:12] DEBUG: ExNext returned, processing file: 'Fonts.info'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Fonts.info'
+[23:38:12] Detecting icon type for: os3.2:Fonts.info
+[23:38:12]   -> Detected as OS3.5 icon format
+[23:38:12] DEBUG: ExNext returned, processing file: 'Internet.info'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Internet.info'
+[23:38:12] Detecting icon type for: os3.2:Internet.info
+[23:38:12]   -> Detected as OS3.5 icon format
+[23:38:12] DEBUG: ExNext returned, processing file: 'L.info'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:L.info'
+[23:38:12] Detecting icon type for: os3.2:L.info
+[23:38:12]   -> Detected as OS3.5 icon format
+[23:38:12] DEBUG: ExNext returned, processing file: 'Libs.info'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Libs.info'
+[23:38:12] Detecting icon type for: os3.2:Libs.info
+[23:38:12]   -> Detected as OS3.5 icon format
+[23:38:12] DEBUG: ExNext returned, processing file: 'Locale.info'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Locale.info'
+[23:38:12] Detecting icon type for: os3.2:Locale.info
+[23:38:12]   -> Detected as OS3.5 icon format
+[23:38:12] DEBUG: ExNext returned, processing file: 'Prefs.info'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Prefs.info'
+[23:38:12] Detecting icon type for: os3.2:Prefs.info
+[23:38:12]   -> Detected as OS3.5 icon format
+[23:38:12] DEBUG: ExNext returned, processing file: 'Programs.info'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Programs.info'
+[23:38:12] Detecting icon type for: os3.2:Programs.info
+[23:38:12]   -> Detected as OS3.5 icon format
+[23:38:12] DEBUG: ExNext returned, processing file: 'Rexxc.info'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Rexxc.info'
+[23:38:12] Detecting icon type for: os3.2:Rexxc.info
+[23:38:12]   -> Detected as OS3.5 icon format
+[23:38:12] DEBUG: ExNext returned, processing file: 'S.info'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:S.info'
+[23:38:12] Detecting icon type for: os3.2:S.info
+[23:38:12]   -> Detected as OS3.5 icon format
+[23:38:12] DEBUG: ExNext returned, processing file: 'Storage.info'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Storage.info'
+[23:38:12] Detecting icon type for: os3.2:Storage.info
+[23:38:12]   -> Detected as OS3.5 icon format
+[23:38:12] DEBUG: ExNext returned, processing file: 'System.info'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:System.info'
+[23:38:12] Detecting icon type for: os3.2:System.info
+[23:38:12]   -> Detected as OS3.5 icon format
+[23:38:12] DEBUG: ExNext returned, processing file: 'T.info'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:T.info'
+[23:38:12] Detecting icon type for: os3.2:T.info
+[23:38:12]   -> Detected as OS3.5 icon format
+[23:38:12] DEBUG: ExNext returned, processing file: 'Temp'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Temp'
+[23:38:12] DEBUG: ExNext returned, processing file: 'Temp.info'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Temp.info'
+[23:38:12] Detecting icon type for: os3.2:Temp.info
+[23:38:12]   -> Detected as OS3.5 icon format
+[23:38:12] DEBUG: ExNext returned, processing file: 'Tools.info'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Tools.info'
+[23:38:12] Detecting icon type for: os3.2:Tools.info
+[23:38:12]   -> Detected as OS3.5 icon format
+[23:38:12] DEBUG: ExNext returned, processing file: 'Utilities.info'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Utilities.info'
+[23:38:12] Detecting icon type for: os3.2:Utilities.info
+[23:38:12]   -> Detected as OS3.5 icon format
+[23:38:12] DEBUG: ExNext returned, processing file: 'WBStartup.info'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:WBStartup.info'
+[23:38:12] Detecting icon type for: os3.2:WBStartup.info
+[23:38:12]   -> Detected as OS3.5 icon format
+[23:38:12] DEBUG: ExNext returned, processing file: 'Rename_Me'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Rename_Me'
+[23:38:12] DEBUG: ExNext returned, processing file: 'Rename_Me.info'
+[23:38:12] DEBUG: File/dir type check passed, calling GetFullPath()
+[23:38:12] DEBUG: GetFullPath() returned: 'os3.2:Rename_Me.info'
+[23:38:12] Detecting icon type for: os3.2:Rename_Me.info
+[23:38:12] Checking tooltypes for NewIcon signature...
+[23:38:12]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[23:38:12]   -> No NewIcon signature found (standard icon)
+[23:38:12]   -> Detected as standard Workbench icon format
+[23:38:12] ID  | Width  | Height | TxtW   | TxtH   | MaxW   | MaxH   | X        | Y        | Border | Type     | Icon                
+[23:38:12] ----------------------------------------------------------------------------------------------------------------
+[23:38:12] 0   | 49     | 49     | 36     | 9      | 52     | 57     | 133      | 326      | 3      | OS3.5    | Trashcan.info       
+[23:38:12] 1   | 45     | 45     | 5      | 9      | 42     | 53     | 13       | 14       | 0      | OS3.5    | C.info              
+[23:38:12] 2   | 45     | 45     | 28     | 9      | 42     | 53     | 74       | 14       | 0      | OS3.5    | Classes.info        
+[23:38:12] 3   | 49     | 49     | 18     | 9      | 52     | 57     | 133      | 10       | 3      | OS3.5    | Devs.info           
+[23:38:12] 4   | 49     | 49     | 40     | 9      | 52     | 57     | 11       | 74       | 3      | OS3.5    | Expansion.info      
+[23:38:12] 5   | 45     | 45     | 23     | 9      | 42     | 53     | 74       | 78       | 0      | OS3.5    | Fonts.info          
+[23:38:12] 6   | 45     | 45     | 34     | 9      | 42     | 53     | 135      | 78       | 0      | OS3.5    | Internet.info       
+[23:38:12] 7   | 45     | 45     | 5      | 9      | 42     | 53     | 13       | 138      | 0      | OS3.5    | L.info              
+[23:38:12] 8   | 45     | 45     | 16     | 9      | 42     | 53     | 74       | 138      | 0      | OS3.5    | Libs.info           
+[23:38:12] 9   | 45     | 45     | 25     | 9      | 42     | 53     | 135      | 138      | 0      | OS3.5    | Locale.info         
+[23:38:12] 10  | 49     | 49     | 22     | 9      | 52     | 57     | 11       | 198      | 3      | OS3.5    | Prefs.info          
+[23:38:12] 11  | 45     | 45     | 37     | 9      | 42     | 53     | 74       | 202      | 0      | OS3.5    | Programs.info       
+[23:38:12] 12  | 45     | 45     | 24     | 9      | 42     | 53     | 135      | 202      | 0      | OS3.5    | Rexxc.info          
+[23:38:12] 13  | 45     | 45     | 5      | 9      | 42     | 53     | 13       | 266      | 0      | OS3.5    | S.info              
+[23:38:12] 14  | 49     | 49     | 32     | 9      | 52     | 57     | 72       | 262      | 3      | OS3.5    | Storage.info        
+[23:38:12] 15  | 49     | 49     | 29     | 9      | 52     | 57     | 133      | 262      | 3      | OS3.5    | System.info         
+[23:38:12] 16  | 45     | 45     | 6      | 9      | 42     | 53     | 13       | 330      | 0      | OS3.5    | T.info              
+[23:38:12] 17  | 45     | 45     | 22     | 9      | 42     | 53     | 135      | 394      | 0      | OS3.5    | Temp.info           
+[23:38:12] 18  | 49     | 49     | 22     | 9      | 52     | 57     | 72       | 326      | 3      | OS3.5    | Tools.info          
+[23:38:12] 19  | 49     | 49     | 30     | 9      | 52     | 57     | 11       | 390      | 3      | OS3.5    | Utilities.info      
+[23:38:12] 20  | 49     | 49     | 42     | 9      | 52     | 57     | 72       | 390      | 3      | OS3.5    | WBStartup.info      
+[23:38:12] 21  | 60     | 24     | 46     | 9      | 63     | 32     | None     | None     | 3      | Standard | Rename_Me.info      
+[23:38:12] Saved folder settings ok for os3.2:Disk
+[23:38:12] ID  | X    | Y    | Icon                                    
+[23:38:12] --------------------------------------------------------------
+[23:38:12] 0   | 13   | 14   | C.info                                  
+[23:38:12] 1   | 74   | 14   | Classes.info                            
+[23:38:12] 2   | 139  | 10   | Devs.info                               
+[23:38:12] 3   | 11   | 74   | Expansion.info                          
+[23:38:12] 4   | 74   | 78   | Fonts.info                              
+[23:38:12] 5   | 141  | 78   | Internet.info                           
+[23:38:12] 6   | 13   | 138  | L.info                                  
+[23:38:12] 7   | 74   | 138  | Libs.info                               
+[23:38:12] 8   | 141  | 138  | Locale.info                             
+[23:38:12] 9   | 11   | 198  | Prefs.info                              
+[23:38:12] 10  | 74   | 202  | Programs.info                           
+[23:38:12] 11  | 133  | 223  | Rename_Me.info                          
+[23:38:12] 12  | 13   | 266  | Rexxc.info                              
+[23:38:12] 13  | 74   | 266  | S.info                                  
+[23:38:12] 14  | 139  | 262  | Storage.info                            
+[23:38:12] 15  | 11   | 326  | System.info                             
+[23:38:12] 16  | 74   | 330  | T.info                                  
+[23:38:12] 17  | 139  | 326  | Tools.info                              
+[23:38:12] 18  | 11   | 390  | Trashcan.info                           
+[23:38:12] 19  | 72   | 390  | Utilities.info                          
+[23:38:12] 20  | 139  | 390  | WBStartup.info                          
+[23:38:12] 21  | 13   | 454  | Temp.info                               
+[23:38:12] Completed arranging icons in 8 rows with 3 icons per row. Path: os3.2:
+[23:38:12] ProcessDirectory completed successfully
+[23:38:12] DEBUG: About to call CleanupWindow()...
+[23:38:12] DEBUG: CleanupWindow() completed
+[23:38:12] DEBUG: About to call disposeTimer()...
+[23:38:12] DEBUG: disposeTimer() completed
+[23:38:12] 
 
-Total icons tidied: 0
-[23:42:52]   - Standard icons:    0
-[23:42:52]   - NewIcon icons:     0
-[23:42:52]   - OS3.5 style icons: 0
-[23:42:52] 
-iTidy completed[23:42:52]  successfully in [23:42:52] 0 seconds
-[23:42:52] DEBUG: Starting cleanup sequence...
-[23:42:52] DEBUG: About to call FreeIconErrorList()...
-[23:42:52] DEBUG: FreeIconErrorList() completed
-[23:42:52] DEBUG: About to free fontPrefs (ptr=1078513556)...
-[23:42:52] DEBUG: fontPrefs freed successfully
+Total icons tidied: 22
+[23:38:12]   - Standard icons:    1
+[23:38:12]   - NewIcon icons:     0
+[23:38:12]   - OS3.5 style icons: 21
+[23:38:12] 
+iTidy completed[23:38:12]  successfully in [23:38:12] 0 seconds
+[23:38:12] DEBUG: Starting cleanup sequence...
+[23:38:12] DEBUG: About to call FreeIconErrorList()...
+[23:38:12] DEBUG: FreeIconErrorList() completed
+[23:38:12] DEBUG: About to free fontPrefs (ptr=1079792676)...
+[23:38:12] DEBUG: fontPrefs freed successfully

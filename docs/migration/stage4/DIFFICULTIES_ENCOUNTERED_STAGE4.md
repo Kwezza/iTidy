@@ -4,6 +4,173 @@ This document tracks significant issues encountered during Stage 4 (Integration,
 
 ---
 
+## CRITICAL: BOOL/bool Type Mismatch Causing Icon Misdetection
+
+**Issue ID:** STAGE4-002  
+**Severity:** CRITICAL  
+**Status:** RESOLVED  
+**Date Discovered:** October 18, 2025  
+**Workbench Version:** 47.080 (3.2)  
+
+### Problem Description
+
+Icons were being incorrectly detected as NewIcons even though they were standard MagicWorkbench icons. This caused the program to extract wrong dimensions (3x3 pixels instead of actual size ~48x48) and position icons too close together, causing overlapping in folder windows.
+
+**Symptoms:**
+- All standard MagicWorkbench icons detected as "NewIcon format"
+- Icon widths extracted as 3 pixels instead of actual ~48 pixels
+- Icon heights extracted as 3 pixels instead of actual ~48 pixels  
+- Icons positioned too close together (30, 83, 126 pixels) causing overlap
+- Log showed: "No NewIcon signature found (standard icon)" followed immediately by "Detected as NewIcon format"
+
+**Evidence from Logs:**
+```
+[22:54:32] Detecting icon type for: whd:Games.info
+[22:54:32] Checking tooltypes for NewIcon signature...
+[22:54:32]   ToolType: '◄▬▬▬ Icon by Martin Huttenloher ▬▬▬►'
+[22:54:32]   -> No NewIcon signature found (standard icon)
+[22:54:32]   -> Detected as NewIcon format
+```
+
+The function correctly identified them as standard icons but the calling code treated them as NewIcons.
+
+### Root Cause Analysis
+
+**Type mismatch between function declaration and implementation:**
+
+**Header File** (`src/icon_types.h`):
+```c
+BOOL IsNewIconPath(const STRPTR filePath);  // BOOL = LONG (32-bit)
+```
+
+**Implementation** (`src/icon_types.c` - INCORRECT):
+```c
+bool IsNewIconPath(const char *filePath) {  // bool = C99 type (8-bit)
+    bool newIconFormat = false;
+    // ... detection logic ...
+    return newIconFormat;  // Returns 8-bit value
+}
+```
+
+**The Problem:**
+1. On AmigaOS, `BOOL` is typedef'd as `LONG` (32-bit signed integer)
+   - `FALSE` = 0 (0x00000000)
+   - `TRUE` = 1 (0x00000001)
+   - Any non-zero value is considered TRUE
+
+2. C99 `bool` is typically an 8-bit type
+   - `false` = 0 (0x00)
+   - `true` = 1 (0x01)
+
+3. **VBCC Behavior with Type Mismatch:**
+   - Calling code expects function to return 32-bit `BOOL` in D0 register
+   - Function only sets lower 8 bits (D0.B) to 0x00 for `false`
+   - Upper 24 bits of D0 register remain **uninitialized**
+   - If upper bits contain garbage (leftover from previous operations), the 32-bit value may be non-zero
+   - Non-zero value is interpreted as `TRUE` by calling code!
+
+4. **Sporadic Behavior:**
+   - Depending on register state, function might work correctly sometimes
+   - In this case, garbage in upper bits consistently made it return TRUE
+   - This explains why it worked before migration (SAS/C likely handled this differently)
+
+### Solution Implemented
+
+**Changed implementation to use AmigaOS types consistently:**
+
+**Location:** `src/icon_types.c` - `IsNewIconPath()` function
+
+```c
+BOOL IsNewIconPath(const char *filePath) {  // Now matches header
+    BOOL newIconFormat = FALSE;  // Changed from bool/false
+    struct DiskObject *diskObject = NULL;
+    char *adjustedFilePath = NULL;
+    char **toolTypes;
+
+    // ... allocation code ...
+    
+    if (adjustedFilePath == NULL) {
+        return FALSE;  // Changed from false
+    }
+    
+    diskObject = GetDiskObject(adjustedFilePath);
+    if (diskObject == NULL) {
+        whd_free(adjustedFilePath);
+        return FALSE;  // Changed from false
+    }
+    
+    toolTypes = diskObject->do_ToolTypes;
+    if (toolTypes != NULL) {
+        while (*toolTypes != NULL) {
+            if (platform_stricmp(*toolTypes, "*** DON'T EDIT THE FOLLOWING LINES!! ***") == 0) {
+                newIconFormat = TRUE;  // Changed from true
+                break;
+            }
+            toolTypes++;
+        }
+    }
+    
+    FreeDiskObject(diskObject);
+    whd_free(adjustedFilePath);
+    
+    return newIconFormat;  // Now returns proper 32-bit BOOL
+}
+```
+
+### Results
+
+After fixing the type mismatch:
+- ✅ Standard MagicWorkbench icons correctly detected as standard icons
+- ✅ Proper icon dimensions extracted (48x48 instead of 3x3)
+- ✅ Icons positioned with correct spacing based on actual sizes
+- ✅ No overlapping icons in folder windows
+- ✅ Icons tidy properly as they did before VBCC migration
+
+### Lessons Learned
+
+**Critical VBCC Migration Rule:**
+1. **Always match return types exactly between header and implementation**
+   - Don't mix C99 types (`bool`) with AmigaOS types (`BOOL`)
+   - Header declares `BOOL` → Implementation must use `BOOL`
+   
+2. **AmigaOS Type Conventions:**
+   - Use `BOOL`/`TRUE`/`FALSE` for boolean return values in public APIs
+   - `BOOL` is `LONG` (32-bit) on Amiga
+   - Never mix with C99 `bool` (8-bit) in function signatures
+   
+3. **VBCC Strictness:**
+   - VBCC doesn't warn about this type mismatch
+   - Different calling conventions for different return sizes
+   - 8-bit vs 32-bit return values use different register operations
+   - Uninitialized upper bits can cause "random" true/false behavior
+   
+4. **Testing Implications:**
+   - Type mismatches may work sometimes, fail other times (register state dependent)
+   - Makes bugs hard to reproduce and diagnose
+   - Requires checking all function declarations vs implementations
+   
+5. **Why It Worked Before:**
+   - SAS/C compiler may have promoted 8-bit bool to 32-bit automatically
+   - Or had different calling conventions that zero-extended return values
+   - VBCC is stricter about type sizes in registers
+
+### Related Issues
+
+This same pattern should be checked in:
+- `IsNewIcon()` function (takes DiskObject pointer) - also uses bool/BOOL
+- Any other functions with BOOL return type in headers
+- All AmigaOS API wrapper functions
+
+### Prevention
+
+Added to VBCC migration checklist:
+- [ ] Verify all function return types match between .h and .c files exactly
+- [ ] Use AmigaOS types (`BOOL`, `LONG`, `ULONG`) for all public API functions
+- [ ] Reserve C99 types (`bool`, `int`) for internal/static functions only
+- [ ] Grep for mixed bool/BOOL usage: `grep -n "bool.*Icon\|BOOL.*Icon" src/*.c src/*.h`
+
+---
+
 ## CRITICAL: VBCC -lauto Library Cleanup Crash
 
 **Issue ID:** STAGE4-001  
