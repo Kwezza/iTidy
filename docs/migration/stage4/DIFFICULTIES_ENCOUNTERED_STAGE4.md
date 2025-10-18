@@ -4,6 +4,241 @@ This document tracks significant issues encountered during Stage 4 (Integration,
 
 ---
 
+## CRITICAL: Window Dimensions Incorrect - Width/Height Swapped and Screen Variables Uninitialized
+
+**Issue ID:** STAGE4-003  
+**Severity:** CRITICAL  
+**Status:** RESOLVED  
+**Date Discovered:** October 19, 2025  
+**Workbench Version:** 47.080 (3.2)  
+
+### Problem Description
+
+After the initial VBCC migration, folder windows were displaying with incorrect dimensions. Initially windows appeared extremely tall and narrow (width/height appeared swapped), then after partial fix, windows became too small with dimensions of 0×-32 pixels.
+
+**Symptoms - Phase 1 (Width/Height Appearance Swapped):**
+- Folder windows displayed very tall and narrow
+- Window borders seemed to be using incorrect values
+- Example: Programs folder showed as narrow vertical window instead of wider horizontal layout
+- Issue appeared consistently across all folders after VBCC migration
+
+**Symptoms - Phase 2 (Zero/Negative Dimensions):**
+- Folder windows displayed as tiny boxes
+- Debug logs showed: `screenWidth=0, screenHight=0`
+- Window dimensions calculated as: `width=0, height=-32`
+- Calculated dimensions before screen limit check were correct: `winWidth=229, winHeight=492`
+- After screen limit check: dimensions became `0×-32`
+
+**Evidence from Logs (Phase 2):**
+```
+[00:36:48] TEMPDBG: Input: winWidth=199, winHeight=454
+[00:36:48] TEMPDBG: After adding borders, winWidth=229
+[00:36:48] TEMPDBG: After adding borders, winHeight=492
+[00:36:48] TEMPDBG: screenWidth=0, screenHight=0
+[00:36:48] TEMPDBG: After screen limit checks, winWidth=0, winHeight=-32
+[00:36:48] TEMPDBG: Final: left=0, top=16, width=0, height=-32
+```
+
+### Root Cause Analysis
+
+**Two separate bugs were discovered and fixed:**
+
+#### Bug 1: Border Width Incorrectly Set to Border Height
+
+**Location:** `src/Settings/IControlPrefs.c` - Title bar scaling logic
+
+The code was incorrectly copying the calculated title bar **height** into the border **width** variable:
+
+```c
+if (details->titleBar_75)
+{
+    details->currentBarHeight = (UWORD)((details->currentWindowBarHeight * 3) / 4);
+    details->currentBarWidth = details->currentBarHeight;  // ❌ WRONG!
+}
+else if (details->titleBar_67)
+{
+    details->currentBarHeight = (uint16_t)((details->currentWindowBarHeight * 67) / 100);
+    details->currentBarWidth = details->currentBarHeight;  // ❌ WRONG!
+}
+// ... similar pattern in titleBar_50 and titleBar_100 blocks
+```
+
+**The Problem:**
+- `currentBarWidth` should remain at its default value of 18 pixels (window border width)
+- `currentBarHeight` should be scaled based on title bar preferences
+- The code was overwriting `currentBarWidth` with the **height** value
+- This caused window width calculations to add incorrect border dimensions
+
+**Impact:**
+- Window width was being increased by height value instead of width value
+- Made windows appear much narrower than intended
+- Created the visual appearance of width/height being swapped
+
+#### Bug 2: Screen Dimensions Never Initialized
+
+**Location:** `src/window_management.c` - `InitializeWindow()` function
+
+Global variables `screenWidth` and `screenHight` were declared but never set:
+
+```c
+// In main.c - globals declared and initialized to 0
+int screenHight = 0;
+int screenWidth = 0;
+
+// In InitializeWindow() - screen locked but globals NOT set
+screen = LockPubScreen("Workbench");
+if (!screen)
+{
+    printf("Failed to lock Workbench screen.\n");
+    return 0;
+}
+// ❌ Missing: screenWidth = screen->Width;
+// ❌ Missing: screenHight = screen->Height;
+
+windowLeft = screen->Width - windowWidth;
+windowTop = screen->Height - windowHeight;
+```
+
+**The Problem:**
+- `screen->Width` and `screen->Height` were read from the Workbench screen correctly
+- Used locally for window positioning calculations
+- But the **global variables** `screenWidth` and `screenHight` remained at 0
+- Later, `repoistionWindow()` relied on these globals for dimension limiting
+
+**Impact in `repoistionWindow()`:**
+```c
+// Correctly calculated dimensions
+winWidth = 229;  // After adding borders
+winHeight = 492; // After adding borders
+
+// Incorrect screen dimension check with screenWidth=0, screenHight=0
+if (winWidth > screenWidth)    // 229 > 0 = TRUE
+    winWidth = screenWidth;    // winWidth becomes 0!
+    
+if (winHeight > screenHight - (prefsIControl.currentTitleBarHeight * 2))  // 492 > -32 = TRUE
+    winHeight = screenHight - (prefsIControl.currentTitleBarHeight * 2);  // winHeight becomes -32!
+
+// Result: 0×-32 pixel window!
+```
+
+**Why This Wasn't Caught Earlier:**
+- Under SAS/C, global variable initialization or memory allocation may have worked differently
+- The Workbench screen dimensions may have been coincidentally available in memory
+- VBCC's stricter initialization requirements exposed this latent bug
+
+### Solution Implemented
+
+#### Fix 1: Remove Incorrect Border Width Assignments
+
+**Location:** `src/Settings/IControlPrefs.c`
+
+Removed the four incorrect assignments that were copying height to width:
+
+```c
+if (details->titleBar_75)
+{
+    details->currentBarHeight = (UWORD)((details->currentWindowBarHeight * 3) / 4);
+    // Removed: details->currentBarWidth = details->currentBarHeight;
+}
+else if (details->titleBar_67)
+{
+    details->currentBarHeight = (uint16_t)((details->currentWindowBarHeight * 67) / 100);
+    // Removed: details->currentBarWidth = details->currentBarHeight;
+}
+else if (details->titleBar_50)
+{
+    details->currentBarHeight = (uint16_t)((details->currentWindowBarHeight * 1) / 2);
+    // Removed: details->currentBarWidth = details->currentBarHeight;
+}
+else if (details->titleBar_100)
+{
+    details->currentBarHeight = details->currentWindowBarHeight;
+    // Removed: details->currentBarWidth = details->currentBarHeight;
+}
+```
+
+Now `currentBarWidth` retains its correct default value of 18 pixels.
+
+#### Fix 2: Initialize Screen Dimension Globals
+
+**Location:** `src/window_management.c` - `InitializeWindow()` function
+
+Added initialization of global screen dimension variables:
+
+```c
+screen = LockPubScreen("Workbench");
+if (!screen)
+{
+    printf("Failed to lock Workbench screen.\n");
+    return 0;
+}
+
+/* Initialize global screen dimensions from Workbench screen */
+screenWidth = screen->Width;
+screenHight = screen->Height;
+
+windowLeft = screen->Width - windowWidth;
+windowTop = screen->Height - windowHeight;
+```
+
+### Verification
+
+After both fixes were applied:
+
+**Test Run Results (October 19, 2025 at 00:43:43):**
+- Screen dimensions correctly detected: `screenWidth=640, screenHight=512`
+- Window dimensions properly calculated and bounded
+- Successfully processed 666 icons across entire boot device
+- All folder windows displayed with correct proportions
+
+**Sample Window Calculations (All Correct):**
+- Root folder (`os3.2:`): 418×307 pixels, centered at (111,102)
+- Programs folder: 394×304 pixels, centered at (123,104)
+- Various folders ranging from 85×115 to 551×480 pixels
+- All dimensions positive and within screen bounds
+
+**Log Evidence of Fix:**
+```
+[00:42:29] TEMPDBG: InitializeWindow set screenWidth=640, screenHight=512
+[00:43:44] TEMPDBG: Input: winWidth=369, winHeight=269
+[00:43:44] TEMPDBG: After adding borders, winWidth=399
+[00:43:44] TEMPDBG: Added volume gauge (19), winWidth now=418
+[00:43:44] TEMPDBG: After adding borders, winHeight=307
+[00:43:44] TEMPDBG: screenWidth=640, screenHight=512
+[00:43:44] TEMPDBG: After screen limit checks, winWidth=418, winHeight=307
+[00:43:44] TEMPDBG: Final: left=111, top=102, width=418, height=307
+```
+
+### Files Modified
+
+1. `src/Settings/IControlPrefs.c` - Removed incorrect width assignments
+2. `src/window_management.c` - Added screen dimension initialization
+
+### Testing Notes
+
+- Tested on OS3.2 (Workbench 47.080) with 640×512 screen resolution
+- Processed entire boot device recursively with 666 icons
+- All folder windows now display with correct dimensions
+- Window sizes appropriate for icon content
+- Windows properly centered on screen
+
+### Migration Impact
+
+This issue highlights two important VBCC migration considerations:
+
+1. **Variable Initialization:** VBCC may handle global variable initialization differently than SAS/C. All globals that depend on runtime values must be explicitly initialized.
+
+2. **Copy-Paste Errors:** During migration, be especially careful when similar code patterns are used for width/height or X/Y coordinates. The incorrect width assignment may have been introduced during refactoring for VBCC compatibility.
+
+### Prevention for Future
+
+- Review all uses of screen dimension globals to ensure proper initialization
+- Add assertions or debug checks for critical dimensional values
+- Consider using a structure for window dimensions to prevent mix-ups
+- Test window display as part of standard regression testing
+
+---
+
 ## CRITICAL: BOOL/bool Type Mismatch Causing Icon Misdetection
 
 **Issue ID:** STAGE4-002  

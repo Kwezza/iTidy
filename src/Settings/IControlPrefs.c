@@ -92,22 +92,18 @@ static void saveIControlPrefsDetails(struct IControlPrefs *prefs, struct IContro
     if (details->titleBar_75)
     {
         details->currentBarHeight = (UWORD)((details->currentWindowBarHeight * 3) / 4);
-        details->currentBarWidth = details->currentBarHeight;
     }
     else if (details->titleBar_67)
     {
         details->currentBarHeight = (uint16_t)((details->currentWindowBarHeight * 67) / 100);
-        details->currentBarWidth = details->currentBarHeight;
     }
     else if (details->titleBar_50)
     {
         details->currentBarHeight = (uint16_t)((details->currentWindowBarHeight * 1) / 2);
-        details->currentBarWidth = details->currentBarHeight;
     }
     else if (details->titleBar_100)
     {
         details->currentBarHeight = details->currentWindowBarHeight;
-        details->currentBarWidth = details->currentBarHeight;
     }
 
 }

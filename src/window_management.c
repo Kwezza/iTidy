@@ -249,6 +249,10 @@ int InitializeWindow(void)
         return 0;
     }
 
+    /* Initialize global screen dimensions from Workbench screen */
+    screenWidth = screen->Width;
+    screenHight = screen->Height;
+
     windowLeft = screen->Width - windowWidth;
     windowTop = screen->Height - windowHeight;
 
