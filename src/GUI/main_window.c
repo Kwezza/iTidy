@@ -1006,31 +1006,47 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         break;
 
                     case GID_CENTER_ICONS:
-                        GT_GetGadgetAttrs(gad, win_data->window, NULL,
-                            GTCB_Checked, &win_data->center_icons,
-                            TAG_END);
-                        printf("Center icons: %s\n", win_data->center_icons ? "ON" : "OFF");
+                        {
+                            ULONG checked = 0;
+                            GT_GetGadgetAttrs(gad, win_data->window, NULL,
+                                GTCB_Checked, &checked,
+                                TAG_END);
+                            win_data->center_icons = (BOOL)checked;
+                            printf("Center icons: %s\n", win_data->center_icons ? "ON" : "OFF");
+                        }
                         break;
 
                     case GID_OPTIMIZE_COLS:
-                        GT_GetGadgetAttrs(gad, win_data->window, NULL,
-                            GTCB_Checked, &win_data->optimize_columns,
-                            TAG_END);
-                        printf("Optimize columns: %s\n", win_data->optimize_columns ? "ON" : "OFF");
+                        {
+                            ULONG checked = 0;
+                            GT_GetGadgetAttrs(gad, win_data->window, NULL,
+                                GTCB_Checked, &checked,
+                                TAG_END);
+                            win_data->optimize_columns = (BOOL)checked;
+                            printf("Optimize columns: %s\n", win_data->optimize_columns ? "ON" : "OFF");
+                        }
                         break;
 
                     case GID_RECURSIVE:
-                        GT_GetGadgetAttrs(gad, win_data->window, NULL,
-                            GTCB_Checked, &win_data->recursive_subdirs,
-                            TAG_END);
-                        printf("Recursive subfolders: %s\n", win_data->recursive_subdirs ? "ON" : "OFF");
+                        {
+                            ULONG checked = 0;
+                            GT_GetGadgetAttrs(gad, win_data->window, NULL,
+                                GTCB_Checked, &checked,
+                                TAG_END);
+                            win_data->recursive_subdirs = (BOOL)checked;
+                            printf("Recursive subfolders: %s\n", win_data->recursive_subdirs ? "ON" : "OFF");
+                        }
                         break;
 
                     case GID_BACKUP:
-                        GT_GetGadgetAttrs(gad, win_data->window, NULL,
-                            GTCB_Checked, &win_data->enable_backup,
-                            TAG_END);
-                        printf("Backup: %s\n", win_data->enable_backup ? "ON" : "OFF");
+                        {
+                            ULONG checked = 0;
+                            GT_GetGadgetAttrs(gad, win_data->window, NULL,
+                                GTCB_Checked, &checked,
+                                TAG_END);
+                            win_data->enable_backup = (BOOL)checked;
+                            printf("Backup: %s\n", win_data->enable_backup ? "ON" : "OFF");
+                        }
                         break;
 
                     default:

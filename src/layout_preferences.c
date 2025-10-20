@@ -33,6 +33,7 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     /* Visual Settings */
     prefs->centerIconsInColumn = DEFAULT_CENTER_ICONS;
     prefs->useColumnWidthOptimization = DEFAULT_OPTIMIZE_COLUMNS;
+    prefs->textAlignment = DEFAULT_TEXT_ALIGNMENT;
     
     /* Window Management */
     prefs->resizeWindows = DEFAULT_RESIZE_WINDOWS;
@@ -77,6 +78,7 @@ void ApplyPreset(LayoutPreferences *prefs, int preset)
             prefs->reverseSort = FALSE;
             prefs->centerIconsInColumn = FALSE;
             prefs->useColumnWidthOptimization = TRUE;
+            prefs->textAlignment = TEXT_ALIGN_BOTTOM;
             prefs->maxIconsPerRow = 5;  /* 5 icons fit nicely on 640px screen */
             prefs->maxWindowWidthPct = 55;
             prefs->aspectRatio = 1.6f;
@@ -91,6 +93,7 @@ void ApplyPreset(LayoutPreferences *prefs, int preset)
             prefs->reverseSort = FALSE;
             prefs->centerIconsInColumn = FALSE;
             prefs->useColumnWidthOptimization = TRUE;
+            prefs->textAlignment = TEXT_ALIGN_BOTTOM;
             prefs->maxIconsPerRow = 6;
             prefs->maxWindowWidthPct = 45;
             prefs->aspectRatio = 1.3f;
@@ -105,6 +108,7 @@ void ApplyPreset(LayoutPreferences *prefs, int preset)
             prefs->reverseSort = FALSE;
             prefs->centerIconsInColumn = FALSE;
             prefs->useColumnWidthOptimization = TRUE;
+            prefs->textAlignment = TEXT_ALIGN_BOTTOM;
             prefs->maxIconsPerRow = 8;
             prefs->maxWindowWidthPct = 60;
             prefs->aspectRatio = 1.5f;
@@ -119,6 +123,7 @@ void ApplyPreset(LayoutPreferences *prefs, int preset)
             prefs->reverseSort = FALSE;
             prefs->centerIconsInColumn = FALSE;
             prefs->useColumnWidthOptimization = TRUE;
+            prefs->textAlignment = TEXT_ALIGN_BOTTOM;
             prefs->maxIconsPerRow = 4;
             prefs->maxWindowWidthPct = 40;
             prefs->aspectRatio = 1.4f;

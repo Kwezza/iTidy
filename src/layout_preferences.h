@@ -60,6 +60,17 @@ typedef enum {
 } SortBy;
 
 /*========================================================================*/
+/* Text Alignment Enumeration                                            */
+/*========================================================================*/
+/**
+ * @brief Vertical alignment of icon text labels within a row
+ */
+typedef enum {
+    TEXT_ALIGN_TOP = 0,     /* Text at natural position (top-aligned icons) */
+    TEXT_ALIGN_BOTTOM = 1   /* Text aligned to tallest icon in row (bottom-aligned) */
+} TextAlignment;
+
+/*========================================================================*/
 /* Backup Preferences Structure                                          */
 /*========================================================================*/
 /**
@@ -96,6 +107,7 @@ typedef struct {
     /* Visual Settings */
     BOOL centerIconsInColumn;        /* Center icons between grid lines */
     BOOL useColumnWidthOptimization; /* Optimize per-column widths */
+    TextAlignment textAlignment;     /* Vertical alignment of text labels in rows */
     
     /* Window Management */
     BOOL resizeWindows;              /* Auto-resize drawer windows */
@@ -131,6 +143,7 @@ typedef struct {
 #define DEFAULT_REVERSE_SORT        FALSE
 #define DEFAULT_CENTER_ICONS        FALSE
 #define DEFAULT_OPTIMIZE_COLUMNS    TRUE
+#define DEFAULT_TEXT_ALIGNMENT      TEXT_ALIGN_BOTTOM  /* Default: align text to bottom of row */
 #define DEFAULT_RESIZE_WINDOWS      TRUE
 #define DEFAULT_MAX_ICONS_PER_ROW   10
 #define DEFAULT_MAX_WIDTH_PCT       55

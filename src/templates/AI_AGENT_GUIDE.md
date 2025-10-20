@@ -131,21 +131,345 @@ Always call `update_window_max_dimensions()` after creating each gadget to ensur
 
 ## 📝 Event Handling Patterns
 
-### Get Gadget Values
+### ⚠️ CRITICAL: Cycle Gadget Race Condition Issue
+
+#### The Problem
+When handling cycle gadget events, using `GT_GetGadgetAttrs()` to read the gadget's current selection can return **stale data** that doesn't reflect the user's actual selection. This creates a race condition where:
+- The GUI visually shows the user's new selection
+- But `GT_GetGadgetAttrs()` returns the *previous* selection
+- This causes the application to behave incorrectly despite the GUI looking correct
+
+#### Example of the Bug
 ```c
+/* ❌ WRONG WAY - Returns stale data! */
+case GADGET_ID_SORT_PRIORITY:
+{
+    ULONG selected_priority = 0;
+    
+    /* This reads the OLD value, not what the user just selected! */
+    GT_GetGadgetAttrs(data->cycle_sort_priority, data->window, NULL,
+                      GTCY_Active, &selected_priority,
+                      TAG_END);
+    
+    /* User sees "Mixed" in GUI, but selected_priority = 0 (Folders First)
+       Application behaves incorrectly! */
+    apply_sort_priority(selected_priority);
+    break;
+}
+```
+
+#### Why This Happens
+1. User clicks on cycle gadget
+2. Intuition sends `IDCMP_GADGETUP` message
+3. Gadget visually updates on screen
+4. Your event handler receives the message
+5. **BUT**: The gadget's internal state hasn't finished updating yet
+6. `GT_GetGadgetAttrs()` reads the gadget structure directly
+7. It returns the value from *before* the click
+
+This is a timing issue in the GadTools library where the visual update happens before the internal state update completes.
+
+#### The Solution: Use IntuiMessage->Code
+Instead of querying the gadget with `GT_GetGadgetAttrs()`, read the selection **directly from the IntuiMessage structure** that triggered the event:
+
+```c
+/* ✅ CORRECT WAY - Use msg->Code directly! */
+case GADGET_ID_SORT_PRIORITY:
+{
+    /* The Code field contains the NEW selection index */
+    ULONG selected_priority = msg->Code;
+    
+    /* This is always current and accurate */
+    apply_sort_priority(selected_priority);
+    break;
+}
+```
+
+#### Complete Example
+```c
+BOOL handle_gadget_event(struct IntuiMessage *msg, YourWindowData *data)
+{
+    struct Gadget *gadget = (struct Gadget *)msg->IAddress;
+    UWORD gadget_id = gadget->GadgetID;
+    
+    switch (gadget_id)
+    {
+        case GADGET_ID_SORT_BY:
+        {
+            /* For cycle gadgets, msg->Code has the selected index */
+            UWORD sort_by = msg->Code;  /* 0 = Name, 1 = Date, 2 = Size, etc. */
+            
+            /* Update your application state */
+            data->current_sort_by = sort_by;
+            
+            /* Apply the sorting */
+            apply_sort_by(sort_by);
+            break;
+        }
+        
+        case GADGET_ID_SORT_PRIORITY:
+        {
+            /* Again, use msg->Code, not GT_GetGadgetAttrs() */
+            UWORD priority = msg->Code;  /* 0 = Folders First, 1 = Files First, 2 = Mixed */
+            
+            data->current_priority = priority;
+            apply_sort_priority(priority);
+            break;
+        }
+        
+        case GADGET_ID_LAYOUT_MODE:
+        {
+            /* Same pattern for all cycle gadgets */
+            UWORD layout_mode = msg->Code;
+            
+            data->current_layout_mode = layout_mode;
+            apply_layout_mode(layout_mode);
+            break;
+        }
+    }
+    
+    return TRUE;
+}
+```
+
+#### When GT_GetGadgetAttrs() IS Safe
+For other gadget types, `GT_GetGadgetAttrs()` works fine because they don't have this race condition:
+
+```c
+/* These are safe to use GT_GetGadgetAttrs() */
+
 case YOUR_STRING_ID:
     STRPTR string_value;
     GT_GetGadgetAttrs(data->your_string, data->window, NULL,
                       GTST_String, &string_value, TAG_END);
-    // Use string_value
+    // Use string_value - This is safe for string gadgets
     break;
 
 case YOUR_CHECKBOX_ID:
     BOOL checked;
     GT_GetGadgetAttrs(data->your_checkbox, data->window, NULL,
                       GTCB_Checked, &checked, TAG_END);
-    // Use checked state
+    // Use checked state - This is safe for checkboxes
     break;
+
+case YOUR_SLIDER_ID:
+    LONG level;
+    GT_GetGadgetAttrs(data->your_slider, data->window, NULL,
+                      GTSL_Level, &level, TAG_END);
+    // Use level - This is safe for sliders
+    break;
+```
+
+#### Summary of the Rule
+**For CYCLE gadgets:**
+- ✅ **DO** use `msg->Code` to get the current selection
+- ❌ **DON'T** use `GT_GetGadgetAttrs()` in the event handler
+- ✅ **DO** use `GT_GetGadgetAttrs()` when querying outside of event handling (e.g., initialization, saving settings)
+
+**For other gadget types (STRING, CHECKBOX, SLIDER, etc.):**
+- ✅ `GT_GetGadgetAttrs()` works correctly
+- ✅ You can use it safely in event handlers
+
+#### Debugging the Race Condition
+If you suspect this issue:
+1. Add debug output showing both values:
+   ```c
+   ULONG attrs_value = 0;
+   GT_GetGadgetAttrs(gadget, window, NULL, GTCY_Active, &attrs_value, TAG_END);
+   printf("msg->Code: %lu, GT_GetGadgetAttrs: %lu\n", msg->Code, attrs_value);
+   ```
+2. If they differ, you have the race condition
+3. Switch to using `msg->Code`
+
+#### Real-World Impact
+This bug caused iTidy to:
+- Show "Mixed" priority in the GUI
+- Actually apply "Folders First" sorting
+- Confuse users who saw correct GUI but wrong behavior
+- Required extensive debugging to identify
+
+After switching to `msg->Code`, all cycle gadgets worked perfectly with zero GUI/behavior mismatches.
+
+### ⚠️ CRITICAL: Checkbox Data Type Issue
+
+#### The Problem
+When reading checkbox gadget values with `GT_GetGadgetAttrs()`, passing a pointer to `BOOL` instead of `ULONG` causes incorrect values to be read. This is a **data type mismatch** issue specific to the Amiga GadTools API.
+
+#### Why This Happens
+- `GT_GetGadgetAttrs()` with `GTCB_Checked` expects a pointer to `ULONG` (32-bit)
+- `BOOL` may be 16-bit or 8-bit depending on the compiler
+- Passing `BOOL*` when `ULONG*` is expected causes:
+  - Memory corruption or partial writes
+  - Incorrect boolean values being read
+  - Values always appearing as FALSE
+
+#### Example of the Bug
+```c
+/* ❌ WRONG WAY - Type mismatch! */
+struct WindowData {
+    BOOL center_icons;  /* May be 16-bit */
+    BOOL optimize_cols;
+};
+
+case GID_CENTER_ICONS:
+    /* This corrupts memory or reads wrong value! */
+    GT_GetGadgetAttrs(gad, window, NULL,
+        GTCB_Checked, &win_data->center_icons,  /* BOOL* instead of ULONG* */
+        TAG_END);
+    break;
+
+/* Result: Checkbox appears ticked in GUI, but value is always FALSE! */
+```
+
+#### The Solution: Use ULONG Temporary Variable
+Always use a `ULONG` temporary variable when calling `GT_GetGadgetAttrs()` for checkboxes:
+
+```c
+/* ✅ CORRECT WAY - Use ULONG temporary! */
+case GID_CENTER_ICONS:
+    {
+        ULONG checked = 0;  /* Correct 32-bit type */
+        GT_GetGadgetAttrs(gad, window, NULL,
+            GTCB_Checked, &checked,  /* Pass ULONG* */
+            TAG_END);
+        win_data->center_icons = (BOOL)checked;  /* Safe cast to BOOL */
+        printf("Center icons: %s\n", win_data->center_icons ? "ON" : "OFF");
+    }
+    break;
+
+case GID_OPTIMIZE_COLS:
+    {
+        ULONG checked = 0;
+        GT_GetGadgetAttrs(gad, window, NULL,
+            GTCB_Checked, &checked,
+            TAG_END);
+        win_data->optimize_cols = (BOOL)checked;
+        printf("Optimize: %s\n", win_data->optimize_cols ? "ON" : "OFF");
+    }
+    break;
+
+case GID_RECURSIVE:
+    {
+        ULONG checked = 0;
+        GT_GetGadgetAttrs(gad, window, NULL,
+            GTCB_Checked, &checked,
+            TAG_END);
+        win_data->recursive = (BOOL)checked;
+        printf("Recursive: %s\n", win_data->recursive ? "ON" : "OFF");
+    }
+    break;
+```
+
+#### Why This Works
+1. `ULONG` is guaranteed to be 32-bit (same as what GadTools expects)
+2. The API correctly writes the checkbox state to the ULONG variable
+3. The cast to `BOOL` is safe and preserves the boolean value
+4. Block scope `{ }` keeps the temporary variable local
+
+#### Symptoms of This Bug
+- ✗ Checkbox visually ticks/unticks correctly in GUI
+- ✗ But application always sees value as FALSE
+- ✗ Feature controlled by checkbox never activates
+- ✗ No compiler warnings or errors
+- ✗ Very difficult to debug without knowing about the type mismatch
+
+#### Complete Checkbox Pattern
+```c
+struct WindowData {
+    /* Application data - can use BOOL for storage */
+    BOOL center_icons;
+    BOOL optimize_cols;
+    BOOL recursive;
+    BOOL enable_backup;
+};
+
+/* Event handler - always use ULONG temporary */
+BOOL handle_gadget_event(struct IntuiMessage *msg, struct WindowData *data)
+{
+    struct Gadget *gad = (struct Gadget *)msg->IAddress;
+    
+    switch (gad->GadgetID)
+    {
+        case GID_CENTER_ICONS:
+        {
+            ULONG checked = 0;
+            GT_GetGadgetAttrs(gad, data->window, NULL,
+                GTCB_Checked, &checked, TAG_END);
+            data->center_icons = (BOOL)checked;
+            break;
+        }
+        
+        case GID_OPTIMIZE_COLS:
+        {
+            ULONG checked = 0;
+            GT_GetGadgetAttrs(gad, data->window, NULL,
+                GTCB_Checked, &checked, TAG_END);
+            data->optimize_cols = (BOOL)checked;
+            break;
+        }
+    }
+    
+    return TRUE;
+}
+```
+
+#### When Setting Checkbox Values
+When *setting* checkbox values with `GT_SetGadgetAttrs()`, you can pass `BOOL` directly as the value (not a pointer):
+
+```c
+/* ✅ This is fine - value is passed directly, not via pointer */
+GT_SetGadgetAttrs(data->checkbox_gad, window, NULL,
+    GTCB_Checked, (ULONG)mybool,  /* Cast BOOL to ULONG */
+    TAG_END);
+
+/* Or use literal */
+GT_SetGadgetAttrs(data->checkbox_gad, window, NULL,
+    GTCB_Checked, TRUE,
+    TAG_END);
+```
+
+#### Summary of the Rule
+**For CHECKBOX gadgets with GT_GetGadgetAttrs():**
+- ✅ **DO** use `ULONG` temporary variable
+- ✅ **DO** pass `ULONG*` to `GT_GetGadgetAttrs()`
+- ✅ **DO** cast result to `BOOL` for storage
+- ❌ **DON'T** pass `BOOL*` directly to `GT_GetGadgetAttrs()`
+
+**For other gadget types:**
+- STRING: Use `STRPTR` (this works correctly)
+- SLIDER: Use `LONG` or `ULONG` (this works correctly)
+- CYCLE: Use `msg->Code` (see cycle gadget section above)
+
+#### Real-World Impact
+This bug in iTidy caused:
+- Column centering feature completely non-functional
+- Users confused because checkbox appeared to work visually
+- Feature activation logic never executed
+- Required deep debugging to identify root cause
+- Fixed by adding ULONG temporary variables
+
+After fix:
+- ✅ All checkboxes work correctly
+- ✅ Features activate/deactivate as expected
+- ✅ Visual state matches actual state
+- ✅ No memory corruption
+
+### Get Gadget Values (Non-Cycle, Non-Checkbox Gadgets)
+```c
+/* String gadgets - Safe to use STRPTR */
+STRPTR string_value;
+GT_GetGadgetAttrs(data->your_string, data->window, NULL,
+                  GTST_String, &string_value, TAG_END);
+
+/* Slider gadgets - Safe to use LONG */
+LONG level;
+GT_GetGadgetAttrs(data->your_slider, data->window, NULL,
+                  GTSL_Level, &level, TAG_END);
+
+/* Integer gadgets - Safe to use LONG */
+LONG number;
+GT_GetGadgetAttrs(data->your_integer, data->window, NULL,
+                  GTIN_Number, &number, TAG_END);
 ```
 
 ### Update Gadget Values
