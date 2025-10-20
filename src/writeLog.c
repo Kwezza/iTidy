@@ -158,3 +158,13 @@ void initialize_logfile(void)
 #endif
     }
 }
+
+// Delete the log file (call at program start for fresh log each run)
+void delete_logfile(void)
+{
+    // Try to delete from preferred location (PROGDIR:)
+    DeleteFile("PROGDIR:iTidy.log");
+    
+    // Also try fallback location (current directory)
+    DeleteFile("iTidy.log");
+}

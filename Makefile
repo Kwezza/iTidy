@@ -39,8 +39,9 @@ endif
 ################################################################################
 
 # Core source files
+# GUI MIGRATION NOTE: Changed from main.c to main_gui.c for GUI version
 CORE_SRCS = \
-	$(SRC_DIR)/main.c \
+	$(SRC_DIR)/main_gui.c \
 	$(SRC_DIR)/icon_types.c \
 	$(SRC_DIR)/icon_misc.c \
 	$(SRC_DIR)/icon_management.c \
@@ -49,7 +50,13 @@ CORE_SRCS = \
 	$(SRC_DIR)/utilities.c \
 	$(SRC_DIR)/spinner.c \
 	$(SRC_DIR)/writeLog.c \
-	$(SRC_DIR)/cli_utilities.c
+	$(SRC_DIR)/cli_utilities.c \
+	$(SRC_DIR)/layout_preferences.c \
+	$(SRC_DIR)/layout_processor.c
+
+# GUI source files
+GUI_SRCS = \
+	$(SRC_DIR)/GUI/main_window.c
 
 # DOS subdirectory sources
 DOS_SRCS = \
@@ -69,7 +76,7 @@ else
 endif
 
 # All sources
-SRCS = $(CORE_SRCS) $(DOS_SRCS) $(SETTINGS_SRCS) $(PLATFORM_SRCS)
+SRCS = $(CORE_SRCS) $(GUI_SRCS) $(DOS_SRCS) $(SETTINGS_SRCS) $(PLATFORM_SRCS)
 
 # Object files (in build directory)
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
@@ -93,23 +100,25 @@ amiga:
 
 # Create output directories
 # VBCC MIGRATION NOTE: Added Bin/Amiga directory for final Amiga executables
+# GUI MIGRATION NOTE: Added GUI subdirectory for GUI window source files
 directories:
 	@if not exist "$(OUT_DIR)" mkdir "$(OUT_DIR)"
 	@if not exist "$(OUT_DIR)\DOS" mkdir "$(OUT_DIR)\DOS"
 	@if not exist "$(OUT_DIR)\Settings" mkdir "$(OUT_DIR)\Settings"
 	@if not exist "$(OUT_DIR)\platform" mkdir "$(OUT_DIR)\platform"
+	@if not exist "$(OUT_DIR)\GUI" mkdir "$(OUT_DIR)\GUI"
 ifeq ($(TARGET),amiga)
 	@if not exist "$(BIN_DIR)" mkdir "$(BIN_DIR)"
 endif
 
 # Link executable
 # VBCC MIGRATION NOTE: For Amiga builds, copy to Bin/Amiga/ after linking
+# GUI MIGRATION NOTE: Executable now named iTidy (GUI version)
 $(BIN): $(OBJS)
 	@echo Linking $(TARGET) executable: $(BIN)
 	$(CC) $(LDFLAGS) -o $@ $^
 ifeq ($(TARGET),amiga)
-	@echo Copying to Bin/Amiga/
-	@copy "$(OUT_DIR)\$(PROJECT)" "$(BIN_DIR)\$(PROJECT)" >nul
+	@echo Build complete: $(BIN)
 endif
 
 # Compile core source files
@@ -159,7 +168,8 @@ help:
 ################################################################################
 
 # Core dependencies (simplified - expand as needed)
-$(OUT_DIR)/main.o: $(SRC_DIR)/main.c $(SRC_DIR)/main.h
+# GUI MIGRATION NOTE: Changed from main.o to main_gui.o
+$(OUT_DIR)/main_gui.o: $(SRC_DIR)/main_gui.c $(SRC_DIR)/main.h $(SRC_DIR)/GUI/main_window.h
 $(OUT_DIR)/icon_types.o: $(SRC_DIR)/icon_types.c $(SRC_DIR)/icon_types.h
 $(OUT_DIR)/icon_misc.o: $(SRC_DIR)/icon_misc.c $(SRC_DIR)/icon_misc.h
 $(OUT_DIR)/icon_management.o: $(SRC_DIR)/icon_management.c $(SRC_DIR)/icon_management.h
@@ -177,6 +187,10 @@ $(OUT_DIR)/DOS/getDiskDetails.o: $(SRC_DIR)/DOS/getDiskDetails.c $(SRC_DIR)/DOS/
 $(OUT_DIR)/Settings/IControlPrefs.o: $(SRC_DIR)/Settings/IControlPrefs.c $(SRC_DIR)/Settings/IControlPrefs.h
 $(OUT_DIR)/Settings/WorkbenchPrefs.o: $(SRC_DIR)/Settings/WorkbenchPrefs.c $(SRC_DIR)/Settings/WorkbenchPrefs.h
 $(OUT_DIR)/Settings/get_fonts.o: $(SRC_DIR)/Settings/get_fonts.c $(SRC_DIR)/Settings/get_fonts.h
+
+# GUI subdirectory
+# GUI MIGRATION NOTE: Added dependency for GUI window module
+$(OUT_DIR)/GUI/main_window.o: $(SRC_DIR)/GUI/main_window.c $(SRC_DIR)/GUI/main_window.h
 
 # Platform-specific
 $(OUT_DIR)/platform/host_platform.o: $(SRC_DIR)/platform/host_platform.c $(INC_DIR)/platform/platform.h

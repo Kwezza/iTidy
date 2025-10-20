@@ -119,6 +119,8 @@ typedef struct {
     char *icon_full_path;
     BOOL is_folder;
     BOOL is_write_protected;
+    ULONG file_size;              /* File size in bytes (0 for folders) */
+    struct DateStamp file_date;   /* File modification date */
 } FullIconDetails;
 
 typedef struct {

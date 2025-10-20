@@ -1,0 +1,11 @@
+[08:20:30] -------------------------
+[08:20:30] Workbench Settings Dump:
+[08:20:30] -------------------------
+[08:20:30] Borderless: No
+[08:20:30] Emboss Rectangle Size: 0
+[08:20:30] Max Name Length: 0
+[08:20:30] New Icons Support: No
+[08:20:30] Color Icon Support: No
+[08:20:30] Disable Title Bar: No
+[08:20:30] Disable Volume Gauge: No
+[08:20:30] -------------------------

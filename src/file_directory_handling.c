@@ -291,6 +291,10 @@ append_to_log("--------------------------------------------------------------\n"
         updateCursor(); // Update the progress spinner
         removeInfoExtension(currentIcon->icon_full_path, fileNameNoInfo);
 
+#ifdef DEBUG
+        append_to_log("Processing icon %d: %s\n", i, currentIcon->icon_text);
+#endif
+
         /* Temporarily enable write and delete permissions if they are disabled,
            so the icon can be updated. */
         is_write_protected_icon = GetWriteProtection(iconArray->array[i].icon_full_path);
@@ -336,12 +340,13 @@ append_to_log("%-3d | %-4d | %-4d | %-40s\n", i, currentIcon->icon_x, currentIco
                 append_to_log("!! Failed to save icon %s\n", fileNameNoInfo);
 #endif
             }
+#ifdef DEBUG
             else
             {
-#ifdef DEBUG_MAX
-                append_to_log("Icon postition saved correctly for %s\n", fileNameNoInfo);
-#endif
+                append_to_log("   Saved OK: %s\n", fileNameNoInfo);
             }
+#endif
+
             FreeDiskObject(diskObject);
             /* Reinstate the original write and delete protection if it was modified. */
             if (is_write_protected_icon)

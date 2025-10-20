@@ -304,6 +304,28 @@ append_to_log("-------------------------\n");
 
                                 /* Determine if it's a folder or a file */
                                 newIcon.is_folder = isDirectory(fullPathAndFile);
+                                
+                                /* Capture file size and date from FileInfoBlock */
+#if PLATFORM_AMIGA
+                                if (newIcon.is_folder)
+                                {
+                                    newIcon.file_size = 0;  /* Folders have no size */
+                                }
+                                else
+                                {
+                                    newIcon.file_size = fib->fib_Size;
+                                }
+                                /* Copy the DateStamp structure */
+                                newIcon.file_date.ds_Days = fib->fib_Date.ds_Days;
+                                newIcon.file_date.ds_Minute = fib->fib_Date.ds_Minute;
+                                newIcon.file_date.ds_Tick = fib->fib_Date.ds_Tick;
+#else
+                                newIcon.file_size = 0;  /* Host stub */
+                                newIcon.file_date.ds_Days = 0;
+                                newIcon.file_date.ds_Minute = 0;
+                                newIcon.file_date.ds_Tick = 0;
+#endif
+                                
 #ifdef DEBUG_MAX
                                 append_to_log("Allocating memory for icon path.\n");
 
@@ -804,14 +826,16 @@ void dumpIconArrayToScreen(IconArray *iconArray)
     }
     else
     {
-    append_to_log("%-3s | %-6s | %-6s | %-6s | %-6s | %-6s | %-6s | %-8s | %-8s | %-6s | %-8s | %-20s\n",
-                  "ID", "Width", "Height", "TxtW", "TxtH", "MaxW", "MaxH", "X", "Y", "Border", "Type", "Icon");
-    append_to_log("----------------------------------------------------------------------------------------------------------------\n");
+    append_to_log("%-3s | %-6s | %-6s | %-6s | %-6s | %-6s | %-6s | %-8s | %-8s | %-6s | %-8s | %-6s | %-10s | %-10s | %-20s\n",
+                  "ID", "Width", "Height", "TxtW", "TxtH", "MaxW", "MaxH", "X", "Y", "Border", "Type", "IsDir", "Size", "Date", "Icon");
+    append_to_log("------------------------------------------------------------------------------------------------------------------------------------------\n");
     }
 #endif
 
     for (i = 0; i < iconArray->size; i++)
     {
+        char dateStr[16];
+        
         // Determine the icon type string
         switch (iconArray->array[i].icon_type)
         {
@@ -837,7 +861,12 @@ void dumpIconArrayToScreen(IconArray *iconArray)
         else
             sprintf(yStr, "%d", iconArray->array[i].icon_y);
 
-        append_to_log("%-3d | %-6d | %-6d | %-6d | %-6d | %-6d | %-6d | %-8s | %-8s | %-6d | %-8s | %-20s\n",
+        // Format the date (Days.Minutes format for compactness)
+        sprintf(dateStr, "%lu.%lu", 
+                (unsigned long)iconArray->array[i].file_date.ds_Days,
+                (unsigned long)iconArray->array[i].file_date.ds_Minute);
+
+        append_to_log("%-3d | %-6d | %-6d | %-6d | %-6d | %-6d | %-6d | %-8s | %-8s | %-6d | %-8s | %-6s | %-10lu | %-10s | %-20s\n",
                       i,
                       iconArray->array[i].icon_width,
                       iconArray->array[i].icon_height,
@@ -849,6 +878,9 @@ void dumpIconArrayToScreen(IconArray *iconArray)
                       yStr,  // Y position (or "None")
                       iconArray->array[i].border_width,
                       iconTypeStr,
+                      iconArray->array[i].is_folder ? "Folder" : "File",
+                      (unsigned long)iconArray->array[i].file_size,
+                      dateStr,
                       iconArray->array[i].icon_text);
     }
 }

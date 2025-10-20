@@ -16,5 +16,6 @@
 
 void append_to_log(const char *format, ...);
 void initialize_logfile(void);
+void delete_logfile(void);
 
 #endif
