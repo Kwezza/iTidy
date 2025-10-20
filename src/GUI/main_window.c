@@ -162,6 +162,11 @@ static void print_layout_preferences(const LayoutPreferences *prefs,
     append_to_log("  Aspect Ratio:     %.2f\n", prefs->aspectRatio);
     append_to_log("\n");
     
+    /* Advanced Settings */
+    append_to_log("ADVANCED SETTINGS:\n");
+    append_to_log("  Skip Hidden:      %s\n", prefs->skipHiddenFolders ? "Yes" : "No");
+    append_to_log("\n");
+    
     /* Backup Settings */
     append_to_log("BACKUP SETTINGS:\n");
     append_to_log("  Enable Backup:    %s\n", prefs->backupPrefs.enableUndoBackup ? "Yes" : "No");
@@ -536,7 +541,29 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
         return FALSE;
     }
     
-    current_y += font_height + 30;
+    current_y += font_height + 10;
+    
+    /*====================================================================*/
+    /* SKIP HIDDEN FOLDERS CHECKBOX                                      */
+    /*====================================================================*/
+    ng.ng_LeftEdge = 30;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = 26;
+    ng.ng_Height = font_height + 4;
+    ng.ng_GadgetText = "Skip Hidden Folders";
+    ng.ng_GadgetID = GID_SKIP_HIDDEN;
+    ng.ng_Flags = PLACETEXT_RIGHT;
+    
+    win_data->skip_hidden_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
+        GTCB_Checked, TRUE,  /* Default to enabled */
+        TAG_END);
+    if (!gad)
+    {
+        printf("ERROR: Failed to create skip hidden folders checkbox\n");
+        return FALSE;
+    }
+    
+    current_y += font_height + 20;
     
     /*====================================================================*/
     /* ADVANCED BUTTON                                                    */
@@ -635,6 +662,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     win_data->recursive_subdirs = FALSE;
     win_data->enable_backup = FALSE;
     win_data->enable_icon_upgrade = FALSE;
+    win_data->skip_hidden_folders = TRUE;  /* Default: skip hidden folders */
 
     /* Lock the Workbench screen */
     win_data->screen = LockPubScreen(NULL);
@@ -867,6 +895,9 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                             win_data->center_icons,
                             win_data->optimize_columns);
                         
+                        /* Set skip hidden folders preference */
+                        prefs.skipHiddenFolders = win_data->skip_hidden_folders;
+                        
                         /* Print preferences for debugging */
                         print_layout_preferences(&prefs, 
                                                win_data->folder_path_buffer,
@@ -1046,6 +1077,17 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                 TAG_END);
                             win_data->enable_backup = (BOOL)checked;
                             printf("Backup: %s\n", win_data->enable_backup ? "ON" : "OFF");
+                        }
+                        break;
+
+                    case GID_SKIP_HIDDEN:
+                        {
+                            ULONG checked = 0;
+                            GT_GetGadgetAttrs(gad, win_data->window, NULL,
+                                GTCB_Checked, &checked,
+                                TAG_END);
+                            win_data->skip_hidden_folders = (BOOL)checked;
+                            printf("Skip hidden folders: %s\n", win_data->skip_hidden_folders ? "ON" : "OFF");
                         }
                         break;
 

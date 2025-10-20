@@ -115,6 +115,9 @@ typedef struct {
     UWORD maxWindowWidthPct;         /* Max window width as % of screen */
     float aspectRatio;               /* Target window aspect ratio */
     
+    /* Advanced Settings */
+    BOOL skipHiddenFolders;          /* Skip folders without .info files (hidden) */
+    
     /* Backup Settings */
     BackupPreferences backupPrefs;   /* Embedded backup configuration */
 } LayoutPreferences;
@@ -148,6 +151,7 @@ typedef struct {
 #define DEFAULT_MAX_ICONS_PER_ROW   10
 #define DEFAULT_MAX_WIDTH_PCT       55
 #define DEFAULT_ASPECT_RATIO        1.6f
+#define DEFAULT_SKIP_HIDDEN_FOLDERS TRUE   /* Default: ignore hidden folders */
 
 /*========================================================================*/
 /* Function Prototypes                                                   */

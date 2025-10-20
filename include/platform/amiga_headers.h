@@ -11,6 +11,7 @@
     #include <exec/types.h>
     #include <exec/memory.h>
     #include <libraries/dos.h>
+    #include <dos/dosasl.h>          /* For pattern matching (MatchFirst/MatchNext) */
     #include <workbench/workbench.h>
     #include <workbench/icon.h>
     #include <proto/exec.h>
@@ -22,6 +23,11 @@
     /* DOS return codes */
     #define RETURN_OK   0
     #define RETURN_FAIL 20
+    
+    /* DOS Object types for AllocDosObject/FreeDosObject */
+    #ifndef DOS_ANCHORPATH
+        #define DOS_ANCHORPATH 2  /* For pattern matching (may not be in older SDK headers) */
+    #endif
 #else
     /* Host build stubs for Amiga types */
 
@@ -68,6 +74,7 @@
 
     /* DOS Object management stubs */
     #define DOS_FIB 1
+    #define DOS_ANCHORPATH 2  /* For pattern matching */
     void* AllocDosObject(uint32_t type, void *tags);
     void FreeDosObject(uint32_t type, void *ptr);
     int32_t Examine(void *lock, struct FileInfoBlock *fib);

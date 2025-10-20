@@ -63,8 +63,9 @@
 
 #define ICON_START_X 10
 #define ICON_START_Y 10
-#define SCROLLBAR_WIDTH 50
-#define SCROLLBAR_HEIGHT 30
+/* DEPRECATED: Scrollbar sizes now obtained from IControl preferences (currentBarWidth/currentBarHeight) */
+/* #define SCROLLBAR_WIDTH 50 */
+/* #define SCROLLBAR_HEIGHT 30 */
 #define WINDOW_TITLE_HEIGHT 30
 #define WORKBENCH_BAR 20
 #define GAP_BETWEEN_ICON_AND_TEXT 2

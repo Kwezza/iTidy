@@ -27,9 +27,10 @@
 #define GID_RECURSIVE        10
 #define GID_BACKUP           11
 #define GID_ICON_UPGRADE     12
-#define GID_ADVANCED         13
-#define GID_APPLY            14
-#define GID_CANCEL           15
+#define GID_SKIP_HIDDEN      13
+#define GID_ADVANCED         14
+#define GID_APPLY            15
+#define GID_CANCEL           16
 
 /*------------------------------------------------------------------------*/
 /* Main Window Data Structure                                            */
@@ -55,6 +56,7 @@ struct iTidyMainWindow
     struct Gadget *recursive_check;
     struct Gadget *backup_check;
     struct Gadget *iconupgrade_check;
+    struct Gadget *skip_hidden_check;
     struct Gadget *advanced_btn;
     struct Gadget *apply_btn;
     struct Gadget *cancel_btn;
@@ -71,6 +73,7 @@ struct iTidyMainWindow
     BOOL recursive_subdirs;
     BOOL enable_backup;
     BOOL enable_icon_upgrade;
+    BOOL skip_hidden_folders;
 };
 
 /*------------------------------------------------------------------------*/

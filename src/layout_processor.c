@@ -693,6 +693,27 @@ static BOOL ProcessDirectoryRecursive(const char *path,
                 /* Build subdirectory path */
                 snprintf(subdir, sizeof(subdir), "%s/%s", path, fib->fib_FileName);
                 
+                /* Check if folder is hidden (no .info file) and skip if enabled */
+                if (prefs->skipHiddenFolders)
+                {
+                    char iconPath[520];
+                    BPTR iconLock;
+                    
+                    snprintf(iconPath, sizeof(iconPath), "%s.info", subdir);
+                    iconLock = Lock((STRPTR)iconPath, ACCESS_READ);
+                    
+                    if (!iconLock)
+                    {
+                        /* No .info file found - folder is hidden, skip it */
+#ifdef DEBUG
+                        append_to_log("Skipping hidden folder (no .info): %s\n", subdir);
+#endif
+                        printf("Skipping hidden folder: %s\n", fib->fib_FileName);
+                        continue;
+                    }
+                    UnLock(iconLock);
+                }
+                
                 /* Recursively process subdirectory */
                 printf("\nEntering: %s\n", subdir);
                 ProcessDirectoryRecursive(subdir, prefs, recursion_level + 1);

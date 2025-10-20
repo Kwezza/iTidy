@@ -93,8 +93,8 @@ void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
                  * Position [5] = Width character (decode by subtracting '!' which is 0x21 or 33)
                  * Position [6] = Height character (decode by subtracting '!')
                  */
-                newIconSize->width = (int)toolType[5] - '!';
-                newIconSize->height = (int)toolType[6] - '!';
+                newIconSize->width = (int)(unsigned char)toolType[5] - '!';
+                newIconSize->height = (int)(unsigned char)toolType[6] - '!';
 #ifdef DEBUG
                 append_to_log("Found icon size from IM1=: width = %d (char '%c'=0x%02X), height = %d (char '%c'=0x%02X)\n", 
                              newIconSize->width, toolType[5], (unsigned char)toolType[5],

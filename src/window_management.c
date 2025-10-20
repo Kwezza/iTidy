@@ -295,7 +295,11 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight)
     #ifdef DEBUG_MAX
     append_to_log("Repoistion window: %s Padding %d disableVolumeGauge=%d\n", dirPath, PADDING_WIDTH, prefsWorkbench.disableVolumeGauge);
     #endif
+    
+    /* Add window chrome (borders, scrollbars, etc.) to width */
     winWidth += prefsIControl.currentBarWidth + prefsIControl.currentLeftBarWidth + (PADDING_WIDTH * 2);
+    winWidth += prefsIControl.currentBarWidth;  /* Add space for vertical scrollbar (same width as right border) */
+    
     if (!prefsWorkbench.disableVolumeGauge && IsRootDirectorySimple(dirPath))
     {
         winWidth += prefsIControl.currentCGaugeWidth;
@@ -310,7 +314,11 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight)
         append_to_log("No root dir detected or VolumeGauge disabled. CGauge width: %d\n", prefsIControl.currentCGaugeWidth);
         #endif
     }
+    
+    /* Add window chrome (title bar, borders, scrollbars, etc.) to height */
     winHeight += prefsIControl.currentWindowBarHeight + prefsIControl.currentBarHeight + (PADDING_HEIGHT * 2);
+    winHeight += prefsIControl.currentBarHeight;  /* Add space for horizontal scrollbar (same height as bottom border) */
+    
     if (winWidth > screenWidth)
         winWidth = screenWidth;
     if (winHeight > screenHight - (prefsIControl.currentTitleBarHeight * 2))

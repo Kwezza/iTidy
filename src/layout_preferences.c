@@ -41,6 +41,9 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     prefs->maxWindowWidthPct = DEFAULT_MAX_WIDTH_PCT;
     prefs->aspectRatio = DEFAULT_ASPECT_RATIO;
     
+    /* Advanced Settings */
+    prefs->skipHiddenFolders = DEFAULT_SKIP_HIDDEN_FOLDERS;
+    
     /* Backup Settings */
     prefs->backupPrefs.enableUndoBackup = FALSE;
     prefs->backupPrefs.useLha = TRUE;
