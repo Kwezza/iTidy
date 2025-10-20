@@ -461,6 +461,117 @@ Saved 26 icons successfully
 - `src/icon_types.c` - Icon type detection and sorting
 - `src/writeLog.c` - Logging and debug output
 
+---
+
+### Phase 7: Pattern Matching Bug Fixes (Volume Root & Empty Names)
+
+#### Problem 1: Pattern Matching Failed on Volume Roots
+- **Issue**: When scanning root directories like `workbench:`, pattern matching returned ERROR_OBJECT_NOT_FOUND (205), finding 0 icons despite .info files existing
+- **Root Cause**: Pattern building always added "/" separator: `workbench:/#?.info`
+  - AmigaDOS volume roots use syntax `volume:` (no trailing slash)
+  - Adding "/" creates invalid pattern trying to match subdirectory named "/"
+  - Correct root pattern: `workbench:#?.info` (no slash between : and #)
+  - Correct subdir pattern: `workbench:Prefs/#?.info` (slash separates path and pattern)
+
+#### Solution: Dynamic Pattern Building
+**Implementation:**
+```c
+size_t pathLen = strlen(dirPath);
+if (pathLen > 0 && dirPath[pathLen - 1] == ':')
+{
+    /* Root directory (volume) - no slash needed */
+    snprintf(pattern, sizeof(pattern), "%s#?.info", dirPath);
+}
+else
+{
+    /* Subdirectory - needs slash separator */
+    snprintf(pattern, sizeof(pattern), "%s/#?.info", dirPath);
+}
+```
+
+**Pattern Examples:**
+- `workbench:#?.info` - ✅ Matches icons in Workbench: root
+- `workbench:/#?.info` - ❌ Tries to match subdirectory "/"
+- `Work:WHDLoad/#?.info` - ✅ Matches icons in Work:WHDLoad/
+- `DH0:Utilities/#?.info` - ✅ Matches icons in DH0:Utilities/
+
+#### Problem 2: Blank Icon Displayed in Workbench Root
+- **Issue**: After fixing volume root pattern, a blank icon (no name/text) appeared in the window
+- **Investigation**: Debug logs revealed file `.info` (literally just dot + .info extension)
+  - Full path: `Workbench:.info`
+  - Text dimensions: width=0, height=0
+  - Result: Invisible/blank icon in window that couldn't be seen to delete
+- **Root Cause**: Pattern `#?.info` matches ANY filename ending in .info, including `.info`
+  - This is a hidden/corrupted icon file
+  - After removing .info extension, filename becomes just "." or empty string
+  - Icon displays with zero text dimensions = blank icon
+
+#### Solution: Empty/Dot-Only Name Filter
+**Implementation:**
+```c
+removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
+
+/* Skip icons with empty names or names that are just a dot */
+if (fileNameNoInfo[0] != '\0' &&  /* Not empty */
+    !(fileNameNoInfo[0] == '.' && fileNameNoInfo[1] == '\0'))  /* Not just "." */
+{
+    /* Process icon normally */
+}
+else
+{
+    append_to_log("DEBUG: Skipping icon with empty or dot-only name: '%s'\n", 
+                  fib->fib_FileName);
+}
+```
+
+**Filtered Cases:**
+- `.info` → Empty string after removing .info → Skipped
+- Files that become just "." after extension removal → Skipped
+- Normal icons like `Devs.info` → "Devs" → Processed
+
+#### Testing Results
+**Before Fix:**
+```
+Pattern: 'workbench:/#?.info'
+MatchFirst returned 205 (ERROR_OBJECT_NOT_FOUND)
+Icon count: 0
+```
+
+**After Volume Root Fix:**
+```
+Pattern: 'Workbench:#?.info'
+MatchFirst successful
+Found 17 icons including blank '.info' file
+```
+
+**After Empty Name Filter:**
+```
+Pattern: 'Workbench:#?.info'
+MatchFirst successful
+DEBUG: Skipping icon with empty or dot-only name: '.info'
+Found 16 valid icons (blank icon filtered out)
+```
+
+#### Exclusion Filter Summary
+The pattern matching now has 4 exclusion filters:
+1. **Disk.info** - Volume icons (`isIconTypeDisk()` returns 1)
+2. **Left Out Icons** - Workbench backdrop icons (`isIconLeftOut()` checks WBConfig.prefs)
+3. **Empty/Dot-Only Names** - Hidden/corrupted files (new filter)
+4. **Corrupted Icons** - Invalid .info files (`IsValidIcon()` fails)
+
+#### Files Modified:
+- `src/icon_management.c` (CreateIconArrayFromPath):
+  - Lines 206-220: Added volume root detection and conditional pattern building
+  - Lines 330-348: Added empty/dot-only name filter with debug logging
+- `docs/DEVELOPMENT_LOG.md` - This section
+
+#### Performance Impact:
+- No performance degradation
+- Volume roots now work with same 40x speed improvement as subdirectories
+- Additional filter is simple string check (minimal overhead)
+
+---
+
 ### Documentation
 - `docs/PROJECT_OVERVIEW.md` - High-level project description
 - `docs/iTidy_GUI_Feature_Design.md` - GUI design specifications

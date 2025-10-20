@@ -1,468 +1,373 @@
 
 
 ========================================
-[21:08:31] === iTidy GUI version starting up (VBCC build) ===
-[21:08:31] iTidy GUI V1.0.0 - Amiga Workbench Icon Tidier
-[21:08:31] by Kerry Thompson
-[21:08:31] Version compiled on Oct 20 2025 at 19:30:57
-[21:08:31] Debug build
-[21:08:31] Workbench version: 47.080
-[21:08:31] Found font: XHelvetica.font, size: 9
-[21:08:31] Workbench Icon Font (getIconFont): XHelvetica.font, Size: 9
-[21:08:31] -------------------------
-[21:08:31] Workbench Settings Dump:
-[21:08:31] -------------------------
-[21:08:31] Borderless: No
-[21:08:31] Emboss Rectangle Size: 0
-[21:08:31] Max Name Length: 0
-[21:08:31] New Icons Support: No
-[21:08:31] Color Icon Support: No
-[21:08:31] Disable Title Bar: No
-[21:08:31] Disable Volume Gauge: No
-[21:08:31] -------------------------
-[21:08:31] Initialized default workbench settings
-[21:08:31] Failed to open workbench settings file.  Possibly not yet set.  Defaults assumed.
-[21:08:31] -------------------------
-[21:08:31] Workbench Settings Dump:
-[21:08:31] -------------------------
-[21:08:31] Borderless: No
-[21:08:31] Emboss Rectangle Size: 3
-[21:08:31] Max Name Length: 25
-[21:08:31] New Icons Support: Yes
-[21:08:31] Color Icon Support: Yes
-[21:08:31] Disable Title Bar: No
-[21:08:31] Disable Volume Gauge: No
-[21:08:31] -------------------------
-[21:08:31] IControl Preferences Dump:
-[21:08:31] --------------------------
-[21:08:31] Flags: 0x8001801E
-[21:08:31] Boolean Settings:
-[21:08:31]   Coerce Colors: No
-[21:08:31]   Coerce Lace: Yes
-[21:08:31]   String Gadget Filter: Yes
-[21:08:31]   Menu Snap: Yes
-[21:08:31]   Mode Promote: Yes
-[21:08:31]   Correct Ratio: No
-[21:08:31]   Off-Screen Windows: Yes
-[21:08:31]   More Size Gadgets: Yes
-[21:08:31]   Versioned: Yes
-[21:08:31]   Legacy Look: No
-[21:08:31] Aspect Ratios Enabled:
-[21:08:31]   9:7
-[21:08:31] Title Bar Heights:
-[21:08:31]   Screen Extra Height: 0
-[21:08:31]   Window Extra Height: 0
-[21:08:31] Title Bar Settings:
-[21:08:31]   Title Bar 50: No
-[21:08:31]   Title Bar 67: No
-[21:08:31]   Title Bar 75: No
-[21:08:31]   Title Bar 100: No
-[21:08:31] Square Proportional Look: No
-[21:08:31] UI Element Dimensions:
-[21:08:31]   Left Bar Width: 4
-[21:08:31]   Border Width: 18, Border Height: 14
-[21:08:31]   Title Height: 16, Window Height: 16
-[21:08:31]   Volume Gauge Width: 19
-[21:08:31] --------------------------
-[21:08:31] Workbench screen width 640, height 512
-[21:09:02] Applying preset: Classic
-[21:09:02] GUI Selections: layout=0, sort=0, order=0, sortby=0, center=0, optimize=1
-[21:09:02] 
-[21:09:02] ==================================================
-[21:09:02]       iTidy Layout Preferences - Debug Output    
-[21:09:02] ==================================================
-[21:09:02] 
-[21:09:02] FOLDER SETTINGS:
-[21:09:02]   Target Folder:    Work:WHDLoad/GamesOCS
-[21:09:02]   Recursive:        No
-[21:09:02] 
-[21:09:02] LAYOUT SETTINGS:
-[21:09:02]   Layout Mode:      Row-major (Horizontal first)
-[21:09:02]   Sort Order:       Horizontal (Left-to-right)
-[21:09:02]   Sort Priority:    [21:09:02] Folders First
-[21:09:02]   Sort By:          [21:09:02] Name
-[21:09:02]   Reverse Sort:     No
-[21:09:02] 
-[21:09:02] VISUAL SETTINGS:
-[21:09:02]   Center Icons:     No
-[21:09:02]   Optimize Columns: Yes
-[21:09:02] 
-[21:09:02] WINDOW MANAGEMENT:
-[21:09:02]   Resize Windows:   Yes
-[21:09:02]   Max Icons/Row:    5
-[21:09:02]   Max Width:        55% of screen
-[21:09:02]   Aspect Ratio:     1.60
-[21:09:02] 
-[21:09:02] ADVANCED SETTINGS:
-[21:09:02]   Skip Hidden:      Yes
-[21:09:02] 
-[21:09:02] BACKUP SETTINGS:
-[21:09:02]   Enable Backup:    No
-[21:09:02]   Use LhA:          Yes
-[21:09:02]   Backup Path:      Work:iTidyBackups/
-[21:09:02]   Max Backups:      3 per folder
-[21:09:02] 
-[21:09:02] ==================================================
-[21:09:02] 
-[21:09:02] ProcessSingleDirectory: path='Work:WHDLoad/GamesOCS'
-[21:09:02] ==== SECTION: LOADING ICONS ====
-[21:09:02] CreateIconArrayFromPath ENTRY: lock=269279798, dirPath='Work:WHDLoad/GamesOCS'
-[21:09:02] Using OPTIMIZED pattern matching (MatchFirst/MatchNext)
-[21:09:02] Icon array created successfully
-[21:09:02] AnchorPath allocated, preparing pattern-based scan
-[21:09:02] Pattern: 'Work:WHDLoad/GamesOCS/#?.info'
-[21:09:02] MatchFirst returned 232 (no .info files found or error)
-[21:09:02] No icons in the folder that can be arranged
-[21:09:02] No icons in directory or error: Work:WHDLoad/GamesOCS
-[21:09:09] Applying preset: Classic
-[21:09:09] GUI Selections: layout=0, sort=0, order=0, sortby=0, center=0, optimize=1
-[21:09:09] 
-[21:09:09] ==================================================
-[21:09:09]       iTidy Layout Preferences - Debug Output    
-[21:09:09] ==================================================
-[21:09:09] 
-[21:09:09] FOLDER SETTINGS:
-[21:09:09]   Target Folder:    Work:WHDLoad/GamesOCS
-[21:09:09]   Recursive:        No
-[21:09:09] 
-[21:09:09] LAYOUT SETTINGS:
-[21:09:09]   Layout Mode:      Row-major (Horizontal first)
-[21:09:09]   Sort Order:       Horizontal (Left-to-right)
-[21:09:09]   Sort Priority:    [21:09:09] Folders First
-[21:09:09]   Sort By:          [21:09:09] Name
-[21:09:09]   Reverse Sort:     No
-[21:09:09] 
-[21:09:09] VISUAL SETTINGS:
-[21:09:09]   Center Icons:     No
-[21:09:09]   Optimize Columns: Yes
-[21:09:09] 
-[21:09:09] WINDOW MANAGEMENT:
-[21:09:09]   Resize Windows:   Yes
-[21:09:09]   Max Icons/Row:    5
-[21:09:09]   Max Width:        55% of screen
-[21:09:09]   Aspect Ratio:     1.60
-[21:09:09] 
-[21:09:09] ADVANCED SETTINGS:
-[21:09:09]   Skip Hidden:      Yes
-[21:09:09] 
-[21:09:09] BACKUP SETTINGS:
-[21:09:09]   Enable Backup:    No
-[21:09:09]   Use LhA:          Yes
-[21:09:09]   Backup Path:      Work:iTidyBackups/
-[21:09:09]   Max Backups:      3 per folder
-[21:09:09] 
-[21:09:09] ==================================================
-[21:09:09] 
-[21:09:09] ProcessSingleDirectory: path='Work:WHDLoad/GamesOCS'
-[21:09:09] ==== SECTION: LOADING ICONS ====
-[21:09:09] CreateIconArrayFromPath ENTRY: lock=269378112, dirPath='Work:WHDLoad/GamesOCS'
-[21:09:09] Using OPTIMIZED pattern matching (MatchFirst/MatchNext)
-[21:09:09] Icon array created successfully
-[21:09:09] AnchorPath allocated, preparing pattern-based scan
-[21:09:09] Pattern: 'Work:WHDLoad/GamesOCS/#?.info'
-[21:09:09] MatchFirst returned 232 (no .info files found or error)
-[21:09:09] No icons in the folder that can be arranged
-[21:09:09] No icons in directory or error: Work:WHDLoad/GamesOCS
-[21:09:20] Applying preset: Classic
-[21:09:20] GUI Selections: layout=0, sort=0, order=0, sortby=0, center=0, optimize=1
-[21:09:20] 
-[21:09:20] ==================================================
-[21:09:20]       iTidy Layout Preferences - Debug Output    
-[21:09:20] ==================================================
-[21:09:20] 
-[21:09:20] FOLDER SETTINGS:
-[21:09:20]   Target Folder:    Work:WHDLoad/GamesOCS/1000ccTurbo
-[21:09:20]   Recursive:        No
-[21:09:20] 
-[21:09:20] LAYOUT SETTINGS:
-[21:09:20]   Layout Mode:      Row-major (Horizontal first)
-[21:09:20]   Sort Order:       Horizontal (Left-to-right)
-[21:09:20]   Sort Priority:    [21:09:20] Folders First
-[21:09:20]   Sort By:          [21:09:20] Name
-[21:09:20]   Reverse Sort:     No
-[21:09:20] 
-[21:09:20] VISUAL SETTINGS:
-[21:09:20]   Center Icons:     No
-[21:09:20]   Optimize Columns: Yes
-[21:09:20] 
-[21:09:20] WINDOW MANAGEMENT:
-[21:09:20]   Resize Windows:   Yes
-[21:09:20]   Max Icons/Row:    5
-[21:09:20]   Max Width:        55% of screen
-[21:09:20]   Aspect Ratio:     1.60
-[21:09:20] 
-[21:09:20] ADVANCED SETTINGS:
-[21:09:20]   Skip Hidden:      Yes
-[21:09:20] 
-[21:09:20] BACKUP SETTINGS:
-[21:09:20]   Enable Backup:    No
-[21:09:20]   Use LhA:          Yes
-[21:09:20]   Backup Path:      Work:iTidyBackups/
-[21:09:20]   Max Backups:      3 per folder
-[21:09:20] 
-[21:09:20] ==================================================
-[21:09:20] 
-[21:09:20] ProcessSingleDirectory: path='Work:WHDLoad/GamesOCS/1000ccTurbo'
-[21:09:20] ==== SECTION: LOADING ICONS ====
-[21:09:20] CreateIconArrayFromPath ENTRY: lock=268913166, dirPath='Work:WHDLoad/GamesOCS/1000ccTurbo'
-[21:09:20] Using OPTIMIZED pattern matching (MatchFirst/MatchNext)
-[21:09:20] Icon array created successfully
-[21:09:20] AnchorPath allocated, preparing pattern-based scan
-[21:09:20] Pattern: 'Work:WHDLoad/GamesOCS/1000ccTurbo/#?.info'
-[21:09:20] MatchFirst successful, entering processing loop
-[21:09:20] DEBUG: Pattern matched .info file: 'ReadMe.info'
-[21:09:20] DEBUG: Full path to .info file: 'Work:WHDLoad/GamesOCS/1000ccTurbo/ReadMe.info'
-[21:09:20] Detecting icon type for: Work:WHDLoad/GamesOCS/1000ccTurbo/ReadMe.info
-[21:09:20] Checking tooltypes for NewIcon signature...
-[21:09:20]   -> No NewIcon signature found (standard icon)
-[21:09:20]   -> Detected as standard Workbench icon format
-[21:09:20] DEBUG: Pattern matched .info file: '1000ccTurbo.info'
-[21:09:20] DEBUG: Full path to .info file: 'Work:WHDLoad/GamesOCS/1000ccTurbo/1000ccTurbo.info'
-[21:09:20] Detecting icon type for: Work:WHDLoad/GamesOCS/1000ccTurbo/1000ccTurbo.info
-[21:09:20] Checking tooltypes for NewIcon signature...
-[21:09:20]   ToolType: 'SLAVE=1000ccTurbo.slave'
-[21:09:20]   ToolType: 'PRELOAD'
-[21:09:20]   ToolType: ' '
-[21:09:20]   ToolType: '*** DON'T EDIT THE FOLLOWING LINES!! ***'
-[21:09:20]   -> NewIcon signature found!
-[21:09:20]   -> Detected as NewIcon format
-[21:09:20] File path copy: Work:WHDLoad/GamesOCS/1000ccTurbo/1000ccTurbo.info
-[21:09:20] Found IM tooltype: 'IM1=B™!AÓ&:$±l:*gR(UVK0ªh`[Y^«H¦*oÏÉÑG$aY¹¡&P¹!]50%:oGa°o²ÉÅY¬ÀWÈ\&$&"!^°ÀÇSÐÐX®.k©¹U`>oY@X>j+%²¶³ÅÑ*%KaÑY$jEÂ"aWÈÄÁÒ' (length: 118)
-[21:09:20] Found icon size from IM1=: width = 120 (char '™'=0x99), height = 96 (char ''=0x81)
-[21:09:20] Error: Unable to lock path: Work:WHDLoad/GamesOCS/1000ccTurbo/1000ccTurbo
-[21:09:20] ID  | Width  | Height | TxtW   | TxtH   | MaxW   | MaxH   | X        | Y        | Border | Type     | IsDir  | Size       | Date       | Icon                
-[21:09:20] ------------------------------------------------------------------------------------------------------------------------------------------
-[21:09:20] 0   | 42     | 38     | 30     | 9      | 45     | 46     | 136      | 4        | 3      | Standard | File   | 1396       | 12605.670  | ReadMe.info         
-[21:09:20] 1   | 123    | 99     | 53     | 9      | 126    | 107    | 5        | 4        | 3      | NewIcon  | File   | 9177       | 12605.670  | 1000ccTurbo.info    
-[21:09:20] ==== SECTION: SORTING ICONS ====
-[21:09:20] Sorting 2 icons with preferences
-[21:09:20]   Sort by: 0, Priority: 0, Reverse: 0
-[21:09:20] After sorting, icon order:
-[21:09:20] ID  | Icon                           | IsDir 
-[21:09:20] --------------------------------------------
-[21:09:20] 0   | 1000ccTurbo.info               | File  
-[21:09:20] 1   | ReadMe.info                    | File  
-[21:09:20] ==== SECTION: CALCULATING LAYOUT ====
-[21:09:20] Using standard row-based layout algorithm
-[21:09:20] CalculateLayoutPositions: Positioning 2 icons with dynamic width wrapping
-[21:09:20]   screenWidth=640, maxWindowWidthPct=55, effectiveMaxWidth=352
-[21:09:20]   textAlignment=BOTTOM
-[21:09:20] ID  | Icon                           | NewX | NewY | Width | Height | Offset
-[21:09:20] ------------------------------------------------------------------------------------
-[21:09:20] 0   | 1000ccTurbo.info               | 8    | 4    | 126   | 107   | 0  
-[21:09:20] 1   | ReadMe.info                    | 142  | 4    | 45    | 46    | 0  
-[21:09:20] 
-Adjusting final row (indices 0 to 1) for bottom text alignment
-[21:09:20]   maxHeightInRow = 107
-[21:09:20]   Adjusted icon 1 ('ReadMe.info') down by 61 pixels for text alignment
-[21:09:20] 
+[22:46:58] === iTidy GUI version starting up (VBCC build) ===
+[22:46:58] iTidy GUI V1.0.0 - Amiga Workbench Icon Tidier
+[22:46:58] by Kerry Thompson
+[22:46:58] Version compiled on Oct 20 2025 at 22:37:23
+[22:46:58] Debug build
+[22:46:58] Workbench version: 47.080
+[22:46:58] Found font: XHelvetica.font, size: 9
+[22:46:58] Workbench Icon Font (getIconFont): XHelvetica.font, Size: 9
+[22:46:58] -------------------------
+[22:46:58] Workbench Settings Dump:
+[22:46:58] -------------------------
+[22:46:58] Borderless: No
+[22:46:58] Emboss Rectangle Size: 0
+[22:46:58] Max Name Length: 0
+[22:46:58] New Icons Support: No
+[22:46:58] Color Icon Support: No
+[22:46:58] Disable Title Bar: No
+[22:46:58] Disable Volume Gauge: No
+[22:46:58] -------------------------
+[22:46:58] Initialized default workbench settings
+[22:46:58] Failed to open workbench settings file.  Possibly not yet set.  Defaults assumed.
+[22:46:58] -------------------------
+[22:46:58] Workbench Settings Dump:
+[22:46:58] -------------------------
+[22:46:58] Borderless: No
+[22:46:58] Emboss Rectangle Size: 3
+[22:46:58] Max Name Length: 25
+[22:46:58] New Icons Support: Yes
+[22:46:58] Color Icon Support: Yes
+[22:46:58] Disable Title Bar: No
+[22:46:58] Disable Volume Gauge: No
+[22:46:58] -------------------------
+[22:46:58] IControl Preferences Dump:
+[22:46:58] --------------------------
+[22:46:58] Flags: 0x8001801E
+[22:46:58] Boolean Settings:
+[22:46:58]   Coerce Colors: No
+[22:46:58]   Coerce Lace: Yes
+[22:46:58]   String Gadget Filter: Yes
+[22:46:58]   Menu Snap: Yes
+[22:46:58]   Mode Promote: Yes
+[22:46:58]   Correct Ratio: No
+[22:46:58]   Off-Screen Windows: Yes
+[22:46:58]   More Size Gadgets: Yes
+[22:46:58]   Versioned: Yes
+[22:46:58]   Legacy Look: No
+[22:46:58] Aspect Ratios Enabled:
+[22:46:58]   9:7
+[22:46:58] Title Bar Heights:
+[22:46:58]   Screen Extra Height: 0
+[22:46:58]   Window Extra Height: 0
+[22:46:58] Title Bar Settings:
+[22:46:58]   Title Bar 50: No
+[22:46:58]   Title Bar 67: No
+[22:46:58]   Title Bar 75: No
+[22:46:58]   Title Bar 100: No
+[22:46:58] Square Proportional Look: No
+[22:46:58] UI Element Dimensions:
+[22:46:58]   Left Bar Width: 4
+[22:46:58]   Border Width: 18, Border Height: 14
+[22:46:58]   Title Height: 16, Window Height: 16
+[22:46:58]   Volume Gauge Width: 19
+[22:46:58] --------------------------
+[22:46:58] Workbench screen width 640, height 512
+[22:47:06] Applying preset: Classic
+[22:47:06] GUI Selections: layout=0, sort=0, order=0, sortby=0, center=0, optimize=1
+[22:47:06] 
+[22:47:06] ==================================================
+[22:47:06]       iTidy Layout Preferences - Debug Output    
+[22:47:06] ==================================================
+[22:47:06] 
+[22:47:06] FOLDER SETTINGS:
+[22:47:06]   Target Folder:    Workbench:
+[22:47:06]   Recursive:        No
+[22:47:06] 
+[22:47:06] LAYOUT SETTINGS:
+[22:47:06]   Layout Mode:      Row-major (Horizontal first)
+[22:47:06]   Sort Order:       Horizontal (Left-to-right)
+[22:47:06]   Sort Priority:    [22:47:06] Folders First
+[22:47:06]   Sort By:          [22:47:06] Name
+[22:47:06]   Reverse Sort:     No
+[22:47:06] 
+[22:47:06] VISUAL SETTINGS:
+[22:47:06]   Center Icons:     No
+[22:47:06]   Optimize Columns: Yes
+[22:47:06] 
+[22:47:06] WINDOW MANAGEMENT:
+[22:47:06]   Resize Windows:   Yes
+[22:47:06]   Max Icons/Row:    5
+[22:47:06]   Max Width:        55% of screen
+[22:47:06]   Aspect Ratio:     1.60
+[22:47:06] 
+[22:47:06] ADVANCED SETTINGS:
+[22:47:06]   Skip Hidden:      Yes
+[22:47:06] 
+[22:47:06] BACKUP SETTINGS:
+[22:47:06]   Enable Backup:    No
+[22:47:06]   Use LhA:          Yes
+[22:47:06]   Backup Path:      Work:iTidyBackups/
+[22:47:06]   Max Backups:      3 per folder
+[22:47:06] 
+[22:47:06] ==================================================
+[22:47:06] 
+[22:47:06] ProcessSingleDirectory: path='Workbench:'
+[22:47:06] ==== SECTION: LOADING ICONS ====
+[22:47:06] CreateIconArrayFromPath ENTRY: lock=269558851, dirPath='Workbench:'
+[22:47:06] Using OPTIMIZED pattern matching (MatchFirst/MatchNext)
+[22:47:06] Icon array created successfully
+[22:47:06] AnchorPath allocated, preparing pattern-based scan
+[22:47:06] Pattern: 'Workbench:#?.info'
+[22:47:06] MatchFirst successful, entering processing loop
+[22:47:06] DEBUG: Pattern matched .info file: 'Picasso96.info'
+[22:47:06] DEBUG: Full path to .info file: 'Workbench:Picasso96.info'
+[22:47:06] DEBUG: isIconTypeDisk('Workbench:Picasso96.info') = 0 (0=not disk, 1=is disk)
+[22:47:06] Detecting icon type for: Workbench:Picasso96.info
+[22:47:06] Checking tooltypes for NewIcon signature...
+[22:47:06]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[22:47:06]   -> No NewIcon signature found (standard icon)
+[22:47:06]   -> Detected as standard Workbench icon format
+[22:47:06] DEBUG: Pattern matched .info file: 'OLD.info'
+[22:47:06] DEBUG: Full path to .info file: 'Workbench:OLD.info'
+[22:47:06] DEBUG: isIconTypeDisk('Workbench:OLD.info') = 0 (0=not disk, 1=is disk)
+[22:47:06] Detecting icon type for: Workbench:OLD.info
+[22:47:06] Checking tooltypes for NewIcon signature...
+[22:47:06]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[22:47:06]   -> No NewIcon signature found (standard icon)
+[22:47:06]   -> Detected as standard Workbench icon format
+[22:47:06] DEBUG: Pattern matched .info file: 'install_log_file.info'
+[22:47:06] DEBUG: Full path to .info file: 'Workbench:install_log_file.info'
+[22:47:06] DEBUG: isIconTypeDisk('Workbench:install_log_file.info') = 0 (0=not disk, 1=is disk)
+[22:47:06] Detecting icon type for: Workbench:install_log_file.info
+[22:47:06]   -> Detected as standard Workbench icon format
+[22:47:06] DEBUG: Pattern matched .info file: 'RoadshowSDK.info'
+[22:47:06] DEBUG: Full path to .info file: 'Workbench:RoadshowSDK.info'
+[22:47:06] DEBUG: isIconTypeDisk('Workbench:RoadshowSDK.info') = 0 (0=not disk, 1=is disk)
+[22:47:06] Detecting icon type for: Workbench:RoadshowSDK.info
+[22:47:06] Checking tooltypes for NewIcon signature...
+[22:47:06]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[22:47:06]   -> No NewIcon signature found (standard icon)
+[22:47:06]   -> Detected as standard Workbench icon format
+[22:47:06] DEBUG: Pattern matched .info file: 'Prefs.info'
+[22:47:06] DEBUG: Full path to .info file: 'Workbench:Prefs.info'
+[22:47:06] DEBUG: isIconTypeDisk('Workbench:Prefs.info') = 0 (0=not disk, 1=is disk)
+[22:47:06] Detecting icon type for: Workbench:Prefs.info
+[22:47:06] Checking tooltypes for NewIcon signature...
+[22:47:06]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[22:47:06]   -> No NewIcon signature found (standard icon)
+[22:47:06]   -> Detected as standard Workbench icon format
+[22:47:06] DEBUG: Pattern matched .info file: 'Storage.info'
+[22:47:06] DEBUG: Full path to .info file: 'Workbench:Storage.info'
+[22:47:06] DEBUG: isIconTypeDisk('Workbench:Storage.info') = 0 (0=not disk, 1=is disk)
+[22:47:06] Detecting icon type for: Workbench:Storage.info
+[22:47:06] Checking tooltypes for NewIcon signature...
+[22:47:06]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[22:47:06]   -> No NewIcon signature found (standard icon)
+[22:47:06]   -> Detected as standard Workbench icon format
+[22:47:06] DEBUG: Pattern matched .info file: 'Devs.info'
+[22:47:06] DEBUG: Full path to .info file: 'Workbench:Devs.info'
+[22:47:06] DEBUG: isIconTypeDisk('Workbench:Devs.info') = 0 (0=not disk, 1=is disk)
+[22:47:07] Detecting icon type for: Workbench:Devs.info
+[22:47:07] Checking tooltypes for NewIcon signature...
+[22:47:07]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[22:47:07]   -> No NewIcon signature found (standard icon)
+[22:47:07]   -> Detected as standard Workbench icon format
+[22:47:07] DEBUG: Pattern matched .info file: 'Expansion.info'
+[22:47:07] DEBUG: Full path to .info file: 'Workbench:Expansion.info'
+[22:47:07] DEBUG: isIconTypeDisk('Workbench:Expansion.info') = 0 (0=not disk, 1=is disk)
+[22:47:07] Detecting icon type for: Workbench:Expansion.info
+[22:47:07] Checking tooltypes for NewIcon signature...
+[22:47:07]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[22:47:07]   -> No NewIcon signature found (standard icon)
+[22:47:07]   -> Detected as standard Workbench icon format
+[22:47:07] DEBUG: Pattern matched .info file: 'System.info'
+[22:47:07] DEBUG: Full path to .info file: 'Workbench:System.info'
+[22:47:07] DEBUG: isIconTypeDisk('Workbench:System.info') = 0 (0=not disk, 1=is disk)
+[22:47:07] Detecting icon type for: Workbench:System.info
+[22:47:07] Checking tooltypes for NewIcon signature...
+[22:47:07]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[22:47:07]   -> No NewIcon signature found (standard icon)
+[22:47:07]   -> Detected as standard Workbench icon format
+[22:47:07] DEBUG: Pattern matched .info file: 'Utilities.info'
+[22:47:07] DEBUG: Full path to .info file: 'Workbench:Utilities.info'
+[22:47:07] DEBUG: isIconTypeDisk('Workbench:Utilities.info') = 0 (0=not disk, 1=is disk)
+[22:47:07] Detecting icon type for: Workbench:Utilities.info
+[22:47:07] Checking tooltypes for NewIcon signature...
+[22:47:07]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[22:47:07]   -> No NewIcon signature found (standard icon)
+[22:47:07]   -> Detected as standard Workbench icon format
+[22:47:07] DEBUG: Pattern matched .info file: 'WBStartup.info'
+[22:47:07] DEBUG: Full path to .info file: 'Workbench:WBStartup.info'
+[22:47:07] DEBUG: isIconTypeDisk('Workbench:WBStartup.info') = 0 (0=not disk, 1=is disk)
+[22:47:07] Detecting icon type for: Workbench:WBStartup.info
+[22:47:07] Checking tooltypes for NewIcon signature...
+[22:47:07]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[22:47:07]   -> No NewIcon signature found (standard icon)
+[22:47:07]   -> Detected as standard Workbench icon format
+[22:47:07] DEBUG: Pattern matched .info file: 'Tools.info'
+[22:47:07] DEBUG: Full path to .info file: 'Workbench:Tools.info'
+[22:47:07] DEBUG: isIconTypeDisk('Workbench:Tools.info') = 0 (0=not disk, 1=is disk)
+[22:47:07] Detecting icon type for: Workbench:Tools.info
+[22:47:07] Checking tooltypes for NewIcon signature...
+[22:47:07]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[22:47:07]   -> No NewIcon signature found (standard icon)
+[22:47:07]   -> Detected as standard Workbench icon format
+[22:47:07] DEBUG: Pattern matched .info file: 'Disk.info'
+[22:47:07] DEBUG: Full path to .info file: 'Workbench:Disk.info'
+[22:47:07] DEBUG: isIconTypeDisk('Workbench:Disk.info') = 1 (0=not disk, 1=is disk)
+[22:47:07] DEBUG: Pattern matched .info file: 'Help.info'
+[22:47:07] DEBUG: Full path to .info file: 'Workbench:Help.info'
+[22:47:07] DEBUG: isIconTypeDisk('Workbench:Help.info') = 0 (0=not disk, 1=is disk)
+[22:47:07] Detecting icon type for: Workbench:Help.info
+[22:47:07] Checking tooltypes for NewIcon signature...
+[22:47:07]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[22:47:07]   -> No NewIcon signature found (standard icon)
+[22:47:07]   -> Detected as standard Workbench icon format
+[22:47:07] DEBUG: Pattern matched .info file: 'Programs.info'
+[22:47:07] DEBUG: Full path to .info file: 'Workbench:Programs.info'
+[22:47:07] DEBUG: isIconTypeDisk('Workbench:Programs.info') = 0 (0=not disk, 1=is disk)
+[22:47:07] Detecting icon type for: Workbench:Programs.info
+[22:47:07] Checking tooltypes for NewIcon signature...
+[22:47:07]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[22:47:07]   -> No NewIcon signature found (standard icon)
+[22:47:07]   -> Detected as standard Workbench icon format
+[22:47:07] DEBUG: Pattern matched .info file: '.info'
+[22:47:07] DEBUG: Full path to .info file: 'Workbench:.info'
+[22:47:07] DEBUG: isIconTypeDisk('Workbench:.info') = 0 (0=not disk, 1=is disk)
+[22:47:07] DEBUG: Skipping icon with empty or dot-only name: '.info'
+[22:47:07] DEBUG: Pattern matched .info file: 'sc.info'
+[22:47:07] DEBUG: Full path to .info file: 'Workbench:sc.info'
+[22:47:07] DEBUG: isIconTypeDisk('Workbench:sc.info') = 0 (0=not disk, 1=is disk)
+[22:47:07] Detecting icon type for: Workbench:sc.info
+[22:47:07] Checking tooltypes for NewIcon signature...
+[22:47:07]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[22:47:07]   -> No NewIcon signature found (standard icon)
+[22:47:07]   -> Detected as standard Workbench icon format
+[22:47:07] ID  | Width  | Height | TxtW   | TxtH   | MaxW   | MaxH   | X        | Y        | Border | Type     | IsDir  | Size       | Date       | Icon                
+[22:47:07] ------------------------------------------------------------------------------------------------------------------------------------------
+[22:47:07] 0   | 60     | 24     | 38     | 9      | 63     | 32     | 81       | 50       | 3      | Standard | Folder | 0          | 17459.1365 | Picasso96.info      
+[22:47:07] 1   | 60     | 24     | 16     | 9      | 63     | 32     | 8        | 50       | 3      | Standard | Folder | 0          | 17459.1365 | OLD.info            
+[22:47:07] 2   | 62     | 29     | 58     | 9      | 65     | 37     | 227      | 4        | 3      | Standard | File   | 528        | 17459.1365 | install_log_file.info
+[22:47:07] 3   | 60     | 24     | 54     | 9      | 63     | 32     | 8        | 91       | 3      | Standard | Folder | 0          | 17459.1365 | RoadshowSDK.info    
+[22:47:07] 4   | 60     | 24     | 22     | 9      | 63     | 32     | 154      | 50       | 3      | Standard | Folder | 0          | 17459.1365 | Prefs.info          
+[22:47:07] 5   | 60     | 24     | 32     | 9      | 63     | 32     | 154      | 91       | 3      | Standard | Folder | 0          | 17459.1365 | Storage.info        
+[22:47:07] 6   | 60     | 24     | 18     | 9      | 63     | 32     | 8        | 9        | 3      | Standard | Folder | 0          | 17459.1365 | Devs.info           
+[22:47:07] 7   | 60     | 24     | 40     | 9      | 63     | 32     | 81       | 9        | 3      | Standard | Folder | 0          | 17459.1365 | Expansion.info      
+[22:47:07] 8   | 60     | 24     | 29     | 9      | 63     | 32     | 228      | 91       | 3      | Standard | Folder | 0          | 17459.1365 | System.info         
+[22:47:07] 9   | 60     | 24     | 30     | 9      | 63     | 32     | 81       | 132      | 3      | Standard | Folder | 0          | 17459.1365 | Utilities.info      
+[22:47:07] 10  | 60     | 24     | 42     | 9      | 63     | 32     | 154      | 132      | 3      | Standard | Folder | 0          | 17459.1365 | WBStartup.info      
+[22:47:07] 11  | 60     | 24     | 22     | 9      | 63     | 32     | 8        | 132      | 3      | Standard | Folder | 0          | 17459.1365 | Tools.info          
+[22:47:07] 12  | 60     | 24     | 17     | 9      | 63     | 32     | 154      | 9        | 3      | Standard | Folder | 0          | 17459.1365 | Help.info           
+[22:47:07] 13  | 60     | 24     | 37     | 9      | 63     | 32     | 228      | 50       | 3      | Standard | Folder | 0          | 17459.1365 | Programs.info       
+[22:47:07] 14  | 60     | 24     | 8      | 9      | 63     | 32     | 81       | 91       | 3      | Standard | Folder | 0          | 17459.1365 | sc.info             
+[22:47:07] ==== SECTION: SORTING ICONS ====
+[22:47:07] Sorting 15 icons with preferences
+[22:47:07]   Sort by: 0, Priority: 0, Reverse: 0
+[22:47:07] After sorting, icon order:
+[22:47:07] ID  | Icon                           | IsDir 
+[22:47:07] --------------------------------------------
+[22:47:07] 0   | Devs.info                      | Folder
+[22:47:07] 1   | Expansion.info                 | Folder
+[22:47:07] 2   | Help.info                      | Folder
+[22:47:07] 3   | OLD.info                       | Folder
+[22:47:07] 4   | Picasso96.info                 | Folder
+[22:47:07] 5   | Prefs.info                     | Folder
+[22:47:07] 6   | Programs.info                  | Folder
+[22:47:07] 7   | RoadshowSDK.info               | Folder
+[22:47:07] 8   | sc.info                        | Folder
+[22:47:07] 9   | Storage.info                   | Folder
+[22:47:07] 10  | System.info                    | Folder
+[22:47:07] 11  | Tools.info                     | Folder
+[22:47:07] 12  | Utilities.info                 | Folder
+[22:47:07] 13  | WBStartup.info                 | Folder
+[22:47:07] 14  | install_log_file.info          | File  
+[22:47:07] ==== SECTION: CALCULATING LAYOUT ====
+[22:47:07] Using standard row-based layout algorithm
+[22:47:07] CalculateLayoutPositions: Positioning 15 icons with dynamic width wrapping
+[22:47:07]   screenWidth=640, maxWindowWidthPct=55, effectiveMaxWidth=352
+[22:47:07]   textAlignment=BOTTOM
+[22:47:07] ID  | Icon                           | NewX | NewY | Width | Height | Offset
+[22:47:07] ------------------------------------------------------------------------------------
+[22:47:07] 0   | Devs.info                      | 8    | 4    | 63    | 32    | 0  
+[22:47:07] 1   | Expansion.info                 | 79   | 4    | 63    | 32    | 0  
+[22:47:07] 2   | Help.info                      | 150  | 4    | 63    | 32    | 0  
+[22:47:07] 3   | OLD.info                       | 221  | 4    | 63    | 32    | 0  
+[22:47:07] 4   | Picasso96.info                 | 8    | 44   | 63    | 32    | 0  
+[22:47:07] 5   | Prefs.info                     | 79   | 44   | 63    | 32    | 0  
+[22:47:07] 6   | Programs.info                  | 150  | 44   | 63    | 32    | 0  
+[22:47:07] 7   | RoadshowSDK.info               | 221  | 44   | 63    | 32    | 0  
+[22:47:07] 8   | sc.info                        | 8    | 84   | 63    | 32    | 0  
+[22:47:07] 9   | Storage.info                   | 79   | 84   | 63    | 32    | 0  
+[22:47:07] 10  | System.info                    | 150  | 84   | 63    | 32    | 0  
+[22:47:07] 11  | Tools.info                     | 221  | 84   | 63    | 32    | 0  
+[22:47:07] 12  | Utilities.info                 | 8    | 124  | 63    | 32    | 0  
+[22:47:07] 13  | WBStartup.info                 | 79   | 124  | 63    | 32    | 0  
+[22:47:07] 14  | install_log_file.info          | 150  | 124  | 65    | 37    | 0  
+[22:47:07] 
+Adjusting final row (indices 12 to 14) for bottom text alignment
+[22:47:07]   maxHeightInRow = 37
+[22:47:07]   Adjusted icon 12 ('Utilities.info') down by 5 pixels for text alignment
+[22:47:07]   Adjusted icon 13 ('WBStartup.info') down by 5 pixels for text alignment
+[22:47:07] 
 Final icon positions:
-[21:09:20] ID  | Icon                           | X    | Y   
-[21:09:20] --------------------------------------------
-[21:09:20] 0   | 1000ccTurbo.info               | 8    | 4   
-[21:09:20] 1   | ReadMe.info                    | 142  | 65  
-[21:09:20] DEBUG: resizeFolderToContents ENTRY: dirPath='Work:WHDLoad/GamesOCS/1000ccTurbo', iconArray->size=2
-[21:09:20] DEBUG: Calculated maxWidth=187, maxHeight=111 before calling repoistionWindow
-[21:09:20] Unable to load disk.info for folder: Work:WHDLoad/GamesOCS/1000ccTurbo
-[21:09:20] ==== SECTION: SAVING ICONS ====
-[21:09:20] ID  | X    | Y    | Icon                                    
-[21:09:20] --------------------------------------------------------------
-[21:09:20] Processing icon 0: 1000ccTurbo.info
-[21:09:20] 0   | 8    | 4    | 1000ccTurbo.info                        
-[21:09:20]    Saved OK: Work:WHDLoad/GamesOCS/1000ccTurbo/1000ccTurbo
-[21:09:20] Processing icon 1: ReadMe.info
-[21:09:20] 1   | 142  | 65   | ReadMe.info                             
-[21:09:20]    Saved OK: Work:WHDLoad/GamesOCS/1000ccTurbo/ReadMe
-[22:09:31] Applying preset: Classic
-[22:09:31] GUI Selections: layout=0, sort=0, order=0, sortby=0, center=1, optimize=1
-[22:09:31] 
-[22:09:31] ==================================================
-[22:09:31]       iTidy Layout Preferences - Debug Output    
-[22:09:31] ==================================================
-[22:09:31] 
-[22:09:31] FOLDER SETTINGS:
-[22:09:31]   Target Folder:    PC:
-[22:09:31]   Recursive:        No
-[22:09:31] 
-[22:09:31] LAYOUT SETTINGS:
-[22:09:31]   Layout Mode:      Row-major (Horizontal first)
-[22:09:31]   Sort Order:       Horizontal (Left-to-right)
-[22:09:31]   Sort Priority:    [22:09:31] Folders First
-[22:09:31]   Sort By:          [22:09:31] Name
-[22:09:31]   Reverse Sort:     No
-[22:09:31] 
-[22:09:31] VISUAL SETTINGS:
-[22:09:31]   Center Icons:     Yes
-[22:09:31]   Optimize Columns: Yes
-[22:09:31] 
-[22:09:31] WINDOW MANAGEMENT:
-[22:09:31]   Resize Windows:   Yes
-[22:09:31]   Max Icons/Row:    5
-[22:09:31]   Max Width:        55% of screen
-[22:09:31]   Aspect Ratio:     1.60
-[22:09:31] 
-[22:09:31] ADVANCED SETTINGS:
-[22:09:31]   Skip Hidden:      Yes
-[22:09:31] 
-[22:09:31] BACKUP SETTINGS:
-[22:09:31]   Enable Backup:    No
-[22:09:31]   Use LhA:          Yes
-[22:09:31]   Backup Path:      Work:iTidyBackups/
-[22:09:31]   Max Backups:      3 per folder
-[22:09:31] 
-[22:09:31] ==================================================
-[22:09:31] 
-[22:09:31] ProcessSingleDirectory: path='PC:'
-[22:09:31] ==== SECTION: LOADING ICONS ====
-[22:09:31] CreateIconArrayFromPath ENTRY: lock=268629491, dirPath='PC:'
-[22:09:31] Using OPTIMIZED pattern matching (MatchFirst/MatchNext)
-[22:09:31] Icon array created successfully
-[22:09:31] AnchorPath allocated, preparing pattern-based scan
-[22:09:31] Pattern: 'PC:/#?.info'
-[22:09:31] MatchFirst successful, entering processing loop
-[22:09:31] DEBUG: Pattern matched .info file: 'test.info'
-[22:09:31] DEBUG: Full path to .info file: 'PC:test.info'
-[22:09:31] Detecting icon type for: PC:test.info
-[22:09:31]   -> Detected as OS3.5 icon format
-[22:09:31] DEBUG: Pattern matched .info file: 'SetWritePermision.info'
-[22:09:31] DEBUG: Full path to .info file: 'PC:SetWritePermision.info'
-[22:09:31] Detecting icon type for: PC:SetWritePermision.info
-[22:09:31]   -> Detected as standard Workbench icon format
-[22:09:31] DEBUG: Pattern matched .info file: 'Retroplay-WHDLoad-downloader.info'
-[22:09:31] DEBUG: Full path to .info file: 'PC:Retroplay-WHDLoad-downloader.info'
-[22:09:31] Detecting icon type for: PC:Retroplay-WHDLoad-downloader.info
-[22:09:31]   -> Detected as standard Workbench icon format
-[22:09:31] DEBUG: Pattern matched .info file: 'Reset.info'
-[22:09:31] DEBUG: Full path to .info file: 'PC:Reset.info'
-[22:09:31] Detecting icon type for: PC:Reset.info
-[22:09:31]   -> Detected as standard Workbench icon format
-[22:09:31] DEBUG: Pattern matched .info file: 'ReOrg.info'
-[22:09:31] DEBUG: Full path to .info file: 'PC:ReOrg.info'
-[22:09:31] Detecting icon type for: PC:ReOrg.info
-[22:09:31]   -> Detected as standard Workbench icon format
-[22:09:31] DEBUG: Pattern matched .info file: 'IconDetails.info'
-[22:09:31] DEBUG: Full path to .info file: 'PC:IconDetails.info'
-[22:09:31] Detecting icon type for: PC:IconDetails.info
-[22:09:31]   -> Detected as standard Workbench icon format
-[22:09:31] DEBUG: Pattern matched .info file: 'IconCrawler.info'
-[22:09:31] DEBUG: Full path to .info file: 'PC:IconCrawler.info'
-[22:09:31] Detecting icon type for: PC:IconCrawler.info
-[22:09:31]   -> Detected as standard Workbench icon format
-[22:09:31] DEBUG: Pattern matched .info file: 'GetIcontrolPrefs.info'
-[22:09:31] DEBUG: Full path to .info file: 'PC:GetIcontrolPrefs.info'
-[22:09:31] Detecting icon type for: PC:GetIcontrolPrefs.info
-[22:09:31]   -> Detected as OS3.5 icon format
-[22:09:31] DEBUG: Pattern matched .info file: 'get IControl settings.info'
-[22:09:31] DEBUG: Full path to .info file: 'PC:get IControl settings.info'
-[22:09:31] Detecting icon type for: PC:get IControl settings.info
-[22:09:31]   -> Detected as OS3.5 icon format
-[22:09:31] DEBUG: Pattern matched .info file: 'AmigaDH0231015Backup.info'
-[22:09:31] DEBUG: Full path to .info file: 'PC:AmigaDH0231015Backup.info'
-[22:09:31] Detecting icon type for: PC:AmigaDH0231015Backup.info
-[22:09:31]   -> Detected as standard Workbench icon format
-[22:09:31] DEBUG: Pattern matched .info file: 'Disk.info'
-[22:09:31] DEBUG: Full path to .info file: 'PC:Disk.info'
-[22:09:31] ID  | Width  | Height | TxtW   | TxtH   | MaxW   | MaxH   | X        | Y        | Border | Type     | IsDir  | Size       | Date       | Icon                
-[22:09:31] ------------------------------------------------------------------------------------------------------------------------------------------
-[22:09:31] 0   | 49     | 49     | 17     | 9      | 52     | 57     | 134      | 46       | 3      | OS3.5    | Folder | 0          | 17456.1350 | test.info           
-[22:09:31] 1   | 60     | 17     | 73     | 9      | 73     | 25     | 50       | 46       | 3      | Standard | Folder | 0          | 17456.1350 | SetWritePermision.info
-[22:09:31] 2   | 60     | 17     | 130    | 9      | 130    | 25     | 241      | 28       | 3      | Standard | Folder | 0          | 17456.1350 | Retroplay-WHDLoad-downloader.info
-[22:09:31] 3   | 121    | 57     | 23     | 9      | 124    | 65     | 50       | 64       | 3      | Standard | File   | 3574       | 17456.1350 | Reset.info          
-[22:09:31] 4   | 60     | 17     | 25     | 9      | 63     | 25     | 134      | 28       | 3      | Standard | Folder | 0          | 17456.1350 | ReOrg.info          
-[22:09:31] 5   | 60     | 17     | 42     | 9      | 63     | 25     | 50       | 28       | 3      | Standard | Folder | 0          | 17456.1350 | IconDetails.info    
-[22:09:31] 6   | 60     | 17     | 46     | 9      | 63     | 25     | 241      | 10       | 3      | Standard | Folder | 0          | 17456.1350 | IconCrawler.info    
-[22:09:31] 7   | 45     | 45     | 67     | 9      | 67     | 53     | 134      | 10       | 0      | OS3.5    | Folder | 0          | 17456.1350 | GetIcontrolPrefs.info
-[22:09:31] 8   | 45     | 45     | 83     | 9      | 83     | 53     | 50       | 10       | 0      | OS3.5    | Folder | 0          | 17456.1350 | get IControl settings.info
-[22:09:31] 9   | 36     | 39     | 94     | 9      | 94     | 47     | 241      | 46       | 3      | Standard | File   | 758        | 17456.1350 | AmigaDH0231015Backup.info
-[22:09:31] ==== SECTION: SORTING ICONS ====
-[22:09:31] Sorting 10 icons with preferences
-[22:09:31]   Sort by: 0, Priority: 0, Reverse: 0
-[22:09:31] After sorting, icon order:
-[22:09:31] ID  | Icon                           | IsDir 
-[22:09:31] --------------------------------------------
-[22:09:31] 0   | get IControl settings.info     | Folder
-[22:09:31] 1   | GetIcontrolPrefs.info          | Folder
-[22:09:31] 2   | IconCrawler.info               | Folder
-[22:09:31] 3   | IconDetails.info               | Folder
-[22:09:31] 4   | ReOrg.info                     | Folder
-[22:09:31] 5   | Retroplay-WHDLoad-downloader.info | Folder
-[22:09:31] 6   | SetWritePermision.info         | Folder
-[22:09:31] 7   | test.info                      | Folder
-[22:09:31] 8   | AmigaDH0231015Backup.info      | File  
-[22:09:31] 9   | Reset.info                     | File  
-[22:09:31] ==== SECTION: CALCULATING LAYOUT ====
-[22:09:31] Using column-centered layout algorithm
-[22:09:31] CalculateLayoutPositionsWithColumnCentering: Processing 10 icons
-[22:09:31]   screenWidth=640, maxWindowWidthPct=55, effectiveMaxWidth=352
-[22:09:31] Phase 1: Statistics
-[22:09:31]   Average icon width: 81 pixels
-[22:09:31]   Total icons: 10
-[22:09:31]   Initial estimated columns: 3
-[22:09:31] Attempt 1: 3 columns, total width = 361 (max = 352)
-[22:09:31]   Width exceeded, reducing to 2 columns
-[22:09:31] Attempt 2: 2 columns, total width = 256 (max = 352)
-[22:09:31] Final configuration: 2 columns, total width = 256
-[22:09:31] Column widths: [22:09:31] 94 [22:09:31] 130 [22:09:31] 
-[22:09:31] 
-Phase 2: Icon Positioning
-[22:09:31] ID  | Icon                           | Col | Row | X    | Y    | Center
-[22:09:31] -------------------------------------------------------------------------
-[22:09:31] 0   | get IControl settings.info     | 0   | 0   | 32   | 4    | 5     
-[22:09:31] 1   | GetIcontrolPrefs.info          | 1   | 0   | 152  | 4    | 31    
-[22:09:31] 2   | IconCrawler.info               | 0   | 1   | 23   | 65   | 15    
-[22:09:31] 3   | IconDetails.info               | 1   | 1   | 143  | 65   | 33    
-[22:09:31] 4   | ReOrg.info                     | 0   | 2   | 23   | 98   | 15    
-[22:09:31] 5   | Retroplay-WHDLoad-downloader.info | 1   | 2   | 145  | 98   | 0     
-[22:09:31] 6   | SetWritePermision.info         | 0   | 3   | 24   | 131  | 10    
-[22:09:31] 7   | test.info                      | 1   | 3   | 149  | 131  | 39    
-[22:09:31] 8   | AmigaDH0231015Backup.info      | 0   | 4   | 37   | 196  | 0     
-[22:09:31] 9   | Reset.info                     | 1   | 4   | 113  | 196  | 3     
-[22:09:31] 
-Adjusting final row (indices 8 to 9) for text alignment
-[22:09:31]   Adjusted icon 8 down by 18 pixels
-[22:09:31] 
-Column-centered layout complete!
-[22:09:31] DEBUG: resizeFolderToContents ENTRY: dirPath='PC:', iconArray->size=10
-[22:09:31] DEBUG: Calculated maxWidth=275, maxHeight=261 before calling repoistionWindow
-[22:09:31] Saved folder settings ok for PC:Disk
-[22:09:31] ==== SECTION: SAVING ICONS ====
-[22:09:31] ID  | X    | Y    | Icon                                    
-[22:09:32] --------------------------------------------------------------
-[22:09:32] Processing icon 0: get IControl settings.info
-[22:09:32] 0   | 32   | 4    | get IControl settings.info              
-[22:09:32]    Saved OK: PC:get IControl settings
-[22:09:32] Processing icon 1: GetIcontrolPrefs.info
-[22:09:32] 1   | 152  | 4    | GetIcontrolPrefs.info                   
-[22:09:32]    Saved OK: PC:GetIcontrolPrefs
-[22:09:32] Processing icon 2: IconCrawler.info
-[22:09:32] 2   | 23   | 65   | IconCrawler.info                        
-[22:09:32]    Saved OK: PC:IconCrawler
-[22:09:32] Processing icon 3: IconDetails.info
-[22:09:32] 3   | 143  | 65   | IconDetails.info                        
-[22:09:32]    Saved OK: PC:IconDetails
-[22:09:32] Processing icon 4: ReOrg.info
-[22:09:32] 4   | 23   | 98   | ReOrg.info                              
-[22:09:32]    Saved OK: PC:ReOrg
-[22:09:32] Processing icon 5: Retroplay-WHDLoad-downloader.info
-[22:09:32] 5   | 145  | 98   | Retroplay-WHDLoad-downloader.info       
-[22:09:32]    Saved OK: PC:Retroplay-WHDLoad-downloader
-[22:09:32] Processing icon 6: SetWritePermision.info
-[22:09:32] 6   | 24   | 163  | SetWritePermision.info                  
-[22:09:32]    Saved OK: PC:SetWritePermision
-[22:09:32] Processing icon 7: test.info
-[22:09:32] 7   | 149  | 131  | test.info                               
-[22:09:32]    Saved OK: PC:test
-[22:09:32] Processing icon 8: AmigaDH0231015Backup.info
-[22:09:32] 8   | 37   | 214  | AmigaDH0231015Backup.info               
-[22:09:32]    Saved OK: PC:AmigaDH0231015Backup
-[22:09:32] Processing icon 9: Reset.info
-[22:09:32] 9   | 113  | 196  | Reset.info                              
-[22:09:32]    Saved OK: PC:Reset
-[22:10:22] DEBUG: About to call CleanupWindow()...
-[22:10:22] DEBUG: CleanupWindow() completed
-[22:10:22] DEBUG: About to call disposeTimer()...
-[22:10:22] DEBUG: disposeTimer() completed
-[22:10:22] DEBUG: About to call FreeIconErrorList()...
-[22:10:22] DEBUG: FreeIconErrorList() completed
-[22:10:22] DEBUG: About to free fontPrefs (ptr=1079392020)...
-[22:10:22] DEBUG: fontPrefs freed successfully
+[22:47:07] ID  | Icon                           | X    | Y   
+[22:47:07] --------------------------------------------
+[22:47:07] 0   | Devs.info                      | 8    | 4   
+[22:47:07] 1   | Expansion.info                 | 79   | 4   
+[22:47:07] 2   | Help.info                      | 150  | 4   
+[22:47:07] 3   | OLD.info                       | 221  | 4   
+[22:47:07] 4   | Picasso96.info                 | 8    | 44  
+[22:47:07] 5   | Prefs.info                     | 79   | 44  
+[22:47:07] 6   | Programs.info                  | 150  | 44  
+[22:47:07] 7   | RoadshowSDK.info               | 221  | 44  
+[22:47:07] 8   | sc.info                        | 8    | 84  
+[22:47:07] 9   | Storage.info                   | 79   | 84  
+[22:47:07] 10  | System.info                    | 150  | 84  
+[22:47:07] 11  | Tools.info                     | 221  | 84  
+[22:47:07] 12  | Utilities.info                 | 8    | 129 
+[22:47:07] 13  | WBStartup.info                 | 79   | 129 
+[22:47:07] 14  | install_log_file.info          | 150  | 124 
+[22:47:07] DEBUG: resizeFolderToContents ENTRY: dirPath='Workbench:', iconArray->size=15
+[22:47:07] DEBUG: Calculated maxWidth=284, maxHeight=161 before calling repoistionWindow
+[22:47:07] Saved folder settings ok for Workbench:Disk
+[22:47:07] ==== SECTION: SAVING ICONS ====
+[22:47:07] ID  | X    | Y    | Icon                                    
+[22:47:07] --------------------------------------------------------------
+[22:47:07] Processing icon 0: Devs.info
+[22:47:07] 0   | 8    | 4    | Devs.info                               
+[22:47:07]    Saved OK: Workbench:Devs
+[22:47:07] Processing icon 1: Expansion.info
+[22:47:07] 1   | 79   | 4    | Expansion.info                          
+[22:47:07]    Saved OK: Workbench:Expansion
+[22:47:07] Processing icon 2: Help.info
+[22:47:07] 2   | 150  | 4    | Help.info                               
+[22:47:07]    Saved OK: Workbench:Help
+[22:47:07] Processing icon 3: OLD.info
+[22:47:07] 3   | 221  | 4    | OLD.info                                
+[22:47:07]    Saved OK: Workbench:OLD
+[22:47:07] Processing icon 4: Picasso96.info
+[22:47:07] 4   | 8    | 44   | Picasso96.info                          
+[22:47:07]    Saved OK: Workbench:Picasso96
+[22:47:07] Processing icon 5: Prefs.info
+[22:47:07] 5   | 79   | 44   | Prefs.info                              
+[22:47:07]    Saved OK: Workbench:Prefs
+[22:47:07] Processing icon 6: Programs.info
+[22:47:07] 6   | 150  | 44   | Programs.info                           
+[22:47:07]    Saved OK: Workbench:Programs
+[22:47:07] Processing icon 7: RoadshowSDK.info
+[22:47:07] 7   | 221  | 44   | RoadshowSDK.info                        
+[22:47:07]    Saved OK: Workbench:RoadshowSDK
+[22:47:07] Processing icon 8: sc.info
+[22:47:07] 8   | 8    | 84   | sc.info                                 
+[22:47:07]    Saved OK: Workbench:sc
+[22:47:07] Processing icon 9: Storage.info
+[22:47:07] 9   | 79   | 84   | Storage.info                            
+[22:47:07]    Saved OK: Workbench:Storage
+[22:47:07] Processing icon 10: System.info
+[22:47:07] 10  | 150  | 84   | System.info                             
+[22:47:07]    Saved OK: Workbench:System
+[22:47:07] Processing icon 11: Tools.info
+[22:47:07] 11  | 221  | 84   | Tools.info                              
+[22:47:07]    Saved OK: Workbench:Tools
+[22:47:07] Processing icon 12: Utilities.info
+[22:47:07] 12  | 8    | 129  | Utilities.info                          
+[22:47:07]    Saved OK: Workbench:Utilities
+[22:47:07] Processing icon 13: WBStartup.info
+[22:47:07] 13  | 79   | 129  | WBStartup.info                          
+[22:47:07]    Saved OK: Workbench:WBStartup
+[22:47:07] Processing icon 14: install_log_file.info
+[22:47:07] 14  | 150  | 124  | install_log_file.info                   
+[22:47:07]    Saved OK: Workbench:install_log_file

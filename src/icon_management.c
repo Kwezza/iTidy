@@ -201,9 +201,27 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
      *   ✗ MyFile (no .info extension)
      *   ✗ MySubDir (directories without .info)
      *   ✗ Disk.info (excluded separately via isIconTypeDisk check)
+     * 
+     * IMPORTANT: Pattern syntax differs for root vs subdirectories:
+     *   - Root (volume):      "workbench:#?.info"  (no slash)
+     *   - Subdirectory:       "workbench:Prefs/#?.info"  (with slash)
+     * 
+     * We detect root by checking if path ends with colon (:)
      * ================================================================
      */
-    snprintf(pattern, sizeof(pattern), "%s/#?.info", dirPath);
+    {
+        size_t pathLen = strlen(dirPath);
+        if (pathLen > 0 && dirPath[pathLen - 1] == ':')
+        {
+            /* Root directory (volume) - no slash needed */
+            snprintf(pattern, sizeof(pattern), "%s#?.info", dirPath);
+        }
+        else
+        {
+            /* Subdirectory - needs slash separator */
+            snprintf(pattern, sizeof(pattern), "%s/#?.info", dirPath);
+        }
+    }
     
 #ifdef DEBUG
     append_to_log("Pattern: '%s'\n", pattern);
@@ -283,7 +301,11 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
          *   - Returns 0 = not a disk icon, 1 = is a disk icon
          * ============================================================
          */
-        if (isIconTypeDisk(fullPathAndFile, fib->fib_DirEntryType) == 0)
+        int isDiskIcon = isIconTypeDisk(fullPathAndFile, fib->fib_DirEntryType);
+#ifdef DEBUG
+        append_to_log("DEBUG: isIconTypeDisk('%s') = %d (0=not disk, 1=is disk)\n", fullPathAndFile, isDiskIcon);
+#endif
+        if (isDiskIcon == 0)
         {
             /* ========================================================
              * EXCLUSION FILTER 2: "Left Out" Icons
@@ -308,19 +330,35 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                  * ====================================================
                  */
                 removeInfoExtension(fullPathAndFile, fullPathAndFileNoInfo);
+                removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
                 
                 /* ====================================================
-                 * EXCLUSION FILTER 3: Corrupted/Invalid Icons
+                 * EXCLUSION FILTER 3: Empty or Dot-Only Names
                  * ====================================================
-                 * IsValidIcon() verifies the .info file is readable
-                 * and properly formatted (not corrupted).
+                 * Skip icons with empty names or names that are just
+                 * a dot (.) character. These are typically hidden or
+                 * corrupted icon files that display as blank icons.
+                 * 
+                 * Examples to skip:
+                 *   ".info" -> "" (empty after removing .info)
+                 *   "." (just a dot, often hidden files)
                  * ====================================================
                  */
-                if (IsValidIcon(fullPathAndFileNoInfo))
+                if (fileNameNoInfo[0] != '\0' &&  /* Not empty */
+                    !(fileNameNoInfo[0] == '.' && fileNameNoInfo[1] == '\0'))  /* Not just "." */
                 {
-                    removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
+                    /* ====================================================
+                     * EXCLUSION FILTER 4: Corrupted/Invalid Icons
+                     * ====================================================
+                     * IsValidIcon() verifies the .info file is readable
+                     * and properly formatted (not corrupted).
+                     * ====================================================
+                     */
+                    if (IsValidIcon(fullPathAndFileNoInfo))
+                    {
+                        removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
                     
-                    /* Reset newIcon to known defaults */
+                        /* Reset newIcon to known defaults */
                     newIcon.icon_type = icon_type_standard;
                     newIcon.icon_height = 0;
                     newIcon.icon_width = 0;
@@ -518,12 +556,19 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                     }
 
                     fileCount++;
-                }
+                    }
+                    else
+                    {
+                        fprintf(stderr, "Error: Unknown or corrupted icon file: %s\n", fullPathAndFile);
+                        //iconsErrorTracker.count++;
+                        AddIconError(&iconsErrorTracker, fullPathAndFile);
+                    }
+                } /* End: if (fileNameNoInfo not empty or dot) */
                 else
                 {
-                    fprintf(stderr, "Error: Unknown or corrupted icon file: %s\n", fullPathAndFile);
-                    //iconsErrorTracker.count++;
-                    AddIconError(&iconsErrorTracker, fullPathAndFile);
+#ifdef DEBUG
+                    append_to_log("DEBUG: Skipping icon with empty or dot-only name: '%s'\n", fib->fib_FileName);
+#endif
                 }
             } /* End: if (isIconLeftOut()) */
         } /* End: if (isIconTypeDisk()) */
