@@ -1,373 +1,1119 @@
 
 
 ========================================
-[22:46:58] === iTidy GUI version starting up (VBCC build) ===
-[22:46:58] iTidy GUI V1.0.0 - Amiga Workbench Icon Tidier
-[22:46:58] by Kerry Thompson
-[22:46:58] Version compiled on Oct 20 2025 at 22:37:23
-[22:46:58] Debug build
-[22:46:58] Workbench version: 47.080
-[22:46:58] Found font: XHelvetica.font, size: 9
-[22:46:58] Workbench Icon Font (getIconFont): XHelvetica.font, Size: 9
-[22:46:58] -------------------------
-[22:46:58] Workbench Settings Dump:
-[22:46:58] -------------------------
-[22:46:58] Borderless: No
-[22:46:58] Emboss Rectangle Size: 0
-[22:46:58] Max Name Length: 0
-[22:46:58] New Icons Support: No
-[22:46:58] Color Icon Support: No
-[22:46:58] Disable Title Bar: No
-[22:46:58] Disable Volume Gauge: No
-[22:46:58] -------------------------
-[22:46:58] Initialized default workbench settings
-[22:46:58] Failed to open workbench settings file.  Possibly not yet set.  Defaults assumed.
-[22:46:58] -------------------------
-[22:46:58] Workbench Settings Dump:
-[22:46:58] -------------------------
-[22:46:58] Borderless: No
-[22:46:58] Emboss Rectangle Size: 3
-[22:46:58] Max Name Length: 25
-[22:46:58] New Icons Support: Yes
-[22:46:58] Color Icon Support: Yes
-[22:46:58] Disable Title Bar: No
-[22:46:58] Disable Volume Gauge: No
-[22:46:58] -------------------------
-[22:46:58] IControl Preferences Dump:
-[22:46:58] --------------------------
-[22:46:58] Flags: 0x8001801E
-[22:46:58] Boolean Settings:
-[22:46:58]   Coerce Colors: No
-[22:46:58]   Coerce Lace: Yes
-[22:46:58]   String Gadget Filter: Yes
-[22:46:58]   Menu Snap: Yes
-[22:46:58]   Mode Promote: Yes
-[22:46:58]   Correct Ratio: No
-[22:46:58]   Off-Screen Windows: Yes
-[22:46:58]   More Size Gadgets: Yes
-[22:46:58]   Versioned: Yes
-[22:46:58]   Legacy Look: No
-[22:46:58] Aspect Ratios Enabled:
-[22:46:58]   9:7
-[22:46:58] Title Bar Heights:
-[22:46:58]   Screen Extra Height: 0
-[22:46:58]   Window Extra Height: 0
-[22:46:58] Title Bar Settings:
-[22:46:58]   Title Bar 50: No
-[22:46:58]   Title Bar 67: No
-[22:46:58]   Title Bar 75: No
-[22:46:58]   Title Bar 100: No
-[22:46:58] Square Proportional Look: No
-[22:46:58] UI Element Dimensions:
-[22:46:58]   Left Bar Width: 4
-[22:46:58]   Border Width: 18, Border Height: 14
-[22:46:58]   Title Height: 16, Window Height: 16
-[22:46:58]   Volume Gauge Width: 19
-[22:46:58] --------------------------
-[22:46:58] Workbench screen width 640, height 512
-[22:47:06] Applying preset: Classic
-[22:47:06] GUI Selections: layout=0, sort=0, order=0, sortby=0, center=0, optimize=1
-[22:47:06] 
-[22:47:06] ==================================================
-[22:47:06]       iTidy Layout Preferences - Debug Output    
-[22:47:06] ==================================================
-[22:47:06] 
-[22:47:06] FOLDER SETTINGS:
-[22:47:06]   Target Folder:    Workbench:
-[22:47:06]   Recursive:        No
-[22:47:06] 
-[22:47:06] LAYOUT SETTINGS:
-[22:47:06]   Layout Mode:      Row-major (Horizontal first)
-[22:47:06]   Sort Order:       Horizontal (Left-to-right)
-[22:47:06]   Sort Priority:    [22:47:06] Folders First
-[22:47:06]   Sort By:          [22:47:06] Name
-[22:47:06]   Reverse Sort:     No
-[22:47:06] 
-[22:47:06] VISUAL SETTINGS:
-[22:47:06]   Center Icons:     No
-[22:47:06]   Optimize Columns: Yes
-[22:47:06] 
-[22:47:06] WINDOW MANAGEMENT:
-[22:47:06]   Resize Windows:   Yes
-[22:47:06]   Max Icons/Row:    5
-[22:47:06]   Max Width:        55% of screen
-[22:47:06]   Aspect Ratio:     1.60
-[22:47:06] 
-[22:47:06] ADVANCED SETTINGS:
-[22:47:06]   Skip Hidden:      Yes
-[22:47:06] 
-[22:47:06] BACKUP SETTINGS:
-[22:47:06]   Enable Backup:    No
-[22:47:06]   Use LhA:          Yes
-[22:47:06]   Backup Path:      Work:iTidyBackups/
-[22:47:06]   Max Backups:      3 per folder
-[22:47:06] 
-[22:47:06] ==================================================
-[22:47:06] 
-[22:47:06] ProcessSingleDirectory: path='Workbench:'
-[22:47:06] ==== SECTION: LOADING ICONS ====
-[22:47:06] CreateIconArrayFromPath ENTRY: lock=269558851, dirPath='Workbench:'
-[22:47:06] Using OPTIMIZED pattern matching (MatchFirst/MatchNext)
-[22:47:06] Icon array created successfully
-[22:47:06] AnchorPath allocated, preparing pattern-based scan
-[22:47:06] Pattern: 'Workbench:#?.info'
-[22:47:06] MatchFirst successful, entering processing loop
-[22:47:06] DEBUG: Pattern matched .info file: 'Picasso96.info'
-[22:47:06] DEBUG: Full path to .info file: 'Workbench:Picasso96.info'
-[22:47:06] DEBUG: isIconTypeDisk('Workbench:Picasso96.info') = 0 (0=not disk, 1=is disk)
-[22:47:06] Detecting icon type for: Workbench:Picasso96.info
-[22:47:06] Checking tooltypes for NewIcon signature...
-[22:47:06]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
-[22:47:06]   -> No NewIcon signature found (standard icon)
-[22:47:06]   -> Detected as standard Workbench icon format
-[22:47:06] DEBUG: Pattern matched .info file: 'OLD.info'
-[22:47:06] DEBUG: Full path to .info file: 'Workbench:OLD.info'
-[22:47:06] DEBUG: isIconTypeDisk('Workbench:OLD.info') = 0 (0=not disk, 1=is disk)
-[22:47:06] Detecting icon type for: Workbench:OLD.info
-[22:47:06] Checking tooltypes for NewIcon signature...
-[22:47:06]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
-[22:47:06]   -> No NewIcon signature found (standard icon)
-[22:47:06]   -> Detected as standard Workbench icon format
-[22:47:06] DEBUG: Pattern matched .info file: 'install_log_file.info'
-[22:47:06] DEBUG: Full path to .info file: 'Workbench:install_log_file.info'
-[22:47:06] DEBUG: isIconTypeDisk('Workbench:install_log_file.info') = 0 (0=not disk, 1=is disk)
-[22:47:06] Detecting icon type for: Workbench:install_log_file.info
-[22:47:06]   -> Detected as standard Workbench icon format
-[22:47:06] DEBUG: Pattern matched .info file: 'RoadshowSDK.info'
-[22:47:06] DEBUG: Full path to .info file: 'Workbench:RoadshowSDK.info'
-[22:47:06] DEBUG: isIconTypeDisk('Workbench:RoadshowSDK.info') = 0 (0=not disk, 1=is disk)
-[22:47:06] Detecting icon type for: Workbench:RoadshowSDK.info
-[22:47:06] Checking tooltypes for NewIcon signature...
-[22:47:06]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
-[22:47:06]   -> No NewIcon signature found (standard icon)
-[22:47:06]   -> Detected as standard Workbench icon format
-[22:47:06] DEBUG: Pattern matched .info file: 'Prefs.info'
-[22:47:06] DEBUG: Full path to .info file: 'Workbench:Prefs.info'
-[22:47:06] DEBUG: isIconTypeDisk('Workbench:Prefs.info') = 0 (0=not disk, 1=is disk)
-[22:47:06] Detecting icon type for: Workbench:Prefs.info
-[22:47:06] Checking tooltypes for NewIcon signature...
-[22:47:06]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
-[22:47:06]   -> No NewIcon signature found (standard icon)
-[22:47:06]   -> Detected as standard Workbench icon format
-[22:47:06] DEBUG: Pattern matched .info file: 'Storage.info'
-[22:47:06] DEBUG: Full path to .info file: 'Workbench:Storage.info'
-[22:47:06] DEBUG: isIconTypeDisk('Workbench:Storage.info') = 0 (0=not disk, 1=is disk)
-[22:47:06] Detecting icon type for: Workbench:Storage.info
-[22:47:06] Checking tooltypes for NewIcon signature...
-[22:47:06]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
-[22:47:06]   -> No NewIcon signature found (standard icon)
-[22:47:06]   -> Detected as standard Workbench icon format
-[22:47:06] DEBUG: Pattern matched .info file: 'Devs.info'
-[22:47:06] DEBUG: Full path to .info file: 'Workbench:Devs.info'
-[22:47:06] DEBUG: isIconTypeDisk('Workbench:Devs.info') = 0 (0=not disk, 1=is disk)
-[22:47:07] Detecting icon type for: Workbench:Devs.info
-[22:47:07] Checking tooltypes for NewIcon signature...
-[22:47:07]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
-[22:47:07]   -> No NewIcon signature found (standard icon)
-[22:47:07]   -> Detected as standard Workbench icon format
-[22:47:07] DEBUG: Pattern matched .info file: 'Expansion.info'
-[22:47:07] DEBUG: Full path to .info file: 'Workbench:Expansion.info'
-[22:47:07] DEBUG: isIconTypeDisk('Workbench:Expansion.info') = 0 (0=not disk, 1=is disk)
-[22:47:07] Detecting icon type for: Workbench:Expansion.info
-[22:47:07] Checking tooltypes for NewIcon signature...
-[22:47:07]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
-[22:47:07]   -> No NewIcon signature found (standard icon)
-[22:47:07]   -> Detected as standard Workbench icon format
-[22:47:07] DEBUG: Pattern matched .info file: 'System.info'
-[22:47:07] DEBUG: Full path to .info file: 'Workbench:System.info'
-[22:47:07] DEBUG: isIconTypeDisk('Workbench:System.info') = 0 (0=not disk, 1=is disk)
-[22:47:07] Detecting icon type for: Workbench:System.info
-[22:47:07] Checking tooltypes for NewIcon signature...
-[22:47:07]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
-[22:47:07]   -> No NewIcon signature found (standard icon)
-[22:47:07]   -> Detected as standard Workbench icon format
-[22:47:07] DEBUG: Pattern matched .info file: 'Utilities.info'
-[22:47:07] DEBUG: Full path to .info file: 'Workbench:Utilities.info'
-[22:47:07] DEBUG: isIconTypeDisk('Workbench:Utilities.info') = 0 (0=not disk, 1=is disk)
-[22:47:07] Detecting icon type for: Workbench:Utilities.info
-[22:47:07] Checking tooltypes for NewIcon signature...
-[22:47:07]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
-[22:47:07]   -> No NewIcon signature found (standard icon)
-[22:47:07]   -> Detected as standard Workbench icon format
-[22:47:07] DEBUG: Pattern matched .info file: 'WBStartup.info'
-[22:47:07] DEBUG: Full path to .info file: 'Workbench:WBStartup.info'
-[22:47:07] DEBUG: isIconTypeDisk('Workbench:WBStartup.info') = 0 (0=not disk, 1=is disk)
-[22:47:07] Detecting icon type for: Workbench:WBStartup.info
-[22:47:07] Checking tooltypes for NewIcon signature...
-[22:47:07]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
-[22:47:07]   -> No NewIcon signature found (standard icon)
-[22:47:07]   -> Detected as standard Workbench icon format
-[22:47:07] DEBUG: Pattern matched .info file: 'Tools.info'
-[22:47:07] DEBUG: Full path to .info file: 'Workbench:Tools.info'
-[22:47:07] DEBUG: isIconTypeDisk('Workbench:Tools.info') = 0 (0=not disk, 1=is disk)
-[22:47:07] Detecting icon type for: Workbench:Tools.info
-[22:47:07] Checking tooltypes for NewIcon signature...
-[22:47:07]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
-[22:47:07]   -> No NewIcon signature found (standard icon)
-[22:47:07]   -> Detected as standard Workbench icon format
-[22:47:07] DEBUG: Pattern matched .info file: 'Disk.info'
-[22:47:07] DEBUG: Full path to .info file: 'Workbench:Disk.info'
-[22:47:07] DEBUG: isIconTypeDisk('Workbench:Disk.info') = 1 (0=not disk, 1=is disk)
-[22:47:07] DEBUG: Pattern matched .info file: 'Help.info'
-[22:47:07] DEBUG: Full path to .info file: 'Workbench:Help.info'
-[22:47:07] DEBUG: isIconTypeDisk('Workbench:Help.info') = 0 (0=not disk, 1=is disk)
-[22:47:07] Detecting icon type for: Workbench:Help.info
-[22:47:07] Checking tooltypes for NewIcon signature...
-[22:47:07]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
-[22:47:07]   -> No NewIcon signature found (standard icon)
-[22:47:07]   -> Detected as standard Workbench icon format
-[22:47:07] DEBUG: Pattern matched .info file: 'Programs.info'
-[22:47:07] DEBUG: Full path to .info file: 'Workbench:Programs.info'
-[22:47:07] DEBUG: isIconTypeDisk('Workbench:Programs.info') = 0 (0=not disk, 1=is disk)
-[22:47:07] Detecting icon type for: Workbench:Programs.info
-[22:47:07] Checking tooltypes for NewIcon signature...
-[22:47:07]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
-[22:47:07]   -> No NewIcon signature found (standard icon)
-[22:47:07]   -> Detected as standard Workbench icon format
-[22:47:07] DEBUG: Pattern matched .info file: '.info'
-[22:47:07] DEBUG: Full path to .info file: 'Workbench:.info'
-[22:47:07] DEBUG: isIconTypeDisk('Workbench:.info') = 0 (0=not disk, 1=is disk)
-[22:47:07] DEBUG: Skipping icon with empty or dot-only name: '.info'
-[22:47:07] DEBUG: Pattern matched .info file: 'sc.info'
-[22:47:07] DEBUG: Full path to .info file: 'Workbench:sc.info'
-[22:47:07] DEBUG: isIconTypeDisk('Workbench:sc.info') = 0 (0=not disk, 1=is disk)
-[22:47:07] Detecting icon type for: Workbench:sc.info
-[22:47:07] Checking tooltypes for NewIcon signature...
-[22:47:07]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
-[22:47:07]   -> No NewIcon signature found (standard icon)
-[22:47:07]   -> Detected as standard Workbench icon format
-[22:47:07] ID  | Width  | Height | TxtW   | TxtH   | MaxW   | MaxH   | X        | Y        | Border | Type     | IsDir  | Size       | Date       | Icon                
-[22:47:07] ------------------------------------------------------------------------------------------------------------------------------------------
-[22:47:07] 0   | 60     | 24     | 38     | 9      | 63     | 32     | 81       | 50       | 3      | Standard | Folder | 0          | 17459.1365 | Picasso96.info      
-[22:47:07] 1   | 60     | 24     | 16     | 9      | 63     | 32     | 8        | 50       | 3      | Standard | Folder | 0          | 17459.1365 | OLD.info            
-[22:47:07] 2   | 62     | 29     | 58     | 9      | 65     | 37     | 227      | 4        | 3      | Standard | File   | 528        | 17459.1365 | install_log_file.info
-[22:47:07] 3   | 60     | 24     | 54     | 9      | 63     | 32     | 8        | 91       | 3      | Standard | Folder | 0          | 17459.1365 | RoadshowSDK.info    
-[22:47:07] 4   | 60     | 24     | 22     | 9      | 63     | 32     | 154      | 50       | 3      | Standard | Folder | 0          | 17459.1365 | Prefs.info          
-[22:47:07] 5   | 60     | 24     | 32     | 9      | 63     | 32     | 154      | 91       | 3      | Standard | Folder | 0          | 17459.1365 | Storage.info        
-[22:47:07] 6   | 60     | 24     | 18     | 9      | 63     | 32     | 8        | 9        | 3      | Standard | Folder | 0          | 17459.1365 | Devs.info           
-[22:47:07] 7   | 60     | 24     | 40     | 9      | 63     | 32     | 81       | 9        | 3      | Standard | Folder | 0          | 17459.1365 | Expansion.info      
-[22:47:07] 8   | 60     | 24     | 29     | 9      | 63     | 32     | 228      | 91       | 3      | Standard | Folder | 0          | 17459.1365 | System.info         
-[22:47:07] 9   | 60     | 24     | 30     | 9      | 63     | 32     | 81       | 132      | 3      | Standard | Folder | 0          | 17459.1365 | Utilities.info      
-[22:47:07] 10  | 60     | 24     | 42     | 9      | 63     | 32     | 154      | 132      | 3      | Standard | Folder | 0          | 17459.1365 | WBStartup.info      
-[22:47:07] 11  | 60     | 24     | 22     | 9      | 63     | 32     | 8        | 132      | 3      | Standard | Folder | 0          | 17459.1365 | Tools.info          
-[22:47:07] 12  | 60     | 24     | 17     | 9      | 63     | 32     | 154      | 9        | 3      | Standard | Folder | 0          | 17459.1365 | Help.info           
-[22:47:07] 13  | 60     | 24     | 37     | 9      | 63     | 32     | 228      | 50       | 3      | Standard | Folder | 0          | 17459.1365 | Programs.info       
-[22:47:07] 14  | 60     | 24     | 8      | 9      | 63     | 32     | 81       | 91       | 3      | Standard | Folder | 0          | 17459.1365 | sc.info             
-[22:47:07] ==== SECTION: SORTING ICONS ====
-[22:47:07] Sorting 15 icons with preferences
-[22:47:07]   Sort by: 0, Priority: 0, Reverse: 0
-[22:47:07] After sorting, icon order:
-[22:47:07] ID  | Icon                           | IsDir 
-[22:47:07] --------------------------------------------
-[22:47:07] 0   | Devs.info                      | Folder
-[22:47:07] 1   | Expansion.info                 | Folder
-[22:47:07] 2   | Help.info                      | Folder
-[22:47:07] 3   | OLD.info                       | Folder
-[22:47:07] 4   | Picasso96.info                 | Folder
-[22:47:07] 5   | Prefs.info                     | Folder
-[22:47:07] 6   | Programs.info                  | Folder
-[22:47:07] 7   | RoadshowSDK.info               | Folder
-[22:47:07] 8   | sc.info                        | Folder
-[22:47:07] 9   | Storage.info                   | Folder
-[22:47:07] 10  | System.info                    | Folder
-[22:47:07] 11  | Tools.info                     | Folder
-[22:47:07] 12  | Utilities.info                 | Folder
-[22:47:07] 13  | WBStartup.info                 | Folder
-[22:47:07] 14  | install_log_file.info          | File  
-[22:47:07] ==== SECTION: CALCULATING LAYOUT ====
-[22:47:07] Using standard row-based layout algorithm
-[22:47:07] CalculateLayoutPositions: Positioning 15 icons with dynamic width wrapping
-[22:47:07]   screenWidth=640, maxWindowWidthPct=55, effectiveMaxWidth=352
-[22:47:07]   textAlignment=BOTTOM
-[22:47:07] ID  | Icon                           | NewX | NewY | Width | Height | Offset
-[22:47:07] ------------------------------------------------------------------------------------
-[22:47:07] 0   | Devs.info                      | 8    | 4    | 63    | 32    | 0  
-[22:47:07] 1   | Expansion.info                 | 79   | 4    | 63    | 32    | 0  
-[22:47:07] 2   | Help.info                      | 150  | 4    | 63    | 32    | 0  
-[22:47:07] 3   | OLD.info                       | 221  | 4    | 63    | 32    | 0  
-[22:47:07] 4   | Picasso96.info                 | 8    | 44   | 63    | 32    | 0  
-[22:47:07] 5   | Prefs.info                     | 79   | 44   | 63    | 32    | 0  
-[22:47:07] 6   | Programs.info                  | 150  | 44   | 63    | 32    | 0  
-[22:47:07] 7   | RoadshowSDK.info               | 221  | 44   | 63    | 32    | 0  
-[22:47:07] 8   | sc.info                        | 8    | 84   | 63    | 32    | 0  
-[22:47:07] 9   | Storage.info                   | 79   | 84   | 63    | 32    | 0  
-[22:47:07] 10  | System.info                    | 150  | 84   | 63    | 32    | 0  
-[22:47:07] 11  | Tools.info                     | 221  | 84   | 63    | 32    | 0  
-[22:47:07] 12  | Utilities.info                 | 8    | 124  | 63    | 32    | 0  
-[22:47:07] 13  | WBStartup.info                 | 79   | 124  | 63    | 32    | 0  
-[22:47:07] 14  | install_log_file.info          | 150  | 124  | 65    | 37    | 0  
-[22:47:07] 
-Adjusting final row (indices 12 to 14) for bottom text alignment
-[22:47:07]   maxHeightInRow = 37
-[22:47:07]   Adjusted icon 12 ('Utilities.info') down by 5 pixels for text alignment
-[22:47:07]   Adjusted icon 13 ('WBStartup.info') down by 5 pixels for text alignment
-[22:47:07] 
+[15:26:54] === iTidy GUI version starting up (VBCC build) ===
+[15:26:54] iTidy GUI V1.0.0 - Amiga Workbench Icon Tidier
+[15:26:54] by Kerry Thompson
+[15:26:54] Version compiled on Oct 20 2025 at 22:37:23
+[15:26:54] Debug build
+[15:26:54] Workbench version: 47.080
+[15:26:54] Found font: XHelvetica.font, size: 9
+[15:26:54] Workbench Icon Font (getIconFont): XHelvetica.font, Size: 9
+[15:26:54] -------------------------
+[15:26:54] Workbench Settings Dump:
+[15:26:54] -------------------------
+[15:26:54] Borderless: No
+[15:26:54] Emboss Rectangle Size: 0
+[15:26:54] Max Name Length: 0
+[15:26:54] New Icons Support: No
+[15:26:54] Color Icon Support: No
+[15:26:54] Disable Title Bar: No
+[15:26:54] Disable Volume Gauge: No
+[15:26:54] -------------------------
+[15:26:54] Initialized default workbench settings
+[15:26:54] Failed to open workbench settings file.  Possibly not yet set.  Defaults assumed.
+[15:26:54] -------------------------
+[15:26:54] Workbench Settings Dump:
+[15:26:54] -------------------------
+[15:26:54] Borderless: No
+[15:26:54] Emboss Rectangle Size: 3
+[15:26:54] Max Name Length: 25
+[15:26:54] New Icons Support: Yes
+[15:26:54] Color Icon Support: Yes
+[15:26:54] Disable Title Bar: No
+[15:26:54] Disable Volume Gauge: No
+[15:26:54] -------------------------
+[15:26:54] IControl Preferences Dump:
+[15:26:54] --------------------------
+[15:26:54] Flags: 0x8001801E
+[15:26:54] Boolean Settings:
+[15:26:54]   Coerce Colors: No
+[15:26:54]   Coerce Lace: Yes
+[15:26:54]   String Gadget Filter: Yes
+[15:26:54]   Menu Snap: Yes
+[15:26:54]   Mode Promote: Yes
+[15:26:54]   Correct Ratio: No
+[15:26:54]   Off-Screen Windows: Yes
+[15:26:54]   More Size Gadgets: Yes
+[15:26:54]   Versioned: Yes
+[15:26:54]   Legacy Look: No
+[15:26:54] Aspect Ratios Enabled:
+[15:26:54]   9:7
+[15:26:54] Title Bar Heights:
+[15:26:54]   Screen Extra Height: 0
+[15:26:54]   Window Extra Height: 0
+[15:26:54] Title Bar Settings:
+[15:26:54]   Title Bar 50: No
+[15:26:54]   Title Bar 67: No
+[15:26:54]   Title Bar 75: No
+[15:26:54]   Title Bar 100: No
+[15:26:54] Square Proportional Look: No
+[15:26:54] UI Element Dimensions:
+[15:26:54]   Left Bar Width: 4
+[15:26:54]   Border Width: 18, Border Height: 14
+[15:26:54]   Title Height: 16, Window Height: 16
+[15:26:54]   Volume Gauge Width: 19
+[15:26:54] --------------------------
+[15:26:54] Workbench screen width 640, height 512
+[15:38:15] Applying preset: Classic
+[15:38:15] GUI Selections: layout=0, sort=0, order=0, sortby=0, center=0, optimize=1
+[15:38:15] 
+[15:38:15] ==================================================
+[15:38:15]       iTidy Layout Preferences - Debug Output    
+[15:38:15] ==================================================
+[15:38:15] 
+[15:38:15] FOLDER SETTINGS:
+[15:38:15]   Target Folder:    PC1:
+[15:38:15]   Recursive:        No
+[15:38:15] 
+[15:38:15] LAYOUT SETTINGS:
+[15:38:15]   Layout Mode:      Row-major (Horizontal first)
+[15:38:15]   Sort Order:       Horizontal (Left-to-right)
+[15:38:15]   Sort Priority:    [15:38:15] Folders First
+[15:38:15]   Sort By:          [15:38:15] Name
+[15:38:15]   Reverse Sort:     No
+[15:38:15] 
+[15:38:15] VISUAL SETTINGS:
+[15:38:15]   Center Icons:     No
+[15:38:15]   Optimize Columns: Yes
+[15:38:15] 
+[15:38:15] WINDOW MANAGEMENT:
+[15:38:15]   Resize Windows:   Yes
+[15:38:15]   Max Icons/Row:    5
+[15:38:15]   Max Width:        55% of screen
+[15:38:15]   Aspect Ratio:     1.60
+[15:38:15] 
+[15:38:15] ADVANCED SETTINGS:
+[15:38:15]   Skip Hidden:      Yes
+[15:38:15] 
+[15:38:15] BACKUP SETTINGS:
+[15:38:15]   Enable Backup:    No
+[15:38:15]   Use LhA:          Yes
+[15:38:15]   Backup Path:      Work:iTidyBackups/
+[15:38:15]   Max Backups:      3 per folder
+[15:38:15] 
+[15:38:15] ==================================================
+[15:38:15] 
+[15:38:15] ProcessSingleDirectory: path='PC1:'
+[15:38:15] ==== SECTION: LOADING ICONS ====
+[15:38:15] CreateIconArrayFromPath ENTRY: lock=269320197, dirPath='PC1:'
+[15:38:15] Using OPTIMIZED pattern matching (MatchFirst/MatchNext)
+[15:38:15] Icon array created successfully
+[15:38:15] AnchorPath allocated, preparing pattern-based scan
+[15:38:15] Pattern: 'PC1:#?.info'
+[15:38:15] MatchFirst successful, entering processing loop
+[15:38:15] DEBUG: Pattern matched .info file: 'Workbench3.1.rom.info'
+[15:38:15] DEBUG: Full path to .info file: 'PC1:Workbench3.1.rom.info'
+[15:38:15] DEBUG: isIconTypeDisk('PC1:Workbench3.1.rom.info') = 0 (0=not disk, 1=is disk)
+[15:38:15] Detecting icon type for: PC1:Workbench3.1.rom.info
+[15:38:15]   -> Detected as standard Workbench icon format
+[15:38:15] DEBUG: Pattern matched .info file: 'Workbench3.1.adf.info'
+[15:38:15] DEBUG: Full path to .info file: 'PC1:Workbench3.1.adf.info'
+[15:38:15] DEBUG: isIconTypeDisk('PC1:Workbench3.1.adf.info') = 0 (0=not disk, 1=is disk)
+[15:38:15] Detecting icon type for: PC1:Workbench3.1.adf.info
+[15:38:15] Checking tooltypes for NewIcon signature...
+[15:38:15]   ToolType: '(WRITEPROTECTED=No)'
+[15:38:15]   -> No NewIcon signature found (standard icon)
+[15:38:15]   -> Detected as standard Workbench icon format
+[15:38:15] DEBUG: Pattern matched .info file: 'WHDArchiveExtractor.lha.info'
+[15:38:15] DEBUG: Full path to .info file: 'PC1:WHDArchiveExtractor.lha.info'
+[15:38:15] DEBUG: isIconTypeDisk('PC1:WHDArchiveExtractor.lha.info') = 0 (0=not disk, 1=is disk)
+[15:38:15] Detecting icon type for: PC1:WHDArchiveExtractor.lha.info
+[15:38:15]   -> Detected as standard Workbench icon format
+[15:38:15] DEBUG: Pattern matched .info file: 'WHDArchiveExtractor.info'
+[15:38:15] DEBUG: Full path to .info file: 'PC1:WHDArchiveExtractor.info'
+[15:38:15] DEBUG: isIconTypeDisk('PC1:WHDArchiveExtractor.info') = 0 (0=not disk, 1=is disk)
+[15:38:15] Detecting icon type for: PC1:WHDArchiveExtractor.info
+[15:38:15] Checking tooltypes for NewIcon signature...
+[15:38:15]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:38:15]   -> No NewIcon signature found (standard icon)
+[15:38:15]   -> Detected as standard Workbench icon format
+[15:38:15] DEBUG: Pattern matched .info file: 'UnLZX2.lha.info'
+[15:38:15] DEBUG: Full path to .info file: 'PC1:UnLZX2.lha.info'
+[15:38:15] DEBUG: isIconTypeDisk('PC1:UnLZX2.lha.info') = 0 (0=not disk, 1=is disk)
+[15:38:15] Detecting icon type for: PC1:UnLZX2.lha.info
+[15:38:15]   -> Detected as standard Workbench icon format
+[15:38:15] DEBUG: Pattern matched .info file: 'T.info'
+[15:38:15] DEBUG: Full path to .info file: 'PC1:T.info'
+[15:38:15] DEBUG: isIconTypeDisk('PC1:T.info') = 0 (0=not disk, 1=is disk)
+[15:38:15] Detecting icon type for: PC1:T.info
+[15:38:15] Checking tooltypes for NewIcon signature...
+[15:38:15]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:38:15]   -> No NewIcon signature found (standard icon)
+[15:38:15]   -> Detected as standard Workbench icon format
+[15:38:15] DEBUG: Pattern matched .info file: 'SDK.info'
+[15:38:15] DEBUG: Full path to .info file: 'PC1:SDK.info'
+[15:38:15] DEBUG: isIconTypeDisk('PC1:SDK.info') = 0 (0=not disk, 1=is disk)
+[15:38:15] Detecting icon type for: PC1:SDK.info
+[15:38:15] Checking tooltypes for NewIcon signature...
+[15:38:15]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:38:15]   -> No NewIcon signature found (standard icon)
+[15:38:15]   -> Detected as standard Workbench icon format
+[15:38:15] DEBUG: Pattern matched .info file: 'Roadshow-SDK-1.8.lha.info'
+[15:38:15] DEBUG: Full path to .info file: 'PC1:Roadshow-SDK-1.8.lha.info'
+[15:38:15] DEBUG: isIconTypeDisk('PC1:Roadshow-SDK-1.8.lha.info') = 0 (0=not disk, 1=is disk)
+[15:38:15] Detecting icon type for: PC1:Roadshow-SDK-1.8.lha.info
+[15:38:15]   -> Detected as standard Workbench icon format
+[15:38:15] DEBUG: Pattern matched .info file: 'Roadshow-SDK-1.8.info'
+[15:38:15] DEBUG: Full path to .info file: 'PC1:Roadshow-SDK-1.8.info'
+[15:38:15] DEBUG: isIconTypeDisk('PC1:Roadshow-SDK-1.8.info') = 0 (0=not disk, 1=is disk)
+[15:38:15] Detecting icon type for: PC1:Roadshow-SDK-1.8.info
+[15:38:15] Checking tooltypes for NewIcon signature...
+[15:38:15]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:38:15]   -> No NewIcon signature found (standard icon)
+[15:38:15]   -> Detected as standard Workbench icon format
+[15:38:15] DEBUG: Pattern matched .info file: 'Picasso96.adf.info'
+[15:38:15] DEBUG: Full path to .info file: 'PC1:Picasso96.adf.info'
+[15:38:15] DEBUG: isIconTypeDisk('PC1:Picasso96.adf.info') = 0 (0=not disk, 1=is disk)
+[15:38:15] Detecting icon type for: PC1:Picasso96.adf.info
+[15:38:15] Checking tooltypes for NewIcon signature...
+[15:38:15]   ToolType: '(WRITEPROTECTED=No)'
+[15:38:15]   -> No NewIcon signature found (standard icon)
+[15:38:15]   -> Detected as standard Workbench icon format
+[15:38:15] DEBUG: Pattern matched .info file: 'pfs3aio.lha.info'
+[15:38:15] DEBUG: Full path to .info file: 'PC1:pfs3aio.lha.info'
+[15:38:15] DEBUG: isIconTypeDisk('PC1:pfs3aio.lha.info') = 0 (0=not disk, 1=is disk)
+[15:38:15] Detecting icon type for: PC1:pfs3aio.lha.info
+[15:38:15]   -> Detected as standard Workbench icon format
+[15:38:15] DEBUG: Pattern matched .info file: 'lzx121r1.lha.info'
+[15:38:15] DEBUG: Full path to .info file: 'PC1:lzx121r1.lha.info'
+[15:38:15] DEBUG: isIconTypeDisk('PC1:lzx121r1.lha.info') = 0 (0=not disk, 1=is disk)
+[15:38:15] Detecting icon type for: PC1:lzx121r1.lha.info
+[15:38:15]   -> Detected as standard Workbench icon format
+[15:38:15] DEBUG: Pattern matched .info file: 'LZX.guide.info'
+[15:38:15] DEBUG: Full path to .info file: 'PC1:LZX.guide.info'
+[15:38:15] DEBUG: isIconTypeDisk('PC1:LZX.guide.info') = 0 (0=not disk, 1=is disk)
+[15:38:15] Detecting icon type for: PC1:LZX.guide.info
+[15:38:15]   -> Detected as standard Workbench icon format
+[15:38:15] DEBUG: Pattern matched .info file: 'GadToolsBox_v2.0.LHA.info'
+[15:38:15] DEBUG: Full path to .info file: 'PC1:GadToolsBox_v2.0.LHA.info'
+[15:38:15] DEBUG: isIconTypeDisk('PC1:GadToolsBox_v2.0.LHA.info') = 0 (0=not disk, 1=is disk)
+[15:38:15] Detecting icon type for: PC1:GadToolsBox_v2.0.LHA.info
+[15:38:15]   -> Detected as standard Workbench icon format
+[15:38:15] DEBUG: Pattern matched .info file: 'cursor.info'
+[15:38:15] DEBUG: Full path to .info file: 'PC1:cursor.info'
+[15:38:15] DEBUG: isIconTypeDisk('PC1:cursor.info') = 0 (0=not disk, 1=is disk)
+[15:38:15] Detecting icon type for: PC1:cursor.info
+[15:38:15] Checking tooltypes for NewIcon signature...
+[15:38:15]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:38:15]   -> No NewIcon signature found (standard icon)
+[15:38:15]   -> Detected as standard Workbench icon format
+[15:38:15] DEBUG: Pattern matched .info file: 'Programming.info'
+[15:38:15] DEBUG: Full path to .info file: 'PC1:Programming.info'
+[15:38:15] DEBUG: isIconTypeDisk('PC1:Programming.info') = 0 (0=not disk, 1=is disk)
+[15:38:15] Detecting icon type for: PC1:Programming.info
+[15:38:15] Checking tooltypes for NewIcon signature...
+[15:38:15]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:38:15]   -> No NewIcon signature found (standard icon)
+[15:38:15]   -> Detected as standard Workbench icon format
+[15:38:15] DEBUG: Pattern matched .info file: '.backdrop.info'
+[15:38:15] DEBUG: Full path to .info file: 'PC1:.backdrop.info'
+[15:38:15] DEBUG: isIconTypeDisk('PC1:.backdrop.info') = 0 (0=not disk, 1=is disk)
+[15:38:15] Detecting icon type for: PC1:.backdrop.info
+[15:38:15]   -> Detected as standard Workbench icon format
+[15:38:15] DEBUG: Pattern matched .info file: 'Update3.2.3.info'
+[15:38:15] DEBUG: Full path to .info file: 'PC1:Update3.2.3.info'
+[15:38:15] DEBUG: isIconTypeDisk('PC1:Update3.2.3.info') = 0 (0=not disk, 1=is disk)
+[15:38:15] Detecting icon type for: PC1:Update3.2.3.info
+[15:38:15]   -> Detected as standard Workbench icon format
+[15:38:15] DEBUG: Pattern matched .info file: 'TestCode.info'
+[15:38:15] DEBUG: Full path to .info file: 'PC1:TestCode.info'
+[15:38:15] DEBUG: isIconTypeDisk('PC1:TestCode.info') = 0 (0=not disk, 1=is disk)
+[15:38:15] Detecting icon type for: PC1:TestCode.info
+[15:38:15] Checking tooltypes for NewIcon signature...
+[15:38:15]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:38:15]   -> No NewIcon signature found (standard icon)
+[15:38:15]   -> Detected as standard Workbench icon format
+[15:38:15] DEBUG: Pattern matched .info file: 'sc.info'
+[15:38:15] DEBUG: Full path to .info file: 'PC1:sc.info'
+[15:38:15] DEBUG: isIconTypeDisk('PC1:sc.info') = 0 (0=not disk, 1=is disk)
+[15:38:15] Detecting icon type for: PC1:sc.info
+[15:38:15] Checking tooltypes for NewIcon signature...
+[15:38:15]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:38:15]   -> No NewIcon signature found (standard icon)
+[15:38:15]   -> Detected as standard Workbench icon format
+[15:38:15] DEBUG: Pattern matched .info file: 'GadToolsBox.info'
+[15:38:15] DEBUG: Full path to .info file: 'PC1:GadToolsBox.info'
+[15:38:15] DEBUG: isIconTypeDisk('PC1:GadToolsBox.info') = 0 (0=not disk, 1=is disk)
+[15:38:15] Detecting icon type for: PC1:GadToolsBox.info
+[15:38:15] Checking tooltypes for NewIcon signature...
+[15:38:15]   -> No NewIcon signature found (standard icon)
+[15:38:15]   -> Detected as standard Workbench icon format
+[15:38:15] ID  | Width  | Height | TxtW   | TxtH   | MaxW   | MaxH   | X        | Y        | Border | Type     | IsDir  | Size       | Date       | Icon                
+[15:38:15] ------------------------------------------------------------------------------------------------------------------------------------------
+[15:38:15] 0   | 57     | 25     | 72     | 9      | 72     | 33     | 11       | 113      | 3      | Standard | File   | 450        | 17460.938  | Workbench3.1.rom.info
+[15:38:15] 1   | 57     | 25     | 70     | 9      | 70     | 33     | 10       | 155      | 3      | Standard | File   | 866        | 17460.938  | Workbench3.1.adf.info
+[15:38:15] 2   | 57     | 25     | 97     | 9      | 97     | 33     | 24       | 197      | 3      | Standard | File   | 822        | 17460.938  | WHDArchiveExtractor.lha.info
+[15:38:15] 3   | 43     | 39     | 84     | 9      | 84     | 47     | 180      | 4        | 3      | Standard | File   | 1459       | 17460.938  | WHDArchiveExtractor.info
+[15:38:15] 4   | 57     | 25     | 44     | 9      | 60     | 33     | 164      | 60       | 3      | Standard | File   | 822        | 17460.938  | UnLZX2.lha.info     
+[15:38:15] 5   | 60     | 24     | 6      | 9      | 63     | 32     | 163      | 102      | 3      | Standard | Folder | 0          | 17460.938  | T.info              
+[15:38:15] 6   | 60     | 24     | 15     | 9      | 63     | 32     | 163      | 143      | 3      | Standard | Folder | 0          | 17460.938  | SDK.info            
+[15:38:15] 7   | 57     | 25     | 89     | 9      | 89     | 33     | 176      | 184      | 3      | Standard | File   | 822        | 17460.938  | Roadshow-SDK-1.8.lha.info
+[15:38:15] 8   | 60     | 24     | 76     | 9      | 76     | 32     | 168      | 226      | 3      | Standard | Folder | 0          | 17460.938  | Roadshow-SDK-1.8.info
+[15:38:15] 9   | 57     | 25     | 53     | 9      | 60     | 33     | 242      | 60       | 3      | Standard | File   | 866        | 17460.938  | Picasso96.adf.info  
+[15:38:15] 10  | 57     | 25     | 42     | 9      | 60     | 33     | 242      | 102      | 3      | Standard | File   | 822        | 17460.938  | pfs3aio.lha.info    
+[15:38:15] 11  | 57     | 25     | 49     | 9      | 60     | 33     | 320      | 4        | 3      | Standard | File   | 822        | 17460.938  | lzx121r1.lha.info   
+[15:38:15] 12  | 57     | 25     | 40     | 9      | 60     | 33     | 320      | 46       | 3      | Standard | File   | 478        | 17460.938  | LZX.guide.info      
+[15:38:15] 13  | 57     | 25     | 89     | 9      | 89     | 33     | 332      | 88       | 3      | Standard | File   | 822        | 17460.938  | GadToolsBox_v2.0.LHA.info
+[15:38:15] 14  | 60     | 24     | 26     | 9      | 63     | 32     | 319      | 130      | 3      | Standard | Folder | 0          | 17460.938  | cursor.info         
+[15:38:15] 15  | 60     | 24     | 51     | 9      | 63     | 32     | 319      | 171      | 3      | Standard | Folder | 0          | 17460.938  | Programming.info    
+[15:38:15] 16  | 57     | 25     | 38     | 9      | 60     | 33     | 320      | 212      | 3      | Standard | File   | 473        | 17460.938  | .backdrop.info      
+[15:38:15] 17  | 60     | 17     | 47     | 9      | 63     | 25     | 7        | 38       | 3      | Standard | Folder | 0          | 17460.938  | Update3.2.3.info    
+[15:38:15] 18  | 60     | 24     | 39     | 9      | 63     | 32     | 7        | 72       | 3      | Standard | Folder | 0          | 17460.938  | TestCode.info       
+[15:38:15] 19  | 60     | 24     | 8      | 9      | 63     | 32     | 81       | 45       | 3      | Standard | Folder | 0          | 17460.938  | sc.info             
+[15:38:15] 20  | 60     | 17     | 51     | 9      | 63     | 25     | 7        | 4        | 3      | Standard | Folder | 0          | 17460.938  | GadToolsBox.info    
+[15:38:15] ==== SECTION: SORTING ICONS ====
+[15:38:15] Sorting 21 icons with preferences
+[15:38:15]   Sort by: 0, Priority: 0, Reverse: 0
+[15:38:15] After sorting, icon order:
+[15:38:15] ID  | Icon                           | IsDir 
+[15:38:15] --------------------------------------------
+[15:38:15] 0   | cursor.info                    | Folder
+[15:38:15] 1   | GadToolsBox.info               | Folder
+[15:38:15] 2   | Programming.info               | Folder
+[15:38:15] 3   | Roadshow-SDK-1.8.info          | Folder
+[15:38:15] 4   | sc.info                        | Folder
+[15:38:15] 5   | SDK.info                       | Folder
+[15:38:15] 6   | T.info                         | Folder
+[15:38:15] 7   | TestCode.info                  | Folder
+[15:38:15] 8   | Update3.2.3.info               | Folder
+[15:38:15] 9   | .backdrop.info                 | File  
+[15:38:15] 10  | GadToolsBox_v2.0.LHA.info      | File  
+[15:38:15] 11  | LZX.guide.info                 | File  
+[15:38:15] 12  | lzx121r1.lha.info              | File  
+[15:38:15] 13  | pfs3aio.lha.info               | File  
+[15:38:15] 14  | Picasso96.adf.info             | File  
+[15:38:15] 15  | Roadshow-SDK-1.8.lha.info      | File  
+[15:38:15] 16  | UnLZX2.lha.info                | File  
+[15:38:15] 17  | WHDArchiveExtractor.info       | File  
+[15:38:15] 18  | WHDArchiveExtractor.lha.info   | File  
+[15:38:15] 19  | Workbench3.1.adf.info          | File  
+[15:38:15] 20  | Workbench3.1.rom.info          | File  
+[15:38:15] ==== SECTION: CALCULATING LAYOUT ====
+[15:38:15] Using standard row-based layout algorithm
+[15:38:15] CalculateLayoutPositions: Positioning 21 icons with dynamic width wrapping
+[15:38:15]   screenWidth=640, maxWindowWidthPct=55, effectiveMaxWidth=352
+[15:38:15]   textAlignment=BOTTOM
+[15:38:15] ID  | Icon                           | NewX | NewY | Width | Height | Offset
+[15:38:15] ------------------------------------------------------------------------------------
+[15:38:15] 0   | cursor.info                    | 8    | 4    | 63    | 32    | 0  
+[15:38:15] 1   | GadToolsBox.info               | 79   | 4    | 63    | 25    | 0  
+[15:38:15] 2   | Programming.info               | 150  | 4    | 63    | 32    | 0  
+[15:38:15] 3   | Roadshow-SDK-1.8.info          | 229  | 4    | 76    | 32    | 8  
+[15:38:15]   Adjusted icon 1 ('GadToolsBox.info') down by 7 pixels for text alignment
+[15:38:15] 4   | sc.info                        | 8    | 44   | 63    | 32    | 0  
+[15:38:15] 5   | SDK.info                       | 79   | 44   | 63    | 32    | 0  
+[15:38:15] 6   | T.info                         | 150  | 44   | 63    | 32    | 0  
+[15:38:15] 7   | TestCode.info                  | 221  | 44   | 63    | 32    | 0  
+[15:38:15] 8   | Update3.2.3.info               | 8    | 84   | 63    | 25    | 0  
+[15:38:15] 9   | .backdrop.info                 | 79   | 84   | 60    | 33    | 0  
+[15:38:15] 10  | GadToolsBox_v2.0.LHA.info      | 163  | 84   | 89    | 33    | 16 
+[15:38:15] 11  | LZX.guide.info                 | 244  | 84   | 60    | 33    | 0  
+[15:38:15]   Adjusted icon 8 ('Update3.2.3.info') down by 8 pixels for text alignment
+[15:38:15] 12  | lzx121r1.lha.info              | 8    | 125  | 60    | 33    | 0  
+[15:38:15] 13  | pfs3aio.lha.info               | 76   | 125  | 60    | 33    | 0  
+[15:38:15] 14  | Picasso96.adf.info             | 144  | 125  | 60    | 33    | 0  
+[15:38:15] 15  | Roadshow-SDK-1.8.lha.info      | 228  | 125  | 89    | 33    | 16 
+[15:38:15] 16  | UnLZX2.lha.info                | 8    | 166  | 60    | 33    | 0  
+[15:38:15] 17  | WHDArchiveExtractor.info       | 96   | 166  | 84    | 47    | 20 
+[15:38:15] 18  | WHDArchiveExtractor.lha.info   | 188  | 166  | 97    | 33    | 20 
+[15:38:15]   Adjusted icon 16 ('UnLZX2.lha.info') down by 14 pixels for text alignment
+[15:38:15]   Adjusted icon 18 ('WHDArchiveExtractor.lha.info') down by 14 pixels for text alignment
+[15:38:15] 19  | Workbench3.1.adf.info          | 14   | 221  | 70    | 33    | 6  
+[15:38:15] 20  | Workbench3.1.rom.info          | 93   | 221  | 72    | 33    | 7  
+[15:38:15] 
+Adjusting final row (indices 19 to 20) for bottom text alignment
+[15:38:15]   maxHeightInRow = 33
+[15:38:15] 
 Final icon positions:
-[22:47:07] ID  | Icon                           | X    | Y   
-[22:47:07] --------------------------------------------
-[22:47:07] 0   | Devs.info                      | 8    | 4   
-[22:47:07] 1   | Expansion.info                 | 79   | 4   
-[22:47:07] 2   | Help.info                      | 150  | 4   
-[22:47:07] 3   | OLD.info                       | 221  | 4   
-[22:47:07] 4   | Picasso96.info                 | 8    | 44  
-[22:47:07] 5   | Prefs.info                     | 79   | 44  
-[22:47:07] 6   | Programs.info                  | 150  | 44  
-[22:47:07] 7   | RoadshowSDK.info               | 221  | 44  
-[22:47:07] 8   | sc.info                        | 8    | 84  
-[22:47:07] 9   | Storage.info                   | 79   | 84  
-[22:47:07] 10  | System.info                    | 150  | 84  
-[22:47:07] 11  | Tools.info                     | 221  | 84  
-[22:47:07] 12  | Utilities.info                 | 8    | 129 
-[22:47:07] 13  | WBStartup.info                 | 79   | 129 
-[22:47:07] 14  | install_log_file.info          | 150  | 124 
-[22:47:07] DEBUG: resizeFolderToContents ENTRY: dirPath='Workbench:', iconArray->size=15
-[22:47:07] DEBUG: Calculated maxWidth=284, maxHeight=161 before calling repoistionWindow
-[22:47:07] Saved folder settings ok for Workbench:Disk
-[22:47:07] ==== SECTION: SAVING ICONS ====
-[22:47:07] ID  | X    | Y    | Icon                                    
-[22:47:07] --------------------------------------------------------------
-[22:47:07] Processing icon 0: Devs.info
-[22:47:07] 0   | 8    | 4    | Devs.info                               
-[22:47:07]    Saved OK: Workbench:Devs
-[22:47:07] Processing icon 1: Expansion.info
-[22:47:07] 1   | 79   | 4    | Expansion.info                          
-[22:47:07]    Saved OK: Workbench:Expansion
-[22:47:07] Processing icon 2: Help.info
-[22:47:07] 2   | 150  | 4    | Help.info                               
-[22:47:07]    Saved OK: Workbench:Help
-[22:47:07] Processing icon 3: OLD.info
-[22:47:07] 3   | 221  | 4    | OLD.info                                
-[22:47:07]    Saved OK: Workbench:OLD
-[22:47:07] Processing icon 4: Picasso96.info
-[22:47:07] 4   | 8    | 44   | Picasso96.info                          
-[22:47:07]    Saved OK: Workbench:Picasso96
-[22:47:07] Processing icon 5: Prefs.info
-[22:47:07] 5   | 79   | 44   | Prefs.info                              
-[22:47:07]    Saved OK: Workbench:Prefs
-[22:47:07] Processing icon 6: Programs.info
-[22:47:07] 6   | 150  | 44   | Programs.info                           
-[22:47:07]    Saved OK: Workbench:Programs
-[22:47:07] Processing icon 7: RoadshowSDK.info
-[22:47:07] 7   | 221  | 44   | RoadshowSDK.info                        
-[22:47:07]    Saved OK: Workbench:RoadshowSDK
-[22:47:07] Processing icon 8: sc.info
-[22:47:07] 8   | 8    | 84   | sc.info                                 
-[22:47:07]    Saved OK: Workbench:sc
-[22:47:07] Processing icon 9: Storage.info
-[22:47:07] 9   | 79   | 84   | Storage.info                            
-[22:47:07]    Saved OK: Workbench:Storage
-[22:47:07] Processing icon 10: System.info
-[22:47:07] 10  | 150  | 84   | System.info                             
-[22:47:07]    Saved OK: Workbench:System
-[22:47:07] Processing icon 11: Tools.info
-[22:47:07] 11  | 221  | 84   | Tools.info                              
-[22:47:07]    Saved OK: Workbench:Tools
-[22:47:07] Processing icon 12: Utilities.info
-[22:47:07] 12  | 8    | 129  | Utilities.info                          
-[22:47:07]    Saved OK: Workbench:Utilities
-[22:47:07] Processing icon 13: WBStartup.info
-[22:47:07] 13  | 79   | 129  | WBStartup.info                          
-[22:47:07]    Saved OK: Workbench:WBStartup
-[22:47:07] Processing icon 14: install_log_file.info
-[22:47:07] 14  | 150  | 124  | install_log_file.info                   
-[22:47:07]    Saved OK: Workbench:install_log_file
+[15:38:15] ID  | Icon                           | X    | Y   
+[15:38:15] --------------------------------------------
+[15:38:15] 0   | cursor.info                    | 8    | 4   
+[15:38:15] 1   | GadToolsBox.info               | 79   | 11  
+[15:38:15] 2   | Programming.info               | 150  | 4   
+[15:38:15] 3   | Roadshow-SDK-1.8.info          | 229  | 4   
+[15:38:15] 4   | sc.info                        | 8    | 44  
+[15:38:15] 5   | SDK.info                       | 79   | 44  
+[15:38:15] 6   | T.info                         | 150  | 44  
+[15:38:15] 7   | TestCode.info                  | 221  | 44  
+[15:38:15] 8   | Update3.2.3.info               | 8    | 92  
+[15:38:15] 9   | .backdrop.info                 | 79   | 84  
+[15:38:15] 10  | GadToolsBox_v2.0.LHA.info      | 163  | 84  
+[15:38:15] 11  | LZX.guide.info                 | 244  | 84  
+[15:38:15] 12  | lzx121r1.lha.info              | 8    | 125 
+[15:38:15] 13  | pfs3aio.lha.info               | 76   | 125 
+[15:38:16] 14  | Picasso96.adf.info             | 144  | 125 
+[15:38:16] 15  | Roadshow-SDK-1.8.lha.info      | 228  | 125 
+[15:38:16] 16  | UnLZX2.lha.info                | 8    | 180 
+[15:38:16] 17  | WHDArchiveExtractor.info       | 96   | 166 
+[15:38:16] 18  | WHDArchiveExtractor.lha.info   | 188  | 180 
+[15:38:16] 19  | Workbench3.1.adf.info          | 14   | 221 
+[15:38:16] 20  | Workbench3.1.rom.info          | 93   | 221 
+[15:38:16] DEBUG: resizeFolderToContents ENTRY: dirPath='PC1:', iconArray->size=21
+[15:38:16] DEBUG: Calculated maxWidth=317, maxHeight=254 before calling repoistionWindow
+[15:38:16] Unable to load disk.info for folder: PC1:Disk
+[15:38:16] ==== SECTION: SAVING ICONS ====
+[15:38:16] ID  | X    | Y    | Icon                                    
+[15:38:16] --------------------------------------------------------------
+[15:38:16] Processing icon 0: cursor.info
+[15:38:16] 0   | 8    | 4    | cursor.info                             
+[15:38:16]    Saved OK: PC1:cursor
+[15:38:16] Processing icon 1: GadToolsBox.info
+[15:38:16] 1   | 79   | 11   | GadToolsBox.info                        
+[15:38:16]    Saved OK: PC1:GadToolsBox
+[15:38:16] Processing icon 2: Programming.info
+[15:38:16] 2   | 150  | 4    | Programming.info                        
+[15:38:16]    Saved OK: PC1:Programming
+[15:38:16] Processing icon 3: Roadshow-SDK-1.8.info
+[15:38:16] 3   | 229  | 4    | Roadshow-SDK-1.8.info                   
+[15:38:16]    Saved OK: PC1:Roadshow-SDK-1.8
+[15:38:16] Processing icon 4: sc.info
+[15:38:16] 4   | 8    | 44   | sc.info                                 
+[15:38:16]    Saved OK: PC1:sc
+[15:38:16] Processing icon 5: SDK.info
+[15:38:16] 5   | 79   | 44   | SDK.info                                
+[15:38:16]    Saved OK: PC1:SDK
+[15:38:16] Processing icon 6: T.info
+[15:38:16] 6   | 150  | 44   | T.info                                  
+[15:38:16]    Saved OK: PC1:T
+[15:38:16] Processing icon 7: TestCode.info
+[15:38:16] 7   | 221  | 44   | TestCode.info                           
+[15:38:16]    Saved OK: PC1:TestCode
+[15:38:16] Processing icon 8: Update3.2.3.info
+[15:38:16] 8   | 8    | 92   | Update3.2.3.info                        
+[15:38:16]    Saved OK: PC1:Update3.2.3
+[15:38:16] Processing icon 9: .backdrop.info
+[15:38:16] 9   | 79   | 84   | .backdrop.info                          
+[15:38:16]    Saved OK: PC1:.backdrop
+[15:38:16] Processing icon 10: GadToolsBox_v2.0.LHA.info
+[15:38:16] 10  | 163  | 84   | GadToolsBox_v2.0.LHA.info               
+[15:38:16]    Saved OK: PC1:GadToolsBox_v2.0.LHA
+[15:38:16] Processing icon 11: LZX.guide.info
+[15:38:16] 11  | 244  | 84   | LZX.guide.info                          
+[15:38:16]    Saved OK: PC1:LZX.guide
+[15:38:16] Processing icon 12: lzx121r1.lha.info
+[15:38:16] 12  | 8    | 125  | lzx121r1.lha.info                       
+[15:38:16]    Saved OK: PC1:lzx121r1.lha
+[15:38:16] Processing icon 13: pfs3aio.lha.info
+[15:38:16] 13  | 76   | 125  | pfs3aio.lha.info                        
+[15:38:16]    Saved OK: PC1:pfs3aio.lha
+[15:38:16] Processing icon 14: Picasso96.adf.info
+[15:38:16] 14  | 144  | 125  | Picasso96.adf.info                      
+[15:38:16]    Saved OK: PC1:Picasso96.adf
+[15:38:16] Processing icon 15: Roadshow-SDK-1.8.lha.info
+[15:38:16] 15  | 228  | 125  | Roadshow-SDK-1.8.lha.info               
+[15:38:16]    Saved OK: PC1:Roadshow-SDK-1.8.lha
+[15:38:16] Processing icon 16: UnLZX2.lha.info
+[15:38:16] 16  | 8    | 180  | UnLZX2.lha.info                         
+[15:38:16]    Saved OK: PC1:UnLZX2.lha
+[15:38:16] Processing icon 17: WHDArchiveExtractor.info
+[15:38:16] 17  | 96   | 166  | WHDArchiveExtractor.info                
+[15:38:16]    Saved OK: PC1:WHDArchiveExtractor
+[15:38:16] Processing icon 18: WHDArchiveExtractor.lha.info
+[15:38:16] 18  | 188  | 180  | WHDArchiveExtractor.lha.info            
+[15:38:16]    Saved OK: PC1:WHDArchiveExtractor.lha
+[15:38:16] Processing icon 19: Workbench3.1.adf.info
+[15:38:16] 19  | 14   | 221  | Workbench3.1.adf.info                   
+[15:38:16]    Saved OK: PC1:Workbench3.1.adf
+[15:38:16] Processing icon 20: Workbench3.1.rom.info
+[15:38:16] 20  | 93   | 221  | Workbench3.1.rom.info                   
+[15:38:16]    Saved OK: PC1:Workbench3.1.rom
+[15:38:31] Applying preset: Classic
+[15:38:31] GUI Selections: layout=0, sort=0, order=0, sortby=0, center=1, optimize=1
+[15:38:31] 
+[15:38:31] ==================================================
+[15:38:31]       iTidy Layout Preferences - Debug Output    
+[15:38:31] ==================================================
+[15:38:31] 
+[15:38:31] FOLDER SETTINGS:
+[15:38:31]   Target Folder:    PC1:
+[15:38:31]   Recursive:        No
+[15:38:31] 
+[15:38:31] LAYOUT SETTINGS:
+[15:38:31]   Layout Mode:      Row-major (Horizontal first)
+[15:38:31]   Sort Order:       Horizontal (Left-to-right)
+[15:38:31]   Sort Priority:    [15:38:31] Folders First
+[15:38:31]   Sort By:          [15:38:31] Name
+[15:38:31]   Reverse Sort:     No
+[15:38:31] 
+[15:38:31] VISUAL SETTINGS:
+[15:38:31]   Center Icons:     Yes
+[15:38:31]   Optimize Columns: Yes
+[15:38:31] 
+[15:38:31] WINDOW MANAGEMENT:
+[15:38:31]   Resize Windows:   Yes
+[15:38:31]   Max Icons/Row:    5
+[15:38:31]   Max Width:        55% of screen
+[15:38:31]   Aspect Ratio:     1.60
+[15:38:31] 
+[15:38:31] ADVANCED SETTINGS:
+[15:38:31]   Skip Hidden:      Yes
+[15:38:31] 
+[15:38:31] BACKUP SETTINGS:
+[15:38:31]   Enable Backup:    No
+[15:38:31]   Use LhA:          Yes
+[15:38:31]   Backup Path:      Work:iTidyBackups/
+[15:38:31]   Max Backups:      3 per folder
+[15:38:31] 
+[15:38:31] ==================================================
+[15:38:31] 
+[15:38:31] ProcessSingleDirectory: path='PC1:'
+[15:38:31] ==== SECTION: LOADING ICONS ====
+[15:38:31] CreateIconArrayFromPath ENTRY: lock=269307143, dirPath='PC1:'
+[15:38:31] Using OPTIMIZED pattern matching (MatchFirst/MatchNext)
+[15:38:31] Icon array created successfully
+[15:38:31] AnchorPath allocated, preparing pattern-based scan
+[15:38:31] Pattern: 'PC1:#?.info'
+[15:38:31] MatchFirst successful, entering processing loop
+[15:38:31] DEBUG: Pattern matched .info file: 'Workbench3.1.rom.info'
+[15:38:31] DEBUG: Full path to .info file: 'PC1:Workbench3.1.rom.info'
+[15:38:31] DEBUG: isIconTypeDisk('PC1:Workbench3.1.rom.info') = 0 (0=not disk, 1=is disk)
+[15:38:31] Detecting icon type for: PC1:Workbench3.1.rom.info
+[15:38:31]   -> Detected as standard Workbench icon format
+[15:38:31] DEBUG: Pattern matched .info file: 'Workbench3.1.adf.info'
+[15:38:31] DEBUG: Full path to .info file: 'PC1:Workbench3.1.adf.info'
+[15:38:31] DEBUG: isIconTypeDisk('PC1:Workbench3.1.adf.info') = 0 (0=not disk, 1=is disk)
+[15:38:31] Detecting icon type for: PC1:Workbench3.1.adf.info
+[15:38:31] Checking tooltypes for NewIcon signature...
+[15:38:31]   ToolType: '(WRITEPROTECTED=No)'
+[15:38:31]   -> No NewIcon signature found (standard icon)
+[15:38:31]   -> Detected as standard Workbench icon format
+[15:38:31] DEBUG: Pattern matched .info file: 'WHDArchiveExtractor.lha.info'
+[15:38:31] DEBUG: Full path to .info file: 'PC1:WHDArchiveExtractor.lha.info'
+[15:38:31] DEBUG: isIconTypeDisk('PC1:WHDArchiveExtractor.lha.info') = 0 (0=not disk, 1=is disk)
+[15:38:31] Detecting icon type for: PC1:WHDArchiveExtractor.lha.info
+[15:38:31]   -> Detected as standard Workbench icon format
+[15:38:31] DEBUG: Pattern matched .info file: 'WHDArchiveExtractor.info'
+[15:38:31] DEBUG: Full path to .info file: 'PC1:WHDArchiveExtractor.info'
+[15:38:31] DEBUG: isIconTypeDisk('PC1:WHDArchiveExtractor.info') = 0 (0=not disk, 1=is disk)
+[15:38:31] Detecting icon type for: PC1:WHDArchiveExtractor.info
+[15:38:31] Checking tooltypes for NewIcon signature...
+[15:38:31]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:38:31]   -> No NewIcon signature found (standard icon)
+[15:38:31]   -> Detected as standard Workbench icon format
+[15:38:31] DEBUG: Pattern matched .info file: 'UnLZX2.lha.info'
+[15:38:31] DEBUG: Full path to .info file: 'PC1:UnLZX2.lha.info'
+[15:38:31] DEBUG: isIconTypeDisk('PC1:UnLZX2.lha.info') = 0 (0=not disk, 1=is disk)
+[15:38:31] Detecting icon type for: PC1:UnLZX2.lha.info
+[15:38:31]   -> Detected as standard Workbench icon format
+[15:38:31] DEBUG: Pattern matched .info file: 'T.info'
+[15:38:31] DEBUG: Full path to .info file: 'PC1:T.info'
+[15:38:31] DEBUG: isIconTypeDisk('PC1:T.info') = 0 (0=not disk, 1=is disk)
+[15:38:31] Detecting icon type for: PC1:T.info
+[15:38:31] Checking tooltypes for NewIcon signature...
+[15:38:31]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:38:31]   -> No NewIcon signature found (standard icon)
+[15:38:31]   -> Detected as standard Workbench icon format
+[15:38:31] DEBUG: Pattern matched .info file: 'SDK.info'
+[15:38:31] DEBUG: Full path to .info file: 'PC1:SDK.info'
+[15:38:31] DEBUG: isIconTypeDisk('PC1:SDK.info') = 0 (0=not disk, 1=is disk)
+[15:38:31] Detecting icon type for: PC1:SDK.info
+[15:38:31] Checking tooltypes for NewIcon signature...
+[15:38:31]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:38:31]   -> No NewIcon signature found (standard icon)
+[15:38:31]   -> Detected as standard Workbench icon format
+[15:38:31] DEBUG: Pattern matched .info file: 'Roadshow-SDK-1.8.lha.info'
+[15:38:31] DEBUG: Full path to .info file: 'PC1:Roadshow-SDK-1.8.lha.info'
+[15:38:31] DEBUG: isIconTypeDisk('PC1:Roadshow-SDK-1.8.lha.info') = 0 (0=not disk, 1=is disk)
+[15:38:31] Detecting icon type for: PC1:Roadshow-SDK-1.8.lha.info
+[15:38:31]   -> Detected as standard Workbench icon format
+[15:38:31] DEBUG: Pattern matched .info file: 'Roadshow-SDK-1.8.info'
+[15:38:31] DEBUG: Full path to .info file: 'PC1:Roadshow-SDK-1.8.info'
+[15:38:31] DEBUG: isIconTypeDisk('PC1:Roadshow-SDK-1.8.info') = 0 (0=not disk, 1=is disk)
+[15:38:31] Detecting icon type for: PC1:Roadshow-SDK-1.8.info
+[15:38:31] Checking tooltypes for NewIcon signature...
+[15:38:31]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:38:31]   -> No NewIcon signature found (standard icon)
+[15:38:31]   -> Detected as standard Workbench icon format
+[15:38:31] DEBUG: Pattern matched .info file: 'Picasso96.adf.info'
+[15:38:31] DEBUG: Full path to .info file: 'PC1:Picasso96.adf.info'
+[15:38:31] DEBUG: isIconTypeDisk('PC1:Picasso96.adf.info') = 0 (0=not disk, 1=is disk)
+[15:38:31] Detecting icon type for: PC1:Picasso96.adf.info
+[15:38:31] Checking tooltypes for NewIcon signature...
+[15:38:31]   ToolType: '(WRITEPROTECTED=No)'
+[15:38:31]   -> No NewIcon signature found (standard icon)
+[15:38:31]   -> Detected as standard Workbench icon format
+[15:38:31] DEBUG: Pattern matched .info file: 'pfs3aio.lha.info'
+[15:38:31] DEBUG: Full path to .info file: 'PC1:pfs3aio.lha.info'
+[15:38:32] DEBUG: isIconTypeDisk('PC1:pfs3aio.lha.info') = 0 (0=not disk, 1=is disk)
+[15:38:32] Detecting icon type for: PC1:pfs3aio.lha.info
+[15:38:32]   -> Detected as standard Workbench icon format
+[15:38:32] DEBUG: Pattern matched .info file: 'lzx121r1.lha.info'
+[15:38:32] DEBUG: Full path to .info file: 'PC1:lzx121r1.lha.info'
+[15:38:32] DEBUG: isIconTypeDisk('PC1:lzx121r1.lha.info') = 0 (0=not disk, 1=is disk)
+[15:38:32] Detecting icon type for: PC1:lzx121r1.lha.info
+[15:38:32]   -> Detected as standard Workbench icon format
+[15:38:32] DEBUG: Pattern matched .info file: 'LZX.guide.info'
+[15:38:32] DEBUG: Full path to .info file: 'PC1:LZX.guide.info'
+[15:38:32] DEBUG: isIconTypeDisk('PC1:LZX.guide.info') = 0 (0=not disk, 1=is disk)
+[15:38:32] Detecting icon type for: PC1:LZX.guide.info
+[15:38:32]   -> Detected as standard Workbench icon format
+[15:38:32] DEBUG: Pattern matched .info file: 'GadToolsBox_v2.0.LHA.info'
+[15:38:32] DEBUG: Full path to .info file: 'PC1:GadToolsBox_v2.0.LHA.info'
+[15:38:32] DEBUG: isIconTypeDisk('PC1:GadToolsBox_v2.0.LHA.info') = 0 (0=not disk, 1=is disk)
+[15:38:32] Detecting icon type for: PC1:GadToolsBox_v2.0.LHA.info
+[15:38:32]   -> Detected as standard Workbench icon format
+[15:38:32] DEBUG: Pattern matched .info file: 'cursor.info'
+[15:38:32] DEBUG: Full path to .info file: 'PC1:cursor.info'
+[15:38:32] DEBUG: isIconTypeDisk('PC1:cursor.info') = 0 (0=not disk, 1=is disk)
+[15:38:32] Detecting icon type for: PC1:cursor.info
+[15:38:32] Checking tooltypes for NewIcon signature...
+[15:38:32]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:38:32]   -> No NewIcon signature found (standard icon)
+[15:38:32]   -> Detected as standard Workbench icon format
+[15:38:32] DEBUG: Pattern matched .info file: 'Programming.info'
+[15:38:32] DEBUG: Full path to .info file: 'PC1:Programming.info'
+[15:38:32] DEBUG: isIconTypeDisk('PC1:Programming.info') = 0 (0=not disk, 1=is disk)
+[15:38:32] Detecting icon type for: PC1:Programming.info
+[15:38:32] Checking tooltypes for NewIcon signature...
+[15:38:32]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:38:32]   -> No NewIcon signature found (standard icon)
+[15:38:32]   -> Detected as standard Workbench icon format
+[15:38:32] DEBUG: Pattern matched .info file: '.backdrop.info'
+[15:38:32] DEBUG: Full path to .info file: 'PC1:.backdrop.info'
+[15:38:32] DEBUG: isIconTypeDisk('PC1:.backdrop.info') = 0 (0=not disk, 1=is disk)
+[15:38:32] Detecting icon type for: PC1:.backdrop.info
+[15:38:32]   -> Detected as standard Workbench icon format
+[15:38:32] DEBUG: Pattern matched .info file: 'Update3.2.3.info'
+[15:38:32] DEBUG: Full path to .info file: 'PC1:Update3.2.3.info'
+[15:38:32] DEBUG: isIconTypeDisk('PC1:Update3.2.3.info') = 0 (0=not disk, 1=is disk)
+[15:38:32] Detecting icon type for: PC1:Update3.2.3.info
+[15:38:32]   -> Detected as standard Workbench icon format
+[15:38:32] DEBUG: Pattern matched .info file: 'TestCode.info'
+[15:38:32] DEBUG: Full path to .info file: 'PC1:TestCode.info'
+[15:38:32] DEBUG: isIconTypeDisk('PC1:TestCode.info') = 0 (0=not disk, 1=is disk)
+[15:38:32] Detecting icon type for: PC1:TestCode.info
+[15:38:32] Checking tooltypes for NewIcon signature...
+[15:38:32]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:38:32]   -> No NewIcon signature found (standard icon)
+[15:38:32]   -> Detected as standard Workbench icon format
+[15:38:32] DEBUG: Pattern matched .info file: 'sc.info'
+[15:38:32] DEBUG: Full path to .info file: 'PC1:sc.info'
+[15:38:32] DEBUG: isIconTypeDisk('PC1:sc.info') = 0 (0=not disk, 1=is disk)
+[15:38:32] Detecting icon type for: PC1:sc.info
+[15:38:32] Checking tooltypes for NewIcon signature...
+[15:38:32]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:38:32]   -> No NewIcon signature found (standard icon)
+[15:38:32]   -> Detected as standard Workbench icon format
+[15:38:32] DEBUG: Pattern matched .info file: 'GadToolsBox.info'
+[15:38:32] DEBUG: Full path to .info file: 'PC1:GadToolsBox.info'
+[15:38:32] DEBUG: isIconTypeDisk('PC1:GadToolsBox.info') = 0 (0=not disk, 1=is disk)
+[15:38:32] Detecting icon type for: PC1:GadToolsBox.info
+[15:38:32]   -> Detected as standard Workbench icon format
+[15:38:32] ID  | Width  | Height | TxtW   | TxtH   | MaxW   | MaxH   | X        | Y        | Border | Type     | IsDir  | Size       | Date       | Icon                
+[15:38:32] ------------------------------------------------------------------------------------------------------------------------------------------
+[15:38:32] 0   | 57     | 25     | 72     | 9      | 72     | 33     | 93       | 221      | 3      | Standard | File   | 450        | 17460.938  | Workbench3.1.rom.info
+[15:38:32] 1   | 57     | 25     | 70     | 9      | 70     | 33     | 14       | 221      | 3      | Standard | File   | 866        | 17460.938  | Workbench3.1.adf.info
+[15:38:32] 2   | 57     | 25     | 97     | 9      | 97     | 33     | 188      | 180      | 3      | Standard | File   | 822        | 17460.938  | WHDArchiveExtractor.lha.info
+[15:38:32] 3   | 43     | 39     | 84     | 9      | 84     | 47     | 96       | 166      | 3      | Standard | File   | 1459       | 17460.938  | WHDArchiveExtractor.info
+[15:38:32] 4   | 57     | 25     | 44     | 9      | 60     | 33     | 8        | 180      | 3      | Standard | File   | 822        | 17460.938  | UnLZX2.lha.info     
+[15:38:32] 5   | 60     | 24     | 6      | 9      | 63     | 32     | 150      | 44       | 3      | Standard | Folder | 0          | 17460.938  | T.info              
+[15:38:32] 6   | 60     | 24     | 15     | 9      | 63     | 32     | 79       | 44       | 3      | Standard | Folder | 0          | 17460.938  | SDK.info            
+[15:38:32] 7   | 57     | 25     | 89     | 9      | 89     | 33     | 228      | 125      | 3      | Standard | File   | 822        | 17460.938  | Roadshow-SDK-1.8.lha.info
+[15:38:32] 8   | 60     | 24     | 76     | 9      | 76     | 32     | 229      | 4        | 3      | Standard | Folder | 0          | 17460.938  | Roadshow-SDK-1.8.info
+[15:38:32] 9   | 57     | 25     | 53     | 9      | 60     | 33     | 144      | 125      | 3      | Standard | File   | 866        | 17460.938  | Picasso96.adf.info  
+[15:38:32] 10  | 57     | 25     | 42     | 9      | 60     | 33     | 76       | 125      | 3      | Standard | File   | 822        | 17460.938  | pfs3aio.lha.info    
+[15:38:32] 11  | 57     | 25     | 49     | 9      | 60     | 33     | 8        | 125      | 3      | Standard | File   | 822        | 17460.938  | lzx121r1.lha.info   
+[15:38:32] 12  | 57     | 25     | 40     | 9      | 60     | 33     | 244      | 84       | 3      | Standard | File   | 478        | 17460.938  | LZX.guide.info      
+[15:38:32] 13  | 57     | 25     | 89     | 9      | 89     | 33     | 163      | 84       | 3      | Standard | File   | 822        | 17460.938  | GadToolsBox_v2.0.LHA.info
+[15:38:32] 14  | 60     | 24     | 26     | 9      | 63     | 32     | 8        | 4        | 3      | Standard | Folder | 0          | 17460.938  | cursor.info         
+[15:38:32] 15  | 60     | 24     | 51     | 9      | 63     | 32     | 150      | 4        | 3      | Standard | Folder | 0          | 17460.938  | Programming.info    
+[15:38:32] 16  | 57     | 25     | 38     | 9      | 60     | 33     | 79       | 84       | 3      | Standard | File   | 473        | 17460.938  | .backdrop.info      
+[15:38:32] 17  | 60     | 17     | 47     | 9      | 63     | 25     | 8        | 92       | 3      | Standard | Folder | 0          | 17460.938  | Update3.2.3.info    
+[15:38:32] 18  | 60     | 24     | 39     | 9      | 63     | 32     | 221      | 44       | 3      | Standard | Folder | 0          | 17460.938  | TestCode.info       
+[15:38:32] 19  | 60     | 24     | 8      | 9      | 63     | 32     | 8        | 44       | 3      | Standard | Folder | 0          | 17460.938  | sc.info             
+[15:38:32] 20  | 60     | 17     | 51     | 9      | 63     | 25     | 79       | 11       | 3      | Standard | Folder | 0          | 17460.938  | GadToolsBox.info    
+[15:38:32] ==== SECTION: SORTING ICONS ====
+[15:38:32] Sorting 21 icons with preferences
+[15:38:32]   Sort by: 0, Priority: 0, Reverse: 0
+[15:38:32] After sorting, icon order:
+[15:38:32] ID  | Icon                           | IsDir 
+[15:38:32] --------------------------------------------
+[15:38:32] 0   | cursor.info                    | Folder
+[15:38:32] 1   | GadToolsBox.info               | Folder
+[15:38:32] 2   | Programming.info               | Folder
+[15:38:32] 3   | Roadshow-SDK-1.8.info          | Folder
+[15:38:32] 4   | sc.info                        | Folder
+[15:38:32] 5   | SDK.info                       | Folder
+[15:38:32] 6   | T.info                         | Folder
+[15:38:32] 7   | TestCode.info                  | Folder
+[15:38:32] 8   | Update3.2.3.info               | Folder
+[15:38:32] 9   | .backdrop.info                 | File  
+[15:38:32] 10  | GadToolsBox_v2.0.LHA.info      | File  
+[15:38:32] 11  | LZX.guide.info                 | File  
+[15:38:32] 12  | lzx121r1.lha.info              | File  
+[15:38:32] 13  | pfs3aio.lha.info               | File  
+[15:38:32] 14  | Picasso96.adf.info             | File  
+[15:38:32] 15  | Roadshow-SDK-1.8.lha.info      | File  
+[15:38:32] 16  | UnLZX2.lha.info                | File  
+[15:38:32] 17  | WHDArchiveExtractor.info       | File  
+[15:38:32] 18  | WHDArchiveExtractor.lha.info   | File  
+[15:38:32] 19  | Workbench3.1.adf.info          | File  
+[15:38:32] 20  | Workbench3.1.rom.info          | File  
+[15:38:32] ==== SECTION: CALCULATING LAYOUT ====
+[15:38:32] Using column-centered layout algorithm
+[15:38:32] CalculateLayoutPositionsWithColumnCentering: Processing 21 icons
+[15:38:32]   screenWidth=640, maxWindowWidthPct=55, effectiveMaxWidth=352
+[15:38:32] Phase 1: Statistics
+[15:38:32]   Average icon width: 68 pixels
+[15:38:32]   Total icons: 21
+[15:38:32]   Initial estimated columns: 4
+[15:38:32] Attempt 1: 4 columns, total width = 390 (max = 352)
+[15:38:32]   Width exceeded, reducing to 3 columns
+[15:38:32] Attempt 2: 3 columns, total width = 310 (max = 352)
+[15:38:32] Final configuration: 3 columns, total width = 310
+[15:38:32] Column widths: [15:38:32] 97 [15:38:32] 89 [15:38:32] 84 [15:38:32] 
+[15:38:32] 
+Phase 2: Icon Positioning
+[15:38:32] ID  | Icon                           | Col | Row | X    | Y    | Center
+[15:38:32] -------------------------------------------------------------------------
+[15:38:32] 0   | cursor.info                    | 0   | 0   | 25   | 4    | 17    
+[15:38:32] 1   | GadToolsBox.info               | 1   | 0   | 126  | 4    | 13    
+[15:38:32] 2   | Programming.info               | 2   | 0   | 220  | 4    | 10    
+[15:38:32] 3   | Roadshow-SDK-1.8.info          | 0   | 1   | 26   | 44   | 10    
+[15:38:32] 4   | sc.info                        | 1   | 1   | 126  | 44   | 13    
+[15:38:32] 5   | SDK.info                       | 2   | 1   | 220  | 44   | 10    
+[15:38:32] 6   | T.info                         | 0   | 2   | 25   | 84   | 17    
+[15:38:32] 7   | TestCode.info                  | 1   | 2   | 126  | 84   | 13    
+[15:38:32] 8   | Update3.2.3.info               | 2   | 2   | 220  | 84   | 10    
+[15:38:32] 9   | .backdrop.info                 | 0   | 3   | 26   | 124  | 18    
+[15:38:32] 10  | GadToolsBox_v2.0.LHA.info      | 1   | 3   | 129  | 124  | 0     
+[15:38:32] 11  | LZX.guide.info                 | 2   | 3   | 222  | 124  | 12    
+[15:38:32] 12  | lzx121r1.lha.info              | 0   | 4   | 26   | 165  | 18    
+[15:38:32] 13  | pfs3aio.lha.info               | 1   | 4   | 127  | 165  | 14    
+[15:38:32] 14  | Picasso96.adf.info             | 2   | 4   | 222  | 165  | 12    
+[15:38:32] 15  | Roadshow-SDK-1.8.lha.info      | 0   | 5   | 28   | 206  | 4     
+[15:38:32] 16  | UnLZX2.lha.info                | 1   | 5   | 127  | 206  | 14    
+[15:38:32] 17  | WHDArchiveExtractor.info       | 2   | 5   | 230  | 206  | 0     
+[15:38:32] 18  | WHDArchiveExtractor.lha.info   | 0   | 6   | 28   | 261  | 0     
+[15:38:32] 19  | Workbench3.1.adf.info          | 1   | 6   | 128  | 261  | 9     
+[15:38:32] 20  | Workbench3.1.rom.info          | 2   | 6   | 223  | 261  | 6     
+[15:38:32] 
+Adjusting final row (indices 18 to 20) for text alignment
+[15:38:32] 
+Column-centered layout complete!
+[15:38:32] DEBUG: resizeFolderToContents ENTRY: dirPath='PC1:', iconArray->size=21
+[15:38:32] DEBUG: Calculated maxWidth=314, maxHeight=294 before calling repoistionWindow
+[15:38:32] Unable to load disk.info for folder: PC1:Disk
+[15:38:32] ==== SECTION: SAVING ICONS ====
+[15:38:32] ID  | X    | Y    | Icon                                    
+[15:38:32] --------------------------------------------------------------
+[15:38:32] Processing icon 0: cursor.info
+[15:38:32] 0   | 25   | 4    | cursor.info                             
+[15:38:32]    Saved OK: PC1:cursor
+[15:38:32] Processing icon 1: GadToolsBox.info
+[15:38:32] 1   | 126  | 11   | GadToolsBox.info                        
+[15:38:32]    Saved OK: PC1:GadToolsBox
+[15:38:32] Processing icon 2: Programming.info
+[15:38:32] 2   | 220  | 4    | Programming.info                        
+[15:38:32]    Saved OK: PC1:Programming
+[15:38:32] Processing icon 3: Roadshow-SDK-1.8.info
+[15:38:32] 3   | 26   | 44   | Roadshow-SDK-1.8.info                   
+[15:38:32]    Saved OK: PC1:Roadshow-SDK-1.8
+[15:38:32] Processing icon 4: sc.info
+[15:38:32] 4   | 126  | 44   | sc.info                                 
+[15:38:32]    Saved OK: PC1:sc
+[15:38:32] Processing icon 5: SDK.info
+[15:38:32] 5   | 220  | 44   | SDK.info                                
+[15:38:32]    Saved OK: PC1:SDK
+[15:38:32] Processing icon 6: T.info
+[15:38:32] 6   | 25   | 84   | T.info                                  
+[15:38:32]    Saved OK: PC1:T
+[15:38:32] Processing icon 7: TestCode.info
+[15:38:32] 7   | 126  | 84   | TestCode.info                           
+[15:38:32]    Saved OK: PC1:TestCode
+[15:38:32] Processing icon 8: Update3.2.3.info
+[15:38:32] 8   | 220  | 91   | Update3.2.3.info                        
+[15:38:32]    Saved OK: PC1:Update3.2.3
+[15:38:32] Processing icon 9: .backdrop.info
+[15:38:32] 9   | 26   | 124  | .backdrop.info                          
+[15:38:32]    Saved OK: PC1:.backdrop
+[15:38:32] Processing icon 10: GadToolsBox_v2.0.LHA.info
+[15:38:32] 10  | 129  | 124  | GadToolsBox_v2.0.LHA.info               
+[15:38:32]    Saved OK: PC1:GadToolsBox_v2.0.LHA
+[15:38:32] Processing icon 11: LZX.guide.info
+[15:38:32] 11  | 222  | 124  | LZX.guide.info                          
+[15:38:32]    Saved OK: PC1:LZX.guide
+[15:38:32] Processing icon 12: lzx121r1.lha.info
+[15:38:32] 12  | 26   | 165  | lzx121r1.lha.info                       
+[15:38:32]    Saved OK: PC1:lzx121r1.lha
+[15:38:32] Processing icon 13: pfs3aio.lha.info
+[15:38:32] 13  | 127  | 165  | pfs3aio.lha.info                        
+[15:38:32]    Saved OK: PC1:pfs3aio.lha
+[15:38:32] Processing icon 14: Picasso96.adf.info
+[15:38:32] 14  | 222  | 165  | Picasso96.adf.info                      
+[15:38:32]    Saved OK: PC1:Picasso96.adf
+[15:38:32] Processing icon 15: Roadshow-SDK-1.8.lha.info
+[15:38:32] 15  | 28   | 220  | Roadshow-SDK-1.8.lha.info               
+[15:38:32]    Saved OK: PC1:Roadshow-SDK-1.8.lha
+[15:38:32] Processing icon 16: UnLZX2.lha.info
+[15:38:32] 16  | 127  | 220  | UnLZX2.lha.info                         
+[15:38:32]    Saved OK: PC1:UnLZX2.lha
+[15:38:32] Processing icon 17: WHDArchiveExtractor.info
+[15:38:32] 17  | 230  | 206  | WHDArchiveExtractor.info                
+[15:38:32]    Saved OK: PC1:WHDArchiveExtractor
+[15:38:32] Processing icon 18: WHDArchiveExtractor.lha.info
+[15:38:32] 18  | 28   | 261  | WHDArchiveExtractor.lha.info            
+[15:38:32]    Saved OK: PC1:WHDArchiveExtractor.lha
+[15:38:32] Processing icon 19: Workbench3.1.adf.info
+[15:38:32] 19  | 128  | 261  | Workbench3.1.adf.info                   
+[15:38:32]    Saved OK: PC1:Workbench3.1.adf
+[15:38:32] Processing icon 20: Workbench3.1.rom.info
+[15:38:32] 20  | 223  | 261  | Workbench3.1.rom.info                   
+[15:38:32]    Saved OK: PC1:Workbench3.1.rom
+[15:39:05] Applying preset: Classic
+[15:39:05] GUI Selections: layout=0, sort=0, order=0, sortby=0, center=1, optimize=1
+[15:39:05] 
+[15:39:05] ==================================================
+[15:39:05]       iTidy Layout Preferences - Debug Output    
+[15:39:05] ==================================================
+[15:39:05] 
+[15:39:05] FOLDER SETTINGS:
+[15:39:05]   Target Folder:    PC1:
+[15:39:05]   Recursive:        No
+[15:39:05] 
+[15:39:05] LAYOUT SETTINGS:
+[15:39:05]   Layout Mode:      Row-major (Horizontal first)
+[15:39:05]   Sort Order:       Horizontal (Left-to-right)
+[15:39:05]   Sort Priority:    [15:39:05] Folders First
+[15:39:05]   Sort By:          [15:39:05] Name
+[15:39:05]   Reverse Sort:     No
+[15:39:05] 
+[15:39:05] VISUAL SETTINGS:
+[15:39:05]   Center Icons:     Yes
+[15:39:05]   Optimize Columns: Yes
+[15:39:05] 
+[15:39:05] WINDOW MANAGEMENT:
+[15:39:05]   Resize Windows:   Yes
+[15:39:05]   Max Icons/Row:    5
+[15:39:05]   Max Width:        55% of screen
+[15:39:05]   Aspect Ratio:     1.60
+[15:39:05] 
+[15:39:05] ADVANCED SETTINGS:
+[15:39:05]   Skip Hidden:      Yes
+[15:39:05] 
+[15:39:05] BACKUP SETTINGS:
+[15:39:05]   Enable Backup:    No
+[15:39:05]   Use LhA:          Yes
+[15:39:05]   Backup Path:      Work:iTidyBackups/
+[15:39:05]   Max Backups:      3 per folder
+[15:39:05] 
+[15:39:05] ==================================================
+[15:39:05] 
+[15:39:05] ProcessSingleDirectory: path='PC1:'
+[15:39:05] ==== SECTION: LOADING ICONS ====
+[15:39:05] CreateIconArrayFromPath ENTRY: lock=269307103, dirPath='PC1:'
+[15:39:05] Using OPTIMIZED pattern matching (MatchFirst/MatchNext)
+[15:39:05] Icon array created successfully
+[15:39:05] AnchorPath allocated, preparing pattern-based scan
+[15:39:05] Pattern: 'PC1:#?.info'
+[15:39:05] MatchFirst successful, entering processing loop
+[15:39:05] DEBUG: Pattern matched .info file: 'Disk.info'
+[15:39:05] DEBUG: Full path to .info file: 'PC1:Disk.info'
+[15:39:05] DEBUG: isIconTypeDisk('PC1:Disk.info') = 1 (0=not disk, 1=is disk)
+[15:39:05] DEBUG: Pattern matched .info file: 'Workbench3.1.rom.info'
+[15:39:05] DEBUG: Full path to .info file: 'PC1:Workbench3.1.rom.info'
+[15:39:05] DEBUG: isIconTypeDisk('PC1:Workbench3.1.rom.info') = 0 (0=not disk, 1=is disk)
+[15:39:05] Detecting icon type for: PC1:Workbench3.1.rom.info
+[15:39:05]   -> Detected as standard Workbench icon format
+[15:39:05] DEBUG: Pattern matched .info file: 'Workbench3.1.adf.info'
+[15:39:05] DEBUG: Full path to .info file: 'PC1:Workbench3.1.adf.info'
+[15:39:05] DEBUG: isIconTypeDisk('PC1:Workbench3.1.adf.info') = 0 (0=not disk, 1=is disk)
+[15:39:05] Detecting icon type for: PC1:Workbench3.1.adf.info
+[15:39:05] Checking tooltypes for NewIcon signature...
+[15:39:05]   ToolType: '(WRITEPROTECTED=No)'
+[15:39:05]   -> No NewIcon signature found (standard icon)
+[15:39:05]   -> Detected as standard Workbench icon format
+[15:39:05] DEBUG: Pattern matched .info file: 'WHDArchiveExtractor.lha.info'
+[15:39:05] DEBUG: Full path to .info file: 'PC1:WHDArchiveExtractor.lha.info'
+[15:39:05] DEBUG: isIconTypeDisk('PC1:WHDArchiveExtractor.lha.info') = 0 (0=not disk, 1=is disk)
+[15:39:05] Detecting icon type for: PC1:WHDArchiveExtractor.lha.info
+[15:39:05]   -> Detected as standard Workbench icon format
+[15:39:05] DEBUG: Pattern matched .info file: 'WHDArchiveExtractor.info'
+[15:39:05] DEBUG: Full path to .info file: 'PC1:WHDArchiveExtractor.info'
+[15:39:05] DEBUG: isIconTypeDisk('PC1:WHDArchiveExtractor.info') = 0 (0=not disk, 1=is disk)
+[15:39:05] Detecting icon type for: PC1:WHDArchiveExtractor.info
+[15:39:05] Checking tooltypes for NewIcon signature...
+[15:39:05]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:39:05]   -> No NewIcon signature found (standard icon)
+[15:39:05]   -> Detected as standard Workbench icon format
+[15:39:05] DEBUG: Pattern matched .info file: 'UnLZX2.lha.info'
+[15:39:05] DEBUG: Full path to .info file: 'PC1:UnLZX2.lha.info'
+[15:39:05] DEBUG: isIconTypeDisk('PC1:UnLZX2.lha.info') = 0 (0=not disk, 1=is disk)
+[15:39:05] Detecting icon type for: PC1:UnLZX2.lha.info
+[15:39:05]   -> Detected as standard Workbench icon format
+[15:39:05] DEBUG: Pattern matched .info file: 'T.info'
+[15:39:05] DEBUG: Full path to .info file: 'PC1:T.info'
+[15:39:05] DEBUG: isIconTypeDisk('PC1:T.info') = 0 (0=not disk, 1=is disk)
+[15:39:05] Detecting icon type for: PC1:T.info
+[15:39:05] Checking tooltypes for NewIcon signature...
+[15:39:05]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:39:05]   -> No NewIcon signature found (standard icon)
+[15:39:05]   -> Detected as standard Workbench icon format
+[15:39:05] DEBUG: Pattern matched .info file: 'SDK.info'
+[15:39:05] DEBUG: Full path to .info file: 'PC1:SDK.info'
+[15:39:05] DEBUG: isIconTypeDisk('PC1:SDK.info') = 0 (0=not disk, 1=is disk)
+[15:39:05] Detecting icon type for: PC1:SDK.info
+[15:39:05] Checking tooltypes for NewIcon signature...
+[15:39:05]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:39:05]   -> No NewIcon signature found (standard icon)
+[15:39:05]   -> Detected as standard Workbench icon format
+[15:39:05] DEBUG: Pattern matched .info file: 'Roadshow-SDK-1.8.lha.info'
+[15:39:05] DEBUG: Full path to .info file: 'PC1:Roadshow-SDK-1.8.lha.info'
+[15:39:05] DEBUG: isIconTypeDisk('PC1:Roadshow-SDK-1.8.lha.info') = 0 (0=not disk, 1=is disk)
+[15:39:05] Detecting icon type for: PC1:Roadshow-SDK-1.8.lha.info
+[15:39:05]   -> Detected as standard Workbench icon format
+[15:39:05] DEBUG: Pattern matched .info file: 'Roadshow-SDK-1.8.info'
+[15:39:05] DEBUG: Full path to .info file: 'PC1:Roadshow-SDK-1.8.info'
+[15:39:05] DEBUG: isIconTypeDisk('PC1:Roadshow-SDK-1.8.info') = 0 (0=not disk, 1=is disk)
+[15:39:05] Detecting icon type for: PC1:Roadshow-SDK-1.8.info
+[15:39:05] Checking tooltypes for NewIcon signature...
+[15:39:05]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:39:05]   -> No NewIcon signature found (standard icon)
+[15:39:05]   -> Detected as standard Workbench icon format
+[15:39:05] DEBUG: Pattern matched .info file: 'Picasso96.adf.info'
+[15:39:05] DEBUG: Full path to .info file: 'PC1:Picasso96.adf.info'
+[15:39:05] DEBUG: isIconTypeDisk('PC1:Picasso96.adf.info') = 0 (0=not disk, 1=is disk)
+[15:39:05] Detecting icon type for: PC1:Picasso96.adf.info
+[15:39:05] Checking tooltypes for NewIcon signature...
+[15:39:05]   ToolType: '(WRITEPROTECTED=No)'
+[15:39:05]   -> No NewIcon signature found (standard icon)
+[15:39:05]   -> Detected as standard Workbench icon format
+[15:39:05] DEBUG: Pattern matched .info file: 'pfs3aio.lha.info'
+[15:39:05] DEBUG: Full path to .info file: 'PC1:pfs3aio.lha.info'
+[15:39:05] DEBUG: isIconTypeDisk('PC1:pfs3aio.lha.info') = 0 (0=not disk, 1=is disk)
+[15:39:05] Detecting icon type for: PC1:pfs3aio.lha.info
+[15:39:05]   -> Detected as standard Workbench icon format
+[15:39:05] DEBUG: Pattern matched .info file: 'lzx121r1.lha.info'
+[15:39:05] DEBUG: Full path to .info file: 'PC1:lzx121r1.lha.info'
+[15:39:05] DEBUG: isIconTypeDisk('PC1:lzx121r1.lha.info') = 0 (0=not disk, 1=is disk)
+[15:39:05] Detecting icon type for: PC1:lzx121r1.lha.info
+[15:39:05]   -> Detected as standard Workbench icon format
+[15:39:05] DEBUG: Pattern matched .info file: 'LZX.guide.info'
+[15:39:05] DEBUG: Full path to .info file: 'PC1:LZX.guide.info'
+[15:39:05] DEBUG: isIconTypeDisk('PC1:LZX.guide.info') = 0 (0=not disk, 1=is disk)
+[15:39:05] Detecting icon type for: PC1:LZX.guide.info
+[15:39:05]   -> Detected as standard Workbench icon format
+[15:39:05] DEBUG: Pattern matched .info file: 'GadToolsBox_v2.0.LHA.info'
+[15:39:05] DEBUG: Full path to .info file: 'PC1:GadToolsBox_v2.0.LHA.info'
+[15:39:05] DEBUG: isIconTypeDisk('PC1:GadToolsBox_v2.0.LHA.info') = 0 (0=not disk, 1=is disk)
+[15:39:05] Detecting icon type for: PC1:GadToolsBox_v2.0.LHA.info
+[15:39:05]   -> Detected as standard Workbench icon format
+[15:39:05] DEBUG: Pattern matched .info file: 'cursor.info'
+[15:39:05] DEBUG: Full path to .info file: 'PC1:cursor.info'
+[15:39:05] DEBUG: isIconTypeDisk('PC1:cursor.info') = 0 (0=not disk, 1=is disk)
+[15:39:05] Detecting icon type for: PC1:cursor.info
+[15:39:05] Checking tooltypes for NewIcon signature...
+[15:39:05]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:39:05]   -> No NewIcon signature found (standard icon)
+[15:39:05]   -> Detected as standard Workbench icon format
+[15:39:05] DEBUG: Pattern matched .info file: 'Programming.info'
+[15:39:05] DEBUG: Full path to .info file: 'PC1:Programming.info'
+[15:39:05] DEBUG: isIconTypeDisk('PC1:Programming.info') = 0 (0=not disk, 1=is disk)
+[15:39:05] Detecting icon type for: PC1:Programming.info
+[15:39:05] Checking tooltypes for NewIcon signature...
+[15:39:05]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:39:05]   -> No NewIcon signature found (standard icon)
+[15:39:05]   -> Detected as standard Workbench icon format
+[15:39:05] DEBUG: Pattern matched .info file: '.backdrop.info'
+[15:39:05] DEBUG: Full path to .info file: 'PC1:.backdrop.info'
+[15:39:05] DEBUG: isIconTypeDisk('PC1:.backdrop.info') = 0 (0=not disk, 1=is disk)
+[15:39:05] Detecting icon type for: PC1:.backdrop.info
+[15:39:05]   -> Detected as standard Workbench icon format
+[15:39:05] DEBUG: Pattern matched .info file: 'Update3.2.3.info'
+[15:39:05] DEBUG: Full path to .info file: 'PC1:Update3.2.3.info'
+[15:39:05] DEBUG: isIconTypeDisk('PC1:Update3.2.3.info') = 0 (0=not disk, 1=is disk)
+[15:39:05] Detecting icon type for: PC1:Update3.2.3.info
+[15:39:05]   -> Detected as standard Workbench icon format
+[15:39:05] DEBUG: Pattern matched .info file: 'TestCode.info'
+[15:39:05] DEBUG: Full path to .info file: 'PC1:TestCode.info'
+[15:39:05] DEBUG: isIconTypeDisk('PC1:TestCode.info') = 0 (0=not disk, 1=is disk)
+[15:39:05] Detecting icon type for: PC1:TestCode.info
+[15:39:05] Checking tooltypes for NewIcon signature...
+[15:39:05]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:39:05]   -> No NewIcon signature found (standard icon)
+[15:39:05]   -> Detected as standard Workbench icon format
+[15:39:05] DEBUG: Pattern matched .info file: 'sc.info'
+[15:39:05] DEBUG: Full path to .info file: 'PC1:sc.info'
+[15:39:05] DEBUG: isIconTypeDisk('PC1:sc.info') = 0 (0=not disk, 1=is disk)
+[15:39:05] Detecting icon type for: PC1:sc.info
+[15:39:05] Checking tooltypes for NewIcon signature...
+[15:39:05]   ToolType: '»»»» Icon by Martin Huttenloher ««««'
+[15:39:05]   -> No NewIcon signature found (standard icon)
+[15:39:05]   -> Detected as standard Workbench icon format
+[15:39:05] DEBUG: Pattern matched .info file: 'GadToolsBox.info'
+[15:39:05] DEBUG: Full path to .info file: 'PC1:GadToolsBox.info'
+[15:39:05] DEBUG: isIconTypeDisk('PC1:GadToolsBox.info') = 0 (0=not disk, 1=is disk)
+[15:39:05] Detecting icon type for: PC1:GadToolsBox.info
+[15:39:05]   -> Detected as standard Workbench icon format
+[15:39:05] ID  | Width  | Height | TxtW   | TxtH   | MaxW   | MaxH   | X        | Y        | Border | Type     | IsDir  | Size       | Date       | Icon                
+[15:39:05] ------------------------------------------------------------------------------------------------------------------------------------------
+[15:39:05] 0   | 57     | 25     | 72     | 9      | 72     | 33     | 14       | 228      | 3      | Standard | File   | 450        | 17460.938  | Workbench3.1.rom.info
+[15:39:05] 1   | 57     | 25     | 70     | 9      | 70     | 33     | 305      | 186      | 3      | Standard | File   | 866        | 17460.938  | Workbench3.1.adf.info
+[15:39:05] 2   | 57     | 25     | 97     | 9      | 97     | 33     | 202      | 186      | 3      | Standard | File   | 822        | 17460.938  | WHDArchiveExtractor.lha.info
+[15:39:05] 3   | 43     | 39     | 84     | 9      | 84     | 47     | 109      | 172      | 3      | Standard | File   | 1459       | 17460.938  | WHDArchiveExtractor.info
+[15:39:05] 4   | 57     | 25     | 44     | 9      | 60     | 33     | 305      | 130      | 3      | Standard | File   | 822        | 17460.938  | UnLZX2.lha.info     
+[15:39:05] 5   | 60     | 24     | 6      | 9      | 63     | 32     | 100      | 131      | 3      | Standard | Folder | 0          | 17460.938  | T.info              
+[15:39:05] 6   | 60     | 24     | 15     | 9      | 63     | 32     | 12       | 131      | 3      | Standard | Folder | 0          | 17460.938  | SDK.info            
+[15:39:05] 7   | 57     | 25     | 89     | 9      | 89     | 33     | 202      | 88       | 3      | Standard | File   | 822        | 17460.938  | Roadshow-SDK-1.8.lha.info
+[15:39:05] 8   | 60     | 24     | 76     | 9      | 76     | 32     | 100      | 89       | 3      | Standard | Folder | 0          | 17460.938  | Roadshow-SDK-1.8.info
+[15:39:05] 9   | 57     | 25     | 53     | 9      | 60     | 33     | 305      | 46       | 3      | Standard | File   | 866        | 17460.938  | Picasso96.adf.info  
+[15:39:05] 10  | 57     | 25     | 42     | 9      | 60     | 33     | 202      | 46       | 3      | Standard | File   | 822        | 17460.938  | pfs3aio.lha.info    
+[15:39:05] 11  | 57     | 25     | 49     | 9      | 60     | 33     | 102      | 46       | 3      | Standard | File   | 822        | 17460.938  | lzx121r1.lha.info   
+[15:39:05] 12  | 57     | 25     | 40     | 9      | 60     | 33     | 14       | 46       | 3      | Standard | File   | 478        | 17460.938  | LZX.guide.info      
+[15:39:05] 13  | 57     | 25     | 89     | 9      | 89     | 33     | 305      | 4        | 3      | Standard | File   | 822        | 17460.938  | GadToolsBox_v2.0.LHA.info
+[15:39:05] 14  | 60     | 24     | 26     | 9      | 63     | 32     | 100      | 5        | 3      | Standard | Folder | 0          | 17460.938  | cursor.info         
+[15:39:05] 15  | 60     | 24     | 51     | 9      | 63     | 32     | 12       | 89       | 3      | Standard | Folder | 0          | 17460.938  | Programming.info    
+[15:39:05] 16  | 57     | 25     | 38     | 9      | 60     | 33     | 14       | 4        | 3      | Standard | File   | 473        | 17460.938  | .backdrop.info      
+[15:39:05] 17  | 60     | 17     | 47     | 9      | 63     | 25     | 12       | 194      | 3      | Standard | Folder | 0          | 17460.938  | Update3.2.3.info    
+[15:39:05] 18  | 60     | 24     | 39     | 9      | 63     | 32     | 201      | 131      | 3      | Standard | Folder | 0          | 17460.938  | TestCode.info       
+[15:39:05] 19  | 60     | 24     | 8      | 9      | 63     | 32     | 304      | 89       | 3      | Standard | Folder | 0          | 17460.938  | sc.info             
+[15:39:05] 20  | 60     | 17     | 51     | 9      | 63     | 25     | 201      | 12       | 3      | Standard | Folder | 0          | 17460.938  | GadToolsBox.info    
+[15:39:05] ==== SECTION: SORTING ICONS ====
+[15:39:05] Sorting 21 icons with preferences
+[15:39:05]   Sort by: 0, Priority: 0, Reverse: 0
+[15:39:05] After sorting, icon order:
+[15:39:05] ID  | Icon                           | IsDir 
+[15:39:05] --------------------------------------------
+[15:39:05] 0   | cursor.info                    | Folder
+[15:39:05] 1   | GadToolsBox.info               | Folder
+[15:39:05] 2   | Programming.info               | Folder
+[15:39:05] 3   | Roadshow-SDK-1.8.info          | Folder
+[15:39:05] 4   | sc.info                        | Folder
+[15:39:05] 5   | SDK.info                       | Folder
+[15:39:05] 6   | T.info                         | Folder
+[15:39:05] 7   | TestCode.info                  | Folder
+[15:39:05] 8   | Update3.2.3.info               | Folder
+[15:39:05] 9   | .backdrop.info                 | File  
+[15:39:05] 10  | GadToolsBox_v2.0.LHA.info      | File  
+[15:39:05] 11  | LZX.guide.info                 | File  
+[15:39:05] 12  | lzx121r1.lha.info              | File  
+[15:39:05] 13  | pfs3aio.lha.info               | File  
+[15:39:05] 14  | Picasso96.adf.info             | File  
+[15:39:05] 15  | Roadshow-SDK-1.8.lha.info      | File  
+[15:39:05] 16  | UnLZX2.lha.info                | File  
+[15:39:05] 17  | WHDArchiveExtractor.info       | File  
+[15:39:05] 18  | WHDArchiveExtractor.lha.info   | File  
+[15:39:05] 19  | Workbench3.1.adf.info          | File  
+[15:39:05] 20  | Workbench3.1.rom.info          | File  
+[15:39:05] ==== SECTION: CALCULATING LAYOUT ====
+[15:39:05] Using column-centered layout algorithm
+[15:39:05] CalculateLayoutPositionsWithColumnCentering: Processing 21 icons
+[15:39:05]   screenWidth=640, maxWindowWidthPct=55, effectiveMaxWidth=352
+[15:39:05] Phase 1: Statistics
+[15:39:05]   Average icon width: 68 pixels
+[15:39:05]   Total icons: 21
+[15:39:05]   Initial estimated columns: 4
+[15:39:05] Attempt 1: 4 columns, total width = 390 (max = 352)
+[15:39:05]   Width exceeded, reducing to 3 columns
+[15:39:05] Attempt 2: 3 columns, total width = 310 (max = 352)
+[15:39:05] Final configuration: 3 columns, total width = 310
+[15:39:05] Column widths: [15:39:05] 97 [15:39:05] 89 [15:39:05] 84 [15:39:05] 
+[15:39:05] 
+Phase 2: Icon Positioning
+[15:39:05] ID  | Icon                           | Col | Row | X    | Y    | Center
+[15:39:05] -------------------------------------------------------------------------
+[15:39:05] 0   | cursor.info                    | 0   | 0   | 25   | 4    | 17    
+[15:39:05] 1   | GadToolsBox.info               | 1   | 0   | 126  | 4    | 13    
+[15:39:05] 2   | Programming.info               | 2   | 0   | 220  | 4    | 10    
+[15:39:05] 3   | Roadshow-SDK-1.8.info          | 0   | 1   | 26   | 44   | 10    
+[15:39:05] 4   | sc.info                        | 1   | 1   | 126  | 44   | 13    
+[15:39:05] 5   | SDK.info                       | 2   | 1   | 220  | 44   | 10    
+[15:39:05] 6   | T.info                         | 0   | 2   | 25   | 84   | 17    
+[15:39:05] 7   | TestCode.info                  | 1   | 2   | 126  | 84   | 13    
+[15:39:05] 8   | Update3.2.3.info               | 2   | 2   | 220  | 84   | 10    
+[15:39:05] 9   | .backdrop.info                 | 0   | 3   | 26   | 124  | 18    
+[15:39:05] 10  | GadToolsBox_v2.0.LHA.info      | 1   | 3   | 129  | 124  | 0     
+[15:39:05] 11  | LZX.guide.info                 | 2   | 3   | 222  | 124  | 12    
+[15:39:05] 12  | lzx121r1.lha.info              | 0   | 4   | 26   | 165  | 18    
+[15:39:05] 13  | pfs3aio.lha.info               | 1   | 4   | 127  | 165  | 14    
+[15:39:05] 14  | Picasso96.adf.info             | 2   | 4   | 222  | 165  | 12    
+[15:39:05] 15  | Roadshow-SDK-1.8.lha.info      | 0   | 5   | 28   | 206  | 4     
+[15:39:05] 16  | UnLZX2.lha.info                | 1   | 5   | 127  | 206  | 14    
+[15:39:05] 17  | WHDArchiveExtractor.info       | 2   | 5   | 230  | 206  | 0     
+[15:39:05] 18  | WHDArchiveExtractor.lha.info   | 0   | 6   | 28   | 261  | 0     
+[15:39:05] 19  | Workbench3.1.adf.info          | 1   | 6   | 128  | 261  | 9     
+[15:39:05] 20  | Workbench3.1.rom.info          | 2   | 6   | 223  | 261  | 6     
+[15:39:05] 
+Adjusting final row (indices 18 to 20) for text alignment
+[15:39:05] 
+Column-centered layout complete!
+[15:39:05] DEBUG: resizeFolderToContents ENTRY: dirPath='PC1:', iconArray->size=21
+[15:39:05] DEBUG: Calculated maxWidth=314, maxHeight=294 before calling repoistionWindow
+[15:39:05] Saved folder settings ok for PC1:Disk
+[15:39:05] ==== SECTION: SAVING ICONS ====
+[15:39:05] ID  | X    | Y    | Icon                                    
+[15:39:05] --------------------------------------------------------------
+[15:39:05] Processing icon 0: cursor.info
+[15:39:05] 0   | 25   | 4    | cursor.info                             
+[15:39:05]    Saved OK: PC1:cursor
+[15:39:05] Processing icon 1: GadToolsBox.info
+[15:39:05] 1   | 126  | 11   | GadToolsBox.info                        
+[15:39:05]    Saved OK: PC1:GadToolsBox
+[15:39:05] Processing icon 2: Programming.info
+[15:39:05] 2   | 220  | 4    | Programming.info                        
+[15:39:05]    Saved OK: PC1:Programming
+[15:39:05] Processing icon 3: Roadshow-SDK-1.8.info
+[15:39:05] 3   | 26   | 44   | Roadshow-SDK-1.8.info                   
+[15:39:05]    Saved OK: PC1:Roadshow-SDK-1.8
+[15:39:05] Processing icon 4: sc.info
+[15:39:05] 4   | 126  | 44   | sc.info                                 
+[15:39:05]    Saved OK: PC1:sc
+[15:39:05] Processing icon 5: SDK.info
+[15:39:05] 5   | 220  | 44   | SDK.info                                
+[15:39:05]    Saved OK: PC1:SDK
+[15:39:05] Processing icon 6: T.info
+[15:39:05] 6   | 25   | 84   | T.info                                  
+[15:39:05]    Saved OK: PC1:T
+[15:39:05] Processing icon 7: TestCode.info
+[15:39:05] 7   | 126  | 84   | TestCode.info                           
+[15:39:05]    Saved OK: PC1:TestCode
+[15:39:05] Processing icon 8: Update3.2.3.info
+[15:39:05] 8   | 220  | 91   | Update3.2.3.info                        
+[15:39:05]    Saved OK: PC1:Update3.2.3
+[15:39:05] Processing icon 9: .backdrop.info
+[15:39:05] 9   | 26   | 124  | .backdrop.info                          
+[15:39:05]    Saved OK: PC1:.backdrop
+[15:39:05] Processing icon 10: GadToolsBox_v2.0.LHA.info
+[15:39:05] 10  | 129  | 124  | GadToolsBox_v2.0.LHA.info               
+[15:39:05]    Saved OK: PC1:GadToolsBox_v2.0.LHA
+[15:39:05] Processing icon 11: LZX.guide.info
+[15:39:05] 11  | 222  | 124  | LZX.guide.info                          
+[15:39:05]    Saved OK: PC1:LZX.guide
+[15:39:05] Processing icon 12: lzx121r1.lha.info
+[15:39:05] 12  | 26   | 165  | lzx121r1.lha.info                       
+[15:39:05]    Saved OK: PC1:lzx121r1.lha
+[15:39:05] Processing icon 13: pfs3aio.lha.info
+[15:39:05] 13  | 127  | 165  | pfs3aio.lha.info                        
+[15:39:05]    Saved OK: PC1:pfs3aio.lha
+[15:39:05] Processing icon 14: Picasso96.adf.info
+[15:39:05] 14  | 222  | 165  | Picasso96.adf.info                      
+[15:39:05]    Saved OK: PC1:Picasso96.adf
+[15:39:05] Processing icon 15: Roadshow-SDK-1.8.lha.info
+[15:39:05] 15  | 28   | 220  | Roadshow-SDK-1.8.lha.info               
+[15:39:05]    Saved OK: PC1:Roadshow-SDK-1.8.lha
+[15:39:05] Processing icon 16: UnLZX2.lha.info
+[15:39:05] 16  | 127  | 220  | UnLZX2.lha.info                         
+[15:39:05]    Saved OK: PC1:UnLZX2.lha
+[15:39:05] Processing icon 17: WHDArchiveExtractor.info
+[15:39:05] 17  | 230  | 206  | WHDArchiveExtractor.info                
+[15:39:05]    Saved OK: PC1:WHDArchiveExtractor
+[15:39:05] Processing icon 18: WHDArchiveExtractor.lha.info
+[15:39:05] 18  | 28   | 261  | WHDArchiveExtractor.lha.info            
+[15:39:05]    Saved OK: PC1:WHDArchiveExtractor.lha
+[15:39:05] Processing icon 19: Workbench3.1.adf.info
+[15:39:05] 19  | 128  | 261  | Workbench3.1.adf.info                   
+[15:39:05]    Saved OK: PC1:Workbench3.1.adf
+[15:39:05] Processing icon 20: Workbench3.1.rom.info
+[15:39:05] 20  | 223  | 261  | Workbench3.1.rom.info                   
+[15:39:05]    Saved OK: PC1:Workbench3.1.rom
