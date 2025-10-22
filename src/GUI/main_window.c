@@ -19,6 +19,7 @@
 #include <stdio.h>
 
 #include "main_window.h"
+#include "advanced_window.h"
 #include "layout_preferences.h"
 #include "layout_processor.h"
 #include "writeLog.h"
@@ -577,7 +578,7 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     ng.ng_Flags = PLACETEXT_IN;
     
     win_data->advanced_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
-        GA_Disabled, TRUE,  /* Disabled for Phase 2 */
+        GA_Disabled, FALSE,  /* Enabled - Phase 5 complete */
         TAG_END);
     if (!gad)
     {
@@ -663,6 +664,9 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     win_data->enable_backup = FALSE;
     win_data->enable_icon_upgrade = FALSE;
     win_data->skip_hidden_folders = TRUE;  /* Default: skip hidden folders */
+    
+    /* Initialize advanced settings flag */
+    win_data->has_advanced_settings = FALSE;
 
     /* Lock the Workbench screen */
     win_data->screen = LockPubScreen(NULL);
@@ -895,6 +899,21 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                             win_data->center_icons,
                             win_data->optimize_columns);
                         
+                        /* Apply advanced settings if user configured them */
+                        if (win_data->has_advanced_settings)
+                        {
+                            printf("Applying advanced settings to preferences\n");
+                            prefs.aspectRatio = win_data->advanced_aspect_ratio;
+                            prefs.useCustomAspectRatio = win_data->advanced_use_custom_ratio;
+                            prefs.customAspectWidth = win_data->advanced_custom_width;
+                            prefs.customAspectHeight = win_data->advanced_custom_height;
+                            prefs.overflowMode = win_data->advanced_overflow_mode;
+                            prefs.iconSpacingX = win_data->advanced_spacing_x;
+                            prefs.iconSpacingY = win_data->advanced_spacing_y;
+                            prefs.minIconsPerRow = win_data->advanced_min_icons_row;
+                            prefs.maxIconsPerRow = win_data->advanced_max_icons_row;
+                        }
+                        
                         /* Set skip hidden folders preference */
                         prefs.skipHiddenFolders = win_data->skip_hidden_folders;
                         
@@ -931,8 +950,96 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         break;
 
                     case GID_ADVANCED:
-                        printf("Advanced button clicked\n");
-                        /* TODO: Open advanced settings window */
+                        {
+                            struct iTidyAdvancedWindow adv_data;
+                            LayoutPreferences temp_prefs;
+                            
+                            printf("Advanced button clicked - opening Advanced Settings window\n");
+                            
+                            /* Get current preferences from main window GUI state */
+                            memset(&temp_prefs, 0, sizeof(LayoutPreferences));
+                            InitLayoutPreferences(&temp_prefs);
+                            
+                            /* Apply current preset to get baseline settings */
+                            ApplyPreset(&temp_prefs, win_data->preset_selected);
+                            
+                            /* Also apply GUI selections to get current state */
+                            MapGuiToPreferences(&temp_prefs,
+                                win_data->layout_selected,
+                                win_data->sort_selected,
+                                win_data->order_selected,
+                                win_data->sortby_selected,
+                                win_data->center_icons,
+                                win_data->optimize_columns);
+                            
+                            /* If we already have advanced settings, apply those too */
+                            if (win_data->has_advanced_settings)
+                            {
+                                temp_prefs.aspectRatio = win_data->advanced_aspect_ratio;
+                                temp_prefs.useCustomAspectRatio = win_data->advanced_use_custom_ratio;
+                                temp_prefs.customAspectWidth = win_data->advanced_custom_width;
+                                temp_prefs.customAspectHeight = win_data->advanced_custom_height;
+                                temp_prefs.overflowMode = win_data->advanced_overflow_mode;
+                                temp_prefs.iconSpacingX = win_data->advanced_spacing_x;
+                                temp_prefs.iconSpacingY = win_data->advanced_spacing_y;
+                                temp_prefs.minIconsPerRow = win_data->advanced_min_icons_row;
+                                temp_prefs.maxIconsPerRow = win_data->advanced_max_icons_row;
+                            }
+                            
+                            /* Open advanced window (modal) */
+                            if (open_itidy_advanced_window(&adv_data, &temp_prefs))
+                            {
+                                /* Disable main window input while advanced window is open */
+                                ModifyIDCMP(win_data->window, 0);
+                                
+                                /* Run advanced window event loop */
+                                while (handle_advanced_window_events(&adv_data))
+                                {
+                                    /* Wait for advanced window events */
+                                    WaitPort(adv_data.window->UserPort);
+                                }
+                                
+                                /* Close advanced window */
+                                close_itidy_advanced_window(&adv_data);
+                                
+                                /* Re-enable main window input */
+                                ModifyIDCMP(win_data->window, 
+                                    IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW);
+                                
+                                /* If changes were accepted, save to window data for Apply button */
+                                if (adv_data.changes_accepted)
+                                {
+                                    printf("Advanced settings accepted - saved for Apply\n");
+                                    printf("  Aspect Ratio: %.2f\n", temp_prefs.aspectRatio);
+                                    printf("  Overflow Mode: %d\n", temp_prefs.overflowMode);
+                                    printf("  Spacing: %dx%d\n", 
+                                           temp_prefs.iconSpacingX,
+                                           temp_prefs.iconSpacingY);
+                                    
+                                    /* Save advanced settings to main window data */
+                                    win_data->has_advanced_settings = TRUE;
+                                    win_data->advanced_aspect_ratio = temp_prefs.aspectRatio;
+                                    win_data->advanced_use_custom_ratio = temp_prefs.useCustomAspectRatio;
+                                    win_data->advanced_custom_width = temp_prefs.customAspectWidth;
+                                    win_data->advanced_custom_height = temp_prefs.customAspectHeight;
+                                    win_data->advanced_overflow_mode = temp_prefs.overflowMode;
+                                    win_data->advanced_spacing_x = temp_prefs.iconSpacingX;
+                                    win_data->advanced_spacing_y = temp_prefs.iconSpacingY;
+                                    win_data->advanced_min_icons_row = temp_prefs.minIconsPerRow;
+                                    win_data->advanced_max_icons_row = temp_prefs.maxIconsPerRow;
+                                    
+                                    printf("  (Settings will be applied when you click Apply button)\n");
+                                }
+                                else
+                                {
+                                    printf("Advanced settings cancelled\n");
+                                }
+                            }
+                            else
+                            {
+                                printf("ERROR: Failed to open Advanced Settings window\n");
+                            }
+                        }
                         break;
 
                     case GID_FOLDER_PATH:
@@ -943,6 +1050,10 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         /* Use msg_code which contains the new cycle gadget selection */
                         win_data->preset_selected = msg_code;
                         printf("Preset changed to: %s\n", preset_labels[win_data->preset_selected]);
+                        
+                        /* Clear advanced settings when preset is changed */
+                        win_data->has_advanced_settings = FALSE;
+                        printf("  (Advanced settings cleared - will use preset defaults)\n");
                         
                         /* Update all cycle gadgets to match preset */
                         switch (win_data->preset_selected)

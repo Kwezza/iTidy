@@ -37,9 +37,20 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     
     /* Window Management */
     prefs->resizeWindows = DEFAULT_RESIZE_WINDOWS;
+    prefs->minIconsPerRow = DEFAULT_MIN_ICONS_PER_ROW;
     prefs->maxIconsPerRow = DEFAULT_MAX_ICONS_PER_ROW;
     prefs->maxWindowWidthPct = DEFAULT_MAX_WIDTH_PCT;
     prefs->aspectRatio = DEFAULT_ASPECT_RATIO;
+    prefs->overflowMode = DEFAULT_OVERFLOW_MODE;
+    
+    /* Spacing Settings */
+    prefs->iconSpacingX = DEFAULT_ICON_SPACING_X;
+    prefs->iconSpacingY = DEFAULT_ICON_SPACING_Y;
+    
+    /* Custom Aspect Ratio */
+    prefs->customAspectWidth = 16;   /* Default 16:10 = 1.6 */
+    prefs->customAspectHeight = 10;
+    prefs->useCustomAspectRatio = FALSE;
     
     /* Advanced Settings */
     prefs->skipHiddenFolders = DEFAULT_SKIP_HIDDEN_FOLDERS;
@@ -82,9 +93,13 @@ void ApplyPreset(LayoutPreferences *prefs, int preset)
             prefs->centerIconsInColumn = FALSE;
             prefs->useColumnWidthOptimization = TRUE;
             prefs->textAlignment = TEXT_ALIGN_BOTTOM;
-            prefs->maxIconsPerRow = 5;  /* 5 icons fit nicely on 640px screen */
+            prefs->minIconsPerRow = 2;
+            prefs->maxIconsPerRow = 0;  /* AUTO: Calculate from screen width */
             prefs->maxWindowWidthPct = 55;
             prefs->aspectRatio = 1.6f;
+            prefs->overflowMode = OVERFLOW_HORIZONTAL;  /* Wide scrolling */
+            prefs->iconSpacingX = 8;   /* Standard spacing */
+            prefs->iconSpacingY = 8;
             break;
         
         case PRESET_COMPACT:
@@ -97,9 +112,13 @@ void ApplyPreset(LayoutPreferences *prefs, int preset)
             prefs->centerIconsInColumn = FALSE;
             prefs->useColumnWidthOptimization = TRUE;
             prefs->textAlignment = TEXT_ALIGN_BOTTOM;
-            prefs->maxIconsPerRow = 6;
+            prefs->minIconsPerRow = 2;
+            prefs->maxIconsPerRow = 0;  /* AUTO: Calculate from screen width */
             prefs->maxWindowWidthPct = 45;
             prefs->aspectRatio = 1.3f;
+            prefs->overflowMode = OVERFLOW_VERTICAL;  /* Maximize width usage */
+            prefs->iconSpacingX = 6;   /* Tight spacing */
+            prefs->iconSpacingY = 6;
             break;
         
         case PRESET_MODERN:
@@ -112,9 +131,13 @@ void ApplyPreset(LayoutPreferences *prefs, int preset)
             prefs->centerIconsInColumn = FALSE;
             prefs->useColumnWidthOptimization = TRUE;
             prefs->textAlignment = TEXT_ALIGN_BOTTOM;
-            prefs->maxIconsPerRow = 8;
+            prefs->minIconsPerRow = 3;  /* Wider minimum */
+            prefs->maxIconsPerRow = 0;  /* AUTO: Calculate from screen width */
             prefs->maxWindowWidthPct = 60;
             prefs->aspectRatio = 1.5f;
+            prefs->overflowMode = OVERFLOW_BOTH;  /* Maintain proportions */
+            prefs->iconSpacingX = 12;  /* Generous spacing */
+            prefs->iconSpacingY = 10;
             break;
         
         case PRESET_WHDLOAD:
@@ -127,9 +150,13 @@ void ApplyPreset(LayoutPreferences *prefs, int preset)
             prefs->centerIconsInColumn = FALSE;
             prefs->useColumnWidthOptimization = TRUE;
             prefs->textAlignment = TEXT_ALIGN_BOTTOM;
-            prefs->maxIconsPerRow = 4;
+            prefs->minIconsPerRow = 2;
+            prefs->maxIconsPerRow = 0;  /* AUTO: Calculate from screen width */
             prefs->maxWindowWidthPct = 40;
             prefs->aspectRatio = 1.4f;
+            prefs->overflowMode = OVERFLOW_HORIZONTAL;  /* Wide game lists */
+            prefs->iconSpacingX = 6;   /* Tight horizontal */
+            prefs->iconSpacingY = 8;   /* Standard vertical */
             break;
         
         default:

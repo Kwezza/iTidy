@@ -71,6 +71,18 @@ typedef enum {
 } TextAlignment;
 
 /*========================================================================*/
+/* Window Overflow Mode Enumeration                                      */
+/*========================================================================*/
+/**
+ * @brief Window overflow behavior when icons exceed screen size
+ */
+typedef enum {
+    OVERFLOW_HORIZONTAL = 0,  /* Expand width, add horizontal scrollbar */
+    OVERFLOW_VERTICAL = 1,    /* Expand height, add vertical scrollbar */
+    OVERFLOW_BOTH = 2         /* Expand both, add both scrollbars */
+} WindowOverflowMode;
+
+/*========================================================================*/
 /* Backup Preferences Structure                                          */
 /*========================================================================*/
 /**
@@ -111,9 +123,20 @@ typedef struct {
     
     /* Window Management */
     BOOL resizeWindows;              /* Auto-resize drawer windows */
+    UWORD minIconsPerRow;            /* Minimum columns (prevent 1×N layouts) */
     UWORD maxIconsPerRow;            /* Maximum columns (0 = no limit) */
     UWORD maxWindowWidthPct;         /* Max window width as % of screen */
     float aspectRatio;               /* Target window aspect ratio */
+    WindowOverflowMode overflowMode; /* Overflow behavior for large folders */
+    
+    /* Spacing Settings */
+    UWORD iconSpacingX;              /* Horizontal spacing between icons (pixels) */
+    UWORD iconSpacingY;              /* Vertical spacing between icons (pixels) */
+    
+    /* Custom Aspect Ratio */
+    UWORD customAspectWidth;         /* Custom ratio numerator (e.g., 16) */
+    UWORD customAspectHeight;        /* Custom ratio denominator (e.g., 10) */
+    BOOL useCustomAspectRatio;       /* TRUE if "Custom" selected */
     
     /* Advanced Settings */
     BOOL skipHiddenFolders;          /* Skip folders without .info files (hidden) */
@@ -148,10 +171,18 @@ typedef struct {
 #define DEFAULT_OPTIMIZE_COLUMNS    TRUE
 #define DEFAULT_TEXT_ALIGNMENT      TEXT_ALIGN_BOTTOM  /* Default: align text to bottom of row */
 #define DEFAULT_RESIZE_WINDOWS      TRUE
-#define DEFAULT_MAX_ICONS_PER_ROW   10
+#define DEFAULT_MIN_ICONS_PER_ROW   2   /* Prevent 1×N layouts */
+#define DEFAULT_MAX_ICONS_PER_ROW   0   /* Auto: Calculate from screen width */
 #define DEFAULT_MAX_WIDTH_PCT       55
 #define DEFAULT_ASPECT_RATIO        1.6f
+#define DEFAULT_OVERFLOW_MODE       OVERFLOW_HORIZONTAL  /* Classic behavior */
+#define DEFAULT_ICON_SPACING_X      8    /* 8px horizontal spacing */
+#define DEFAULT_ICON_SPACING_Y      8    /* 8px vertical spacing */
 #define DEFAULT_SKIP_HIDDEN_FOLDERS TRUE   /* Default: ignore hidden folders */
+
+/* Icon Spacing Limits */
+#define MIN_ICON_SPACING            4    /* Minimum 4px (icons too close) */
+#define MAX_ICON_SPACING           20    /* Maximum 20px (too much wasted space) */
 
 /*========================================================================*/
 /* Function Prototypes                                                   */

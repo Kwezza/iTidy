@@ -28,7 +28,6 @@
 #include "icon_management.h"
 #include "window_management.h"
 #include "utilities.h"
-#include "spinner.h"
 #include "writeLog.h"
 #include "icon_misc.h"
 #include "dos/getDiskDetails.h"

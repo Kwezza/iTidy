@@ -74,6 +74,18 @@ struct iTidyMainWindow
     BOOL enable_backup;
     BOOL enable_icon_upgrade;
     BOOL skip_hidden_folders;
+    
+    /* Advanced settings (overrides preset defaults when set) */
+    BOOL has_advanced_settings;         /* TRUE if user configured advanced settings */
+    float advanced_aspect_ratio;
+    BOOL advanced_use_custom_ratio;
+    UWORD advanced_custom_width;
+    UWORD advanced_custom_height;
+    UWORD advanced_overflow_mode;
+    UWORD advanced_spacing_x;
+    UWORD advanced_spacing_y;
+    UWORD advanced_min_icons_row;
+    UWORD advanced_max_icons_row;
 };
 
 /*------------------------------------------------------------------------*/

@@ -78,6 +78,8 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray)
 {
 #if PLATFORM_AMIGA
     int i, maxWidth = 0, maxHeight = 0;
+    int rightMargin = 16;  /* Safety margin on right edge */
+    int bottomMargin = 16; /* Safety margin on bottom edge */
 
 #ifdef DEBUG
     append_to_log("DEBUG: resizeFolderToContents ENTRY: dirPath='%s', iconArray->size=%d\n", 
@@ -86,14 +88,26 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray)
 
     if (user_folderViewMode == DDVM_BYICON)
     {
+        /* Calculate content dimensions from icon positions */
         for (i = 0; i < iconArray->size; i++)
         {
-            maxWidth = MAX(maxWidth, iconArray->array[i].icon_x + iconArray->array[i].icon_max_width);
-            maxHeight = MAX(maxHeight, iconArray->array[i].icon_y + iconArray->array[i].icon_max_height);
+            int iconRight = iconArray->array[i].icon_x + iconArray->array[i].icon_max_width;
+            int iconBottom = iconArray->array[i].icon_y + iconArray->array[i].icon_max_height;
+            
+            maxWidth = MAX(maxWidth, iconRight);
+            maxHeight = MAX(maxHeight, iconBottom);
         }
+        
+        /* Add margins to content dimensions */
+        maxWidth += rightMargin;
+        maxHeight += bottomMargin;
+        
+#ifdef DEBUG
+        append_to_log("DEBUG: Content dimensions: %d×%d (with margins)\n", 
+                      maxWidth, maxHeight);
+#endif
     }
     else
-
     {
         maxWidth = WindowWidthTextOnly;
         maxHeight = WindowHeightTextOnly;
@@ -113,6 +127,7 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray)
         return;
     }
 
+    /* Note: repoistionWindow will clamp to screen size and add chrome */
     repoistionWindow(dirPath, maxWidth, maxHeight);
 #else
     (void)dirPath;
@@ -291,53 +306,92 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight)
 {
 #if PLATFORM_AMIGA
     int posTop = 0, posLeft = 0;
+    int finalWidth, finalHeight;
+    int maxUsableHeight;
     folderWindowSize newFolderInfo;
-    #ifdef DEBUG_MAX
-    append_to_log("Repoistion window: %s Padding %d disableVolumeGauge=%d\n", dirPath, PADDING_WIDTH, prefsWorkbench.disableVolumeGauge);
-    #endif
+    
+#ifdef DEBUG
+    append_to_log("Reposition window: %s (content: %d×%d)\n", dirPath, winWidth, winHeight);
+    append_to_log("  Padding: %d, disableVolumeGauge: %d\n", 
+                  PADDING_WIDTH, prefsWorkbench.disableVolumeGauge);
+#endif
     
     /* Add window chrome (borders, scrollbars, etc.) to width */
-    winWidth += prefsIControl.currentBarWidth + prefsIControl.currentLeftBarWidth + (PADDING_WIDTH * 2);
-    winWidth += prefsIControl.currentBarWidth;  /* Add space for vertical scrollbar (same width as right border) */
+    finalWidth = winWidth + prefsIControl.currentBarWidth + prefsIControl.currentLeftBarWidth + (PADDING_WIDTH * 2);
+    finalWidth += prefsIControl.currentBarWidth;  /* Add space for vertical scrollbar (same width as right border) */
     
     if (!prefsWorkbench.disableVolumeGauge && IsRootDirectorySimple(dirPath))
     {
-        winWidth += prefsIControl.currentCGaugeWidth;
+        finalWidth += prefsIControl.currentCGaugeWidth;
 
-    #ifdef DEBUG_MAX
-        append_to_log("Root dir detected and VolumeGauge enabled. Adding CGauge width: %d\n", prefsIControl.currentCGaugeWidth);
-    #endif
-    }
-    else
-    {
-        #ifdef DEBUG_MAX
-        append_to_log("No root dir detected or VolumeGauge disabled. CGauge width: %d\n", prefsIControl.currentCGaugeWidth);
-        #endif
+#ifdef DEBUG
+        append_to_log("  Root dir detected and VolumeGauge enabled. Adding CGauge width: %d\n", 
+                      prefsIControl.currentCGaugeWidth);
+#endif
     }
     
     /* Add window chrome (title bar, borders, scrollbars, etc.) to height */
-    winHeight += prefsIControl.currentWindowBarHeight + prefsIControl.currentBarHeight + (PADDING_HEIGHT * 2);
-    winHeight += prefsIControl.currentBarHeight;  /* Add space for horizontal scrollbar (same height as bottom border) */
+    finalHeight = winHeight + prefsIControl.currentWindowBarHeight + prefsIControl.currentBarHeight + (PADDING_HEIGHT * 2);
+    finalHeight += prefsIControl.currentBarHeight;  /* Add space for horizontal scrollbar (same height as bottom border) */
     
-    if (winWidth > screenWidth)
-        winWidth = screenWidth;
-    if (winHeight > screenHight - (prefsIControl.currentTitleBarHeight * 2))
-        winHeight = screenHight - (prefsIControl.currentTitleBarHeight * 2);
-
-    posTop = (screenHight - winHeight) / 2;
-    posLeft = (screenWidth - winWidth) / 2;
+#ifdef DEBUG
+    append_to_log("  With chrome: %d×%d\n", finalWidth, finalHeight);
+#endif
+    
+    /* Calculate maximum usable height (account for Workbench title bar) */
+    maxUsableHeight = screenHight - prefsIControl.currentTitleBarHeight;
+    
+    /* Clamp window dimensions to screen size (creates scrollbars if needed) */
+    if (finalWidth > screenWidth)
+    {
+#ifdef DEBUG
+        append_to_log("  Width %d exceeds screen %d - will have horizontal scrollbar\n", 
+                      finalWidth, screenWidth);
+#endif
+        finalWidth = screenWidth;
+    }
+    
+    if (finalHeight > maxUsableHeight)
+    {
+#ifdef DEBUG
+        append_to_log("  Height %d exceeds usable %d - will have vertical scrollbar\n", 
+                      finalHeight, maxUsableHeight);
+#endif
+        finalHeight = maxUsableHeight;
+    }
+    
+    /* Position window vertically */
+    if (finalHeight >= maxUsableHeight)
+    {
+        /* Tall/overflow window - position just below Workbench title bar */
+        posTop = prefsIControl.currentTitleBarHeight;
+#ifdef DEBUG
+        append_to_log("  Overflow height - positioning at top: %d\n", posTop);
+#endif
+    }
+    else
+    {
+        /* Normal window - center vertically in available space */
+        posTop = (screenHight - finalHeight) / 2;
+#ifdef DEBUG
+        append_to_log("  Normal height - centering vertically: %d\n", posTop);
+#endif
+    }
+    
+    /* Position window horizontally - always center */
+    posLeft = (screenWidth - finalWidth) / 2;
+    
+#ifdef DEBUG
+    append_to_log("  Final position: left=%d, top=%d, width=%d, height=%d\n", 
+                  posLeft, posTop, finalWidth, finalHeight);
+#endif
 
     newFolderInfo.left = posLeft;
     newFolderInfo.top = posTop;
-    newFolderInfo.width = winWidth;
-    newFolderInfo.height = winHeight;
+    newFolderInfo.width = finalWidth;
+    newFolderInfo.height = finalHeight;
 
-
-        #ifdef DEBUG_MAX
-    append_to_log("posTop: %d, posLeft: %d, winWidth: %d, winHeight: %d\n", posTop, posLeft, winWidth, winHeight);
-    #endif
-
-    SaveFolderSettings(dirPath, &newFolderInfo,0);
+    SaveFolderSettings(dirPath, &newFolderInfo, 0);
 #else
     (void)dirPath;
     (void)winWidth;

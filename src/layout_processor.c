@@ -22,6 +22,7 @@
 #include "writeLog.h"
 #include "icon_misc.h"
 #include "spinner.h"
+#include "aspect_ratio_layout.h"
 
 /* Forward declarations for helper functions */
 static int CompareIconsWithPreferences(const void *a, const void *b, 
@@ -36,9 +37,11 @@ static BOOL ProcessDirectoryRecursive(const char *path,
 
 /* Forward declarations for column centering */
 static void CalculateLayoutPositions(IconArray *iconArray, 
-                                    const LayoutPreferences *prefs);
+                                    const LayoutPreferences *prefs,
+                                    int targetColumns);
 static void CalculateLayoutPositionsWithColumnCentering(IconArray *iconArray, 
-                                                       const LayoutPreferences *prefs);
+                                                       const LayoutPreferences *prefs,
+                                                       int targetColumns);
 
 /* Helper functions for sorting */
 static const char* GetFileExtension(const char *filename);
@@ -84,20 +87,33 @@ BOOL ProcessDirectoryWithPreferences(const char *path,
 /*========================================================================*/
 
 static void CalculateLayoutPositions(IconArray *iconArray, 
-                                    const LayoutPreferences *prefs)
+                                    const LayoutPreferences *prefs,
+                                    int targetColumns)
 {
     int i;
-    int currentX = 8;   /* Starting X position */
-    int currentY = 4;   /* Starting Y position */
-    int iconSpacing = 8; /* Horizontal spacing between icons */
-    int maxWidth = 640;  /* Default screen width */
+    int iconSpacingX;   /* Horizontal spacing between icons */
+    int iconSpacingY;   /* Vertical spacing between icons */
+    int currentX;       /* Current X position */
+    int currentY;       /* Current Y position */
+    int maxWidth = 640; /* Default screen width */
     int effectiveMaxWidth;
-    int rightMargin = 16; /* Safety margin on right edge */
+    int rightMargin;    /* Safety margin on right edge */
     int nextX;
     int maxHeightInRow = 0; /* Track tallest icon in current row */
-    int rowStartY = 4; /* Y position where current row started */
+    int rowStartY;      /* Y position where current row started */
     int rowStartIndex = 0; /* Index of first icon in current row */
     int adjustmentOffset;
+    int iconsInCurrentRow = 0; /* Track icons placed in current row */
+    
+    /* Use spacing from preferences */
+    iconSpacingX = prefs->iconSpacingX;
+    iconSpacingY = prefs->iconSpacingY;
+    
+    /* Starting positions use spacing as margin */
+    currentX = iconSpacingX;
+    currentY = iconSpacingY;
+    rowStartY = iconSpacingY;
+    rightMargin = iconSpacingX;
     
     if (!iconArray || iconArray->size == 0)
         return;
@@ -117,8 +133,8 @@ static void CalculateLayoutPositions(IconArray *iconArray,
     }
     
 #ifdef DEBUG
-    append_to_log("CalculateLayoutPositions: Positioning %d icons with dynamic width wrapping\n", 
-                  iconArray->size);
+    append_to_log("CalculateLayoutPositions: Positioning %d icons (targetColumns=%d)\n", 
+                  iconArray->size, targetColumns);
     append_to_log("  screenWidth=%d, maxWindowWidthPct=%d, effectiveMaxWidth=%d\n",
                   maxWidth, prefs->maxWindowWidthPct, effectiveMaxWidth);
     append_to_log("  textAlignment=%s\n", 
@@ -133,13 +149,25 @@ static void CalculateLayoutPositions(IconArray *iconArray,
     {
         FullIconDetails *icon = &iconArray->array[i];
         int iconOffset = 0;
+        BOOL shouldWrap = FALSE;
         
         /* Calculate where the NEXT icon would start */
-        nextX = currentX + icon->icon_max_width + iconSpacing;
+        nextX = currentX + icon->icon_max_width + iconSpacingX;
         
-        /* If this icon would go past the effective width limit, wrap to next row */
-        /* (but always place at least one icon per row) */
-        if (currentX > 8 && nextX > (effectiveMaxWidth - rightMargin))
+        /* Check if we should wrap based on target columns or width constraint */
+        if (targetColumns > 0)
+        {
+            /* Aspect ratio mode: wrap based on column count */
+            shouldWrap = (iconsInCurrentRow >= targetColumns);
+        }
+        else
+        {
+            /* Traditional mode: wrap based on width */
+            shouldWrap = (nextX > (effectiveMaxWidth - rightMargin));
+        }
+        
+        /* If should wrap to next row (but always place at least one icon per row) */
+        if (currentX > iconSpacingX && shouldWrap)
         {
             /* Before starting new row, adjust previous row if TEXT_ALIGN_BOTTOM */
             if (prefs->textAlignment == TEXT_ALIGN_BOTTOM && maxHeightInRow > 0)
@@ -163,11 +191,12 @@ static void CalculateLayoutPositions(IconArray *iconArray,
             }
             
             /* Start new row - use the tallest icon from previous row */
-            currentX = 8;
-            currentY = rowStartY + maxHeightInRow + 8; /* 8px vertical spacing */
+            currentX = iconSpacingX;
+            currentY = rowStartY + maxHeightInRow + iconSpacingY;
             rowStartY = currentY;
             rowStartIndex = i; /* Mark start of new row */
             maxHeightInRow = 0; /* Reset for new row */
+            iconsInCurrentRow = 0; /* Reset column counter for new row */
         }
         
         /* If text is wider than icon, center the icon within the text width */
@@ -191,7 +220,8 @@ static void CalculateLayoutPositions(IconArray *iconArray,
 #endif
         
         /* Advance X position for next icon (using max width, not offset position) */
-        currentX += icon->icon_max_width + iconSpacing;
+        currentX += icon->icon_max_width + iconSpacingX;
+        iconsInCurrentRow++; /* Count icons in current row */
     }
     
     /* SECOND PASS: Adjust the last row if TEXT_ALIGN_BOTTOM */
@@ -260,21 +290,32 @@ static void CalculateLayoutPositions(IconArray *iconArray,
  * @param prefs Layout preferences including centerIconsInColumn flag
  */
 static void CalculateLayoutPositionsWithColumnCentering(IconArray *iconArray, 
-                                                       const LayoutPreferences *prefs)
+                                                       const LayoutPreferences *prefs,
+                                                       int targetColumns)
 {
     int i, col, row;
-    int iconSpacing = 8;
+    int iconSpacingX;   /* Horizontal spacing between icons */
+    int iconSpacingY;   /* Vertical spacing between icons */
     int maxWidth = 640;
     int effectiveMaxWidth;
-    int rightMargin = 16;
-    int startX = 8;
-    int startY = 4;
+    int rightMargin;
+    int startX;
+    int startY;
+    
+    /* Use spacing from preferences */
+    iconSpacingX = prefs->iconSpacingX;
+    iconSpacingY = prefs->iconSpacingY;
+    
+    /* Starting positions and margins use spacing */
+    startX = iconSpacingX;
+    startY = iconSpacingY;
+    rightMargin = iconSpacingX;
     
     /* Phase 1 variables: Statistics and column calculation */
     int totalWidth = 0;
     int averageWidth = 0;
     int estimatedColumns = 0;
-    int finalColumns = 0;
+    int finalColumns = targetColumns; /* Use aspect ratio calculated columns */
     int *columnWidths = NULL;
     int *columnXPositions = NULL;
     int calculationAttempts = 0;
@@ -329,14 +370,27 @@ static void CalculateLayoutPositionsWithColumnCentering(IconArray *iconArray,
     append_to_log("  Total icons: %d\n", iconArray->size);
 #endif
     
-    /* Step 2: Estimate initial column count */
-    estimatedColumns = (effectiveMaxWidth - startX - rightMargin) / (averageWidth + iconSpacing);
-    if (estimatedColumns < 1)
-        estimatedColumns = 1;
-    
+    /* Step 2: Estimate initial column count (or use target from aspect ratio) */
+    if (targetColumns > 0)
+    {
+        /* Use aspect ratio calculated columns */
+        estimatedColumns = targetColumns;
+        finalColumns = targetColumns;
 #ifdef DEBUG
-    append_to_log("  Initial estimated columns: %d\n", estimatedColumns);
+        append_to_log("  Using aspect ratio target columns: %d\n", targetColumns);
 #endif
+    }
+    else
+    {
+        /* Calculate columns based on width */
+        estimatedColumns = (effectiveMaxWidth - startX - rightMargin) / (averageWidth + iconSpacingX);
+        if (estimatedColumns < 1)
+            estimatedColumns = 1;
+        finalColumns = estimatedColumns;
+#ifdef DEBUG
+        append_to_log("  Initial estimated columns: %d\n", estimatedColumns);
+#endif
+    }
     
     /* Allocate arrays for column widths and positions */
     columnWidths = (int *)malloc(estimatedColumns * sizeof(int));
@@ -350,12 +404,12 @@ static void CalculateLayoutPositionsWithColumnCentering(IconArray *iconArray,
 #endif
         if (columnWidths) free(columnWidths);
         if (columnXPositions) free(columnXPositions);
-        CalculateLayoutPositions(iconArray, prefs);
+        CalculateLayoutPositions(iconArray, prefs, targetColumns);
         return;
     }
     
     /* Step 3 & 4: Calculate actual column widths (with potential adjustment) */
-    finalColumns = estimatedColumns;
+    /* Skip adjustment loop if using targetColumns */
     
     do {
         calculationAttempts++;
@@ -382,7 +436,7 @@ static void CalculateLayoutPositionsWithColumnCentering(IconArray *iconArray,
         {
             totalWidth += columnWidths[col];
             if (col < finalColumns - 1)
-                totalWidth += iconSpacing;
+                totalWidth += iconSpacingX;
         }
         totalWidth += rightMargin;
         
@@ -390,6 +444,15 @@ static void CalculateLayoutPositionsWithColumnCentering(IconArray *iconArray,
         append_to_log("Attempt %d: %d columns, total width = %d (max = %d)\n",
                       calculationAttempts, finalColumns, totalWidth, effectiveMaxWidth);
 #endif
+        
+        /* If using targetColumns, accept width even if it exceeds screen */
+        if (targetColumns > 0)
+        {
+#ifdef DEBUG
+            append_to_log("  Using aspect ratio target, accepting width\n");
+#endif
+            break;
+        }
         
         /* If doesn't fit and we have more than 1 column, reduce and recalculate */
         if (totalWidth > effectiveMaxWidth && finalColumns > 1)
@@ -422,7 +485,7 @@ static void CalculateLayoutPositionsWithColumnCentering(IconArray *iconArray,
     columnXPositions[0] = startX;
     for (col = 1; col < finalColumns; col++)
     {
-        columnXPositions[col] = columnXPositions[col - 1] + columnWidths[col - 1] + iconSpacing;
+        columnXPositions[col] = columnXPositions[col - 1] + columnWidths[col - 1] + iconSpacingX;
     }
     
     /*====================================================================*/
@@ -463,7 +526,7 @@ static void CalculateLayoutPositionsWithColumnCentering(IconArray *iconArray,
             }
             
             /* Move to next row */
-            rowStartY += maxHeightInRow + 8;  /* 8px vertical spacing */
+            rowStartY += maxHeightInRow + iconSpacingY;
             rowStartIndex = i;
             maxHeightInRow = 0;
         }
@@ -593,20 +656,34 @@ static BOOL ProcessSingleDirectory(const char *path,
     append_to_log("==== SECTION: CALCULATING LAYOUT ====\n");
 #endif
     
-    /* Choose layout algorithm based on centerIconsInColumn preference */
-    if (prefs->centerIconsInColumn)
+    /* Calculate optimal layout based on aspect ratio and overflow preferences */
     {
+        int finalColumns = 0;
+        int finalRows = 0;
+        
+        /* Use aspect ratio calculation to determine optimal columns/rows */
+        CalculateLayoutWithAspectRatio(iconArray, prefs, &finalColumns, &finalRows);
+        
 #ifdef DEBUG
-        append_to_log("Using column-centered layout algorithm\n");
+        append_to_log("Aspect ratio calculation complete: %d cols × %d rows\n", 
+                      finalColumns, finalRows);
 #endif
-        CalculateLayoutPositionsWithColumnCentering(iconArray, prefs);
-    }
-    else
-    {
+        
+        /* Choose layout algorithm based on centerIconsInColumn preference */
+        if (prefs->centerIconsInColumn)
+        {
 #ifdef DEBUG
-        append_to_log("Using standard row-based layout algorithm\n");
+            append_to_log("Using column-centered layout algorithm\n");
 #endif
-        CalculateLayoutPositions(iconArray, prefs);
+            CalculateLayoutPositionsWithColumnCentering(iconArray, prefs, finalColumns);
+        }
+        else
+        {
+#ifdef DEBUG
+            append_to_log("Using standard row-based layout algorithm\n");
+#endif
+            CalculateLayoutPositions(iconArray, prefs, finalColumns);
+        }
     }
     
     /* Resize window if requested */

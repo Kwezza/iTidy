@@ -12,7 +12,6 @@
 
 #include "file_directory_handling.h"
 #include "utilities.h"
-#include "spinner.h"
 #include "writeLog.h"
 #include "icon_misc.h"
 #include "dos/getDiskDetails.h"
@@ -146,7 +145,11 @@ void ProcessDirectory(char *path, BOOL processSubDirs, int recursion_level)
         if (HasSlaveFile(path)) {
             // Resize the folder to fit its contents if resizing is allowed
             if (user_dontResize == FALSE) {
-                resizeFolderToContents(path, CreateIconArrayFromPath(lock, path));
+                IconArray *tempIconArray = CreateIconArrayFromPath(lock, path);
+                if (tempIconArray) {
+                    resizeFolderToContents(path, tempIconArray);
+                    FreeIconArray(tempIconArray);
+                }
             }
 #ifdef DEBUGLocks
             append_to_log("Unlocking directory at level %d: %s\n", recursion_level, path);
@@ -274,9 +277,15 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
     IconPosition iconPosition; // Only used for debugging
     #endif
 
+#ifdef DEBUG
+    append_to_log("saveIconsPositionsToDisk: ENTRY, iconArray=%p\n", iconArray);
+#endif
+
     // Precompute the array size to avoid redundant dereferencing
     iconArraySize = iconArray->size;
-    #ifdef DEBUG
+    
+#ifdef DEBUG
+    append_to_log("saveIconsPositionsToDisk: iconArraySize=%d\n", iconArraySize);
     
     // Print the header
 append_to_log("%-3s | %-4s | %-4s | %-40s\n", "ID", "X", "Y", "Icon");
@@ -288,7 +297,6 @@ append_to_log("--------------------------------------------------------------\n"
 
         // Access the icon's full path and coordinates once to minimize array lookups
         FullIconDetails *currentIcon = &iconArray->array[i];
-        updateCursor(); // Update the progress spinner
         removeInfoExtension(currentIcon->icon_full_path, fileNameNoInfo);
 
 #ifdef DEBUG
@@ -371,7 +379,6 @@ append_to_log("%-3d | %-4d | %-4d | %-40s\n", i, currentIcon->icon_x, currentIco
             fprintf(stderr, "Error: Invalid icon: %s\n", currentIcon->icon_full_path);
         }
     }
-    eraseSpinner();
     return 0; // Return success
 }
 
