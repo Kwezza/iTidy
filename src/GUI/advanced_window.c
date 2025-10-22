@@ -25,7 +25,7 @@
 /*------------------------------------------------------------------------*/
 #define ADV_WINDOW_TITLE "iTidy - Advanced Settings"
 #define ADV_WINDOW_WIDTH 420
-#define ADV_WINDOW_HEIGHT 300
+#define ADV_WINDOW_HEIGHT 400
 #define ADV_WINDOW_LEFT 100
 #define ADV_WINDOW_TOP 50
 
@@ -468,7 +468,30 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
         return NULL;
     }
     
-    current_y += button_height + 16;
+    current_y += button_height + 12;
+    
+    /*--------------------------------------------------------------------*/
+    /* Reverse Sort Checkbox                                             */
+    /*--------------------------------------------------------------------*/
+    ng.ng_LeftEdge = 30;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = 26;
+    ng.ng_Height = button_height - 4;
+    ng.ng_GadgetText = "Reverse Sort (Z->A)";
+    ng.ng_GadgetID = GID_ADV_REVERSE_SORT;
+    ng.ng_Flags = PLACETEXT_RIGHT;
+    
+    adv_data->reverse_sort_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
+        GTCB_Checked, adv_data->reverse_sort_enabled,
+        TAG_END);
+    
+    if (!gad)
+    {
+        printf("ERROR: Failed to create reverse sort checkbox\n");
+        return NULL;
+    }
+    
+    current_y += button_height + 8;
     
     /*--------------------------------------------------------------------*/
     /* OK and Cancel Buttons                                             */
@@ -536,6 +559,16 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
     adv_data->max_auto_enabled = (prefs->maxIconsPerRow == 0);  /* Auto if 0 */
     adv_data->max_width_pct_selected = get_max_width_pct_index(prefs->maxWindowWidthPct);
     adv_data->vertical_align_selected = prefs->textAlignment;  /* 0=Top, 1=Middle, 2=Bottom */
+    adv_data->reverse_sort_enabled = prefs->reverseSort;        /* Load reverse sort setting */
+    
+    append_to_log("DEBUG: Loading prefs into adv_data on window open:\n");
+    append_to_log("  prefs->maxWindowWidthPct = %ld\n", (long)prefs->maxWindowWidthPct);
+    append_to_log("  prefs->textAlignment = %ld\n", (long)prefs->textAlignment);
+    append_to_log("  adv_data->max_width_pct_selected = %ld\n", (long)adv_data->max_width_pct_selected);
+    append_to_log("  adv_data->vertical_align_selected = %ld\n", (long)adv_data->vertical_align_selected);
+    append_to_log("  prefs->overflowMode = %ld\n", (long)prefs->overflowMode);
+    append_to_log("  prefs->aspectRatio = %.2f\n", prefs->aspectRatio);
+    append_to_log("  prefs->reverseSort = %s\n", prefs->reverseSort ? "YES" : "NO");
     
     /* Get Workbench screen */
     adv_data->screen = LockPubScreen(NULL);
@@ -590,6 +623,9 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
     }
     
     adv_data->window_open = TRUE;
+    
+    /* Load current preferences into gadgets (in case they were changed since last open) */
+    load_preferences_to_advanced_window(adv_data);
     
     /* Refresh gadgets */
     GT_RefreshWindow(adv_data->window, NULL);
@@ -765,6 +801,20 @@ void save_advanced_window_to_preferences(struct iTidyAdvancedWindow *adv_data)
     /* Save vertical alignment */
     adv_data->prefs->textAlignment = adv_data->vertical_align_selected;
     
+    /* Save reverse sort setting */
+    adv_data->prefs->reverseSort = adv_data->reverse_sort_enabled;
+    
+    append_to_log("DEBUG: save_advanced_window_to_preferences() called:\n");
+    append_to_log("  adv_data->max_width_pct_selected = %ld\n", (long)adv_data->max_width_pct_selected);
+    append_to_log("  adv_data->vertical_align_selected = %ld\n", (long)adv_data->vertical_align_selected);
+    append_to_log("  adv_data->overflow_mode_selected = %ld\n", (long)adv_data->overflow_mode_selected);
+    append_to_log("  adv_data->aspect_preset_selected = %ld\n", (long)adv_data->aspect_preset_selected);
+    append_to_log("  adv_data->reverse_sort_enabled = %s\n", adv_data->reverse_sort_enabled ? "YES" : "NO");
+    append_to_log("  Saved prefs->maxWindowWidthPct = %ld\n", (long)adv_data->prefs->maxWindowWidthPct);
+    append_to_log("  Saved prefs->textAlignment = %ld\n", (long)adv_data->prefs->textAlignment);
+    append_to_log("  Saved prefs->overflowMode = %ld\n", (long)adv_data->prefs->overflowMode);
+    append_to_log("  Saved prefs->reverseSort = %s\n", adv_data->prefs->reverseSort ? "YES" : "NO");
+    
     printf("Advanced settings saved to preferences:\n");
     printf("  Aspect Ratio: %.2f (Custom: %s)\n", 
            adv_data->prefs->aspectRatio,
@@ -782,6 +832,8 @@ void save_advanced_window_to_preferences(struct iTidyAdvancedWindow *adv_data)
            adv_data->prefs->maxWindowWidthPct == 0 ? "AUTO" : "MANUAL");
     printf("  Vertical Alignment: %s\n",
            vertical_align_labels[adv_data->prefs->textAlignment]);
+    printf("  Reverse Sort: %s\n",
+           adv_data->prefs->reverseSort ? "YES" : "NO");
 }
 
 BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
@@ -878,6 +930,30 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                                             adv_data->window, NULL,
                                             GTCY_Active, &temp_number, TAG_END);
                             adv_data->max_width_pct_selected = (WORD)temp_number;
+                            
+                            /* Aspect ratio cycle gadget */
+                            GT_GetGadgetAttrs(adv_data->aspect_ratio_cycle,
+                                            adv_data->window, NULL,
+                                            GTCY_Active, &temp_number, TAG_END);
+                            adv_data->aspect_preset_selected = (WORD)temp_number;
+                            
+                            /* Overflow mode cycle gadget */
+                            GT_GetGadgetAttrs(adv_data->overflow_mode_cycle,
+                                            adv_data->window, NULL,
+                                            GTCY_Active, &temp_number, TAG_END);
+                            adv_data->overflow_mode_selected = (WORD)temp_number;
+                            
+                            /* Vertical alignment cycle gadget */
+                            GT_GetGadgetAttrs(adv_data->vertical_align_cycle,
+                                            adv_data->window, NULL,
+                                            GTCY_Active, &temp_number, TAG_END);
+                            adv_data->vertical_align_selected = (WORD)temp_number;
+                            
+                            append_to_log("DEBUG: Read gadget values on OK click:\n");
+                            append_to_log("  max_width_pct_selected = %ld\n", (long)adv_data->max_width_pct_selected);
+                            append_to_log("  vertical_align_selected = %ld\n", (long)adv_data->vertical_align_selected);
+                            append_to_log("  overflow_mode_selected = %ld\n", (long)adv_data->overflow_mode_selected);
+                            append_to_log("  aspect_preset_selected = %ld\n", (long)adv_data->aspect_preset_selected);
                         }
                         
                         /* Save to preferences */
@@ -943,6 +1019,18 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                         printf("Vertical alignment changed to: %s\n",
                                vertical_align_labels[adv_data->vertical_align_selected]);
                         break;
+                    
+                    case GID_ADV_REVERSE_SORT:
+                        {
+                            ULONG checked = 0;
+                            GT_GetGadgetAttrs(gad, adv_data->window, NULL,
+                                GTCB_Checked, &checked,
+                                TAG_END);
+                            adv_data->reverse_sort_enabled = (BOOL)checked;
+                            printf("Reverse Sort: %s\n", 
+                                   adv_data->reverse_sort_enabled ? "ENABLED" : "DISABLED");
+                        }
+                        break;
                         
                     case GID_ADV_CUSTOM_WIDTH:
                     case GID_ADV_CUSTOM_HEIGHT:
@@ -971,6 +1059,12 @@ void load_preferences_to_advanced_window(struct iTidyAdvancedWindow *adv_data)
         printf("ERROR: NULL pointer in load_preferences_to_advanced_window\n");
         return;
     }
+    
+    append_to_log("DEBUG: load_preferences_to_advanced_window() called:\n");
+    append_to_log("  Setting max_width_pct_cycle to: %ld\n", (long)adv_data->max_width_pct_selected);
+    append_to_log("  Setting vertical_align_cycle to: %ld\n", (long)adv_data->vertical_align_selected);
+    append_to_log("  Setting overflow_mode_cycle to: %ld\n", (long)adv_data->overflow_mode_selected);
+    append_to_log("  Setting aspect_ratio_cycle to: %ld\n", (long)adv_data->aspect_preset_selected);
     
     /* Aspect ratio preset */
     GT_SetGadgetAttrs(adv_data->aspect_ratio_cycle, adv_data->window, NULL,
@@ -1025,6 +1119,11 @@ void load_preferences_to_advanced_window(struct iTidyAdvancedWindow *adv_data)
     /* Vertical alignment */
     GT_SetGadgetAttrs(adv_data->vertical_align_cycle, adv_data->window, NULL,
         GTCY_Active, adv_data->vertical_align_selected,
+        TAG_END);
+    
+    /* Reverse sort checkbox */
+    GT_SetGadgetAttrs(adv_data->reverse_sort_check, adv_data->window, NULL,
+        GTCB_Checked, adv_data->reverse_sort_enabled,
         TAG_END);
     
     /* Enable/disable custom ratio gadgets based on selection */

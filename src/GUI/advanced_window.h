@@ -27,6 +27,7 @@
 #define GID_ADV_MAX_AUTO_CHECKBOX 1011
 #define GID_ADV_MAX_WIDTH_PCT     1012
 #define GID_ADV_VERTICAL_ALIGN    1013
+#define GID_ADV_REVERSE_SORT      1014
 #define GID_ADV_OK                1009
 #define GID_ADV_CANCEL            1010
 
@@ -74,6 +75,7 @@ struct iTidyAdvancedWindow
     struct Gadget *max_auto_checkbox;
     struct Gadget *max_width_pct_cycle;
     struct Gadget *vertical_align_cycle;
+    struct Gadget *reverse_sort_check;
     struct Gadget *ok_btn;
     struct Gadget *cancel_btn;
     
@@ -89,6 +91,7 @@ struct iTidyAdvancedWindow
     BOOL max_auto_enabled;              /* TRUE if Auto mode, FALSE if manual */
     WORD max_width_pct_selected;        /* Index into max width percentage presets */
     WORD vertical_align_selected;       /* Index: 0=Top, 1=Middle, 2=Bottom */
+    BOOL reverse_sort_enabled;          /* TRUE if reverse sort enabled */
     
     /* Pointer to preferences to update */
     LayoutPreferences *prefs;

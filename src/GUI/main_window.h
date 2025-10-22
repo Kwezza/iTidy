@@ -86,7 +86,9 @@ struct iTidyMainWindow
     UWORD advanced_spacing_y;
     UWORD advanced_min_icons_row;
     UWORD advanced_max_icons_row;
+    UWORD advanced_max_width_pct;       /* Max window width percentage */
     UWORD advanced_vertical_align;      /* TextAlignment value */
+    BOOL advanced_reverse_sort;         /* Reverse sort order (Z->A) */
 };
 
 /*------------------------------------------------------------------------*/
