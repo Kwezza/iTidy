@@ -54,32 +54,39 @@ void loadLeftOutIcons(const char *file_path) {
         printf("Error: Could not determine device name for path: %s\n", file_path);
         return;
     }
-#ifdef DEBUG
-    append_to_log("Getting any 'left out' icons for device: %s\n", device_name);
-#endif
 
-    /* Construct the full path to the .backdrop file (e.g., "DH0:.backdrop") */
-    if (strlen(device_name) + 10 <= sizeof(backdrop_path)) {  /* 10 for ":.backdrop" + null terminator */
+    /* Construct the full path to the .backdrop file at the device root
+     * The .backdrop file is always at the root of the device (e.g., "Workbench:.backdrop")
+     * It contains paths to all left-out icons from anywhere on that device */
+    if (strlen(device_name) + 11 <= sizeof(backdrop_path)) {  /* 11 for ":.backdrop" + null terminator */
         sprintf(backdrop_path, "%s:.backdrop", device_name);
     } else {
         printf("Backdrop path too long.\n");
         return;
     }
 
+    append_to_log("========================================\n");
+    append_to_log("Loading 'left out' icons for device: %s\n", device_name);
+    append_to_log("Looking for .backdrop file: %s\n", backdrop_path);
+    
     /* Open the .backdrop file */
     file = Open(backdrop_path, MODE_OLDFILE);
     if (!file) {
-#ifdef DEBUG
-        append_to_log("Could not open %s\n", backdrop_path);
-#endif
+        append_to_log("  --> .backdrop file not found or could not be opened\n");
+        append_to_log("  --> No left-out icons to protect on this device\n");
+        append_to_log("========================================\n");
         return;
     }
+    
+    append_to_log("  --> .backdrop file opened successfully\n");
 
     /* Initialize the left_out_icons array to empty strings */
     for (i = 0; i < MAX_LEFT_OUT_ICONS; i++) {
         left_out_icons[i][0] = '\0';
     }
 
+    append_to_log("  --> Reading .backdrop file contents:\n");
+    
     /* Read each line in the file and store it in the array */
     i = 0;
 #if PLATFORM_AMIGA
@@ -98,22 +105,32 @@ void loadLeftOutIcons(const char *file_path) {
             break;
         }
 
-        /* Construct the full icon path */
-        /* The full icon path is device_name + ":" + buffer + ".info" */
-        len = strlen(device_name) + 1 + strlen(buffer) + 5 + 1; /* device_name + ":" + buffer + ".info" + null terminator */
-
-        if (len <= MAX_PATH_LENGTH) {
-            sprintf(left_out_icons[i], "%s%s.info", device_name, buffer);
-#ifdef DEBUG
-            append_to_log("Found left out icon: %s\n", left_out_icons[i]);
-#endif
-            i++;
+        /* Construct the full icon path from the .backdrop entry
+         * .backdrop entries are in the format ":Path/To/Icon" (relative to device root)
+         * We need to replace the leading ":" with "DeviceName:" to get the full path
+         * Example: ":Prefs/ScreenMode" becomes "Workbench:Prefs/ScreenMode"
+         */
+        if (buffer[0] == ':') {
+            /* Entry starts with ':', replace it with device name */
+            /* Full path is device_name + buffer (where buffer starts with ':') + ".info" */
+            len = strlen(device_name) + strlen(buffer) + 5 + 1; /* device_name + buffer + ".info" + null terminator */
+            if (len <= MAX_PATH_LENGTH) {
+                sprintf(left_out_icons[i], "%s%s.info", device_name, buffer);
+                append_to_log("      [%d] %s (from .backdrop entry: '%s')\n", i, left_out_icons[i], buffer);
+                i++;
+            } else {
+                append_to_log("      Icon path too long, skipping: %s\n", buffer);
+            }
         } else {
-            printf("Icon path too long, skipping.\n");
+            /* Entry doesn't start with ':', this is unexpected but handle it */
+            append_to_log("      WARNING: Unexpected .backdrop entry format (missing leading ':'): '%s'\n", buffer);
         }
     }
 
     Close(file);
+    
+    append_to_log("  --> Total left-out icons loaded: %d\n", i);
+    append_to_log("========================================\n");
 }
 
 int isIconLeftOut(const char *icon_path) {
@@ -126,11 +143,12 @@ int isIconLeftOut(const char *icon_path) {
             break;
         }
         if (strcmp(left_out_icons[i], icon_path) == 0) {
-            return true;  /* Icon found in the list */
+            append_to_log("*** PROTECTED: Icon '%s' is left out on desktop - SKIPPING ***\n", icon_path);
+            return TRUE;  /* Icon found in the list */
         }
     }
 
-    return false;  /* Icon not found */
+    return FALSE;  /* Icon not found */
 }
 
 void dumpLeftOutIcons(void) {

@@ -183,7 +183,12 @@ void ProcessDirectory(char *path, BOOL processSubDirs, int recursion_level)
             while (ExNext(lock, fib)) {
                 if (fib->fib_DirEntryType > 0) { // Process only directories
                     // VBCC MIGRATION: Use snprintf for safety
-                    snprintf(subdir, sizeof(subdir), "%s/%s", path, fib->fib_FileName);
+                    // Check if path ends with ':' (root device) - if so, don't add '/'
+                    if (path[strlen(path) - 1] == ':') {
+                        snprintf(subdir, sizeof(subdir), "%s%s", path, fib->fib_FileName);
+                    } else {
+                        snprintf(subdir, sizeof(subdir), "%s/%s", path, fib->fib_FileName);
+                    }
                     // Recursively process the subdirectory and increment the recursion level
                     ProcessDirectory(subdir, TRUE, recursion_level + 1);
                 }

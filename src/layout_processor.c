@@ -68,6 +68,9 @@ BOOL ProcessDirectoryWithPreferences(const char *path,
     sanitizedPath[sizeof(sanitizedPath) - 1] = '\0';
     sanitizeAmigaPath(sanitizedPath);
     
+    /* Load left-out icons from the device's .backdrop file */
+    loadLeftOutIcons(sanitizedPath);
+    
     printf("\nProcessing: %s\n", sanitizedPath);
     printf("Recursive: %s\n", recursive ? "Yes" : "No");
     
@@ -867,7 +870,12 @@ static BOOL ProcessDirectoryRecursive(const char *path,
             if (fib->fib_DirEntryType > 0)
             {
                 /* Build subdirectory path */
-                snprintf(subdir, sizeof(subdir), "%s/%s", path, fib->fib_FileName);
+                /* Check if path ends with ':' (root device) - if so, don't add '/' */
+                if (path[strlen(path) - 1] == ':') {
+                    snprintf(subdir, sizeof(subdir), "%s%s", path, fib->fib_FileName);
+                } else {
+                    snprintf(subdir, sizeof(subdir), "%s/%s", path, fib->fib_FileName);
+                }
                 
                 /* Check if folder is hidden (no .info file) and skip if enabled */
                 if (prefs->skipHiddenFolders)
