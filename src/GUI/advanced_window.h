@@ -25,6 +25,8 @@
 #define GID_ADV_MIN_ICONS_ROW     1007
 #define GID_ADV_MAX_ICONS_ROW     1008
 #define GID_ADV_MAX_AUTO_CHECKBOX 1011
+#define GID_ADV_MAX_WIDTH_PCT     1012
+#define GID_ADV_VERTICAL_ALIGN    1013
 #define GID_ADV_OK                1009
 #define GID_ADV_CANCEL            1010
 
@@ -38,6 +40,16 @@
 #define ASPECT_PRESET_WIDE        4   /* 2.0  (2:1) */
 #define ASPECT_PRESET_ULTRAWIDE   5   /* 2.4  (21:9 approx) */
 #define ASPECT_PRESET_CUSTOM      6   /* User-defined */
+
+/*------------------------------------------------------------------------*/
+/* Max Window Width Percentage Preset Indices                            */
+/*------------------------------------------------------------------------*/
+#define MAX_WIDTH_AUTO            0   /* Auto (use preset default) */
+#define MAX_WIDTH_30              1   /* 30% of screen */
+#define MAX_WIDTH_50              2   /* 50% of screen */
+#define MAX_WIDTH_70              3   /* 70% of screen */
+#define MAX_WIDTH_90              4   /* 90% of screen */
+#define MAX_WIDTH_100             5   /* 100% of screen (full width) */
 
 /*------------------------------------------------------------------------*/
 /* Advanced Window Data Structure                                        */
@@ -60,6 +72,8 @@ struct iTidyAdvancedWindow
     struct Gadget *min_icons_row_int;
     struct Gadget *max_icons_row_int;
     struct Gadget *max_auto_checkbox;
+    struct Gadget *max_width_pct_cycle;
+    struct Gadget *vertical_align_cycle;
     struct Gadget *ok_btn;
     struct Gadget *cancel_btn;
     
@@ -73,6 +87,8 @@ struct iTidyAdvancedWindow
     UWORD min_icons_per_row;            /* Minimum columns (1-10) */
     UWORD max_icons_per_row;            /* Maximum columns (0=Auto, 1-20) */
     BOOL max_auto_enabled;              /* TRUE if Auto mode, FALSE if manual */
+    WORD max_width_pct_selected;        /* Index into max width percentage presets */
+    WORD vertical_align_selected;       /* Index: 0=Top, 1=Middle, 2=Bottom */
     
     /* Pointer to preferences to update */
     LayoutPreferences *prefs;
@@ -163,5 +179,15 @@ void set_custom_ratio_gadgets_state(struct iTidyAdvancedWindow *adv_data,
  */
 void set_max_icons_gadget_state(struct iTidyAdvancedWindow *adv_data,
                                 BOOL auto_enabled);
+
+/**
+ * @brief Enable/disable Max Window Width Pct gadget based on Max Icons/Row mode
+ *
+ * Disables the max window width percentage cycle gadget when Max Icons/Row 
+ * is in manual mode (not Auto), enables it when in Auto mode.
+ *
+ * @param adv_data Pointer to advanced window data structure
+ */
+void update_max_width_pct_gadget_state(struct iTidyAdvancedWindow *adv_data);
 
 #endif /* ITIDY_ADVANCED_WINDOW_H */

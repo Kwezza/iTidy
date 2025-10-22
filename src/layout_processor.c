@@ -138,7 +138,8 @@ static void CalculateLayoutPositions(IconArray *iconArray,
     append_to_log("  screenWidth=%d, maxWindowWidthPct=%d, effectiveMaxWidth=%d\n",
                   maxWidth, prefs->maxWindowWidthPct, effectiveMaxWidth);
     append_to_log("  textAlignment=%s\n", 
-                  prefs->textAlignment == TEXT_ALIGN_BOTTOM ? "BOTTOM" : "TOP");
+                  prefs->textAlignment == TEXT_ALIGN_TOP ? "TOP" :
+                  prefs->textAlignment == TEXT_ALIGN_MIDDLE ? "MIDDLE" : "BOTTOM");
     append_to_log("%-3s | %-30s | %-4s | %-4s | %-5s | %-5s | %-6s\n", 
                   "ID", "Icon", "NewX", "NewY", "Width", "Height", "Offset");
     append_to_log("------------------------------------------------------------------------------------\n");
@@ -169,22 +170,45 @@ static void CalculateLayoutPositions(IconArray *iconArray,
         /* If should wrap to next row (but always place at least one icon per row) */
         if (currentX > iconSpacingX && shouldWrap)
         {
-            /* Before starting new row, adjust previous row if TEXT_ALIGN_BOTTOM */
-            if (prefs->textAlignment == TEXT_ALIGN_BOTTOM && maxHeightInRow > 0)
+            /* Before starting new row, apply vertical alignment to previous row */
+            if (maxHeightInRow > 0)
             {
-                /* Adjust all icons in the previous row to align text to bottom */
+                /* Adjust all icons in the previous row based on alignment setting */
                 for (int j = rowStartIndex; j < i; j++)
                 {
                     FullIconDetails *rowIcon = &iconArray->array[j];
-                    /* Calculate how much to move this icon down */
-                    /* Move it so its text aligns with the tallest icon's text */
-                    adjustmentOffset = maxHeightInRow - rowIcon->icon_max_height;
+                    
+                    /* Calculate adjustment based on alignment mode */
+                    switch (prefs->textAlignment)
+                    {
+                        case TEXT_ALIGN_TOP:
+                            /* No adjustment needed - icons already at top */
+                            adjustmentOffset = 0;
+                            break;
+                            
+                        case TEXT_ALIGN_MIDDLE:
+                            /* Center icon vertically within row height */
+                            adjustmentOffset = (maxHeightInRow - rowIcon->icon_max_height) / 2;
+                            break;
+                            
+                        case TEXT_ALIGN_BOTTOM:
+                            /* Align to bottom of row */
+                            adjustmentOffset = maxHeightInRow - rowIcon->icon_max_height;
+                            break;
+                            
+                        default:
+                            adjustmentOffset = 0;
+                            break;
+                    }
+                    
                     if (adjustmentOffset > 0)
                     {
                         rowIcon->icon_y += adjustmentOffset;
 #ifdef DEBUG
-                        append_to_log("  Adjusted icon %d ('%s') down by %d pixels for text alignment\n",
-                                      j, rowIcon->icon_text, adjustmentOffset);
+                        append_to_log("  Adjusted icon %d ('%s') down by %d pixels for %s alignment\n",
+                                      j, rowIcon->icon_text, adjustmentOffset,
+                                      prefs->textAlignment == TEXT_ALIGN_TOP ? "top" :
+                                      prefs->textAlignment == TEXT_ALIGN_MIDDLE ? "middle" : "bottom");
 #endif
                     }
                 }
@@ -224,27 +248,53 @@ static void CalculateLayoutPositions(IconArray *iconArray,
         iconsInCurrentRow++; /* Count icons in current row */
     }
     
-    /* SECOND PASS: Adjust the last row if TEXT_ALIGN_BOTTOM */
+    /* SECOND PASS: Adjust the last row with vertical alignment */
     /* (This handles the final row that didn't trigger the wrap condition) */
-    if (prefs->textAlignment == TEXT_ALIGN_BOTTOM && maxHeightInRow > 0)
+    if (maxHeightInRow > 0)
     {
 #ifdef DEBUG
-        append_to_log("\nAdjusting final row (indices %d to %d) for bottom text alignment\n",
+        append_to_log("\nAdjusting final row (indices %d to %d) for vertical alignment\n",
                       rowStartIndex, iconArray->size - 1);
-        append_to_log("  maxHeightInRow = %d\n", maxHeightInRow);
+        append_to_log("  maxHeightInRow = %d, alignment = %s\n", maxHeightInRow,
+                      prefs->textAlignment == TEXT_ALIGN_TOP ? "top" :
+                      prefs->textAlignment == TEXT_ALIGN_MIDDLE ? "middle" : "bottom");
 #endif
         
         for (int j = rowStartIndex; j < iconArray->size; j++)
         {
             FullIconDetails *rowIcon = &iconArray->array[j];
-            /* Calculate how much to move this icon down */
-            adjustmentOffset = maxHeightInRow - rowIcon->icon_max_height;
+            
+            /* Calculate adjustment based on alignment mode */
+            switch (prefs->textAlignment)
+            {
+                case TEXT_ALIGN_TOP:
+                    /* No adjustment needed - icons already at top */
+                    adjustmentOffset = 0;
+                    break;
+                    
+                case TEXT_ALIGN_MIDDLE:
+                    /* Center icon vertically within row height */
+                    adjustmentOffset = (maxHeightInRow - rowIcon->icon_max_height) / 2;
+                    break;
+                    
+                case TEXT_ALIGN_BOTTOM:
+                    /* Align to bottom of row */
+                    adjustmentOffset = maxHeightInRow - rowIcon->icon_max_height;
+                    break;
+                    
+                default:
+                    adjustmentOffset = 0;
+                    break;
+            }
+            
             if (adjustmentOffset > 0)
             {
                 rowIcon->icon_y += adjustmentOffset;
 #ifdef DEBUG
-                append_to_log("  Adjusted icon %d ('%s') down by %d pixels for text alignment\n",
-                              j, rowIcon->icon_text, adjustmentOffset);
+                append_to_log("  Adjusted icon %d ('%s') down by %d pixels for %s alignment\n",
+                              j, rowIcon->icon_text, adjustmentOffset,
+                              prefs->textAlignment == TEXT_ALIGN_TOP ? "top" :
+                              prefs->textAlignment == TEXT_ALIGN_MIDDLE ? "middle" : "bottom");
 #endif
             }
         }
@@ -511,13 +561,36 @@ static void CalculateLayoutPositionsWithColumnCentering(IconArray *iconArray,
         /* Start a new row? Track row boundaries for text alignment */
         if (col == 0 && i > 0)
         {
-            /* Apply text alignment to previous row if needed */
-            if (prefs->textAlignment == TEXT_ALIGN_BOTTOM && maxHeightInRow > 0)
+            /* Apply vertical alignment to previous row */
+            if (maxHeightInRow > 0)
             {
                 for (int j = rowStartIndex; j < i; j++)
                 {
                     FullIconDetails *rowIcon = &iconArray->array[j];
-                    adjustmentOffset = maxHeightInRow - rowIcon->icon_max_height;
+                    
+                    /* Calculate adjustment based on alignment mode */
+                    switch (prefs->textAlignment)
+                    {
+                        case TEXT_ALIGN_TOP:
+                            /* No adjustment needed - icons already at top */
+                            adjustmentOffset = 0;
+                            break;
+                            
+                        case TEXT_ALIGN_MIDDLE:
+                            /* Center icon vertically within row height */
+                            adjustmentOffset = (maxHeightInRow - rowIcon->icon_max_height) / 2;
+                            break;
+                            
+                        case TEXT_ALIGN_BOTTOM:
+                            /* Align to bottom of row */
+                            adjustmentOffset = maxHeightInRow - rowIcon->icon_max_height;
+                            break;
+                            
+                        default:
+                            adjustmentOffset = 0;
+                            break;
+                    }
+                    
                     if (adjustmentOffset > 0)
                     {
                         rowIcon->icon_y += adjustmentOffset;
@@ -563,17 +636,43 @@ static void CalculateLayoutPositionsWithColumnCentering(IconArray *iconArray,
 #endif
     }
     
-    /* Apply text alignment to final row if needed */
-    if (prefs->textAlignment == TEXT_ALIGN_BOTTOM && maxHeightInRow > 0)
+    /* Apply vertical alignment to final row */
+    if (maxHeightInRow > 0)
     {
 #ifdef DEBUG
-        append_to_log("\nAdjusting final row (indices %d to %d) for text alignment\n",
+        append_to_log("\nAdjusting final row (indices %d to %d) for vertical alignment\n",
                       rowStartIndex, iconArray->size - 1);
+        append_to_log("  maxHeightInRow = %d, alignment = %s\n", maxHeightInRow,
+                      prefs->textAlignment == TEXT_ALIGN_TOP ? "top" :
+                      prefs->textAlignment == TEXT_ALIGN_MIDDLE ? "middle" : "bottom");
 #endif
         for (int j = rowStartIndex; j < iconArray->size; j++)
         {
             FullIconDetails *rowIcon = &iconArray->array[j];
-            adjustmentOffset = maxHeightInRow - rowIcon->icon_max_height;
+            
+            /* Calculate adjustment based on alignment mode */
+            switch (prefs->textAlignment)
+            {
+                case TEXT_ALIGN_TOP:
+                    /* No adjustment needed - icons already at top */
+                    adjustmentOffset = 0;
+                    break;
+                    
+                case TEXT_ALIGN_MIDDLE:
+                    /* Center icon vertically within row height */
+                    adjustmentOffset = (maxHeightInRow - rowIcon->icon_max_height) / 2;
+                    break;
+                    
+                case TEXT_ALIGN_BOTTOM:
+                    /* Align to bottom of row */
+                    adjustmentOffset = maxHeightInRow - rowIcon->icon_max_height;
+                    break;
+                    
+                default:
+                    adjustmentOffset = 0;
+                    break;
+            }
+            
             if (adjustmentOffset > 0)
             {
                 rowIcon->icon_y += adjustmentOffset;

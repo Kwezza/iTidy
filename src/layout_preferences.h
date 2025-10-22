@@ -63,11 +63,12 @@ typedef enum {
 /* Text Alignment Enumeration                                            */
 /*========================================================================*/
 /**
- * @brief Vertical alignment of icon text labels within a row
+ * @brief Vertical alignment of icons within a row
  */
 typedef enum {
-    TEXT_ALIGN_TOP = 0,     /* Text at natural position (top-aligned icons) */
-    TEXT_ALIGN_BOTTOM = 1   /* Text aligned to tallest icon in row (bottom-aligned) */
+    TEXT_ALIGN_TOP = 0,     /* Icons aligned to top of row */
+    TEXT_ALIGN_MIDDLE = 1,  /* Icons centered vertically in row */
+    TEXT_ALIGN_BOTTOM = 2   /* Icons aligned to bottom of row (default) */
 } TextAlignment;
 
 /*========================================================================*/
@@ -169,7 +170,7 @@ typedef struct {
 #define DEFAULT_REVERSE_SORT        FALSE
 #define DEFAULT_CENTER_ICONS        FALSE
 #define DEFAULT_OPTIMIZE_COLUMNS    TRUE
-#define DEFAULT_TEXT_ALIGNMENT      TEXT_ALIGN_BOTTOM  /* Default: align text to bottom of row */
+#define DEFAULT_TEXT_ALIGNMENT      TEXT_ALIGN_BOTTOM  /* Default: align icons to bottom of row */
 #define DEFAULT_RESIZE_WINDOWS      TRUE
 #define DEFAULT_MIN_ICONS_PER_ROW   2   /* Prevent 1×N layouts */
 #define DEFAULT_MAX_ICONS_PER_ROW   0   /* Auto: Calculate from screen width */

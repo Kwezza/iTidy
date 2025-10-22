@@ -25,7 +25,7 @@
 /*------------------------------------------------------------------------*/
 #define ADV_WINDOW_TITLE "iTidy - Advanced Settings"
 #define ADV_WINDOW_WIDTH 420
-#define ADV_WINDOW_HEIGHT 280
+#define ADV_WINDOW_HEIGHT 300
 #define ADV_WINDOW_LEFT 100
 #define ADV_WINDOW_TOP 50
 
@@ -47,6 +47,23 @@ static STRPTR overflow_mode_labels[] = {
     "Expand Horizontally",
     "Expand Vertically",
     "Expand Both",
+    NULL
+};
+
+static STRPTR max_width_pct_labels[] = {
+    "Auto",
+    "30%",
+    "50%",
+    "70%",
+    "90%",
+    "100%",
+    NULL
+};
+
+static STRPTR vertical_align_labels[] = {
+    "Top",
+    "Middle",
+    "Bottom",
     NULL
 };
 
@@ -97,6 +114,48 @@ static WORD get_aspect_ratio_preset_index(const LayoutPreferences *prefs)
     
     /* Default to Classic if no match */
     return ASPECT_PRESET_CLASSIC;
+}
+
+/**
+ * @brief Get max window width percentage index from actual percentage value
+ *
+ * @param pct Percentage value (0-100)
+ * @return WORD Index (0=Auto, 1=30%, 2=50%, 3=70%, 4=90%, 5=100%)
+ */
+static WORD get_max_width_pct_index(UWORD pct)
+{
+    /* Map common preset values to indices */
+    switch (pct)
+    {
+        case 30: return MAX_WIDTH_30;
+        case 50: return MAX_WIDTH_50;
+        case 70: return MAX_WIDTH_70;
+        case 90: return MAX_WIDTH_90;
+        case 100: return MAX_WIDTH_100;
+        default: return MAX_WIDTH_AUTO;  /* Anything else defaults to Auto */
+    }
+}
+
+/**
+ * @brief Get actual percentage value from max window width index
+ *
+ * @param index Index (0-5)
+ * @param prefs Current preferences (for Auto default)
+ * @return UWORD Percentage value (0-100), 0 means use preset default
+ */
+static UWORD get_max_width_pct_value(WORD index, const LayoutPreferences *prefs)
+{
+    switch (index)
+    {
+        case MAX_WIDTH_30: return 30;
+        case MAX_WIDTH_50: return 50;
+        case MAX_WIDTH_70: return 70;
+        case MAX_WIDTH_90: return 90;
+        case MAX_WIDTH_100: return 100;
+        case MAX_WIDTH_AUTO:
+        default:
+            return 0;  /* 0 = Auto, means use preset default */
+    }
 }
 
 /**
@@ -360,7 +419,56 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
         return NULL;
     }
     
-    current_y += string_height + 16;
+    current_y += string_height + 4;
+    
+    /*--------------------------------------------------------------------*/
+    /* Max Window Width Percentage Cycle Gadget                          */
+    /*--------------------------------------------------------------------*/
+    ng.ng_LeftEdge = gadget_x;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = gadget_width - 40;
+    ng.ng_Height = button_height;
+    ng.ng_GadgetText = "Max Window Width:";
+    ng.ng_GadgetID = GID_ADV_MAX_WIDTH_PCT;
+    ng.ng_Flags = PLACETEXT_LEFT;
+    
+    adv_data->max_width_pct_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
+        GTCY_Labels, max_width_pct_labels,
+        GTCY_Active, adv_data->max_width_pct_selected,
+        GA_Disabled, !adv_data->max_auto_enabled,  /* Disabled if manual mode */
+        TAG_END);
+    
+    if (!gad)
+    {
+        printf("ERROR: Failed to create max window width percentage cycle gadget\n");
+        return NULL;
+    }
+    
+    current_y += button_height + 16;
+    
+    /*--------------------------------------------------------------------*/
+    /* Vertical Alignment Cycle Gadget                                   */
+    /*--------------------------------------------------------------------*/
+    ng.ng_LeftEdge = gadget_x;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = gadget_width - 40;
+    ng.ng_Height = button_height;
+    ng.ng_GadgetText = "Vertical Alignment:";
+    ng.ng_GadgetID = GID_ADV_VERTICAL_ALIGN;
+    ng.ng_Flags = PLACETEXT_LEFT;
+    
+    adv_data->vertical_align_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
+        GTCY_Labels, vertical_align_labels,
+        GTCY_Active, adv_data->vertical_align_selected,
+        TAG_END);
+    
+    if (!gad)
+    {
+        printf("ERROR: Failed to create vertical alignment cycle gadget\n");
+        return NULL;
+    }
+    
+    current_y += button_height + 16;
     
     /*--------------------------------------------------------------------*/
     /* OK and Cancel Buttons                                             */
@@ -426,6 +534,8 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
     adv_data->min_icons_per_row = prefs->minIconsPerRow;
     adv_data->max_icons_per_row = prefs->maxIconsPerRow;
     adv_data->max_auto_enabled = (prefs->maxIconsPerRow == 0);  /* Auto if 0 */
+    adv_data->max_width_pct_selected = get_max_width_pct_index(prefs->maxWindowWidthPct);
+    adv_data->vertical_align_selected = prefs->textAlignment;  /* 0=Top, 1=Middle, 2=Bottom */
     
     /* Get Workbench screen */
     adv_data->screen = LockPubScreen(NULL);
@@ -570,6 +680,26 @@ void set_max_icons_gadget_state(struct iTidyAdvancedWindow *adv_data,
     }
 }
 
+void update_max_width_pct_gadget_state(struct iTidyAdvancedWindow *adv_data)
+{
+    BOOL manual_mode;
+    
+    if (!adv_data || !adv_data->window)
+    {
+        return;
+    }
+    
+    /* Disable max width pct gadget when in manual mode (not Auto) */
+    manual_mode = !adv_data->max_auto_enabled;
+    
+    if (adv_data->max_width_pct_cycle)
+    {
+        GT_SetGadgetAttrs(adv_data->max_width_pct_cycle, adv_data->window, NULL,
+            GA_Disabled, manual_mode,
+            TAG_END);
+    }
+}
+
 void save_advanced_window_to_preferences(struct iTidyAdvancedWindow *adv_data)
 {
     if (!adv_data || !adv_data->prefs)
@@ -628,6 +758,13 @@ void save_advanced_window_to_preferences(struct iTidyAdvancedWindow *adv_data)
         adv_data->prefs->maxIconsPerRow = adv_data->max_icons_per_row;
     }
     
+    /* Save max window width percentage */
+    adv_data->prefs->maxWindowWidthPct = get_max_width_pct_value(
+        adv_data->max_width_pct_selected, adv_data->prefs);
+    
+    /* Save vertical alignment */
+    adv_data->prefs->textAlignment = adv_data->vertical_align_selected;
+    
     printf("Advanced settings saved to preferences:\n");
     printf("  Aspect Ratio: %.2f (Custom: %s)\n", 
            adv_data->prefs->aspectRatio,
@@ -640,6 +777,11 @@ void save_advanced_window_to_preferences(struct iTidyAdvancedWindow *adv_data)
     printf("  Max Icons/Row: %d (%s)\n", 
            adv_data->prefs->maxIconsPerRow,
            adv_data->prefs->maxIconsPerRow == 0 ? "AUTO" : "MANUAL");
+    printf("  Max Window Width: %d%% (%s)\n",
+           adv_data->prefs->maxWindowWidthPct,
+           adv_data->prefs->maxWindowWidthPct == 0 ? "AUTO" : "MANUAL");
+    printf("  Vertical Alignment: %s\n",
+           vertical_align_labels[adv_data->prefs->textAlignment]);
 }
 
 BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
@@ -730,6 +872,12 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                                             adv_data->window, NULL,
                                             GTSL_Level, &temp_number, TAG_END);
                             adv_data->spacing_y_value = (UWORD)temp_number;
+                            
+                            /* Max window width percentage cycle gadget */
+                            GT_GetGadgetAttrs(adv_data->max_width_pct_cycle,
+                                            adv_data->window, NULL,
+                                            GTCY_Active, &temp_number, TAG_END);
+                            adv_data->max_width_pct_selected = (WORD)temp_number;
                         }
                         
                         /* Save to preferences */
@@ -776,7 +924,24 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                             
                             /* Enable/disable the max icons/row integer gadget */
                             set_max_icons_gadget_state(adv_data, adv_data->max_auto_enabled);
+                            
+                            /* Enable/disable the max window width pct gadget */
+                            update_max_width_pct_gadget_state(adv_data);
                         }
+                        break;
+                        
+                    case GID_ADV_MAX_WIDTH_PCT:
+                        /* Max window width percentage changed */
+                        adv_data->max_width_pct_selected = msg_code;
+                        printf("Max window width changed to: %s\n", 
+                               max_width_pct_labels[adv_data->max_width_pct_selected]);
+                        break;
+                    
+                    case GID_ADV_VERTICAL_ALIGN:
+                        /* Vertical alignment changed */
+                        adv_data->vertical_align_selected = msg_code;
+                        printf("Vertical alignment changed to: %s\n",
+                               vertical_align_labels[adv_data->vertical_align_selected]);
                         break;
                         
                     case GID_ADV_CUSTOM_WIDTH:
@@ -851,12 +1016,26 @@ void load_preferences_to_advanced_window(struct iTidyAdvancedWindow *adv_data)
         GA_Disabled, adv_data->max_auto_enabled,
         TAG_END);
     
+    /* Max window width percentage */
+    GT_SetGadgetAttrs(adv_data->max_width_pct_cycle, adv_data->window, NULL,
+        GTCY_Active, adv_data->max_width_pct_selected,
+        GA_Disabled, !adv_data->max_auto_enabled,
+        TAG_END);
+    
+    /* Vertical alignment */
+    GT_SetGadgetAttrs(adv_data->vertical_align_cycle, adv_data->window, NULL,
+        GTCY_Active, adv_data->vertical_align_selected,
+        TAG_END);
+    
     /* Enable/disable custom ratio gadgets based on selection */
     set_custom_ratio_gadgets_state(adv_data, 
         adv_data->aspect_preset_selected == ASPECT_PRESET_CUSTOM);
     
     /* Enable/disable max icons gadget based on Auto checkbox */
     set_max_icons_gadget_state(adv_data, adv_data->max_auto_enabled);
+    
+    /* Enable/disable max width pct gadget based on Auto checkbox */
+    update_max_width_pct_gadget_state(adv_data);
     
     printf("Preferences loaded into advanced window\n");
 }

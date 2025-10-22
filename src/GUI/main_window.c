@@ -912,6 +912,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                             prefs.iconSpacingY = win_data->advanced_spacing_y;
                             prefs.minIconsPerRow = win_data->advanced_min_icons_row;
                             prefs.maxIconsPerRow = win_data->advanced_max_icons_row;
+                            prefs.textAlignment = win_data->advanced_vertical_align;
                         }
                         
                         /* Set skip hidden folders preference */
@@ -1027,6 +1028,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                     win_data->advanced_spacing_y = temp_prefs.iconSpacingY;
                                     win_data->advanced_min_icons_row = temp_prefs.minIconsPerRow;
                                     win_data->advanced_max_icons_row = temp_prefs.maxIconsPerRow;
+                                    win_data->advanced_vertical_align = temp_prefs.textAlignment;
                                     
                                     printf("  (Settings will be applied when you click Apply button)\n");
                                 }
