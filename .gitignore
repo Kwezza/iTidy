@@ -1,5 +1,7 @@
 .vscode/
 iTidy
+workbench/
+Bin/Amiga/iTidy.log
 
 # Prerequisites
 *.d
