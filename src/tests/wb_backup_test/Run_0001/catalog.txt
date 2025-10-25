@@ -1,0 +1,20 @@
+iTidy Backup Catalog v1.0
+========================================
+Run Number: 0001
+Session Started: 2025-10-24 20:21:58
+LhA Path: lha
+========================================
+
+# Index    | Subfolder | Size    | Original Path
+-----------+-----------+---------+------------------
+00001.lha  | 000/      | 1 MB    | ../../workbench/Prefs
+00002.lha  | 000/      | 218 KB  | ../../workbench/Tools
+00003.lha  | 000/      | 37 KB   | ../../workbench/Utilities
+
+========================================
+Session Ended: 2025-10-24 20:21:59
+Total Archives: 3
+Successful: 3
+Failed: 0
+Total Size: 1 MB
+========================================

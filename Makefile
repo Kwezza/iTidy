@@ -55,6 +55,16 @@ CORE_SRCS = \
 	$(SRC_DIR)/layout_processor.c \
 	$(SRC_DIR)/aspect_ratio_layout.c
 
+# Backup system source files
+BACKUP_SRCS = \
+	$(SRC_DIR)/backup_catalog.c \
+	$(SRC_DIR)/backup_lha.c \
+	$(SRC_DIR)/backup_marker.c \
+	$(SRC_DIR)/backup_paths.c \
+	$(SRC_DIR)/backup_runs.c \
+	$(SRC_DIR)/backup_session.c \
+	$(SRC_DIR)/backup_restore.c
+
 # GUI source files
 GUI_SRCS = \
 	$(SRC_DIR)/GUI/main_window.c \
@@ -78,7 +88,7 @@ else
 endif
 
 # All sources
-SRCS = $(CORE_SRCS) $(GUI_SRCS) $(DOS_SRCS) $(SETTINGS_SRCS) $(PLATFORM_SRCS)
+SRCS = $(CORE_SRCS) $(BACKUP_SRCS) $(GUI_SRCS) $(DOS_SRCS) $(SETTINGS_SRCS) $(PLATFORM_SRCS)
 
 # Object files (in build directory)
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)

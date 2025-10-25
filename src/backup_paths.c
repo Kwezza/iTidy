@@ -13,9 +13,9 @@
 
 #ifndef PLATFORM_HOST
 #include "writeLog.h"
-#define DEBUG_LOG(fmt, ...) writeLog(LOG_DEBUG, fmt, ##__VA_ARGS__)
+#define DEBUG_LOG(...) /* disabled on Amiga */
 #else
-#define DEBUG_LOG(fmt, ...) printf("[DEBUG] " fmt "\n", ##__VA_ARGS__)
+#define DEBUG_LOG(fmt, ...) printf("[DEBUG] " fmt "\n", __VA_ARGS__)
 #endif
 
 /*========================================================================*/

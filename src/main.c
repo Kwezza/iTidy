@@ -48,10 +48,6 @@
 #include <ctype.h>
 #include <time.h>
 
-/* VBCC MIGRATION NOTE: Platform abstraction */
-#include <platform/platform.h>
-#include <platform/amiga_headers.h>
-
 /* VBCC MIGRATION NOTE: Amiga-specific headers wrapped in guard */
 #ifdef __AMIGA__
 #include <exec/types.h>
@@ -95,6 +91,12 @@
 #include "cli_utilities.h"
 #include "file_directory_handling.h"
 #include "GUI/main_window.h"
+
+/* Backup/Restore system headers */
+#include "backup_restore.h"
+#include "backup_session.h"
+#include "backup_runs.h"
+#include "backup_catalog.h"
 
 /* VBCC: Set stack size to 20KB at compile time */
 #ifdef __AMIGA__
@@ -235,14 +237,21 @@ static void print_usage(const char *program_name)
     printf("  " textBold "-viewByType  " textReset "List mode sorted by type.\n");
     printf("  " textBold "-resetIcons  " textReset "Remove saved icon positions.\n");
     printf("  " textBold "-skipWHD     " textReset "Keep WHDLoad positions but resize.\n");
-    printf("  " textBold "-forceStd    " textReset "Ignore advanced icon sizes, use classic size for machines without NewIcons support. May remove some NewIcon data.\n");
+    printf("  " textBold "-forceStd    " textReset "Ignore advanced icon sizes, use classic size for machines\n");
     printf("               " textBlack "without NewIcons support. May remove some NewIcon data." textReset "\n\n");
+    
+    printf(textBold "Backup & Restore:\n" textReset);
+    printf("  " textBold "--list-backups" textReset "     List all available backup runs.\n");
+    printf("  " textBold "--restore-run <N>" textReset "  Restore entire backup run N (e.g., --restore-run 1).\n");
+    printf("  " textBold "--restore <file>" textReset "  Restore specific archive file.\n\n");
     
     
     // Examples Section
     printf(textBold "Examples:\n" textReset);
     printf("  " textWhite "iTidy Work:Projects -subdirs" textReset " " textBlack "Recursively tidy Work:Projects and subfolders\n"
-           "  " textWhite "iTidy DF0: -viewByName -viewShowAll" textReset " " textBlack "Tidy DF0:, change the folder view to\n                                      text, and show all files\n\n");
+           "  " textWhite "iTidy DF0: -viewByName -viewShowAll" textReset " " textBlack "Tidy DF0:, change the folder view to\n                                      text, and show all files\n");
+    printf("  " textWhite "iTidy --list-backups" textReset " " textBlack "Show all available backup runs\n");
+    printf("  " textWhite "iTidy --restore-run 1" textReset " " textBlack "Restore all folders from backup run 1\n\n");
     
     // Important Note and Disclaimer Combined
     printf(textBold "Important & Disclaimer:\n" textReset);
@@ -250,6 +259,151 @@ static void print_usage(const char *program_name)
     printf("  " textItalic "Provided 'as is' without any warranty. No responsibility for issues." textReset "\n");
     
 
+}
+
+/* ========================================================================
+ * BACKUP/RESTORE CLI FUNCTIONS
+ * ======================================================================== */
+
+static int cli_list_backups(const char *backupRoot) {
+    UWORD highestRun = FindHighestRunNumber(backupRoot);
+    
+    if (highestRun == 0) {
+        printf("\nNo backup runs found in: %s\n", backupRoot);
+        return 0;
+    }
+    
+    printf("\n" textBold "Available Backup Runs:" textReset "\n");
+    printf("==================================================\n");
+    
+    for (UWORD runNum = 1; runNum <= highestRun; runNum++) {
+        char runDir[256];
+        char catalogPath[300];
+        
+        /* Build run directory path */
+        snprintf(runDir, sizeof(runDir), "%s/Run_%04d", backupRoot, runNum);
+        snprintf(catalogPath, sizeof(catalogPath), "%s/catalog.txt", runDir);
+        
+        /* Check if catalog exists */
+        if (!does_file_or_folder_exist(catalogPath, 0)) {
+            continue;
+        }
+        
+        /* Read catalog header to get info */
+        FILE *fp = fopen(catalogPath, "r");
+        if (fp) {
+            char line[512];
+            int archiveCount = 0;
+            
+            printf("\n" textBold "Run %04d:" textReset " %s\n", runNum, runDir);
+            
+            /* Parse catalog for basic info */
+            while (fgets(line, sizeof(line), fp)) {
+                if (strstr(line, "Session Started:")) {
+                    printf("  Started: %s", strchr(line, ':') + 2);
+                }
+                if (strstr(line, "Session Ended:")) {
+                    printf("  Ended:   %s", strchr(line, ':') + 2);
+                }
+                if (strstr(line, "Total Archives:")) {
+                    sscanf(line, "Total Archives: %d", &archiveCount);
+                    printf("  Archives: %d\n", archiveCount);
+                }
+            }
+            
+            fclose(fp);
+        }
+    }
+    
+    printf("\n");
+    return 0;
+}
+
+static int cli_restore_run(UWORD runNumber, const char *backupRoot) {
+    RestoreContext ctx;
+    char runDir[256];
+    RestoreStatus status;
+    char statsStr[256];
+    
+    printf("\n" textBold "Restoring Backup Run %04d..." textReset "\n", runNumber);
+    printf("==================================================\n");
+    
+    /* Initialize restore context */
+    if (!InitRestoreContext(&ctx)) {
+        printf("\n" textBold "Error:" textReset " LHA not available. Cannot restore backups.\n");
+        return 1;
+    }
+    
+    /* Build run directory path */
+    snprintf(runDir, sizeof(runDir), "%s/Run_%04d", backupRoot, runNumber);
+    
+    /* Check if run exists */
+    if (!does_file_or_folder_exist(runDir, 0)) {
+        printf("\n" textBold "Error:" textReset " Backup run %04d not found in %s\n", runNumber, backupRoot);
+        return 1;
+    }
+    
+    printf("\nRestoring from: %s\n", runDir);
+    printf("This may take a moment...\n\n");
+    
+    /* Restore the full run */
+    status = RestoreFullRun(&ctx, runDir);
+    
+    /* Show results */
+    printf("\n" textBold "Restore Complete" textReset "\n");
+    printf("==================================================\n");
+    
+    GetRestoreStatistics(&ctx, statsStr, sizeof(statsStr));
+    printf("%s\n", statsStr);
+    
+    if (status == RESTORE_OK) {
+        printf("\n" textBold "✓ Success:" textReset " All folders restored successfully!\n");
+        return 0;
+    } else {
+        printf("\n" textBold "⚠ Warning:" textReset " Some restores failed: %s\n", 
+               GetRestoreStatusMessage(status));
+        if (ctx.stats.hasErrors) {
+            printf("First error: %s\n", ctx.stats.firstError);
+        }
+        return (ctx.stats.archivesRestored > 0) ? 0 : 1;
+    }
+}
+
+static int cli_restore_archive(const char *archivePath) {
+    RestoreContext ctx;
+    RestoreStatus status;
+    
+    printf("\n" textBold "Restoring Archive..." textReset "\n");
+    printf("==================================================\n");
+    printf("Archive: %s\n\n", archivePath);
+    
+    /* Initialize restore context */
+    if (!InitRestoreContext(&ctx)) {
+        printf("\n" textBold "Error:" textReset " LHA not available. Cannot restore backups.\n");
+        return 1;
+    }
+    
+    /* Check if archive exists */
+    if (!does_file_or_folder_exist(archivePath, 0)) {
+        printf("\n" textBold "Error:" textReset " Archive not found: %s\n", archivePath);
+        return 1;
+    }
+    
+    /* Restore the archive */
+    status = RestoreArchive(&ctx, archivePath);
+    
+    /* Show results */
+    if (status == RESTORE_OK) {
+        printf("\n" textBold "✓ Success:" textReset " Archive restored successfully!\n");
+        printf("Bytes restored: %lu\n", ctx.stats.totalBytesRestored);
+        return 0;
+    } else {
+        printf("\n" textBold "✗ Error:" textReset " %s\n", GetRestoreStatusMessage(status));
+        if (ctx.lastError[0]) {
+            printf("Details: %s\n", ctx.lastError);
+        }
+        return 1;
+    }
 }
 
 
@@ -352,6 +506,34 @@ int main(int argc, char **argv)
         //print_usage(argv[0]);
         return RETURN_FAIL;
     }
+    
+    /* Check for backup/restore commands first (these don't need a directory path) */
+    if (strcmp(argv[1], "--list-backups") == 0) {
+        const char *backupRoot = (argc > 2) ? argv[2] : "PROGDIR:Backups";
+        return cli_list_backups(backupRoot);
+    }
+    
+    if (strcmp(argv[1], "--restore-run") == 0) {
+        if (argc < 3) {
+            printf("Error: --restore-run requires a run number\n");
+            printf("Example: iTidy --restore-run 1\n");
+            return RETURN_FAIL;
+        }
+        UWORD runNumber = (UWORD)atoi(argv[2]);
+        const char *backupRoot = (argc > 3) ? argv[3] : "PROGDIR:Backups";
+        return cli_restore_run(runNumber, backupRoot);
+    }
+    
+    if (strcmp(argv[1], "--restore") == 0) {
+        if (argc < 3) {
+            printf("Error: --restore requires an archive path\n");
+            printf("Example: iTidy --restore PROGDIR:Backups/Run_0001/000/00001.lha\n");
+            return RETURN_FAIL;
+        }
+        return cli_restore_archive(argv[2]);
+    }
+    
+    /* Normal tidy operation - requires directory path */
     strcpy(filePath, argv[1]);
     sanitizeAmigaPath(filePath);
     if (does_file_or_folder_exist(filePath, 0) == FALSE)

@@ -20,13 +20,13 @@
     #endif
     #include <sys/stat.h>
     #include <unistd.h>
-    #define DEBUG_LOG(fmt, ...) printf("[DEBUG] " fmt "\n", ##__VA_ARGS__)
+    #define DEBUG_LOG(fmt, ...) printf("[DEBUG] " fmt "\n", __VA_ARGS__)
 #else
     #include <dos/dos.h>
     #include <proto/dos.h>
     #include <proto/exec.h>
     #include "writeLog.h"
-    #define DEBUG_LOG(fmt, ...) writeLog(LOG_DEBUG, fmt, ##__VA_ARGS__)
+    #define DEBUG_LOG(...) /* disabled on Amiga */
     #define PATH_SEP "/"
     #define NULL_DEVICE "NIL:"
 #endif
@@ -38,6 +38,67 @@
 
 /* Command buffer size */
 #define MAX_COMMAND_LEN 512
+
+/*========================================================================*/
+/* Path Expansion Helper                                                  */
+/*========================================================================*/
+
+#ifndef PLATFORM_HOST
+/**
+ * Expand PROGDIR: to absolute path on Amiga
+ * Returns TRUE if expansion successful, FALSE otherwise
+ */
+static BOOL ExpandProgDir(const char *path, char *expanded, size_t maxLen) {
+    BPTR lock;
+    char buffer[512];
+    BOOL success = FALSE;
+    
+    if (!path || !expanded || maxLen == 0) {
+        return FALSE;
+    }
+    
+    /* If path doesn't start with PROGDIR:, just copy it */
+    if (strncmp(path, "PROGDIR:", 8) != 0) {
+        strncpy(expanded, path, maxLen - 1);
+        expanded[maxLen - 1] = '\0';
+        return TRUE;
+    }
+    
+    /* Lock PROGDIR: to get its absolute path */
+    lock = Lock((STRPTR)"PROGDIR:", ACCESS_READ);
+    if (lock) {
+        /* Get the full path name */
+        if (NameFromLock(lock, (STRPTR)buffer, sizeof(buffer))) {
+            /* Combine the expanded PROGDIR with the rest of the path */
+            const char *remainder = path + 8;  /* Skip "PROGDIR:" */
+            if (*remainder == '/' || *remainder == ':') {
+                remainder++;  /* Skip separator */
+            }
+            
+            /* Build the full path */
+            if (*remainder) {
+                snprintf(expanded, maxLen, "%s/%s", buffer, remainder);
+            } else {
+                strncpy(expanded, buffer, maxLen - 1);
+                expanded[maxLen - 1] = '\0';
+            }
+            success = TRUE;
+            
+            append_to_log("[BACKUP] Expanded '%s' to '%s'\n", path, expanded);
+        }
+        UnLock(lock);
+    }
+    
+    if (!success) {
+        /* Fallback: just copy the original path */
+        strncpy(expanded, path, maxLen - 1);
+        expanded[maxLen - 1] = '\0';
+        append_to_log("[BACKUP] WARNING: Could not expand PROGDIR:, using as-is\n");
+    }
+    
+    return success;
+}
+#endif
 
 /*========================================================================*/
 /* LHA Detection                                                          */
@@ -189,6 +250,9 @@ BOOL ExecuteLhaCommand(const char *command) {
     }
     
     DEBUG_LOG("Executing: %s", command);
+#ifndef PLATFORM_HOST
+    append_to_log("[BACKUP] Executing LHA: %s\n", command);
+#endif
     
 #ifdef PLATFORM_HOST
     result = system(command);
@@ -209,6 +273,9 @@ BOOL ExecuteLhaCommand(const char *command) {
     if (!input || !output) {
         if (input) Close(input);
         if (output) Close(output);
+#ifndef PLATFORM_HOST
+        append_to_log("[BACKUP] ERROR: Failed to open NIL: for LHA execution\n");
+#endif
         return FALSE;
     }
     
@@ -216,6 +283,14 @@ BOOL ExecuteLhaCommand(const char *command) {
     
     Close(input);
     Close(output);
+    
+#ifndef PLATFORM_HOST
+    if (result) {
+        append_to_log("[BACKUP] LHA command succeeded\n");
+    } else {
+        append_to_log("[BACKUP] ERROR: LHA command failed (Execute returned 0)\n");
+    }
+#endif
     
     return (result != 0);  /* Execute() returns non-zero on success */
 #endif
@@ -228,28 +303,57 @@ BOOL ExecuteLhaCommand(const char *command) {
 BOOL CreateLhaArchive(const char *lhaPath, const char *archivePath, 
                       const char *sourceDir) {
     char command[MAX_COMMAND_LEN];
+    char absArchivePath[MAX_COMMAND_LEN];
     int len;
+    BOOL result;
     
     if (!lhaPath || !archivePath || !sourceDir) {
         DEBUG_LOG("Invalid parameters for CreateLhaArchive");
+#ifndef PLATFORM_HOST
+        append_to_log("[BACKUP] ERROR: Invalid parameters for CreateLhaArchive\n");
+#endif
         return FALSE;
     }
     
     DEBUG_LOG("Creating archive: %s from %s", archivePath, sourceDir);
+#ifndef PLATFORM_HOST
+    append_to_log("[BACKUP] Creating archive: %s from %s\n", archivePath, sourceDir);
+#endif
+    
+#ifdef PLATFORM_HOST
+    /* Convert archive path to absolute path for host builds */
+    #ifdef _WIN32
+    if (_fullpath(absArchivePath, archivePath, sizeof(absArchivePath)) == NULL) {
+        strcpy(absArchivePath, archivePath);
+    }
+    #else
+    if (realpath(archivePath, absArchivePath) == NULL) {
+        strcpy(absArchivePath, archivePath);
+    }
+    #endif
+#else
+    /* On Amiga, expand PROGDIR: to absolute path */
+    if (!ExpandProgDir(archivePath, absArchivePath, sizeof(absArchivePath))) {
+        append_to_log("[BACKUP] ERROR: Failed to expand archive path\n");
+        return FALSE;
+    }
+#endif
     
     /* Build command: change to source dir and archive from there */
     /* This avoids issues with wildcards in paths */
-#ifdef _WIN32
-    /* Windows: use pushd/popd and archive parent directory contents */
-    len = snprintf(command, sizeof(command), 
-                  "pushd \"%s\" && %s a -r \"%s\" * & popd",
-                  sourceDir, lhaPath, archivePath);
-#else
-    /* Unix/Amiga: use cd and archive */
-    len = snprintf(command, sizeof(command),
-                  "cd \"%s\" && %s a -r \"%s\" *",
-                  sourceDir, lhaPath, archivePath);
-#endif
+#ifdef PLATFORM_HOST
+    #ifdef _WIN32
+        /* Windows: Use cmd.exe for proper wildcard expansion (PowerShell doesn't expand wildcards in external commands)
+         * Note: -r flag removed as this version of LHA recurses by default */
+        len = snprintf(command, sizeof(command), 
+                      "cmd /c \"cd /d \"%s\" && %s a \"%s\" *\"",
+                      sourceDir, lhaPath, absArchivePath);
+    #else
+        /* Unix: use cd and archive (removed -r flag) */
+        len = snprintf(command, sizeof(command),
+                      "cd \"%s\" && %s a \"%s\" *",
+                      sourceDir, lhaPath, absArchivePath);
+    #endif
     
     if (len >= MAX_COMMAND_LEN) {
         DEBUG_LOG("Command too long");
@@ -257,6 +361,53 @@ BOOL CreateLhaArchive(const char *lhaPath, const char *archivePath,
     }
     
     return ExecuteLhaCommand(command);
+#else
+    /* Amiga: Pass full paths directly to LHA */
+    /* Archive only .info files with recursive search */
+    /* Format: C:LhA a -r "archive.lha" source/dir/ *.info */
+    /* The trailing slash makes it a home directory, and *.info is the pattern */
+    len = snprintf(command, sizeof(command),
+                  "%s a -r \"%s\" %s/ *.info",
+                  lhaPath, absArchivePath, sourceDir);
+    
+    if (len >= MAX_COMMAND_LEN) {
+        append_to_log("[BACKUP] ERROR: Command too long\n");
+        return FALSE;
+    }
+    
+    result = ExecuteLhaCommand(command);
+    
+    /* DEBUG: List archive contents to verify what was archived */
+    if (result) {
+        char listFile[MAX_COMMAND_LEN];
+        char listCommand[MAX_COMMAND_LEN];
+        const char *lastSlash;
+        
+        /* Build output filename: replace .lha with .txt */
+        strncpy(listFile, absArchivePath, sizeof(listFile) - 1);
+        listFile[sizeof(listFile) - 1] = '\0';
+        
+        /* Find the last dot and replace extension */
+        lastSlash = strrchr(listFile, '.');
+        if (lastSlash && strcmp(lastSlash, ".lha") == 0) {
+            strcpy((char*)lastSlash, ".txt");
+        } else {
+            strcat(listFile, ".txt");
+        }
+        
+        /* Build list command: lha l "archive.lha" > "output.txt" */
+        len = snprintf(listCommand, sizeof(listCommand),
+                      "%s l \"%s\" > \"%s\"",
+                      lhaPath, absArchivePath, listFile);
+        
+        if (len < MAX_COMMAND_LEN) {
+            append_to_log("[BACKUP] DEBUG: Listing archive contents to: %s\n", listFile);
+            ExecuteLhaCommand(listCommand);
+        }
+    }
+    
+    return result;
+#endif
 }
 
 BOOL AddFileToArchive(const char *lhaPath, const char *archivePath,
@@ -267,6 +418,7 @@ BOOL AddFileToArchive(const char *lhaPath, const char *archivePath,
     char absArchivePath[MAX_COMMAND_LEN];
     const char *lastSlash;
     int len;
+    BOOL result;
     
     if (!lhaPath || !archivePath || !markerFile) {
         return FALSE;
@@ -293,7 +445,8 @@ BOOL AddFileToArchive(const char *lhaPath, const char *archivePath,
         strcpy(fileName, markerFile);
     }
     
-    /* Convert archive path to absolute path */
+#ifdef PLATFORM_HOST
+    /* Convert archive path to absolute path for host builds */
     #ifdef _WIN32
     if (_fullpath(absArchivePath, archivePath, sizeof(absArchivePath)) == NULL) {
         strcpy(absArchivePath, archivePath);
@@ -306,21 +459,55 @@ BOOL AddFileToArchive(const char *lhaPath, const char *archivePath,
     
     /* Build command: change to directory and add just the filename */
     /* This ensures the file is stored without path in the archive */
-#ifdef _WIN32
+    #ifdef _WIN32
     len = snprintf(command, sizeof(command), 
                   "pushd \"%s\" & %s a \"%s\" \"%s\" & popd",
                   dirPath, lhaPath, absArchivePath, fileName);
-#else
+    #else
     len = snprintf(command, sizeof(command), 
                   "cd \"%s\" && %s a \"%s\" \"%s\"",
                   dirPath, lhaPath, absArchivePath, fileName);
-#endif
+    #endif
     
     if (len >= MAX_COMMAND_LEN) {
         return FALSE;
     }
     
     return ExecuteLhaCommand(command);
+#else
+    /* Amiga: Use CurrentDir() to change directory (proper AmigaDOS way) */
+    BPTR oldDir, newDir;
+    
+    /* Use archive path as-is on Amiga (already in AmigaDOS format) */
+    strcpy(absArchivePath, archivePath);
+    
+    newDir = Lock((STRPTR)dirPath, SHARED_LOCK);
+    if (!newDir) {
+        DEBUG_LOG("Failed to lock directory: %s", dirPath);
+        return FALSE;
+    }
+    
+    oldDir = CurrentDir(newDir);
+    
+    /* Build command without path changes */
+    len = snprintf(command, sizeof(command), 
+                  "%s a \"%s\" \"%s\"",
+                  lhaPath, absArchivePath, fileName);
+    
+    if (len >= MAX_COMMAND_LEN) {
+        CurrentDir(oldDir);
+        UnLock(newDir);
+        return FALSE;
+    }
+    
+    result = ExecuteLhaCommand(command);
+    
+    /* Restore original directory */
+    CurrentDir(oldDir);
+    UnLock(newDir);
+    
+    return result;
+#endif
 }
 
 ULONG GetArchiveSize(const char *archivePath) {

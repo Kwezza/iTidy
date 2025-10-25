@@ -511,7 +511,6 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     
     win_data->backup_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
         GTCB_Checked, FALSE,
-        GA_Disabled, TRUE,  /* Disabled for now */
         TAG_END);
     if (!gad)
     {
@@ -919,6 +918,10 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         
                         /* Set skip hidden folders preference */
                         prefs.skipHiddenFolders = win_data->skip_hidden_folders;
+                        
+                        /* Set backup preferences from GUI */
+                        prefs.backupPrefs.enableUndoBackup = win_data->enable_backup;
+                        /* Keep other backup settings at defaults (useLha=TRUE, path="Work:iTidyBackups/") */
                         
                         /* Print preferences for debugging */
                         print_layout_preferences(&prefs, 

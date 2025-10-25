@@ -24,6 +24,13 @@
 #include "spinner.h"
 #include "aspect_ratio_layout.h"
 
+/* Backup system integration */
+#include "backup_session.h"
+#include "backup_catalog.h"
+
+/* Global backup context (initialized by ProcessDirectoryWithPreferences) */
+static BackupContext *g_backupContext = NULL;
+
 /* Forward declarations for helper functions */
 static int CompareIconsWithPreferences(const void *a, const void *b, 
                                       const LayoutPreferences *prefs);
@@ -56,6 +63,9 @@ BOOL ProcessDirectoryWithPreferences(const char *path,
                                     const LayoutPreferences *prefs)
 {
     char sanitizedPath[512];
+    BOOL success = FALSE;
+    BackupContext localContext;
+    BackupPreferences backupPrefs;
     
     if (!path || !prefs)
     {
@@ -68,6 +78,39 @@ BOOL ProcessDirectoryWithPreferences(const char *path,
     sanitizedPath[sizeof(sanitizedPath) - 1] = '\0';
     sanitizeAmigaPath(sanitizedPath);
     
+    /* Initialize backup session if backup is enabled */
+    if (prefs->backupPrefs.enableUndoBackup)
+    {
+        printf("\n*** Backup enabled - creating backup session ***\n");
+        printf("Backup location: %s\n", prefs->backupPrefs.backupRootPath);
+        
+        /* Copy backup preferences from layout preferences */
+        backupPrefs.enableUndoBackup = prefs->backupPrefs.enableUndoBackup;
+        backupPrefs.useLha = prefs->backupPrefs.useLha;
+        strncpy(backupPrefs.backupRootPath, prefs->backupPrefs.backupRootPath, 
+                sizeof(backupPrefs.backupRootPath) - 1);
+        backupPrefs.maxBackupsPerFolder = prefs->backupPrefs.maxBackupsPerFolder;
+        
+        if (InitBackupSession(&localContext, &backupPrefs))
+        {
+            g_backupContext = &localContext;
+            printf("Backup session started successfully (Run #%u)\n", localContext.runNumber);
+            printf("Backup directory: %s\n", localContext.runDirectory);
+            append_to_log("Backup session started: %s\n", localContext.runDirectory);
+        }
+        else
+        {
+            printf("Warning: Failed to start backup session - continuing without backup\n");
+            append_to_log("ERROR: Failed to start backup session\n");
+            g_backupContext = NULL;
+        }
+    }
+    else
+    {
+        printf("\n*** Backup disabled - no backup will be created ***\n");
+        g_backupContext = NULL;
+    }
+    
     /* Load left-out icons from the device's .backdrop file */
     loadLeftOutIcons(sanitizedPath);
     
@@ -77,12 +120,33 @@ BOOL ProcessDirectoryWithPreferences(const char *path,
     /* Start processing */
     if (recursive)
     {
-        return ProcessDirectoryRecursive(sanitizedPath, prefs, 0);
+        success = ProcessDirectoryRecursive(sanitizedPath, prefs, 0);
     }
     else
     {
-        return ProcessSingleDirectory(sanitizedPath, prefs);
+        success = ProcessSingleDirectory(sanitizedPath, prefs);
     }
+    
+    /* End backup session if one was started */
+    if (g_backupContext != NULL)
+    {
+        printf("\n*** Finalizing backup session ***\n");
+        CloseBackupSession(g_backupContext);
+        printf("Backup session completed successfully\n");
+        printf("  Folders backed up: %u\n", g_backupContext->foldersBackedUp);
+        printf("  Total bytes archived: %lu\n", (unsigned long)g_backupContext->totalBytesArchived);
+        printf("  Location: %s\n", g_backupContext->runDirectory);
+        
+        append_to_log("\n*** Backup session completed ***\n");
+        append_to_log("  Folders backed up: %u\n", g_backupContext->foldersBackedUp);
+        append_to_log("  Failed backups: %u\n", g_backupContext->failedBackups);
+        append_to_log("  Total bytes: %lu\n", (unsigned long)g_backupContext->totalBytesArchived);
+        append_to_log("  Location: %s\n", g_backupContext->runDirectory);
+        
+        g_backupContext = NULL;
+    }
+    
+    return success;
 }
 
 /*========================================================================*/
@@ -744,6 +808,21 @@ static BOOL ProcessSingleDirectory(const char *path,
     }
     
     printf("  Found %lu icons\n", (unsigned long)iconArray->size);
+    
+    /* Backup this directory if backup is enabled */
+    if (g_backupContext != NULL)
+    {
+        printf("  Creating backup...\n");
+        BackupStatus status = BackupFolder(g_backupContext, path);
+        if (status == BACKUP_OK)
+        {
+            printf("  ✓ Backup created successfully\n");
+        }
+        else
+        {
+            printf("  Warning: Backup failed (status %d) - continuing anyway\n", status);
+        }
+    }
     
     /* Sort icons according to preferences */
     printf("  Sorting icons...\n");

@@ -102,14 +102,16 @@ BOOL CloseCatalog(BackupContext *ctx);
  *       return TRUE; // Continue parsing
  *   }
  *   
- *   ParseCatalog("PROGDIR:Backups/Run_0001/catalog.txt", ProcessEntry);
+ *   ParseCatalog("PROGDIR:Backups/Run_0001/catalog.txt", ProcessEntry, NULL);
  * 
  * @param catalogPath Full path to catalog.txt file
  * @param callback Function to call for each entry (return FALSE to stop)
+ * @param userData Optional user data passed to callback (can be NULL)
  * @return TRUE if parsing completed, FALSE on error
  */
 BOOL ParseCatalog(const char *catalogPath, 
-                  BOOL (*callback)(const BackupArchiveEntry *entry));
+                  BOOL (*callback)(const BackupArchiveEntry *entry, void *userData),
+                  void *userData);
 
 /**
  * @brief Find a specific entry in the catalog by archive index

@@ -17,12 +17,13 @@
 /* Platform-specific includes */
 #ifdef PLATFORM_HOST
     #include <sys/stat.h>
-    #define DEBUG_LOG(fmt, ...) printf("[DEBUG] " fmt "\n", ##__VA_ARGS__)
+    #define DEBUG_LOG printf
 #else
     #include <dos/dos.h>
     #include <proto/dos.h>
     #include "writeLog.h"
-    #define DEBUG_LOG(fmt, ...) writeLog(LOG_DEBUG, fmt, ##__VA_ARGS__)
+    /* VBCC C99 mode has issues with variadic macros, just disable for now */
+    #define DEBUG_LOG(...) /* disabled */
 #endif
 
 /*========================================================================*/
@@ -386,7 +387,8 @@ BOOL ParseCatalogLine(const char *line, BackupArchiveEntry *outEntry) {
 }
 
 BOOL ParseCatalog(const char *catalogPath, 
-                  BOOL (*callback)(const BackupArchiveEntry *entry)) {
+                  BOOL (*callback)(const BackupArchiveEntry *entry, void *userData),
+                  void *userData) {
     char line[MAX_LINE_LENGTH];
     BackupArchiveEntry entry;
     BPTR file;
@@ -405,7 +407,7 @@ BOOL ParseCatalog(const char *catalogPath,
     
     while (fgets(line, sizeof(line), fp)) {
         if (ParseCatalogLine(line, &entry)) {
-            if (!callback(&entry)) {
+            if (!callback(&entry, userData)) {
                 result = FALSE; /* Callback requested stop */
                 break;
             }
@@ -422,7 +424,7 @@ BOOL ParseCatalog(const char *catalogPath,
     
     while (FGets(file, line, sizeof(line))) {
         if (ParseCatalogLine(line, &entry)) {
-            if (!callback(&entry)) {
+            if (!callback(&entry, userData)) {
                 result = FALSE; /* Callback requested stop */
                 break;
             }
@@ -435,40 +437,68 @@ BOOL ParseCatalog(const char *catalogPath,
     return result;
 }
 
+/*========================================================================*/
+/* Helper structures for ParseCatalog callbacks                          */
+/*========================================================================*/
+
+typedef struct {
+    ULONG targetArchiveIndex;
+    BackupArchiveEntry *outEntry;
+    BOOL found;
+} FindEntryContext;
+
+typedef struct {
+    UWORD count;
+} CountEntryContext;
+
+/*========================================================================*/
+/* Callback functions (no longer nested)                                 */
+/*========================================================================*/
+
+static BOOL FindEntryCallback(const BackupArchiveEntry *entry, void *userData) {
+    FindEntryContext *ctx = (FindEntryContext *)userData;
+    if (entry->archiveIndex == ctx->targetArchiveIndex) {
+        memcpy(ctx->outEntry, entry, sizeof(BackupArchiveEntry));
+        ctx->found = TRUE;
+        return FALSE; /* Stop parsing */
+    }
+    return TRUE; /* Continue */
+}
+
+static BOOL CountEntryCallback(const BackupArchiveEntry *entry, void *userData) {
+    CountEntryContext *ctx = (CountEntryContext *)userData;
+    ctx->count++;
+    (void)entry; /* Unused but required by callback signature */
+    return TRUE; /* Continue */
+}
+
+/*========================================================================*/
+/* Public API implementations                                            */
+/*========================================================================*/
+
 BOOL FindCatalogEntry(const char *catalogPath, ULONG archiveIndex,
                       BackupArchiveEntry *outEntry) {
-    BackupArchiveEntry tempEntry;
-    BOOL found = FALSE;
+    FindEntryContext ctx;
     
     if (!catalogPath || !outEntry) {
         return FALSE;
     }
     
-    /* Helper callback for finding specific entry */
-    BOOL FindCallback(const BackupArchiveEntry *entry) {
-        if (entry->archiveIndex == archiveIndex) {
-            memcpy(outEntry, entry, sizeof(BackupArchiveEntry));
-            found = TRUE;
-            return FALSE; /* Stop parsing */
-        }
-        return TRUE; /* Continue */
-    }
+    ctx.targetArchiveIndex = archiveIndex;
+    ctx.outEntry = outEntry;
+    ctx.found = FALSE;
     
-    ParseCatalog(catalogPath, FindCallback);
+    ParseCatalog(catalogPath, FindEntryCallback, &ctx);
     
-    return found;
+    return ctx.found;
 }
 
 UWORD CountCatalogEntries(const char *catalogPath) {
-    UWORD count = 0;
+    CountEntryContext ctx;
     
-    /* Helper callback for counting */
-    BOOL CountCallback(const BackupArchiveEntry *entry) {
-        count++;
-        return TRUE; /* Continue */
-    }
+    ctx.count = 0;
     
-    ParseCatalog(catalogPath, CountCallback);
+    ParseCatalog(catalogPath, CountEntryCallback, &ctx);
     
-    return count;
+    return ctx.count;
 }

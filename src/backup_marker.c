@@ -12,15 +12,17 @@
     #ifdef _WIN32
         #define WIN32_LEAN_AND_MEAN
         #include <windows.h>
+        #include <io.h>
+        #define access _access
     #endif
     #include <sys/stat.h>
     #include <unistd.h>
-    #define DEBUG_LOG(fmt, ...) printf("[DEBUG] " fmt "\n", ##__VA_ARGS__)
+    #define DEBUG_LOG(fmt, ...) printf("[DEBUG] " fmt "\n", __VA_ARGS__)
 #else
     #include <dos/dos.h>
     #include <proto/dos.h>
     #include "writeLog.h"
-    #define DEBUG_LOG(fmt, ...) writeLog(LOG_DEBUG, fmt, ##__VA_ARGS__)
+    #define DEBUG_LOG(...) /* disabled on Amiga */
 #endif
 
 #include "backup_marker.h"
@@ -106,11 +108,14 @@ BOOL GetTempDirectory(char *tempDirOut) {
         return TRUE;
     #endif
 #else
-    /* Amiga: Try TEMP: then RAM: */
-    BPTR lock = Lock((STRPTR)"TEMP:", ACCESS_READ);
+    /* Amiga: Try T: (standard temporary) then RAM: */
+    BPTR lock = Lock((STRPTR)"T:", ACCESS_READ);
     if (lock) {
         UnLock(lock);
-        strcpy(tempDirOut, "TEMP:");
+        strcpy(tempDirOut, "T:");
+#ifndef PLATFORM_HOST
+        append_to_log("[BACKUP] Using temp directory: T:\n");
+#endif
         return TRUE;
     }
     
@@ -118,11 +123,17 @@ BOOL GetTempDirectory(char *tempDirOut) {
     if (lock) {
         UnLock(lock);
         strcpy(tempDirOut, "RAM:");
+#ifndef PLATFORM_HOST
+        append_to_log("[BACKUP] Using temp directory: RAM:\n");
+#endif
         return TRUE;
     }
     
     /* Fallback to current directory */
     strcpy(tempDirOut, "");
+#ifndef PLATFORM_HOST
+    append_to_log("[BACKUP] WARNING: No temp directory available, using current directory\n");
+#endif
     return TRUE;
 #endif
 }
@@ -343,11 +354,11 @@ BOOL ExtractAndReadMarker(const char *archivePath, const char *lhaPath,
     }
     
     DEBUG_LOG("Extracting marker from: %s", archivePath);
+    DEBUG_LOG("Target temp directory: %s", tempDirectory);
     
-    /* Extract _PATH.txt from archive */
-    if (!ExtractFileFromArchive(lhaPath, archivePath, MARKER_FILENAME, 
-                                 tempDirectory)) {
-        DEBUG_LOG("Failed to extract marker from archive");
+    /* Extract entire archive to temp (single file extraction doesn't work reliably) */
+    if (!ExtractLhaArchive(lhaPath, archivePath, tempDirectory)) {
+        DEBUG_LOG("Failed to extract archive");
         return FALSE;
     }
     
@@ -356,11 +367,44 @@ BOOL ExtractAndReadMarker(const char *archivePath, const char *lhaPath,
         return FALSE;
     }
     
+    DEBUG_LOG("Expected marker path: %s", markerPath);
+    
+    /* Small delay to ensure file system sync (host OS may need it) */
+    /* Also retry a few times in case LHA hasn't finished writing */
+#ifdef PLATFORM_HOST
+    int retries = 5;
+    while (retries > 0) {
+        #ifdef _WIN32
+        Sleep(200);  /* 200ms delay */
+        #else
+        usleep(200000);  /* 200ms delay */
+        #endif
+        
+        /* Check if file exists */
+        #ifdef _WIN32
+        if (_access(markerPath, 0) == 0) {
+            break;  /* File exists */
+        }
+        #else
+        if (access(markerPath, F_OK) == 0) {
+            break;  /* File exists */
+        }
+        #endif
+        
+        retries--;
+        if (retries > 0) {
+            DEBUG_LOG("Marker not found yet, retrying... (%d attempts left)", retries);
+        }
+    }
+#endif
+    
     /* Read marker file */
     success = ReadPathMarkerFile(markerPath, originalPathOut, NULL);
     
     /* Clean up temp marker */
-    DeleteMarkerFile(markerPath);
+    if (success) {
+        DeleteMarkerFile(markerPath);
+    }
     
     return success;
 }

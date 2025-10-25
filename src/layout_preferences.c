@@ -58,7 +58,7 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     /* Backup Settings */
     prefs->backupPrefs.enableUndoBackup = FALSE;
     prefs->backupPrefs.useLha = TRUE;
-    strcpy(prefs->backupPrefs.backupRootPath, "Work:iTidyBackups/");
+    strcpy(prefs->backupPrefs.backupRootPath, "PROGDIR:Backups");
     prefs->backupPrefs.maxBackupsPerFolder = 3;
 }
 

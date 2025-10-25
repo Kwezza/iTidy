@@ -19,7 +19,7 @@
     #include <sys/types.h>
     #include <dirent.h>
     #include <errno.h>
-    #define DEBUG_LOG(fmt, ...) printf("[DEBUG] " fmt "\n", ##__VA_ARGS__)
+    #define DEBUG_LOG(fmt, ...) printf("[DEBUG] " fmt "\n", __VA_ARGS__)
     
     /* Windows compatibility */
     #ifdef _WIN32
@@ -30,8 +30,10 @@
     #include <dos/dos.h>
     #include <dos/dosasl.h>
     #include <proto/dos.h>
+    #include <proto/exec.h>
+    #include <exec/memory.h>
     #include "writeLog.h"
-    #define DEBUG_LOG(fmt, ...) writeLog(LOG_DEBUG, fmt, ##__VA_ARGS__)
+    #define DEBUG_LOG(...) /* disabled on Amiga */
 #endif
 
 /*========================================================================*/
@@ -383,6 +385,8 @@ BOOL CreateBackupRoot(const char *backupRoot) {
 BOOL GetRunDirectoryPath(char *outPath, const char *backupRoot, UWORD runNumber) {
     char runDirName[MAX_RUN_DIR_NAME];
     int length;
+    size_t rootLen;
+    BOOL hasTrailingSlash;
     
     if (!outPath || !backupRoot) {
         return FALSE;
@@ -396,8 +400,16 @@ BOOL GetRunDirectoryPath(char *outPath, const char *backupRoot, UWORD runNumber)
     /* Format run directory name */
     FormatRunDirectoryName(runDirName, runNumber);
     
-    /* Build full path */
-    length = snprintf(outPath, MAX_BACKUP_PATH, "%s/%s", backupRoot, runDirName);
+    /* Check if backupRoot has trailing slash */
+    rootLen = strlen(backupRoot);
+    hasTrailingSlash = (rootLen > 0 && (backupRoot[rootLen - 1] == '/' || backupRoot[rootLen - 1] == ':'));
+    
+    /* Build full path - add separator only if needed */
+    if (hasTrailingSlash) {
+        length = snprintf(outPath, MAX_BACKUP_PATH, "%s%s", backupRoot, runDirName);
+    } else {
+        length = snprintf(outPath, MAX_BACKUP_PATH, "%s/%s", backupRoot, runDirName);
+    }
     
     if (length >= MAX_BACKUP_PATH) {
         DEBUG_LOG("Run directory path too long: %d chars", length);
