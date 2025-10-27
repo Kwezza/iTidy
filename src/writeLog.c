@@ -17,6 +17,16 @@
 
 #include "writeLog.h"
 #include "file_directory_handling.h"
+#include <devices/timer.h>
+#include <clib/timer_protos.h>
+
+// External timer device (initialized in spinner.c)
+extern struct Device* TimerBase;
+
+// Logging performance tracking
+static ULONG totalLogCalls = 0;
+static ULONG totalLogMicroseconds = 0;
+static ULONG totalBytesWritten = 0;
 
 // Helper function to get timestamp string
 void getTimestamp(char *buffer, int bufferSize)
@@ -78,6 +88,13 @@ void append_to_log(const char *format, ...)
     va_list args;
     LONG bytesWritten;
     LONG messageLen;
+    struct timeval startTime, endTime;
+    ULONG elapsedMicros;
+
+    // Start timing
+    if (TimerBase) {
+        GetSysTime(&startTime);
+    }
 
     // Get timestamp
     getTimestamp(timestamp, sizeof(timestamp));
@@ -108,9 +125,11 @@ void append_to_log(const char *format, ...)
         Close(logFile);
         return;
     }
+    totalBytesWritten += bytesWritten;
 
     // Write space separator
-    Write(logFile, " ", 1);
+    bytesWritten = Write(logFile, " ", 1);
+    totalBytesWritten += (bytesWritten > 0) ? bytesWritten : 0;
 
     // Write message
     messageLen = strlen(buffer);
@@ -119,9 +138,19 @@ void append_to_log(const char *format, ...)
         Close(logFile);
         return;
     }
+    totalBytesWritten += bytesWritten;
 
     // Close the file
     Close(logFile);
+
+    // End timing and accumulate
+    if (TimerBase) {
+        GetSysTime(&endTime);
+        elapsedMicros = ((endTime.tv_secs - startTime.tv_secs) * 1000000) +
+                        (endTime.tv_micro - startTime.tv_micro);
+        totalLogMicroseconds += elapsedMicros;
+        totalLogCalls++;
+    }
 }
 
 void initialize_logfile(void)
@@ -167,4 +196,78 @@ void delete_logfile(void)
     
     // Also try fallback location (current directory)
     DeleteFile("iTidy.log");
+}
+
+// Reset logging performance statistics
+void reset_log_performance_stats(void)
+{
+    totalLogCalls = 0;
+    totalLogMicroseconds = 0;
+    totalBytesWritten = 0;
+}
+
+// Print logging performance statistics
+void print_log_performance_stats(void)
+{
+    ULONG avgMicros;
+    ULONG totalMillis;
+    BPTR logFile;
+    char buffer[512];
+    
+    if (totalLogCalls == 0) {
+        Printf("\n==== LOGGING OVERHEAD STATS ====\n");
+        Printf("No log calls recorded.\n");
+        Printf("================================\n\n");
+        
+        /* Also write to log file (without timing this write!) */
+        logFile = OpenLogFile("PROGDIR:iTidy.log", "iTidy.log");
+        if (logFile) {
+            Seek(logFile, 0, OFFSET_END);
+            Write(logFile, "\n==== LOGGING OVERHEAD STATS ====\n", 35);
+            Write(logFile, "No log calls recorded.\n", 23);
+            Write(logFile, "================================\n\n", 34);
+            Close(logFile);
+        }
+        return;
+    }
+    
+    avgMicros = totalLogMicroseconds / totalLogCalls;
+    totalMillis = totalLogMicroseconds / 1000;
+    
+    /* Print to console */
+    Printf("\n==== LOGGING OVERHEAD STATS ====\n");
+    Printf("Total log calls: %lu\n", totalLogCalls);
+    Printf("Total time: %lu microseconds (%lu.%03lu ms)\n", 
+           totalLogMicroseconds, totalMillis, totalLogMicroseconds % 1000);
+    Printf("Average per call: %lu microseconds (%lu.%03lu ms)\n",
+           avgMicros, avgMicros / 1000, avgMicros % 1000);
+    Printf("Total bytes written: %lu bytes (%lu KB)\n",
+           totalBytesWritten, totalBytesWritten / 1024);
+    Printf("================================\n\n");
+    
+    /* Also write to log file (without timing this write!) */
+    logFile = OpenLogFile("PROGDIR:iTidy.log", "iTidy.log");
+    if (logFile) {
+        Seek(logFile, 0, OFFSET_END);
+        
+        Write(logFile, "\n==== LOGGING OVERHEAD STATS ====\n", 35);
+        
+        snprintf(buffer, sizeof(buffer), "Total log calls: %lu\n", totalLogCalls);
+        Write(logFile, buffer, strlen(buffer));
+        
+        snprintf(buffer, sizeof(buffer), "Total time: %lu microseconds (%lu.%03lu ms)\n", 
+                 totalLogMicroseconds, totalMillis, totalLogMicroseconds % 1000);
+        Write(logFile, buffer, strlen(buffer));
+        
+        snprintf(buffer, sizeof(buffer), "Average per call: %lu microseconds (%lu.%03lu ms)\n",
+                 avgMicros, avgMicros / 1000, avgMicros % 1000);
+        Write(logFile, buffer, strlen(buffer));
+        
+        snprintf(buffer, sizeof(buffer), "Total bytes written: %lu bytes (%lu KB)\n",
+                 totalBytesWritten, totalBytesWritten / 1024);
+        Write(logFile, buffer, strlen(buffer));
+        
+        Write(logFile, "================================\n\n", 34);
+        Close(logFile);
+    }
 }

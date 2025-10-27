@@ -770,6 +770,9 @@ static BOOL ProcessSingleDirectory(const char *path,
     IconArray *iconArray = NULL;
     BOOL success = FALSE;
     
+    /* Reset logging performance stats for this folder */
+    reset_log_performance_stats();
+    
 #ifdef DEBUG
     append_to_log("ProcessSingleDirectory: path='%s'\n", path);
 #endif
@@ -888,6 +891,9 @@ static BOOL ProcessSingleDirectory(const char *path,
     {
         printf("  Failed to save icon positions\n");
     }
+    
+    /* Print logging performance statistics */
+    print_log_performance_stats();
     
     /* Cleanup */
     FreeIconArray(iconArray);

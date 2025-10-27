@@ -18,11 +18,15 @@
 #include "icon_misc.h"
 
 
-// Function to read Kickstart version from memory for Kickstart 1.3 and earlier
+// Function to read Kickstart version from SysBase for all Kickstart versions
 uint16_t GetKickstartVersion(void)
 {
 #if PLATFORM_AMIGA
-    return *((volatile UWORD*)0x00FC);
+    /* Proper way to get Kickstart/ROM version - from SysBase, not low memory */
+    if (!SysBase) {
+        return 0; /* SysBase not available */
+    }
+    return SysBase->LibNode.lib_Version;
 #else
     /* Host stub - return a default version */
     return 36; /* Simulate Workbench 2.0+ */

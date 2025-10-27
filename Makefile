@@ -26,9 +26,10 @@ else
     # VBCC MIGRATION NOTE: Changed to use VBCC v0.9x with Workbench 3.2 SDK
     # Output now goes to Bin/Amiga/ for clean separation
     # VBCC MIGRATION NOTE (Stage 4): Added -DDEBUG for debug logging
+    # DEBUG BUILD: Added -g for debug symbols, -hunkdebug for symbol table
     CC = vc
-    CFLAGS = +aos68k -c99 -cpu=68020 -I$(INC_DIR) -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG
-    LDFLAGS = +aos68k -cpu=68020 -lamiga -lauto -lmieee
+    CFLAGS = +aos68k -c99 -cpu=68020 -g -I$(INC_DIR) -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG
+    LDFLAGS = +aos68k -cpu=68020 -g -hunkdebug -lamiga -lauto -lmieee
     OUT_DIR = $(BUILD_DIR)/amiga
     BIN_DIR = Bin/Amiga
     BIN = $(BIN_DIR)/$(PROJECT)
@@ -126,11 +127,13 @@ endif
 # Link executable
 # VBCC MIGRATION NOTE: For Amiga builds, copy to Bin/Amiga/ after linking
 # GUI MIGRATION NOTE: Executable now named iTidy (GUI version)
+# DEBUG BUILD: Executable contains embedded debug symbols via -hunkdebug
 $(BIN): $(OBJS)
 	@echo Linking $(TARGET) executable: $(BIN)
-	$(CC) $(LDFLAGS) -o $@ $^
+	$(CC) $(LDFLAGS) -o $@ $^ 
 ifeq ($(TARGET),amiga)
 	@echo Build complete: $(BIN)
+	@echo Debug symbols embedded in executable (use WinUAE debugger or MonAm)
 endif
 
 # Compile core source files

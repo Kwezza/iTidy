@@ -10,6 +10,8 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <devices/timer.h>
+#include <clib/timer_protos.h>
 
 #include "aspect_ratio_layout.h"
 #include "layout_preferences.h"
@@ -19,6 +21,9 @@
 /* External screen dimensions (from window_management.c or platform) */
 extern int screenWidth;
 extern int screenHight;  /* Note: Misspelled 'screenHight' in original codebase */
+
+/* External timer base for performance measurement */
+extern struct Device* TimerBase;
 
 /*========================================================================*/
 /* Helper Functions: Average Icon Dimensions                            */
@@ -208,6 +213,14 @@ void CalculateLayoutWithAspectRatio(const IconArray *iconArray,
     int chrome = 20; /* Window chrome estimate (borders, scrollbars) */
     int maxCols, minCols;
     float effectiveAspectRatio;
+    struct timeval startTime, endTime;
+    ULONG elapsedMicros, elapsedMillis;
+    
+    /* Start timing - capture system time */
+    if (TimerBase)
+    {
+        GetSysTime(&startTime);
+    }
     
     if (!iconArray || !prefs || !finalColumns || !finalRows)
     {
@@ -466,6 +479,34 @@ void CalculateLayoutWithAspectRatio(const IconArray *iconArray,
     append_to_log("Total positions: %d (icons: %d)\n", 
                   (*finalColumns) * (*finalRows), iconArray->size);
 #endif
+    
+    /* End timing - calculate elapsed time */
+    if (TimerBase)
+    {
+        GetSysTime(&endTime);
+        
+        /* Calculate elapsed time in microseconds */
+        elapsedMicros = ((endTime.tv_secs - startTime.tv_secs) * 1000000) +
+                        (endTime.tv_micro - startTime.tv_micro);
+        elapsedMillis = elapsedMicros / 1000;
+        
+        /* Log performance metrics */
+        append_to_log("\n==== FLOATING POINT PERFORMANCE ====\n");
+        append_to_log("CalculateLayoutWithAspectRatio() execution time:\n");
+        append_to_log("  %lu microseconds (%lu.%03lu ms)\n", 
+                      elapsedMicros, elapsedMillis, elapsedMicros % 1000);
+        append_to_log("  Icons processed: %d\n", iconArray->size);
+        if (iconArray->size > 0)
+        {
+            append_to_log("  Time per icon: %lu microseconds\n", 
+                          elapsedMicros / iconArray->size);
+        }
+        append_to_log("====================================\n\n");
+        
+        /* Also print to console for immediate visibility */
+        printf("  [TIMING] Aspect ratio calculation: %lu.%03lu ms for %d icons\n",
+               elapsedMillis, elapsedMicros % 1000, iconArray->size);
+    }
 }
 
 /* End of aspect_ratio_layout.c */

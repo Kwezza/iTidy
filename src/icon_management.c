@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <devices/timer.h>
+#include <clib/timer_protos.h>
 
 #include "main.h"
 #include "icon_management.h"
@@ -19,6 +21,9 @@
 #include "dos/getDiskDetails.h"
 #include "Settings/WorkbenchPrefs.h"
 #include "Settings/IControlPrefs.h"
+
+/* External timer base for performance measurement */
+extern struct Device* TimerBase;
 
 void FreeIconArray(IconArray *iconArray)
 {
@@ -136,6 +141,14 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
     int textLength, fileCount = 0, maxWidth = 0;
     IconPosition iconPosition;
     LONG matchResult;               /* MatchFirst/MatchNext return value */
+    struct timeval startTime, endTime;
+    ULONG elapsedMicros, elapsedMillis;
+
+    /* Start timing - capture system time */
+    if (TimerBase)
+    {
+        GetSysTime(&startTime);
+    }
 
 #ifdef DEBUG
     append_to_log("CreateIconArrayFromPath ENTRY: lock=%ld, dirPath='%s'\n", (LONG)lock, dirPath);
@@ -608,6 +621,35 @@ append_to_log("Has only borderless icons: %d\n", iconArray->hasOnlyBorderlessIco
 
     dumpIconArrayToScreen(iconArray);
 #endif
+
+    /* End timing - calculate elapsed time */
+    if (TimerBase)
+    {
+        GetSysTime(&endTime);
+        
+        /* Calculate elapsed time in microseconds */
+        elapsedMicros = ((endTime.tv_secs - startTime.tv_secs) * 1000000) +
+                        (endTime.tv_micro - startTime.tv_micro);
+        elapsedMillis = elapsedMicros / 1000;
+        
+        /* Log performance metrics */
+        append_to_log("\n==== ICON LOADING PERFORMANCE ====\n");
+        append_to_log("CreateIconArrayFromPath() execution time:\n");
+        append_to_log("  %lu microseconds (%lu.%03lu ms)\n", 
+                      elapsedMicros, elapsedMillis, elapsedMicros % 1000);
+        append_to_log("  Icons loaded: %d\n", iconArray->size);
+        if (iconArray->size > 0)
+        {
+            append_to_log("  Time per icon: %lu microseconds\n", 
+                          elapsedMicros / iconArray->size);
+        }
+        append_to_log("  Folder: %s\n", dirPath);
+        append_to_log("==================================\n\n");
+        
+        /* Also print to console for immediate visibility */
+        printf("  [TIMING] Icon loading: %lu.%03lu ms for %d icons\n",
+               elapsedMillis, elapsedMicros % 1000, iconArray->size);
+    }
 
     return iconArray;
 }

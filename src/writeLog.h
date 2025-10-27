@@ -18,4 +18,8 @@ void append_to_log(const char *format, ...);
 void initialize_logfile(void);
 void delete_logfile(void);
 
+// Logging performance tracking
+void reset_log_performance_stats(void);
+void print_log_performance_stats(void);
+
 #endif

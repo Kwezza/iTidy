@@ -201,15 +201,18 @@ UWORD FindHighestRunNumber(const char *backupRoot) {
     /* AmigaDOS version using pattern matching */
     struct AnchorPath *anchor;
     LONG result;
-    char pattern[MAX_BACKUP_PATH];
+    char pattern[MAX_BACKUP_PATH * 2];  /* Larger to accommodate full paths */
     
-    /* Allocate anchor structure */
-    anchor = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath) + MAX_BACKUP_PATH, 
+    /* Allocate anchor structure with extra space for full pathnames */
+    anchor = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath) + 512, 
                                            MEMF_CLEAR);
     if (!anchor) {
         DEBUG_LOG("Failed to allocate AnchorPath");
         return 0;
     }
+    
+    anchor->ap_BreakBits = 0;
+    anchor->ap_Strlen = 512;  /* BUGFIX: Must set buffer length! */
     
     /* Build pattern: "backupRoot/Run_#?" */
     snprintf(pattern, sizeof(pattern), "%s/Run_#?", backupRoot);
@@ -277,13 +280,16 @@ UWORD CountRunDirectories(const char *backupRoot) {
 #else
     struct AnchorPath *anchor;
     LONG result;
-    char pattern[MAX_BACKUP_PATH];
+    char pattern[MAX_BACKUP_PATH * 2];  /* Larger to accommodate full paths */
     
-    anchor = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath) + MAX_BACKUP_PATH, 
+    anchor = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath) + 512, 
                                            MEMF_CLEAR);
     if (!anchor) {
         return 0;
     }
+    
+    anchor->ap_BreakBits = 0;
+    anchor->ap_Strlen = 512;  /* BUGFIX: Must set buffer length! */
     
     snprintf(pattern, sizeof(pattern), "%s/Run_#?", backupRoot);
     result = MatchFirst(pattern, anchor);

@@ -371,19 +371,24 @@ BOOL FolderHasInfoFiles(const char *folderPath) {
     struct AnchorPath *anchor;
     BOOL found = FALSE;
     LONG result;
-    char pattern[256];
+    char pattern[512];
     
     /* Build pattern: "folderPath/#?.info" */
     snprintf(pattern, sizeof(pattern), "%s#?.info", folderPath);
     
-    /* Allocate anchor structure */
-    anchor = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath) + 256, MEMF_CLEAR);
+    /* Allocate anchor structure with larger buffer to prevent overflow
+     * MatchFirst can write full paths back into ap_Buf, so we need room for:
+     * - The full folder path
+     * - The filename (up to 107 chars on FFS)
+     * - Pattern characters
+     * Allocating 512 bytes provides safe margin */
+    anchor = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath) + 512, MEMF_CLEAR);
     if (!anchor) {
         return FALSE;
     }
     
     anchor->ap_BreakBits = 0;
-    anchor->ap_Strlen = 256;
+    anchor->ap_Strlen = 512;
     
     /* Match first .info file */
     result = MatchFirst((STRPTR)pattern, anchor);

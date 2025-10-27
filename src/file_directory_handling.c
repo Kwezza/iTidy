@@ -9,6 +9,8 @@
  */
 
 #include <devices/trackdisk.h>
+#include <devices/timer.h>
+#include <clib/timer_protos.h>
 
 #include "file_directory_handling.h"
 #include "utilities.h"
@@ -18,6 +20,9 @@
 #include "icon_management.h"
 
 #define MAX_DEVICE_NAME_LEN 24  // Define a maximum size for the device name buffer
+
+/* External timer base for performance measurement */
+extern struct Device* TimerBase;
 
 int HasSlaveFile(char *path)
 {
@@ -274,6 +279,8 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
     char fileNameNoInfo[256];
     int iconArraySize;
     int  is_write_protected_icon, is_delete_protected_icon;
+    struct timeval startTime, endTime;
+    ULONG elapsedMicros, elapsedMillis;
 
     int sanityCheckX = 0;
     int sanityCheckY = 0;
@@ -281,6 +288,12 @@ int saveIconsPositionsToDisk(IconArray *iconArray)
     #ifdef DEBUG_MAX
     IconPosition iconPosition; // Only used for debugging
     #endif
+
+    /* Start timing - capture system time */
+    if (TimerBase)
+    {
+        GetSysTime(&startTime);
+    }
 
 #ifdef DEBUG
     append_to_log("saveIconsPositionsToDisk: ENTRY, iconArray=%p\n", iconArray);
@@ -384,6 +397,35 @@ append_to_log("%-3d | %-4d | %-4d | %-40s\n", i, currentIcon->icon_x, currentIco
             fprintf(stderr, "Error: Invalid icon: %s\n", currentIcon->icon_full_path);
         }
     }
+    
+    /* End timing - calculate elapsed time */
+    if (TimerBase)
+    {
+        GetSysTime(&endTime);
+        
+        /* Calculate elapsed time in microseconds */
+        elapsedMicros = ((endTime.tv_secs - startTime.tv_secs) * 1000000) +
+                        (endTime.tv_micro - startTime.tv_micro);
+        elapsedMillis = elapsedMicros / 1000;
+        
+        /* Log performance metrics */
+        append_to_log("\n==== ICON SAVING PERFORMANCE ====\n");
+        append_to_log("saveIconsPositionsToDisk() execution time:\n");
+        append_to_log("  %lu microseconds (%lu.%03lu ms)\n", 
+                      elapsedMicros, elapsedMillis, elapsedMicros % 1000);
+        append_to_log("  Icons saved: %d\n", iconArraySize);
+        if (iconArraySize > 0)
+        {
+            append_to_log("  Time per icon: %lu microseconds\n", 
+                          elapsedMicros / iconArraySize);
+        }
+        append_to_log("=================================\n\n");
+        
+        /* Also print to console for immediate visibility */
+        printf("  [TIMING] Icon saving: %lu.%03lu ms for %d icons\n",
+               elapsedMillis, elapsedMicros % 1000, iconArraySize);
+    }
+    
     return 0; // Return success
 }
 
