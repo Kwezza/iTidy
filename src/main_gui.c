@@ -228,20 +228,23 @@ int main(int argc, char **argv)
     printf("   by Kerry Thompson\n");
     printf("   compiled: %s at %s\n\n", __DATE__, __TIME__);
 
-    /* KEEP: Initialize log file (delete old log first for fresh start) */
-    delete_logfile();
-    initialize_logfile();
-    append_to_log("=== iTidy GUI version starting up (VBCC build) ===\n");
+    /* Initialize enhanced logging system (TRUE = clean old logs) */
+    initialize_log_system(TRUE);
+    
+    /* Initialize memory tracking if enabled */
+    whd_memory_init();
+    
+    log_info(LOG_GENERAL, "=== iTidy GUI version starting up (VBCC build) ===\n");
 
 #ifdef DEBUG
-    append_to_log("iTidy GUI V%s - Amiga Workbench Icon Tidier\n", VERSION);
-    append_to_log("by Kerry Thompson\n");
-    append_to_log("Version compiled on %s at %s\n", __DATE__, __TIME__);
-    append_to_log("Debug build\n");
+    log_debug(LOG_GENERAL, "iTidy GUI V%s - Amiga Workbench Icon Tidier\n", VERSION);
+    log_debug(LOG_GENERAL, "by Kerry Thompson\n");
+    log_debug(LOG_GENERAL, "Version compiled on %s at %s\n", __DATE__, __TIME__);
+    log_debug(LOG_GENERAL, "Debug build\n");
 
     stringWBVersion = convertWBVersionWithDot(workbenchVersion);
-    append_to_log("Workbench version: %s\n", stringWBVersion);
-    free(stringWBVersion);
+    log_debug(LOG_GENERAL, "Workbench version: %s\n", stringWBVersion);
+    whd_free(stringWBVersion);
 #endif
 
     /* KEEP: Workbench version check */
@@ -257,7 +260,7 @@ int main(int argc, char **argv)
         ICON_SPACING_X = 15;
         ICON_SPACING_Y = 10;
 #ifdef DEBUG
-        append_to_log("Workbench 2.x detected. Icon spacing increased to x: %d y: %d\n", ICON_SPACING_X, ICON_SPACING_Y);
+        log_debug(LOG_GENERAL, "Workbench 2.x detected. Icon spacing increased to x: %d y: %d\n", ICON_SPACING_X, ICON_SPACING_Y);
 #endif
     }
 
@@ -278,7 +281,7 @@ int main(int argc, char **argv)
     /* KEEP: Initialize window system (for icon processing, not GUI) */
     InitializeWindow();
 #ifdef DEBUG
-    append_to_log("Workbench screen width %d, height %d\n", screenWidth, screenHight);
+    log_debug(LOG_GENERAL, "Workbench screen width %d, height %d\n", screenWidth, screenHight);
 #endif
 
     /* GUI MIGRATION: Open the GUI window */
@@ -319,42 +322,51 @@ int main(int argc, char **argv)
 
     /* KEEP: Cleanup window system */
 #ifdef DEBUG
-    append_to_log("DEBUG: About to call CleanupWindow()...\n");
+    log_debug(LOG_GENERAL, "DEBUG: About to call CleanupWindow()...\n");
 #endif
     CleanupWindow();
 #ifdef DEBUG
-    append_to_log("DEBUG: CleanupWindow() completed\n");
+    log_debug(LOG_GENERAL, "DEBUG: CleanupWindow() completed\n");
 #endif
 
     /* KEEP: Dispose timer */
 #ifdef DEBUG
-    append_to_log("DEBUG: About to call disposeTimer()...\n");
+    log_debug(LOG_GENERAL, "DEBUG: About to call disposeTimer()...\n");
 #endif
     disposeTimer();
 #ifdef DEBUG
-    append_to_log("DEBUG: disposeTimer() completed\n");
+    log_debug(LOG_GENERAL, "DEBUG: disposeTimer() completed\n");
 #endif
 
     /* KEEP: Free allocated resources */
 #ifdef DEBUG
-    append_to_log("DEBUG: About to call FreeIconErrorList()...\n");
+    log_debug(LOG_GENERAL, "DEBUG: About to call FreeIconErrorList()...\n");
 #endif
     FreeIconErrorList(&iconsErrorTracker);
 #ifdef DEBUG
-    append_to_log("DEBUG: FreeIconErrorList() completed\n");
+    log_debug(LOG_GENERAL, "DEBUG: FreeIconErrorList() completed\n");
 #endif
 
 #ifdef DEBUG
-    append_to_log("DEBUG: About to free fontPrefs (ptr=%ld)...\n", (LONG)fontPrefs);
+    log_debug(LOG_GENERAL, "DEBUG: About to free fontPrefs (ptr=%ld)...\n", (LONG)fontPrefs);
 #endif
     if (fontPrefs)
     {
         FreeVec(fontPrefs);
         fontPrefs = NULL;
 #ifdef DEBUG
-        append_to_log("DEBUG: fontPrefs freed successfully\n");
+        log_debug(LOG_GENERAL, "DEBUG: fontPrefs freed successfully\n");
 #endif
     }
+
+    /* Report memory status before shutdown */
+    whd_memory_report();
+    
+    /* Print logging performance statistics */
+    print_log_performance_stats();
+    
+    /* Shutdown logging system */
+    shutdown_log_system();
 
     printf("\niTidy GUI shutdown complete\n\n");
 

@@ -20,11 +20,30 @@
 #endif
 
 /*---------------------------------------------------------------------------*/
-/* Memory Allocation Abstraction                                             */
+/* Memory Allocation Abstraction with Debugging                              */
 /*---------------------------------------------------------------------------*/
 
-#define whd_malloc(sz)  malloc(sz)
-#define whd_free(p)     free(p)
+/* Enable memory debugging by uncommenting this line */
+#define DEBUG_MEMORY_TRACKING 
+
+#ifdef DEBUG_MEMORY_TRACKING
+    /* Memory tracking functions - implemented in platform.c */
+    void* whd_malloc_debug(size_t size, const char *file, int line);
+    void whd_free_debug(void *ptr, const char *file, int line);
+    void whd_memory_report(void);
+    void whd_memory_init(void);
+    
+    #define whd_malloc(sz)  whd_malloc_debug(sz, __FILE__, __LINE__)
+    #define whd_free(p)     whd_free_debug(p, __FILE__, __LINE__)
+#else
+    /* Standard allocation without tracking */
+    #define whd_malloc(sz)  malloc(sz)
+    #define whd_free(p)     free(p)
+    
+    /* No-op functions when debugging disabled */
+    #define whd_memory_report() ((void)0)
+    #define whd_memory_init() ((void)0)
+#endif
 
 /*---------------------------------------------------------------------------*/
 /* Platform-Specific Includes                                                */

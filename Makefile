@@ -89,11 +89,24 @@ else
     PLATFORM_SRCS = $(SRC_DIR)/platform/amiga_platform.c
 endif
 
+# Memory tracking implementation (conditional - only included if DEBUG_MEMORY_TRACKING is defined)
+# To enable: Uncomment #define DEBUG_MEMORY_TRACKING in include/platform/platform.h
+MEMORY_TRACKING_SRCS = $(INC_DIR)/platform/platform.c
+
 # All sources
-SRCS = $(CORE_SRCS) $(BACKUP_SRCS) $(GUI_SRCS) $(DOS_SRCS) $(SETTINGS_SRCS) $(PLATFORM_SRCS)
+SRCS = $(CORE_SRCS) $(BACKUP_SRCS) $(GUI_SRCS) $(DOS_SRCS) $(SETTINGS_SRCS) $(PLATFORM_SRCS) $(MEMORY_TRACKING_SRCS)
 
 # Object files (in build directory)
-OBJS = $(SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
+# Note: platform.c is in include/platform, needs special handling
+CORE_OBJS = $(CORE_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
+BACKUP_OBJS = $(BACKUP_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
+GUI_OBJS = $(GUI_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
+DOS_OBJS = $(DOS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
+SETTINGS_OBJS = $(SETTINGS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
+PLATFORM_OBJS = $(PLATFORM_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
+MEMORY_TRACKING_OBJS = $(OUT_DIR)/platform_memory.o
+
+OBJS = $(CORE_OBJS) $(BACKUP_OBJS) $(GUI_OBJS) $(DOS_OBJS) $(SETTINGS_OBJS) $(PLATFORM_OBJS) $(MEMORY_TRACKING_OBJS)
 
 ################################################################################
 # Build Rules
@@ -140,6 +153,11 @@ endif
 # Compile core source files
 $(OUT_DIR)/%.o: $(SRC_DIR)/%.c
 	@echo Compiling [$@] from $<
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Compile memory tracking (from include directory)
+$(OUT_DIR)/platform_memory.o: $(INC_DIR)/platform/platform.c
+	@echo Compiling memory tracking: $@
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Clean build artifacts

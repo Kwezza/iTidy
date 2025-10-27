@@ -1,0 +1,625 @@
+[17:33:18][INFO] Log system initialized - timestamp: 2025-10-27_17-33-17
+[17:33:18][INFO] Logs directory: PROGDIR:
+[17:33:18][INFO] === iTidy GUI version starting up (VBCC build) ===
+[17:33:18][DEBUG] iTidy GUI V1.0.0 - Amiga Workbench Icon Tidier
+[17:33:18][DEBUG] by Kerry Thompson
+[17:33:18][DEBUG] Version compiled on Oct 27 2025 at 17:33:06
+[17:33:18][DEBUG] Debug build
+[17:33:18][DEBUG] Workbench version: 47.100
+[17:33:18][INFO] Found font: XEN.font, size: 8
+[17:33:18][INFO] Workbench Icon Font (getIconFont): XEN.font, Size: 8
+[17:33:18][INFO] -------------------------
+[17:33:18][INFO] Workbench Settings Dump:
+[17:33:18][INFO] -------------------------
+[17:33:18][INFO] Borderless: No
+[17:33:18][INFO] Emboss Rectangle Size: 0
+[17:33:18][INFO] Max Name Length: 0
+[17:33:18][INFO] New Icons Support: No
+[17:33:18][INFO] Color Icon Support: No
+[17:33:18][INFO] Disable Title Bar: No
+[17:33:18][INFO] Disable Volume Gauge: No
+[17:33:18][INFO] -------------------------
+[17:33:18][INFO] Initialized default workbench settings
+[17:33:18][INFO] Failed to open workbench settings file.  Possibly not yet set.  Defaults assumed.
+[17:33:18][INFO] -------------------------
+[17:33:18][INFO] Workbench Settings Dump:
+[17:33:18][INFO] -------------------------
+[17:33:18][INFO] Borderless: No
+[17:33:18][INFO] Emboss Rectangle Size: 3
+[17:33:18][INFO] Max Name Length: 25
+[17:33:18][INFO] New Icons Support: Yes
+[17:33:18][INFO] Color Icon Support: Yes
+[17:33:18][INFO] Disable Title Bar: No
+[17:33:18][INFO] Disable Volume Gauge: No
+[17:33:18][INFO] -------------------------
+[17:33:18][INFO] IControl Preferences Dump:
+[17:33:18][INFO] --------------------------
+[17:33:18][INFO] Flags: 0x8007803E
+[17:33:18][INFO] Boolean Settings:
+[17:33:18][INFO]   Coerce Colors: No
+[17:33:18][INFO]   Coerce Lace: Yes
+[17:33:18][INFO]   String Gadget Filter: Yes
+[17:33:18][INFO]   Menu Snap: Yes
+[17:33:18][INFO]   Mode Promote: Yes
+[17:33:18][INFO]   Correct Ratio: Yes
+[17:33:18][INFO]   Off-Screen Windows: Yes
+[17:33:18][INFO]   More Size Gadgets: Yes
+[17:33:18][INFO]   Versioned: Yes
+[17:33:18][INFO]   Legacy Look: No
+[17:33:18][INFO] Aspect Ratios Enabled:
+[17:33:18][INFO] Title Bar Heights:
+[17:33:18][INFO]   Screen Extra Height: 0
+[17:33:18][INFO]   Window Extra Height: 0
+[17:33:18][INFO] Title Bar Settings:
+[17:33:18][INFO]   Title Bar 50: No
+[17:33:18][INFO]   Title Bar 67: No
+[17:33:18][INFO]   Title Bar 75: No
+[17:33:18][INFO]   Title Bar 100: Yes
+[17:33:18][INFO] Square Proportional Look: Yes
+[17:33:18][INFO] UI Element Dimensions:
+[17:33:18][INFO]   Left Bar Width: 4
+[17:33:18][INFO]   Border Width: 18, Border Height: 16
+[17:33:18][INFO]   Title Height: 16, Window Height: 16
+[17:33:18][INFO]   Volume Gauge Width: 19
+[17:33:18][INFO] --------------------------
+[17:33:18][DEBUG] Workbench screen width 800, height 600
+[17:33:22][INFO] Applying preset: Classic
+[17:33:22][INFO] GUI Selections: layout=0, sort=0, order=0, sortby=0, center=1, optimize=1
+[17:33:22][INFO] 
+[17:33:22][INFO] ==================================================
+[17:33:22][INFO]       iTidy Layout Preferences - Debug Output    
+[17:33:22][INFO] ==================================================
+[17:33:22][INFO] 
+[17:33:22][INFO] FOLDER SETTINGS:
+[17:33:22][INFO]   Target Folder:    PC:
+[17:33:22][INFO]   Recursive:        No
+[17:33:22][INFO] 
+[17:33:22][INFO] LAYOUT SETTINGS:
+[17:33:22][INFO]   Layout Mode:      Row-major (Horizontal first)
+[17:33:22][INFO]   Sort Order:       Horizontal (Left-to-right)
+[17:33:22][INFO]   Sort Priority:    [17:33:22][INFO] Folders First
+[17:33:22][INFO]   Sort By:          [17:33:22][INFO] Name
+[17:33:22][INFO]   Reverse Sort:     No
+[17:33:22][INFO] 
+[17:33:22][INFO] VISUAL SETTINGS:
+[17:33:22][INFO]   Center Icons:     Yes
+[17:33:22][INFO]   Optimize Columns: Yes
+[17:33:22][INFO] 
+[17:33:22][INFO] WINDOW MANAGEMENT:
+[17:33:22][INFO]   Resize Windows:   Yes
+[17:33:22][INFO]   Max Icons/Row:    0
+[17:33:22][INFO]   Max Width:        55% of screen
+[17:33:22][INFO]   Aspect Ratio:     1.60
+[17:33:22][INFO] 
+[17:33:22][INFO] ADVANCED SETTINGS:
+[17:33:22][INFO]   Skip Hidden:      Yes
+[17:33:22][INFO] 
+[17:33:22][INFO] BACKUP SETTINGS:
+[17:33:22][INFO]   Enable Backup:    No
+[17:33:22][INFO]   Use LhA:          Yes
+[17:33:22][INFO]   Backup Path:      PROGDIR:Backups
+[17:33:22][INFO]   Max Backups:      3 per folder
+[17:33:22][INFO] 
+[17:33:22][INFO] ==================================================
+[17:33:22][INFO] 
+[17:33:22][INFO] ========================================
+[17:33:22][INFO] Loading 'left out' icons for device: PC
+[17:33:22][INFO] Looking for .backdrop file: PC:.backdrop
+[17:33:22][INFO]   --> .backdrop file opened successfully
+[17:33:22][INFO]   --> Reading .backdrop file contents:
+[17:33:22][INFO]       [0] PC:Programming/ListView.info (from .backdrop entry: ':Programming/ListView')
+[17:33:22][INFO]       [1] PC:Programming/GUI-WHDload-downloader/build/amiga/test.txt.info (from .backdrop entry: ':Programming/GUI-WHDload-downloader/build/amiga/test.txt')
+[17:33:22][INFO]       [2] PC:Programming/GUI-WHDload-downloader.info (from .backdrop entry: ':Programming/GUI-WHDload-downloader')
+[17:33:22][INFO]       [3] PC:Programming/GUI-WHDload-downloader/build/amiga/process-all-v2.info (from .backdrop entry: ':Programming/GUI-WHDload-downloader/build/amiga/process-all-v2')
+[17:33:22][INFO]       [4] PC:Programming/GUI-WHDload-downloader/build/amiga/html-parsing.info (from .backdrop entry: ':Programming/GUI-WHDload-downloader/build/amiga/html-parsing')
+[17:33:22][INFO]       [5] PC:Programming/iTidy/Bin/Amiga.info (from .backdrop entry: ':Programming/iTidy/Bin/Amiga')
+[17:33:22][INFO]   --> Total left-out icons loaded: 6
+[17:33:22][INFO] ========================================
+[17:33:22][INFO] ProcessSingleDirectory: path='PC:'
+[17:33:22][INFO] ==== SECTION: LOADING ICONS ====
+[17:33:22][INFO] CreateIconArrayFromPath ENTRY: lock=268448199, dirPath='PC:'
+[17:33:22][INFO] Using OPTIMIZED pattern matching (MatchFirst/MatchNext)
+[17:33:22][INFO] Icon array created successfully
+[17:33:22][INFO] AnchorPath allocated, preparing pattern-based scan
+[17:33:22][INFO] Pattern: 'PC:#?.info'
+[17:33:22][INFO] MatchFirst successful, entering processing loop
+[17:33:22][INFO] DEBUG: Pattern matched .info file: 'Workbench3.1.adf.info'
+[17:33:22][INFO] DEBUG: Full path to .info file: 'PC:Workbench3.1.adf.info'
+[17:33:22][INFO] DEBUG: isIconTypeDisk('PC:Workbench3.1.adf.info') = 0 (0=not disk, 1=is disk)
+[17:33:22][INFO] Detecting icon type for: PC:Workbench3.1.adf.info
+[17:33:22][INFO] Checking tooltypes for NewIcon signature...
+[17:33:22][INFO]   ToolType: '(WRITEPROTECTED=No)'
+[17:33:22][INFO]   -> No NewIcon signature found (standard icon)
+[17:33:22][INFO]   -> Detected as standard Workbench icon format
+[17:33:22][INFO] DEBUG: Pattern matched .info file: 'Workbench.info'
+[17:33:22][INFO] DEBUG: Full path to .info file: 'PC:Workbench.info'
+[17:33:22][INFO] DEBUG: isIconTypeDisk('PC:Workbench.info') = 0 (0=not disk, 1=is disk)
+[17:33:22][INFO] Detecting icon type for: PC:Workbench.info
+[17:33:22][INFO] Checking tooltypes for NewIcon signature...
+[17:33:22][INFO]   ToolType: 'ªªªª Icon by Martin Huttenloher ´´´´'
+[17:33:22][INFO]   -> No NewIcon signature found (standard icon)
+[17:33:22][INFO]   -> Detected as standard Workbench icon format
+[17:33:22][INFO] DEBUG: Pattern matched .info file: 'UnZip.lha.info'
+[17:33:22][INFO] DEBUG: Full path to .info file: 'PC:UnZip.lha.info'
+[17:33:22][INFO] DEBUG: isIconTypeDisk('PC:UnZip.lha.info') = 0 (0=not disk, 1=is disk)
+[17:33:22][INFO] Detecting icon type for: PC:UnZip.lha.info
+[17:33:22][INFO]   -> Detected as standard Workbench icon format
+[17:33:22][INFO] DEBUG: Pattern matched .info file: 'test2.info'
+[17:33:22][INFO] DEBUG: Full path to .info file: 'PC:test2.info'
+[17:33:22][INFO] DEBUG: isIconTypeDisk('PC:test2.info') = 0 (0=not disk, 1=is disk)
+[17:33:22][INFO] Detecting icon type for: PC:test2.info
+[17:33:22][INFO] Checking tooltypes for NewIcon signature...
+[17:33:22][INFO]   ToolType: 'ªªªª Icon by Martin Huttenloher ´´´´'
+[17:33:22][INFO]   -> No NewIcon signature found (standard icon)
+[17:33:22][INFO]   -> Detected as standard Workbench icon format
+[17:33:22][INFO] DEBUG: Pattern matched .info file: 'test1.info'
+[17:33:22][INFO] DEBUG: Full path to .info file: 'PC:test1.info'
+[17:33:22][INFO] DEBUG: isIconTypeDisk('PC:test1.info') = 0 (0=not disk, 1=is disk)
+[17:33:22][INFO] Detecting icon type for: PC:test1.info
+[17:33:22][INFO] Checking tooltypes for NewIcon signature...
+[17:33:22][INFO]   ToolType: 'ªªªª Icon by Martin Huttenloher ´´´´'
+[17:33:22][INFO]   -> No NewIcon signature found (standard icon)
+[17:33:22][INFO]   -> Detected as standard Workbench icon format
+[17:33:22][INFO] DEBUG: Pattern matched .info file: 'StandardMagicWB.lha.info'
+[17:33:22][INFO] DEBUG: Full path to .info file: 'PC:StandardMagicWB.lha.info'
+[17:33:22][INFO] DEBUG: isIconTypeDisk('PC:StandardMagicWB.lha.info') = 0 (0=not disk, 1=is disk)
+[17:33:22][INFO] Detecting icon type for: PC:StandardMagicWB.lha.info
+[17:33:22][INFO]   -> Detected as standard Workbench icon format
+[17:33:22][INFO] DEBUG: Pattern matched .info file: 'sdk.info'
+[17:33:22][INFO] DEBUG: Full path to .info file: 'PC:sdk.info'
+[17:33:22][INFO] DEBUG: isIconTypeDisk('PC:sdk.info') = 0 (0=not disk, 1=is disk)
+[17:33:22][INFO] Detecting icon type for: PC:sdk.info
+[17:33:22][INFO] Checking tooltypes for NewIcon signature...
+[17:33:22][INFO]   ToolType: 'ªªªª Icon by Martin Huttenloher ´´´´'
+[17:33:22][INFO]   -> No NewIcon signature found (standard icon)
+[17:33:22][INFO]   -> Detected as standard Workbench icon format
+[17:33:22][INFO] DEBUG: Pattern matched .info file: 'sc.info'
+[17:33:22][INFO] DEBUG: Full path to .info file: 'PC:sc.info'
+[17:33:22][INFO] DEBUG: isIconTypeDisk('PC:sc.info') = 0 (0=not disk, 1=is disk)
+[17:33:22][INFO] Detecting icon type for: PC:sc.info
+[17:33:22][INFO] Checking tooltypes for NewIcon signature...
+[17:33:22][INFO]   ToolType: 'ªªªª Icon by Martin Huttenloher ´´´´'
+[17:33:22][INFO]   -> No NewIcon signature found (standard icon)
+[17:33:22][INFO]   -> Detected as standard Workbench icon format
+[17:33:22][INFO] DEBUG: Pattern matched .info file: 'Programming.info'
+[17:33:22][INFO] DEBUG: Full path to .info file: 'PC:Programming.info'
+[17:33:22][INFO] DEBUG: isIconTypeDisk('PC:Programming.info') = 0 (0=not disk, 1=is disk)
+[17:33:22][INFO] Detecting icon type for: PC:Programming.info
+[17:33:22][INFO] Checking tooltypes for NewIcon signature...
+[17:33:22][INFO]   ToolType: 'ªªªª Icon by Martin Huttenloher ´´´´'
+[17:33:22][INFO]   -> No NewIcon signature found (standard icon)
+[17:33:22][INFO]   -> Detected as standard Workbench icon format
+[17:33:22][INFO] DEBUG: Pattern matched .info file: 'Picasso96.adf.info'
+[17:33:22][INFO] DEBUG: Full path to .info file: 'PC:Picasso96.adf.info'
+[17:33:22][INFO] DEBUG: isIconTypeDisk('PC:Picasso96.adf.info') = 0 (0=not disk, 1=is disk)
+[17:33:22][INFO] Detecting icon type for: PC:Picasso96.adf.info
+[17:33:22][INFO] Checking tooltypes for NewIcon signature...
+[17:33:22][INFO]   ToolType: '(WRITEPROTECTED=No)'
+[17:33:22][INFO]   -> No NewIcon signature found (standard icon)
+[17:33:22][INFO]   -> Detected as standard Workbench icon format
+[17:33:22][INFO] DEBUG: Pattern matched .info file: 'NDK_1.3.info'
+[17:33:22][INFO] DEBUG: Full path to .info file: 'PC:NDK_1.3.info'
+[17:33:22][INFO] DEBUG: isIconTypeDisk('PC:NDK_1.3.info') = 0 (0=not disk, 1=is disk)
+[17:33:22][INFO] Detecting icon type for: PC:NDK_1.3.info
+[17:33:22][INFO]   -> Detected as standard Workbench icon format
+[17:33:22][INFO] DEBUG: Pattern matched .info file: 'MyAmiga600Image.hdf.info'
+[17:33:22][INFO] DEBUG: Full path to .info file: 'PC:MyAmiga600Image.hdf.info'
+[17:33:22][INFO] DEBUG: isIconTypeDisk('PC:MyAmiga600Image.hdf.info') = 0 (0=not disk, 1=is disk)
+[17:33:22][INFO] Detecting icon type for: PC:MyAmiga600Image.hdf.info
+[17:33:22][INFO] Checking tooltypes for NewIcon signature...
+[17:33:22][INFO]   ToolType: 'ªªªª Icon by Martin Huttenloher ´´´´'
+[17:33:22][INFO]   -> No NewIcon signature found (standard icon)
+[17:33:22][INFO]   -> Detected as standard Workbench icon format
+[17:33:22][INFO] DEBUG: Pattern matched .info file: 'Kick31.rom.info'
+[17:33:22][INFO] DEBUG: Full path to .info file: 'PC:Kick31.rom.info'
+[17:33:22][INFO] DEBUG: isIconTypeDisk('PC:Kick31.rom.info') = 0 (0=not disk, 1=is disk)
+[17:33:22][INFO] Detecting icon type for: PC:Kick31.rom.info
+[17:33:22][INFO]   -> Detected as standard Workbench icon format
+[17:33:22][INFO] DEBUG: Pattern matched .info file: 'Kick13.rom.info'
+[17:33:22][INFO] DEBUG: Full path to .info file: 'PC:Kick13.rom.info'
+[17:33:22][INFO] DEBUG: isIconTypeDisk('PC:Kick13.rom.info') = 0 (0=not disk, 1=is disk)
+[17:33:22][INFO] Detecting icon type for: PC:Kick13.rom.info
+[17:33:22][INFO] Checking tooltypes for NewIcon signature...
+[17:33:22][INFO]   ToolType: 'ªªªª Icon by Martin Huttenloher ´´´´'
+[17:33:22][INFO]   -> No NewIcon signature found (standard icon)
+[17:33:22][INFO]   -> Detected as standard Workbench icon format
+[17:33:22][INFO] DEBUG: Pattern matched .info file: 'Includes3.2R4.info'
+[17:33:22][INFO] DEBUG: Full path to .info file: 'PC:Includes3.2R4.info'
+[17:33:23][INFO] DEBUG: isIconTypeDisk('PC:Includes3.2R4.info') = 0 (0=not disk, 1=is disk)
+[17:33:23][INFO] Detecting icon type for: PC:Includes3.2R4.info
+[17:33:23][INFO] Checking tooltypes for NewIcon signature...
+[17:33:23][INFO]   ToolType: 'ªªªª Icon by Martin Huttenloher ´´´´'
+[17:33:23][INFO]   -> No NewIcon signature found (standard icon)
+[17:33:23][INFO]   -> Detected as standard Workbench icon format
+[17:33:23][INFO] DEBUG: Pattern matched .info file: 'includes.info'
+[17:33:23][INFO] DEBUG: Full path to .info file: 'PC:includes.info'
+[17:33:23][INFO] DEBUG: isIconTypeDisk('PC:includes.info') = 0 (0=not disk, 1=is disk)
+[17:33:23][INFO] Detecting icon type for: PC:includes.info
+[17:33:23][INFO] Checking tooltypes for NewIcon signature...
+[17:33:23][INFO]   ToolType: 'ªªªª Icon by Martin Huttenloher ´´´´'
+[17:33:23][INFO]   -> No NewIcon signature found (standard icon)
+[17:33:23][INFO]   -> Detected as standard Workbench icon format
+[17:33:23][INFO] DEBUG: Pattern matched .info file: 'dump.txt.info'
+[17:33:23][INFO] DEBUG: Full path to .info file: 'PC:dump.txt.info'
+[17:33:23][INFO] DEBUG: isIconTypeDisk('PC:dump.txt.info') = 0 (0=not disk, 1=is disk)
+[17:33:23][INFO] Detecting icon type for: PC:dump.txt.info
+[17:33:23][INFO]   -> Detected as standard Workbench icon format
+[17:33:23][INFO] DEBUG: Pattern matched .info file: 'Disks.info'
+[17:33:23][INFO] DEBUG: Full path to .info file: 'PC:Disks.info'
+[17:33:23][INFO] DEBUG: isIconTypeDisk('PC:Disks.info') = 0 (0=not disk, 1=is disk)
+[17:33:23][INFO] Detecting icon type for: PC:Disks.info
+[17:33:23][INFO] Checking tooltypes for NewIcon signature...
+[17:33:23][INFO]   ToolType: 'ªªªª Icon by Martin Huttenloher ´´´´'
+[17:33:23][INFO]   -> No NewIcon signature found (standard icon)
+[17:33:23][INFO]   -> Detected as standard Workbench icon format
+[17:33:23][INFO] DEBUG: Pattern matched .info file: 'Cursor.info'
+[17:33:23][INFO] DEBUG: Full path to .info file: 'PC:Cursor.info'
+[17:33:23][INFO] DEBUG: isIconTypeDisk('PC:Cursor.info') = 0 (0=not disk, 1=is disk)
+[17:33:23][INFO] Detecting icon type for: PC:Cursor.info
+[17:33:23][INFO] Checking tooltypes for NewIcon signature...
+[17:33:23][INFO]   ToolType: 'ªªªª Icon by Martin Huttenloher ´´´´'
+[17:33:23][INFO]   -> No NewIcon signature found (standard icon)
+[17:33:23][INFO]   -> Detected as standard Workbench icon format
+[17:33:23][INFO] DEBUG: Pattern matched .info file: 'codesets.info'
+[17:33:23][INFO] DEBUG: Full path to .info file: 'PC:codesets.info'
+[17:33:23][INFO] DEBUG: isIconTypeDisk('PC:codesets.info') = 0 (0=not disk, 1=is disk)
+[17:33:23][INFO] Detecting icon type for: PC:codesets.info
+[17:33:23][INFO]   -> Detected as OS3.5 icon format
+[17:33:23][INFO] DEBUG: Pattern matched .info file: 'ClassicWB3.9-MWB.lha.info'
+[17:33:23][INFO] DEBUG: Full path to .info file: 'PC:ClassicWB3.9-MWB.lha.info'
+[17:33:23][INFO] DEBUG: isIconTypeDisk('PC:ClassicWB3.9-MWB.lha.info') = 0 (0=not disk, 1=is disk)
+[17:33:23][INFO] Detecting icon type for: PC:ClassicWB3.9-MWB.lha.info
+[17:33:23][INFO]   -> Detected as standard Workbench icon format
+[17:33:23][INFO] DEBUG: Pattern matched .info file: 'BastionPlatform.7z.info'
+[17:33:23][INFO] DEBUG: Full path to .info file: 'PC:BastionPlatform.7z.info'
+[17:33:23][INFO] DEBUG: isIconTypeDisk('PC:BastionPlatform.7z.info') = 0 (0=not disk, 1=is disk)
+[17:33:23][INFO] Detecting icon type for: PC:BastionPlatform.7z.info
+[17:33:23][INFO] Checking tooltypes for NewIcon signature...
+[17:33:23][INFO]   ToolType: 'ªªªª Icon by Martin Huttenloher ´´´´'
+[17:33:23][INFO]   -> No NewIcon signature found (standard icon)
+[17:33:23][INFO]   -> Detected as standard Workbench icon format
+[17:33:23][INFO] DEBUG: Pattern matched .info file: 'AminetReadme.info'
+[17:33:23][INFO] DEBUG: Full path to .info file: 'PC:AminetReadme.info'
+[17:33:23][INFO] DEBUG: isIconTypeDisk('PC:AminetReadme.info') = 0 (0=not disk, 1=is disk)
+[17:33:23][INFO] Detecting icon type for: PC:AminetReadme.info
+[17:33:23][INFO]   -> Detected as standard Workbench icon format
+[17:33:23][INFO] DEBUG: Pattern matched .info file: 'AmigaOS-3.2.3.lha.info'
+[17:33:23][INFO] DEBUG: Full path to .info file: 'PC:AmigaOS-3.2.3.lha.info'
+[17:33:23][INFO] DEBUG: isIconTypeDisk('PC:AmigaOS-3.2.3.lha.info') = 0 (0=not disk, 1=is disk)
+[17:33:23][INFO] Detecting icon type for: PC:AmigaOS-3.2.3.lha.info
+[17:33:23][INFO]   -> Detected as standard Workbench icon format
+[17:33:23][INFO] DEBUG: Pattern matched .info file: 'AmigaIncludes.info'
+[17:33:23][INFO] DEBUG: Full path to .info file: 'PC:AmigaIncludes.info'
+[17:33:23][INFO] DEBUG: isIconTypeDisk('PC:AmigaIncludes.info') = 0 (0=not disk, 1=is disk)
+[17:33:23][INFO] Detecting icon type for: PC:AmigaIncludes.info
+[17:33:23][INFO] Checking tooltypes for NewIcon signature...
+[17:33:23][INFO]   ToolType: 'ªªªª Icon by Martin Huttenloher ´´´´'
+[17:33:23][INFO]   -> No NewIcon signature found (standard icon)
+[17:33:23][INFO]   -> Detected as standard Workbench icon format
+[17:33:23][INFO] DEBUG: Pattern matched .info file: 'AmigaGUIExtract.info'
+[17:33:23][INFO] DEBUG: Full path to .info file: 'PC:AmigaGUIExtract.info'
+[17:33:23][INFO] DEBUG: isIconTypeDisk('PC:AmigaGUIExtract.info') = 0 (0=not disk, 1=is disk)
+[17:33:23][INFO] Detecting icon type for: PC:AmigaGUIExtract.info
+[17:33:23][INFO] Checking tooltypes for NewIcon signature...
+[17:33:23][INFO]   ToolType: 'ªªªª Icon by Martin Huttenloher ´´´´'
+[17:33:23][INFO]   -> No NewIcon signature found (standard icon)
+[17:33:23][INFO]   -> Detected as standard Workbench icon format
+[17:33:23][INFO] DEBUG: Pattern matched .info file: 'amiga-os-src-3.1.info'
+[17:33:23][INFO] DEBUG: Full path to .info file: 'PC:amiga-os-src-3.1.info'
+[17:33:23][INFO] DEBUG: isIconTypeDisk('PC:amiga-os-src-3.1.info') = 0 (0=not disk, 1=is disk)
+[17:33:23][INFO] Detecting icon type for: PC:amiga-os-src-3.1.info
+[17:33:23][INFO] Checking tooltypes for NewIcon signature...
+[17:33:23][INFO]   ToolType: 'ªªªª Icon by Martin Huttenloher ´´´´'
+[17:33:23][INFO]   -> No NewIcon signature found (standard icon)
+[17:33:23][INFO]   -> Detected as standard Workbench icon format
+[17:33:23][INFO] DEBUG: Pattern matched .info file: 'Disk.info'
+[17:33:23][INFO] DEBUG: Full path to .info file: 'PC:Disk.info'
+[17:33:23][INFO] DEBUG: isIconTypeDisk('PC:Disk.info') = 1 (0=not disk, 1=is disk)
+[17:33:23][INFO] ID  | Width  | Height | TxtW   | TxtH   | MaxW   | MaxH   | X        | Y        | Border | Type     | IsDir  | Size       | Date       | Icon                
+[17:33:23][INFO] ------------------------------------------------------------------------------------------------------------------------------------------
+[17:33:23][INFO] 0   | 57     | 25     | 96     | 8      | 96     | 32     | 95       | 258      | 3      | Standard | File   | 866        | 17466.937  | Workbench3.1.adf.info
+[17:33:23][INFO] 1   | 60     | 24     | 54     | 8      | 63     | 31     | 8        | 165      | 3      | Standard | Folder | 0          | 17466.937  | Workbench.info      
+[17:33:23][INFO] 2   | 57     | 25     | 54     | 8      | 60     | 32     | 8        | 258      | 3      | Standard | File   | 822        | 17466.937  | UnZip.lha.info      
+[17:33:23][INFO] 3   | 60     | 24     | 30     | 8      | 63     | 31     | 295      | 111      | 3      | Standard | Folder | 0          | 17466.937  | test2.info          
+[17:33:23][INFO] 4   | 60     | 24     | 30     | 8      | 63     | 31     | 224      | 111      | 3      | Standard | Folder | 0          | 17466.937  | test1.info          
+[17:33:23][INFO] 5   | 57     | 25     | 114    | 8      | 114    | 32     | 380      | 218      | 3      | Standard | File   | 822        | 17466.937  | StandardMagicWB.lha.info
+[17:33:23][INFO] 6   | 60     | 24     | 18     | 8      | 63     | 31     | 153      | 111      | 3      | Standard | Folder | 0          | 17466.937  | sdk.info            
+[17:33:23][INFO] 7   | 60     | 24     | 12     | 8      | 63     | 31     | 82       | 111      | 3      | Standard | Folder | 0          | 17466.937  | sc.info             
+[17:33:23][INFO] 8   | 60     | 24     | 66     | 8      | 66     | 31     | 11       | 111      | 3      | Standard | Folder | 0          | 17466.937  | Programming.info    
+[17:33:23][INFO] 9   | 57     | 25     | 78     | 8      | 78     | 32     | 276      | 218      | 3      | Standard | File   | 866        | 17466.937  | Picasso96.adf.info  
+[17:33:23][INFO] 10  | 60     | 17     | 42     | 8      | 63     | 24     | 307      | 79       | 3      | Standard | Folder | 0          | 17466.937  | NDK_1.3.info        
+[17:33:23][INFO] 11  | 43     | 39     | 114    | 8      | 114    | 46     | 179      | 204      | 3      | Standard | File   | 1459       | 17466.937  | MyAmiga600Image.hdf.info
+[17:33:23][INFO] 12  | 57     | 25     | 60     | 8      | 60     | 32     | 77       | 218      | 3      | Standard | File   | 450        | 17466.937  | Kick31.rom.info     
+[17:33:23][INFO] 13  | 43     | 39     | 60     | 8      | 60     | 46     | 16       | 204      | 3      | Standard | File   | 1473       | 17466.937  | Kick13.rom.info     
+[17:33:23][INFO] 14  | 60     | 24     | 78     | 8      | 78     | 31     | 230      | 72       | 3      | Standard | Folder | 0          | 17466.937  | Includes3.2R4.info  
+[17:33:23][INFO] 15  | 60     | 24     | 48     | 8      | 63     | 31     | 150      | 72       | 3      | Standard | Folder | 0          | 17466.937  | includes.info       
+[17:33:23][INFO] 16  | 57     | 25     | 48     | 8      | 60     | 32     | 433      | 164      | 3      | Standard | File   | 473        | 17466.937  | dump.txt.info       
+[17:33:23][INFO] 17  | 60     | 24     | 30     | 8      | 63     | 31     | 79       | 72       | 3      | Standard | Folder | 0          | 17466.937  | Disks.info          
+[17:33:23][INFO] 18  | 60     | 24     | 36     | 8      | 63     | 31     | 8        | 72       | 3      | Standard | Folder | 0          | 17466.937  | Cursor.info         
+[17:33:23][INFO] 19  | 49     | 49     | 48     | 8      | 52     | 56     | 376      | 8        | 3      | OS3.5    | Folder | 0          | 17466.937  | codesets.info       
+[17:33:23][INFO] 20  | 57     | 25     | 120    | 8      | 120    | 32     | 336      | 164      | 3      | Standard | File   | 822        | 17466.937  | ClassicWB3.9-MWB.lha.info
+[17:33:23][INFO] 21  | 43     | 39     | 108    | 8      | 108    | 46     | 221      | 150      | 3      | Standard | File   | 1473       | 17466.937  | BastionPlatform.7z.info
+[17:33:23][INFO] 22  | 49     | 49     | 72     | 8      | 72     | 56     | 307      | 8        | 3      | Standard | Folder | 0          | 17466.937  | AminetReadme.info   
+[17:33:23][INFO] 23  | 57     | 25     | 102    | 8      | 102    | 32     | 101      | 164      | 3      | Standard | File   | 822        | 17466.937  | AmigaOS-3.2.3.lha.info
+[17:33:23][INFO] 24  | 60     | 24     | 78     | 8      | 78     | 31     | 219      | 33       | 3      | Standard | Folder | 0          | 17466.937  | AmigaIncludes.info  
+[17:33:23][INFO] 25  | 60     | 24     | 90     | 8      | 90     | 31     | 127      | 33       | 3      | Standard | Folder | 0          | 17466.937  | AmigaGUIExtract.info
+[17:33:23][INFO] 26  | 60     | 24     | 96     | 8      | 96     | 31     | 26       | 33       | 3      | Standard | Folder | 0          | 17466.937  | amiga-os-src-3.1.info
+[17:33:23][INFO] 
+==== ICON LOADING PERFORMANCE ====
+[17:33:23][INFO] CreateIconArrayFromPath() execution time:
+[17:33:23][INFO]   640238 microseconds (640.238 ms)
+[17:33:23][INFO]   Icons loaded: 27
+[17:33:23][INFO]   Time per icon: 23712 microseconds
+[17:33:23][INFO]   Folder: PC:
+[17:33:23][INFO] ==================================
+
+[17:33:23][INFO] ==== SECTION: SORTING ICONS ====
+[17:33:23][INFO] Sorting 27 icons with preferences
+[17:33:23][INFO]   Sort by: 0, Priority: 0, Reverse: 0
+[17:33:23][INFO] After sorting, icon order:
+[17:33:23][INFO] ID  | Icon                           | IsDir 
+[17:33:23][INFO] --------------------------------------------
+[17:33:23][INFO] 0   | amiga-os-src-3.1.info          | Folder
+[17:33:23][INFO] 1   | AmigaGUIExtract.info           | Folder
+[17:33:23][INFO] 2   | AmigaIncludes.info             | Folder
+[17:33:23][INFO] 3   | AminetReadme.info              | Folder
+[17:33:23][INFO] 4   | codesets.info                  | Folder
+[17:33:23][INFO] 5   | Cursor.info                    | Folder
+[17:33:23][INFO] 6   | Disks.info                     | Folder
+[17:33:23][INFO] 7   | includes.info                  | Folder
+[17:33:23][INFO] 8   | Includes3.2R4.info             | Folder
+[17:33:23][INFO] 9   | NDK_1.3.info                   | Folder
+[17:33:23][INFO] 10  | Programming.info               | Folder
+[17:33:23][INFO] 11  | sc.info                        | Folder
+[17:33:23][INFO] 12  | sdk.info                       | Folder
+[17:33:23][INFO] 13  | test1.info                     | Folder
+[17:33:23][INFO] 14  | test2.info                     | Folder
+[17:33:23][INFO] 15  | Workbench.info                 | Folder
+[17:33:23][INFO] 16  | AmigaOS-3.2.3.lha.info         | File  
+[17:33:23][INFO] 17  | BastionPlatform.7z.info        | File  
+[17:33:23][INFO] 18  | ClassicWB3.9-MWB.lha.info      | File  
+[17:33:23][INFO] 19  | dump.txt.info                  | File  
+[17:33:23][INFO] 20  | Kick13.rom.info                | File  
+[17:33:23][INFO] 21  | Kick31.rom.info                | File  
+[17:33:23][INFO] 22  | MyAmiga600Image.hdf.info       | File  
+[17:33:23][INFO] 23  | Picasso96.adf.info             | File  
+[17:33:23][INFO] 24  | StandardMagicWB.lha.info       | File  
+[17:33:23][INFO] 25  | UnZip.lha.info                 | File  
+[17:33:23][INFO] 26  | Workbench3.1.adf.info          | File  
+[17:33:23][INFO] ==== SECTION: CALCULATING LAYOUT ====
+[17:33:23][INFO] 
+==== CalculateLayoutWithAspectRatio ====
+[17:33:23][INFO] Icons: 27
+[17:33:23][INFO] Preferences:
+[17:33:23][INFO]   aspectRatio: 1.60
+[17:33:23][INFO]   overflowMode: 0 (0=HORIZ, 1=VERT, 2=BOTH)
+[17:33:23][INFO]   minIconsPerRow: 2
+[17:33:23][INFO]   maxIconsPerRow: 0
+[17:33:23][INFO]   iconSpacing: 8√ó8
+[17:33:23][INFO] Average icon size: 76√ó34 pixels
+[17:33:23][INFO] Screen constraints: 800√ó589 (usable)
+[17:33:23][INFO] Auto mode: effectiveWidth=440, margins=36, baseMaxCols=4, maxCols=9
+[17:33:23][INFO] 
+--- STAGE 1: Calculate Ideal Layout ---
+[17:33:23][INFO] CalculateOptimalIconsPerRow:
+[17:33:23][INFO]   totalIcons=27, avgWidth=76, avgHeight=34
+[17:33:23][INFO]   targetRatio=1.60, minCols=2, maxCols=9
+[17:33:23][INFO]   Try 2 cols: 14 rows, 152√ó476 = 0.32 ratio (diff: 1.28) ‚Üê NEW BEST
+[17:33:23][INFO]   Try 3 cols: 9 rows, 228√ó306 = 0.75 ratio (diff: 0.85) ‚Üê NEW BEST
+[17:33:23][INFO]   Try 4 cols: 7 rows, 304√ó238 = 1.28 ratio (diff: 0.32) ‚Üê NEW BEST
+[17:33:23][INFO]   Try 5 cols: 6 rows, 380√ó204 = 1.86 ratio (diff: 0.26) ‚Üê NEW BEST
+[17:33:23][INFO]   Try 6 cols: 5 rows, 456√ó170 = 2.68 ratio (diff: 1.08)
+[17:33:23][INFO]   Try 7 cols: 4 rows, 532√ó136 = 3.91 ratio (diff: 2.31)
+[17:33:23][INFO]   Try 8 cols: 4 rows, 608√ó136 = 4.47 ratio (diff: 2.87)
+[17:33:23][INFO]   Try 9 cols: 3 rows, 684√ó102 = 6.71 ratio (diff: 5.11)
+[17:33:23][INFO]   Result: 5 columns (ratio diff: 0.26)
+[17:33:23][INFO] Ideal layout: 5 cols √ó 6 rows
+[17:33:23][INFO] Ideal window: 448√ó280 pixels
+[17:33:23][INFO] 
+--- STAGE 2: Check Screen Fit ---
+[17:33:23][INFO] Fits width: YES (448 <= 800)
+[17:33:23][INFO] Fits height: YES (280 <= 589)
+[17:33:23][INFO] Result: FITS - Using ideal aspect ratio layout
+[17:33:23][INFO] 
+==== Final Layout Decision ====
+[17:33:23][INFO] Columns: 5
+[17:33:23][INFO] Rows: 6
+[17:33:23][INFO] Total positions: 30 (icons: 27)
+[17:33:23][INFO] 
+==== FLOATING POINT PERFORMANCE ====
+[17:33:23][INFO] CalculateLayoutWithAspectRatio() execution time:
+[17:33:23][INFO]   46696 microseconds (46.696 ms)
+[17:33:23][INFO]   Icons processed: 27
+[17:33:23][INFO]   Time per icon: 1729 microseconds
+[17:33:23][INFO] ====================================
+
+[17:33:23][INFO] Aspect ratio calculation complete: 5 cols √ó 6 rows
+[17:33:23][INFO] Using column-centered layout algorithm
+[17:33:23][INFO] CalculateLayoutPositionsWithColumnCentering: Processing 27 icons
+[17:33:23][INFO]   screenWidth=800, maxWindowWidthPct=55, effectiveMaxWidth=440
+[17:33:23][INFO] Phase 1: Statistics
+[17:33:23][INFO]   Average icon width: 76 pixels
+[17:33:23][INFO]   Total icons: 27
+[17:33:23][INFO]   Using aspect ratio target columns: 5
+[17:33:23][INFO] Attempt 1: 5 columns, total width = 594 (max = 440)
+[17:33:23][INFO]   Using aspect ratio target, accepting width
+[17:33:23][INFO] Final configuration: 5 columns, total width = 594
+[17:33:23][INFO] Column widths: [17:33:23][INFO] 96 [17:33:23][INFO] 102 [17:33:23][INFO] 114 [17:33:23][INFO] 120 [17:33:23][INFO] 114 [17:33:23][INFO] 
+[17:33:23][INFO] 
+Phase 2: Icon Positioning
+[17:33:23][INFO] ID  | Icon                           | Col | Row | X    | Y    | Center
+[17:33:23][INFO] -------------------------------------------------------------------------
+[17:33:23][INFO] 0   | amiga-os-src-3.1.info          | 0   | 0   | 26   | 8    | 0     
+[17:33:23][INFO] 1   | AmigaGUIExtract.info           | 1   | 0   | 133  | 8    | 6     
+[17:33:23][INFO] 2   | AmigaIncludes.info             | 2   | 0   | 249  | 8    | 18    
+[17:33:23][INFO] 3   | AminetReadme.info              | 3   | 0   | 379  | 8    | 24    
+[17:33:23][INFO] 4   | codesets.info                  | 4   | 0   | 503  | 8    | 31    
+[17:33:23][INFO] 5   | Cursor.info                    | 0   | 1   | 24   | 72   | 16    
+[17:33:23][INFO] 6   | Disks.info                     | 1   | 1   | 131  | 72   | 19    
+[17:33:23][INFO] 7   | includes.info                  | 2   | 1   | 247  | 72   | 25    
+[17:33:23][INFO] 8   | Includes3.2R4.info             | 3   | 1   | 374  | 72   | 21    
+[17:33:23][INFO] 9   | NDK_1.3.info                   | 4   | 1   | 497  | 72   | 25    
+[17:33:23][INFO] 10  | Programming.info               | 0   | 2   | 26   | 111  | 15    
+[17:33:23][INFO] 11  | sc.info                        | 1   | 2   | 131  | 111  | 19    
+[17:33:23][INFO] 12  | sdk.info                       | 2   | 2   | 247  | 111  | 25    
+[17:33:23][INFO] 13  | test1.info                     | 3   | 2   | 372  | 111  | 28    
+[17:33:23][INFO] 14  | test2.info                     | 4   | 2   | 497  | 111  | 25    
+[17:33:23][INFO] 15  | Workbench.info                 | 0   | 3   | 24   | 150  | 16    
+[17:33:23][INFO] 16  | AmigaOS-3.2.3.lha.info         | 1   | 3   | 134  | 150  | 0     
+[17:33:23][INFO] 17  | BastionPlatform.7z.info        | 2   | 3   | 257  | 150  | 3     
+[17:33:23][INFO] 18  | ClassicWB3.9-MWB.lha.info      | 3   | 3   | 375  | 150  | 0     
+[17:33:23][INFO] 19  | dump.txt.info                  | 4   | 3   | 499  | 150  | 27    
+[17:33:23][INFO] 20  | Kick13.rom.info                | 0   | 4   | 34   | 204  | 18    
+[17:33:23][INFO] 21  | Kick31.rom.info                | 1   | 4   | 134  | 204  | 21    
+[17:33:23][INFO] 22  | MyAmiga600Image.hdf.info       | 2   | 4   | 257  | 204  | 0     
+[17:33:23][INFO] 23  | Picasso96.adf.info             | 3   | 4   | 375  | 204  | 21    
+[17:33:23][INFO] 24  | StandardMagicWB.lha.info       | 4   | 4   | 500  | 204  | 0     
+[17:33:23][INFO] 25  | UnZip.lha.info                 | 0   | 5   | 26   | 258  | 18    
+[17:33:23][INFO] 26  | Workbench3.1.adf.info          | 1   | 5   | 134  | 258  | 3     
+[17:33:23][INFO] 
+Adjusting final row (indices 25 to 26) for vertical alignment
+[17:33:23][INFO]   maxHeightInRow = 32, alignment = bottom
+[17:33:23][INFO] 
+Column-centered layout complete!
+[17:33:23][INFO] DEBUG: resizeFolderToContents ENTRY: dirPath='PC:', iconArray->size=27
+[17:33:23][INFO] DEBUG: Content dimensions: 630√ó306 (with margins)
+[17:33:23][INFO] DEBUG: Calculated maxWidth=630, maxHeight=306 before calling repoistionWindow
+[17:33:23][INFO] Reposition window: PC: (content: 630√ó306)
+[17:33:23][INFO]   Padding: 4, disableVolumeGauge: 0
+[17:33:23][INFO]   Root dir detected and VolumeGauge enabled. Adding CGauge width: 19
+[17:33:23][INFO]   With chrome: 697√ó362
+[17:33:23][INFO]   Normal height - centering vertically: 119
+[17:33:23][INFO]   Final position: left=51, top=119, width=697, height=362
+[17:33:23][INFO] Saved folder settings ok for PC:Disk
+[17:33:23][INFO] ==== SECTION: SAVING ICONS ====
+[17:33:23][INFO] saveIconsPositionsToDisk: ENTRY, iconArray=0x404b310c
+[17:33:23][INFO] saveIconsPositionsToDisk: iconArraySize=27
+[17:33:23][INFO] ID  | X    | Y    | Icon                                    
+[17:33:23][INFO] --------------------------------------------------------------
+[17:33:23][INFO] Processing icon 0: amiga-os-src-3.1.info
+[17:33:23][INFO] 0   | 26   | 33   | amiga-os-src-3.1.info                   
+[17:33:23][INFO]    Saved OK: PC:amiga-os-src-3.1
+[17:33:23][INFO] Processing icon 1: AmigaGUIExtract.info
+[17:33:23][INFO] 1   | 133  | 33   | AmigaGUIExtract.info                    
+[17:33:23][INFO]    Saved OK: PC:AmigaGUIExtract
+[17:33:23][INFO] Processing icon 2: AmigaIncludes.info
+[17:33:23][INFO] 2   | 249  | 33   | AmigaIncludes.info                      
+[17:33:23][INFO]    Saved OK: PC:AmigaIncludes
+[17:33:23][INFO] Processing icon 3: AminetReadme.info
+[17:33:23][INFO] 3   | 379  | 8    | AminetReadme.info                       
+[17:33:23][INFO]    Saved OK: PC:AminetReadme
+[17:33:23][INFO] Processing icon 4: codesets.info
+[17:33:23][INFO] 4   | 503  | 8    | codesets.info                           
+[17:33:23][INFO]    Saved OK: PC:codesets
+[17:33:23][INFO] Processing icon 5: Cursor.info
+[17:33:23][INFO] 5   | 24   | 72   | Cursor.info                             
+[17:33:23][INFO]    Saved OK: PC:Cursor
+[17:33:23][INFO] Processing icon 6: Disks.info
+[17:33:23][INFO] 6   | 131  | 72   | Disks.info                              
+[17:33:23][INFO]    Saved OK: PC:Disks
+[17:33:23][INFO] Processing icon 7: includes.info
+[17:33:23][INFO] 7   | 247  | 72   | includes.info                           
+[17:33:23][INFO]    Saved OK: PC:includes
+[17:33:23][INFO] Processing icon 8: Includes3.2R4.info
+[17:33:23][INFO] 8   | 374  | 72   | Includes3.2R4.info                      
+[17:33:23][INFO]    Saved OK: PC:Includes3.2R4
+[17:33:23][INFO] Processing icon 9: NDK_1.3.info
+[17:33:23][INFO] 9   | 497  | 79   | NDK_1.3.info                            
+[17:33:23][INFO]    Saved OK: PC:NDK_1.3
+[17:33:23][INFO] Processing icon 10: Programming.info
+[17:33:23][INFO] 10  | 26   | 111  | Programming.info                        
+[17:33:23][INFO]    Saved OK: PC:Programming
+[17:33:23][INFO] Processing icon 11: sc.info
+[17:33:23][INFO] 11  | 131  | 111  | sc.info                                 
+[17:33:23][INFO]    Saved OK: PC:sc
+[17:33:23][INFO] Processing icon 12: sdk.info
+[17:33:23][INFO] 12  | 247  | 111  | sdk.info                                
+[17:33:23][INFO]    Saved OK: PC:sdk
+[17:33:23][INFO] Processing icon 13: test1.info
+[17:33:23][INFO] 13  | 372  | 111  | test1.info                              
+[17:33:23][INFO]    Saved OK: PC:test1
+[17:33:23][INFO] Processing icon 14: test2.info
+[17:33:23][INFO] 14  | 497  | 111  | test2.info                              
+[17:33:23][INFO]    Saved OK: PC:test2
+[17:33:23][INFO] Processing icon 15: Workbench.info
+[17:33:23][INFO] 15  | 24   | 165  | Workbench.info                          
+[17:33:23][INFO]    Saved OK: PC:Workbench
+[17:33:23][INFO] Processing icon 16: AmigaOS-3.2.3.lha.info
+[17:33:23][INFO] 16  | 134  | 164  | AmigaOS-3.2.3.lha.info                  
+[17:33:23][INFO]    Saved OK: PC:AmigaOS-3.2.3.lha
+[17:33:23][INFO] Processing icon 17: BastionPlatform.7z.info
+[17:33:23][INFO] 17  | 257  | 150  | BastionPlatform.7z.info                 
+[17:33:23][INFO]    Saved OK: PC:BastionPlatform.7z
+[17:33:23][INFO] Processing icon 18: ClassicWB3.9-MWB.lha.info
+[17:33:23][INFO] 18  | 375  | 164  | ClassicWB3.9-MWB.lha.info               
+[17:33:23][INFO]    Saved OK: PC:ClassicWB3.9-MWB.lha
+[17:33:23][INFO] Processing icon 19: dump.txt.info
+[17:33:23][INFO] 19  | 499  | 164  | dump.txt.info                           
+[17:33:23][INFO]    Saved OK: PC:dump.txt
+[17:33:23][INFO] Processing icon 20: Kick13.rom.info
+[17:33:23][INFO] 20  | 34   | 204  | Kick13.rom.info                         
+[17:33:23][INFO]    Saved OK: PC:Kick13.rom
+[17:33:23][INFO] Processing icon 21: Kick31.rom.info
+[17:33:23][INFO] 21  | 134  | 218  | Kick31.rom.info                         
+[17:33:23][INFO]    Saved OK: PC:Kick31.rom
+[17:33:23][INFO] Processing icon 22: MyAmiga600Image.hdf.info
+[17:33:23][INFO] 22  | 257  | 204  | MyAmiga600Image.hdf.info                
+[17:33:23][INFO]    Saved OK: PC:MyAmiga600Image.hdf
+[17:33:23][INFO] Processing icon 23: Picasso96.adf.info
+[17:33:23][INFO] 23  | 375  | 218  | Picasso96.adf.info                      
+[17:33:23][INFO]    Saved OK: PC:Picasso96.adf
+[17:33:23][INFO] Processing icon 24: StandardMagicWB.lha.info
+[17:33:23][INFO] 24  | 500  | 218  | StandardMagicWB.lha.info                
+[17:33:23][INFO]    Saved OK: PC:StandardMagicWB.lha
+[17:33:23][INFO] Processing icon 25: UnZip.lha.info
+[17:33:23][INFO] 25  | 26   | 258  | UnZip.lha.info                          
+[17:33:23][INFO]    Saved OK: PC:UnZip.lha
+[17:33:23][INFO] Processing icon 26: Workbench3.1.adf.info
+[17:33:23][INFO] 26  | 134  | 258  | Workbench3.1.adf.info                   
+[17:33:23][INFO]    Saved OK: PC:Workbench3.1.adf
+[17:33:23][INFO] 
+==== ICON SAVING PERFORMANCE ====
+[17:33:23][INFO] saveIconsPositionsToDisk() execution time:
+[17:33:23][INFO]   242166 microseconds (242.166 ms)
+[17:33:23][INFO]   Icons saved: 27
+[17:33:23][INFO]   Time per icon: 8969 microseconds
+[17:33:23][INFO] =================================
+
+[17:33:23][INFO] 
+========== LOGGING PERFORMANCE STATS ==========
+[17:33:23][INFO] Total timed calls: 464
+[17:33:23][INFO] Total time: 516.398 ms
+[17:33:23][INFO] Average: 1.113 ms per call
+[17:33:23][INFO] 
+Per-Category Statistics:
+[17:33:23][INFO]   general :   587 messages,   39248 bytes (38 KB)
+[17:33:23][INFO]   memory  :   176 messages,   19078 bytes (18 KB)
+[17:33:23][INFO] ===============================================
+
+[17:37:47][DEBUG] DEBUG: About to call CleanupWindow()...
+[17:37:47][DEBUG] DEBUG: CleanupWindow() completed
+[17:37:47][DEBUG] DEBUG: About to call disposeTimer()...
+[17:37:48][DEBUG] DEBUG: disposeTimer() completed
+[17:37:48][DEBUG] DEBUG: About to call FreeIconErrorList()...
+[17:37:48][DEBUG] DEBUG: FreeIconErrorList() completed
+[17:37:48][DEBUG] DEBUG: About to free fontPrefs (ptr=1078669532)...
+[17:37:48][DEBUG] DEBUG: fontPrefs freed successfully
+[17:37:48][INFO] 
+========== LOGGING PERFORMANCE STATS ==========
+[17:37:48][INFO] Total timed calls: 480
+[17:37:48][INFO] Total time: 534.287 ms
+[17:37:48][INFO] Average: 1.113 ms per call
+[17:37:48][INFO] 
+Per-Category Statistics:
+[17:37:48][INFO]   general :   603 messages,   40137 bytes (39 KB)
+[17:37:48][INFO]   memory  :   242 messages,   27088 bytes (26 KB)
+[17:37:48][INFO]   errors  :     4 messages,       0 bytes (0 KB)
+[17:37:48][INFO] ===============================================
+
+[17:37:48][INFO] 
+========== LOG SYSTEM SHUTDOWN ==========
+[17:37:48][INFO]   general: 608 messages, 40463 bytes
+[17:37:48][INFO]   memory: 242 messages, 27088 bytes
+[17:37:48][INFO]   errors: 4 messages, 0 bytes
+[17:37:48][INFO] =========================================
+
