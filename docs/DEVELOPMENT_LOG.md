@@ -5,6 +5,152 @@ iTidy is an Amiga icon management utility that allows users to sort and arrange 
 
 ## Development Timeline
 
+### Latest: Enhanced Multi-Category Logging & Memory Tracking System (October 2025)
+
+#### Implementation: Comprehensive Debugging Infrastructure
+- **Purpose**: Advanced diagnostics for memory leaks, performance analysis, and multi-category logging
+- **Date**: October 27, 2025
+
+#### Features Implemented:
+
+**1. Multi-Category Logging System**
+- **Separate log files** per category (general, memory, GUI, icons, backup, errors)
+- **Timestamped logs**: `category_YYYY-MM-DD_HH-MM-SS.log` format
+- **Log levels**: DEBUG, INFO, WARNING, ERROR
+- **Runtime control**: Enable/disable categories on-the-fly
+- **Automatic error consolidation**: All ERROR-level logs duplicated to `errors_*.log`
+- **Location**: `PROGDIR:logs/` directory (with fallback to `PROGDIR:`)
+
+**2. Memory Tracking System**
+- **Comprehensive tracking**: Every `whd_malloc()`/`whd_free()` logged with file:line
+- **Leak detection**: Identifies unfreed memory blocks with allocation location
+- **Statistics**: 
+  - Total allocations/frees with byte counts
+  - Peak memory usage tracking
+  - Current memory status
+  - Memory leak reporting
+- **Immediate writes**: Memory logs survive crashes (no buffering)
+- **Type-safe API**: Uses `LogCategory` enum to prevent typos
+
+**3. Platform Abstraction Layer**
+- **Memory wrappers**: `whd_malloc()`/`whd_free()` route through tracking system
+- **Compile-time control**: `DEBUG_MEMORY_TRACKING` enables/disables overhead
+- **Zero-cost when disabled**: Direct malloc/free when not debugging
+
+#### Technical Details:
+
+**Log Categories:**
+```c
+typedef enum {
+    LOG_GENERAL,    // Program flow, initialization
+    LOG_MEMORY,     // Memory operations (high-frequency)
+    LOG_GUI,        // User interactions, events
+    LOG_ICONS,      // Icon processing
+    LOG_BACKUP,     // Backup/restore operations
+    LOG_ERRORS      // Consolidated error log
+} LogCategory;
+```
+
+**Memory Tracking Functions:**
+- `whd_memory_init()` - Initialize tracking system
+- `whd_malloc_debug()` - Tracked allocation with file:line
+- `whd_free_debug()` - Tracked deallocation with validation
+- `whd_memory_report()` - Generate leak report
+
+**Example Memory Log Output:**
+```
+[17:33:18][DEBUG] ALLOC: 256 bytes at 0x404b3084 (icon_management.c:56) [Current: 256, Peak: 256]
+[17:33:19][DEBUG] FREE: 256 bytes at 0x404b3084 (allocated icon_management.c:56, freed icon_management.c:120)
+[17:37:48][INFO] ========== MEMORY TRACKING REPORT ==========
+[17:37:48][INFO] Total allocations: 116 (6253 bytes)
+[17:37:48][INFO] Total frees: 116 (6253 bytes)
+[17:37:48][INFO] Peak memory usage: 3878 bytes (3 KB)
+[17:37:48][INFO] *** NO MEMORY LEAKS DETECTED - ALL ALLOCATIONS FREED ***
+```
+
+#### Bug Fixes During Implementation:
+
+**Memory Leak Fix (October 27, 2025)**
+- **Issue**: `convertWBVersionWithDot()` allocated with `whd_malloc()` but freed with `free()`
+- **Impact**: 7-byte leak reported on every run (false positive)
+- **Location**: `src/main_gui.c:246`
+- **Fix**: Changed `free(stringWBVersion)` → `whd_free(stringWBVersion)`
+- **Result**: Zero leaks confirmed
+
+**Directory Creation Enhancement**
+- **Issue**: `PROGDIR:logs/` directory not created on some systems
+- **Root Cause**: `CreateDir()` may fail with complex paths
+- **Solution**: Dual-method approach:
+  1. Direct `CreateDir("PROGDIR:logs/")`
+  2. Fallback: Navigate to PROGDIR:, then `CreateDir("logs")`
+- **Error Reporting**: Added `IoErr()` codes and PROGDIR: accessibility checks
+- **Graceful Fallback**: Logs created in PROGDIR: if subdirectory fails
+
+#### Files Created:
+- `include/platform/platform.h` - Memory tracking API and abstractions
+- `include/platform/platform.c` - Memory tracking implementation
+- `docs/ENHANCED_LOGGING_SYSTEM.md` - Complete system documentation
+- `docs/MEMORY_TRACKING_SYSTEM.md` - Detailed memory tracking guide
+- `docs/MEMORY_TRACKING_QUICKSTART.md` - Quick start reference
+
+#### Files Modified:
+- `src/writeLog.h` - Enhanced with multi-category support and log levels
+- `src/writeLog.c` - Complete rewrite for category-based logging
+- `src/main_gui.c` - Integrated new logging system and memory tracking
+- `Makefile` - Added platform.c to build process
+
+#### Usage Examples:
+
+**Basic Logging:**
+```c
+log_debug(LOG_GENERAL, "Processing directory: %s\n", path);
+log_info(LOG_ICONS, "Found %d icons\n", count);
+log_warning(LOG_GUI, "Window size too small\n");
+log_error(LOG_BACKUP, "Backup failed: %s\n", reason);
+```
+
+**Runtime Control:**
+```c
+enable_log_category(LOG_MEMORY, FALSE);  // Disable verbose memory logs
+set_log_level(LOG_ICONS, LOG_LEVEL_WARNING);  // Only warnings/errors
+```
+
+**Memory Tracking:**
+```c
+initialize_log_system(TRUE);  // Clean old logs
+whd_memory_init();            // Start tracking
+// ... program execution ...
+whd_memory_report();          // Report leaks before exit
+shutdown_log_system();        // Close all logs
+```
+
+#### Benefits:
+
+✅ **Easy leak detection**: Exact file:line for every unfreed allocation  
+✅ **Separate concerns**: Each subsystem has its own log file  
+✅ **Error consolidation**: All errors in one place for quick review  
+✅ **Performance tracking**: Built-in statistics for logging overhead  
+✅ **Crash-safe**: Memory logs survive program crashes  
+✅ **Type-safe**: Enum-based categories prevent typos  
+✅ **Backward compatible**: Old `append_to_log()` still works  
+✅ **Zero overhead when disabled**: No performance impact in release builds
+
+#### Testing Results:
+- **Test Run**: October 27, 2025, 17:33:17
+- **Memory Operations**: 116 allocations, 116 frees
+- **Peak Usage**: 3.8 KB
+- **Leaks Found**: 0 (after fix)
+- **Log Files Generated**: 6 categories + timestamp
+- **Directory Creation**: Successfully creates `PROGDIR:logs/`
+
+#### Performance Impact:
+- **With tracking enabled**: ~1-2ms per log entry (acceptable for debugging)
+- **Memory tracking**: Immediate writes ensure crash survival
+- **With tracking disabled**: Zero overhead (direct malloc/free)
+- **Recommended**: Disable for release, enable for debugging specific issues
+
+---
+
 ### Phase 1: Initial Bug Fixes (Console & Positioning Issues)
 
 #### Problem: Console Corruption and Icons Not Moving
