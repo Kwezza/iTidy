@@ -504,8 +504,8 @@ void CalculateLayoutWithAspectRatio(const IconArray *iconArray,
         append_to_log("====================================\n\n");
         
         /* Also print to console for immediate visibility */
-        printf("  [TIMING] Aspect ratio calculation: %lu.%03lu ms for %d icons\n",
-               elapsedMillis, elapsedMicros % 1000, iconArray->size);
+        printf("  [TIMING] Aspect ratio calculation: %lu.%03lu ms for %lu icons\n",
+               elapsedMillis, elapsedMicros % 1000, (unsigned long)iconArray->size);
     }
 }
 

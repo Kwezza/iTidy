@@ -238,7 +238,8 @@ void SetIconFont(void)
     if (iconFont)
     {
         SetFont(rastPort, iconFont);
-        printf( textBold "Workbench Icon Font:" textReset " %s (%dpt) loaded\n", fontPrefs->name, fontPrefs->size);
+        printf("Workbench Icon Font: %s (%d pt) loaded\n", 
+               fontPrefs->name, (int)fontPrefs->size);
     }
     else
     {

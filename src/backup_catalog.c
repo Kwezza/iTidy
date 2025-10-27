@@ -258,11 +258,11 @@ BOOL CloseCatalog(BackupContext *ctx) {
     snprintf(line, sizeof(line), "Session Ended: %s", timestamp);
     WriteLineToFile(ctx->catalogFile, line);
     
-    snprintf(line, sizeof(line), "Total Archives: %u", 
-             ctx->foldersBackedUp + ctx->failedBackups);
+    snprintf(line, sizeof(line), "Total Archives: %hu", 
+             (UWORD)(ctx->foldersBackedUp + ctx->failedBackups));
     WriteLineToFile(ctx->catalogFile, line);
     
-    snprintf(line, sizeof(line), "Successful: %u", ctx->foldersBackedUp);
+    snprintf(line, sizeof(line), "Successful: %hu", ctx->foldersBackedUp);
     WriteLineToFile(ctx->catalogFile, line);
     
     snprintf(line, sizeof(line), "Failed: %u", ctx->failedBackups);

@@ -647,8 +647,8 @@ append_to_log("Has only borderless icons: %d\n", iconArray->hasOnlyBorderlessIco
         append_to_log("==================================\n\n");
         
         /* Also print to console for immediate visibility */
-        printf("  [TIMING] Icon loading: %lu.%03lu ms for %d icons\n",
-               elapsedMillis, elapsedMicros % 1000, iconArray->size);
+        printf("  [TIMING] Icon loading: %lu.%03lu ms for %lu icons\n",
+               elapsedMillis, elapsedMicros % 1000, (unsigned long)iconArray->size);
     }
 
     return iconArray;

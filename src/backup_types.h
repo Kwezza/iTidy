@@ -15,7 +15,7 @@
 #define BACKUP_TYPES_H
 
 /* Platform-specific includes */
-#ifdef PLATFORM_HOST
+#if PLATFORM_HOST
     /* Host compilation - define Amiga types if not already defined by Windows */
     #ifndef _WINDEF_
         typedef unsigned char UBYTE;

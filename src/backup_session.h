@@ -13,25 +13,11 @@
 #define BACKUP_SESSION_H
 
 #include "backup_types.h"
+#include "layout_preferences.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/*========================================================================*/
-/* Backup Preferences                                                     */
-/*========================================================================*/
-
-/**
- * Backup system preferences.
- * These are typically loaded from iTidy's layout preferences.
- */
-typedef struct {
-    BOOL enableUndoBackup;          /* Enable backup system */
-    BOOL useLha;                    /* Use LHA compression */
-    char backupRootPath[256];       /* Root backup directory (e.g., "PROGDIR:Backups") */
-    UWORD maxBackupsPerFolder;      /* Maximum backups before cleanup (0 = unlimited) */
-} BackupPreferences;
 
 /*========================================================================*/
 /* Session Management                                                     */

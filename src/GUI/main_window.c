@@ -1021,7 +1021,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                     printf("Advanced settings accepted - saved for Apply\n");
                                     printf("  Aspect Ratio: %.2f\n", temp_prefs.aspectRatio);
                                     printf("  Overflow Mode: %d\n", temp_prefs.overflowMode);
-                                    printf("  Spacing: %dx%d\n", 
+                                    printf("  Spacing: %hux%hu\n", 
                                            temp_prefs.iconSpacingX,
                                            temp_prefs.iconSpacingY);
                                     

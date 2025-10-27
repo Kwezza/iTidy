@@ -8,6 +8,10 @@
 #include <dos/dos.h>
 #include <libraries/iffparse.h>
 #include <prefs/prefhdr.h>
+/* Note: prefs/icontrol.h triggers compiler warnings from Amiga SDK system headers:
+ * - "bitfield type non-portable" (lines 49-50): UBYTE bitfields, works correctly on Amiga
+ * - "array of size <=0" (line 94): Flexible array member, VBCC handles this automatically
+ * These warnings are from Commodore's original headers and cannot be changed. */
 #include <prefs/icontrol.h>
 #include <proto/exec.h>
 #include <proto/dos.h>

@@ -79,8 +79,8 @@ BOOL CalculateArchivePath(char *outPath, const char *runDirectory, ULONG archive
     
     /* Build full path: runDirectory/folderNum/archiveName */
     length = snprintf(outPath, MAX_BACKUP_PATH, 
-                     "%s/%03u/%s", 
-                     runDirectory, folderNum, archiveName);
+                     "%s/%03d/%s", 
+                     runDirectory, (int)folderNum, archiveName);
     
     /* Check if path would be too long */
     if (length >= MAX_BACKUP_PATH) {
@@ -108,8 +108,8 @@ BOOL CalculateSubfolderPath(char *outPath, const char *runDirectory, ULONG archi
     
     /* Build subfolder path: runDirectory/folderNum */
     length = snprintf(outPath, MAX_BACKUP_PATH, 
-                     "%s/%03u", 
-                     runDirectory, folderNum);
+                     "%s/%03d", 
+                     runDirectory, (int)folderNum);
     
     if (length >= MAX_BACKUP_PATH) {
         return FALSE;

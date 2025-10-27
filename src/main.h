@@ -179,4 +179,4 @@ extern BOOL user_forceStandardIcons;
 void AddIconError(IconErrorTrackerStruct *tracker, STRPTR filePath);
 void FreeIconErrorList(IconErrorTrackerStruct *tracker);
 int endsWithFont(const char *str) ;
-#endif // MAIN_H
+#endif /* MAIN_H */

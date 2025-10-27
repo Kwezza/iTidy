@@ -1,0 +1,355 @@
+Compiling [build/amiga/main_gui.o] from src/main_gui.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/main_gui.c -o build/amiga/main_gui.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main_gui.c":51
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main_gui.c":51
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main_gui.c":51
+Compiling [build/amiga/icon_types.o] from src/icon_types.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/icon_types.c -o build/amiga/icon_types.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\icon_types.c":10
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\icon_types.c":10
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\icon_types.c":10
+>    toolTypes = diskObject->do_ToolTypes;
+warning 110 in line 69 of "src\icon_types.c": pointer assignment with different qualifiers
+>    toolTypes = diskObject->do_ToolTypes;
+warning 110 in line 313 of "src\icon_types.c": pointer assignment with different qualifiers
+>    toolTypes = diskObject->do_ToolTypes;
+warning 110 in line 557 of "src\icon_types.c": pointer assignment with different qualifiers
+Compiling [build/amiga/icon_misc.o] from src/icon_misc.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/icon_misc.c -o build/amiga/icon_misc.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\icon_misc.h":11
+	included from file "src\icon_misc.c":7
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\icon_misc.h":11
+	included from file "src\icon_misc.c":7
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\icon_misc.h":11
+	included from file "src\icon_misc.c":7
+Compiling [build/amiga/icon_management.o] from src/icon_management.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/icon_management.c -o build/amiga/icon_management.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\icon_management.c":12
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\icon_management.c":12
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\icon_management.c":12
+>               elapsedMillis, elapsedMicros % 1000, iconArray->size);
+warning 214 in line 651 of "src\icon_management.c": suspicious format string
+Compiling [build/amiga/file_directory_handling.o] from src/file_directory_handling.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/file_directory_handling.c -o build/amiga/file_directory_handling.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\file_directory_handling.h":27
+	included from file "src\file_directory_handling.c":15
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\file_directory_handling.h":27
+	included from file "src\file_directory_handling.c":15
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\file_directory_handling.h":27
+	included from file "src\file_directory_handling.c":15
+Compiling [build/amiga/window_management.o] from src/window_management.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/window_management.c -o build/amiga/window_management.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\window_management.c":12
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\window_management.c":12
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\window_management.c":12
+>        printf( textBold "Workbench Icon Font:" textReset " %s (%dpt) loaded\n"
+warning 214 in line 241 of "src\window_management.c": suspicious format string
+Compiling [build/amiga/utilities.o] from src/utilities.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/utilities.c -o build/amiga/utilities.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\utilities.c":16
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\utilities.c":16
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\utilities.c":16
+Compiling [build/amiga/spinner.o] from src/spinner.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/spinner.c -o build/amiga/spinner.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\icon_misc.h":11
+	included from file "src\spinner.h":6
+	included from file "src\spinner.c":1
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\icon_misc.h":11
+	included from file "src\spinner.h":6
+	included from file "src\spinner.c":1
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\icon_misc.h":11
+	included from file "src\spinner.h":6
+	included from file "src\spinner.c":1
+Compiling [build/amiga/writeLog.o] from src/writeLog.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/writeLog.c -o build/amiga/writeLog.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\file_directory_handling.h":27
+	included from file "src\writeLog.c":19
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\file_directory_handling.h":27
+	included from file "src\writeLog.c":19
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\file_directory_handling.h":27
+	included from file "src\writeLog.c":19
+>        (void)error;
+warning 153 in line 112 of "src\writeLog.c": statement has no effect
+>        (void)error;
+warning 153 in line 184 of "src\writeLog.c": statement has no effect
+Compiling [build/amiga/cli_utilities.o] from src/cli_utilities.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/cli_utilities.c -o build/amiga/cli_utilities.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\cli_utilities.c":22
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\cli_utilities.c":22
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\cli_utilities.c":22
+Compiling [build/amiga/layout_preferences.o] from src/layout_preferences.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/layout_preferences.c -o build/amiga/layout_preferences.o
+Compiling [build/amiga/layout_processor.o] from src/layout_processor.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/layout_processor.c -o build/amiga/layout_processor.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\file_directory_handling.h":27
+	included from file "src\layout_processor.c":18
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\file_directory_handling.h":27
+	included from file "src\layout_processor.c":18
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\file_directory_handling.h":27
+	included from file "src\layout_processor.c":18
+Compiling [build/amiga/aspect_ratio_layout.o] from src/aspect_ratio_layout.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/aspect_ratio_layout.c -o build/amiga/aspect_ratio_layout.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\icon_management.h":16
+	included from file "src\aspect_ratio_layout.h":16
+	included from file "src\aspect_ratio_layout.c":16
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\icon_management.h":16
+	included from file "src\aspect_ratio_layout.h":16
+	included from file "src\aspect_ratio_layout.c":16
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main.h":43
+	included from file "src\icon_management.h":16
+	included from file "src\aspect_ratio_layout.h":16
+	included from file "src\aspect_ratio_layout.c":16
+>               elapsedMillis, elapsedMicros % 1000, iconArray->size);
+warning 214 in line 508 of "src\aspect_ratio_layout.c": suspicious format string
+Compiling [build/amiga/backup_catalog.o] from src/backup_catalog.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/backup_catalog.c -o build/amiga/backup_catalog.o
+>             ctx->foldersBackedUp + ctx->failedBackups);
+warning 214 in line 262 of "src\backup_catalog.c": suspicious format string
+>    (void)entry;
+warning 153 in line 471 of "src\backup_catalog.c": statement has no effect
+Compiling [build/amiga/backup_lha.o] from src/backup_lha.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/backup_lha.c -o build/amiga/backup_lha.o
+Compiling [build/amiga/backup_marker.o] from src/backup_marker.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/backup_marker.c -o build/amiga/backup_marker.o
+Compiling [build/amiga/backup_paths.o] from src/backup_paths.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/backup_paths.c -o build/amiga/backup_paths.o
+>                     runDirectory, folderNum, archiveName);
+warning 214 in line 83 of "src\backup_paths.c": suspicious format string
+>                     runDirectory, folderNum);
+warning 214 in line 112 of "src\backup_paths.c": suspicious format string
+Compiling [build/amiga/backup_runs.o] from src/backup_runs.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/backup_runs.c -o build/amiga/backup_runs.o
+Compiling [build/amiga/backup_session.o] from src/backup_session.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/backup_session.c -o build/amiga/backup_session.o
+>            snprintf(entry.subFolder, sizeof(entry.subFolder), "%03d/", folderN
+warning 214 in line 251 of "src\backup_session.c": suspicious format string
+>        snprintf(entry.subFolder, sizeof(entry.subFolder), "%03d/", folderNum);
+warning 214 in line 314 of "src\backup_session.c": suspicious format string
+Compiling [build/amiga/backup_restore.o] from src/backup_restore.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/backup_restore.c -o build/amiga/backup_restore.o
+>    (void)status;
+warning 153 in line 67 of "src\backup_restore.c": statement has no effect
+Compiling [build/amiga/GUI/main_window.o] from src/GUI/main_window.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/GUI/main_window.c -o build/amiga/GUI/main_window.o
+>                                           temp_prefs.iconSpacingY);
+warning 214 in line 1026 of "src\GUI\main_window.c": suspicious format string
+Compiling [build/amiga/GUI/advanced_window.o] from src/GUI/advanced_window.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/GUI/advanced_window.c -o build/amiga/GUI/advanced_window.o
+>           adv_data->prefs->iconSpacingY);
+warning 214 in line 825 of "src\GUI\advanced_window.c": suspicious format string
+>    printf("  Min Icons/Row: %d\n", adv_data->prefs->minIconsPerRow);
+warning 214 in line 826 of "src\GUI\advanced_window.c": suspicious format string
+>           adv_data->prefs->maxIconsPerRow == 0 ? "AUTO" : "MANUAL");
+warning 214 in line 829 of "src\GUI\advanced_window.c": suspicious format string
+>           adv_data->prefs->maxWindowWidthPct == 0 ? "AUTO" : "MANUAL");
+warning 214 in line 832 of "src\GUI\advanced_window.c": suspicious format string
+>                        printf("Unknown gadget ID: %d\n", gad->GadgetID);
+warning 214 in line 1045 of "src\GUI\advanced_window.c": suspicious format string
+Compiling [build/amiga/DOS/getDiskDetails.o] from src/DOS/getDiskDetails.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/DOS/getDiskDetails.c -o build/amiga/DOS/getDiskDetails.o
+Compiling [build/amiga/Settings/IControlPrefs.o] from src/Settings/IControlPrefs.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/Settings/IControlPrefs.c -o build/amiga/Settings/IControlPrefs.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\Settings\IControlPrefs.c":3
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\Settings\IControlPrefs.c":3
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\Settings\IControlPrefs.c":3
+Compiling [build/amiga/Settings/WorkbenchPrefs.o] from src/Settings/WorkbenchPrefs.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/Settings/WorkbenchPrefs.c -o build/amiga/Settings/WorkbenchPrefs.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src/main.h":43
+	included from file "src\Settings\workbenchprefs.h":5
+	included from file "src\Settings\WorkbenchPrefs.c":1
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src/main.h":43
+	included from file "src\Settings\workbenchprefs.h":5
+	included from file "src\Settings\WorkbenchPrefs.c":1
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src/main.h":43
+	included from file "src\Settings\workbenchprefs.h":5
+	included from file "src\Settings\WorkbenchPrefs.c":1
+>	TEXT whdp_Name[0]
+warning 61 in line 59 of "prefs\workbench.h": array of size <=0 (set to 1)
+	included from file "src\Settings\WorkbenchPrefs.c":7
+>	TEXT wtfp_Format[0]
+warning 61 in line 67 of "prefs\workbench.h": array of size <=0 (set to 1)
+	included from file "src\Settings\WorkbenchPrefs.c":7
+Compiling [build/amiga/Settings/get_fonts.o] from src/Settings/get_fonts.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/Settings/get_fonts.c -o build/amiga/Settings/get_fonts.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src/main.h":43
+	included from file "src\Settings\get_fonts.h":10
+	included from file "src\Settings\get_fonts.c":7
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src/main.h":43
+	included from file "src\Settings\get_fonts.h":10
+	included from file "src\Settings\get_fonts.c":7
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src/main.h":43
+	included from file "src\Settings\get_fonts.h":10
+	included from file "src\Settings\get_fonts.c":7
+Compiling [build/amiga/platform/amiga_platform.o] from src/platform/amiga_platform.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/platform/amiga_platform.c -o build/amiga/platform/amiga_platform.o
+Linking amiga executable: Bin/Amiga/iTidy
+vc +aos68k -cpu=68020 -g -hunkdebug -lamiga -lauto -lmieee -o Bin/Amiga/iTidy build/amiga/main_gui.o build/amiga/icon_types.o build/amiga/icon_misc.o build/amiga/icon_management.o build/amiga/file_directory_handling.o build/amiga/window_management.o build/amiga/utilities.o build/amiga/spinner.o build/amiga/writeLog.o build/amiga/cli_utilities.o build/amiga/layout_preferences.o build/amiga/layout_processor.o build/amiga/aspect_ratio_layout.o build/amiga/backup_catalog.o build/amiga/backup_lha.o build/amiga/backup_marker.o build/amiga/backup_paths.o build/amiga/backup_runs.o build/amiga/backup_session.o build/amiga/backup_restore.o build/amiga/GUI/main_window.o build/amiga/GUI/advanced_window.o build/amiga/DOS/getDiskDetails.o build/amiga/Settings/IControlPrefs.o build/amiga/Settings/WorkbenchPrefs.o build/amiga/Settings/get_fonts.o build/amiga/platform/amiga_platform.o 
+Build complete: Bin/Amiga/iTidy
+Debug symbols embedded in executable (use WinUAE debugger or MonAm)

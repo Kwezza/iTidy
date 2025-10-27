@@ -223,7 +223,7 @@ int main(int argc, char **argv)
 
     /* KEEP: Banner display */
     printf("==================================================\n");
-    printf(textBold "   iTidy GUI" textReset " V%s - Amiga Workbench Icon Tidier\n", VERSION);
+    printf("   iTidy GUI V%s - Amiga Workbench Icon Tidier\n", VERSION);
     printf("==================================================\n\n");
     printf("   by Kerry Thompson\n");
     printf("   compiled: %s at %s\n\n", __DATE__, __TIME__);

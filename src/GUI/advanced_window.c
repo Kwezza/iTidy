@@ -820,14 +820,14 @@ void save_advanced_window_to_preferences(struct iTidyAdvancedWindow *adv_data)
            adv_data->prefs->aspectRatio,
            adv_data->prefs->useCustomAspectRatio ? "YES" : "NO");
     printf("  Overflow Mode: %d\n", adv_data->prefs->overflowMode);
-    printf("  Spacing: %d x %d\n", 
+    printf("  Spacing: %hu x %hu\n", 
            adv_data->prefs->iconSpacingX, 
            adv_data->prefs->iconSpacingY);
-    printf("  Min Icons/Row: %d\n", adv_data->prefs->minIconsPerRow);
-    printf("  Max Icons/Row: %d (%s)\n", 
+    printf("  Min Icons/Row: %hu\n", adv_data->prefs->minIconsPerRow);
+    printf("  Max Icons/Row: %hu (%s)\n", 
            adv_data->prefs->maxIconsPerRow,
            adv_data->prefs->maxIconsPerRow == 0 ? "AUTO" : "MANUAL");
-    printf("  Max Window Width: %d%% (%s)\n",
+    printf("  Max Window Width: %hu%% (%s)\n",
            adv_data->prefs->maxWindowWidthPct,
            adv_data->prefs->maxWindowWidthPct == 0 ? "AUTO" : "MANUAL");
     printf("  Vertical Alignment: %s\n",
@@ -1042,7 +1042,7 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                         break;
                         
                     default:
-                        printf("Unknown gadget ID: %d\n", gad->GadgetID);
+                        printf("Unknown gadget ID: %lu\n", (unsigned long)gad->GadgetID);
                         break;
                 }
                 break;

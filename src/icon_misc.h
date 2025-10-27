@@ -23,4 +23,4 @@ void dumpLeftOutIcons(void);
 int countLeftOutIcons(void);
 void getDeviceNameFromPath(const char *path, char *device_name, int max_length);
 
-#endif // ICON_MISC_H
+#endif /* ICON_MISC_H */

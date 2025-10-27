@@ -29,6 +29,7 @@
 #endif
 
 #include "backup_session.h"
+#include "layout_preferences.h"
 #include "backup_paths.h"
 #include "backup_runs.h"
 #include "backup_catalog.h"
@@ -247,7 +248,7 @@ BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath) {
         /* Extract subfolder number from archive index */
         {
             UWORD folderNum = ARCHIVE_FOLDER_NUM(ctx->archiveIndex);
-            snprintf(entry.subFolder, sizeof(entry.subFolder), "%03d/", folderNum);
+            snprintf(entry.subFolder, sizeof(entry.subFolder), "%03hu/", folderNum);
         }
         
         entry.sizeBytes = 0;
@@ -310,7 +311,7 @@ BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath) {
     /* Extract subfolder number from archive index */
     {
         UWORD folderNum = ARCHIVE_FOLDER_NUM(ctx->archiveIndex);
-        snprintf(entry.subFolder, sizeof(entry.subFolder), "%03d/", folderNum);
+        snprintf(entry.subFolder, sizeof(entry.subFolder), "%03hu/", folderNum);
     }
     
     entry.sizeBytes = GetArchiveSize(archivePath);

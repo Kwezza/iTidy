@@ -35,4 +35,4 @@ int getOS35IconSize(const char *filename, IconSize *size);
 int isIconTypeDisk(const char *filename,long fib_DirEntryType);
 BOOL GetIconSizeFromFile(const char *filePath, IconSize *iconSize);
 
-#endif // ICON_TYPES_H
+#endif /* ICON_TYPES_H */

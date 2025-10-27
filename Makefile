@@ -27,6 +27,7 @@ else
     # Output now goes to Bin/Amiga/ for clean separation
     # VBCC MIGRATION NOTE (Stage 4): Added -DDEBUG for debug logging
     # DEBUG BUILD: Added -g for debug symbols, -hunkdebug for symbol table
+    # Note: VBCC warnings from system headers (51: bitfield, 61: array size) cannot be suppressed
     CC = vc
     CFLAGS = +aos68k -c99 -cpu=68020 -g -I$(INC_DIR) -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG
     LDFLAGS = +aos68k -cpu=68020 -g -hunkdebug -lamiga -lauto -lmieee

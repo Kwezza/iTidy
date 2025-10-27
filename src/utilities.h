@@ -36,4 +36,4 @@ char* convertWBVersionWithDot(int number);
 int endsWithInfo(const char *filePath);
 char *removeTextFromStartOfString(const char *str, const char *prefix);
 
-#endif // utilities_h
+#endif /* utilities_h */

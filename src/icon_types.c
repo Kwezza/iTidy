@@ -261,7 +261,7 @@ IconPosition GetIconPositionFromPath(const char *iconPath)
     return position;
 }
 
-BOOL IsNewIconPath(const char *filePath)
+BOOL IsNewIconPath(const STRPTR filePath)
 {
     BOOL newIconFormat = FALSE;
     struct DiskObject *diskObject = NULL;
