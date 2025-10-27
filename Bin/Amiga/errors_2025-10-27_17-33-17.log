@@ -1,7 +1,0 @@
-[17:37:48][ERROR][memory] 
-*** MEMORY LEAKS DETECTED: 1 blocks, 7 bytes ***
-[17:37:48][ERROR][memory] 
-Leak details:
-[17:37:48][ERROR][memory]   - 7 bytes at 0x404b3084 (allocated at src\utilities.c:193)
-[17:37:48][ERROR][memory] 
-*** CHECK error.log FOR COMPLETE LEAK REPORT ***

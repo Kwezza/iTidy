@@ -3,6 +3,7 @@ iTidy
 workbench/
 Bin/Amiga/iTidy.log
 Bin/Amiga/Backups/
+Bin/Amiga/Logs
 # Prerequisites
 *.d
 
