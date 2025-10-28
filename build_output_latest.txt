@@ -1,52 +1,23 @@
-make[1]: Entering directory 'C:/Amiga/Programming/iTidy/iTidy'
-Compiling [build/amiga/window_management.o] from src/window_management.c
-vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/window_management.c -o build/amiga/window_management.o
->    struct FontPrefs fontPrefs;
-warning 202 in line 144 of "src\window_management.c": var <fontPrefs> is incomplete
->    iff = AllocIFF();
-warning 161 in line 152 of "src\window_management.c": implicit declaration of function <AllocIFF>
->    iff = AllocIFF();
-error 39 in line 152 of "src\window_management.c": invalid types for assignment
->        FreeIFF(iff);
-warning 161 in line 164 of "src\window_management.c": implicit declaration of function <FreeIFF>
->    InitIFFasDOS(iff);
-warning 161 in line 169 of "src\window_management.c": implicit declaration of function <InitIFFasDOS>
->    if (OpenIFF(iff, IFFF_READ) != 0)
-warning 161 in line 171 of "src\window_management.c": implicit declaration of function <OpenIFF>
->    while ((cn = CurrentChunk(iff)) != NULL)
-warning 161 in line 180 of "src\window_management.c": implicit declaration of function <CurrentChunk>
->    while ((cn = CurrentChunk(iff)) != NULL)
-error 39 in line 180 of "src\window_management.c": invalid types for assignment
->        if (cn->cn_ID == ID_FONT)
-error 82 in line 182 of "src\window_management.c": unknown identifier <ID_FONT>
->            if (ReadChunkBytes(iff, &fontPrefs, sizeof(struct FontPrefs)
-warning 176 in line 184 of "src\window_management.c": size of incomplete type not available
->            if (ReadChunkBytes(iff, &fontPrefs, sizeof(struct FontPrefs)) == si
-warning 176 in line 184 of "src\window_management.c": size of incomplete type not available
->            if (ReadChunkBytes(iff, &fontPrefs, sizeof(struct FontPrefs)) == si
-warning 161 in line 184 of "src\window_management.c": implicit declaration of function <ReadChunkBytes>
->                if (fontPrefs.fp_Type == FP_WBFONT)
-error 11 in line 186 of "src\window_management.c": incomplete struct
->                    strncpy(fontName, fontPrefs.fp_Name, FONTNAMESIZE - 1);
-error 11 in line 188 of "src\window_management.c": incomplete struct
->                    fontName[FONTNAMESIZE - 1] = '\0';
-error 82 in line 189 of "src\window_management.c": unknown identifier <FONTNAMESIZE>
->                    *fontSize = fontPrefs.fp_TextAttr.ta_YSize;
-error 11 in line 190 of "src\window_management.c": incomplete struct
->        if (ParseIFF(iff, IFFPARSE_STEP) == IFFERR_EOF)
-warning 161 in line 195 of "src\window_management.c": implicit declaration of function <ParseIFF>
->    CloseIFF(iff);
-warning 161 in line 199 of "src\window_management.c": implicit declaration of function <CloseIFF>
->                  PADDING_WIDTH, prefsWorkbench.disableVolumeGauge);
-error 11 in line 317 of "src\window_management.c": incomplete struct
->    finalWidth = winWidth + prefsIControl.currentBarWidth + prefsIControl.curre
-error 11 in line 321 of "src\window_management.c": incomplete struct
->    finalWidth += prefsIControl.currentBarWidth;
-error 11 in line 322 of "src\window_management.c": incomplete struct
-Maximum number of errors reached!
-unexpected end of file
-10 errors found!
-vbccm68k -quiet "src\window_management.c" -o= "C:\Users\kwezz\AppData\Local\Temp\vbcc068c.asm" -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -hunkdebug -amiga-softfloat  -O=1 -I"%VBCC%"/targets/m68k-amigaos/include failed
-make[1]: *** [Makefile:157: build/amiga/window_management.o] Error 1
-make[1]: Leaving directory 'C:/Amiga/Programming/iTidy/iTidy'
-make: *** [Makefile:127: amiga] Error 2
+make[1]: Entering directory 'C:/Amiga/Programming/iTidy'
+Compiling [build/amiga/layout_processor.o] from src/layout_processor.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/layout_processor.c -o build/amiga/layout_processor.o
+Compiling [build/amiga/backup_catalog.o] from src/backup_catalog.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/backup_catalog.c -o build/amiga/backup_catalog.o
+>    (void)entry;
+warning 153 in line 477 of "src\backup_catalog.c": statement has no effect
+Compiling [build/amiga/backup_lha.o] from src/backup_lha.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/backup_lha.c -o build/amiga/backup_lha.o
+Compiling [build/amiga/backup_session.o] from src/backup_session.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/backup_session.c -o build/amiga/backup_session.o
+Compiling [build/amiga/GUI/restore_window.o] from src/GUI/restore_window.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/GUI/restore_window.c -o build/amiga/GUI/restore_window.o
+>} RestoreStatus;
+warning 226 in line 55 of "..\backup_restore.h": redeclaration of typedef <RestoreStatus>
+	included from file "src\GUI\restore_window.c":27
+>    NewList(restore_data->run_list_strings);
+warning 161 in line 376 of "src\GUI\restore_window.c": implicit declaration of function <NewList>
+Linking amiga executable: Bin/Amiga/iTidy
+vc +aos68k -cpu=68020 -g -hunkdebug -lamiga -lauto -lmieee -o Bin/Amiga/iTidy build/amiga/main_gui.o build/amiga/icon_types.o build/amiga/icon_misc.o build/amiga/icon_management.o build/amiga/file_directory_handling.o build/amiga/window_management.o build/amiga/utilities.o build/amiga/spinner.o build/amiga/writeLog.o build/amiga/cli_utilities.o build/amiga/layout_preferences.o build/amiga/layout_processor.o build/amiga/aspect_ratio_layout.o build/amiga/backup_catalog.o build/amiga/backup_lha.o build/amiga/backup_marker.o build/amiga/backup_paths.o build/amiga/backup_runs.o build/amiga/backup_session.o build/amiga/backup_restore.o build/amiga/GUI/main_window.o build/amiga/GUI/advanced_window.o build/amiga/GUI/restore_window.o build/amiga/DOS/getDiskDetails.o build/amiga/Settings/IControlPrefs.o build/amiga/Settings/WorkbenchPrefs.o build/amiga/Settings/get_fonts.o build/amiga/platform/amiga_platform.o build/amiga/platform_memory.o 
+Build complete: Bin/Amiga/iTidy
+Debug symbols embedded in executable (use WinUAE debugger or MonAm)
+make[1]: Leaving directory 'C:/Amiga/Programming/iTidy'

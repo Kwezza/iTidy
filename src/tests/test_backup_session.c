@@ -204,7 +204,7 @@ static void test_init_session_success(void) {
     strcpy(prefs.backupRootPath, TEST_BACKUPS);
     prefs.maxBackupsPerFolder = 100;
     
-    ASSERT(InitBackupSession(&ctx, &prefs), "InitBackupSession failed");
+    ASSERT(InitBackupSession(&ctx, &prefs, NULL), "InitBackupSession failed");
     ASSERT_EQ(1, ctx.runNumber, "Run number should be 1");
     ASSERT_EQ(1, ctx.archiveIndex, "Archive index should start at 1");
     ASSERT(ctx.sessionActive, "Session should be active");
@@ -233,10 +233,10 @@ static void test_init_session_invalid_params(void) {
     TEST_START("InitBackupSession with NULL parameters");
     
     /* NULL context */
-    ASSERT(!InitBackupSession(NULL, &prefs), "Should fail with NULL context");
+    ASSERT(!InitBackupSession(NULL, &prefs, NULL), "Should fail with NULL context");
     
     /* NULL preferences */
-    ASSERT(!InitBackupSession(&ctx, NULL), "Should fail with NULL preferences");
+    ASSERT(!InitBackupSession(&ctx, NULL, NULL), "Should fail with NULL preferences");
     
     TEST_PASS();
 }
@@ -254,7 +254,7 @@ static void test_init_session_backup_disabled(void) {
     prefs.useLha = TRUE;
     strcpy(prefs.backupRootPath, TEST_BACKUPS);
     
-    ASSERT(!InitBackupSession(&ctx, &prefs), "Should fail when backup disabled");
+    ASSERT(!InitBackupSession(&ctx, &prefs, NULL), "Should fail when backup disabled");
     
     TEST_PASS();
 }
@@ -272,7 +272,7 @@ static void test_close_session(void) {
     prefs.useLha = TRUE;
     strcpy(prefs.backupRootPath, TEST_BACKUPS);
     
-    ASSERT(InitBackupSession(&ctx, &prefs), "InitBackupSession failed");
+    ASSERT(InitBackupSession(&ctx, &prefs, NULL), "InitBackupSession failed");
     
     CloseBackupSession(&ctx);
     
@@ -307,7 +307,7 @@ static void test_backup_single_folder(void) {
     prefs.useLha = TRUE;
     strcpy(prefs.backupRootPath, TEST_BACKUPS);
     
-    ASSERT(InitBackupSession(&ctx, &prefs), "InitBackupSession failed");
+    ASSERT(InitBackupSession(&ctx, &prefs, testFolder), "InitBackupSession failed");
     
     /* Backup folder */
     status = BackupFolder(&ctx, testFolder);
@@ -350,7 +350,7 @@ static void test_backup_multiple_folders(void) {
     prefs.useLha = TRUE;
     strcpy(prefs.backupRootPath, TEST_BACKUPS);
     
-    ASSERT(InitBackupSession(&ctx, &prefs), "InitBackupSession failed");
+    ASSERT(InitBackupSession(&ctx, &prefs, NULL), "InitBackupSession failed");
     
     /* Backup all folders */
     status = BackupFolder(&ctx, folder1);

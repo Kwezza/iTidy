@@ -15,6 +15,7 @@
 /*------------------------------------------------------------------------*/
 /* Gadget IDs                                                             */
 /*------------------------------------------------------------------------*/
+#define GID_RESTORE_BACKUP_LABEL    2000
 #define GID_RESTORE_BACKUP_PATH     2001
 #define GID_RESTORE_CHANGE_PATH     2002
 #define GID_RESTORE_RUN_LIST        2003
@@ -29,7 +30,7 @@
 #define RESTORE_SPACE_X         10      /* Horizontal spacing */
 #define RESTORE_SPACE_Y         8       /* Vertical spacing */
 #define RESTORE_MARGIN_LEFT     10      /* Left margin */
-#define RESTORE_MARGIN_TOP      10      /* Top margin */
+#define RESTORE_MARGIN_TOP      10      /* Top margin (added to currentWindowBarHeight) */
 #define RESTORE_MARGIN_RIGHT    10      /* Right margin */
 #define RESTORE_MARGIN_BOTTOM   10      /* Bottom margin */
 
@@ -52,6 +53,7 @@ struct RestoreRunEntry
     char displayString[80];             /* Formatted for ListView */
     char runName[16];                   /* "Run_0007" */
     char dateStr[24];                   /* "2025-10-25 14:32:17" full date */
+    char sourceDirectory[256];          /* Source folder that was tidied */
     ULONG folderCount;                  /* Number of archives */
     ULONG totalBytes;                   /* Total size in bytes */
     char sizeStr[16];                   /* "46 KB" formatted */
@@ -73,6 +75,7 @@ struct iTidyRestoreWindow
     BOOL window_open;                   /* Window state flag */
     
     /* Gadget pointers */
+    struct Gadget *backup_path_label;  /* TEXT gadget for label */
     struct Gadget *backup_path_str;
     struct Gadget *change_path_btn;
     struct Gadget *run_list;

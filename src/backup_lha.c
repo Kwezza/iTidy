@@ -363,11 +363,10 @@ BOOL CreateLhaArchive(const char *lhaPath, const char *archivePath,
     return ExecuteLhaCommand(command);
 #else
     /* Amiga: Pass full paths directly to LHA */
-    /* Archive only .info files with recursive search */
-    /* Format: C:LhA a -r "archive.lha" source/dir/ *.info */
-    /* The trailing slash makes it a home directory, and *.info is the pattern */
+    /* Archive only .info files in the root of the source directory (non-recursive) */
+    /* Format: C:LhA a "archive.lha" source/dir/*.info */
     len = snprintf(command, sizeof(command),
-                  "%s a -r \"%s\" %s/ *.info",
+                  "%s a \"%s\" %s/*.info",
                   lhaPath, absArchivePath, sourceDir);
     
     if (len >= MAX_COMMAND_LEN) {

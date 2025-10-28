@@ -91,12 +91,14 @@ BOOL ProcessDirectoryWithPreferences(const char *path,
                 sizeof(backupPrefs.backupRootPath) - 1);
         backupPrefs.maxBackupsPerFolder = prefs->backupPrefs.maxBackupsPerFolder;
         
-        if (InitBackupSession(&localContext, &backupPrefs))
+        if (InitBackupSession(&localContext, &backupPrefs, sanitizedPath))
         {
             g_backupContext = &localContext;
             printf("Backup session started successfully (Run #%u)\n", localContext.runNumber);
             printf("Backup directory: %s\n", localContext.runDirectory);
+            printf("Source directory: %s\n", sanitizedPath);
             append_to_log("Backup session started: %s\n", localContext.runDirectory);
+            append_to_log("Source directory: %s\n", sanitizedPath);
         }
         else
         {

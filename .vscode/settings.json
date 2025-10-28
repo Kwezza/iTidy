@@ -36,6 +36,7 @@
         "font.h": "c",
         "trackdisk.h": "c",
         "getdiskdetails.h": "c",
-        "get_fonts.h": "c"
+        "get_fonts.h": "c",
+        "gadtools.h": "c"
     }
 }

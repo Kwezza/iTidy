@@ -193,6 +193,12 @@ BOOL CreateCatalog(BackupContext *ctx) {
     snprintf(line, sizeof(line), "Session Started: %s", timestamp);
     WriteLineToFile(ctx->catalogFile, line);
     
+    /* Write source directory if available */
+    if (ctx->sourceDirectory[0] != '\0') {
+        snprintf(line, sizeof(line), "Source Directory: %s", ctx->sourceDirectory);
+        WriteLineToFile(ctx->catalogFile, line);
+    }
+    
     /* LhA version (if available) */
     if (ctx->lhaAvailable) {
         snprintf(line, sizeof(line), "LhA Path: %s", ctx->lhaPath);

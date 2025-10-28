@@ -26,6 +26,12 @@
 #include "../backup_catalog.h"
 #include "../backup_restore.h"
 #include "../writeLog.h"
+#include "../Settings/IControlPrefs.h"
+
+/*------------------------------------------------------------------------*/
+/* External Global Variables                                             */
+/*------------------------------------------------------------------------*/
+extern struct IControlPrefsDetails prefsIControl;
 
 /*------------------------------------------------------------------------*/
 /* Window Title                                                           */
@@ -74,6 +80,79 @@ void format_size_string(ULONG bytes, char *buffer)
     {
         sprintf(buffer, "%.2f GB", (float)bytes / 1073741824.0f);
     }
+}
+
+/*------------------------------------------------------------------------*/
+/**
+ * @brief Format DateStamp to human-readable string
+ * 
+ * Converts an Amiga DateStamp (days since 1978, minutes, ticks) into
+ * a formatted string: "YYYY-MM-DD HH:MM:SS"
+ */
+/*------------------------------------------------------------------------*/
+static void format_datestamp_string(struct DateStamp *ds, char *buffer, int bufferSize)
+{
+    ULONG days, minutes, seconds;
+    ULONG year, month, day, hour, minute;
+    ULONG daysSinceEpoch;
+    
+    if (ds == NULL || buffer == NULL || bufferSize < 20)
+    {
+        if (buffer != NULL && bufferSize > 0)
+            strcpy(buffer, "Unknown");
+        return;
+    }
+    
+    days = ds->ds_Days;
+    minutes = ds->ds_Minute;
+    seconds = ds->ds_Tick / 50;  /* Ticks are 1/50th of a second */
+    
+    /* Convert minutes to hours and minutes */
+    hour = minutes / 60;
+    minute = minutes % 60;
+    
+    /* Days since Jan 1, 1978 - convert to calendar date */
+    /* Simple algorithm: count years and remaining days */
+    daysSinceEpoch = days;
+    year = 1978;
+    
+    /* Account for leap years */
+    while (1)
+    {
+        ULONG daysInYear = 365;
+        if ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0))
+            daysInYear = 366;
+        
+        if (daysSinceEpoch >= daysInYear)
+        {
+            daysSinceEpoch -= daysInYear;
+            year++;
+        }
+        else
+            break;
+    }
+    
+    /* Count months */
+    {
+        ULONG daysInMonth[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+        BOOL isLeap = ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0));
+        
+        if (isLeap)
+            daysInMonth[1] = 29;
+        
+        month = 1;
+        while (month <= 12 && daysSinceEpoch >= daysInMonth[month - 1])
+        {
+            daysSinceEpoch -= daysInMonth[month - 1];
+            month++;
+        }
+        
+        day = daysSinceEpoch + 1;  /* Days are 1-based */
+    }
+    
+    /* Format the string */
+    snprintf(buffer, bufferSize, "%04lu-%02lu-%02lu %02lu:%02lu:%02lu",
+             year, month, day, hour, minute, seconds);
 }
 
 /*------------------------------------------------------------------------*/
@@ -134,6 +213,54 @@ static BOOL catalog_stats_callback(const BackupArchiveEntry *entry, void *userDa
 
 /*------------------------------------------------------------------------*/
 /**
+ * @brief Extract source directory from catalog header
+ */
+/*------------------------------------------------------------------------*/
+static BOOL extract_source_directory(const char *catalog_path, char *buffer, ULONG buffer_size)
+{
+    BPTR file;
+    char line[512];
+    BOOL found = FALSE;
+    
+    if (!catalog_path || !buffer || buffer_size == 0)
+        return FALSE;
+    
+    buffer[0] = '\0';
+    
+    file = Open((STRPTR)catalog_path, MODE_OLDFILE);
+    if (!file)
+        return FALSE;
+    
+    /* Read lines looking for "Source Directory: " */
+    while (FGets(file, line, sizeof(line)))
+    {
+        /* Remove trailing newline */
+        ULONG len = strlen(line);
+        if (len > 0 && line[len - 1] == '\n')
+            line[len - 1] = '\0';
+        
+        /* Check if this is the source directory line */
+        if (strncmp(line, "Source Directory: ", 18) == 0)
+        {
+            /* Extract the path after the label */
+            const char *path = line + 18;
+            strncpy(buffer, path, buffer_size - 1);
+            buffer[buffer_size - 1] = '\0';
+            found = TRUE;
+            break;
+        }
+        
+        /* Stop at the table separator (end of header) */
+        if (strstr(line, "----") != NULL)
+            break;
+    }
+    
+    Close(file);
+    return found;
+}
+
+/*------------------------------------------------------------------------*/
+/**
  * @brief Scan backup directory for available runs
  */
 /*------------------------------------------------------------------------*/
@@ -176,14 +303,30 @@ ULONG scan_backup_runs(const char *backup_root,
     /* Scan each run from 1 to highest */
     for (i = 1; i <= highest_run; i++)
     {
+        struct FileInfoBlock *fib;
+        struct DateStamp runDate;
+        BOOL hasDate = FALSE;
+        
         /* Build run directory path */
         if (!GetRunDirectoryPath(run_path, backup_root, (UWORD)i))
             continue;
         
-        /* Check if run directory exists */
+        /* Check if run directory exists and get its timestamp */
         lock = Lock(run_path, ACCESS_READ);
         if (lock == 0)
             continue;  /* Directory doesn't exist, skip */
+        
+        /* Get directory timestamp */
+        fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
+        if (fib != NULL)
+        {
+            if (Examine(lock, fib))
+            {
+                runDate = fib->fib_Date;
+                hasDate = TRUE;
+            }
+            FreeDosObject(DOS_FIB, fib);
+        }
         
         UnLock(lock);
         
@@ -192,6 +335,16 @@ ULONG scan_backup_runs(const char *backup_root,
         entry->runNumber = (UWORD)i;
         FormatRunDirectoryName(entry->runName, (UWORD)i);
         strcpy(entry->fullPath, run_path);
+        
+        /* Format the timestamp */
+        if (hasDate)
+        {
+            format_datestamp_string(&runDate, entry->dateStr, sizeof(entry->dateStr));
+        }
+        else
+        {
+            strcpy(entry->dateStr, "Unknown");
+        }
         
         /* Check for catalog.txt */
         sprintf(catalog_path, "%s/catalog.txt", run_path);
@@ -214,7 +367,13 @@ ULONG scan_backup_runs(const char *backup_root,
             format_size_string(stats.totalBytes, entry->sizeStr);
             entry->statusCode = RESTORE_STATUS_COMPLETE;
             strcpy(entry->statusStr, "Complete");
-            strcpy(entry->dateStr, "2025-10-27 00:00:00");
+            
+            /* Extract source directory from catalog header */
+            if (!extract_source_directory(catalog_path, entry->sourceDirectory, 
+                                         sizeof(entry->sourceDirectory)))
+            {
+                strcpy(entry->sourceDirectory, "(Unknown)");
+            }
         }
         else
         {
@@ -223,7 +382,7 @@ ULONG scan_backup_runs(const char *backup_root,
             strcpy(entry->sizeStr, "N/A");
             entry->statusCode = RESTORE_STATUS_ORPHANED;
             strcpy(entry->statusStr, "NoCAT");
-            strcpy(entry->dateStr, "Unknown");
+            strcpy(entry->sourceDirectory, "(No catalog)");
         }
         
         /* Format display string */
@@ -318,8 +477,8 @@ void update_details_panel(struct iTidyRestoreWindow *restore_data,
     struct Node *node;
     struct List *list;
     int i;
-    char *detail_lines[6];
-    char line_buffer[6][256];
+    char *detail_lines[7];
+    char line_buffer[7][256];
     
     if (restore_data == NULL || restore_data->details_listview == NULL)
         return;
@@ -359,6 +518,7 @@ void update_details_panel(struct iTidyRestoreWindow *restore_data,
         line_buffer[3][0] = '\0';
         line_buffer[4][0] = '\0';
         line_buffer[5][0] = '\0';
+        line_buffer[6][0] = '\0';
     }
     else
     {
@@ -389,18 +549,20 @@ void update_details_panel(struct iTidyRestoreWindow *restore_data,
                 selected_entry->runNumber);
         sprintf(line_buffer[1], "Date Created:      %s", 
                 selected_entry->dateStr);
-        sprintf(line_buffer[2], "Total Archives:    %lu", 
+        sprintf(line_buffer[2], "Source Directory:  %s", 
+                selected_entry->sourceDirectory);
+        sprintf(line_buffer[3], "Total Archives:    %lu", 
                 selected_entry->folderCount);
-        sprintf(line_buffer[3], "Total Size:        %s", 
+        sprintf(line_buffer[4], "Total Size:        %s", 
                 selected_entry->sizeStr);
-        sprintf(line_buffer[4], "Status:            %s", 
+        sprintf(line_buffer[5], "Status:            %s", 
                 status_desc);
-        sprintf(line_buffer[5], "Location:          %s", 
+        sprintf(line_buffer[6], "Location:          %s", 
                 selected_entry->fullPath);
     }
     
     /* Create list nodes */
-    for (i = 0; i < 6; i++)
+    for (i = 0; i < 7; i++)
     {
         node = (struct Node *)AllocVec(sizeof(struct Node), MEMF_CLEAR);
         if (node != NULL)
@@ -536,7 +698,9 @@ static BOOL request_directory(char *buffer, ULONG buffer_size,
 BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
 {
     struct Screen *screen;
+    struct DrawInfo *draw_info;
     struct TextFont *font;
+    struct RastPort temp_rp;
     struct NewGadget ng;
     struct Gadget *gad;
     UWORD font_width, font_height;
@@ -546,8 +710,6 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     UWORD current_x, current_y;
     UWORD window_max_width, window_max_height;
     UWORD listview_bottom_y;
-    UWORD button_spacing, restore_btn_width, view_btn_width, cancel_btn_width;
-    UWORD total_button_width, button_start_x;
     UWORD final_window_width, final_window_height;
     STRPTR label;
     UWORD label_width, label_spacing;
@@ -576,15 +738,26 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     }
     
     append_to_log("Screen locked successfully\n");
-    append_to_log("Screen locked successfully\n");
     restore_data->screen = screen;
     
-    /* Get font dimensions */
-    append_to_log("Getting font dimensions\n");
-    font = screen->RastPort.Font;
+    /* Get DrawInfo for proper font information */
+    append_to_log("Getting DrawInfo and font dimensions\n");
+    draw_info = GetScreenDrawInfo(screen);
+    if (draw_info == NULL)
+    {
+        append_to_log("ERROR: Failed to get DrawInfo\n");
+        UnlockPubScreen(NULL, screen);
+        return FALSE;
+    }
+    
+    font = draw_info->dri_Font;
     font_width = font->tf_XSize;
     font_height = font->tf_YSize;
     append_to_log("Font: width=%d, height=%d\n", font_width, font_height);
+    
+    /* Initialize RastPort for TextLength() measurements */
+    InitRastPort(&temp_rp);
+    SetFont(&temp_rp, font);
     
     /* Calculate gadget dimensions */
     button_height = font_height + 6;
@@ -595,8 +768,9 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     details_height = detail_line_height * 6;
     
     /* Initialize position tracking */
-    current_x = RESTORE_MARGIN_LEFT;
-    current_y = RESTORE_MARGIN_TOP;
+    /* Start from window borders (using IControl preferences), then add margins */
+    current_x = prefsIControl.currentLeftBarWidth + RESTORE_MARGIN_LEFT;
+    current_y = prefsIControl.currentWindowBarHeight + RESTORE_MARGIN_TOP;
     window_max_width = 0;
     window_max_height = 0;
     
@@ -633,23 +807,68 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     append_to_log("NewGadget structure initialized\n");
     
     /*--------------------------------------------------------------------*/
-    /* Backup Location String Gadget                                     */
+    /* PRE-CALCULATE LAYOUT DIMENSIONS                                   */
     /*--------------------------------------------------------------------*/
-    append_to_log("Creating Backup Location string gadget\n");
+    UWORD listview_width = font_width * 65;
+    UWORD string_gadget_width = font_width * 35;
+    
+    /* Pre-calculate what the maximum right edge will be */
+    UWORD precalc_max_right = current_x + listview_width;
+    
+    /* Pre-calculate button dimensions */
     label = "Backup Location:";
-    label_width = strlen(label) * font_width;
+    label_width = TextLength(&temp_rp, label, strlen(label));
     label_spacing = 4;
     
-    ng.ng_LeftEdge = current_x + label_width + label_spacing;
+    UWORD string_left = current_x + label_width + label_spacing;
+    UWORD string_right = string_left + string_gadget_width;
+    UWORD change_btn_left = string_right + RESTORE_SPACE_X;
+    UWORD change_btn_width = precalc_max_right - change_btn_left;
+    
+    append_to_log("=== PRE-CALCULATED LAYOUT ===\n");
+    append_to_log("Listview width: %d, max_right will be: %d\n", listview_width, precalc_max_right);
+    append_to_log("Change button: left=%d, width=%d\n", change_btn_left, change_btn_width);
+    
+    /*--------------------------------------------------------------------*/
+    /* Backup Location Label (TEXT gadget)                               */
+    /*--------------------------------------------------------------------*/
+    append_to_log("Creating Backup Location label\n");
+    
+    ng.ng_LeftEdge = current_x;
     ng.ng_TopEdge = current_y;
-    ng.ng_Width = font_width * 35;  /* Reduced from 40 to fit better */
+    ng.ng_Width = label_width;
     ng.ng_Height = string_height;
     ng.ng_GadgetText = label;
-    ng.ng_GadgetID = GID_RESTORE_BACKUP_PATH;
-    ng.ng_Flags = PLACETEXT_LEFT;
+    ng.ng_GadgetID = GID_RESTORE_BACKUP_LABEL;
+    ng.ng_Flags = PLACETEXT_IN;
     
-    append_to_log("String gadget params: left=%d, top=%d, width=%d, height=%d, label_width=%d\n",
-                  ng.ng_LeftEdge, ng.ng_TopEdge, ng.ng_Width, ng.ng_Height, label_width);
+    restore_data->backup_path_label = gad = CreateGadget(TEXT_KIND, gad, &ng,
+        GTTX_Text, label,
+        GTTX_Border, FALSE,
+        TAG_END);
+    
+    if (gad == NULL)
+    {
+        append_to_log("ERROR: Failed to create Backup Location label\n");
+        goto cleanup_error;
+    }
+    append_to_log("Backup Location label created successfully\n");
+    
+    /*--------------------------------------------------------------------*/
+    /* Backup Location String Gadget (no label)                          */
+    /*--------------------------------------------------------------------*/
+    append_to_log("Creating Backup Location string gadget\n");
+    
+    ng.ng_LeftEdge = string_left;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = string_gadget_width;
+    ng.ng_Height = string_height;
+    ng.ng_GadgetText = NULL;  /* No label - using separate TEXT gadget */
+    ng.ng_GadgetID = GID_RESTORE_BACKUP_PATH;
+    ng.ng_Flags = 0;  /* No PLACETEXT flag */
+    
+    append_to_log("String gadget params: left=%d, top=%d, width=%d, height=%d\n",
+                  ng.ng_LeftEdge, ng.ng_TopEdge, ng.ng_Width, ng.ng_Height);
     
     restore_data->backup_path_str = gad = CreateGadget(STRING_KIND, gad, &ng,
         GTST_String, restore_data->backup_root_path,
@@ -671,12 +890,11 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
                                 ng.ng_TopEdge + ng.ng_Height);
     
     /*--------------------------------------------------------------------*/
-    /* Change Location Button                                            */
+    /* Change Location Button - PRE-CALCULATED WIDTH                     */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = restore_data->backup_path_str->LeftEdge + 
-                     restore_data->backup_path_str->Width + RESTORE_SPACE_X;
+    ng.ng_LeftEdge = change_btn_left;
     ng.ng_TopEdge = current_y;
-    ng.ng_Width = font_width * 10;
+    ng.ng_Width = change_btn_width;
     ng.ng_Height = button_height;
     ng.ng_GadgetText = "Change";
     ng.ng_GadgetID = GID_RESTORE_CHANGE_PATH;
@@ -700,9 +918,9 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     
     ng.ng_LeftEdge = current_x;
     ng.ng_TopEdge = current_y;
-    ng.ng_Width = font_width * 65;
+    ng.ng_Width = listview_width;
     ng.ng_Height = listview_requested_height;
-    ng.ng_GadgetText = "Select Backup Run:";
+    ng.ng_GadgetText = "";
     ng.ng_GadgetID = GID_RESTORE_RUN_LIST;
     ng.ng_Flags = PLACETEXT_ABOVE;
     
@@ -738,9 +956,9 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     
     ng.ng_LeftEdge = current_x;
     ng.ng_TopEdge = current_y;
-    ng.ng_Width = font_width * 65;
-    ng.ng_Height = (font_height + 2) * 6;  /* 6 lines for details */
-    ng.ng_GadgetText = "Run Details:";
+    ng.ng_Width = listview_width;
+    ng.ng_Height = (font_height + 2) * 7;  /* 7 lines for details (added Source Directory) */
+    ng.ng_GadgetText = "";
     ng.ng_GadgetID = GID_RESTORE_DETAILS;
     ng.ng_Flags = PLACETEXT_ABOVE;
     
@@ -758,25 +976,36 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
                                 ng.ng_TopEdge + ng.ng_Height);
     
     /*--------------------------------------------------------------------*/
-    /* Button Row                                                        */
+    /* Button Row - PRE-CALCULATED EQUAL WIDTHS                          */
     /*--------------------------------------------------------------------*/
     current_y = ng.ng_TopEdge + ng.ng_Height + RESTORE_SPACE_Y;
     
-    button_spacing = RESTORE_SPACE_X;
-    restore_btn_width = font_width * 15;
-    view_btn_width = font_width * 16;
-    cancel_btn_width = font_width * 10;
+    /* Pre-calculate equal button widths */
+    UWORD available_width = listview_width;
     
-    total_button_width = restore_btn_width + button_spacing +
-                        view_btn_width + button_spacing +
-                        cancel_btn_width;
+    /* Find maximum button text width */
+    UWORD max_btn_text_width = TextLength(&temp_rp, "Restore Run", 11);
+    UWORD temp_width = TextLength(&temp_rp, "View Folders...", 15);
+    if (temp_width > max_btn_text_width)
+        max_btn_text_width = temp_width;
+    temp_width = TextLength(&temp_rp, "Cancel", 6);
+    if (temp_width > max_btn_text_width)
+        max_btn_text_width = temp_width;
     
-    button_start_x = (window_max_width - total_button_width) / 2;
+    /* Calculate equal button width: 3 * button_width + 2 * spacing = available_width */
+    UWORD equal_button_width = (available_width - (2 * RESTORE_SPACE_X)) / 3;
+    
+    /* Ensure buttons are wide enough for text + padding */
+    if (equal_button_width < max_btn_text_width + 8)
+        equal_button_width = max_btn_text_width + 8;
+    
+    append_to_log("=== BUTTON ROW PRE-CALCULATION ===\n");
+    append_to_log("Available width: %d, Equal button width: %d\n", available_width, equal_button_width);
     
     /* Restore Run Button */
-    ng.ng_LeftEdge = button_start_x;
+    ng.ng_LeftEdge = current_x;
     ng.ng_TopEdge = current_y;
-    ng.ng_Width = restore_btn_width;
+    ng.ng_Width = equal_button_width;
     ng.ng_Height = button_height;
     ng.ng_GadgetText = "Restore Run";
     ng.ng_GadgetID = GID_RESTORE_RUN_BTN;
@@ -790,10 +1019,9 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
         goto cleanup_error;
     
     /* View Folders Button */
-    ng.ng_LeftEdge = restore_data->restore_run_btn->LeftEdge + 
-                     restore_data->restore_run_btn->Width + button_spacing;
+    ng.ng_LeftEdge = current_x + equal_button_width + RESTORE_SPACE_X;
     ng.ng_TopEdge = current_y;
-    ng.ng_Width = view_btn_width;
+    ng.ng_Width = equal_button_width;
     ng.ng_Height = button_height;
     ng.ng_GadgetText = "View Folders...";
     ng.ng_GadgetID = GID_RESTORE_VIEW_FOLDERS;
@@ -807,10 +1035,9 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
         goto cleanup_error;
     
     /* Cancel Button */
-    ng.ng_LeftEdge = restore_data->view_folders_btn->LeftEdge + 
-                     restore_data->view_folders_btn->Width + button_spacing;
+    ng.ng_LeftEdge = current_x + (2 * equal_button_width) + (2 * RESTORE_SPACE_X);
     ng.ng_TopEdge = current_y;
-    ng.ng_Width = cancel_btn_width;
+    ng.ng_Width = equal_button_width;
     ng.ng_Height = button_height;
     ng.ng_GadgetText = "Cancel";
     ng.ng_GadgetID = GID_RESTORE_CANCEL;
@@ -829,11 +1056,64 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     /*--------------------------------------------------------------------*/
     /* Calculate final window size and open window                       */
     /*--------------------------------------------------------------------*/
-    final_window_width = window_max_width + RESTORE_MARGIN_RIGHT;
+    /* Add right border width and margin to window width */
+    final_window_width = window_max_width + prefsIControl.currentLeftBarWidth + RESTORE_MARGIN_RIGHT;
     final_window_height = current_y + button_height + RESTORE_MARGIN_BOTTOM;
     
-    append_to_log("Opening restore window: size=%dx%d\n", 
-                  final_window_width, final_window_height);
+    append_to_log("=== PREPARING TO OPEN WINDOW ===\n");
+    append_to_log("Window size calculation:\n");
+    append_to_log("  window_max_width=%d\n", window_max_width);
+    append_to_log("  currentLeftBarWidth=%d\n", prefsIControl.currentLeftBarWidth);
+    append_to_log("  RESTORE_MARGIN_RIGHT=%d\n", RESTORE_MARGIN_RIGHT);
+    append_to_log("  final_window_width=%d\n", final_window_width);
+    append_to_log("  current_y=%d, button_height=%d, RESTORE_MARGIN_BOTTOM=%d\n", 
+                  current_y, button_height, RESTORE_MARGIN_BOTTOM);
+    append_to_log("  final_window_height=%d\n", final_window_height);
+    append_to_log("Screen dimensions: %d x %d\n", screen->Width, screen->Height);
+    append_to_log("Window position: Left=%d, Top=%d\n",
+                  (screen->Width - final_window_width) / 2,
+                  (screen->Height - final_window_height) / 2);
+    append_to_log("Gadget list pointer: %p\n", restore_data->glist);
+    append_to_log("Screen pointer: %p\n", screen);
+    
+    /* Verify all gadgets were created */
+    if (restore_data->backup_path_str == NULL)
+    {
+        append_to_log("ERROR: backup_path_str is NULL!\n");
+        goto cleanup_error;
+    }
+    if (restore_data->change_path_btn == NULL)
+    {
+        append_to_log("ERROR: change_path_btn is NULL!\n");
+        goto cleanup_error;
+    }
+    if (restore_data->run_list == NULL)
+    {
+        append_to_log("ERROR: run_list is NULL!\n");
+        goto cleanup_error;
+    }
+    if (restore_data->details_listview == NULL)
+    {
+        append_to_log("ERROR: details_listview is NULL!\n");
+        goto cleanup_error;
+    }
+    if (restore_data->restore_run_btn == NULL)
+    {
+        append_to_log("ERROR: restore_run_btn is NULL!\n");
+        goto cleanup_error;
+    }
+    if (restore_data->view_folders_btn == NULL)
+    {
+        append_to_log("ERROR: view_folders_btn is NULL!\n");
+        goto cleanup_error;
+    }
+    if (restore_data->cancel_btn == NULL)
+    {
+        append_to_log("ERROR: cancel_btn is NULL!\n");
+        goto cleanup_error;
+    }
+    
+    append_to_log("All gadgets verified OK. Calling OpenWindowTags...\n");
     
     restore_data->window = OpenWindowTags(NULL,
         WA_Left, (screen->Width - final_window_width) / 2,
@@ -841,16 +1121,22 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
         WA_Width, final_window_width,
         WA_Height, final_window_height,
         WA_Title, RESTORE_WINDOW_TITLE,
-        WA_Flags, WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_CLOSEGADGET | 
-                  WFLG_ACTIVATE | WFLG_RMBTRAP,
-        WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_REFRESHWINDOW | IDCMP_GADGETUP,
+        WA_DragBar, TRUE,
+        WA_DepthGadget, TRUE,
+        WA_CloseGadget, TRUE,
+        WA_Activate, TRUE,
         WA_PubScreen, screen,
         WA_Gadgets, restore_data->glist,
+        WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_REFRESHWINDOW | IDCMP_GADGETUP,
         TAG_END);
+    
+    append_to_log("OpenWindowTags returned: %p\n", restore_data->window);
     
     if (restore_data->window == NULL)
     {
+        LONG ioerr = IoErr();
         append_to_log("ERROR: Failed to open restore window\n");
+        append_to_log("ERROR: IoErr() = %ld\n", ioerr);
         goto cleanup_error;
     }
     
@@ -875,6 +1161,12 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
                          restore_data->run_count);
     }
     
+    /* Free DrawInfo - no longer needed after window is created */
+    if (draw_info != NULL)
+    {
+        FreeScreenDrawInfo(screen, draw_info);
+    }
+    
     append_to_log("Restore window opened successfully\n");
     return TRUE;
 
@@ -889,6 +1181,11 @@ cleanup_error:
     {
         append_to_log("Freeing visual info\n");
         FreeVisualInfo(restore_data->visual_info);
+    }
+    if (draw_info != NULL)
+    {
+        append_to_log("Freeing DrawInfo\n");
+        FreeScreenDrawInfo(screen, draw_info);
     }
     if (screen != NULL)
     {

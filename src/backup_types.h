@@ -126,6 +126,7 @@ typedef struct {
     /* Paths */
     char runDirectory[MAX_BACKUP_PATH]; /* Full path to Run_NNNN/ directory */
     char backupRoot[MAX_BACKUP_PATH];   /* Root backup directory (e.g., "PROGDIR:Backups") */
+    char sourceDirectory[MAX_BACKUP_PATH]; /* Source directory being tidied */
     char lhaPath[32];                   /* Path to LhA executable */
     
     /* Catalog file handle */

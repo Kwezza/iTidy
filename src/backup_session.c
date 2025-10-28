@@ -43,7 +43,7 @@
 /* Session Management                                                     */
 /*========================================================================*/
 
-BOOL InitBackupSession(BackupContext *ctx, const BackupPreferences *prefs) {
+BOOL InitBackupSession(BackupContext *ctx, const BackupPreferences *prefs, const char *sourceDirectory) {
     if (!ctx || !prefs) {
         DEBUG_LOG("Invalid parameters for InitBackupSession");
 #ifndef PLATFORM_HOST
@@ -72,9 +72,18 @@ BOOL InitBackupSession(BackupContext *ctx, const BackupPreferences *prefs) {
     /* Initialize context to known state */
     memset(ctx, 0, sizeof(BackupContext));
     
+    /* Store source directory if provided */
+    if (sourceDirectory && sourceDirectory[0] != '\0') {
+        strncpy(ctx->sourceDirectory, sourceDirectory, sizeof(ctx->sourceDirectory) - 1);
+        ctx->sourceDirectory[sizeof(ctx->sourceDirectory) - 1] = '\0';
+    }
+    
 #ifndef PLATFORM_HOST
     append_to_log("[BACKUP] Initializing backup session...\n");
     append_to_log("[BACKUP] Root path: %s\n", prefs->backupRootPath);
+    if (ctx->sourceDirectory[0] != '\0') {
+        append_to_log("[BACKUP] Source directory: %s\n", ctx->sourceDirectory);
+    }
 #endif
     
     /* Check if LHA is available */

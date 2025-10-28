@@ -31,11 +31,12 @@ extern "C" {
  * 
  * @param ctx Backup context to initialize
  * @param prefs Backup preferences
+ * @param sourceDirectory Optional source directory being tidied (can be NULL)
  * @return TRUE on success, FALSE on failure
  * 
  * @note Call CloseBackupSession() when done to finalize the catalog.
  */
-BOOL InitBackupSession(BackupContext *ctx, const BackupPreferences *prefs);
+BOOL InitBackupSession(BackupContext *ctx, const BackupPreferences *prefs, const char *sourceDirectory);
 
 /**
  * Backup a single folder's icon layout.
