@@ -29,10 +29,13 @@
 /*------------------------------------------------------------------------*/
 #define RESTORE_SPACE_X         10      /* Horizontal spacing */
 #define RESTORE_SPACE_Y         8       /* Vertical spacing */
-#define RESTORE_MARGIN_LEFT     10      /* Left margin */
-#define RESTORE_MARGIN_TOP      10      /* Top margin (added to currentWindowBarHeight) */
+#define RESTORE_MARGIN_LEFT     4      /* Left margin */
+#define RESTORE_MARGIN_TOP      4      /* Top margin (added to currentWindowBarHeight) */
 #define RESTORE_MARGIN_RIGHT    10      /* Right margin */
 #define RESTORE_MARGIN_BOTTOM   10      /* Bottom margin */
+#define RESTORE_BEVEL_BORDER    4       /* Checkerboard border around bevel */
+#define RESTORE_CONTENT_PADDING 8       /* Padding inside bevel for content */
+#define RESTORE_BUTTON_SPACING  0       /* Space between bevel and buttons */
 
 /*------------------------------------------------------------------------*/
 /* Status Codes                                                           */

@@ -2,6 +2,25 @@
  * restore_window.c - iTidy Restore Window Implementation
  * GadTools-based Backup Restore GUI for Workbench 2.0+
  * Based on RESTORE_WINDOW_GUI_SPEC.md specification
+ * 
+ * COLUMN ALIGNMENT - FIXED-WIDTH FONT REQUIRED:
+ * ===============================================
+ * The run list uses space-based column alignment which ONLY works with
+ * FIXED-WIDTH (monospaced) fonts like Topaz. The format_run_list_entry()
+ * function uses character-based column widths (%-9s, %-16s, %-11s, %8s).
+ * 
+ * With PROPORTIONAL fonts (where 'i' is narrower than 'W'), columns will
+ * NOT align properly because the pixel widths vary per character.
+ * 
+ * The code detects proportional fonts and logs a warning. To fix alignment
+ * issues: Change your Workbench screen font to Topaz or another fixed-width
+ * font in Workbench Preferences.
+ * 
+ * Technical details:
+ * - Listview width calculated as: font_width * 65 characters
+ * - Total format width: ~65 chars (matches listview)
+ * - With fixed-width fonts, columns scale proportionally with font size
+ * - With proportional fonts, columns cannot align using character counts
  */
 
 #include <exec/types.h>
@@ -12,6 +31,9 @@
 #include <libraries/gadtools.h>
 #include <libraries/asl.h>
 #include <libraries/dos.h>
+#include <graphics/rastport.h>
+#include <graphics/gfx.h>
+#include <graphics/gfxmacros.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/gadtools.h>
@@ -157,13 +179,170 @@ static void format_datestamp_string(struct DateStamp *ds, char *buffer, int buff
 
 /*------------------------------------------------------------------------*/
 /**
+ * @brief Draw window background with checkerboard pattern and recessed panel
+ * 
+ * Creates the classic Amiga dialog look:
+ * 1. Fill entire window with checkerboard pattern
+ * 2. Draw large recessed panel for main content area
+ * 3. Buttons remain on checkerboard pattern at bottom
+ * 
+ * @param restore_data Pointer to restore window data structure
+ */
+/*------------------------------------------------------------------------*/
+static void draw_window_background(struct iTidyRestoreWindow *restore_data)
+{
+    struct RastPort *rp;
+    WORD content_left, content_top, content_width, content_height;
+    WORD window_inner_left, window_inner_top;
+    WORD window_inner_width, window_inner_height;
+    struct DrawInfo *dri;
+    static UWORD checkerboard_pattern[2] = {0x5555, 0xAAAA};
+    
+    if (restore_data == NULL || restore_data->window == NULL)
+        return;
+    
+    if (restore_data->backup_path_label == NULL || restore_data->details_listview == NULL)
+        return;
+    
+    rp = restore_data->window->RPort;
+    dri = GetScreenDrawInfo(restore_data->screen);
+    if (dri == NULL)
+        return;
+    
+    /* Get window's inner dimensions (excluding borders) */
+    window_inner_left = restore_data->window->BorderLeft;
+    window_inner_top = restore_data->window->BorderTop;
+    window_inner_width = restore_data->window->Width - 
+                         restore_data->window->BorderLeft - 
+                         restore_data->window->BorderRight;
+    window_inner_height = restore_data->window->Height - 
+                          restore_data->window->BorderTop - 
+                          restore_data->window->BorderBottom;
+    
+    /* Fill entire window interior with checkerboard pattern */
+    /* Use pen 0 (light gray) and pen 1 (white) for the classic Amiga look */
+    SetAPen(rp, 0);  /* Light gray background */
+    SetBPen(rp, 2);  /* White */
+    SetDrMd(rp, JAM2);
+    
+    /* Use alternating pattern (checkerboard) */
+    SetAfPt(rp, checkerboard_pattern, 1);
+    
+    RectFill(rp, 
+             window_inner_left, 
+             window_inner_top,
+             window_inner_left + window_inner_width - 1,
+             window_inner_top + window_inner_height - 1);
+    
+    /* Clear the pattern */
+    SetAfPt(rp, NULL, 0);
+    
+    /* Calculate recessed panel dimensions */
+    /* Panel should contain: backup path row + both listviews, but NOT the buttons */
+    /* Bevel starts RESTORE_BEVEL_BORDER pixels from the content */
+    content_left = restore_data->backup_path_label->LeftEdge - RESTORE_CONTENT_PADDING - RESTORE_BEVEL_BORDER;
+    content_top = restore_data->backup_path_label->TopEdge - RESTORE_CONTENT_PADDING - RESTORE_BEVEL_BORDER;
+    
+    /* Width matches the listview width + content padding on both sides + bevel border on both sides */
+    content_width = restore_data->run_list->Width + (2 * RESTORE_CONTENT_PADDING) + (2 * RESTORE_BEVEL_BORDER);
+    
+    /* Height goes from top to bottom of details listview + padding + border */
+    content_height = (restore_data->details_listview->TopEdge + 
+                      restore_data->details_listview->Height + 
+                      RESTORE_CONTENT_PADDING + RESTORE_BEVEL_BORDER) - content_top;
+    
+    /* Fill the content area with solid background color (clear the checkerboard) */
+    /* This fills the area inside the bevel plus the 4-pixel border */
+    SetAPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
+    SetDrMd(rp, JAM1);
+    RectFill(rp,
+             content_left,
+             content_top,
+             content_left + content_width - 1,
+             content_top + content_height - 1);
+    
+    /* Draw the large recessed bevel box for content area */
+    DrawBevelBox(rp,
+                content_left,
+                content_top,
+                content_width,
+                content_height,
+                GT_VisualInfo, restore_data->visual_info,
+                GTBB_Recessed, TRUE,  /* Sunken/recessed effect */
+                TAG_END);
+    
+    FreeScreenDrawInfo(restore_data->screen, dri);
+}
+
+/*------------------------------------------------------------------------*/
+/**
+ * @brief Calculate optimal column widths based on listview width
+ * 
+ * This function calculates column widths that maintain alignment across
+ * different font sizes by using the actual character width.
+ * 
+ * @param listview_width_chars Total width in characters (typically 65)
+ * @param col_widths Output array for column widths [5 columns]
+ */
+/*------------------------------------------------------------------------*/
+static void calculate_column_widths(UWORD listview_width_chars, UWORD *col_widths)
+{
+    /* Default column widths for 65-character listview:
+     * Run Name:     9 chars  "Run_0007"
+     * Date/Time:   16 chars  "2025-10-25 14:32"
+     * Folders:     11 chars  "63 folders"
+     * Size:         8 chars  "46 KB"
+     * Status:      remainder  "Complete"
+     * Separators:   8 chars  (2 spaces x 4)
+     * Total:       52 chars + status
+     */
+    
+    if (col_widths == NULL)
+        return;
+    
+    /* Fixed columns that don't change */
+    col_widths[0] = 9;   /* Run Name */
+    col_widths[1] = 16;  /* Date/Time */
+    col_widths[2] = 11;  /* Folder Count */
+    col_widths[3] = 8;   /* Size */
+    
+    /* Calculate remaining space for status */
+    UWORD used = col_widths[0] + col_widths[1] + col_widths[2] + col_widths[3];
+    UWORD separators = 8;  /* 2 spaces x 4 gaps */
+    
+    if (listview_width_chars > used + separators)
+        col_widths[4] = listview_width_chars - used - separators;
+    else
+        col_widths[4] = 10;  /* Minimum for "Complete" */
+}
+
+/*------------------------------------------------------------------------*/
+/**
  * @brief Format a run list entry for display
+ * 
+ * NOTE: This function assumes a FIXED-WIDTH font (like Topaz).
+ * With proportional fonts, column alignment will not work properly.
+ * The code detects proportional fonts and logs a warning.
  */
 /*------------------------------------------------------------------------*/
 static void format_run_list_entry(struct RestoreRunEntry *entry, char *buffer)
 {
-    /* Fixed-width format for alignment:
-     * "Run_0007  2025-10-25 14:32   63 folders   46 KB  Complete"
+    /* Format for fixed-width fonts with column alignment:
+     * Layout: "Run_0007  2025-10-25 14:32   63 folders   46 KB  Complete"
+     * 
+     * Column widths (for fixed-width fonts):
+     * - Run Name: 9 chars (fixed, "Run_0000" to "Run_9999")
+     * - Separator: 2 spaces
+     * - Date/Time: 16 chars (fixed, "YYYY-MM-DD HH:MM")
+     * - Separator: 2 spaces  
+     * - Folder Count: 11 chars ("1 folders" to "999 folders")
+     * - Separator: 2 spaces
+     * - Size: 8 chars (right-aligned, "46 KB" to "999 MB")
+     * - Separator: 2 spaces
+     * - Status: remaining space ("Complete", "Incomplete", "Orphaned")
+     * 
+     * IMPORTANT: If using proportional fonts, consider changing Workbench
+     * screen font to a fixed-width font like Topaz for proper alignment.
      */
     
     /* Extract just date and time (first 16 chars of dateStr) */
@@ -178,12 +357,19 @@ static void format_run_list_entry(struct RestoreRunEntry *entry, char *buffer)
         strcpy(short_date, entry->dateStr);
     }
     
-    sprintf(buffer, "%-9s  %-16s  %3lu folders  %8s  %s",
-        entry->runName,           /* "Run_0007" */
-        short_date,               /* "2025-10-25 14:32" */
-        entry->folderCount,       /* 63 */
-        entry->sizeStr,           /* "46 KB" */
-        entry->statusStr);        /* "Complete" */
+    /* Format folder count with proper spacing */
+    char folder_str[16];
+    sprintf(folder_str, "%lu folders", entry->folderCount);
+    
+    /* Build the display string with column alignment for fixed-width fonts
+     * This will NOT align properly with proportional fonts!
+     */
+    sprintf(buffer, "%-9s  %-16s  %-11s  %8s  %s",
+        entry->runName,           /* "Run_0007" - left-aligned, 9 chars */
+        short_date,               /* "2025-10-25 14:32" - left-aligned, 16 chars */
+        folder_str,               /* "63 folders" - left-aligned, 11 chars */
+        entry->sizeStr,           /* "46 KB" - right-aligned, 8 chars */
+        entry->statusStr);        /* "Complete" - remaining space */
 }
 
 /*------------------------------------------------------------------------*/
@@ -545,10 +731,14 @@ void update_details_panel(struct iTidyRestoreWindow *restore_data,
         }
         
         /* Format each detail line */
-        sprintf(line_buffer[0], "Run Number:        %04u", 
+        sprintf(line_buffer[0], "iiiiii:        %04u", 
+                selected_entry->runNumber);
+        sprintf(line_buffer[1], "WWWWWW:      %s", 
+                selected_entry->dateStr);
+        /*                sprintf(line_buffer[0], "Run Number:        %04u", 
                 selected_entry->runNumber);
         sprintf(line_buffer[1], "Date Created:      %s", 
-                selected_entry->dateStr);
+                selected_entry->dateStr); */
         sprintf(line_buffer[2], "Source Directory:  %s", 
                 selected_entry->sourceDirectory);
         sprintf(line_buffer[3], "Total Archives:    %lu", 
@@ -753,7 +943,15 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     font = draw_info->dri_Font;
     font_width = font->tf_XSize;
     font_height = font->tf_YSize;
-    append_to_log("Font: width=%d, height=%d\n", font_width, font_height);
+    append_to_log("Font: width=%d, height=%d, flags=0x%02x\n", 
+                  font_width, font_height, font->tf_Flags);
+    
+    /* Check if font is proportional */
+    if (font->tf_Flags & FPF_PROPORTIONAL)
+    {
+        append_to_log("WARNING: Screen uses proportional font - column alignment may be imperfect\n");
+        append_to_log("NOTE: For best results, use a fixed-width font like Topaz\n");
+    }
     
     /* Initialize RastPort for TextLength() measurements */
     InitRastPort(&temp_rp);
@@ -769,8 +967,9 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     
     /* Initialize position tracking */
     /* Start from window borders (using IControl preferences), then add margins */
-    current_x = prefsIControl.currentLeftBarWidth + RESTORE_MARGIN_LEFT;
-    current_y = prefsIControl.currentWindowBarHeight + RESTORE_MARGIN_TOP;
+    /* Add BEVEL_BORDER and CONTENT_PADDING to position gadgets inside the bevel */
+    current_x = prefsIControl.currentLeftBarWidth + RESTORE_MARGIN_LEFT + RESTORE_BEVEL_BORDER + RESTORE_CONTENT_PADDING;
+    current_y = prefsIControl.currentWindowBarHeight + RESTORE_MARGIN_TOP + RESTORE_BEVEL_BORDER + RESTORE_CONTENT_PADDING;
     window_max_width = 0;
     window_max_height = 0;
     
@@ -978,10 +1177,22 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     /*--------------------------------------------------------------------*/
     /* Button Row - PRE-CALCULATED EQUAL WIDTHS                          */
     /*--------------------------------------------------------------------*/
-    current_y = ng.ng_TopEdge + ng.ng_Height + RESTORE_SPACE_Y;
+    /* Buttons positioned OUTSIDE bevel, aligned with bevel INNER edges */
+    /* The bevel has a frame, so we need to account for that */
+    /* Add spacing between bottom of details listview and buttons */
+    current_y = ng.ng_TopEdge + ng.ng_Height + RESTORE_CONTENT_PADDING + RESTORE_BEVEL_BORDER + RESTORE_BUTTON_SPACING;
+    
+    /* Calculate bevel position and dimensions (must match draw_window_background()) */
+    UWORD bevel_left = current_x - RESTORE_CONTENT_PADDING - RESTORE_BEVEL_BORDER;
+    UWORD bevel_width = listview_width + (2 * RESTORE_CONTENT_PADDING) + (2 * RESTORE_BEVEL_BORDER);
+    
+    /* Calculate button row starting position */
+    /* Align with bevel's INNER edge (account for 2-pixel bevel frame) */
+    UWORD button_row_x = bevel_left + 2;
     
     /* Pre-calculate equal button widths */
-    UWORD available_width = listview_width;
+    /* Available width spans from inner left to inner right of bevel frame */
+    UWORD available_width = bevel_width - 4;  /* Subtract bevel frame (2px left + 2px right) */
     
     /* Find maximum button text width */
     UWORD max_btn_text_width = TextLength(&temp_rp, "Restore Run", 11);
@@ -1000,10 +1211,12 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
         equal_button_width = max_btn_text_width + 8;
     
     append_to_log("=== BUTTON ROW PRE-CALCULATION ===\n");
-    append_to_log("Available width: %d, Equal button width: %d\n", available_width, equal_button_width);
+    append_to_log("Bevel width: %d, Available width (minus frame): %d, Equal button width: %d\n", 
+                  bevel_width, available_width, equal_button_width);
+    append_to_log("Button row starts at x=%d (bevel left=%d, aligned with bevel INNER edge)\n", button_row_x, bevel_left);
     
     /* Restore Run Button */
-    ng.ng_LeftEdge = current_x;
+    ng.ng_LeftEdge = button_row_x;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = equal_button_width;
     ng.ng_Height = button_height;
@@ -1019,7 +1232,7 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
         goto cleanup_error;
     
     /* View Folders Button */
-    ng.ng_LeftEdge = current_x + equal_button_width + RESTORE_SPACE_X;
+    ng.ng_LeftEdge = button_row_x + equal_button_width + RESTORE_SPACE_X;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = equal_button_width;
     ng.ng_Height = button_height;
@@ -1035,7 +1248,7 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
         goto cleanup_error;
     
     /* Cancel Button */
-    ng.ng_LeftEdge = current_x + (2 * equal_button_width) + (2 * RESTORE_SPACE_X);
+    ng.ng_LeftEdge = button_row_x + (2 * equal_button_width) + (2 * RESTORE_SPACE_X);
     ng.ng_TopEdge = current_y;
     ng.ng_Width = equal_button_width;
     ng.ng_Height = button_height;
@@ -1143,9 +1356,14 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     append_to_log("Restore window opened successfully\n");
     restore_data->window_open = TRUE;
     
-    /* Refresh gadgets */
+    /* Draw the window background FIRST (before refreshing gadgets) */
+    /* This ensures the pattern and bevel are behind the gadgets */
+    draw_window_background(restore_data);
+    
+    /* Force all gadgets to redraw themselves on top of the background */
+    /* GT_RefreshWindow alone doesn't work with custom backgrounds */
     append_to_log("Refreshing window gadgets\n");
-    GT_RefreshWindow(restore_data->window, NULL);
+    RefreshGList(restore_data->glist, restore_data->window, NULL, -1);
     
     /* Scan for backup runs */
     append_to_log("Scanning for backup runs in: %s\n", restore_data->backup_root_path);
@@ -1308,6 +1526,7 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
             
             case IDCMP_REFRESHWINDOW:
                 GT_BeginRefresh(restore_data->window);
+                draw_window_background(restore_data);  /* Redraw background and panel after window damage */
                 GT_EndRefresh(restore_data->window, TRUE);
                 break;
             
