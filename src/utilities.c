@@ -13,7 +13,7 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "main.h"
+#include "itidy_types.h"
 #include "writeLog.h"
 #include "icon_misc.h"
 

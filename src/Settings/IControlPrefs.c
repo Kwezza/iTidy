@@ -24,20 +24,20 @@ static void saveIControlPrefsDetails(struct IControlPrefs *prefs, struct IContro
 {
     uint32_t ratioMask;
     details->flags = prefs->ic_Flags;
-    details->coerceColors = (prefs->ic_Flags & ICF_COERCE_COLORS) ? true : false;
-    details->coerceLace = (prefs->ic_Flags & ICF_COERCE_LACE) ? true : false;
-    details->strGadFilter = (prefs->ic_Flags & ICF_STRGAD_FILTER) ? true : false;
-    details->menuSnap = (prefs->ic_Flags & ICF_MENUSNAP) ? true : false;
-    details->modePromote = (prefs->ic_Flags & ICF_MODEPROMOTE) ? true : false;
-    details->correctRatio = (prefs->ic_Flags & ICF_CORRECT_RATIO) ? true : false;
-    details->offScrnWin = (prefs->ic_Flags & ICF_OFFSCRNWIN) ? true : false;
-    details->moreSizeGadgets = (prefs->ic_Flags & ICF_MORESIZEGADGETS) ? true : false;
-    details->versioned = (prefs->ic_Flags & ICF_VERSIONED) ? true : false;
+    details->coerceColors = (prefs->ic_Flags & ICF_COERCE_COLORS) ? TRUE : FALSE;
+    details->coerceLace = (prefs->ic_Flags & ICF_COERCE_LACE) ? TRUE : FALSE;
+    details->strGadFilter = (prefs->ic_Flags & ICF_STRGAD_FILTER) ? TRUE : FALSE;
+    details->menuSnap = (prefs->ic_Flags & ICF_MENUSNAP) ? TRUE : FALSE;
+    details->modePromote = (prefs->ic_Flags & ICF_MODEPROMOTE) ? TRUE : FALSE;
+    details->correctRatio = (prefs->ic_Flags & ICF_CORRECT_RATIO) ? TRUE : FALSE;
+    details->offScrnWin = (prefs->ic_Flags & ICF_OFFSCRNWIN) ? TRUE : FALSE;
+    details->moreSizeGadgets = (prefs->ic_Flags & ICF_MORESIZEGADGETS) ? TRUE : FALSE;
+    details->versioned = (prefs->ic_Flags & ICF_VERSIONED) ? TRUE : FALSE;
     ratioMask = prefs->ic_Flags & ICF_RATIO_MASK;
-    details->ratio_9_7 = (ratioMask == ICF_RATIO_9_7) ? true : false;
-    details->ratio_9_8 = (ratioMask == ICF_RATIO_9_8) ? true : false;
-    details->ratio_1_1 = (ratioMask == ICF_RATIO_1_1) ? true : false;
-    details->ratio_8_9 = (ratioMask == ICF_RATIO_8_9) ? true : false;
+    details->ratio_9_7 = (ratioMask == ICF_RATIO_9_7) ? TRUE : FALSE;
+    details->ratio_9_8 = (ratioMask == ICF_RATIO_9_8) ? TRUE : FALSE;
+    details->ratio_1_1 = (ratioMask == ICF_RATIO_1_1) ? TRUE : FALSE;
+    details->ratio_8_9 = (ratioMask == ICF_RATIO_8_9) ? TRUE : FALSE;
     details->legacyLook = !(details->correctRatio) && (ratioMask == 0x1E);
     details->screenTitleBarExtraHeight = 0;
     details->windowTitleBarExtraHeight = 0;
@@ -53,10 +53,10 @@ static void saveIControlPrefsDetails(struct IControlPrefs *prefs, struct IContro
     details->squareProportionalLook = details->titleBar_50 || details->titleBar_67 || details->titleBar_75 || details->titleBar_100;
     if (details->squareProportionalLook)
     {
-        details->ratio_9_7 = false;
-        details->ratio_9_8 = false;
-        details->ratio_1_1 = false;
-        details->ratio_8_9 = false;
+        details->ratio_9_7 = FALSE;
+        details->ratio_9_8 = FALSE;
+        details->ratio_1_1 = FALSE;
+        details->ratio_8_9 = FALSE;
     }
 
     if (details->legacyLook)
@@ -196,27 +196,27 @@ int fetchIControlSettings(struct IControlPrefsDetails *details)
     details->currentWindowBarHeight = 16;
     details->currentLeftBarWidth = 4;
     details->flags = 0x8000001e;
-    details->coerceColors = false;
-    details->coerceLace = false;
-    details->strGadFilter = false;
-    details->menuSnap = false;
-    details->modePromote = false;
-    details->correctRatio = false;
-    details->offScrnWin = false;
-    details->moreSizeGadgets = false;
-    details->versioned = false;
-    details->legacyLook = false;
+    details->coerceColors = FALSE;
+    details->coerceLace = FALSE;
+    details->strGadFilter = FALSE;
+    details->menuSnap = FALSE;
+    details->modePromote = FALSE;
+    details->correctRatio = FALSE;
+    details->offScrnWin = FALSE;
+    details->moreSizeGadgets = FALSE;
+    details->versioned = FALSE;
+    details->legacyLook = FALSE;
     details->ratio_9_7 = true;
-    details->ratio_9_8 = false;
-    details->ratio_1_1 = false;
-    details->ratio_8_9 = false;
+    details->ratio_9_8 = FALSE;
+    details->ratio_1_1 = FALSE;
+    details->ratio_8_9 = FALSE;
     details->screenTitleBarExtraHeight = 0;
     details->windowTitleBarExtraHeight = 0;
-    details->titleBar_50 = false;
-    details->titleBar_67 = false;
-    details->titleBar_75 = false;
-    details->titleBar_100 = false;
-    details->squareProportionalLook = false;
+    details->titleBar_50 = FALSE;
+    details->titleBar_67 = FALSE;
+    details->titleBar_75 = FALSE;
+    details->titleBar_100 = FALSE;
+    details->squareProportionalLook = FALSE;
     return 0;
 #endif
 }

@@ -18,7 +18,6 @@
 #include <proto/iffparse.h>
 #include <math.h>
 
-#include "main.h"
 #include "writeLog.h"
 
 // Define the IControlPrefsDetails structure

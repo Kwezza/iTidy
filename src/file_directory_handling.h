@@ -24,7 +24,7 @@
 #include <devices/trackdisk.h>
 #include <dos/dos.h>
 
-#include "main.h"
+#include "itidy_types.h"
 #include "icon_management.h"
 #include "window_management.h"
 #include "utilities.h"

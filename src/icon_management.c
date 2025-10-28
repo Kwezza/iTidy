@@ -9,7 +9,7 @@
 #include <devices/timer.h>
 #include <clib/timer_protos.h>
 
-#include "main.h"
+#include "itidy_types.h"
 #include "icon_management.h"
 #include "window_management.h"
 #include "file_directory_handling.h"

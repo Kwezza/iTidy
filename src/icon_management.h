@@ -13,7 +13,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "main.h"
 #include "icon_types.h"
 #include "utilities.h"
 #include "writeLog.h"

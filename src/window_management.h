@@ -20,7 +20,7 @@
 #include <intuition/intuition.h>
 #include <graphics/text.h>
 
-#include "main.h"
+
 #include "icon_management.h"
 #include "file_directory_handling.h"
 #include "utilities.h"

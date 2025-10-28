@@ -48,9 +48,9 @@
 #endif
 
 /* VBCC MIGRATION NOTE: Project headers */
+#include "itidy_types.h"
 #include "Settings/IControlPrefs.h"
 #include "Settings/WorkbenchPrefs.h"
-#include "main.h"
 #include "icon_management.h"
 #include "window_management.h"
 #include "utilities.h"

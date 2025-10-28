@@ -5,7 +5,7 @@
 #include <string.h>
 
 #include "icon_misc.h"
-#include "main.h"
+#include "itidy_types.h"
 #include "dos/getDiskDetails.h"
 
 

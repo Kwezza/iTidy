@@ -9,7 +9,15 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "main.h"
+#ifdef __AMIGA__
+#include <prefs/font.h>
+#include <libraries/iffparse.h>
+#include <proto/iffparse.h>
+#endif
+
+#include "itidy_types.h"
+#include "Settings/WorkbenchPrefs.h"
+#include "Settings/IControlPrefs.h"
 #include "icon_management.h"
 #include "window_management.h"
 #include "file_directory_handling.h"

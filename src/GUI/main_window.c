@@ -20,6 +20,7 @@
 
 #include "main_window.h"
 #include "advanced_window.h"
+#include "restore_window.h"
 #include "layout_preferences.h"
 #include "layout_processor.h"
 #include "writeLog.h"
@@ -586,9 +587,29 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     }
     
     /*====================================================================*/
+    /* RESTORE BUTTON                                                     */
+    /*====================================================================*/
+    ng.ng_LeftEdge = 140;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = 130;
+    ng.ng_Height = font_height + 8;
+    ng.ng_GadgetText = "Restore Backups...";
+    ng.ng_GadgetID = GID_RESTORE;
+    ng.ng_Flags = PLACETEXT_IN;
+    
+    win_data->restore_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
+        GA_Disabled, FALSE,
+        TAG_END);
+    if (!gad)
+    {
+        printf("ERROR: Failed to create restore button\n");
+        return FALSE;
+    }
+    
+    /*====================================================================*/
     /* APPLY BUTTON                                                       */
     /*====================================================================*/
-    ng.ng_LeftEdge = 200;
+    ng.ng_LeftEdge = 280;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 100;
     ng.ng_Height = font_height + 8;
@@ -606,7 +627,7 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     /*====================================================================*/
     /* CANCEL BUTTON                                                      */
     /*====================================================================*/
-    ng.ng_LeftEdge = 320;
+    ng.ng_LeftEdge = 390;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 100;
     ng.ng_Height = font_height + 8;
@@ -953,6 +974,41 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                     case GID_CANCEL:
                         printf("Cancel button clicked - closing window\n");
                         continue_running = FALSE;
+                        break;
+
+                    case GID_RESTORE:
+                        {
+                            struct iTidyRestoreWindow restore_data;
+                            
+                            printf("Restore Backups button clicked - opening Restore window\n");
+                            
+                            /* Open restore window (modal) */
+                            if (open_restore_window(&restore_data))
+                            {
+                                /* Disable main window input while restore window is open */
+                                ModifyIDCMP(win_data->window, 0);
+                                
+                                /* Run restore window event loop */
+                                while (handle_restore_window_events(&restore_data))
+                                {
+                                    /* Wait for restore window events */
+                                    WaitPort(restore_data.window->UserPort);
+                                }
+                                
+                                /* Close restore window */
+                                close_restore_window(&restore_data);
+                                
+                                /* Re-enable main window input */
+                                ModifyIDCMP(win_data->window, 
+                                    IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW);
+                                
+                                printf("Restore window closed\n");
+                            }
+                            else
+                            {
+                                printf("ERROR: Failed to open Restore window\n");
+                            }
+                        }
                         break;
 
                     case GID_ADVANCED:

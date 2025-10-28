@@ -5,7 +5,7 @@
 #include <exec/types.h>
 #include <proto/dos.h>
 #include "get_fonts.h"
-#include "main.h"
+#include "itidy_types.h"
 //#include "file_directory_handling.h"
 FontPref *fontPrefs = NULL;
 

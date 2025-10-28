@@ -2,7 +2,6 @@
 #define WORKBENCH_PREFS_H
 
 #include <exec/types.h>
-#include "main.h"
 #include "writeLog.h"
 
 /* Define the WorkbenchSettings structure */

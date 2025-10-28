@@ -19,7 +19,7 @@
 #include <platform/amiga_headers.h>
 
 #include "cli_utilities.h"
-#include "main.h"
+#include "itidy_types.h"
 
 /* VBCC MIGRATION NOTE: Forward declarations for internal functions */
 static void wrap_and_page_text_with_markup(const char *text, int indent, int width, int maxRows, int *printedRows);

@@ -8,7 +8,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "main.h"
+
 #include "dos/getDiskDetails.h"
 
 #define MAX_LEFT_OUT_ICONS 20

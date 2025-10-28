@@ -70,7 +70,8 @@ BACKUP_SRCS = \
 # GUI source files
 GUI_SRCS = \
 	$(SRC_DIR)/GUI/main_window.c \
-	$(SRC_DIR)/GUI/advanced_window.c
+	$(SRC_DIR)/GUI/advanced_window.c \
+	$(SRC_DIR)/GUI/restore_window.c
 
 # DOS subdirectory sources
 DOS_SRCS = \
@@ -203,7 +204,7 @@ help:
 
 # Core dependencies (simplified - expand as needed)
 # GUI MIGRATION NOTE: Changed from main.o to main_gui.o
-$(OUT_DIR)/main_gui.o: $(SRC_DIR)/main_gui.c $(SRC_DIR)/main.h $(SRC_DIR)/GUI/main_window.h
+$(OUT_DIR)/main_gui.o: $(SRC_DIR)/main_gui.c $(SRC_DIR)/GUI/main_window.h
 $(OUT_DIR)/icon_types.o: $(SRC_DIR)/icon_types.c $(SRC_DIR)/icon_types.h
 $(OUT_DIR)/icon_misc.o: $(SRC_DIR)/icon_misc.c $(SRC_DIR)/icon_misc.h
 $(OUT_DIR)/icon_management.o: $(SRC_DIR)/icon_management.c $(SRC_DIR)/icon_management.h
@@ -229,6 +230,7 @@ $(OUT_DIR)/Settings/get_fonts.o: $(SRC_DIR)/Settings/get_fonts.c $(SRC_DIR)/Sett
 # GUI MIGRATION NOTE: Added dependency for GUI window module
 $(OUT_DIR)/GUI/main_window.o: $(SRC_DIR)/GUI/main_window.c $(SRC_DIR)/GUI/main_window.h
 $(OUT_DIR)/GUI/advanced_window.o: $(SRC_DIR)/GUI/advanced_window.c $(SRC_DIR)/GUI/advanced_window.h
+$(OUT_DIR)/GUI/restore_window.o: $(SRC_DIR)/GUI/restore_window.c $(SRC_DIR)/GUI/restore_window.h
 
 # Platform-specific
 $(OUT_DIR)/platform/host_platform.o: $(SRC_DIR)/platform/host_platform.c $(INC_DIR)/platform/platform.h

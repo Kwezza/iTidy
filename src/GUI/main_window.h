@@ -31,6 +31,7 @@
 #define GID_ADVANCED         14
 #define GID_APPLY            15
 #define GID_CANCEL           16
+#define GID_RESTORE          17
 
 /*------------------------------------------------------------------------*/
 /* Main Window Data Structure                                            */
@@ -58,6 +59,7 @@ struct iTidyMainWindow
     struct Gadget *iconupgrade_check;
     struct Gadget *skip_hidden_check;
     struct Gadget *advanced_btn;
+    struct Gadget *restore_btn;
     struct Gadget *apply_btn;
     struct Gadget *cancel_btn;
     

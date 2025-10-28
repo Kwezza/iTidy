@@ -7,7 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "main.h"
+#include "itidy_types.h"
 #include "icon_management.h"
 #include "window_management.h"
 #include "file_directory_handling.h"

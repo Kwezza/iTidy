@@ -7,7 +7,7 @@
 #include <dos/dos.h>
 #include <exec/types.h>
 #include <proto/dos.h>
-#include "main.h"
+
 //#include "file_directory_handling.h"
 
 #define FONT_BUFFER_SIZE 16   /* Bytes per hex dump line */

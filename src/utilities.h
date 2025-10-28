@@ -19,7 +19,7 @@
 #include <proto/dos.h>
 #include <dos/dos.h>
 #include <math.h>
-#include "main.h"
+
 #include "writeLog.h"
 #include "icon_misc.h"
 

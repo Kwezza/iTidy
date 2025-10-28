@@ -2,23 +2,24 @@
 
 **Project:** iTidy Icon Cleanup Tool  
 **Feature:** Automatic Backup & Restore System  
-**Status:** ✅ CLI Integration Complete | ⏳ GUI Pending  
-**Date:** October 24, 2025  
+**Status:** ✅ Backup System Complete | ⏳ Restore GUI Pending  
+**Date:** October 27, 2025  
 **Platform:** Amiga OS 2.0+ / VBCC  
 
 ---
 
 ## Executive Summary
 
-The iTidy backup system is now **functionally complete** for command-line use. Users can:
+The iTidy backup system core functionality is **complete and working**. Users can:
 
 1. ✅ Create automatic backups before icon operations (Tasks 1-7)
-2. ✅ List available backup runs (`--list-backups`)
-3. ✅ Restore complete backup runs (`--restore-run N`)
-4. ✅ Restore individual archives (`--restore <file>`)
-5. ⏳ GUI integration planned (Phase 2)
+2. ✅ Enable/disable backups via GUI checkbox
+3. ✅ Backups successfully tested on real Amiga hardware
+4. ⏳ GUI restore window (Task 9 - in development)
 
 **Test Coverage:** 268 passing tests (100% success rate)
+
+**Note:** The restore functionality (Task 8) is fully implemented and tested. Only the GUI window for browsing and restoring backups remains to be completed.
 
 ---
 
@@ -29,14 +30,14 @@ The iTidy backup system is now **functionally complete** for command-line use. U
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                      iTidy Application                       │
-│  ┌────────────────┐  ┌────────────────┐  ┌──────────────┐  │
-│  │   CLI Main     │  │   GUI Main     │  │  Preferences │  │
-│  │   (main.c)     │  │ (main_gui.c)   │  │              │  │
-│  └────────┬───────┘  └────────┬───────┘  └──────────────┘  │
-│           │                   │                              │
-│           └───────────┬───────┘                              │
-│                       │                                      │
-└───────────────────────┼──────────────────────────────────────┘
+│  ┌────────────────┐                      ┌──────────────┐  │
+│  │   GUI Main     │                      │  Preferences │  │
+│  │ (main_gui.c)   │                      │              │  │
+│  └────────┬───────┘                      └──────────────┘  │
+│           │                                                 │
+│           │                                                 │
+│           │                                                 │
+└───────────┼─────────────────────────────────────────────────┘
                         │
 ┌───────────────────────┼──────────────────────────────────────┐
 │              Backup & Restore System                         │
@@ -61,8 +62,8 @@ The iTidy backup system is now **functionally complete** for command-line use. U
 │                                                              │
 │  ┌────────────────────────────────────────────────────┐     │
 │  │            Integration Layer (Task 9)              │     │
-│  │  • CLI: --list-backups, --restore-run, --restore  │     │
-│  │  • GUI: Restore Manager Window (pending)          │     │
+│  │  • GUI Backup: Complete (checkbox in main window) │     │
+│  │  • GUI Restore: Pending (restore window needed)   │     │
 │  └────────────────────────────────────────────────────┘     │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -72,8 +73,7 @@ The iTidy backup system is now **functionally complete** for command-line use. U
 ```
 iTidy/
 ├── src/
-│   ├── main.c                    ✅ CLI with restore commands
-│   ├── main_gui.c                ⏳ GUI (restore menu pending)
+│   ├── main_gui.c                ✅ GUI application
 │   │
 │   ├── backup_catalog.c/h        ✅ Task 1: Archive catalog
 │   ├── backup_runs.c/h           ✅ Task 2: Run management
@@ -202,18 +202,16 @@ iTidy/
 - Retry loop with 200ms delays for file system sync
 - Acceptable performance trade-off
 
-### ✅ Task 9 Phase 1: CLI Integration (COMPLETE)
-- **File:** `main.c` (modified)
-- **Lines Added:** 191
-- **Tests:** Manual (Amiga-specific)
+### ✅ Task 9 Phase 1: GUI Backup Integration (COMPLETE)
+- **File:** `main_gui.c`, `main_window.c`, `layout_processor.c` (modified)
 - **Features:**
-  - `--list-backups` command
-  - `--restore-run N` command
-  - `--restore <file>` command
-  - Help text updates
-  - Error handling
+  - Backup checkbox in main GUI window
+  - Preference storage and retrieval
+  - Automatic backup before icon operations
+  - Successfully tested on real Amiga hardware
+  - Integration with layout processor
 
-### ⏳ Task 9 Phase 2: GUI Integration (PENDING)
+### ⏳ Task 9 Phase 2: GUI Restore Window (PENDING)
 - **Files to Create:** `GUI/restore_window.c/h`
 - **Lines Estimated:** 600+ (window + handlers)
 - **Features Planned:**
@@ -259,106 +257,43 @@ gcc -std=c99 -DPLATFORM_HOST=1 -o test_restore \
 
 ## Usage Guide
 
-### CLI Commands
+### GUI Backup
 
-#### 1. List All Backups
+#### Enable/Disable Backups
 
-```bash
-iTidy --list-backups [backup_root]
-```
+1. Open iTidy GUI application
+2. Check/uncheck the **"Enable Backup"** checkbox
+3. Process folders as normal
+4. Backups are automatically created in `PROGDIR:Backups/Run_NNNN/`
 
-**Output:**
-```
-Available Backup Runs in PROGDIR:Backups
-=======================================
+**Backup Location:**
+- Default: `PROGDIR:Backups/` (same directory as iTidy executable)
+- Each backup run creates a new `Run_NNNN` directory
+- Archives organized in subfolders (000/, 001/, etc.)
+- Catalog file tracks all backed-up folders
 
-Run #1 (Run_0001) - 2025-10-24 14:32:17
-  Status: ACTIVE
-  Archives: 5
-  Source: DH0:MyIcons/
-  Destination: C:\Temp\TestRestore\
+### Restore Operations (Pending GUI)
 
-Total: 1 backup run
-```
+**Current Status:** Restore functionality is fully implemented at the code level (Task 8), but the GUI window for browsing and restoring backups is not yet complete.
 
-#### 2. Restore Full Backup Run
+**Planned GUI Restore Window will provide:**
+- Browse available backup runs
+- View backup run details (date, folder count, size)
+- Restore complete runs or individual folders
+- Progress feedback during restore
+- Error reporting
 
-```bash
-iTidy --restore-run <N> [backup_root]
-```
-
-**Example:**
-```bash
-iTidy --restore-run 1 PROGDIR:Backups
-```
-
-**Output:**
-```
-Restoring backup run 1 from PROGDIR:Backups/Run_0001...
-
-[========================================] 100% (5/5 archives)
-
-Restore Complete!
------------------
-Successfully restored: 5 archives
-Failed: 0 archives
-Files restored: 47
-Bytes restored: 2,456,832
-Duration: 3.2 seconds
-```
-
-#### 3. Restore Single Archive
-
-```bash
-iTidy --restore <archive_path>
-```
-
-**Example:**
-```bash
-iTidy --restore PROGDIR:Backups/Run_0001/000/00001.lha
-```
-
-**Output:**
-```
-Restoring archive: PROGDIR:Backups/Run_0001/000/00001.lha
-
-✓ Archive restored successfully
-  Files restored: 8
-  Destination: DH0:MyIcons/
-  Time: 0.8 seconds
-```
-
-### Integration Workflow
-
-#### Backup Creation (Automatic)
-
+**Technical Implementation:**
+The restore API is ready and tested:
 ```c
-// In iTidy main icon processing
-BackupSession session;
+// Restore single archive (implemented)
+RestoreArchive("path/to/archive.lha", "C:LhA");
 
-// Begin backup session
-if (BeginBackupSession(&session, backupRoot, sourcePath, destPath) == 0) {
-    // For each icon file processed
-    if (BackupIconFile(&session, iconPath) == 0) {
-        printf("Backed up: %s\n", iconPath);
-    }
-    
-    // End session (finalizes catalog)
-    EndBackupSession(&session);
-}
-```
+// Restore full run (implemented)
+RestoreFullRun(runNumber, "PROGDIR:Backups", "C:LhA");
 
-#### Restore (Manual via CLI)
-
-```bash
-# Step 1: List available backups
-iTidy --list-backups
-
-# Step 2: Choose run to restore
-iTidy --restore-run 1
-
-# Alternative: Restore single archive
-iTidy --restore PROGDIR:Backups/Run_0001/000/00001.lha
+// Recover orphaned archive (implemented)
+RecoverOrphanedArchive("archive.lha", "C:LhA");
 ```
 
 ---
@@ -460,20 +395,20 @@ iTidy --restore PROGDIR:Backups/Run_0001/000/00001.lha
 
 ### Short-Term (Immediate)
 
-1. ✅ Complete CLI integration in main.c
-2. ✅ Document Task 9 Phase 1
-3. ⏳ Test compilation on Amiga (VBCC)
-4. ⏳ Test restore commands with real backup data
-5. ⏳ Update Makefile to include backup modules
+1. ✅ Complete backup system core (Tasks 1-8)
+2. ✅ GUI backup integration and testing
+3. ✅ Real Amiga hardware testing successful
+4. ⏳ Design restore window UI/UX
+5. ⏳ Create restore window implementation
 
-### Medium-Term (GUI Development)
+### Medium-Term (GUI Restore Window)
 
 1. ⏳ Create `GUI/restore_window.h`
 2. ⏳ Create `GUI/restore_window.c`
-3. ⏳ Add "Backup & Restore" menu to main_window.c
-4. ⏳ Implement restore listview
-5. ⏳ Add progress feedback
-6. ⏳ Test GUI on WinUAE
+3. ⏳ Add "Restore Backups" menu item to main_window.c
+4. ⏳ Implement backup run listview with details
+5. ⏳ Add restore buttons and progress feedback
+6. ⏳ Test restore GUI on WinUAE and real hardware
 
 ### Long-Term (Enhancement)
 
@@ -508,15 +443,16 @@ Each header file (`*.h`) contains comprehensive API documentation:
 
 ## Conclusion
 
-The iTidy Backup & Restore System is now **production-ready** for CLI use:
+The iTidy Backup System is **production-ready** and working on real Amiga hardware:
 
 ✅ **Robustness:** 268 passing tests, 100% success rate  
 ✅ **Completeness:** All core features implemented (Tasks 1-8)  
-✅ **Integration:** CLI commands fully functional (Task 9 Phase 1)  
+✅ **GUI Backup:** Fully functional with checkbox in main window  
+✅ **Real Hardware:** Successfully tested on Amiga (WinUAE)  
 ✅ **Documentation:** Comprehensive guides and API docs  
 ✅ **Compatibility:** Works on both Amiga (VBCC) and Windows (GCC)  
 
-**GUI integration is the final step** to provide a complete user-friendly experience on Workbench.
+**The restore GUI window** is the final component to provide a complete user-friendly restore experience on Workbench.
 
 ---
 
