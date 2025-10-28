@@ -1,0 +1,41 @@
+Compiling [build/amiga/main_gui.o] from src/main_gui.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/main_gui.c -o build/amiga/main_gui.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main_gui.c":52
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main_gui.c":52
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main_gui.c":52
+>int ICON_SPACING_X 
+error 36 in line 83 of "src\main_gui.c": declarator expected
+>int ICON_SPACING_X 
+warning 369 in line 83 of "src\main_gui.c": declaration expected
+>int ICON_SPACING_X = 
+warning 369 in line 83 of "src\main_gui.c": declaration expected
+>int ICON_SPACING_X = 9;
+warning 369 in line 83 of "src\main_gui.c": declaration expected
+>int ICON_SPACING_X = 9;
+warning 369 in line 83 of "src\main_gui.c": declaration expected
+>int ICON_SPACING_Y 
+error 36 in line 84 of "src\main_gui.c": declarator expected
+>int ICON_SPACING_Y 
+warning 369 in line 84 of "src\main_gui.c": declaration expected
+>int ICON_SPACING_Y = 
+warning 369 in line 84 of "src\main_gui.c": declaration expected
+>int ICON_SPACING_Y = 7;
+warning 369 in line 84 of "src\main_gui.c": declaration expected
+>int ICON_SPACING_Y = 7;
+warning 369 in line 84 of "src\main_gui.c": declaration expected
+>        ICON_SPACING_X = 15;
+error 86 in line 260 of "src\main_gui.c": lvalue required for assignment
+>        ICON_SPACING_Y = 10;
+error 86 in line 261 of "src\main_gui.c": lvalue required for assignment
+4 errors found!
+vbccm68k -quiet "src\main_gui.c" -o= "C:\Users\kerrytho\AppData\Local\Temp\vbcc068c.asm" -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -hunkdebug -amiga-softfloat  -O=1 -I"%VBCC%"/targets/m68k-amigaos/include failed
+make: *** [Makefile:157: build/amiga/main_gui.o] Error 1

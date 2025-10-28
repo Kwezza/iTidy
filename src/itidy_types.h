@@ -14,8 +14,6 @@
 #define GAP_BETWEEN_ICON_AND_TEXT 2
 #define ICON_START_X 10
 #define ICON_START_Y 8
-#define ICON_SPACING_X 9
-#define ICON_SPACING_Y 7
 #define PADDING_WIDTH 10
 #define PADDING_HEIGHT 10
 #define ID_FONT MAKE_ID('F','O','N','T')
@@ -105,6 +103,8 @@ extern int screenHight;
 extern int screenWidth;
 extern int WindowWidthTextOnly;
 extern int WindowHeightTextOnly;
+extern int ICON_SPACING_X;
+extern int ICON_SPACING_Y;
 
 extern char filePath[256];
 
