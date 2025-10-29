@@ -49,6 +49,8 @@ typedef struct {
 static BOOL RestoreCatalogEntryCallback(const BackupArchiveEntry *entry, void *userData) {
     CatalogIterContext *iterData = (CatalogIterContext*)userData;
     RestoreContext *rctx = iterData->restoreCtx;
+    char archivePath[MAX_RESTORE_PATH];
+    const char *destPath;
     
     /* Skip failed backups (they have no valid archive) */
     if (!entry->successful) {
@@ -56,15 +58,65 @@ static BOOL RestoreCatalogEntryCallback(const BackupArchiveEntry *entry, void *u
     }
     
     /* Build full archive path */
-    char archivePath[MAX_RESTORE_PATH];
     snprintf(archivePath, sizeof(archivePath), "%s/%s%s",
             iterData->runDir, entry->subFolder, entry->archiveName);
     
-    /* Restore this archive */
-    RestoreStatus status = RestoreArchive(rctx, archivePath);
+    /* Use the catalog entry's original path as the destination */
+    destPath = entry->originalPath;
     
-    /* Note: Statistics already updated by RestoreArchive */
-    (void)status; /* Suppress unused warning */
+    #ifdef PLATFORM_AMIGA
+    printf("Restoring archive: %s\n", archivePath);
+    printf("  -> Restoring to: %s\n", destPath);
+    #else
+    printf("Restoring archive: %s\n", archivePath);
+    printf("  -> Restoring to: %s\n", destPath);
+    #endif
+    
+    /* Check if archive exists */
+    if (!FileExists(archivePath)) {
+        RecordError(rctx, "Archive file not found");
+        UpdateStatistics(rctx, FALSE, 0);
+        return TRUE;  /* Continue with other archives */
+    }
+    
+    /* Validate destination path */
+    if (!ValidateRestorePath(destPath)) {
+        char error[256];
+        sprintf(error, "Invalid restore path: %s", destPath);
+        RecordError(rctx, error);
+        UpdateStatistics(rctx, FALSE, 0);
+        return TRUE;  /* Continue with other archives */
+    }
+    
+    /* Ensure destination directory exists */
+    if (!DirectoryExists(destPath)) {
+        if (!CreateDirectoryRecursive(destPath)) {
+            char error[256];
+            sprintf(error, "Failed to create directory: %s", destPath);
+            RecordError(rctx, error);
+            UpdateStatistics(rctx, FALSE, 0);
+            return TRUE;  /* Continue with other archives */
+        }
+    }
+    
+    /* Extract archive to destination */
+    if (!ExtractLhaArchive(rctx->lhaPath, archivePath, destPath)) {
+        char error[256];
+        sprintf(error, "Failed to extract archive to: %s", destPath);
+        RecordError(rctx, error);
+        UpdateStatistics(rctx, FALSE, 0);
+        return TRUE;  /* Continue with other archives */
+    }
+    
+    /* Get archive size for statistics */
+    ULONG archiveSize = GetArchiveSize(archivePath);
+    UpdateStatistics(rctx, TRUE, archiveSize);
+    
+    #ifdef PLATFORM_AMIGA
+    printf("  -> Restored successfully\n");
+    #else
+    printf("  -> Restored successfully\n");
+    #endif
     
     return TRUE;  /* Continue parsing */
 }
@@ -269,6 +321,13 @@ RestoreStatus RestoreArchive(RestoreContext *ctx, const char *archivePath) {
     if (!ctx || !archivePath) return RESTORE_INVALID_PARAMS;
     if (!ctx->lhaAvailable) return RESTORE_LHA_NOT_FOUND;
     
+    /* Log start of restore */
+    #ifdef PLATFORM_AMIGA
+    printf("Restoring archive: %s\n", archivePath);
+    #else
+    printf("Restoring archive: %s\n", archivePath);
+    #endif
+    
     /* Check if archive exists */
     if (!FileExists(archivePath)) {
         RecordError(ctx, "Archive file not found");
@@ -284,6 +343,12 @@ RestoreStatus RestoreArchive(RestoreContext *ctx, const char *archivePath) {
         UpdateStatistics(ctx, FALSE, 0);
         return RESTORE_MARKER_READ_FAILED;
     }
+    
+    #ifdef PLATFORM_AMIGA
+    printf("  -> Restoring to: %s\n", originalPath);
+    #else
+    printf("  -> Restoring to: %s\n", originalPath);
+    #endif
     
     /* Validate destination path */
     if (!ValidateRestorePath(originalPath)) {
@@ -318,6 +383,12 @@ RestoreStatus RestoreArchive(RestoreContext *ctx, const char *archivePath) {
     ULONG archiveSize = GetArchiveSize(archivePath);
     UpdateStatistics(ctx, TRUE, archiveSize);
     
+    #ifdef PLATFORM_AMIGA
+    printf("  -> Restored successfully\n");
+    #else
+    printf("  -> Restored successfully\n");
+    #endif
+    
     return RESTORE_OK;
 }
 
@@ -330,6 +401,18 @@ RestoreStatus RestoreFullRun(RestoreContext *ctx, const char *runDirectory) {
     if (!ctx || !runDirectory) return RESTORE_INVALID_PARAMS;
     if (!ctx->lhaAvailable) return RESTORE_LHA_NOT_FOUND;
     
+    #ifdef PLATFORM_AMIGA
+    printf("\n========================================\n");
+    printf("Starting Full Run Restore\n");
+    printf("Run Directory: %s\n", runDirectory);
+    printf("========================================\n\n");
+    #else
+    printf("\n========================================\n");
+    printf("Starting Full Run Restore\n");
+    printf("Run Directory: %s\n", runDirectory);
+    printf("========================================\n\n");
+    #endif
+    
     /* Build catalog path */
     char catalogPath[MAX_RESTORE_PATH];
     snprintf(catalogPath, sizeof(catalogPath), "%s/%s", runDirectory, CATALOG_FILENAME);
@@ -339,6 +422,12 @@ RestoreStatus RestoreFullRun(RestoreContext *ctx, const char *runDirectory) {
         RecordError(ctx, "Catalog file not found");
         return RESTORE_CATALOG_NOT_FOUND;
     }
+    
+    #ifdef PLATFORM_AMIGA
+    printf("Reading catalog: %s\n\n", catalogPath);
+    #else
+    printf("Reading catalog: %s\n\n", catalogPath);
+    #endif
     
     /* Setup context for catalog iteration */
     CatalogIterContext iterCtx = {
@@ -351,6 +440,25 @@ RestoreStatus RestoreFullRun(RestoreContext *ctx, const char *runDirectory) {
         RecordError(ctx, "Failed to parse catalog file");
         return RESTORE_CATALOG_READ_FAILED;
     }
+    
+    /* Print summary */
+    #ifdef PLATFORM_AMIGA
+    printf("\n========================================\n");
+    printf("Restore Summary\n");
+    printf("========================================\n");
+    printf("Archives restored: %u\n", ctx->stats.archivesRestored);
+    printf("Archives failed:   %u\n", ctx->stats.archivesFailed);
+    printf("Total data:        %lu bytes\n", ctx->stats.totalBytesRestored);
+    printf("========================================\n\n");
+    #else
+    printf("\n========================================\n");
+    printf("Restore Summary\n");
+    printf("========================================\n");
+    printf("Archives restored: %u\n", ctx->stats.archivesRestored);
+    printf("Archives failed:   %u\n", ctx->stats.archivesFailed);
+    printf("Total data:        %lu bytes\n", ctx->stats.totalBytesRestored);
+    printf("========================================\n\n");
+    #endif
     
     /* Return success if at least one archive was restored */
     if (ctx->stats.archivesRestored > 0) {

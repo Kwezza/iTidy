@@ -174,6 +174,7 @@ typedef struct {
     /* Archive metadata */
     ULONG sizeBytes;                    /* Archive file size in bytes */
     ULONG timestamp;                    /* Creation timestamp */
+    UWORD iconCount;                    /* Number of .info files backed up */
     
     /* Original path (for restore) */
     char originalPath[MAX_BACKUP_PATH]; /* Full path to original folder */

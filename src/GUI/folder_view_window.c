@@ -627,8 +627,11 @@ static BOOL parse_catalog_callback(const char *line, struct iTidyFolderViewWindo
     struct FolderEntry *entry;
     char *path_start;
     char *size_start;
+    char *icons_start;
     char *path_copy;
     char size_str[32];
+    char icons_str[16];
+    char combined_str[64];
     UWORD path_len;
     UWORD depth;
     
@@ -649,7 +652,7 @@ static BOOL parse_catalog_callback(const char *line, struct iTidyFolderViewWindo
     }
     
     /* Look for catalog entries with "Original Path" column */
-    /* Format: "00001.lha  | 000/      | 11 KB   | PC:Workbench" */
+    /* Format: "00001.lha  | 000/      | 11 KB   | 15    | PC:Workbench" */
     path_start = strrchr(line, '|');
     if (path_start != NULL)
     {
@@ -663,8 +666,8 @@ static BOOL parse_catalog_callback(const char *line, struct iTidyFolderViewWindo
         /* Check if we have a valid path (contains '/' or ':') */
         if (strchr(path_start, '/') != NULL || strchr(path_start, ':') != NULL)
         {
-            /* Extract size from the third column */
-            char *pipe1, *pipe2, *pipe3;
+            /* Extract size from the third column and icons from the fourth column */
+            char *pipe1, *pipe2, *pipe3, *pipe4;
             pipe1 = strchr(line, '|');
             if (pipe1 != NULL)
             {
@@ -674,6 +677,8 @@ static BOOL parse_catalog_callback(const char *line, struct iTidyFolderViewWindo
                     pipe3 = strchr(pipe2 + 1, '|');
                     if (pipe3 != NULL)
                     {
+                        pipe4 = strchr(pipe3 + 1, '|');
+                        
                         /* Extract size between pipe2 and pipe3 */
                         size_start = pipe2 + 1;
                         while (*size_start == ' ' || *size_start == '\t')
@@ -704,6 +709,36 @@ static BOOL parse_catalog_callback(const char *line, struct iTidyFolderViewWindo
                             }
                         }
                         size_str[i] = '\0';
+                        
+                        /* Extract icons count between pipe3 and pipe4 (if pipe4 exists) */
+                        icons_str[0] = '\0';
+                        if (pipe4 != NULL)
+                        {
+                            icons_start = pipe3 + 1;
+                            while (*icons_start == ' ' || *icons_start == '\t')
+                            {
+                                icons_start++;
+                            }
+                            
+                            /* Copy icons string */
+                            i = 0;
+                            while (icons_start < pipe4 && i < sizeof(icons_str) - 1 &&
+                                   *icons_start != ' ' && *icons_start != '\t')
+                            {
+                                icons_str[i++] = *icons_start++;
+                            }
+                            icons_str[i] = '\0';
+                        }
+                        
+                        /* Combine size and icons into format "size / icons icons" */
+                        if (icons_str[0] != '\0')
+                        {
+                            sprintf(combined_str, "%s / %s icons", size_str, icons_str);
+                        }
+                        else
+                        {
+                            strcpy(combined_str, size_str);
+                        }
                     }
                 }
             }
@@ -749,7 +784,7 @@ static BOOL parse_catalog_callback(const char *line, struct iTidyFolderViewWindo
                 return FALSE;
             }
             
-            format_folder_display_with_size(entry->path, depth, size_str, entry->display_text, 300);
+            format_folder_display_with_size(entry->path, depth, combined_str, entry->display_text, 300);
             
             /* Set up node for ListView */
             entry->node.ln_Name = entry->display_text;
@@ -757,8 +792,8 @@ static BOOL parse_catalog_callback(const char *line, struct iTidyFolderViewWindo
             /* Add to list */
             AddTail(&folder_data->folder_entries, (struct Node *)entry);
             
-            append_to_log("Added folder: %s (depth %u, original: %s, size: %s)\n", 
-                         entry->display_text, depth, entry->path, size_str);
+            append_to_log("Added folder: %s (depth %u, original: %s, size/icons: %s)\n", 
+                         entry->display_text, depth, entry->path, combined_str);
         }
     }
     

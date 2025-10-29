@@ -49,12 +49,13 @@ BOOL InitBackupSession(BackupContext *ctx, const BackupPreferences *prefs, const
  * 
  * @param ctx Active backup context (from InitBackupSession)
  * @param folderPath Full path to folder (e.g., "DH0:Projects/MyApp/")
+ * @param iconCount Number of icons being backed up (0 to auto-count)
  * @return BACKUP_OK on success, error code on failure
  * 
  * @note Root folders (e.g., "DH0:") are handled specially.
  * @note Empty folders (no .info files) are skipped automatically.
  */
-BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath);
+BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath, UWORD iconCount);
 
 /**
  * Close a backup session.
@@ -78,6 +79,14 @@ void CloseBackupSession(BackupContext *ctx);
  * @return TRUE if .info files exist, FALSE otherwise
  */
 BOOL FolderHasInfoFiles(const char *folderPath);
+
+/**
+ * Count the number of .info files in a folder.
+ * 
+ * @param folderPath Path to folder
+ * @return Number of .info files found (0 if none or error)
+ */
+UWORD CountInfoFiles(const char *folderPath);
 
 #ifdef __cplusplus
 }

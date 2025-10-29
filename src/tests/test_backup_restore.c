@@ -392,7 +392,7 @@ TEST(test_backup_and_restore_single_folder) {
     strncpy(prefs.backupRootPath, "./test_backups", sizeof(prefs.backupRootPath));
     
     ASSERT(InitBackupSession(&backupCtx, &prefs, testSource) == TRUE);
-    BackupStatus backupStatus = BackupFolder(&backupCtx, testSource);
+    BackupStatus backupStatus = BackupFolder(&backupCtx, testSource, 0);
     CloseBackupSession(&backupCtx);
     
     ASSERT(backupStatus == BACKUP_OK);
@@ -466,9 +466,9 @@ TEST(test_restore_full_run_multiple_folders) {
     strncpy(prefs.backupRootPath, "./test_backups_multi", sizeof(prefs.backupRootPath));
     
     ASSERT(InitBackupSession(&backupCtx, &prefs, NULL) == TRUE);
-    ASSERT(BackupFolder(&backupCtx, testDir1) == BACKUP_OK);
-    ASSERT(BackupFolder(&backupCtx, testDir2) == BACKUP_OK);
-    ASSERT(BackupFolder(&backupCtx, testDir3) == BACKUP_OK);
+    ASSERT(BackupFolder(&backupCtx, testDir1, 0) == BACKUP_OK);
+    ASSERT(BackupFolder(&backupCtx, testDir2, 0) == BACKUP_OK);
+    ASSERT(BackupFolder(&backupCtx, testDir3, 0) == BACKUP_OK);
     CloseBackupSession(&backupCtx);
     
     /* Delete all source files */
@@ -528,7 +528,7 @@ TEST(test_orphaned_archive_recovery) {
     strncpy(prefs.backupRootPath, "./test_orphan_backup", sizeof(prefs.backupRootPath));
     
     ASSERT(InitBackupSession(&backupCtx, &prefs, testSource) == TRUE);
-    ASSERT(BackupFolder(&backupCtx, testSource) == BACKUP_OK);
+    ASSERT(BackupFolder(&backupCtx, testSource, 0) == BACKUP_OK);
     CloseBackupSession(&backupCtx);
     
     /* Delete source file */

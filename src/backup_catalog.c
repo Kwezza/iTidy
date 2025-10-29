@@ -32,8 +32,8 @@
 
 #define CATALOG_VERSION "iTidy Backup Catalog v1.0"
 #define CATALOG_SEPARATOR "========================================"
-#define CATALOG_COLUMN_HEADER "# Index    | Subfolder | Size    | Original Path"
-#define CATALOG_COLUMN_DIVIDER "-----------+-----------+---------+------------------"
+#define CATALOG_COLUMN_HEADER "# Index    | Subfolder | Size    | Icons | Original Path"
+#define CATALOG_COLUMN_DIVIDER "-----------+-----------+---------+-------+------------------"
 #define MAX_LINE_LENGTH 512
 
 /*========================================================================*/
@@ -228,11 +228,12 @@ BOOL AppendCatalogEntry(BackupContext *ctx, const BackupArchiveEntry *entry) {
     /* Format size */
     FormatSizeForCatalog(sizeStr, entry->sizeBytes);
     
-    /* Build entry line: "00042.lha  | 000/      | 22 KB   | DH0:Projects/MyFolder/" */
-    snprintf(line, sizeof(line), "%-10s | %-9s | %-7s | %s",
+    /* Build entry line: "00042.lha  | 000/      | 22 KB   | 5     | DH0:Projects/MyFolder/" */
+    snprintf(line, sizeof(line), "%-10s | %-9s | %-7s | %-5hu | %s",
              entry->archiveName,
              entry->subFolder,
              sizeStr,
+             entry->iconCount,
              entry->originalPath);
     
     if (!WriteLineToFile(ctx->catalogFile, line)) {
@@ -326,7 +327,7 @@ BOOL ParseCatalogLine(const char *line, BackupArchiveEntry *outEntry) {
     token = strtok(tempLine, "|");
 #endif
     
-    while (token && field < 4) {
+    while (token && field < 5) {
         /* Trim leading/trailing whitespace */
         while (*token == ' ' || *token == '\t') token++;
         
@@ -371,7 +372,11 @@ BOOL ParseCatalogLine(const char *line, BackupArchiveEntry *outEntry) {
                 }
                 break;
                 
-            case 3: /* Original path */
+            case 3: /* Icon count */
+                sscanf(token, "%hu", &outEntry->iconCount);
+                break;
+                
+            case 4: /* Original path */
                 strncpy(outEntry->originalPath, token, MAX_BACKUP_PATH - 1);
                 break;
         }
@@ -384,8 +389,8 @@ BOOL ParseCatalogLine(const char *line, BackupArchiveEntry *outEntry) {
 #endif
     }
     
-    /* Valid entry must have all 4 fields */
-    if (field == 4 && outEntry->archiveName[0] && outEntry->originalPath[0]) {
+    /* Valid entry must have all 5 fields */
+    if (field == 5 && outEntry->archiveName[0] && outEntry->originalPath[0]) {
         return TRUE;
     }
     

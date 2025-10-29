@@ -49,6 +49,8 @@
 #include <stdio.h>
 
 #include "restore_window.h"
+#include "../backup_restore.h"
+#include "../writeLog.h"
 #include "folder_view_window.h"
 #include "test_simple_window.h"  /* TESTING: Simple window test */
 #include "../backup_runs.h"
@@ -815,14 +817,51 @@ BOOL perform_restore_run(struct iTidyRestoreWindow *restore_data,
                   run_entry->runNumber,
                   restore_data->backup_root_path);
     
-    /* Perform restore - Note: RestoreFullRun interface needs updating */
-    /* For now, assume success if we get here */
-    status = RESTORE_OK;  /* Placeholder until RestoreFullRun API is updated */
+    /* Initialize restore context */
+    RestoreContext restoreCtx;
+    if (!InitRestoreContext(&restoreCtx))
+    {
+        append_to_log("ERROR: Failed to initialize restore context - LHA not available\n");
+        
+        sprintf(message, "LHA executable not found!\nRestore requires LHA to be installed.");
+        easy_struct.es_StructSize = sizeof(struct EasyStruct);
+        easy_struct.es_Flags = 0;
+        easy_struct.es_Title = "Restore Failed";
+        easy_struct.es_TextFormat = message;
+        easy_struct.es_GadgetFormat = "OK";
+        EasyRequest(restore_data->window, &easy_struct, NULL);
+        
+        return FALSE;
+    }
+    
+    /* Build full path to run directory */
+    char runPath[512];
+    sprintf(runPath, "%s/%s", restore_data->backup_root_path, run_entry->runName);
+    
+    append_to_log("Restoring from: %s\n", runPath);
+    append_to_log("Restoring %lu folder(s)...\n", run_entry->folderCount);
+    
+    /* Perform the actual restore */
+    status = RestoreFullRun(&restoreCtx, runPath);
+    
+    /* Log results */
+    append_to_log("Restore completed with status: %s\n", GetRestoreStatusMessage(status));
+    append_to_log("Archives restored: %u, Archives failed: %u\n",
+                  restoreCtx.stats.archivesRestored,
+                  restoreCtx.stats.archivesFailed);
+    
+    if (restoreCtx.stats.hasErrors)
+    {
+        append_to_log("First error: %s\n", restoreCtx.stats.firstError);
+    }
     
     /* Show result */
     if (status == RESTORE_OK)
     {
-        sprintf(message, "Successfully restored %s", run_entry->runName);
+        sprintf(message, "Successfully restored %s\n\n%u folder(s) restored\n%u failed",
+                run_entry->runName,
+                restoreCtx.stats.archivesRestored,
+                restoreCtx.stats.archivesFailed);
         
         easy_struct.es_StructSize = sizeof(struct EasyStruct);
         easy_struct.es_Flags = 0;
@@ -835,8 +874,22 @@ BOOL perform_restore_run(struct iTidyRestoreWindow *restore_data,
     }
     else
     {
-        sprintf(message, "Failed to restore %s\nCheck log for details", 
-                run_entry->runName);
+        /* Show detailed error message */
+        const char *statusMsg = GetRestoreStatusMessage(status);
+        
+        if (restoreCtx.stats.hasErrors && restoreCtx.stats.firstError[0] != '\0')
+        {
+            sprintf(message, "Failed to restore %s\n\nStatus: %s\nError: %s\n\nCheck iTidy.log for details",
+                    run_entry->runName,
+                    statusMsg,
+                    restoreCtx.stats.firstError);
+        }
+        else
+        {
+            sprintf(message, "Failed to restore %s\n\nStatus: %s\n\nCheck iTidy.log for details",
+                    run_entry->runName,
+                    statusMsg);
+        }
         
         easy_struct.es_StructSize = sizeof(struct EasyStruct);
         easy_struct.es_Flags = 0;

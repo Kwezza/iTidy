@@ -550,6 +550,7 @@ ULONG GetArchiveSize(const char *archivePath) {
 BOOL ExtractLhaArchive(const char *lhaPath, const char *archivePath,
                        const char *destDir) {
     char command[MAX_COMMAND_LEN];
+    char absArchivePath[512];
     int len;
     
     if (!lhaPath || !archivePath || !destDir) {
@@ -559,14 +560,26 @@ BOOL ExtractLhaArchive(const char *lhaPath, const char *archivePath,
     
     DEBUG_LOG("Extracting archive: %s to %s", archivePath, destDir);
     
+#ifdef PLATFORM_HOST
+    /* On host, use path as-is */
+    strncpy(absArchivePath, archivePath, sizeof(absArchivePath) - 1);
+    absArchivePath[sizeof(absArchivePath) - 1] = '\0';
+#else
+    /* On Amiga, expand PROGDIR: to absolute path */
+    if (!ExpandProgDir(archivePath, absArchivePath, sizeof(absArchivePath))) {
+        append_to_log("[BACKUP] ERROR: Failed to expand archive path for extraction\n");
+        return FALSE;
+    }
+#endif
+    
     /* Build command: lha x archive.lha destdir/ */
 #ifdef PLATFORM_HOST
     len = snprintf(command, sizeof(command), "%s x \"%s\" -w=\"%s\"",
-                  lhaPath, archivePath, destDir);
+                  lhaPath, absArchivePath, destDir);
 #else
     /* Amiga LhA uses different syntax for destination */
     len = snprintf(command, sizeof(command), "%s x %s %s",
-                  lhaPath, archivePath, destDir);
+                  lhaPath, absArchivePath, destDir);
 #endif
     
     if (len >= MAX_COMMAND_LEN) {
@@ -580,6 +593,7 @@ BOOL ExtractLhaArchive(const char *lhaPath, const char *archivePath,
 BOOL ExtractFileFromArchive(const char *lhaPath, const char *archivePath,
                              const char *fileName, const char *destDir) {
     char command[MAX_COMMAND_LEN];
+    char absArchivePath[512];
     int len;
     
     if (!lhaPath || !archivePath || !fileName || !destDir) {
@@ -588,13 +602,25 @@ BOOL ExtractFileFromArchive(const char *lhaPath, const char *archivePath,
     
     DEBUG_LOG("Extracting file: %s from %s", fileName, archivePath);
     
+#ifdef PLATFORM_HOST
+    /* On host, use path as-is */
+    strncpy(absArchivePath, archivePath, sizeof(absArchivePath) - 1);
+    absArchivePath[sizeof(absArchivePath) - 1] = '\0';
+#else
+    /* On Amiga, expand PROGDIR: to absolute path */
+    if (!ExpandProgDir(archivePath, absArchivePath, sizeof(absArchivePath))) {
+        append_to_log("[BACKUP] ERROR: Failed to expand archive path for file extraction\n");
+        return FALSE;
+    }
+#endif
+    
     /* Build command: lha x archive.lha filename -w=destdir */
 #ifdef PLATFORM_HOST
     len = snprintf(command, sizeof(command), "%s x \"%s\" \"%s\" -w=\"%s\"",
-                  lhaPath, archivePath, fileName, destDir);
+                  lhaPath, absArchivePath, fileName, destDir);
 #else
     len = snprintf(command, sizeof(command), "%s x %s %s %s",
-                  lhaPath, archivePath, fileName, destDir);
+                  lhaPath, absArchivePath, fileName, destDir);
 #endif
     
     if (len >= MAX_COMMAND_LEN) {

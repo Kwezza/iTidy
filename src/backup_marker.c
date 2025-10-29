@@ -17,10 +17,13 @@
     #endif
     #include <sys/stat.h>
     #include <unistd.h>
-    #define DEBUG_LOG(fmt, ...) printf("[DEBUG] " fmt "\n", __VA_ARGS__)
+    #define DEBUG_LOG(fmt, ...) printf("[DEBUG" ] fmt "\n", __VA_ARGS__)
 #else
     #include <dos/dos.h>
     #include <proto/dos.h>
+    #include <exec/types.h>
+    #include <exec/memory.h>
+    #include <proto/exec.h>
     #include "writeLog.h"
     #define DEBUG_LOG(...) /* disabled on Amiga */
 #endif
@@ -368,6 +371,9 @@ BOOL ExtractAndReadMarker(const char *archivePath, const char *lhaPath,
     }
     
     DEBUG_LOG("Expected marker path: %s", markerPath);
+#ifndef PLATFORM_HOST
+    append_to_log("[BACKUP] Expected marker path: %s\n", markerPath);
+#endif
     
     /* Small delay to ensure file system sync (host OS may need it) */
     /* Also retry a few times in case LHA hasn't finished writing */
@@ -395,6 +401,30 @@ BOOL ExtractAndReadMarker(const char *archivePath, const char *lhaPath,
         if (retries > 0) {
             DEBUG_LOG("Marker not found yet, retrying... (%d attempts left)", retries);
         }
+    }
+#else
+    /* Amiga: Check if marker file exists */
+    {
+        BPTR lock = Lock((STRPTR)markerPath, ACCESS_READ);
+        if (!lock) {
+            append_to_log("[BACKUP] ERROR: Marker file not found: %s\n", markerPath);
+            /* List files in temp directory for debugging */
+            BPTR dirLock = Lock((STRPTR)tempDirectory, ACCESS_READ);
+            if (dirLock) {
+                struct FileInfoBlock *fib = (struct FileInfoBlock *)AllocVec(sizeof(struct FileInfoBlock), MEMF_PUBLIC | MEMF_CLEAR);
+                if (fib && Examine(dirLock, fib)) {
+                    append_to_log("[BACKUP] Files in %s:\n", tempDirectory);
+                    while (ExNext(dirLock, fib)) {
+                        append_to_log("[BACKUP]   - %s\n", fib->fib_FileName);
+                    }
+                }
+                if (fib) FreeVec(fib);
+                UnLock(dirLock);
+            }
+            return FALSE;
+        }
+        UnLock(lock);
+        append_to_log("[BACKUP] Marker file found: %s\n", markerPath);
     }
 #endif
     

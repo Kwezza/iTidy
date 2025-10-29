@@ -33,7 +33,7 @@ int main(void) {
     
     /* Backup Workbench/Prefs */
     printf("Backing up workbench/Prefs...\n");
-    if (BackupFolder(&ctx, "../../workbench/Prefs") == TRUE) {
+    if (BackupFolder(&ctx, "../../workbench/Prefs", 0) == TRUE) {
         printf("  SUCCESS: Prefs backed up\n");
     } else {
         printf("  FAILED\n");
@@ -41,7 +41,7 @@ int main(void) {
     
     /* Backup Workbench/Tools */
     printf("Backing up workbench/Tools...\n");
-    if (BackupFolder(&ctx, "../../workbench/Tools") == TRUE) {
+    if (BackupFolder(&ctx, "../../workbench/Tools", 0) == TRUE) {
         printf("  SUCCESS: Tools backed up\n");
     } else {
         printf("  FAILED\n");
@@ -49,7 +49,7 @@ int main(void) {
     
     /* Backup Workbench/Utilities */
     printf("Backing up workbench/Utilities...\n");
-    if (BackupFolder(&ctx, "../../workbench/Utilities") == TRUE) {
+    if (BackupFolder(&ctx, "../../workbench/Utilities", 0) == TRUE) {
         printf("  SUCCESS: Utilities backed up\n");
     } else {
         printf("  FAILED\n");

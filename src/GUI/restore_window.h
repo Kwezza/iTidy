@@ -45,7 +45,7 @@ typedef enum {
     RESTORE_STATUS_INCOMPLETE = 1,      /* Has catalog, missing archives */
     RESTORE_STATUS_ORPHANED = 2,        /* No catalog.txt */
     RESTORE_STATUS_CORRUPTED = 3        /* Catalog parse error */
-} RestoreStatus;
+} RestoreRunStatus;
 
 /*------------------------------------------------------------------------*/
 /* Run Entry Structure                                                    */
@@ -60,7 +60,7 @@ struct RestoreRunEntry
     ULONG folderCount;                  /* Number of archives */
     ULONG totalBytes;                   /* Total size in bytes */
     char sizeStr[16];                   /* "46 KB" formatted */
-    UWORD statusCode;                   /* RestoreStatus enum */
+    UWORD statusCode;                   /* RestoreRunStatus enum */
     char statusStr[16];                 /* "Complete" text */
     char fullPath[256];                 /* Full path to run directory */
     BOOL hasCatalog;                    /* TRUE if catalog.txt exists */

@@ -310,7 +310,7 @@ static void test_backup_single_folder(void) {
     ASSERT(InitBackupSession(&ctx, &prefs, testFolder), "InitBackupSession failed");
     
     /* Backup folder */
-    status = BackupFolder(&ctx, testFolder);
+    status = BackupFolder(&ctx, testFolder, 0);
     ASSERT_EQ(BACKUP_OK, status, "BackupFolder should succeed");
     ASSERT_EQ(2, ctx.archiveIndex, "Archive index should increment");
     ASSERT_EQ(1, ctx.foldersBackedUp, "Should have 1 folder backed up");
@@ -353,13 +353,13 @@ static void test_backup_multiple_folders(void) {
     ASSERT(InitBackupSession(&ctx, &prefs, NULL), "InitBackupSession failed");
     
     /* Backup all folders */
-    status = BackupFolder(&ctx, folder1);
+    status = BackupFolder(&ctx, folder1, 0);
     ASSERT_EQ(BACKUP_OK, status, "Backup folder1 should succeed");
     
-    status = BackupFolder(&ctx, folder2);
+    status = BackupFolder(&ctx, folder2, 0);
     ASSERT_EQ(BACKUP_OK, status, "Backup folder2 should succeed");
     
-    status = BackupFolder(&ctx, folder3);
+    status = BackupFolder(&ctx, folder3, 0);
     ASSERT_EQ(BACKUP_OK, status, "Backup folder3 should succeed");
     
     ASSERT_EQ(4, ctx.archiveIndex, "Archive index should be 4");
@@ -394,7 +394,7 @@ static void test_backup_empty_folder(void) {
     ASSERT(InitBackupSession(&ctx, &prefs), "InitBackupSession failed");
     
     /* Backup empty folder - should be skipped */
-    status = BackupFolder(&ctx, emptyFolder);
+    status = BackupFolder(&ctx, emptyFolder, 0);
     ASSERT_EQ(BACKUP_NO_ICONS, status, "Should return BACKUP_NO_ICONS");
     ASSERT_EQ(1, ctx.archiveIndex, "Archive index should not increment");
     ASSERT_EQ(0, ctx.foldersBackedUp, "Should have no folders backed up");
@@ -421,11 +421,11 @@ static void test_backup_invalid_params(void) {
     ASSERT(InitBackupSession(&ctx, &prefs), "InitBackupSession failed");
     
     /* NULL context */
-    status = BackupFolder(NULL, TEST_SOURCE);
+    status = BackupFolder(NULL, TEST_SOURCE, 0);
     ASSERT_EQ(BACKUP_INVALID_PARAMS, status, "Should fail with NULL context");
     
     /* NULL folder path */
-    status = BackupFolder(&ctx, NULL);
+    status = BackupFolder(&ctx, NULL, 0);
     ASSERT_EQ(BACKUP_INVALID_PARAMS, status, "Should fail with NULL path");
     
     CloseBackupSession(&ctx);
@@ -539,10 +539,10 @@ static void test_full_session_workflow(void) {
     ASSERT(InitBackupSession(&ctx, &prefs), "Session init failed");
     
     /* Backup folders */
-    status = BackupFolder(&ctx, folder1);
+    status = BackupFolder(&ctx, folder1, 0);
     ASSERT_EQ(BACKUP_OK, status, "Backup folder1 failed");
     
-    status = BackupFolder(&ctx, folder2);
+    status = BackupFolder(&ctx, folder2, 0);
     ASSERT_EQ(BACKUP_OK, status, "Backup folder2 failed");
     
     /* Close session */

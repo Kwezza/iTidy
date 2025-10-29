@@ -163,7 +163,7 @@ void CloseBackupSession(BackupContext *ctx) {
     DEBUG_LOG("Backup session closed");
 }
 
-BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath) {
+BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath, UWORD iconCount) {
     char archivePath[MAX_BACKUP_PATH];
     char subfolderPath[MAX_BACKUP_PATH];
     char markerPath[MAX_BACKUP_PATH];
@@ -204,6 +204,20 @@ BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath) {
         append_to_log("[BACKUP] Folder has no .info files, skipping\n");
 #endif
         return BACKUP_NO_ICONS;
+    }
+    
+    /* If icon count not provided, count them now */
+    if (iconCount == 0) {
+        iconCount = CountInfoFiles(folderPath);
+        DEBUG_LOG("Counted %hu .info files", iconCount);
+#ifndef PLATFORM_HOST
+        append_to_log("[BACKUP] Counted %hu .info files\n", iconCount);
+#endif
+    } else {
+        DEBUG_LOG("Using provided icon count: %hu", iconCount);
+#ifndef PLATFORM_HOST
+        append_to_log("[BACKUP] Using provided icon count: %hu\n", iconCount);
+#endif
     }
     
     /* Determine if this is a root folder */
@@ -261,6 +275,7 @@ BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath) {
         }
         
         entry.sizeBytes = 0;
+        entry.iconCount = iconCount;
         strncpy(entry.originalPath, folderPath, sizeof(entry.originalPath) - 1);
         entry.successful = FALSE;
         AppendCatalogEntry(ctx, &entry);
@@ -324,6 +339,7 @@ BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath) {
     }
     
     entry.sizeBytes = GetArchiveSize(archivePath);
+    entry.iconCount = iconCount;
     strncpy(entry.originalPath, folderPath, sizeof(entry.originalPath) - 1);
     entry.originalPath[sizeof(entry.originalPath) - 1] = '\0';
     entry.successful = TRUE;
@@ -411,3 +427,65 @@ BOOL FolderHasInfoFiles(const char *folderPath) {
     return found;
 #endif
 }
+
+UWORD CountInfoFiles(const char *folderPath) {
+    UWORD count = 0;
+    
+    if (!folderPath) {
+        return 0;
+    }
+    
+#ifdef PLATFORM_HOST
+    /* Host implementation using opendir/readdir */
+    DIR *dir;
+    struct dirent *entry;
+    
+    dir = opendir(folderPath);
+    if (!dir) {
+        DEBUG_LOG("Failed to open directory: %s", folderPath);
+        return 0;
+    }
+    
+    /* Count .info files */
+    while ((entry = readdir(dir)) != NULL) {
+        size_t len = strlen(entry->d_name);
+        if (len > 5 && strcmp(entry->d_name + len - 5, ".info") == 0) {
+            count++;
+        }
+    }
+    
+    closedir(dir);
+    return count;
+    
+#else
+    /* Amiga implementation using pattern matching */
+    struct AnchorPath *anchor;
+    LONG result;
+    char pattern[512];
+    
+    /* Build pattern: "folderPath/#?.info" */
+    snprintf(pattern, sizeof(pattern), "%s#?.info", folderPath);
+    
+    /* Allocate anchor structure with larger buffer */
+    anchor = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath) + 512, MEMF_CLEAR);
+    if (!anchor) {
+        return 0;
+    }
+    
+    anchor->ap_BreakBits = 0;
+    anchor->ap_Strlen = 512;
+    
+    /* Count all matching .info files */
+    result = MatchFirst((STRPTR)pattern, anchor);
+    while (result == 0) {
+        count++;
+        result = MatchNext(anchor);
+    }
+    
+    MatchEnd(anchor);
+    FreeVec(anchor);
+    
+    return count;
+#endif
+}
+

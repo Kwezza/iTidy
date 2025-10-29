@@ -818,7 +818,7 @@ static BOOL ProcessSingleDirectory(const char *path,
     if (g_backupContext != NULL)
     {
         printf("  Creating backup...\n");
-        BackupStatus status = BackupFolder(g_backupContext, path);
+        BackupStatus status = BackupFolder(g_backupContext, path, (UWORD)iconArray->size);
         if (status == BACKUP_OK)
         {
             printf("  ✓ Backup created successfully\n");
