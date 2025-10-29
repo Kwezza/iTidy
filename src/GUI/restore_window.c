@@ -3,24 +3,29 @@
  * GadTools-based Backup Restore GUI for Workbench 2.0+
  * Based on RESTORE_WINDOW_GUI_SPEC.md specification
  * 
- * COLUMN ALIGNMENT - FIXED-WIDTH FONT REQUIRED:
- * ===============================================
- * The run list uses space-based column alignment which ONLY works with
- * FIXED-WIDTH (monospaced) fonts like Topaz. The format_run_list_entry()
- * function uses character-based column widths (%-9s, %-16s, %-11s, %8s).
+ * COLUMN ALIGNMENT - SYSTEM DEFAULT FONT:
+ * ========================================
+ * The run list uses space-based column alignment which requires a
+ * FIXED-WIDTH (monospaced) font. To ensure proper alignment regardless
+ * of the screen font, this window uses the System Default Text font
+ * (typically Topaz) for all gadgets.
  * 
- * With PROPORTIONAL fonts (where 'i' is narrower than 'W'), columns will
- * NOT align properly because the pixel widths vary per character.
+ * Even if the Workbench screen uses a proportional font (like Helvetica)
+ * for Screen Text, the listviews will use the System Default Text font,
+ * which is defined in Workbench Preferences and is typically fixed-width.
  * 
- * The code detects proportional fonts and logs a warning. To fix alignment
- * issues: Change your Workbench screen font to Topaz or another fixed-width
- * font in Workbench Preferences.
+ * The code:
+ * - Opens the System Default Text font (GfxBase->DefaultFont)
+ * - Uses it for all gadgets via ng.ng_TextAttr
+ * - Closes the font in cleanup
+ * 
+ * This ensures column alignment works correctly with the format:
+ * "Run_0007  2025-10-25 14:32  63 folders   46 KB  Complete"
  * 
  * Technical details:
- * - Listview width calculated as: font_width * 65 characters
- * - Total format width: ~65 chars (matches listview)
- * - With fixed-width fonts, columns scale proportionally with font size
- * - With proportional fonts, columns cannot align using character counts
+ * - Listview width: font_width * 65 characters
+ * - Format width: ~65 chars using %-9s, %-16s, %-11s, %8s
+ * - Columns align because character widths are consistent
  */
 
 #include <exec/types.h>
@@ -731,14 +736,11 @@ void update_details_panel(struct iTidyRestoreWindow *restore_data,
         }
         
         /* Format each detail line */
-        sprintf(line_buffer[0], "iiiiii:        %04u", 
-                selected_entry->runNumber);
-        sprintf(line_buffer[1], "WWWWWW:      %s", 
-                selected_entry->dateStr);
-        /*                sprintf(line_buffer[0], "Run Number:        %04u", 
+
+        sprintf(line_buffer[0], "Run Number:        %04u", 
                 selected_entry->runNumber);
         sprintf(line_buffer[1], "Date Created:      %s", 
-                selected_entry->dateStr); */
+                selected_entry->dateStr); 
         sprintf(line_buffer[2], "Source Directory:  %s", 
                 selected_entry->sourceDirectory);
         sprintf(line_buffer[3], "Total Archives:    %lu", 
@@ -890,6 +892,8 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     struct Screen *screen;
     struct DrawInfo *draw_info;
     struct TextFont *font;
+    struct TextFont *system_font;
+    struct TextAttr system_font_attr;
     struct RastPort temp_rp;
     struct NewGadget ng;
     struct Gadget *gad;
@@ -943,14 +947,46 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     font = draw_info->dri_Font;
     font_width = font->tf_XSize;
     font_height = font->tf_YSize;
-    append_to_log("Font: width=%d, height=%d, flags=0x%02x\n", 
+    append_to_log("Screen font: width=%d, height=%d, flags=0x%02x\n", 
                   font_width, font_height, font->tf_Flags);
     
     /* Check if font is proportional */
     if (font->tf_Flags & FPF_PROPORTIONAL)
     {
-        append_to_log("WARNING: Screen uses proportional font - column alignment may be imperfect\n");
-        append_to_log("NOTE: For best results, use a fixed-width font like Topaz\n");
+        append_to_log("WARNING: Screen uses proportional font - will use system default font instead\n");
+    }
+    
+    /* Open System Default Text font for listviews
+     * This ensures we use a fixed-width font (typically Topaz)
+     * even if the screen uses a proportional font
+     */
+    system_font_attr.ta_Name = (STRPTR)GfxBase->DefaultFont->tf_Message.mn_Node.ln_Name;
+    system_font_attr.ta_YSize = GfxBase->DefaultFont->tf_YSize;
+    system_font_attr.ta_Style = FS_NORMAL;
+    system_font_attr.ta_Flags = 0;
+    
+    system_font = OpenFont(&system_font_attr);
+    if (system_font != NULL)
+    {
+        append_to_log("Opened system default font: %s, size %d\n", 
+                      system_font_attr.ta_Name, system_font_attr.ta_YSize);
+        
+        /* Store in restore_data for later cleanup */
+        restore_data->system_font = system_font;
+        
+        /* Use system font metrics for listview calculations */
+        font = system_font;
+        font_width = font->tf_XSize;
+        font_height = font->tf_YSize;
+        append_to_log("System font: width=%d, height=%d, flags=0x%02x\n", 
+                      font_width, font_height, font->tf_Flags);
+    }
+    else
+    {
+        append_to_log("WARNING: Could not open system default font, using screen font\n");
+        font = draw_info->dri_Font;
+        system_font = NULL;
+        restore_data->system_font = NULL;
     }
     
     /* Initialize RastPort for TextLength() measurements */
@@ -999,11 +1035,13 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     append_to_log("Gadget context created successfully\n");
     
     /* Initialize NewGadget structure with required fields */
-    ng.ng_TextAttr = screen->Font;
+    /* Use system default font for gadgets (fixed-width) instead of screen font */
+    ng.ng_TextAttr = (system_font != NULL) ? &system_font_attr : screen->Font;
     ng.ng_VisualInfo = restore_data->visual_info;
     ng.ng_Flags = 0;
     
-    append_to_log("NewGadget structure initialized\n");
+    append_to_log("NewGadget structure initialized (using %s)\n", 
+                  (system_font != NULL) ? "system default font" : "screen font");
     
     /*--------------------------------------------------------------------*/
     /* PRE-CALCULATE LAYOUT DIMENSIONS                                   */
@@ -1400,6 +1438,12 @@ cleanup_error:
         append_to_log("Freeing visual info\n");
         FreeVisualInfo(restore_data->visual_info);
     }
+    if (restore_data->system_font != NULL)
+    {
+        append_to_log("Closing system font\n");
+        CloseFont(restore_data->system_font);
+        restore_data->system_font = NULL;
+    }
     if (draw_info != NULL)
     {
         append_to_log("Freeing DrawInfo\n");
@@ -1445,6 +1489,13 @@ void close_restore_window(struct iTidyRestoreWindow *restore_data)
     {
         FreeVisualInfo(restore_data->visual_info);
         restore_data->visual_info = NULL;
+    }
+    
+    /* Close system font if we opened it */
+    if (restore_data->system_font != NULL)
+    {
+        CloseFont(restore_data->system_font);
+        restore_data->system_font = NULL;
     }
     
     /* Free run list strings */

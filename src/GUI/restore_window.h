@@ -75,6 +75,7 @@ struct iTidyRestoreWindow
     struct Window *window;              /* Restore window */
     APTR visual_info;                   /* GadTools visual info */
     struct Gadget *glist;               /* Gadget list */
+    struct TextFont *system_font;       /* System default font (if opened) */
     BOOL window_open;                   /* Window state flag */
     
     /* Gadget pointers */

@@ -2,6 +2,15 @@
 
 This document provides critical guidance for AI agents working with the Amiga window template. These patterns were discovered through extensive debugging and must be followed exactly to avoid layout issues.
 
+## ⚠️ CRITICAL: Font Selection for Column-Based Layouts
+
+**If your ListView displays data in columns** (tabular data, logs, file listings):
+- **DO NOT** use the screen font directly - it may be proportional (Helvetica, etc.)
+- **USE** System Default Text font (`GfxBase->DefaultFont`) - typically fixed-width
+- See **Section 0.1** below for complete implementation details
+
+**Why:** Proportional fonts have variable character widths ('i' ≠ 'W'), breaking space-aligned columns. System Default Text is user-configurable in Workbench Preferences and is typically Topaz (fixed-width).
+
 ## 🎯 Pattern Selection Decision Tree
 
 ```
@@ -14,6 +23,7 @@ START: What kind of window are you creating?
 │
 ├─► List Management / File Selection
 │   └─► Use MEDIUM window (60-65 chars)
+│       ├─► ⚠️ COLUMNAR DATA? → Use System Default Font (Section 0.1)
 │       ├─► Need file/path input?
 │       │   └─► Add PATTERN_INPUT_ROW at top
 │       ├─► Add PATTERN_REFERENCE_CONTENT (ListView)
@@ -458,6 +468,121 @@ FreeScreenDrawInfo(screen, draw_info);
 - Initialize a RastPort with `InitRastPort()` and `SetFont()` for measurements
 - Always call `FreeScreenDrawInfo()` when done (both success and error paths)
 - For button text, use `TextLength(rp, text, strlen(text)) + padding`
+
+### 0.1. Using System Default Font for Column-Based Layouts ⚠️ CRITICAL
+
+**THE PROBLEM:** If you display data in **space-aligned columns** in a ListView (like tabular data), the Screen Text font might be **proportional** (e.g., Helvetica), which breaks column alignment. Proportional fonts have variable character widths ('i' is narrower than 'W'), making character-based spacing impossible.
+
+**Example of broken alignment with proportional font:**
+```
+Run_0007  2025-10-25 14:32  63 folders   46 KB  Complete
+Run_0008  2025-10-28 10:09  127 folders  543 KB Complete
+  ^^^^       ^^^^^^               ^^^       ^^^
+  Columns don't line up - each character has different width!
+```
+
+**SOLUTION:** Use the **System Default Text** font (from Workbench Preferences) for gadgets displaying columnar data. This font is typically fixed-width (monospaced) like Topaz.
+
+**Workbench has THREE font settings:**
+1. **Workbench Icon Text** - For icon labels
+2. **System Default Text** - For system gadgets (usually Topaz - FIXED WIDTH)
+3. **Screen Text** - For window titles, menus (can be proportional)
+
+**When Screen Text is proportional, use System Default Text instead:**
+
+```c
+struct TextFont *system_font = NULL;
+struct TextAttr system_font_attr;
+
+/* Get screen font first */
+draw_info = GetScreenDrawInfo(screen);
+font = draw_info->dri_Font;
+font_width = font->tf_XSize;
+font_height = font->tf_YSize;
+
+/* Check if screen font is proportional */
+if (font->tf_Flags & FPF_PROPORTIONAL)
+{
+    append_to_log("WARNING: Screen uses proportional font - using system default instead\n");
+}
+
+/* Open System Default Text font (GfxBase->DefaultFont)
+ * This is the font defined in Workbench Preferences as "System Default Text"
+ * It's typically Topaz (fixed-width) regardless of Screen Text setting
+ */
+system_font_attr.ta_Name = (STRPTR)GfxBase->DefaultFont->tf_Message.mn_Node.ln_Name;
+system_font_attr.ta_YSize = GfxBase->DefaultFont->tf_YSize;
+system_font_attr.ta_Style = FS_NORMAL;
+system_font_attr.ta_Flags = 0;
+
+system_font = OpenFont(&system_font_attr);
+if (system_font != NULL)
+{
+    /* Use system font metrics for layout calculations */
+    font = system_font;
+    font_width = font->tf_XSize;
+    font_height = font->tf_YSize;
+    
+    /* Store in your data structure for cleanup */
+    window_data->system_font = system_font;
+}
+else
+{
+    append_to_log("WARNING: Could not open system font, using screen font\n");
+    system_font = NULL;
+}
+
+/* Initialize NewGadget to use system font */
+ng.ng_TextAttr = (system_font != NULL) ? &system_font_attr : screen->Font;
+
+/* ... create gadgets ... */
+
+/* CLEANUP: Close the font when done */
+if (window_data->system_font != NULL)
+{
+    CloseFont(window_data->system_font);
+    window_data->system_font = NULL;
+}
+```
+
+**When to use System Default Font:**
+- ✅ **ListViews with columnar data** (logs, file lists, backup runs, etc.)
+- ✅ **Any space-aligned text** that needs to line up in columns
+- ✅ **Tabular displays** where you use character-based formatting like `"%-10s  %-20s  %8s"`
+- ❌ **Not needed** for simple text labels or single-column lists
+- ❌ **Not needed** if you don't care about column alignment
+
+**Column alignment example (requires fixed-width font):**
+```c
+/* Format entry with character-based column widths */
+sprintf(buffer, "%-9s  %-16s  %-11s  %8s  %s",
+    run_name,      /* Left-align in 9 chars */
+    date_time,     /* Left-align in 16 chars */
+    folder_count,  /* Left-align in 11 chars */
+    size_str,      /* Right-align in 8 chars */
+    status);       /* Remaining space */
+
+/* This ONLY works if every character is the same width (fixed-width font) */
+/* With proportional fonts, columns will be misaligned */
+```
+
+**Required structure field:**
+```c
+struct MyWindowData
+{
+    struct TextFont *system_font;  /* Store opened system font for cleanup */
+    /* ... other fields ... */
+};
+```
+
+**KEY RULES:**
+- Check if screen font is proportional with `font->tf_Flags & FPF_PROPORTIONAL`
+- Open system default font via `GfxBase->DefaultFont` for column-based layouts
+- Set `ng.ng_TextAttr` to use system font for all gadgets
+- Store font pointer in your window structure
+- Always `CloseFont()` in cleanup (both error and normal paths)
+- System Default Text is user-configurable in Workbench Preferences
+- This ensures columns align properly even if user sets proportional Screen Text
 
 ### 1. ListView Height "Snapping" Issue
 
