@@ -82,6 +82,16 @@ New: 00001.lha | 000/ | 15 KB | 5 | Work:Projects/MyFolder/ | 320x200+100+50 | 1
 - Graceful handling when geometry unavailable (folders with no `.info`)
 - No side effects outside target folder
 
+**Root Directory Handling:**
+For device roots like `DH0:`, the system correctly handles the special case:
+- **Backup**: `GetFolderWindowSettings("DH0:")` appends "Disk" → reads `DH0:Disk.info`
+  - LHA command `DH0:/*.info` includes `Disk.info` in archive
+  - Window geometry stored in catalog metadata
+- **Restore**: `SaveFolderSettings("DH0:")` appends "Disk" → updates `DH0:Disk.info`
+  - Archive extraction restores `Disk.info` with icon positions
+  - Catalog metadata updates window geometry fields only
+- **Result**: Both icon positions AND window geometry fully restored for root volumes
+
 **Testing Results:**
 - Build successful (warnings only, no errors)
 - Ready for WinUAE testing
@@ -91,6 +101,7 @@ New: 00001.lha | 000/ | 15 KB | 5 | Work:Projects/MyFolder/ | 320x200+100+50 | 1
 - User-controllable feature via GUI checkbox
 - Safe implementation - no risk of overwriting custom icons/tool types
 - Backwards compatible with existing backup runs
+- Correctly handles both normal folders and device root volumes
 
 ---
 
