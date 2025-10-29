@@ -49,6 +49,8 @@
 #include <stdio.h>
 
 #include "restore_window.h"
+#include "folder_view_window.h"
+#include "test_simple_window.h"  /* TESTING: Simple window test */
 #include "../backup_runs.h"
 #include "../backup_catalog.h"
 #include "../backup_restore.h"
@@ -369,7 +371,7 @@ static void format_run_list_entry(struct RestoreRunEntry *entry, char *buffer)
     /* Build the display string with column alignment for fixed-width fonts
      * This will NOT align properly with proportional fonts!
      */
-    sprintf(buffer, "%-9s  %-16s  %-11s  %8s  %s",
+    sprintf(buffer, "%-9s \x7C %-16s \x7C %-11s \x7C %8s \x7C %s",
         entry->runName,           /* "Run_0007" - left-aligned, 9 chars */
         short_date,               /* "2025-10-25 14:32" - left-aligned, 16 chars */
         folder_str,               /* "63 folders" - left-aligned, 11 chars */
@@ -737,19 +739,19 @@ void update_details_panel(struct iTidyRestoreWindow *restore_data,
         
         /* Format each detail line */
 
-        sprintf(line_buffer[0], "Run Number:        %04u", 
+        sprintf(line_buffer[0], "       Run Number: %04u", 
                 selected_entry->runNumber);
-        sprintf(line_buffer[1], "Date Created:      %s", 
+        sprintf(line_buffer[1], "     Date Created: %s", 
                 selected_entry->dateStr); 
-        sprintf(line_buffer[2], "Source Directory:  %s", 
+        sprintf(line_buffer[2], " Source Directory: %s", 
                 selected_entry->sourceDirectory);
-        sprintf(line_buffer[3], "Total Archives:    %lu", 
+        sprintf(line_buffer[3], "   Total Archives: %lu", 
                 selected_entry->folderCount);
-        sprintf(line_buffer[4], "Total Size:        %s", 
+        sprintf(line_buffer[4], "       Total Size: %s", 
                 selected_entry->sizeStr);
-        sprintf(line_buffer[5], "Status:            %s", 
+        sprintf(line_buffer[5], "           Status: %s", 
                 status_desc);
-        sprintf(line_buffer[6], "Location:          %s", 
+        sprintf(line_buffer[6], "         Location: %s", 
                 selected_entry->fullPath);
     }
     
@@ -1633,11 +1635,29 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                                             GTLV_Selected, &selected,
                                             TAG_END);
                             
+                            append_to_log("ListView clicked: selected=%d, run_count=%d\n", 
+                                         selected, restore_data->run_count);
+                            
                             if (selected >= 0 && selected < (LONG)restore_data->run_count)
                             {
                                 /* List is in reverse order */
                                 ULONG actual_idx = restore_data->run_count - 1 - selected;
+                                
+                                /* Check for double-click by comparing with previous click */
+                                BOOL is_double_click = FALSE;
+                                if (restore_data->selected_run_index == (LONG)actual_idx &&
+                                    DoubleClick(restore_data->last_click_secs, restore_data->last_click_micros,
+                                               imsg->Seconds, imsg->Micros))
+                                {
+                                    is_double_click = TRUE;
+                                    append_to_log("Double-click detected on ListView item %d!\n", selected);
+                                }
+                                
                                 restore_data->selected_run_index = actual_idx;
+                                
+                                /* Update click tracking */
+                                restore_data->last_click_secs = imsg->Seconds;
+                                restore_data->last_click_micros = imsg->Micros;
                                 
                                 update_details_panel(restore_data,
                                     &restore_data->run_entries[actual_idx]);
@@ -1654,6 +1674,51 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                                                 GA_Disabled,
                                                 !restore_data->run_entries[actual_idx].hasCatalog,
                                                 TAG_END);
+                                
+                                /* Handle double-click */
+                                if (is_double_click && restore_data->run_entries[actual_idx].hasCatalog)
+                                {
+                                    struct RestoreRunEntry *selected_entry = 
+                                        &restore_data->run_entries[actual_idx];
+                                    char catalog_path[512];
+                                    struct iTidyFolderViewWindow folder_view_data;
+                                    
+                                    /* Build path to catalog.txt */
+                                    sprintf(catalog_path, "%s/%s/catalog.txt",
+                                           restore_data->backup_root_path,
+                                           selected_entry->runName);
+                                    
+                                    append_to_log("Double-click opening folder view for: %s\n", catalog_path);
+                                    
+                                    /* Initialize folder view data */
+                                    memset(&folder_view_data, 0, sizeof(folder_view_data));
+                                    folder_view_data.screen = restore_data->screen;
+                                    
+                                    /* Open folder view window */
+                                    if (open_folder_view_window(&folder_view_data,
+                                                               catalog_path,
+                                                               selected_entry->runNumber,
+                                                               selected_entry->dateStr,
+                                                               selected_entry->folderCount))
+                                    {
+                                        /* Run folder view event loop */
+                                        while (handle_folder_view_window_events(&folder_view_data))
+                                        {
+                                            WaitPort(folder_view_data.window->UserPort);
+                                        }
+                                        
+                                        /* Close folder view window */
+                                        close_folder_view_window(&folder_view_data);
+                                    }
+                                    else
+                                    {
+                                        append_to_log("ERROR: Failed to open folder view window\n");
+                                    }
+                                }
+                                else if (is_double_click)
+                                {
+                                    append_to_log("Double-click on run without catalog - ignoring\n");
+                                }
                             }
                         }
                         break;
@@ -1668,8 +1733,47 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                         break;
                     
                     case GID_RESTORE_VIEW_FOLDERS:
-                        /* TODO: Implement folder preview window */
-                        append_to_log("View Folders not yet implemented\n");
+                        /* Use simple test window (working version) */
+                        if (restore_data->selected_run_index >= 0 &&
+                            restore_data->selected_run_index < (LONG)restore_data->run_count)
+                        {
+                            struct RestoreRunEntry *selected_entry = 
+                                &restore_data->run_entries[restore_data->selected_run_index];
+                            char catalog_path[512];
+                            struct iTidyFolderViewWindow folder_view_data;
+                            
+                            /* Build path to catalog.txt */
+                            sprintf(catalog_path, "%s/%s/catalog.txt",
+                                   restore_data->backup_root_path,
+                                   selected_entry->runName);
+                            
+                            append_to_log("Opening folder view for: %s\n", catalog_path);
+                            
+                            /* Initialize folder view data */
+                            memset(&folder_view_data, 0, sizeof(folder_view_data));
+                            folder_view_data.screen = restore_data->screen;
+                            
+                            /* Open folder view window */
+                            if (open_folder_view_window(&folder_view_data,
+                                                       catalog_path,
+                                                       selected_entry->runNumber,
+                                                       selected_entry->dateStr,
+                                                       selected_entry->folderCount))
+                            {
+                                /* Run folder view event loop */
+                                while (handle_folder_view_window_events(&folder_view_data))
+                                {
+                                    WaitPort(folder_view_data.window->UserPort);
+                                }
+                                
+                                /* Close folder view window */
+                                close_folder_view_window(&folder_view_data);
+                            }
+                            else
+                            {
+                                append_to_log("ERROR: Failed to open folder view window\n");
+                            }
+                        }
                         break;
                     
                     case GID_RESTORE_CANCEL:

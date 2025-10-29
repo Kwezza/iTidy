@@ -71,7 +71,9 @@ BACKUP_SRCS = \
 GUI_SRCS = \
 	$(SRC_DIR)/GUI/main_window.c \
 	$(SRC_DIR)/GUI/advanced_window.c \
-	$(SRC_DIR)/GUI/restore_window.c
+	$(SRC_DIR)/GUI/restore_window.c \
+	$(SRC_DIR)/GUI/folder_view_window.c \
+	$(SRC_DIR)/GUI/test_simple_window.c
 
 # DOS subdirectory sources
 DOS_SRCS = \
@@ -231,6 +233,7 @@ $(OUT_DIR)/Settings/get_fonts.o: $(SRC_DIR)/Settings/get_fonts.c $(SRC_DIR)/Sett
 $(OUT_DIR)/GUI/main_window.o: $(SRC_DIR)/GUI/main_window.c $(SRC_DIR)/GUI/main_window.h
 $(OUT_DIR)/GUI/advanced_window.o: $(SRC_DIR)/GUI/advanced_window.c $(SRC_DIR)/GUI/advanced_window.h
 $(OUT_DIR)/GUI/restore_window.o: $(SRC_DIR)/GUI/restore_window.c $(SRC_DIR)/GUI/restore_window.h
+$(OUT_DIR)/GUI/folder_view_window.o: $(SRC_DIR)/GUI/folder_view_window.c $(SRC_DIR)/GUI/folder_view_window.h
 
 # Platform-specific
 $(OUT_DIR)/platform/host_platform.o: $(SRC_DIR)/platform/host_platform.c $(INC_DIR)/platform/platform.h

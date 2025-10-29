@@ -5,7 +5,174 @@ iTidy is an Amiga icon management utility that allows users to sort and arrange 
 
 ## Development Timeline
 
-### Latest: Enhanced Multi-Category Logging & Memory Tracking System (October 2025)
+### Latest: Folder View Window with ASCII Tree-Style ListView (October 2025)
+
+#### Implementation: Hierarchical Folder Display in Modal Window
+- **Purpose**: Provide visual overview of folder hierarchy from backup catalog in restore window
+- **Date**: October 29, 2025
+
+#### Feature Overview:
+- **Window**: Modal "View Folders" dialog accessible from restore window
+- **Display**: GadTools ListView showing folder structure from backup catalog
+- **Format**: ASCII tree-style representation using fixed-width font for alignment
+
+#### ASCII Tree-Style ListView Format:
+**Approach**: Convert traditional tree view to ListView-compatible text format using 3-character grid pattern
+- **Pattern**: Each depth level = exactly 3 characters for perfect alignment
+  - `:..<folder>` - Folder at this level (colon-double-dot prefix)
+  - `: ` - Vertical line continuing to child below
+  - `   ` - Blank space (no continuation at this level)
+
+**Example Display:**
+```
+Workbench
+:..Wbd
+:..WBStartup
+:..Utilities
+:..Tools
+:  :..Commodities
+:..System
+:..Storage
+:  :..NetInterfaces
+:  :..Monitors
+:  :..DOSDrivers
+:..sc
+:  :..starter_project
+:  :..Manuals
+:  :..icons
+:  :..help
+:  :..extras
+```
+
+**Implementation Details:**
+- **Font**: System Default Text font (typically Topaz 8) for fixed-width character alignment
+- **Algorithm**: Path comparison between consecutive catalog entries to determine parent continuation
+- **Vertical Lines**: Calculated by comparing parent paths at each depth level
+  - If parent paths match: show `:` (vertical line continues)
+  - If parent paths differ: show space (branch complete)
+- **Functions**:
+  - `get_parent_path_at_depth()` - Extracts parent path up to specific depth
+  - `calculate_folder_depth()` - Counts path separators for nesting level
+  - `format_folder_with_tree_lines()` - Builds display string with 3-char grid pattern
+  - `parse_catalog_callback()` - Processes entries and builds parent line state
+
+**Files Created:**
+- `src/GUI/folder_view_window.h` - Window structure and API definitions
+- `src/GUI/folder_view_window.c` - Full implementation (854 lines)
+
+**Integration:**
+- Triggered by "View Folders..." button in restore window
+- Opens as modal dialog with catalog path passed from restore metadata
+- Close button dismisses window and returns to restore window
+
+**Benefits:**
+- Clear visual representation of backup folder structure
+- Proper alignment using fixed-width font
+- Traditional tree aesthetics adapted for Amiga ListView gadget
+- Helps users understand catalog contents before restore operations
+
+---
+
+### System Default Font for ListView Column Alignment (October 2025)
+
+#### Implementation: Fixed-Width Font for Columnar Data Display
+- **Purpose**: Ensure proper column alignment in ListViews regardless of user's screen font preference
+- **Date**: October 28-29, 2025
+
+#### Problem Identified:
+- **Issue**: Restore window ListView columns were misaligned when Workbench used proportional fonts
+- **Root Cause**: GadTools ListViews inherited Screen Text font, which can be proportional (e.g., Helvetica)
+- **Impact**: Space-based column formatting broke because character widths varied ('i' ≠ 'W' ≠ 'M')
+
+#### Solution Implemented:
+
+**1. System Default Font Integration**
+- **Approach**: Open and use System Default Text font instead of Screen Text font
+- **Font Source**: `GfxBase->DefaultFont` - the "System Default Text" from Workbench Preferences
+- **Benefit**: Typically Topaz (fixed-width) even when Screen Text is proportional
+- **Location**: `src/GUI/restore_window.c`
+
+**Code Changes:**
+```c
+/* Check if screen font is proportional */
+if (font->tf_Flags & FPF_PROPORTIONAL)
+{
+    append_to_log("WARNING: Screen uses proportional font - using system default instead\n");
+}
+
+/* Open System Default Text font */
+system_font_attr.ta_Name = (STRPTR)GfxBase->DefaultFont->tf_Message.mn_Node.ln_Name;
+system_font_attr.ta_YSize = GfxBase->DefaultFont->tf_YSize;
+system_font_attr.ta_Style = FS_NORMAL;
+system_font_attr.ta_Flags = 0;
+
+system_font = OpenFont(&system_font_attr);
+if (system_font != NULL)
+{
+    /* Use system font for all gadget layout calculations */
+    ng.ng_TextAttr = &system_font_attr;
+    /* Store for cleanup */
+    restore_data->system_font = system_font;
+}
+```
+
+**2. Colon-Aligned Label-Value Formatting Pattern**
+- **Purpose**: Professional display of detailed information in ListViews
+- **Pattern**: Right-aligned labels to colon, left-aligned values at consistent position
+- **Visual Result**:
+```
+      Run Number: 0008
+    Date Created: 2025-10-28 10:09:27
+Source Directory: PC:Workbench
+  Total Archives: 127
+      Total Size: 543 KB
+```
+
+**Implementation Technique:**
+```c
+/* Calculate maximum label width */
+int max_label_len = 0;
+for (each label)
+    max_label_len = max(max_label_len, strlen(label));
+
+/* Format with right-justified labels using %*s */
+sprintf(buffer, "%*s %s", max_label_len, "Run Number:", value);
+sprintf(buffer, "%*s %s", max_label_len, "Total Size:", value);
+/* Labels right-align in field, creating vertical colon alignment */
+```
+
+**Benefits:**
+- ✅ Clean vertical alignment at the colon
+- ✅ Easy to scan - eye follows the colon line
+- ✅ Professional appearance matching Amiga system preference panels
+- ✅ Clear separation between labels and values
+
+#### Files Modified:
+- `src/GUI/restore_window.h` - Added `system_font` field to window structure
+- `src/GUI/restore_window.c` - Implemented system font opening, usage, and cleanup
+- `src/templates/AI_AGENT_LAYOUT_GUIDE.md` - Added Section 0.1 (System Default Font) and Section 0.2 (Colon-Aligned Formatting)
+
+#### Documentation Added:
+- **Section 0.1**: Complete guide for using System Default Font with column-based layouts
+- **Section 0.2**: Colon-aligned label-value formatting pattern for details displays
+- **Usage Guidelines**: When to use fixed-width fonts vs. proportional fonts
+- **Code Examples**: Real-world implementations with full cleanup procedures
+
+#### Technical Requirements:
+- **Fixed-width font required** for all columnar data in ListViews
+- **Proportional font detection** via `font->tf_Flags & FPF_PROPORTIONAL`
+- **Proper cleanup** with `CloseFont()` in both success and error paths
+- **User-configurable** respects Workbench Preferences for System Default Text
+
+#### Result:
+- ✅ Column alignment works perfectly regardless of Screen Text font choice
+- ✅ Professional appearance in details panels
+- ✅ Documented pattern for all future ListView implementations
+- ✅ Maintains user's font preferences while ensuring functionality
+
+---
+
+### Enhanced Multi-Category Logging & Memory Tracking System (October 2025)
 
 #### Implementation: Comprehensive Debugging Infrastructure
 - **Purpose**: Advanced diagnostics for memory leaks, performance analysis, and multi-category logging

@@ -8,6 +8,7 @@ This document provides critical guidance for AI agents working with the Amiga wi
 - **DO NOT** use the screen font directly - it may be proportional (Helvetica, etc.)
 - **USE** System Default Text font (`GfxBase->DefaultFont`) - typically fixed-width
 - See **Section 0.1** below for complete implementation details
+- See **Section 0.2** for colon-aligned details panel formatting pattern
 
 **Why:** Proportional fonts have variable character widths ('i' ≠ 'W'), breaking space-aligned columns. System Default Text is user-configurable in Workbench Preferences and is typically Topaz (fixed-width).
 
@@ -549,6 +550,7 @@ if (window_data->system_font != NULL)
 - ✅ **ListViews with columnar data** (logs, file lists, backup runs, etc.)
 - ✅ **Any space-aligned text** that needs to line up in columns
 - ✅ **Tabular displays** where you use character-based formatting like `"%-10s  %-20s  %8s"`
+- ✅ **Colon-aligned details panels** (see Section 0.2 for formatting pattern)
 - ❌ **Not needed** for simple text labels or single-column lists
 - ❌ **Not needed** if you don't care about column alignment
 
@@ -583,6 +585,154 @@ struct MyWindowData
 - Always `CloseFont()` in cleanup (both error and normal paths)
 - System Default Text is user-configurable in Workbench Preferences
 - This ensures columns align properly even if user sets proportional Screen Text
+
+### 0.2. Colon-Aligned Label-Value Formatting (Details Display Pattern)
+
+**THE PATTERN:** When displaying detailed information in a ListView (like properties, details panels, or info displays), use **colon-aligned formatting** where labels are right-justified to a colon, and values are left-aligned starting at a consistent position.
+
+**Visual Example:**
+```
+      Run Number: 0008
+    Date Created: 2025-10-28 10:09:27
+Source Directory: PC:Workbench
+  Total Archives: 127
+      Total Size: 543 KB
+          Status: Complete (catalog present)
+        Location: PROGDIR:Backups/Run_0008
+```
+
+**Why this looks better:**
+- ✅ Creates a clean vertical alignment at the colon
+- ✅ Easy to scan - eye follows the colon line down
+- ✅ Professional appearance like system preference panels
+- ✅ Clearly separates labels from values
+- ✅ Works perfectly with fixed-width fonts
+
+**Implementation (requires fixed-width font):**
+
+```c
+/* Step 1: Find the longest label to determine alignment width */
+const char *labels[] = {
+    "Run Number:",
+    "Date Created:",
+    "Source Directory:",
+    "Total Archives:",
+    "Total Size:",
+    "Status:",
+    "Location:"
+};
+
+/* Find maximum label length */
+int max_label_len = 0;
+for (int i = 0; i < label_count; i++)
+{
+    int len = strlen(labels[i]);
+    if (len > max_label_len)
+        max_label_len = len;
+}
+
+/* Step 2: Format each line with right-aligned label + left-aligned value */
+char line_buffer[256];
+sprintf(line_buffer, "%*s %s",
+    max_label_len,           /* Width for right-alignment */
+    "Run Number:",           /* Label (right-justified in field) */
+    "0008");                 /* Value (starts right after colon + space) */
+
+/* Result: "      Run Number: 0008" */
+/*          └─right aligned─┘ └─value */
+
+/* Example for all fields: */
+sprintf(line_buffer, "%*s %s", max_label_len, "Run Number:", run_number_str);
+sprintf(line_buffer, "%*s %s", max_label_len, "Date Created:", date_str);
+sprintf(line_buffer, "%*s %s", max_label_len, "Source Directory:", source_path);
+sprintf(line_buffer, "%*s %d", max_label_len, "Total Archives:", archive_count);
+sprintf(line_buffer, "%*s %s", max_label_len, "Total Size:", size_str);
+sprintf(line_buffer, "%*s %s", max_label_len, "Status:", status_str);
+sprintf(line_buffer, "%*s %s", max_label_len, "Location:", location_path);
+```
+
+**Format Specifier Breakdown:**
+- `%*s` - Variable-width string field (width specified as parameter)
+- First parameter (`max_label_len`) - Total width for the label field
+- Second parameter (label string) - The label text to right-justify
+- The label is padded with spaces on the LEFT to reach `max_label_len`
+- Space after `%*s` creates the gap between colon and value
+- Value is printed normally after the space
+
+**Real-World Example (restore window details panel):**
+```c
+/* From populate_run_list() - formatting details for selected backup run */
+
+/* Find longest label */
+int max_label_len = 0;
+const char *labels[] = {
+    "Run Number:",
+    "Date Created:", 
+    "Source Directory:",
+    "Total Archives:",
+    "Total Size:",
+    "Status:",
+    "Location:"
+};
+for (int i = 0; i < 7; i++)
+{
+    int len = strlen(labels[i]);
+    if (len > max_label_len)
+        max_label_len = len;
+}
+
+/* Format each detail line */
+char detail_lines[7][256];
+sprintf(detail_lines[0], "%*s %d", max_label_len, "Run Number:", entry->runNumber);
+sprintf(detail_lines[1], "%*s %s", max_label_len, "Date Created:", entry->dateStr);
+sprintf(detail_lines[2], "%*s %s", max_label_len, "Source Directory:", entry->sourceDirectory);
+sprintf(detail_lines[3], "%*s %lu", max_label_len, "Total Archives:", entry->folderCount);
+sprintf(detail_lines[4], "%*s %s", max_label_len, "Total Size:", entry->sizeStr);
+sprintf(detail_lines[5], "%*s %s", max_label_len, "Status:", entry->statusStr);
+sprintf(detail_lines[6], "%*s %s", max_label_len, "Location:", entry->fullPath);
+
+/* Add to ListView */
+for (int i = 0; i < 7; i++)
+{
+    /* Add detail_lines[i] to ListView as node->ln_Name */
+}
+```
+
+**When to use Colon-Aligned Formatting:**
+- ✅ **Details panels** showing properties of a selected item
+- ✅ **Information displays** with label-value pairs
+- ✅ **About/Info windows** with system information
+- ✅ **Property sheets** with configuration details
+- ✅ **Status displays** showing multiple fields
+- ✅ **Read-only data** that users need to scan quickly
+
+**When NOT to use:**
+- ❌ **Editable forms** (use normal input gadgets)
+- ❌ **Tabular data** with multiple columns (use column formatting from Section 0.1)
+- ❌ **Single-column lists** without label-value pairs
+- ❌ **Short labels** that don't benefit from alignment (just use "Label: Value")
+
+**KEY RULES:**
+- **REQUIRES** fixed-width font (use System Default Font from Section 0.1)
+- Calculate maximum label width at runtime (don't hardcode)
+- Use `%*s` format specifier for right-justified labels
+- Always include ONE space between colon and value
+- Keep ListView read-only (`GTLV_ReadOnly, TRUE`) for info displays
+- Ensure longest label + space + longest value fits in ListView width
+- Consider line wrapping for very long values (paths, etc.)
+
+**Alternative: Pre-calculated Width**
+If you know your labels at compile time, you can hardcode the width:
+```c
+/* If longest label is "Source Directory:" (17 chars including colon) */
+#define DETAIL_LABEL_WIDTH 17
+
+sprintf(buffer, "%*s %s", DETAIL_LABEL_WIDTH, "Run Number:", value);
+sprintf(buffer, "%*s %s", DETAIL_LABEL_WIDTH, "Total Size:", value);
+/* etc. */
+```
+
+This formatting pattern creates professional, easy-to-read information displays that match the aesthetic of Amiga system preference panels and file requesters.
 
 ### 1. ListView Height "Snapping" Issue
 
