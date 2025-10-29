@@ -161,9 +161,12 @@ typedef struct {
  * an archive index to its original folder path and metadata.
  * 
  * Catalog format (pipe-delimited):
- *   00001.lha | 000/ | 15 KB | DH0:Projects/ClientWork/WebDesign/
- *   00042.lha | 000/ | 22 KB | Work:Development/SourceCode/
- *   12345.lha | 123/ | 5 KB  | Work:WHDLoad/Games/Z/Zool/
+ *   00001.lha | 000/ | 15 KB | DH0:Projects/ClientWork/WebDesign/ | 320x200+100+50 | 1
+ *   00042.lha | 000/ | 22 KB | Work:Development/SourceCode/ | 640x400+50+30 | 0
+ *   12345.lha | 123/ | 5 KB  | Work:WHDLoad/Games/Z/Zool/ | 320x200+0+11 | 1
+ * 
+ * Window geometry format: WIDTHxHEIGHT+LEFT+TOP (X11-style)
+ * Last field is view mode (0=icons, 1=text list, etc.)
  */
 typedef struct {
     /* Archive identification */
@@ -178,6 +181,13 @@ typedef struct {
     
     /* Original path (for restore) */
     char originalPath[MAX_BACKUP_PATH]; /* Full path to original folder */
+    
+    /* Window geometry (from folder's .info file at backup time) */
+    WORD windowLeft;                    /* Window X position (-1 if not available) */
+    WORD windowTop;                     /* Window Y position (-1 if not available) */
+    WORD windowWidth;                   /* Window width (-1 if not available) */
+    WORD windowHeight;                  /* Window height (-1 if not available) */
+    UWORD viewMode;                     /* Drawer view mode (DDVM_BYICON, etc.) */
     
     /* Status */
     BOOL successful;                    /* TRUE if backup completed successfully */

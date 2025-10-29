@@ -619,6 +619,83 @@ void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo,
         SetDeleteProtection(folderPathWithInfo, 1);
 }
 
+BOOL GetFolderWindowSettings(const char *folderPath, folderWindowSize *folderInfo, UWORD *viewMode)
+{
+    char diskInfoPath[256];
+    struct DiskObject *diskObject;
+    struct DrawerData *drawerData;
+    int folderPathLen;
+    BOOL result = FALSE;
+
+    if (!folderPath || !folderInfo) {
+        return FALSE;
+    }
+
+    /* Initialize output to invalid values */
+    folderInfo->left = -1;
+    folderInfo->top = -1;
+    folderInfo->width = -1;
+    folderInfo->height = -1;
+    if (viewMode) {
+        *viewMode = 0;
+    }
+
+#ifdef DEBUG_MAX
+    append_to_log("Reading folder window settings for: %s\n", folderPath);
+#endif
+
+    strcpy(diskInfoPath, folderPath);
+
+    /* Check if folder path ends with a colon (root directory) */
+    folderPathLen = strlen(diskInfoPath);
+    if (folderPathLen > 0 && diskInfoPath[folderPathLen - 1] == ':')
+    {
+        strcat(diskInfoPath, "Disk");
+    }
+
+    diskObject = GetDiskObject(diskInfoPath);
+    if (diskObject == NULL)
+    {
+#ifdef DEBUG
+        append_to_log("Unable to load .info file for folder: %s\n", diskInfoPath);
+#endif
+        return FALSE;
+    }
+
+    /* Check if it's a drawer or disk with DrawerData */
+    if (((diskObject->do_Type == WBDRAWER || diskObject->do_Type == WBDISK)) && diskObject->do_DrawerData)
+    {
+        drawerData = (struct DrawerData *)diskObject->do_DrawerData;
+        
+        /* Read window geometry */
+        folderInfo->left = drawerData->dd_NewWindow.LeftEdge;
+        folderInfo->top = drawerData->dd_NewWindow.TopEdge;
+        folderInfo->width = drawerData->dd_NewWindow.Width;
+        folderInfo->height = drawerData->dd_NewWindow.Height;
+        
+        /* Read view mode if requested */
+        if (viewMode) {
+            *viewMode = drawerData->dd_ViewModes;
+        }
+
+#ifdef DEBUG_MAX
+        append_to_log("Folder window settings: LeftEdge=%d, TopEdge=%d, Width=%d, Height=%d, ViewMode=%d\n",
+                      folderInfo->left, folderInfo->top, folderInfo->width, folderInfo->height,
+                      viewMode ? *viewMode : 0);
+#endif
+        result = TRUE;
+    }
+    else
+    {
+#ifdef DEBUG
+        append_to_log("Not a drawer/disk or missing DrawerData: %s\n", diskInfoPath);
+#endif
+    }
+
+    FreeDiskObject(diskObject);
+    return result;
+}
+
 void sanitizeAmigaPath(char *path)
 {
     ULONG len;

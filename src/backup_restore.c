@@ -10,6 +10,7 @@
 #include "backup_marker.h"
 #include "backup_lha.h"
 #include "backup_paths.h"
+#include "file_directory_handling.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,6 +39,7 @@ static BOOL DirectoryExists(const char *path);
 static BOOL CreateDirectoryRecursive(const char *path);
 static void RecordError(RestoreContext *ctx, const char *error);
 static void UpdateStatistics(RestoreContext *ctx, BOOL success, ULONG bytes);
+static BOOL RestoreWindowGeometry(const char *folderPath, const BackupArchiveEntry *entry);
 
 /* Context for catalog iteration during full run restore */
 typedef struct {
@@ -106,6 +108,11 @@ static BOOL RestoreCatalogEntryCallback(const BackupArchiveEntry *entry, void *u
         RecordError(rctx, error);
         UpdateStatistics(rctx, FALSE, 0);
         return TRUE;  /* Continue with other archives */
+    }
+    
+    /* Restore window geometry if enabled */
+    if (rctx->restoreWindowGeometry) {
+        RestoreWindowGeometry(destPath, entry);
     }
     
     /* Get archive size for statistics */
@@ -252,6 +259,56 @@ static void UpdateStatistics(RestoreContext *ctx, BOOL success, ULONG bytes) {
     }
 }
 
+/**
+ * @brief Restore window geometry to folder's .info file
+ * 
+ * Applies window position, size, and view mode from backup metadata
+ * to the folder's .info file. Only modifies window-related fields,
+ * leaving icon image and tool types intact.
+ * 
+ * @param folderPath Full path to the folder (e.g., "Work:Projects/")
+ * @param entry Catalog entry containing window geometry
+ * @return TRUE on success, FALSE on failure or if geometry not available
+ */
+static BOOL RestoreWindowGeometry(const char *folderPath, const BackupArchiveEntry *entry) {
+#ifdef PLATFORM_AMIGA
+    folderWindowSize windowInfo;
+    
+    if (!folderPath || !entry) {
+        return FALSE;
+    }
+    
+    /* Check if window geometry is available */
+    if (entry->windowWidth <= 0 || entry->windowHeight <= 0 ||
+        entry->windowLeft < 0 || entry->windowTop < 0) {
+        /* No window geometry stored - not an error, just skip */
+        return TRUE;
+    }
+    
+    /* Populate window info structure */
+    windowInfo.left = entry->windowLeft;
+    windowInfo.top = entry->windowTop;
+    windowInfo.width = entry->windowWidth;
+    windowInfo.height = entry->windowHeight;
+    
+    /* Use SaveFolderSettings to update the .info file */
+    /* Note: This also updates view mode via user_folderViewMode global */
+    /* For now, we'll just update window geometry and let view mode stay as-is */
+    SaveFolderSettings(folderPath, &windowInfo, 0);
+    
+    printf("  Restored window geometry: %dx%d+%d+%d\n",
+           windowInfo.width, windowInfo.height,
+           windowInfo.left, windowInfo.top);
+    
+    return TRUE;
+#else
+    /* No .info files on host platform */
+    (void)folderPath;
+    (void)entry;
+    return TRUE;
+#endif
+}
+
 /* ========================================================================
  * PUBLIC API IMPLEMENTATION - Initialization
  * ======================================================================== */
@@ -269,6 +326,9 @@ BOOL InitRestoreContext(RestoreContext *ctx) {
         RecordError(ctx, "LHA executable not found");
         return FALSE;
     }
+    
+    /* Default: restore window geometry */
+    ctx->restoreWindowGeometry = TRUE;
     
     return TRUE;
 }

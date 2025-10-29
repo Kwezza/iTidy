@@ -20,6 +20,7 @@
 #define GID_RESTORE_CHANGE_PATH     2002
 #define GID_RESTORE_RUN_LIST        2003
 #define GID_RESTORE_DETAILS         2004
+#define GID_RESTORE_WINDOW_GEOM_CHK 2005
 #define GID_RESTORE_RUN_BTN         2006
 #define GID_RESTORE_VIEW_FOLDERS    2007
 #define GID_RESTORE_CANCEL          2008
@@ -84,6 +85,7 @@ struct iTidyRestoreWindow
     struct Gadget *change_path_btn;
     struct Gadget *run_list;
     struct Gadget *details_listview;   /* Read-only details display */
+    struct Gadget *window_geom_chk;    /* Checkbox: restore window geometry */
     struct Gadget *restore_run_btn;
     struct Gadget *view_folders_btn;
     struct Gadget *cancel_btn;
@@ -95,6 +97,7 @@ struct iTidyRestoreWindow
     struct List *details_list_strings;  /* List for details ListView */
     ULONG run_count;                    /* Number of runs found */
     LONG selected_run_index;            /* Currently selected (-1 if none) */
+    BOOL restore_window_geometry;       /* TRUE to restore window positions (default TRUE) */
     
     /* Double-click tracking */
     ULONG last_click_secs;              /* Last click timestamp seconds */

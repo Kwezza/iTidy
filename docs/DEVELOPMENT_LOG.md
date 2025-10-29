@@ -5,7 +5,96 @@ iTidy is an Amiga icon management utility that allows users to sort and arrange 
 
 ## Development Timeline
 
-### Latest: Folder View Window with ASCII Tree-Style ListView (October 2025)
+### Latest: Window Geometry Backup and Restore (October 29, 2025)
+
+#### Implementation: Preserve Folder Window Positions in Backups
+- **Purpose**: Restore folder window positions, sizes, and view modes along with icon positions
+- **Date**: October 29, 2025
+- **Motivation**: User discovered backup/restore system didn't preserve folder window geometry, only icon positions
+
+#### Design Discussion:
+**Safety Consideration**: Backing up parent folder's `.info` file was considered risky:
+- Could overwrite user changes made after backup (custom icons, tool types)
+- Affects files outside the folder being restored
+- Decided against including full `.info` file in archives
+
+**Solution**: Store window geometry as metadata in catalog, apply selectively during restore
+- Only modifies window-related fields in `.info` file
+- Preserves icon image and tool types
+- User-controllable via checkbox in restore GUI
+
+#### Implementation Details:
+
+**Catalog Format Enhanced (v1.0 → v1.1):**
+```
+Old: 00001.lha | 000/ | 15 KB | 5 | Work:Projects/MyFolder/
+New: 00001.lha | 000/ | 15 KB | 5 | Work:Projects/MyFolder/ | 320x200+100+50 | 1
+                                                               └─Window Geom─┘  └ViewMode
+```
+- **Geometry Format**: `WIDTHxHEIGHT+LEFT+TOP` (X11-style)
+- **View Mode**: DDVM enum value (0=icons, 1=text, etc.)
+- **Backwards Compatible**: Old catalogs without geometry fields still work (fields optional)
+
+**Files Modified:**
+1. **backup_types.h** - Added to `BackupArchiveEntry`:
+   - `WORD windowLeft, windowTop, windowWidth, windowHeight`
+   - `UWORD viewMode`
+
+2. **backup_catalog.c**:
+   - Updated `CATALOG_VERSION` to "v1.1"
+   - `AppendCatalogEntry()` - Writes geometry as `320x200+100+50 | 1`
+   - `ParseCatalogLine()` - Reads geometry, defaults to -1 if missing (backwards compat)
+   - Updated column headers to include "Window Geometry | VM"
+
+3. **backup_session.c**:
+   - `BackupFolder()` - Calls `GetFolderWindowSettings()` to read `.info` before archiving
+   - Stores geometry in catalog entry with fallback to -1 if `.info` not available
+
+4. **file_directory_handling.h/.c**:
+   - Added `GetFolderWindowSettings()` - Reads window geometry from folder's `.info` file
+   - Uses `GetDiskObject()` to access `DrawerData->dd_NewWindow` structure
+   - Mirrors existing `SaveFolderSettings()` functionality
+
+5. **backup_restore.h/.c**:
+   - Added `restoreWindowGeometry` flag to `RestoreContext` (default TRUE)
+   - Added `RestoreWindowGeometry()` - Applies saved geometry using `SaveFolderSettings()`
+   - `RestoreCatalogEntryCallback()` - Calls geometry restore after file extraction
+   - `InitRestoreContext()` - Defaults flag to TRUE
+
+6. **GUI/restore_window.h/.c**:
+   - Added gadget ID `GID_RESTORE_WINDOW_GEOM_CHK`
+   - Added checkbox: "Restore window positions" (default checked)
+   - Added `restore_window_geometry` flag to window structure
+   - Handler updates flag on checkbox toggle
+   - `perform_restore_run()` passes flag to `RestoreContext`
+
+**Restore Flow:**
+1. Extract LHA archive to folder (restores `.info` files of contents)
+2. If `restoreWindowGeometry` enabled:
+   - Read window geometry from catalog entry
+   - Call `SaveFolderSettings()` to update folder's `.info` file
+   - Only modifies: `dd_NewWindow.LeftEdge/TopEdge/Width/Height` and `dd_ViewModes`
+   - Preserves: Icon image, tool types, all other drawer properties
+
+**Safety Features:**
+- Checkbox allows user to disable if unwanted
+- Only touches window-related fields in `.info` file
+- Graceful handling when geometry unavailable (folders with no `.info`)
+- No side effects outside target folder
+
+**Testing Results:**
+- Build successful (warnings only, no errors)
+- Ready for WinUAE testing
+
+**Benefits:**
+- Complete restoration of folder appearance (icons + window)
+- User-controllable feature via GUI checkbox
+- Safe implementation - no risk of overwriting custom icons/tool types
+- Backwards compatible with existing backup runs
+
+---
+
+### Folder View Window with ASCII Tree-Style ListView (October 2025)
 
 #### Implementation: Hierarchical Folder Display in Modal Window
 - **Purpose**: Provide visual overview of folder hierarchy from backup catalog in restore window

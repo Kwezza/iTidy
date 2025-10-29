@@ -30,10 +30,10 @@
 /* Constants                                                             */
 /*========================================================================*/
 
-#define CATALOG_VERSION "iTidy Backup Catalog v1.0"
-#define CATALOG_SEPARATOR "========================================"
-#define CATALOG_COLUMN_HEADER "# Index    | Subfolder | Size    | Icons | Original Path"
-#define CATALOG_COLUMN_DIVIDER "-----------+-----------+---------+-------+------------------"
+#define CATALOG_VERSION "iTidy Backup Catalog v1.1"
+#define CATALOG_SEPARATOR "==============================================================================="
+#define CATALOG_COLUMN_HEADER "# Index    | Subfolder | Size    | Icons | Original Path                            | Window Geometry | VM"
+#define CATALOG_COLUMN_DIVIDER "-----------+-----------+---------+-------+------------------------------------------+----------------+---"
 #define MAX_LINE_LENGTH 512
 
 /*========================================================================*/
@@ -219,6 +219,7 @@ BOOL CreateCatalog(BackupContext *ctx) {
 BOOL AppendCatalogEntry(BackupContext *ctx, const BackupArchiveEntry *entry) {
     char line[MAX_LINE_LENGTH];
     char sizeStr[16];
+    char geometryStr[32];
     
     if (!ctx || !entry || !ctx->catalogFile || !ctx->catalogOpen) {
         DEBUG_LOG("Invalid parameters for catalog entry");
@@ -228,13 +229,26 @@ BOOL AppendCatalogEntry(BackupContext *ctx, const BackupArchiveEntry *entry) {
     /* Format size */
     FormatSizeForCatalog(sizeStr, entry->sizeBytes);
     
-    /* Build entry line: "00042.lha  | 000/      | 22 KB   | 5     | DH0:Projects/MyFolder/" */
-    snprintf(line, sizeof(line), "%-10s | %-9s | %-7s | %-5hu | %s",
+    /* Format window geometry: "320x200+100+50" or "N/A" if not available */
+    if (entry->windowWidth > 0 && entry->windowHeight > 0 && 
+        entry->windowLeft >= 0 && entry->windowTop >= 0) {
+        snprintf(geometryStr, sizeof(geometryStr), "%dx%d+%d+%d",
+                 entry->windowWidth, entry->windowHeight,
+                 entry->windowLeft, entry->windowTop);
+    } else {
+        strcpy(geometryStr, "N/A");
+    }
+    
+    /* Build entry line with window geometry and view mode:
+     * "00042.lha  | 000/      | 22 KB   | 5     | DH0:Projects/MyFolder/ | 320x200+100+50 | 1" */
+    snprintf(line, sizeof(line), "%-10s | %-9s | %-7s | %-5hu | %-40s | %-14s | %hu",
              entry->archiveName,
              entry->subFolder,
              sizeStr,
              entry->iconCount,
-             entry->originalPath);
+             entry->originalPath,
+             geometryStr,
+             entry->viewMode);
     
     if (!WriteLineToFile(ctx->catalogFile, line)) {
         DEBUG_LOG("Failed to write catalog entry");
@@ -320,6 +334,13 @@ BOOL ParseCatalogLine(const char *line, BackupArchiveEntry *outEntry) {
     /* Clear output entry */
     memset(outEntry, 0, sizeof(BackupArchiveEntry));
     
+    /* Initialize window geometry to "not available" */
+    outEntry->windowLeft = -1;
+    outEntry->windowTop = -1;
+    outEntry->windowWidth = -1;
+    outEntry->windowHeight = -1;
+    outEntry->viewMode = 0;
+    
     /* Parse pipe-delimited fields */
 #ifdef PLATFORM_HOST
     token = strtok(tempLine, "|");
@@ -327,7 +348,7 @@ BOOL ParseCatalogLine(const char *line, BackupArchiveEntry *outEntry) {
     token = strtok(tempLine, "|");
 #endif
     
-    while (token && field < 5) {
+    while (token && field < 7) {
         /* Trim leading/trailing whitespace */
         while (*token == ' ' || *token == '\t') token++;
         
@@ -379,6 +400,22 @@ BOOL ParseCatalogLine(const char *line, BackupArchiveEntry *outEntry) {
             case 4: /* Original path */
                 strncpy(outEntry->originalPath, token, MAX_BACKUP_PATH - 1);
                 break;
+                
+            case 5: /* Window geometry: "320x200+100+50" or "N/A" */
+                if (strcmp(token, "N/A") != 0) {
+                    int w, h, l, t;
+                    if (sscanf(token, "%dx%d+%d+%d", &w, &h, &l, &t) == 4) {
+                        outEntry->windowWidth = (WORD)w;
+                        outEntry->windowHeight = (WORD)h;
+                        outEntry->windowLeft = (WORD)l;
+                        outEntry->windowTop = (WORD)t;
+                    }
+                }
+                break;
+                
+            case 6: /* View mode */
+                sscanf(token, "%hu", &outEntry->viewMode);
+                break;
         }
         
         field++;
@@ -389,8 +426,9 @@ BOOL ParseCatalogLine(const char *line, BackupArchiveEntry *outEntry) {
 #endif
     }
     
-    /* Valid entry must have all 5 fields */
-    if (field == 5 && outEntry->archiveName[0] && outEntry->originalPath[0]) {
+    /* Valid entry must have at least the first 5 fields (backwards compatibility) */
+    /* Fields 6 and 7 (window geometry and view mode) are optional */
+    if (field >= 5 && outEntry->archiveName[0] && outEntry->originalPath[0]) {
         return TRUE;
     }
     

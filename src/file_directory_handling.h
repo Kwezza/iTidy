@@ -40,6 +40,7 @@ int IsRootDirectorySimple(char *path);
 void removeInfoExtension(const char *input, char *output);
 int saveIconsPositionsToDisk(IconArray *iconArray);
 void SaveFolderSettings(const char *folderPath, folderWindowSize *newFolderInfo, int sanityCheck);
+BOOL GetFolderWindowSettings(const char *folderPath, folderWindowSize *folderInfo, UWORD *viewMode);
 void dumpIconArrayToScreen(IconArray *iconArray);
 void sanitizeAmigaPath(char *path);
 

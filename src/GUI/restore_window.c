@@ -834,6 +834,11 @@ BOOL perform_restore_run(struct iTidyRestoreWindow *restore_data,
         return FALSE;
     }
     
+    /* Set window geometry restore flag from checkbox */
+    restoreCtx.restoreWindowGeometry = restore_data->restore_window_geometry;
+    append_to_log("Window geometry restore: %s\n",
+                  restoreCtx.restoreWindowGeometry ? "ENABLED" : "DISABLED");
+    
     /* Build full path to run directory */
     char runPath[512];
     sprintf(runPath, "%s/%s", restore_data->backup_root_path, run_entry->runName);
@@ -975,6 +980,7 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     /* Initialize structure */
     memset(restore_data, 0, sizeof(struct iTidyRestoreWindow));
     restore_data->selected_run_index = -1;
+    restore_data->restore_window_geometry = TRUE;  /* Default to enabled */
     strcpy(restore_data->backup_root_path, "PROGDIR:Backups");
     
     /* Get Workbench screen */
@@ -1272,7 +1278,26 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     /*--------------------------------------------------------------------*/
     /* Buttons positioned OUTSIDE bevel, aligned with bevel INNER edges */
     /* The bevel has a frame, so we need to account for that */
-    /* Add spacing between bottom of details listview and buttons */
+    /* Add spacing between bottom of details listview and checkbox */
+    current_y = ng.ng_TopEdge + ng.ng_Height + RESTORE_SPACE_Y;
+    
+    /* Restore Window Geometry Checkbox */
+    ng.ng_LeftEdge = current_x;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = TextLength(&temp_rp, "Restore window positions", 24) + 30;
+    ng.ng_Height = temp_rp.TxHeight + 4;
+    ng.ng_GadgetText = "Restore window positions";
+    ng.ng_GadgetID = GID_RESTORE_WINDOW_GEOM_CHK;
+    ng.ng_Flags = PLACETEXT_RIGHT;
+    
+    restore_data->window_geom_chk = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
+        GTCB_Checked, TRUE,  /* Default to enabled */
+        TAG_END);
+    
+    if (gad == NULL)
+        goto cleanup_error;
+    
+    /* Add spacing between checkbox and buttons */
     current_y = ng.ng_TopEdge + ng.ng_Height + RESTORE_CONTENT_PADDING + RESTORE_BEVEL_BORDER + RESTORE_BUTTON_SPACING;
     
     /* Calculate bevel position and dimensions (must match draw_window_background()) */
@@ -1774,6 +1799,14 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                                 }
                             }
                         }
+                        break;
+                    
+                    case GID_RESTORE_WINDOW_GEOM_CHK:
+                        /* Update flag from checkbox state */
+                        restore_data->restore_window_geometry = 
+                            (((struct Gadget*)imsg->IAddress)->Flags & GFLG_SELECTED) != 0;
+                        append_to_log("Window geometry restore: %s\n", 
+                                     restore_data->restore_window_geometry ? "ENABLED" : "DISABLED");
                         break;
                     
                     case GID_RESTORE_RUN_BTN:

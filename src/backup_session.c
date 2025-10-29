@@ -35,6 +35,7 @@
 #include "backup_catalog.h"
 #include "backup_lha.h"
 #include "backup_marker.h"
+#include "file_directory_handling.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -343,6 +344,42 @@ BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath, UWORD icon
     strncpy(entry.originalPath, folderPath, sizeof(entry.originalPath) - 1);
     entry.originalPath[sizeof(entry.originalPath) - 1] = '\0';
     entry.successful = TRUE;
+    
+#ifndef PLATFORM_HOST
+    /* Capture window geometry from folder's .info file */
+    {
+        folderWindowSize windowInfo;
+        UWORD viewMode = 0;
+        
+        if (GetFolderWindowSettings(folderPath, &windowInfo, &viewMode)) {
+            entry.windowLeft = windowInfo.left;
+            entry.windowTop = windowInfo.top;
+            entry.windowWidth = windowInfo.width;
+            entry.windowHeight = windowInfo.height;
+            entry.viewMode = viewMode;
+            
+            append_to_log("[BACKUP] Captured window geometry: %dx%d+%d+%d (view mode %d)\n",
+                         windowInfo.width, windowInfo.height, 
+                         windowInfo.left, windowInfo.top, viewMode);
+        } else {
+            /* No .info file or not a drawer - use -1 to indicate not available */
+            entry.windowLeft = -1;
+            entry.windowTop = -1;
+            entry.windowWidth = -1;
+            entry.windowHeight = -1;
+            entry.viewMode = 0;
+            
+            append_to_log("[BACKUP] No window geometry available for this folder\n");
+        }
+    }
+#else
+    /* Host builds don't have .info files */
+    entry.windowLeft = -1;
+    entry.windowTop = -1;
+    entry.windowWidth = -1;
+    entry.windowHeight = -1;
+    entry.viewMode = 0;
+#endif
     
     /* Append to catalog */
     if (!AppendCatalogEntry(ctx, &entry)) {

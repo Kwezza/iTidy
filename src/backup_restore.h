@@ -71,6 +71,7 @@ typedef struct {
 typedef struct {
     char lhaPath[MAX_RESTORE_PATH];    /* Path to LHA executable */
     BOOL lhaAvailable;                  /* TRUE if LHA was found */
+    BOOL restoreWindowGeometry;         /* TRUE to restore window positions/sizes (default TRUE) */
     RestoreStatistics stats;            /* Operation statistics */
     char lastError[256];                /* Last error message */
 } RestoreContext;
