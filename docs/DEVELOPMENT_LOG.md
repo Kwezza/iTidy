@@ -92,16 +92,112 @@ For device roots like `DH0:`, the system correctly handles the special case:
   - Catalog metadata updates window geometry fields only
 - **Result**: Both icon positions AND window geometry fully restored for root volumes
 
+**Checkbox Behavior - Important Distinction:**
+
+**For Normal Folders** (e.g., `Work:Projects/MyFolder/`):
+- **Checkbox CHECKED**: Applies window geometry from catalog metadata to parent's `.info` file
+  - Archive extracts: `file1.info`, `file2.info`, `SubFolder.info` (contents only)
+  - Catalog updates: `Work:Projects/MyFolder.info` (parent directory) with window geometry
+- **Checkbox UNCHECKED**: No window geometry applied
+  - Only archive contents restored, parent `.info` untouched
+
+**For Root Directories** (e.g., `DH0:`, `Workbench:`):
+- **Checkbox CHECKED or UNCHECKED**: Window geometry restored either way! ✅
+  - Why? `Disk.info` is **inside** the archive (it's a file in the root, not the parent)
+  - Archive extraction restores `Disk.info` with original window geometry
+  - Catalog metadata application is redundant (both sources have same original geometry)
+  - **Result**: Checkbox setting doesn't affect root directory window restoration
+
+**Backup Timeline** (explains why both sources match):
+1. `BackupFolder()` called **before** iTidy modifies anything
+2. Captures `.info` files in current state (original geometry)
+3. Captures catalog metadata (original geometry)
+4. iTidy then sorts icons and resizes window
+5. iTidy saves new positions to `.info` files
+6. **Conclusion**: Archive and catalog both captured same pre-iTidy state
+
 **Testing Results:**
-- Build successful (warnings only, no errors)
-- Ready for WinUAE testing
+- ✅ **Build**: Successful (warnings only, no errors)
+- ✅ **WinUAE Test - Normal Folder (October 30, 2025)**: **PASSED**
+  - **Test Case**: `Workbench:Help/` folder
+  - **Initial State**: Window maximized to full screen, snapshot saved
+  - **iTidy Run**: Centered and shrunk window to fit content nicely
+  - **Backup Created**: Captured original full-screen geometry in catalog
+  - **Restore Run**: Successfully restored window to original full-screen size
+  - **Result**: Window geometry restoration working perfectly for normal folders! ✅
+- ✅ **WinUAE Test - Root Directory (October 30, 2025)**: **PASSED**
+  - **Test Case**: `Workbench:` (device root volume)
+  - **Initial State**: Window maximized to full screen, snapshot saved
+  - **iTidy Run**: Centered and shrunk window to fit content
+  - **Backup Created**: Captured geometry from `Workbench:Disk.info` in catalog
+  - **Restore Run**: Successfully restored window to original full-screen size
+  - **Result**: Root directory handling working perfectly! Special `Disk.info` logic confirmed! ✅
+  - **Note**: Checkbox setting irrelevant for roots - `Disk.info` in archive always restores geometry
+
+**CRITICAL: Workbench Window Geometry Cache Limitation (October 30, 2025)**
+
+⚠️ **Important Amiga OS Behavior**: Workbench caches **window geometry only** in memory for performance optimization. This creates a specific limitation for iTidy's window resizing feature:
+
+**⚠️ IMPORTANT CLARIFICATION:**
+- **Icon positions**: ✅ Update **immediately** and are visible in real-time
+- **Window geometry**: ❌ Cached until reboot (size/position only)
+- If a folder window is **open** while iTidy runs, the user will **see icons moving instantly**
+- However, the **window size/position** will remain cached and unchanged
+- **Only window geometry is affected** by this cache limitation
+
+**The Problem:**
+1. User opens a folder window (e.g., `Work:Projects/`)
+2. Workbench loads `.info` file and **caches window geometry** (size/position) in RAM
+3. User runs iTidy → modifies `.info` file on disk with new window size/position
+4. **Icons move instantly** inside the open window ✅
+5. User closes and reopens folder → Workbench displays **cached** window geometry (not updated disk version)
+6. **Result**: Window size/position appears unchanged despite iTidy successfully modifying the `.info` file! ❌
+
+**Why This Happens:**
+- Workbench caches **window geometry only** to avoid disk I/O on every folder open
+- **Icon data is NOT cached** - changes are immediately visible
+- Window geometry cache persists until reboot or window is explicitly invalidated
+- No standard AmigaOS API to invalidate specific window cache entries
+- iTidy modifies `.info` files directly, bypassing Workbench's cache management
+
+**Current Workaround:**
+- **Reboot Amiga** to clear entire Workbench cache
+- After reboot, all folders will display updated window geometry from `.info` files
+- This is the **only reliable way** to see iTidy's window size/position changes for previously-opened folders
+- **Remember**: Icon positions update immediately - no reboot needed for those changes
+
+**Impact on Users:**
+- **Icon tidying**: ✅ Works instantly and visibly in real-time (even with window open)
+- **Window resizing**: ❌ Cached for previously-opened folders until reboot
+- **First-time folders**: ✅ Window geometry works correctly (no cache exists yet)
+- **Testing/validation**: Requires reboot to verify window geometry changes only
+- **Backup/restore**: Icon positions restore instantly; window geometry requires reboot for previously-opened folders
+
+**Future Considerations:**
+- Investigate undocumented Workbench.library functions for cache invalidation
+- Consider creating external utility to force cache refresh
+- Add prominent warning in GUI and documentation
+- Potentially add "Reboot Required" indicator after iTidy operations
+
+**Documentation Requirements:**
+- ✅ Add to `DEVELOPMENT_LOG.md` (this entry)
+- ⚠️ TODO: Add to user manual/help file (emphasize icon vs window geometry distinction)
+- ⚠️ TODO: Add warning dialog or info text in iTidy GUI
+- ⚠️ TODO: Display notice after tidy operations: "Window resizing requires reboot for previously-opened folders. Icon positions are updated immediately."
+
+**Testing Impact:**
+- Icon position tests: ✅ Can be validated immediately (real-time updates)
+- Window geometry tests: ⚠️ Must be performed after reboot for previously-opened folders
+- Cannot reliably test window size changes for multiple iterations without rebooting between each
+- Backup/restore tests: Icon positions verify instantly; window geometry affected if folders were opened before restore
 
 **Benefits:**
 - Complete restoration of folder appearance (icons + window)
-- User-controllable feature via GUI checkbox
+- User-controllable feature via GUI checkbox (for normal folders)
 - Safe implementation - no risk of overwriting custom icons/tool types
 - Backwards compatible with existing backup runs
 - Correctly handles both normal folders and device root volumes
+- Root directories naturally preserve window geometry via `Disk.info` in archive
 
 ---
 
