@@ -592,6 +592,292 @@ ListView gadgets calculate their height based on:
 
 The gadget ensures it can display complete rows, so it rounds the height to the nearest row boundary.
 
+## ⚠️ CRITICAL: ListView Cleanup Order Bug (Use-After-Free)
+
+### The Problem: Crash on Window Close
+When closing a window with ListView gadgets, improper cleanup order causes a **use-after-free** bug that leads to:
+- **System crashes** with "Software Failure" alerts (error #80000003)
+- **Screen corruption** where the display stops updating correctly
+- **System instability** that requires a reboot
+- **Intermittent failures** that are hard to reproduce and debug
+
+This bug occurs when you:
+1. Open a window with ListView gadgets
+2. Close the window immediately (without interacting with it)
+3. The system tries to access freed memory during window cleanup
+
+### Why This Happens: Memory Access During Window Close
+The crash is caused by incorrect cleanup sequence:
+
+```c
+/* ❌ WRONG ORDER - Causes crash! */
+void close_window_wrong(WindowData *data)
+{
+    /* 1. Close window FIRST */
+    if (data->window != NULL)
+        CloseWindow(data->window);  /* Window gadgets still point to lists! */
+    
+    /* 2. Free gadgets */
+    if (data->glist != NULL)
+        FreeGadgets(data->glist);
+    
+    /* 3. Free list data LAST */
+    if (data->listview_list != NULL)
+    {
+        while ((node = RemHead(data->listview_list)) != NULL)
+            FreeVec(node);
+        FreeVec(data->listview_list);
+    }
+}
+```
+
+**What goes wrong:**
+1. `CloseWindow()` is called while ListView gadgets still have pointers to list data
+2. During window closure, Intuition tries to render/cleanup the gadgets
+3. The ListView gadget tries to access its list data
+4. But the list data **hasn't been freed yet** - the pointers are still valid but **dangling**
+5. The gadget reads **memory that's about to be freed**
+6. When the list is freed immediately after, the system becomes unstable
+7. Sometimes the memory is overwritten before access = **crash**
+8. Sometimes it's accessed after being freed = **screen corruption**
+
+### The Solution: Detach Lists BEFORE Any Cleanup
+
+Always follow this strict cleanup order:
+
+```c
+/* ✅ CORRECT ORDER - Safe cleanup! */
+void close_window_correct(WindowData *data)
+{
+    if (data == NULL)
+        return;
+    
+    /* STEP 1: Detach lists from ListView gadgets FIRST */
+    /* This tells gadgets: "Your list is gone, don't access it!" */
+    if (data->window != NULL)
+    {
+        if (data->listview != NULL)
+        {
+            GT_SetGadgetAttrs(data->listview, data->window, NULL,
+                GTLV_Labels, ~0,  /* ~0 means "no list attached" */
+                TAG_END);
+        }
+        
+        if (data->details_listview != NULL)
+        {
+            GT_SetGadgetAttrs(data->details_listview, data->window, NULL,
+                GTLV_Labels, ~0,
+                TAG_END);
+        }
+    }
+    
+    /* STEP 2: Free list data structures */
+    /* Now safe because gadgets know the lists are detached */
+    if (data->listview_list != NULL)
+    {
+        struct Node *node;
+        while ((node = RemHead(data->listview_list)) != NULL)
+            FreeVec(node);
+        FreeVec(data->listview_list);
+        data->listview_list = NULL;
+    }
+    
+    if (data->details_list != NULL)
+    {
+        struct Node *node;
+        while ((node = RemHead(data->details_list)) != NULL)
+        {
+            if (node->ln_Name != NULL)
+                FreeVec(node->ln_Name);
+            FreeVec(node);
+        }
+        FreeVec(data->details_list);
+        data->details_list = NULL;
+    }
+    
+    /* STEP 3: Free run entries or other data */
+    if (data->run_entries != NULL)
+    {
+        FreeVec(data->run_entries);
+        data->run_entries = NULL;
+    }
+    
+    /* STEP 4: Close window */
+    /* Gadgets won't access freed memory during window close */
+    if (data->window != NULL)
+    {
+        CloseWindow(data->window);
+        data->window = NULL;
+    }
+    
+    /* STEP 5: Free gadgets */
+    if (data->glist != NULL)
+    {
+        FreeGadgets(data->glist);
+        data->glist = NULL;
+    }
+    
+    /* STEP 6: Free visual info */
+    if (data->visual_info != NULL)
+    {
+        FreeVisualInfo(data->visual_info);
+        data->visual_info = NULL;
+    }
+    
+    /* STEP 7: Close fonts (if opened) */
+    if (data->system_font != NULL)
+    {
+        CloseFont(data->system_font);
+        data->system_font = NULL;
+    }
+    
+    /* STEP 8: Unlock screen */
+    if (data->screen != NULL)
+    {
+        UnlockPubScreen(NULL, data->screen);
+        data->screen = NULL;
+    }
+}
+```
+
+### Critical Cleanup Sequence Rules
+
+**For ANY window with ListView gadgets:**
+
+1. **FIRST**: Detach ALL lists from ListView gadgets using `GT_SetGadgetAttrs()` with `GTLV_Labels, ~0`
+2. **SECOND**: Free all list data structures and their contents
+3. **THIRD**: Free any other application data (run entries, etc.)
+4. **FOURTH**: Close the window
+5. **FIFTH**: Free gadgets
+6. **SIXTH**: Free visual info
+7. **SEVENTH**: Close fonts
+8. **EIGHTH**: Unlock screen
+
+**Why this order matters:**
+- Detaching lists prevents gadgets from accessing freed memory
+- Freeing lists before closing window ensures no dangling pointers
+- Closing window before freeing gadgets allows proper gadget cleanup
+- Freeing resources in reverse order of allocation prevents leaks
+
+### Multiple ListViews Pattern
+
+If your window has multiple ListView gadgets:
+
+```c
+/* Detach ALL ListViews before freeing any lists */
+if (data->window != NULL)
+{
+    /* Detach first ListView */
+    if (data->run_listview != NULL)
+    {
+        GT_SetGadgetAttrs(data->run_listview, data->window, NULL,
+            GTLV_Labels, ~0, TAG_END);
+    }
+    
+    /* Detach second ListView */
+    if (data->details_listview != NULL)
+    {
+        GT_SetGadgetAttrs(data->details_listview, data->window, NULL,
+            GTLV_Labels, ~0, TAG_END);
+    }
+    
+    /* Detach third ListView */
+    if (data->archive_listview != NULL)
+    {
+        GT_SetGadgetAttrs(data->archive_listview, data->window, NULL,
+            GTLV_Labels, ~0, TAG_END);
+    }
+}
+
+/* Now safe to free all lists */
+/* Free first list... */
+/* Free second list... */
+/* Free third list... */
+```
+
+### Real-World Impact: iTidy Restore Window Bug
+
+This bug was discovered in iTidy's restore window (`restore_window.c`):
+
+**Symptoms:**
+- Opening and closing the restore window immediately caused crashes
+- Error #80000003 (memory access violation)
+- Screen stopped updating correctly (frozen display)
+- System became unstable, requiring reboot
+- Bug was intermittent, making it hard to debug
+
+**Original buggy code:**
+```c
+void close_restore_window(struct iTidyRestoreWindow *restore_data)
+{
+    /* Closed window FIRST - gadgets still had list pointers! */
+    if (restore_data->window != NULL)
+        CloseWindow(restore_data->window);
+    
+    /* Freed gadgets SECOND */
+    if (restore_data->glist != NULL)
+        FreeGadgets(restore_data->glist);
+    
+    /* Freed lists LAST - but gadgets already accessed them during close! */
+    if (restore_data->run_list_strings != NULL)
+    {
+        /* Crash or corruption happened before this point */
+        ...
+    }
+}
+```
+
+**After fix:**
+- Detached both ListViews (`run_list` and `details_listview`) FIRST
+- Freed all list data structures SECOND
+- Closed window THIRD
+- No more crashes, even with repeated open/close cycles
+- System remained stable
+
+### Debugging This Issue
+
+If you encounter crashes when closing windows with ListViews:
+
+1. **Add logging** to trace cleanup order:
+   ```c
+   append_to_log("Detaching listviews\n");
+   append_to_log("Freeing list data\n");
+   append_to_log("Closing window\n");
+   ```
+
+2. **Check for use-after-free** patterns:
+   - Does window close before lists are freed?
+   - Are lists detached before being freed?
+   - Are gadgets freed before window is closed?
+
+3. **Test with immediate close**:
+   - Open window
+   - Close immediately without interaction
+   - If it crashes, you have this bug
+
+4. **Watch for symptoms**:
+   - Software Failure alert #80000003
+   - Screen freezing or not updating
+   - Intermittent crashes
+   - System instability after window close
+
+### Summary: ListView Cleanup Checklist
+
+For EVERY window with ListView gadgets:
+
+- ✅ **DO** detach lists with `GT_SetGadgetAttrs(gadget, window, NULL, GTLV_Labels, ~0, TAG_END)` FIRST
+- ✅ **DO** detach ALL ListViews before freeing ANY list data
+- ✅ **DO** free list data BEFORE closing window
+- ✅ **DO** close window BEFORE freeing gadgets
+- ✅ **DO** add logging to trace cleanup sequence
+- ✅ **DO** set pointers to NULL after freeing
+- ❌ **DON'T** close window before detaching lists
+- ❌ **DON'T** free gadgets before freeing list data
+- ❌ **DON'T** free lists while gadgets still reference them
+- ❌ **DON'T** skip the detach step - it's mandatory!
+
+**Remember:** This bug causes serious system instability and crashes. Always follow the correct cleanup order when working with ListView gadgets. Test by opening and immediately closing your window - if it crashes, you have this bug.
+
 ## NewLook Menu Template
 
 ### 1. Customize Window Settings

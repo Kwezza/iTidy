@@ -1550,37 +1550,33 @@ void close_restore_window(struct iTidyRestoreWindow *restore_data)
     if (restore_data == NULL)
         return;
     
-    /* Close window */
+    append_to_log("close_restore_window: Starting cleanup\n");
+    
+    /* CRITICAL: Detach list views from gadgets BEFORE freeing lists */
+    /* This prevents the gadgets from accessing freed memory during window close */
     if (restore_data->window != NULL)
     {
-        CloseWindow(restore_data->window);
-        restore_data->window = NULL;
-    }
-    
-    /* Free gadgets */
-    if (restore_data->glist != NULL)
-    {
-        FreeGadgets(restore_data->glist);
-        restore_data->glist = NULL;
-    }
-    
-    /* Free visual info */
-    if (restore_data->visual_info != NULL)
-    {
-        FreeVisualInfo(restore_data->visual_info);
-        restore_data->visual_info = NULL;
-    }
-    
-    /* Close system font if we opened it */
-    if (restore_data->system_font != NULL)
-    {
-        CloseFont(restore_data->system_font);
-        restore_data->system_font = NULL;
+        append_to_log("Detaching listviews from gadgets\n");
+        
+        if (restore_data->run_list != NULL)
+        {
+            GT_SetGadgetAttrs(restore_data->run_list, restore_data->window, NULL,
+                GTLV_Labels, ~0,
+                TAG_END);
+        }
+        
+        if (restore_data->details_listview != NULL)
+        {
+            GT_SetGadgetAttrs(restore_data->details_listview, restore_data->window, NULL,
+                GTLV_Labels, ~0,
+                TAG_END);
+        }
     }
     
     /* Free run list strings */
     if (restore_data->run_list_strings != NULL)
     {
+        append_to_log("Freeing run_list_strings\n");
         while ((node = RemHead(restore_data->run_list_strings)) != NULL)
         {
             FreeVec(node);
@@ -1592,10 +1588,14 @@ void close_restore_window(struct iTidyRestoreWindow *restore_data)
     /* Free details list strings */
     if (restore_data->details_list_strings != NULL)
     {
+        append_to_log("Freeing details_list_strings\n");
         while ((node = RemHead(restore_data->details_list_strings)) != NULL)
         {
             if (node->ln_Name != NULL)
+            {
                 FreeVec(node->ln_Name);
+                node->ln_Name = NULL;
+            }
             FreeVec(node);
         }
         FreeVec(restore_data->details_list_strings);
@@ -1605,20 +1605,54 @@ void close_restore_window(struct iTidyRestoreWindow *restore_data)
     /* Free run entries */
     if (restore_data->run_entries != NULL)
     {
+        append_to_log("Freeing run_entries\n");
         FreeVec(restore_data->run_entries);
         restore_data->run_entries = NULL;
+    }
+    
+    /* Close window */
+    if (restore_data->window != NULL)
+    {
+        append_to_log("Closing window\n");
+        CloseWindow(restore_data->window);
+        restore_data->window = NULL;
+    }
+    
+    /* Free gadgets */
+    if (restore_data->glist != NULL)
+    {
+        append_to_log("Freeing gadgets\n");
+        FreeGadgets(restore_data->glist);
+        restore_data->glist = NULL;
+    }
+    
+    /* Free visual info */
+    if (restore_data->visual_info != NULL)
+    {
+        append_to_log("Freeing visual info\n");
+        FreeVisualInfo(restore_data->visual_info);
+        restore_data->visual_info = NULL;
+    }
+    
+    /* Close system font if we opened it */
+    if (restore_data->system_font != NULL)
+    {
+        append_to_log("Closing system font\n");
+        CloseFont(restore_data->system_font);
+        restore_data->system_font = NULL;
     }
     
     /* Unlock screen */
     if (restore_data->screen != NULL)
     {
+        append_to_log("Unlocking screen\n");
         UnlockPubScreen(NULL, restore_data->screen);
         restore_data->screen = NULL;
     }
     
     restore_data->window_open = FALSE;
     
-    append_to_log("Restore window closed\n");
+    append_to_log("Restore window closed successfully\n");
 }
 
 /*------------------------------------------------------------------------*/
