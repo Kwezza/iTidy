@@ -652,8 +652,24 @@ static BOOL parse_catalog_callback(const char *line, struct iTidyFolderViewWindo
     }
     
     /* Look for catalog entries with "Original Path" column */
-    /* Format: "00001.lha  | 000/      | 11 KB   | 15    | PC:Workbench" */
-    path_start = strrchr(line, '|');
+    /* Format: "00001.lha  | 000/      | 11 KB   | 15    | PC:Workbench | 709x374+45+113 | 1" */
+    /* Original Path is in the 5th column (after 4th pipe) */
+    
+    /* Find the 4th pipe to get to the Original Path column */
+    path_start = strchr(line, '|');  /* 1st pipe */
+    if (path_start != NULL)
+    {
+        path_start = strchr(path_start + 1, '|');  /* 2nd pipe */
+    }
+    if (path_start != NULL)
+    {
+        path_start = strchr(path_start + 1, '|');  /* 3rd pipe */
+    }
+    if (path_start != NULL)
+    {
+        path_start = strchr(path_start + 1, '|');  /* 4th pipe - now we're at the start of Original Path column */
+    }
+    
     if (path_start != NULL)
     {
         /* Skip past the '|' and any spaces */
@@ -663,8 +679,21 @@ static BOOL parse_catalog_callback(const char *line, struct iTidyFolderViewWindo
             path_start++;
         }
         
-        /* Check if we have a valid path (contains '/' or ':') */
-        if (strchr(path_start, '/') != NULL || strchr(path_start, ':') != NULL)
+        /* Find the end of the Original Path column (next pipe or end of line) */
+        char *path_end = strchr(path_start, '|');
+        UWORD path_column_len;
+        if (path_end != NULL)
+        {
+            path_column_len = path_end - path_start;
+        }
+        else
+        {
+            path_column_len = strlen(path_start);
+        }
+        
+        /* Check if we have a valid path (contains '/' or ':') within the column */
+        if ((strchr(path_start, '/') != NULL || strchr(path_start, ':') != NULL) &&
+            path_column_len > 0)
         {
             /* Extract size from the third column and icons from the fourth column */
             char *pipe1, *pipe2, *pipe3, *pipe4;
@@ -751,25 +780,38 @@ static BOOL parse_catalog_callback(const char *line, struct iTidyFolderViewWindo
                 return FALSE;
             }
             
-            /* Copy and clean up the path */
-            path_len = strlen(path_start);
-            entry->path = AllocVec(path_len + 1, MEMF_CLEAR);
+            /* Copy and clean up the path (only the Original Path column content) */
+            /* Create a temporary buffer for the path column only */
+            char temp_path[256];
+            UWORD copy_len = path_column_len;
+            if (copy_len >= sizeof(temp_path))
+            {
+                copy_len = sizeof(temp_path) - 1;
+            }
+            
+            strncpy(temp_path, path_start, copy_len);
+            temp_path[copy_len] = '\0';
+            
+            /* Remove trailing whitespace from the column */
+            while (copy_len > 0 && (temp_path[copy_len - 1] == ' ' || 
+                                   temp_path[copy_len - 1] == '\t' ||
+                                   temp_path[copy_len - 1] == '\n' ||
+                                   temp_path[copy_len - 1] == '\r'))
+            {
+                temp_path[copy_len - 1] = '\0';
+                copy_len--;
+            }
+            
+            /* Allocate and copy the cleaned path */
+            entry->path = AllocVec(copy_len + 1, MEMF_CLEAR);
             if (entry->path == NULL)
             {
                 FreeVec(entry);
                 return FALSE;
             }
             
-            /* Remove trailing whitespace/newlines */
-            strcpy(entry->path, path_start);
-            while (path_len > 0 && (entry->path[path_len - 1] == ' ' || 
-                                   entry->path[path_len - 1] == '\t' ||
-                                   entry->path[path_len - 1] == '\n' ||
-                                   entry->path[path_len - 1] == '\r'))
-            {
-                entry->path[path_len - 1] = '\0';
-                path_len--;
-            }
+            strcpy(entry->path, temp_path);
+            path_len = strlen(entry->path);
             
             /* Calculate depth based on directory separators */
             depth = calculate_folder_depth(entry->path);
