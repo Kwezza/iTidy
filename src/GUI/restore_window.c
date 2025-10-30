@@ -1473,6 +1473,11 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     /* append_to_log("Refreshing window gadgets\n");
     RefreshGList(restore_data->glist, restore_data->window, NULL, -1); */
     
+    /* Set busy pointer while scanning for backup runs */
+    SetWindowPointer(restore_data->window,
+                     WA_BusyPointer, TRUE,
+                     TAG_END);
+    
     /* Scan for backup runs */
     append_to_log("Scanning for backup runs in: %s\n", restore_data->backup_root_path);
     restore_data->run_count = scan_backup_runs(restore_data->backup_root_path,
@@ -1486,6 +1491,11 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
                          restore_data->run_entries,
                          restore_data->run_count);
     }
+    
+    /* Clear busy pointer - scanning complete */
+    SetWindowPointer(restore_data->window,
+                     WA_Pointer, NULL,
+                     TAG_END);
     
     /* Free DrawInfo - no longer needed after window is created */
     if (draw_info != NULL)
@@ -1765,7 +1775,7 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                                     memset(&folder_view_data, 0, sizeof(folder_view_data));
                                     folder_view_data.screen = restore_data->screen;
                                     
-                                    /* Open folder view window */
+                                    /* Open folder view window - it handles its own busy pointer */
                                     if (open_folder_view_window(&folder_view_data,
                                                                catalog_path,
                                                                selected_entry->runNumber,
@@ -1926,7 +1936,7 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                             memset(&folder_view_data, 0, sizeof(folder_view_data));
                             folder_view_data.screen = restore_data->screen;
                             
-                            /* Open folder view window */
+                            /* Open folder view window - it handles its own busy pointer */
                             if (open_folder_view_window(&folder_view_data,
                                                        catalog_path,
                                                        selected_entry->runNumber,

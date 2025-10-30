@@ -81,48 +81,12 @@ BOOL open_folder_view_window(struct iTidyFolderViewWindow *folder_data,
     append_to_log("Title set to: %s (address: %p)\n", 
                   folder_data->window_title, folder_data->window_title);
     
-    /* Initialize folder list */
+    /* Initialize folder list - start empty for fast window opening */
     NewList(&folder_data->folder_entries);
-    append_to_log("Initialized folder entries list\n");
+    append_to_log("Initialized folder entries list (empty for now)\n");
     
-    /* Parse catalog and build folder tree */
-    if (catalog_path != NULL)
-    {
-        if (!parse_catalog_and_build_tree(catalog_path, folder_data))
-        {
-            append_to_log("ERROR: Failed to parse catalog\n");
-            return FALSE;
-        }
-        append_to_log("Catalog parsed successfully\n");
-    }
-    else
-    {
-        /* Add some test data if no catalog provided */
-        append_to_log("No catalog provided, adding test data\n");
-        struct FolderEntry *entry;
-        
-        /* Root folder */
-        entry = (struct FolderEntry *)AllocVec(sizeof(struct FolderEntry), MEMF_CLEAR);
-        if (entry)
-        {
-            entry->path = AllocVec(strlen("Work:") + 1, MEMF_CLEAR);
-            entry->display_text = AllocVec(64, MEMF_CLEAR);
-            if (entry->path && entry->display_text)
-            {
-                strcpy(entry->path, "Work:");
-                strcpy(entry->display_text, "Work:");
-                entry->depth = 0;
-                entry->node.ln_Name = entry->display_text;
-                AddTail(&folder_data->folder_entries, (struct Node *)entry);
-            }
-            else
-            {
-                if (entry->path) FreeVec(entry->path);
-                if (entry->display_text) FreeVec(entry->display_text);
-                FreeVec(entry);
-            }
-        }
-    }
+    /* Store catalog path for later parsing - AFTER window opens */
+    const char *stored_catalog_path = catalog_path;
     
     /* Get visual info for GadTools - CRITICAL: use simple approach */
     folder_data->visual_info = GetVisualInfo(folder_data->screen, TAG_DONE);
@@ -212,7 +176,7 @@ BOOL open_folder_view_window(struct iTidyFolderViewWindow *folder_data,
         WA_CloseGadget, TRUE,
         WA_Activate, TRUE,
         WA_PubScreen, folder_data->screen,
-        WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW,
+        WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_GADGETDOWN | IDCMP_REFRESHWINDOW,
         WA_Gadgets, folder_data->glist,
         TAG_DONE);
     
@@ -230,9 +194,78 @@ BOOL open_folder_view_window(struct iTidyFolderViewWindow *folder_data,
     append_to_log("Folder view window opened successfully at %p\n", folder_data->window);
     append_to_log("Window UserPort: %p\n", folder_data->window->UserPort);
     
-    /* Refresh gadgets */
+    /* Set busy pointer while populating listview */
+    SetWindowPointer(folder_data->window,
+                     WA_BusyPointer, TRUE,
+                     TAG_END);
+    
+    /* NOW parse catalog and build folder tree - AFTER window is open */
+    if (stored_catalog_path != NULL)
+    {
+        append_to_log("Now parsing catalog and populating listview...\n");
+        if (!parse_catalog_and_build_tree(stored_catalog_path, folder_data))
+        {
+            append_to_log("ERROR: Failed to parse catalog\n");
+            
+            /* Clear busy pointer even on error */
+            SetWindowPointer(folder_data->window,
+                             WA_Pointer, NULL,
+                             TAG_END);
+            
+            /* Close window and cleanup */
+            close_folder_view_window(folder_data);
+            return FALSE;
+        }
+        append_to_log("Catalog parsed successfully, entries: %lu\n", 
+                     (ULONG)folder_data->folder_entries.lh_Head);
+        
+        /* Update the ListView with the newly populated list */
+        GT_SetGadgetAttrs(folder_data->folder_list, folder_data->window, NULL,
+                          GTLV_Labels, &folder_data->folder_entries,
+                          TAG_DONE);
+    }
+    else
+    {
+        /* Add some test data if no catalog provided */
+        append_to_log("No catalog provided, adding test data\n");
+        struct FolderEntry *entry;
+        
+        /* Root folder */
+        entry = (struct FolderEntry *)AllocVec(sizeof(struct FolderEntry), MEMF_CLEAR);
+        if (entry)
+        {
+            entry->path = AllocVec(strlen("Work:") + 1, MEMF_CLEAR);
+            entry->display_text = AllocVec(64, MEMF_CLEAR);
+            if (entry->path && entry->display_text)
+            {
+                strcpy(entry->path, "Work:");
+                strcpy(entry->display_text, "Work:");
+                entry->depth = 0;
+                entry->node.ln_Name = entry->display_text;
+                AddTail(&folder_data->folder_entries, (struct Node *)entry);
+            }
+            else
+            {
+                if (entry->path) FreeVec(entry->path);
+                if (entry->display_text) FreeVec(entry->display_text);
+                FreeVec(entry);
+            }
+        }
+        
+        /* Update the ListView with test data */
+        GT_SetGadgetAttrs(folder_data->folder_list, folder_data->window, NULL,
+                          GTLV_Labels, &folder_data->folder_entries,
+                          TAG_DONE);
+    }
+    
+    /* Refresh gadgets to show the populated list */
     GT_RefreshWindow(folder_data->window, NULL);
-    append_to_log("Gadgets refreshed\n");
+    append_to_log("Gadgets refreshed with populated list\n");
+    
+    /* Clear busy pointer - listview is populated and window is ready */
+    SetWindowPointer(folder_data->window,
+                     WA_Pointer, NULL,
+                     TAG_END);
     
     folder_data->window_open = TRUE;
     folder_data->system_font = NULL;  /* We're not using custom fonts */
@@ -272,6 +305,28 @@ BOOL handle_folder_view_window_events(struct iTidyFolderViewWindow *folder_data)
                 {
                     append_to_log("Close button clicked\n");
                     return FALSE;  /* Signal to close window */
+                }
+                break;
+                
+            case IDCMP_GADGETDOWN:
+                /* Handle ListView scroll arrow buttons */
+                gadget_id = ((struct Gadget *)msg->IAddress)->GadgetID;
+                GT_ReplyIMsg(msg);
+                
+                if (gadget_id == GID_FOLDER_LIST)
+                {
+                    /* Get current top position */
+                    LONG current_top = 0;
+                    GT_GetGadgetAttrs(folder_data->folder_list, folder_data->window, NULL,
+                                      GTLV_Top, &current_top,
+                                      TAG_END);
+                    
+                    append_to_log("ListView scroll button pressed, current top: %ld\n", current_top);
+                    
+                    /* The scroll direction is determined by which arrow was clicked,
+                     * but we need to let GadTools handle the actual scrolling.
+                     * We refresh the window to ensure proper display. */
+                    GT_RefreshWindow(folder_data->window, NULL);
                 }
                 break;
                 

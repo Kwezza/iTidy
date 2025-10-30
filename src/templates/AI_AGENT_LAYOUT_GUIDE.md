@@ -2,6 +2,16 @@
 
 This document provides critical guidance for AI agents working with the Amiga window template. These patterns were discovered through extensive debugging and must be followed exactly to avoid layout issues.
 
+## ⚠️ CRITICAL: ListView Scroll Buttons Require IDCMP_GADGETDOWN
+
+**If your window has a ListView gadget with scroll arrow buttons:**
+- **MUST** include `IDCMP_GADGETDOWN` in the window's `WA_IDCMP` flags
+- **MUST** handle `IDCMP_GADGETDOWN` events in your event loop
+- **Without this:** Scroll arrows will be visible but non-functional (scrollbar will still work)
+- See **Section 0** below for complete implementation details
+
+**Why:** ListView scroll arrow buttons generate `IDCMP_GADGETDOWN` events, not `IDCMP_GADGETUP`. This is a GadTools requirement that is easy to forget.
+
 ## ⚠️ CRITICAL: Font Selection for Column-Based Layouts
 
 **If your ListView displays data in columns** (tabular data, logs, file listings):
@@ -292,14 +302,30 @@ current_y += string_height + WINDOW_SPACE_Y;
 
 #### Pattern: REFERENCE_CONTENT
 ```c
+/* Optional: Create label for ListView using separate TEXT gadget (RECOMMENDED) */
+STRPTR listview_label = "Items:";
+ng.ng_LeftEdge = current_x;
+ng.ng_TopEdge = current_y;
+ng.ng_Width = TextLength(&temp_rp, listview_label, strlen(listview_label));
+ng.ng_Height = font_height;
+ng.ng_GadgetText = listview_label;
+ng.ng_GadgetID = GID_LISTVIEW_LABEL;
+ng.ng_Flags = PLACETEXT_IN;
+label_gad = CreateGadget(TEXT_KIND, gad, &ng,
+    GTTX_Text, listview_label,
+    GTTX_Border, FALSE,
+    TAG_END);
+
+current_y += font_height + 4;  /* Label height + small gap */
+
 /* Main ListView (establishes reference width) */
 ng.ng_LeftEdge = current_x;
 ng.ng_TopEdge = current_y;
 ng.ng_Width = reference_width;  /* Pre-calculated */
 ng.ng_Height = (font_height + 2) * 10;  /* 10 visible lines */
-ng.ng_GadgetText = "Items:";
+ng.ng_GadgetText = "";  /* EMPTY LABEL - we created our own above! */
 ng.ng_GadgetID = GID_LISTVIEW;
-ng.ng_Flags = PLACETEXT_ABOVE;
+ng.ng_Flags = PLACETEXT_ABOVE;  /* Doesn't matter with empty string */
 listview_gad = CreateGadget(LISTVIEW_KIND, gad, &ng,
     GTLV_Labels, NULL,
     GTLV_Selected, ~0,
@@ -734,6 +760,338 @@ sprintf(buffer, "%*s %s", DETAIL_LABEL_WIDTH, "Total Size:", value);
 
 This formatting pattern creates professional, easy-to-read information displays that match the aesthetic of Amiga system preference panels and file requesters.
 
+### 0. ListView Scroll Buttons Setup (CRITICAL)
+
+**THE PROBLEM:** ListView gadgets have built-in scroll arrow buttons (up/down arrows) that appear automatically, but they won't work unless you configure the window to receive their events.
+
+**SYMPTOMS:**
+- Scroll arrows are visible on ListView
+- Scrollbar works correctly
+- Clicking scroll arrows does nothing - no response at all
+
+**ROOT CAUSE:** ListView scroll arrow buttons generate `IDCMP_GADGETDOWN` events, NOT `IDCMP_GADGETUP`. If your window isn't listening for `IDCMP_GADGETDOWN`, the buttons will be non-functional.
+
+**❌ WRONG WAY (scroll arrows won't work):**
+```c
+/* Window setup - MISSING IDCMP_GADGETDOWN */
+folder_data->window = OpenWindowTags(NULL,
+    WA_Title, "My Window",
+    WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW,  /* Missing GADGETDOWN! */
+    WA_Gadgets, folder_data->glist,
+    TAG_DONE);
+
+/* Event handler - no GADGETDOWN case */
+while ((msg = GT_GetIMsg(window->UserPort)) != NULL)
+{
+    switch (msg->Class)
+    {
+        case IDCMP_GADGETUP:
+            /* Handle button clicks */
+            break;
+        /* Missing IDCMP_GADGETDOWN case! */
+    }
+}
+```
+
+**✅ CORRECT WAY (scroll arrows work perfectly):**
+
+**Step 1: Add IDCMP_GADGETDOWN to window IDCMP flags**
+```c
+/* Window setup - includes IDCMP_GADGETDOWN */
+folder_data->window = OpenWindowTags(NULL,
+    WA_Left, 100,
+    WA_Top, 50,
+    WA_Width, 400,
+    WA_Height, 200,
+    WA_Title, "Folder View",
+    WA_DragBar, TRUE,
+    WA_DepthGadget, TRUE,
+    WA_CloseGadget, TRUE,
+    WA_Activate, TRUE,
+    WA_PubScreen, folder_data->screen,
+    WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_GADGETDOWN | IDCMP_REFRESHWINDOW,
+    /*                                             ^^^^^^^^^^^^^^^^^^^  CRITICAL: Add this! */
+    WA_Gadgets, folder_data->glist,
+    TAG_DONE);
+```
+
+**Step 2: Handle IDCMP_GADGETDOWN events in your event loop**
+```c
+/* Event handler - handles ListView scroll button clicks */
+BOOL handle_window_events(struct WindowData *data)
+{
+    struct IntuiMessage *msg;
+    ULONG msg_class;
+    UWORD gadget_id;
+    
+    while ((msg = GT_GetIMsg(data->window->UserPort)) != NULL)
+    {
+        msg_class = msg->Class;
+        
+        switch (msg_class)
+        {
+            case IDCMP_GADGETUP:
+                gadget_id = ((struct Gadget *)msg->IAddress)->GadgetID;
+                GT_ReplyIMsg(msg);
+                
+                /* Handle regular button clicks */
+                if (gadget_id == GID_CLOSE_BTN)
+                {
+                    return FALSE;  /* Close window */
+                }
+                break;
+                
+            case IDCMP_GADGETDOWN:
+                /* Handle ListView scroll arrow buttons */
+                gadget_id = ((struct Gadget *)msg->IAddress)->GadgetID;
+                GT_ReplyIMsg(msg);
+                
+                if (gadget_id == GID_MY_LISTVIEW)
+                {
+                    /* Get current top position (optional - for debugging) */
+                    LONG current_top = 0;
+                    GT_GetGadgetAttrs(data->listview, data->window, NULL,
+                                      GTLV_Top, &current_top,
+                                      TAG_END);
+                    
+                    append_to_log("ListView scroll button pressed, current top: %ld\n", current_top);
+                    
+                    /* GadTools handles the actual scrolling automatically.
+                     * We just refresh the window to ensure proper display. */
+                    GT_RefreshWindow(data->window, NULL);
+                }
+                break;
+                
+            case IDCMP_CLOSEWINDOW:
+                GT_ReplyIMsg(msg);
+                return FALSE;
+                
+            case IDCMP_REFRESHWINDOW:
+                GT_ReplyIMsg(msg);
+                GT_BeginRefresh(data->window);
+                GT_EndRefresh(data->window, TRUE);
+                break;
+                
+            default:
+                GT_ReplyIMsg(msg);
+                break;
+        }
+    }
+    
+    return TRUE;  /* Continue running */
+}
+```
+
+**HOW IT WORKS:**
+1. **ListView scroll arrows** (up/down buttons) generate `IDCMP_GADGETDOWN` events
+2. These events have the **same GadgetID** as the ListView itself (not separate gadgets)
+3. **GadTools handles the scrolling automatically** - you don't need to manually change `GTLV_Top`
+4. You just need to:
+   - Listen for `IDCMP_GADGETDOWN` in window IDCMP flags
+   - Handle the event in your event loop
+   - Optionally call `GT_RefreshWindow()` to ensure proper display
+
+**KEY RULES:**
+- ⚠️ **ALWAYS** include `IDCMP_GADGETDOWN` in WA_IDCMP for windows with ListView gadgets
+- ⚠️ **ALWAYS** handle `IDCMP_GADGETDOWN` in your event loop
+- ⚠️ **DO NOT** try to manually scroll by modifying `GTLV_Top` - GadTools does it automatically
+- ⚠️ **REMEMBER** to call `GT_RefreshWindow()` after handling scroll events
+- ✅ The scroll arrows and scrollbar both work with the same event handling
+- ✅ This applies to ALL ListView gadgets, regardless of window size or content
+
+**WHEN TO USE:**
+- ✅ **Every window** with a ListView gadget
+- ✅ **Even if** you think users will only use the scrollbar
+- ✅ **Even if** your list is small - users expect scroll buttons to work
+
+**COMMON MISTAKE:**
+❌ Forgetting to add `IDCMP_GADGETDOWN` because the scrollbar works fine without it. The scrollbar uses different events (`IDCMP_MOUSEMOVE`, etc.), but the arrow buttons specifically need `IDCMP_GADGETDOWN`.
+
+**REFERENCE:**
+- See `folder_view_window.c` for a complete working example
+- GadTools autodocs: "LISTVIEWIDCMP = IDCMP_GADGETUP | IDCMP_GADGETDOWN | IDCMP_MOUSEMOVE"
+
+### 0.1. ListView Label Text Positioning (CRITICAL)
+
+**THE PROBLEM:** ListView gadgets with `PLACETEXT_ABOVE` labels add extra vertical space above the ListView that varies with font size. If you don't account for this, your layout calculations will be wrong and gadgets will overlap or have incorrect spacing.
+
+**SYMPTOMS:**
+- ListView appears lower than expected
+- Gadgets above ListView overlap with the label
+- Vertical spacing calculations don't match actual positions
+- Layout breaks when user changes font size
+
+**ROOT CAUSE:** When you use `ng.ng_GadgetText` with `PLACETEXT_ABOVE`, GadTools automatically adds vertical space above the ListView for the label text (typically `font_height + small_gap`). This space is NOT included in `ng.ng_Height` and must be accounted for separately.
+
+**❌ WRONG WAY #1 (hardcoded offset - breaks with font changes):**
+```c
+/* BAD: Hardcoded offset for label space */
+ng.ng_LeftEdge = MARGIN_LEFT;
+ng.ng_TopEdge = MARGIN_TOP + 20;  /* WRONG! Hardcoded 20 pixels for label */
+ng.ng_Width = 380;
+ng.ng_Height = 120;
+ng.ng_GadgetText = "Folders:";
+ng.ng_GadgetID = GID_FOLDER_LIST;
+ng.ng_Flags = PLACETEXT_ABOVE;
+
+listview = CreateGadget(LISTVIEW_KIND, gad, &ng, TAG_END);
+
+/* Position next gadget - but what's the right Y position? */
+/* ng.ng_TopEdge + ng.ng_Height doesn't account for the label above! */
+next_y = ng.ng_TopEdge + ng.ng_Height;  /* WRONG! Missing label space */
+```
+
+**❌ WRONG WAY #2 (using label with complex calculations):**
+```c
+/* BAD: Trying to calculate label space manually */
+UWORD label_height = font_height + 4;  /* Guess at spacing */
+ng.ng_TopEdge = current_y + label_height;  /* Manual offset */
+ng.ng_GadgetText = "Items:";
+ng.ng_Flags = PLACETEXT_ABOVE;
+
+listview = CreateGadget(LISTVIEW_KIND, gad, &ng, TAG_END);
+
+/* Now you need to remember the label space for all subsequent calculations */
+current_y = ng.ng_TopEdge + listview->Height;  /* Still confusing! */
+```
+
+**✅ CORRECT WAY - Use Empty Label (RECOMMENDED):**
+
+The **simplest and most reliable approach** is to use an **empty string** for `ng.ng_GadgetText` and create a separate TEXT gadget for the label. This gives you complete control over positioning and eliminates font-dependent spacing issues.
+
+```c
+/* Step 1: Create separate TEXT gadget for the label */
+STRPTR listview_label = "Backup Runs:";
+UWORD label_height = font_height;  /* Or measure with TextExtent if needed */
+
+ng.ng_LeftEdge = current_x;
+ng.ng_TopEdge = current_y;
+ng.ng_Width = TextLength(&temp_rp, listview_label, strlen(listview_label));
+ng.ng_Height = label_height;
+ng.ng_GadgetText = listview_label;
+ng.ng_GadgetID = GID_LISTVIEW_LABEL;
+ng.ng_Flags = PLACETEXT_IN;
+
+label_gadget = CreateGadget(TEXT_KIND, gad, &ng,
+    GTTX_Text, listview_label,
+    GTTX_Border, FALSE,
+    TAG_END);
+
+/* Move down for the ListView - exact control over spacing */
+current_y += label_height + 4;  /* Label + small gap */
+
+/* Step 2: Create ListView with EMPTY label */
+ng.ng_LeftEdge = current_x;
+ng.ng_TopEdge = current_y;
+ng.ng_Width = listview_width;
+ng.ng_Height = (font_height + 2) * 10;  /* 10 visible lines */
+ng.ng_GadgetText = "";  /* EMPTY STRING - no built-in label! */
+ng.ng_GadgetID = GID_LISTVIEW;
+ng.ng_Flags = PLACETEXT_ABOVE;  /* Doesn't matter with empty string */
+
+listview = CreateGadget(LISTVIEW_KIND, gad, &ng,
+    GTLV_Labels, NULL,
+    GTLV_Selected, ~0,
+    TAG_END);
+
+/* Step 3: Position next gadget using actual ListView dimensions */
+UWORD actual_listview_height = listview->Height;
+current_y = listview->TopEdge + actual_listview_height + WINDOW_SPACE_Y;
+
+/* Now position your next gadget - calculations are simple and accurate! */
+ng.ng_TopEdge = current_y;
+```
+
+**ALTERNATIVE - Calculate Label Space (More Complex):**
+
+If you must use `PLACETEXT_ABOVE` with a label, you need to account for the label space in all your calculations:
+
+```c
+/* Calculate label space (GadTools adds font_height + small gap above ListView) */
+UWORD label_space = font_height + 4;  /* Approximate, may vary */
+
+ng.ng_LeftEdge = current_x;
+ng.ng_TopEdge = current_y + label_space;  /* Reserve space for label */
+ng.ng_Width = listview_width;
+ng.ng_Height = (font_height + 2) * 10;
+ng.ng_GadgetText = "Items:";
+ng.ng_GadgetID = GID_LISTVIEW;
+ng.ng_Flags = PLACETEXT_ABOVE;
+
+listview = CreateGadget(LISTVIEW_KIND, gad, &ng, TAG_END);
+
+/* CRITICAL: Account for label space when calculating total height */
+UWORD total_height = label_space + listview->Height;
+current_y = ng.ng_TopEdge + listview->Height;  /* Base position + actual height */
+
+/* OR use the gadget's TopEdge which already accounts for label */
+current_y = listview->TopEdge + listview->Height + WINDOW_SPACE_Y;
+```
+
+**WHY EMPTY LABEL IS BETTER:**
+
+| Aspect | Empty Label + TEXT Gadget | PLACETEXT_ABOVE with Label |
+|--------|---------------------------|----------------------------|
+| **Position Control** | ✅ Exact control, you position everything | ❌ GadTools adds mysterious spacing |
+| **Font Changes** | ✅ You calculate spacing explicitly | ⚠️ Must guess at GadTools spacing |
+| **Code Clarity** | ✅ Clear: `current_y += label_height + gap` | ❌ Confusing: Where does label space come from? |
+| **Debugging** | ✅ Easy to see label gadget dimensions | ❌ Label space is invisible |
+| **Flexibility** | ✅ Can style label differently (bold, colors) | ❌ Limited to default text rendering |
+
+**REAL-WORLD EXAMPLE (restore_window.c):**
+
+```c
+/* From restore_window.c - uses empty label for precise control */
+ng.ng_LeftEdge = current_x;
+ng.ng_TopEdge = current_y;
+ng.ng_Width = listview_width;
+ng.ng_Height = listview_requested_height;
+ng.ng_GadgetText = "";  /* Empty label - we manage our own! */
+ng.ng_GadgetID = GID_RESTORE_RUN_LIST;
+ng.ng_Flags = PLACETEXT_ABOVE;
+
+restore_data->run_list = gad = CreateGadget(LISTVIEW_KIND, gad, &ng,
+    GTLV_Labels, NULL,
+    GTLV_Selected, ~0,
+    TAG_END);
+
+/* Get actual height and position next gadget - simple and accurate */
+actual_listview_height = gad->Height;
+current_y = ng.ng_TopEdge + actual_listview_height + RESTORE_SPACE_Y;
+```
+
+**KEY RULES:**
+- ⚠️ **RECOMMENDED:** Always use empty string `""` for `ng.ng_GadgetText` on ListView gadgets
+- ⚠️ **RECOMMENDED:** Create separate TEXT gadget for the label above the ListView
+- ⚠️ **NEVER** hardcode pixel offsets like `+ 20` for label space
+- ⚠️ **ALWAYS** calculate label space dynamically using `font_height` if you must use PLACETEXT_ABOVE
+- ✅ Empty labels make your code simpler, clearer, and more maintainable
+- ✅ Separate TEXT gadgets give you full control over label positioning and styling
+- ✅ This approach works consistently across all font sizes and screen modes
+
+**WHEN TO USE EMPTY LABELS:**
+- ✅ **All ListView gadgets** in production code
+- ✅ When you need **precise vertical spacing** between gadgets
+- ✅ When your layout uses **pre-calculated dimensions**
+- ✅ When you want **font-independent** layout calculations
+
+**WHEN PLACETEXT_ABOVE WITH LABEL IS ACCEPTABLE:**
+- ⚠️ Quick prototypes or test code where precision doesn't matter
+- ⚠️ Simple windows with only one ListView and no complex spacing
+- ⚠️ When you're willing to deal with font-dependent spacing quirks
+
+**TESTING:**
+After implementing ListView labels:
+- [ ] Test with Topaz 8 font (default)
+- [ ] Test with Topaz 9 font (larger)
+- [ ] Verify label doesn't overlap with gadgets above
+- [ ] Verify ListView doesn't overlap with gadgets below
+- [ ] Check that vertical spacing remains consistent
+- [ ] Ensure window height accommodates label + ListView properly
+
+**SUMMARY:**
+Use **empty string labels** with ListView gadgets and create a separate TEXT gadget for the label. This gives you precise control, works with all font sizes, and makes your code cleaner and more maintainable.
+
 ### 1. ListView Height "Snapping" Issue
 
 **THE PROBLEM:** ListView gadgets automatically adjust their height to show complete rows. The height you request is NOT the height you get.
@@ -1049,32 +1407,42 @@ button->Width = new_calculated_width;  // Visual update doesn't happen
 
 ## Common AI Agent Mistakes
 
+### ListView and Event Handling Errors
+1. **Forgetting IDCMP_GADGETDOWN for ListView windows** - This is why scroll arrow buttons don't work
+   - **SOLUTION:** Always add `IDCMP_GADGETDOWN` to WA_IDCMP flags and handle it in event loop (see Section 0)
+2. **Not handling IDCMP_GADGETDOWN in event loop** - Window listens but doesn't respond to scroll buttons
+   - **SOLUTION:** Add case for `IDCMP_GADGETDOWN` and call `GT_RefreshWindow()` for ListView gadgets
+3. **Using PLACETEXT_ABOVE with ListView label text** - Causes unpredictable spacing that varies with fonts
+   - **SOLUTION:** Use empty string `""` for ng.ng_GadgetText and create separate TEXT gadget for label (see Section 0.1)
+4. **Hardcoding ListView label space (like + 20)** - Breaks when user changes font size
+   - **SOLUTION:** Use empty label + separate TEXT gadget, or calculate space dynamically with `font_height`
+
 ### Layout and Dimension Errors
-1. **Using calculated ListView height instead of actual height** - This is the #1 cause of button overlap
-2. **Not accounting for PLACETEXT_LEFT label space** - This causes label overlap with adjacent gadgets
+5. **Using calculated ListView height instead of actual height** - This is the #1 cause of button overlap
+6. **Not accounting for PLACETEXT_LEFT label space** - This causes label overlap with adjacent gadgets
    - **SOLUTION:** Use separate TEXT gadget for label instead of PLACETEXT_LEFT for complex rows
-3. **Creating gadgets in wrong order** - ListView must be first to get actual dimensions
-4. **Forgetting label widths in window calculations** - Causes window to be too narrow
-5. **Trying to modify gadget dimensions after creation** - Doesn't trigger visual update; use pre-calculation instead
-6. **Using PLACETEXT_LEFT for INPUT_ROW pattern** - Hard to align with other gadgets; use separate TEXT gadget instead
+7. **Creating gadgets in wrong order** - ListView must be first to get actual dimensions
+8. **Forgetting label widths in window calculations** - Causes window to be too narrow
+9. **Trying to modify gadget dimensions after creation** - Doesn't trigger visual update; use pre-calculation instead
+10. **Using PLACETEXT_LEFT for INPUT_ROW pattern** - Hard to align with other gadgets; use separate TEXT gadget instead
 
 ### Font and Text Measurement Errors
-6. **Using `screen->RastPort.Font` instead of `DrawInfo`** - Should use `GetScreenDrawInfo()` for proper font access
-7. **Using `strlen() * font_width` for proportional fonts** - Use `TextLength()` for accurate measurements
-8. **Not testing with different fonts** - Layout may work with one font but fail with others
-9. **Inconsistent button text padding** - Always use `BUTTON_TEXT_PADDING` constant
+11. **Using `screen->RastPort.Font` instead of `DrawInfo`** - Should use `GetScreenDrawInfo()` for proper font access
+12. **Using `strlen() * font_width` for proportional fonts** - Use `TextLength()` for accurate measurements
+13. **Not testing with different fonts** - Layout may work with one font but fail with others
+14. **Inconsistent button text padding** - Always use `BUTTON_TEXT_PADDING` constant
 
 ### Standard Pattern Violations
-10. **Not using standard window sizes** - Use 40/60/80 char widths, not arbitrary values
-11. **Wrong button count for window size** - Small=2, Medium=3, Large=4 buttons
-12. **Not using pre-calculation block** - All dimensions must be calculated before CreateGadget()
-13. **Ignoring standard spacing constants** - Use `WINDOW_SPACE_X`, `WINDOW_SPACE_Y`, etc.
-14. **Not following pattern structure** - INPUT_ROW → REFERENCE_CONTENT → EQUAL_BUTTON_ROW
+15. **Not using standard window sizes** - Use 40/60/80 char widths, not arbitrary values
+16. **Wrong button count for window size** - Small=2, Medium=3, Large=4 buttons
+17. **Not using pre-calculation block** - All dimensions must be calculated before CreateGadget()
+18. **Ignoring standard spacing constants** - Use `WINDOW_SPACE_X`, `WINDOW_SPACE_Y`, etc.
+19. **Not following pattern structure** - INPUT_ROW → REFERENCE_CONTENT → EQUAL_BUTTON_ROW
 
 ### Resource Management Errors
-15. **Using GT_GetGadgetAttrs() for geometry** - Direct structure access is more reliable
-16. **Not freeing DrawInfo resources** - Always call `FreeScreenDrawInfo()` when done
-17. **Memory leaks in error paths** - Ensure cleanup_error: label frees all resources
+20. **Using GT_GetGadgetAttrs() for geometry** - Direct structure access is more reliable
+21. **Not freeing DrawInfo resources** - Always call `FreeScreenDrawInfo()` when done
+22. **Memory leaks in error paths** - Ensure cleanup_error: label frees all resources
 
 ## 🚀 Quick Reference Checklist
 
@@ -1083,6 +1451,11 @@ button->Width = new_calculated_width;  // Visual update doesn't happen
 - [ ] Define button count: Small=2, Medium=3, Large=4
 - [ ] Define all spacing constants: `WINDOW_MARGIN_*`, `WINDOW_SPACE_*`, `BUTTON_TEXT_PADDING`
 - [ ] Have `GetScreenDrawInfo()` and `TextLength()` ready for font measurements
+- [ ] **If using ListView:** Plan to add `IDCMP_GADGETDOWN` to IDCMP flags (Section 0)
+- [ ] **If using ListView:** Plan to use empty label `""` + separate TEXT gadget (Section 0.1)
+- [ ] Define all spacing constants: `WINDOW_MARGIN_*`, `WINDOW_SPACE_*`, `BUTTON_TEXT_PADDING`
+- [ ] Have `GetScreenDrawInfo()` and `TextLength()` ready for font measurements
+- [ ] **If using ListView:** Plan to add `IDCMP_GADGETDOWN` to IDCMP flags (Section 0)
 
 ### Pre-Calculation Block (MANDATORY)
 - [ ] Calculate `reference_width = font_width * size_constant`
@@ -1097,6 +1470,18 @@ button->Width = new_calculated_width;  // Visual update doesn't happen
 3. [ ] Get actual height: `actual_height = gadget->Height`
 4. [ ] Create secondary content gadgets
 5. [ ] Create EQUAL_BUTTON_ROW pattern gadgets
+
+### Window Opening
+- [ ] **If using ListView:** Include `IDCMP_GADGETDOWN` in WA_IDCMP flags
+- [ ] Calculate final size using `precalc_max_right` and actual gadget heights
+- [ ] Add all margins and borders
+- [ ] Verify all gadgets created successfully
+
+### Event Loop Setup
+- [ ] **If using ListView:** Add `case IDCMP_GADGETDOWN:` to handle scroll buttons
+- [ ] Handle IDCMP_GADGETUP for buttons
+- [ ] Handle IDCMP_CLOSEWINDOW
+- [ ] Handle IDCMP_REFRESHWINDOW
 
 ### Before Opening Window
 - [ ] Calculate final size using `precalc_max_right` and actual gadget heights
@@ -1185,3 +1570,233 @@ When using this template:
 **Note:** The standard button counts (2/3/4) are guidelines for creating windows from scratch. Existing windows may have different requirements, and that's acceptable. The key is using the pre-calculation strategy and standard spacing.
 
 Remember: These patterns exist because they solve real problems that occur in Amiga GadTools programming. Deviating from them will likely reintroduce the same bugs they were designed to prevent.
+
+## ⚡ Performance Best Practice: Fast Window Opening with Deferred Loading
+
+**THE PRINCIPLE:** Users should see windows open **immediately** with visual feedback, not wait staring at a blank screen while data loads. This creates a responsive, professional feel even on slow hardware (7MHz Amiga 500).
+
+**THE PROBLEM:** If you parse files, scan directories, or build large lists **before** opening a window, users wait with no feedback. On slow machines, this can mean 5+ seconds of apparent unresponsiveness.
+
+**❌ WRONG WAY (Poor UX):**
+```c
+BOOL open_my_window(struct WindowData *data, const char *data_file)
+{
+    /* Parse large data file FIRST - user waits with no feedback */
+    if (!parse_large_file(data_file, data))
+        return FALSE;
+    
+    /* Build complex data structures - still waiting... */
+    build_folder_tree(data);
+    
+    /* FINALLY open window after 5 seconds - window appears instantly populated */
+    data->window = OpenWindowTags(NULL, ...);
+    
+    /* Refresh gadgets */
+    GT_RefreshWindow(data->window, NULL);
+    
+    return TRUE;
+}
+```
+
+**User Experience:** Click button → *wait 5 seconds staring at previous window* → New window appears instantly with data
+
+**✅ CORRECT WAY (Polished UX):**
+```c
+BOOL open_my_window(struct WindowData *data, const char *data_file)
+{
+    /* Initialize list structure - empty for fast opening */
+    NewList(&data->item_list);
+    
+    /* Store data file path for later parsing */
+    const char *stored_data_file = data_file;
+    
+    /* ... Get visual info, create gadgets with EMPTY list ... */
+    
+    /* Open window IMMEDIATELY with empty listview */
+    data->window = OpenWindowTags(NULL,
+        WA_Title, "Loading...",  /* Or your normal title */
+        /* ... other tags ... */
+        TAG_END);
+    
+    if (data->window == NULL)
+        return FALSE;
+    
+    /* Set busy pointer IMMEDIATELY after window opens */
+    SetWindowPointer(data->window,
+                     WA_BusyPointer, TRUE,
+                     TAG_END);
+    
+    /* NOW parse data file - window is visible with busy pointer */
+    if (stored_data_file != NULL)
+    {
+        append_to_log("Window open, now parsing data...\n");
+        
+        if (!parse_large_file(stored_data_file, data))
+        {
+            /* Clear busy pointer even on error */
+            SetWindowPointer(data->window,
+                             WA_Pointer, NULL,
+                             TAG_END);
+            
+            /* Close window and cleanup */
+            close_my_window(data);
+            return FALSE;
+        }
+        
+        /* Build data structures */
+        build_folder_tree(data);
+        
+        /* Update ListView with populated data */
+        GT_SetGadgetAttrs(data->listview, data->window, NULL,
+                          GTLV_Labels, &data->item_list,
+                          TAG_DONE);
+    }
+    
+    /* Refresh gadgets to display populated list */
+    GT_RefreshWindow(data->window, NULL);
+    append_to_log("Gadgets refreshed with populated list\n");
+    
+    /* Clear busy pointer - window is ready */
+    SetWindowPointer(data->window,
+                     WA_Pointer, NULL,
+                     TAG_END);
+    
+    return TRUE;
+}
+```
+
+**User Experience:** Click button → *Window appears instantly with busy pointer* → List populates after ~5 seconds → Ready!
+
+**KEY BENEFITS:**
+- ✅ **Instant feedback** - User knows their action was recognized
+- ✅ **Visual indication** - Busy pointer shows work is in progress
+- ✅ **Perceived performance** - Feels faster even if actual time is the same
+- ✅ **Professional feel** - Matches behavior of well-designed Amiga applications
+- ✅ **Error handling** - User sees window even if loading fails (can show error message)
+
+**IMPLEMENTATION STEPS:**
+
+1. **Initialize empty data structure** before opening window:
+```c
+NewList(&data->item_list);  /* Empty list */
+```
+
+2. **Store parameters** needed for loading (don't use them yet):
+```c
+const char *stored_file_path = file_path;
+```
+
+3. **Create gadgets with empty list**:
+```c
+gad = CreateGadget(LISTVIEW_KIND, gad, &ng,
+    GTLV_Labels, NULL,  /* NULL or &empty_list */
+    TAG_DONE);
+```
+
+4. **Open window immediately**:
+```c
+window = OpenWindowTags(NULL, /* ... */);
+```
+
+5. **Set busy pointer right after window opens**:
+```c
+SetWindowPointer(window, WA_BusyPointer, TRUE, TAG_END);
+```
+
+6. **Perform slow operations** (parsing, scanning, etc.):
+```c
+parse_large_file(stored_file_path, data);
+build_data_structures(data);
+```
+
+7. **Update gadgets** with loaded data:
+```c
+GT_SetGadgetAttrs(listview, window, NULL,
+                  GTLV_Labels, &populated_list,
+                  TAG_DONE);
+```
+
+8. **Refresh gadgets** to display changes:
+```c
+GT_RefreshWindow(window, NULL);
+```
+
+9. **Clear busy pointer** when ready:
+```c
+SetWindowPointer(window, WA_Pointer, NULL, TAG_END);
+```
+
+**ERROR HANDLING:**
+Always clear the busy pointer on error paths:
+```c
+if (parse_error)
+{
+    /* Clear busy pointer */
+    SetWindowPointer(window, WA_Pointer, NULL, TAG_END);
+    
+    /* Show error to user, close window, etc. */
+    close_my_window(data);
+    return FALSE;
+}
+```
+
+**WHEN TO USE THIS PATTERN:**
+- ✅ **File parsing** that takes > 1 second
+- ✅ **Directory scanning** with many entries
+- ✅ **Building complex data structures** (trees, sorted lists)
+- ✅ **Network operations** or any I/O that might block
+- ✅ **Any operation** that makes users wait on slow hardware
+
+**WHEN NOT NEEDED:**
+- ❌ **Instant operations** (< 0.5 seconds even on slow hardware)
+- ❌ **Simple windows** with no data loading
+- ❌ **Static content** that's already in memory
+
+**REAL-WORLD EXAMPLE:**
+
+The iTidy folder view window demonstrates this pattern perfectly:
+
+**Before optimization:**
+- Parsed 214-folder catalog file (5 seconds on 7MHz Amiga 500)
+- Built folder tree structure
+- THEN opened window
+- Result: 5 second delay with no feedback
+
+**After optimization:**
+- Opens window immediately with empty list (< 0.1 seconds)
+- Shows busy pointer
+- Parses catalog in background
+- Updates listview with data
+- Clears busy pointer
+- Result: Instant window, 5 second loading with visual feedback
+
+**ALTERNATIVE: Progress Indicators**
+
+For very long operations, consider updating a text gadget periodically:
+```c
+GT_SetGadgetAttrs(status_text, window, NULL,
+                  GTTX_Text, "Loading... 50%",
+                  TAG_DONE);
+GT_RefreshWindow(window, NULL);
+```
+
+But for most cases, busy pointer + deferred loading is sufficient.
+
+**PORTABILITY:**
+- Works on all Amiga OS versions (2.0+)
+- No special libraries required
+- Uses standard Intuition SetWindowPointer() API
+- Busy pointer automatically uses system pointer prefs
+
+**KEY RULES:**
+- ⚠️ **ALWAYS** set busy pointer immediately after opening window
+- ⚠️ **ALWAYS** clear busy pointer when done (including error paths)
+- ⚠️ **ALWAYS** use `GT_SetGadgetAttrs()` to update ListView after loading
+- ⚠️ **ALWAYS** call `GT_RefreshWindow()` after updating gadgets
+- ⚠️ **NEVER** do slow operations before opening window
+- ⚠️ **NEVER** forget to clear busy pointer on error
+
+This pattern makes your application feel fast, responsive, and professional, even on hardware from 1985. It's the difference between "this feels slow" and "this feels polished."
+
+---
+

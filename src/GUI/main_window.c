@@ -982,9 +982,19 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                             
                             printf("Restore Backups button clicked - opening Restore window\n");
                             
+                            /* Set busy pointer on main window */
+                            SetWindowPointer(win_data->window,
+                                           WA_BusyPointer, TRUE,
+                                           TAG_END);
+                            
                             /* Open restore window (modal) */
                             if (open_restore_window(&restore_data))
                             {
+                                /* Clear busy pointer - restore window is now open */
+                                SetWindowPointer(win_data->window,
+                                               WA_Pointer, NULL,
+                                               TAG_END);
+                                
                                 /* Disable main window input while restore window is open */
                                 ModifyIDCMP(win_data->window, 0);
                                 
@@ -1006,6 +1016,11 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                             }
                             else
                             {
+                                /* Clear busy pointer on error */
+                                SetWindowPointer(win_data->window,
+                                               WA_Pointer, NULL,
+                                               TAG_END);
+                                
                                 printf("ERROR: Failed to open Restore window\n");
                             }
                         }
