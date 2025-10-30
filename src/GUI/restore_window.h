@@ -15,15 +15,13 @@
 /*------------------------------------------------------------------------*/
 /* Gadget IDs                                                             */
 /*------------------------------------------------------------------------*/
-#define GID_RESTORE_BACKUP_LABEL    2000
-#define GID_RESTORE_BACKUP_PATH     2001
-#define GID_RESTORE_CHANGE_PATH     2002
 #define GID_RESTORE_RUN_LIST        2003
 #define GID_RESTORE_DETAILS         2004
 #define GID_RESTORE_WINDOW_GEOM_CHK 2005
 #define GID_RESTORE_RUN_BTN         2006
 #define GID_RESTORE_VIEW_FOLDERS    2007
-#define GID_RESTORE_CANCEL          2008
+#define GID_RESTORE_DELETE_RUN      2008
+#define GID_RESTORE_CANCEL          2009
 
 /*------------------------------------------------------------------------*/
 /* Window Spacing Constants                                              */
@@ -80,14 +78,12 @@ struct iTidyRestoreWindow
     BOOL window_open;                   /* Window state flag */
     
     /* Gadget pointers */
-    struct Gadget *backup_path_label;  /* TEXT gadget for label */
-    struct Gadget *backup_path_str;
-    struct Gadget *change_path_btn;
     struct Gadget *run_list;
     struct Gadget *details_listview;   /* Read-only details display */
     struct Gadget *window_geom_chk;    /* Checkbox: restore window geometry */
     struct Gadget *restore_run_btn;
     struct Gadget *view_folders_btn;
+    struct Gadget *delete_run_btn;
     struct Gadget *cancel_btn;
     
     /* Current state */

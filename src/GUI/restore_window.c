@@ -20,11 +20,11 @@
  * - Closes the font in cleanup
  * 
  * This ensures column alignment works correctly with the format:
- * "Run_0007  2025-10-25 14:32  63 folders   46 KB  Complete"
+ * "Run_0007  2025-10-25 14:32    63 folders   46 KB  Complete"
  * 
  * Technical details:
  * - Listview width: font_width * 65 characters
- * - Format width: ~65 chars using %-9s, %-16s, %-11s, %8s
+ * - Format width: ~65 chars using %-9s, %-16s, %11s, %8s
  * - Columns align because character widths are consistent
  */
 
@@ -97,7 +97,11 @@ void format_size_string(ULONG bytes, char *buffer)
     }
     else if (bytes < 1024)
     {
-        sprintf(buffer, "%lu B", bytes);
+        /* For bytes, add trailing space to align with KB/MB/GB (2-letter units) */
+        if (bytes < 10)
+            sprintf(buffer, " %lu B ", bytes);  /* Leading space for single digit, trailing space for unit alignment */
+        else
+            sprintf(buffer, "%lu B ", bytes);   /* Trailing space for unit alignment */
     }
     else if (bytes < 1048576)  /* < 1 MB */
     {
@@ -210,7 +214,7 @@ static void draw_window_background(struct iTidyRestoreWindow *restore_data)
     if (restore_data == NULL || restore_data->window == NULL)
         return;
     
-    if (restore_data->backup_path_label == NULL || restore_data->details_listview == NULL)
+    if (restore_data->run_list == NULL || restore_data->details_listview == NULL)
         return;
     
     rp = restore_data->window->RPort;
@@ -247,10 +251,10 @@ static void draw_window_background(struct iTidyRestoreWindow *restore_data)
     SetAfPt(rp, NULL, 0);
     
     /* Calculate recessed panel dimensions */
-    /* Panel should contain: backup path row + both listviews, but NOT the buttons */
+    /* Panel should contain: both listviews, but NOT the buttons */
     /* Bevel starts RESTORE_BEVEL_BORDER pixels from the content */
-    content_left = restore_data->backup_path_label->LeftEdge - RESTORE_CONTENT_PADDING - RESTORE_BEVEL_BORDER;
-    content_top = restore_data->backup_path_label->TopEdge - RESTORE_CONTENT_PADDING - RESTORE_BEVEL_BORDER;
+    content_left = restore_data->run_list->LeftEdge - RESTORE_CONTENT_PADDING - RESTORE_BEVEL_BORDER;
+    content_top = restore_data->run_list->TopEdge - RESTORE_CONTENT_PADDING - RESTORE_BEVEL_BORDER;
     
     /* Width matches the listview width + content padding on both sides + bevel border on both sides */
     content_width = restore_data->run_list->Width + (2 * RESTORE_CONTENT_PADDING) + (2 * RESTORE_BEVEL_BORDER);
@@ -337,14 +341,14 @@ static void calculate_column_widths(UWORD listview_width_chars, UWORD *col_width
 static void format_run_list_entry(struct RestoreRunEntry *entry, char *buffer)
 {
     /* Format for fixed-width fonts with column alignment:
-     * Layout: "Run_0007  2025-10-25 14:32   63 folders   46 KB  Complete"
+     * Layout: "Run_0007  2025-10-25 14:32    63 folders   46 KB  Complete"
      * 
      * Column widths (for fixed-width fonts):
      * - Run Name: 9 chars (fixed, "Run_0000" to "Run_9999")
      * - Separator: 2 spaces
      * - Date/Time: 16 chars (fixed, "YYYY-MM-DD HH:MM")
      * - Separator: 2 spaces  
-     * - Folder Count: 11 chars ("1 folders" to "999 folders")
+     * - Folder Count: 11 chars ("1 folders" to "999 folders") - right-aligned
      * - Separator: 2 spaces
      * - Size: 8 chars (right-aligned, "46 KB" to "999 MB")
      * - Separator: 2 spaces
@@ -366,17 +370,20 @@ static void format_run_list_entry(struct RestoreRunEntry *entry, char *buffer)
         strcpy(short_date, entry->dateStr);
     }
     
-    /* Format folder count with proper spacing */
+    /* Format folder count with proper spacing and singular/plural */
     char folder_str[16];
-    sprintf(folder_str, "%lu folders", entry->folderCount);
+    if (entry->folderCount == 1)
+        sprintf(folder_str, "%lu folder ", entry->folderCount);  /* Singular with trailing space for alignment */
+    else
+        sprintf(folder_str, "%lu folders", entry->folderCount);  /* Plural */
     
     /* Build the display string with column alignment for fixed-width fonts
      * This will NOT align properly with proportional fonts!
      */
-    sprintf(buffer, "%-9s \x7C %-16s \x7C %-11s \x7C %8s \x7C %s",
+    sprintf(buffer, "%-9s \x7C %-16s \x7C %11s \x7C %8s \x7C %s",
         entry->runName,           /* "Run_0007" - left-aligned, 9 chars */
         short_date,               /* "2025-10-25 14:32" - left-aligned, 16 chars */
-        folder_str,               /* "63 folders" - left-aligned, 11 chars */
+        folder_str,               /* "63 folders" - right-aligned, 11 chars */
         entry->sizeStr,           /* "46 KB" - right-aligned, 8 chars */
         entry->statusStr);        /* "Complete" - remaining space */
 }
@@ -909,37 +916,99 @@ BOOL perform_restore_run(struct iTidyRestoreWindow *restore_data,
 
 /*------------------------------------------------------------------------*/
 /**
- * @brief Request a directory using ASL file requester
+ * @brief Recursively delete a directory and all its contents
+ * 
+ * @param path Path to directory to delete
+ * @return BOOL TRUE if successful, FALSE otherwise
  */
 /*------------------------------------------------------------------------*/
-static BOOL request_directory(char *buffer, ULONG buffer_size, 
-                             const char *initial_path)
+static BOOL delete_directory_recursive(const char *path)
 {
-    struct FileRequester *freq;
-    BOOL result = FALSE;
+    BPTR lock;
+    struct FileInfoBlock *fib;
+    BOOL success = TRUE;
+    char full_path[512];
     
-    freq = (struct FileRequester *)AllocAslRequestTags(ASL_FileRequest,
-        ASLFR_TitleText, "Select Backup Directory",
-        ASLFR_InitialDrawer, initial_path,
-        ASLFR_DrawersOnly, TRUE,
-        ASLFR_DoPatterns, FALSE,
-        TAG_END);
+    if (path == NULL)
+        return FALSE;
     
-    if (freq != NULL)
+    append_to_log("delete_directory_recursive: %s\n", path);
+    
+    lock = Lock((STRPTR)path, ACCESS_READ);
+    if (!lock)
     {
-        if (AslRequest(freq, NULL))
-        {
-            if (freq->fr_Drawer != NULL)
-            {
-                strncpy(buffer, freq->fr_Drawer, buffer_size - 1);
-                buffer[buffer_size - 1] = '\0';
-                result = TRUE;
-            }
-        }
-        FreeAslRequest(freq);
+        append_to_log("ERROR: Cannot lock directory: %s\n", path);
+        return FALSE;
     }
     
-    return result;
+    fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
+    if (!fib)
+    {
+        UnLock(lock);
+        append_to_log("ERROR: Cannot allocate FIB\n");
+        return FALSE;
+    }
+    
+    /* Examine the directory */
+    if (!Examine(lock, fib))
+    {
+        FreeDosObject(DOS_FIB, fib);
+        UnLock(lock);
+        append_to_log("ERROR: Cannot examine directory: %s\n", path);
+        return FALSE;
+    }
+    
+    /* Iterate through directory contents */
+    while (ExNext(lock, fib))
+    {
+        /* Build full path to entry */
+        snprintf(full_path, sizeof(full_path), "%s/%s", path, fib->fib_FileName);
+        
+        if (fib->fib_DirEntryType > 0)
+        {
+            /* It's a directory - recurse */
+            append_to_log("  Entering subdirectory: %s\n", fib->fib_FileName);
+            if (!delete_directory_recursive(full_path))
+            {
+                success = FALSE;
+                append_to_log("ERROR: Failed to delete subdirectory: %s\n", full_path);
+            }
+        }
+        else
+        {
+            /* It's a file - delete it */
+            append_to_log("  Deleting file: %s\n", fib->fib_FileName);
+            if (!DeleteFile((STRPTR)full_path))
+            {
+                success = FALSE;
+                append_to_log("ERROR: Failed to delete file: %s\n", full_path);
+            }
+        }
+    }
+    
+    /* Check if ExNext ended normally (ERROR_NO_MORE_ENTRIES) or with an error */
+    LONG error = IoErr();
+    if (error != ERROR_NO_MORE_ENTRIES)
+    {
+        append_to_log("ERROR: ExNext failed with error code: %ld\n", error);
+        success = FALSE;
+    }
+    
+    FreeDosObject(DOS_FIB, fib);
+    UnLock(lock);
+    
+    /* Now delete the empty directory itself */
+    if (success)
+    {
+        append_to_log("  Deleting directory: %s\n", path);
+        if (!DeleteFile((STRPTR)path))
+        {
+            append_to_log("ERROR: Failed to delete directory: %s\n", path);
+            success = FALSE;
+        }
+    }
+    
+    return success;
 }
 
 /*------------------------------------------------------------------------*/
@@ -1064,9 +1133,9 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     
     /* Initialize position tracking */
     /* Start from window borders (using IControl preferences), then add margins */
-    /* Add BEVEL_BORDER and CONTENT_PADDING to position gadgets inside the bevel */
-    current_x = prefsIControl.currentLeftBarWidth + RESTORE_MARGIN_LEFT + RESTORE_BEVEL_BORDER + RESTORE_CONTENT_PADDING;
-    current_y = prefsIControl.currentWindowBarHeight + RESTORE_MARGIN_TOP + RESTORE_BEVEL_BORDER + RESTORE_CONTENT_PADDING;
+    /* STANDARD LAYOUT: No bevel border or content padding */
+    current_x = prefsIControl.currentLeftBarWidth + RESTORE_MARGIN_LEFT;
+    current_y = prefsIControl.currentWindowBarHeight + RESTORE_MARGIN_TOP;
     window_max_width = 0;
     window_max_height = 0;
     
@@ -1108,111 +1177,17 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     /* PRE-CALCULATE LAYOUT DIMENSIONS                                   */
     /*--------------------------------------------------------------------*/
     UWORD listview_width = font_width * 65;
-    UWORD string_gadget_width = font_width * 35;
     
     /* Pre-calculate what the maximum right edge will be */
     UWORD precalc_max_right = current_x + listview_width;
     
-    /* Pre-calculate button dimensions */
-    label = "Backup Location:";
-    label_width = TextLength(&temp_rp, label, strlen(label));
-    label_spacing = 4;
-    
-    UWORD string_left = current_x + label_width + label_spacing;
-    UWORD string_right = string_left + string_gadget_width;
-    UWORD change_btn_left = string_right + RESTORE_SPACE_X;
-    UWORD change_btn_width = precalc_max_right - change_btn_left;
-    
     append_to_log("=== PRE-CALCULATED LAYOUT ===\n");
     append_to_log("Listview width: %d, max_right will be: %d\n", listview_width, precalc_max_right);
-    append_to_log("Change button: left=%d, width=%d\n", change_btn_left, change_btn_width);
-    
-    /*--------------------------------------------------------------------*/
-    /* Backup Location Label (TEXT gadget)                               */
-    /*--------------------------------------------------------------------*/
-    append_to_log("Creating Backup Location label\n");
-    
-    ng.ng_LeftEdge = current_x;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = label_width;
-    ng.ng_Height = string_height;
-    ng.ng_GadgetText = label;
-    ng.ng_GadgetID = GID_RESTORE_BACKUP_LABEL;
-    ng.ng_Flags = PLACETEXT_IN;
-    
-    restore_data->backup_path_label = gad = CreateGadget(TEXT_KIND, gad, &ng,
-        GTTX_Text, label,
-        GTTX_Border, FALSE,
-        TAG_END);
-    
-    if (gad == NULL)
-    {
-        append_to_log("ERROR: Failed to create Backup Location label\n");
-        goto cleanup_error;
-    }
-    append_to_log("Backup Location label created successfully\n");
-    
-    /*--------------------------------------------------------------------*/
-    /* Backup Location String Gadget (no label)                          */
-    /*--------------------------------------------------------------------*/
-    append_to_log("Creating Backup Location string gadget\n");
-    
-    ng.ng_LeftEdge = string_left;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = string_gadget_width;
-    ng.ng_Height = string_height;
-    ng.ng_GadgetText = NULL;  /* No label - using separate TEXT gadget */
-    ng.ng_GadgetID = GID_RESTORE_BACKUP_PATH;
-    ng.ng_Flags = 0;  /* No PLACETEXT flag */
-    
-    append_to_log("String gadget params: left=%d, top=%d, width=%d, height=%d\n",
-                  ng.ng_LeftEdge, ng.ng_TopEdge, ng.ng_Width, ng.ng_Height);
-    
-    restore_data->backup_path_str = gad = CreateGadget(STRING_KIND, gad, &ng,
-        GTST_String, restore_data->backup_root_path,
-        GTST_MaxChars, 255,
-        TAG_END);
-    
-    if (gad == NULL)
-    {
-        append_to_log("ERROR: Failed to create Backup Location string gadget\n");
-        append_to_log("  Parameters were: left=%d, top=%d, width=%d, height=%d\n",
-                      ng.ng_LeftEdge, ng.ng_TopEdge, ng.ng_Width, ng.ng_Height);
-        append_to_log("  Screen size: %d x %d\n", screen->Width, screen->Height);
-        goto cleanup_error;
-    }
-    append_to_log("Backup Location string gadget created successfully\n");
-    
-    update_window_max_dimensions(&window_max_width, &window_max_height,
-                                ng.ng_LeftEdge + ng.ng_Width,
-                                ng.ng_TopEdge + ng.ng_Height);
-    
-    /*--------------------------------------------------------------------*/
-    /* Change Location Button - PRE-CALCULATED WIDTH                     */
-    /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = change_btn_left;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = change_btn_width;
-    ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Change";
-    ng.ng_GadgetID = GID_RESTORE_CHANGE_PATH;
-    ng.ng_Flags = PLACETEXT_IN;
-    
-    restore_data->change_path_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
-        TAG_END);
-    
-    if (gad == NULL)
-        goto cleanup_error;
-    
-    update_window_max_dimensions(&window_max_width, &window_max_height,
-                                ng.ng_LeftEdge + ng.ng_Width,
-                                ng.ng_TopEdge + ng.ng_Height);
     
     /*--------------------------------------------------------------------*/
     /* Backup Run ListView                                               */
     /*--------------------------------------------------------------------*/
     append_to_log("Creating Backup Run ListView\n");
-    current_y += string_height + RESTORE_SPACE_Y;
     
     ng.ng_LeftEdge = current_x;
     ng.ng_TopEdge = current_y;
@@ -1274,16 +1249,57 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
                                 ng.ng_TopEdge + ng.ng_Height);
     
     /*--------------------------------------------------------------------*/
-    /* Button Row - PRE-CALCULATED EQUAL WIDTHS                          */
+    /* Calculate equal button width for all 4 buttons                    */
     /*--------------------------------------------------------------------*/
-    /* Buttons positioned OUTSIDE bevel, aligned with bevel INNER edges */
-    /* The bevel has a frame, so we need to account for that */
-    /* Add spacing between bottom of details listview and checkbox */
+    /* Find maximum button text width */
+    UWORD max_btn_text_width = TextLength(&temp_rp, "Restore Run", 11);
+    UWORD temp_width = TextLength(&temp_rp, "View Folders...", 15);
+    if (temp_width > max_btn_text_width)
+        max_btn_text_width = temp_width;
+    temp_width = TextLength(&temp_rp, "Delete Run", 10);
+    if (temp_width > max_btn_text_width)
+        max_btn_text_width = temp_width;
+    temp_width = TextLength(&temp_rp, "Cancel", 6);
+    if (temp_width > max_btn_text_width)
+        max_btn_text_width = temp_width;
+    
+    /* Calculate equal button width: 3 * button_width + 2 * spacing = available_width */
+    UWORD available_width = listview_width;
+    UWORD equal_button_width = (available_width - (2 * RESTORE_SPACE_X)) / 3;
+    
+    /* Ensure buttons are wide enough for text + padding */
+    if (equal_button_width < max_btn_text_width + 8)
+        equal_button_width = max_btn_text_width + 8;
+    
+    append_to_log("=== BUTTON CALCULATION ===\n");
+    append_to_log("Available width: %d, Equal button width: %d\n", 
+                  available_width, equal_button_width);
+    
+    /*--------------------------------------------------------------------*/
+    /* Top Row: Restore Run Button + Checkbox                            */
+    /*--------------------------------------------------------------------*/
+    /* Add spacing between details listview and top button row */
     current_y = ng.ng_TopEdge + ng.ng_Height + RESTORE_SPACE_Y;
     
-    /* Restore Window Geometry Checkbox */
+    /* Restore Run Button - left-aligned, no centering */
     ng.ng_LeftEdge = current_x;
     ng.ng_TopEdge = current_y;
+    ng.ng_Width = equal_button_width;
+    ng.ng_Height = button_height;
+    ng.ng_GadgetText = "Restore Run";
+    ng.ng_GadgetID = GID_RESTORE_RUN_BTN;
+    ng.ng_Flags = PLACETEXT_IN;
+    
+    restore_data->restore_run_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
+        GA_Disabled, TRUE,
+        TAG_END);
+    
+    if (gad == NULL)
+        goto cleanup_error;
+    
+    /* Restore Window Geometry Checkbox - to the right of the button */
+    ng.ng_LeftEdge = current_x + equal_button_width + RESTORE_SPACE_X;
+    ng.ng_TopEdge = current_y + ((button_height - (temp_rp.TxHeight + 4)) / 2); /* Vertically center with button */
     ng.ng_Width = TextLength(&temp_rp, "Restore window positions", 24) + 30;
     ng.ng_Height = temp_rp.TxHeight + 4;
     ng.ng_GadgetText = "Restore window positions";
@@ -1297,52 +1313,27 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     if (gad == NULL)
         goto cleanup_error;
     
-    /* Add spacing between checkbox and buttons */
-    current_y = ng.ng_TopEdge + ng.ng_Height + RESTORE_CONTENT_PADDING + RESTORE_BEVEL_BORDER + RESTORE_BUTTON_SPACING;
+    /*--------------------------------------------------------------------*/
+    /* Bottom Row: Delete Run, View Folders, Cancel (3 equal buttons)    */
+    /*--------------------------------------------------------------------*/
+    /* Add spacing between top row and bottom button row */
+    current_y += button_height + RESTORE_SPACE_Y;
     
-    /* Calculate bevel position and dimensions (must match draw_window_background()) */
-    UWORD bevel_left = current_x - RESTORE_CONTENT_PADDING - RESTORE_BEVEL_BORDER;
-    UWORD bevel_width = listview_width + (2 * RESTORE_CONTENT_PADDING) + (2 * RESTORE_BEVEL_BORDER);
+    UWORD button_row_x = current_x;
     
-    /* Calculate button row starting position */
-    /* Align with bevel's INNER edge (account for 2-pixel bevel frame) */
-    UWORD button_row_x = bevel_left + 2;
+    append_to_log("=== BOTTOM BUTTON ROW ===\n");
+    append_to_log("Button row starts at x=%d, y=%d\n", button_row_x, current_y);
     
-    /* Pre-calculate equal button widths */
-    /* Available width spans from inner left to inner right of bevel frame */
-    UWORD available_width = bevel_width - 4;  /* Subtract bevel frame (2px left + 2px right) */
-    
-    /* Find maximum button text width */
-    UWORD max_btn_text_width = TextLength(&temp_rp, "Restore Run", 11);
-    UWORD temp_width = TextLength(&temp_rp, "View Folders...", 15);
-    if (temp_width > max_btn_text_width)
-        max_btn_text_width = temp_width;
-    temp_width = TextLength(&temp_rp, "Cancel", 6);
-    if (temp_width > max_btn_text_width)
-        max_btn_text_width = temp_width;
-    
-    /* Calculate equal button width: 3 * button_width + 2 * spacing = available_width */
-    UWORD equal_button_width = (available_width - (2 * RESTORE_SPACE_X)) / 3;
-    
-    /* Ensure buttons are wide enough for text + padding */
-    if (equal_button_width < max_btn_text_width + 8)
-        equal_button_width = max_btn_text_width + 8;
-    
-    append_to_log("=== BUTTON ROW PRE-CALCULATION ===\n");
-    append_to_log("Bevel width: %d, Available width (minus frame): %d, Equal button width: %d\n", 
-                  bevel_width, available_width, equal_button_width);
-    append_to_log("Button row starts at x=%d (bevel left=%d, aligned with bevel INNER edge)\n", button_row_x, bevel_left);
-    
-    /* Restore Run Button */
+    /* Delete Run Button */
     ng.ng_LeftEdge = button_row_x;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = equal_button_width;
     ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Restore Run";
-    ng.ng_GadgetID = GID_RESTORE_RUN_BTN;
+    ng.ng_GadgetText = "Delete Run";
+    ng.ng_GadgetID = GID_RESTORE_DELETE_RUN;
     ng.ng_Flags = PLACETEXT_IN;
     
-    restore_data->restore_run_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
+    restore_data->delete_run_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
         GA_Disabled, TRUE,
         TAG_END);
     
@@ -1408,16 +1399,6 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     append_to_log("Screen pointer: %p\n", screen);
     
     /* Verify all gadgets were created */
-    if (restore_data->backup_path_str == NULL)
-    {
-        append_to_log("ERROR: backup_path_str is NULL!\n");
-        goto cleanup_error;
-    }
-    if (restore_data->change_path_btn == NULL)
-    {
-        append_to_log("ERROR: change_path_btn is NULL!\n");
-        goto cleanup_error;
-    }
     if (restore_data->run_list == NULL)
     {
         append_to_log("ERROR: run_list is NULL!\n");
@@ -1431,6 +1412,11 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     if (restore_data->restore_run_btn == NULL)
     {
         append_to_log("ERROR: restore_run_btn is NULL!\n");
+        goto cleanup_error;
+    }
+    if (restore_data->delete_run_btn == NULL)
+    {
+        append_to_log("ERROR: delete_run_btn is NULL!\n");
         goto cleanup_error;
     }
     if (restore_data->view_folders_btn == NULL)
@@ -1474,14 +1460,18 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     append_to_log("Restore window opened successfully\n");
     restore_data->window_open = TRUE;
     
-    /* Draw the window background FIRST (before refreshing gadgets) */
-    /* This ensures the pattern and bevel are behind the gadgets */
-    draw_window_background(restore_data);
+    /* DISABLED: Custom checkerboard background 
+     * Draw the window background FIRST (before refreshing gadgets)
+     * This ensures the pattern and bevel are behind the gadgets
+     */
+    /* draw_window_background(restore_data); */
     
-    /* Force all gadgets to redraw themselves on top of the background */
-    /* GT_RefreshWindow alone doesn't work with custom backgrounds */
-    append_to_log("Refreshing window gadgets\n");
-    RefreshGList(restore_data->glist, restore_data->window, NULL, -1);
+    /* DISABLED: Custom gadget refresh
+     * Force all gadgets to redraw themselves on top of the background
+     * GT_RefreshWindow alone doesn't work with custom backgrounds
+     */
+    /* append_to_log("Refreshing window gadgets\n");
+    RefreshGList(restore_data->glist, restore_data->window, NULL, -1); */
     
     /* Scan for backup runs */
     append_to_log("Scanning for backup runs in: %s\n", restore_data->backup_root_path);
@@ -1690,55 +1680,19 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                 break;
             
             case IDCMP_REFRESHWINDOW:
+                /* DISABLED: Custom background redrawing
+                 * GT_BeginRefresh(restore_data->window);
+                 * draw_window_background(restore_data);
+                 * GT_EndRefresh(restore_data->window, TRUE);
+                 */
+                /* Use standard GadTools refresh instead */
                 GT_BeginRefresh(restore_data->window);
-                draw_window_background(restore_data);  /* Redraw background and panel after window damage */
                 GT_EndRefresh(restore_data->window, TRUE);
                 break;
             
             case IDCMP_GADGETUP:
                 switch (gadget->GadgetID)
                 {
-                    case GID_RESTORE_CHANGE_PATH:
-                        {
-                            char new_path[256];
-                            strcpy(new_path, restore_data->backup_root_path);
-                            
-                            if (request_directory(new_path, sizeof(new_path),
-                                                restore_data->backup_root_path))
-                            {
-                                strcpy(restore_data->backup_root_path, new_path);
-                                
-                                /* Update string gadget */
-                                GT_SetGadgetAttrs(restore_data->backup_path_str,
-                                                restore_data->window, NULL,
-                                                GTST_String, new_path,
-                                                TAG_END);
-                                
-                                /* Rescan runs */
-                                if (restore_data->run_entries != NULL)
-                                {
-                                    FreeVec(restore_data->run_entries);
-                                    restore_data->run_entries = NULL;
-                                }
-                                
-                                restore_data->run_count = scan_backup_runs(
-                                    restore_data->backup_root_path,
-                                    &restore_data->run_entries);
-                                
-                                if (restore_data->run_count > 0)
-                                {
-                                    populate_run_list(restore_data,
-                                                     restore_data->run_entries,
-                                                     restore_data->run_count);
-                                }
-                                else
-                                {
-                                    update_details_panel(restore_data, NULL);
-                                }
-                            }
-                        }
-                        break;
-                    
                     case GID_RESTORE_RUN_LIST:
                         {
                             LONG selected = -1;
@@ -1774,8 +1728,13 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                                 update_details_panel(restore_data,
                                     &restore_data->run_entries[actual_idx]);
                                 
-                                /* Enable restore button */
+                                /* Enable restore and delete buttons */
                                 GT_SetGadgetAttrs(restore_data->restore_run_btn,
+                                                restore_data->window, NULL,
+                                                GA_Disabled, FALSE,
+                                                TAG_END);
+                                
+                                GT_SetGadgetAttrs(restore_data->delete_run_btn,
                                                 restore_data->window, NULL,
                                                 GA_Disabled, FALSE,
                                                 TAG_END);
@@ -1849,6 +1808,100 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                         {
                             perform_restore_run(restore_data,
                                 &restore_data->run_entries[restore_data->selected_run_index]);
+                        }
+                        break;
+                    
+                    case GID_RESTORE_DELETE_RUN:
+                        if (restore_data->selected_run_index >= 0 &&
+                            restore_data->selected_run_index < (LONG)restore_data->run_count)
+                        {
+                            struct RestoreRunEntry *selected_entry = 
+                                &restore_data->run_entries[restore_data->selected_run_index];
+                            struct EasyStruct easy_struct;
+                            char message[512];
+                            
+                            /* Show confirmation requester */
+                            sprintf(message, "Delete backup run %s?\n\nThis will permanently delete:\n- %lu folder archive(s)\n- Catalog file\n- Run directory\n\nThis action cannot be undone!",
+                                    selected_entry->runName,
+                                    selected_entry->folderCount);
+                            
+                            easy_struct.es_StructSize = sizeof(struct EasyStruct);
+                            easy_struct.es_Flags = 0;
+                            easy_struct.es_Title = "Confirm Delete";
+                            easy_struct.es_TextFormat = message;
+                            easy_struct.es_GadgetFormat = "Delete|Cancel";
+                            
+                            if (EasyRequest(restore_data->window, &easy_struct, NULL))
+                            {
+                                char run_path[512];
+                                
+                                /* Build full path to run directory */
+                                sprintf(run_path, "%s/%s", restore_data->backup_root_path, selected_entry->runName);
+                                
+                                append_to_log("Deleting backup run: %s\n", run_path);
+                                
+                                /* Delete the entire run directory recursively */
+                                if (delete_directory_recursive(run_path))
+                                {
+                                    append_to_log("Successfully deleted run: %s\n", selected_entry->runName);
+                                    
+                                    /* Rescan backup directory */
+                                    if (restore_data->run_entries != NULL)
+                                    {
+                                        FreeVec(restore_data->run_entries);
+                                        restore_data->run_entries = NULL;
+                                    }
+                                    
+                                    restore_data->run_count = scan_backup_runs(
+                                        restore_data->backup_root_path,
+                                        &restore_data->run_entries);
+                                    
+                                    if (restore_data->run_count > 0)
+                                    {
+                                        populate_run_list(restore_data,
+                                                         restore_data->run_entries,
+                                                         restore_data->run_count);
+                                    }
+                                    else
+                                    {
+                                        /* No runs left, clear details and disable buttons */
+                                        update_details_panel(restore_data, NULL);
+                                        GT_SetGadgetAttrs(restore_data->restore_run_btn,
+                                                        restore_data->window, NULL,
+                                                        GA_Disabled, TRUE,
+                                                        TAG_END);
+                                        GT_SetGadgetAttrs(restore_data->delete_run_btn,
+                                                        restore_data->window, NULL,
+                                                        GA_Disabled, TRUE,
+                                                        TAG_END);
+                                        GT_SetGadgetAttrs(restore_data->view_folders_btn,
+                                                        restore_data->window, NULL,
+                                                        GA_Disabled, TRUE,
+                                                        TAG_END);
+                                    }
+                                    
+                                    /* Show success message */
+                                    sprintf(message, "Backup run %s deleted successfully.", selected_entry->runName);
+                                    easy_struct.es_TextFormat = message;
+                                    easy_struct.es_GadgetFormat = "OK";
+                                    easy_struct.es_Title = "Delete Complete";
+                                    EasyRequest(restore_data->window, &easy_struct, NULL);
+                                }
+                                else
+                                {
+                                    append_to_log("ERROR: Failed to delete run: %s\n", run_path);
+                                    
+                                    sprintf(message, "Failed to delete backup run %s.\n\nThe directory may be in use or protected.\nCheck the log for details.", selected_entry->runName);
+                                    easy_struct.es_TextFormat = message;
+                                    easy_struct.es_GadgetFormat = "OK";
+                                    easy_struct.es_Title = "Delete Failed";
+                                    EasyRequest(restore_data->window, &easy_struct, NULL);
+                                }
+                            }
+                            else
+                            {
+                                append_to_log("Delete cancelled by user\n");
+                            }
                         }
                         break;
                     

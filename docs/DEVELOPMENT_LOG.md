@@ -5,7 +5,103 @@ iTidy is an Amiga icon management utility that allows users to sort and arrange 
 
 ## Development Timeline
 
-### Latest: Window Geometry Backup and Restore (October 29, 2025)
+### Latest: Restore Window UI Refinements and Delete Functionality (October 30, 2025)
+
+#### Restore Window Listview Formatting Improvements
+* **Purpose**: Improve visual alignment and readability of backup run list
+* **Date**: October 30, 2025
+
+**Changes Made:**
+
+1. **Folders Column Right-Justified**
+   - Changed from left-aligned (`%-11s`) to right-aligned (`%11s`)
+   - Now matches the visual style of the Size column
+   - Numbers align vertically for easier scanning
+
+2. **Size Column Byte Formatting**
+   - Added trailing space to "B" unit to match 2-character units (KB, MB, GB)
+   - Single-digit bytes now display as " 1 B " instead of "1 B"
+   - Ensures consistent column alignment across all size formats
+
+3. **Folder Count Singular/Plural**
+   - Added logic to display "1 folder " (singular) instead of "1 folders"
+   - Trailing space added to maintain column alignment
+   - Plural form remains "folders" for 2+ folders
+
+**Result**: Professional-looking listview with proper column alignment and correct grammar
+
+#### Backup Location Controls Removed
+* **Purpose**: Simplify UI as backup location rarely changes
+* **Motivation**: Backup feature is secondary; most users will use default location
+
+**Changes Made:**
+- Removed "Backup Location:" label gadget
+- Removed backup path string gadget
+- Removed "Change" button and directory requester
+- Removed `request_directory()` function
+- Backup location now fixed to `PROGDIR:Backups`
+
+**Files Modified:**
+- `restore_window.h`: Removed gadget IDs and struct members
+- `restore_window.c`: Removed gadget creation and event handling code
+- Updated `draw_window_background()` to use `run_list` for positioning
+
+#### Restore Window Layout Restructure with Delete Functionality
+* **Purpose**: Add ability to delete unwanted backup runs directly from GUI
+* **Date**: October 30, 2025
+
+**New Layout Design:**
+
+**Top Row (after details listview):**
+- **"Restore Run" button** - Moved up from bottom row, left-aligned
+- **"Restore window positions" checkbox** - Positioned to right of button, vertically centered
+
+**Bottom Row:**
+- **"Delete Run" button** (NEW) - Replaces where Restore Run was
+- **"View Folders..."** button - Center position
+- **"Cancel"** button - Right position
+- All buttons have equal width for consistent appearance
+
+**Delete Functionality:**
+
+1. **Confirmation Dialog**
+   - Shows number of archives that will be deleted
+   - Warns that action cannot be undone
+   - "Delete|Cancel" buttons
+
+2. **Recursive Directory Delete**
+   - Created `delete_directory_recursive()` function
+   - AmigaDOS `DeleteFile()` won't delete non-empty directories
+   - Function walks directory tree depth-first:
+     - Deletes files as encountered
+     - Recurses into subdirectories
+     - Deletes directories only when empty
+   - Includes detailed logging for troubleshooting
+
+3. **Post-Delete Actions**
+   - Rescans backup directory
+   - Updates listview to remove deleted run
+   - Disables buttons if no runs remain
+   - Shows success/error message to user
+
+**Button States:**
+- "Restore Run" and "Delete Run" enabled when run selected
+- "View Folders..." enabled when run has catalog
+- All disabled when no selection
+
+**Files Modified:**
+- `restore_window.h`: Added `GID_RESTORE_DELETE_RUN`, `delete_run_btn` member
+- `restore_window.c`: New layout, delete handler, recursive delete function
+
+**Technical Notes:**
+- Button width calculation includes all 4 buttons for consistency
+- Checkbox vertically centered with button using height calculation
+- Error handling for locked/protected directories
+- Log output tracks each file/directory operation
+
+---
+
+### Window Geometry Backup and Restore (October 29, 2025)
 
 #### Implementation: Preserve Folder Window Positions in Backups
 - **Purpose**: Restore folder window positions, sizes, and view modes along with icon positions
