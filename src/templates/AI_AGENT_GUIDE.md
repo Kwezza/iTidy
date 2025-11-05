@@ -9,7 +9,85 @@ This project provides two specialized templates designed for AI agents (like Git
 
 Both templates are AI-friendly with clear modification instructions and template usage guides.
 
-## 📋 Template Modification Checklists
+## �️ Amiga SDK Naming Collision Policy (MANDATORY)
+
+AmigaOS headers define many short, common identifiers and macros (for example SHINEPEN, SHADOWPEN, FILLPEN, TEXTPEN). To avoid accidental conflicts and macro expansion surprises, iTidy adopts a strict naming convention for all project-owned symbols.
+
+### The Rule: Prefix everything we own
+
+- Types: use iTidy_ prefix
+    - Example: iTidy_ProgressWindow, iTidy_RecursiveProgressWindow, iTidy_RecursiveScanResult
+- Functions: use iTidy_ prefix
+    - Example: iTidy_OpenProgressWindow, iTidy_UpdateProgress, iTidy_Progress_DrawBevelBox
+- Constants/macros: use ITIDY_ prefix in ALL CAPS
+    - Example: ITIDY_BAR_HEIGHT, ITIDY_DEFAULT_WINDOW_WIDTH
+- Struct fields and local variables: use clear snake_case; avoid ambiguous short names
+    - Example fields: iTidy_shine_pen, iTidy_shadow_pen, iTidy_fill_pen, iTidy_bar_pen, iTidy_text_pen
+    - Example params: left, top, width, height (avoid x, y, w, h)
+
+Why this is necessary:
+- Avoids collisions with AmigaOS macros and identifiers across 2.x/3.x SDKs
+- Prevents rare but painful bugs where an identifier is a macro in some headers
+- Makes symbols grep-able and clearly project-scoped for future maintenance
+
+### Before vs After examples
+
+Bad (risk of collision and ambiguous names):
+```c
+typedef struct {
+        ULONG shinePen;  /* may be confused with SHINEPEN macro */
+        ULONG fillPen;
+} ProgressPens;
+
+void DrawBevelBox(struct RastPort *rp, WORD x, WORD y, WORD w, WORD h,
+                                    ULONG shinePen, ULONG shadowPen, ULONG fillPen, BOOL recessed);
+```
+
+Good (namespaced and explicit):
+```c
+typedef struct {
+        ULONG iTidy_shine_pen;
+        ULONG iTidy_shadow_pen;
+        ULONG iTidy_fill_pen;
+        ULONG iTidy_bar_pen;
+        ULONG iTidy_text_pen;
+} iTidy_ProgressPens;
+
+void iTidy_Progress_DrawBevelBox(struct RastPort *rp,
+                                                                 WORD left, WORD top, WORD width, WORD height,
+                                                                 ULONG iTidy_shine_pen, ULONG iTidy_shadow_pen, ULONG iTidy_fill_pen,
+                                                                 BOOL recessed);
+```
+
+### Parameter naming guidance
+
+- Prefer left, top, width, height for geometry
+- Avoid x, y, w, h which sometimes appear as macros in legacy headers
+- Prefer descriptive names for colors/pens: iTidy_shine_pen, not shinePen
+
+### Include hygiene
+
+- Minimize header pollution in public headers (forward-declare struct Screen, struct Window, struct RastPort when possible)
+- Include AmigaOS headers in .c files rather than .h where feasible
+- Never redefine common macros like TRUE, FALSE, MIN, MAX; use SDK-provided ones
+
+### Checklist for new code (AI agents MUST follow)
+
+- [ ] All new types/functions/macros are prefixed (iTidy_/ITIDY_)
+- [ ] Struct fields and parameters use snake_case descriptive names
+- [ ] No identifiers named like SDK macros (e.g., shinePen, shadowPen, fillPen)
+- [ ] Geometry parameters use left/top/width/height
+- [ ] Public headers are minimal; heavy AmigaOS includes stay in .c files
+- [ ] Makefile updated if new source directories or files are added
+
+### Known SDK identifiers to avoid mimicking
+
+- Pens and UI: SHINEPEN, SHADOWPEN, BACKGROUNDPEN, FILLPEN, TEXTPEN
+- Common gadget tags and enums (GadTools/Intuition): use their names as-is; do not shadow
+
+Adhering to this policy prevents subtle build breaks, macro-related parse errors, and runtime inconsistencies across different AmigaOS setups. Future AI agents should treat this convention as mandatory when proposing, generating, or refactoring code in this repository.
+
+## �📋 Template Modification Checklists
 
 ## Dynamic Window Template
 

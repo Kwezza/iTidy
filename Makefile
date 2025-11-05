@@ -73,6 +73,7 @@ GUI_SRCS = \
 	$(SRC_DIR)/GUI/advanced_window.c \
 	$(SRC_DIR)/GUI/restore_window.c \
 	$(SRC_DIR)/GUI/folder_view_window.c \
+	$(SRC_DIR)/GUI/StatusWindows/progress_common.c \
 	$(SRC_DIR)/GUI/test_simple_window.c
 
 # DOS subdirectory sources
@@ -137,6 +138,7 @@ directories:
 	@if not exist "$(OUT_DIR)\Settings" mkdir "$(OUT_DIR)\Settings"
 	@if not exist "$(OUT_DIR)\platform" mkdir "$(OUT_DIR)\platform"
 	@if not exist "$(OUT_DIR)\GUI" mkdir "$(OUT_DIR)\GUI"
+	@if not exist "$(OUT_DIR)\GUI\StatusWindows" mkdir "$(OUT_DIR)\GUI\StatusWindows"
 ifeq ($(TARGET),amiga)
 	@if not exist "$(BIN_DIR)" mkdir "$(BIN_DIR)"
 endif

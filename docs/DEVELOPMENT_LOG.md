@@ -5,6 +5,38 @@ iTidy is an Amiga icon management utility that allows users to sort and arrange 
 
 ## Development Timeline
 
+### Latest: Phase 1 — StatusWindows Common Helpers Refactor and Build Success (November 5, 2025)
+
+#### Phase 1 Complete: Common Drawing/Refresh Utilities Compiling Cleanly
+* Purpose: Establish a solid, Workbench 3.x-compatible foundation for progress/status windows.
+* Status: Phase 1 complete — code compiles and links with no errors.
+* Date: November 5, 2025
+
+**Changes Made:**
+- Refactored the StatusWindows public API and implementation to use the iTidy_ prefix consistently and snake_case struct fields to avoid Amiga SDK collision.
+- Implemented WB3.0-compatible drawing helpers leveraging DrawInfo pens and TextLength measurements:
+   - iTidy_Progress_GetPens, iTidy_Progress_ApplyScreenFont
+   - iTidy_Progress_DrawBevelBox, iTidy_Progress_DrawBarFill
+   - iTidy_Progress_DrawTextLabel, iTidy_Progress_DrawPercentage
+   - iTidy_Progress_ClearTextArea, iTidy_Progress_HandleRefresh
+- Hardened header hygiene: only forward-declare SDK types in headers; include heavy Amiga headers in .c files.
+- Updated naming to avoid macro collisions with Amiga SDK (e.g., SHINEPEN, FILLPEN) and common short identifiers.
+
+**Files Modified/Created:**
+- src/GUI/StatusWindows/progress_common.h — Renamed types to iTidy_ProgressPens with snake_case fields; all function names now iTidy_Progress_*; callback typedef renamed to iTidy_Progress_RedrawFunc.
+- src/GUI/StatusWindows/progress_common.c — Updated implementations to match new API; simplified pen assignment from DrawInfo; maintained WB3.x drawing behavior.
+- docs/STATUS_WINDOWS_DESIGN.md — Updated to reflect iTidy_ naming policy for all StatusWindows APIs.
+- src/templates/AI_AGENT_GUIDE.md — Added mandatory naming policy to prevent Amiga SDK collisions.
+
+**Build Result:**
+- Build: PASS (Bin/Amiga/iTidy). No errors; only unrelated warnings in other modules.
+
+**Notes:**
+- This completes Phase 1 from STATUS_WINDOWS_DESIGN.md (common primitives).
+- Sets the stage for Phase 2 (simple progress window) and Phase 3 (recursive progress window) using these shared helpers.
+
+---
+
 ### Latest: Status Windows Design Specification (November 5, 2025)
 
 #### Comprehensive Progress Window Design Document Created

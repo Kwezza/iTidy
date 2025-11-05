@@ -22,6 +22,22 @@ This document outlines the design and implementation strategy for reusable statu
 
 ---
 
+## Naming Convention Update (iTidy_ prefix)
+
+To avoid accidental symbol collisions with AmigaOS SDK macros and identifiers (for example SHINEPEN/SHADOWPEN and other short or common names), all public types, functions, and constants in this feature use an explicit iTidy_ prefix, and fields use snake_case. This improves clarity, grep-ability, and reduces risk of macro expansion surprises on legacy headers.
+
+- Types: iTidy_ProgressWindow, iTidy_RecursiveProgressWindow, iTidy_RecursiveScanResult
+- Functions: iTidy_OpenProgressWindow, iTidy_UpdateProgress, iTidy_ShowCompletionState, iTidy_HandleProgressWindowEvents, iTidy_CloseProgressWindow, etc.
+- Common drawing helpers: iTidy_Progress_DrawBevelBox, iTidy_Progress_DrawBarFill, iTidy_Progress_DrawTextLabel, iTidy_Progress_DrawPercentage, iTidy_Progress_ClearTextArea, iTidy_Progress_HandleRefresh
+- Fields and parameters: left, top, width, height; iTidy_shine_pen, iTidy_shadow_pen, iTidy_fill_pen, iTidy_bar_pen, iTidy_text_pen
+
+Why renamed:
+- Avoid clashes with SDK macros and identifiers on AmigaOS 2.x/3.x
+- Keep exported API clearly within the project namespace
+- Make code search and maintenance easier across modules
+
+---
+
 ## Why Two Window Types?
 
 ### The Problem
@@ -79,37 +95,37 @@ Shows progress for single-level operations where the total count is known in adv
 | Title Bar | Yes | Shows task description |
 | Depth Gadget | Yes | Standard window behavior |
 
-### API Design
+### API Design (prefixed)
 
 ```c
 /* Open progress window */
-struct ProgressWindow* OpenProgressWindow(
+struct iTidy_ProgressWindow* iTidy_OpenProgressWindow(
     struct Screen *screen,         /* Workbench screen */
     const char *task_label,        /* "Restoring Backup Run 0007" */
     UWORD total_items              /* Total count (e.g., 63 archives) */
 );
 
 /* Update progress */
-void UpdateProgress(
-    struct ProgressWindow *pw,
+void iTidy_UpdateProgress(
+    struct iTidy_ProgressWindow *pw,
     UWORD current_item,            /* Current item number (1-based) */
     const char *helper_text        /* "Extracting: 00015.lha" */
 );
 
 /* Show completion state with Close button (optional - for longer operations) */
-void ShowCompletionState(
-    struct ProgressWindow *pw,
+void iTidy_ShowCompletionState(
+    struct iTidy_ProgressWindow *pw,
     BOOL success                   /* TRUE = success, FALSE = error */
 );
 
 /* Handle events (only needed if using completion state) */
-BOOL HandleProgressWindowEvents(
-    struct ProgressWindow *pw      /* Returns FALSE when Close clicked */
+BOOL iTidy_HandleProgressWindowEvents(
+    struct iTidy_ProgressWindow *pw      /* Returns FALSE when Close clicked */
 );
 
 /* Close window */
-void CloseProgressWindow(
-    struct ProgressWindow *pw
+void iTidy_CloseProgressWindow(
+    struct iTidy_ProgressWindow *pw
 );
 ```
 
@@ -119,7 +135,7 @@ void CloseProgressWindow(
 
 ```c
 /* Restore operation - auto-close when done */
-struct ProgressWindow *pw = OpenProgressWindow(
+struct iTidy_ProgressWindow *pw = iTidy_OpenProgressWindow(
     screen, 
     "Restoring Backup Run 0007", 
     catalog->entryCount  /* 63 archives */
@@ -129,21 +145,21 @@ for (i = 0; i < catalog->entryCount; i++) {
     char status[256];
     snprintf(status, sizeof(status), "Extracting: %s", entry->archiveName);
     
-    UpdateProgress(pw, i + 1, status);
+    iTidy_UpdateProgress(pw, i + 1, status);
     
     /* Perform actual work */
     ExtractArchive(entry->archivePath, destination);
 }
 
 /* Close immediately when done */
-CloseProgressWindow(pw);
+iTidy_CloseProgressWindow(pw);
 ```
 
 **Pattern B: Completion State with Close Button (RECOMMENDED)**
 
 ```c
 /* Restore operation - show completion state */
-struct ProgressWindow *pw = OpenProgressWindow(
+struct iTidy_ProgressWindow *pw = iTidy_OpenProgressWindow(
     screen, 
     "Restoring Backup Run 0007", 
     catalog->entryCount  /* 63 archives */
@@ -154,7 +170,7 @@ for (i = 0; i < catalog->entryCount; i++) {
     char status[256];
     snprintf(status, sizeof(status), "Extracting: %s", entry->archiveName);
     
-    UpdateProgress(pw, i + 1, status);
+    iTidy_UpdateProgress(pw, i + 1, status);
     
     /* Perform actual work */
     if (!ExtractArchive(entry->archivePath, destination)) {
@@ -164,15 +180,15 @@ for (i = 0; i < catalog->entryCount; i++) {
 }
 
 /* Show completion state with Close button */
-ShowCompletionState(pw, success);
+iTidy_ShowCompletionState(pw, success);
 
 /* Wait for user to click Close button */
-while (HandleProgressWindowEvents(pw)) {
+while (iTidy_HandleProgressWindowEvents(pw)) {
     WaitPort(pw->window->UserPort);
 }
 
 /* User clicked Close - now we can clean up */
-CloseProgressWindow(pw);
+iTidy_CloseProgressWindow(pw);
 ```
 
 ---
@@ -284,46 +300,46 @@ typedef struct {
     ULONG totalIcons;          /* Total icons across all folders (e.g., 8,432) */
     char **folderPaths;        /* Array of folder paths */
     UWORD *iconCounts;         /* Icons per folder (parallel array) */
-} RecursiveScanResult;
+} iTidy_RecursiveScanResult;
 ```
 
 ### API Design
 
 ```c
 /* Prescan directory tree */
-RecursiveScanResult* PrescanRecursive(
+iTidy_RecursiveScanResult* iTidy_PrescanRecursive(
     const char *rootPath       /* "Work:WHDLoad" */
 );
 
 /* Open recursive progress window */
-struct RecursiveProgressWindow* OpenRecursiveProgress(
+struct iTidy_RecursiveProgressWindow* iTidy_OpenRecursiveProgress(
     struct Screen *screen,
     const char *task_label,                    /* "Processing Icons Recursively" */
-    const RecursiveScanResult *scan            /* Prescan results */
+    const iTidy_RecursiveScanResult *scan      /* Prescan results */
 );
 
 /* Update outer progress (new folder) */
-void UpdateFolderProgress(
-    struct RecursiveProgressWindow *rpw,
+void iTidy_UpdateFolderProgress(
+    struct iTidy_RecursiveProgressWindow *rpw,
     UWORD folder_index,                        /* Current folder (1-based) */
     const char *folder_path,                   /* "Work:WHDLoad/GamesOCS/" */
     UWORD icons_in_folder                      /* Icon count for progress bar setup */
 );
 
 /* Update inner progress (icon in current folder) */
-void UpdateIconProgress(
-    struct RecursiveProgressWindow *rpw,
+void iTidy_UpdateIconProgress(
+    struct iTidy_RecursiveProgressWindow *rpw,
     UWORD icon_index                           /* Current icon (1-based) */
 );
 
 /* Close window */
-void CloseRecursiveProgress(
-    struct RecursiveProgressWindow *rpw
+void iTidy_CloseRecursiveProgress(
+    struct iTidy_RecursiveProgressWindow *rpw
 );
 
 /* Free prescan results */
-void FreeScanResult(
-    RecursiveScanResult *scan
+void iTidy_FreeScanResult(
+    iTidy_RecursiveScanResult *scan
 );
 ```
 
@@ -332,11 +348,11 @@ void FreeScanResult(
 ```c
 /* Phase 1: Prescan */
 printf("Scanning folders...\n");
-RecursiveScanResult *scan = PrescanRecursive("Work:WHDLoad");
+iTidy_RecursiveScanResult *scan = iTidy_PrescanRecursive("Work:WHDLoad");
 /* Result: Found 500 folders, 8,432 total icons */
 
 /* Phase 2: Open progress window */
-struct RecursiveProgressWindow *rpw = OpenRecursiveProgress(
+struct iTidy_RecursiveProgressWindow *rpw = iTidy_OpenRecursiveProgress(
     screen,
     "Processing Icons Recursively",
     scan
@@ -345,7 +361,7 @@ struct RecursiveProgressWindow *rpw = OpenRecursiveProgress(
 /* Phase 3: Process each folder */
 for (i = 0; i < scan->totalFolders; i++) {
     /* Update outer progress */
-    UpdateFolderProgress(rpw, i + 1, scan->folderPaths[i], scan->iconCounts[i]);
+    iTidy_UpdateFolderProgress(rpw, i + 1, scan->folderPaths[i], scan->iconCounts[i]);
     
     /* Load icons for this folder */
     iconArray = CreateIconArrayFromPath(scan->folderPaths[i]);
@@ -353,7 +369,7 @@ for (i = 0; i < scan->totalFolders; i++) {
     /* Process each icon */
     for (j = 0; j < iconArray->count; j++) {
         /* Update inner progress */
-        UpdateIconProgress(rpw, j + 1);
+    iTidy_UpdateIconProgress(rpw, j + 1);
         
         /* Process icon */
         ProcessIcon(&iconArray->icons[j]);
@@ -365,8 +381,8 @@ for (i = 0; i < scan->totalFolders; i++) {
 }
 
 /* Phase 4: Cleanup */
-CloseRecursiveProgress(rpw);
-FreeScanResult(scan);
+iTidy_CloseRecursiveProgress(rpw);
+iTidy_FreeScanResult(scan);
 ```
 
 ---
@@ -1009,7 +1025,7 @@ WA_IDCMP, IDCMP_REFRESHWINDOW | IDCMP_INTUITICKS
 
 **Future-Proof State Structure:**
 ```c
-struct ProgressWindow {
+struct iTidy_ProgressWindow {
     struct Window *window;
     /* ... existing display fields ... */
     volatile BOOL userCancelled;   /* Reserved for future Cancel button feature */
@@ -1024,7 +1040,7 @@ is added in the future, no existing code needs recompiling - maintaining binary 
 When the operation completes successfully, transition to a "completion state":
 
 ```c
-void ShowCompletionState(struct ProgressWindow *pw, BOOL success) {
+void iTidy_ShowCompletionState(struct iTidy_ProgressWindow *pw, BOOL success) {
     /* Clear busy pointer - operation is done */
     SetWindowPointer(pw->window,
                      WA_Pointer, NULL,
@@ -1032,9 +1048,9 @@ void ShowCompletionState(struct ProgressWindow *pw, BOOL success) {
     
     /* Update status text to show completion */
     const char *status = success ? "Complete!" : "Failed";
-    ClearTextArea(pw->window->RPort, pw->helper_x, pw->helper_y, 
+    iTidy_Progress_ClearTextArea(pw->window->RPort, pw->helper_x, pw->helper_y, 
                   pw->helper_max_width, pw->font_height, fillPen);
-    DrawTextLabel(pw->window->RPort, pw->helper_x, pw->helper_y, status);
+    iTidy_Progress_DrawTextLabel(pw->window->RPort, pw->helper_x, pw->helper_y, status);
     
     /* Show full-width Close button where progress bar was */
     UWORD button_width = pw->bar_w - 16;  /* Window width - margins */
@@ -1065,7 +1081,7 @@ void ShowCompletionState(struct ProgressWindow *pw, BOOL success) {
 }
 
 /* Event loop now needs to handle IDCMP_GADGETUP */
-BOOL HandleProgressWindowEvents(struct ProgressWindow *pw) {
+BOOL iTidy_HandleProgressWindowEvents(struct iTidy_ProgressWindow *pw) {
     struct IntuiMessage *msg;
     BOOL keep_open = TRUE;
     
@@ -1147,7 +1163,7 @@ Since the window uses `WFLG_SMART_REFRESH` and has no gadgets during operation, 
 
 **Lightweight Refresh Handler:**
 ```c
-void CheckRefreshEvents(struct ProgressWindow *pw) {
+void iTidy_Progress_HandleRefresh(struct iTidy_ProgressWindow *pw) {
     struct IntuiMessage *msg;
     
     /* Non-blocking check for refresh events only */
@@ -1160,7 +1176,7 @@ void CheckRefreshEvents(struct ProgressWindow *pw) {
             GT_BeginRefresh(pw->window);
             
             /* Redraw window contents (bevel box, progress bar, text) */
-            RedrawProgressWindow(pw);
+            /* Redraw function here should call iTidy_Progress_DrawBevelBox, etc. */
             
             GT_EndRefresh(pw->window, TRUE);
         }
@@ -1168,12 +1184,12 @@ void CheckRefreshEvents(struct ProgressWindow *pw) {
 }
 
 /* Call periodically during operation */
-void UpdateProgress(struct ProgressWindow *pw, UWORD current, const char *helper) {
+void iTidy_UpdateProgress(struct iTidy_ProgressWindow *pw, UWORD current, const char *helper) {
     /* Update progress bar and text */
     /* ... drawing code ... */
     
     /* Check for refresh events to prevent artifacts */
-    CheckRefreshEvents(pw);
+    iTidy_Progress_HandleRefresh(pw);
 }
 ```
 
@@ -1185,21 +1201,21 @@ void UpdateProgress(struct ProgressWindow *pw, UWORD current, const char *helper
 
 **Alternative: Simple Refresh Handler in Update Loop:**
 ```c
-void UpdateProgress(struct ProgressWindow *pw, UWORD current, const char *helper) {
+void iTidy_UpdateProgress(struct iTidy_ProgressWindow *pw, UWORD current, const char *helper) {
     struct IntuiMessage *msg;
     
     /* Update progress display */
-    DrawProgressBarFill(pw->window->RPort, ...);
-    DrawTextLabel(pw->window->RPort, ...);
+    iTidy_Progress_DrawBarFill(pw->window->RPort, ...);
+    iTidy_Progress_DrawTextLabel(pw->window->RPort, ...);
     
     /* Handle any pending refresh events (non-blocking) */
     while ((msg = (struct IntuiMessage *)GetMsg(pw->window->UserPort)) != NULL) {
         if (msg->Class == IDCMP_REFRESHWINDOW) {
             GT_BeginRefresh(pw->window);
             /* Re-render entire window */
-            DrawBevelBox(pw->window->RPort, ...);
-            DrawProgressBarFill(pw->window->RPort, ...);
-            DrawTextLabel(pw->window->RPort, ...);
+            iTidy_Progress_DrawBevelBox(pw->window->RPort, ...);
+            iTidy_Progress_DrawBarFill(pw->window->RPort, ...);
+            iTidy_Progress_DrawTextLabel(pw->window->RPort, ...);
             GT_EndRefresh(pw->window, TRUE);
         }
         ReplyMsg((struct Message *)msg);
@@ -1217,7 +1233,7 @@ void UpdateProgress(struct ProgressWindow *pw, UWORD current, const char *helper
 
 **If window fails to open:**
 ```c
-struct ProgressWindow *pw = OpenProgressWindow(...);
+struct iTidy_ProgressWindow *pw = iTidy_OpenProgressWindow(...);
 if (!pw) {
     /* Fall back to console output */
     printf("Processing: %s\n", status);
@@ -1228,7 +1244,7 @@ if (!pw) {
 **If operation fails midway:**
 ```c
 if (error) {
-    CloseProgressWindow(pw);
+    iTidy_CloseProgressWindow(pw);
     DisplayError("Operation failed: Out of disk space");
     return FALSE;
 }
@@ -1239,8 +1255,8 @@ if (error) {
 /* Check all allocations */
 if (!pw || !scan || !folderPaths) {
     /* Cleanup partial allocations */
-    if (pw) CloseProgressWindow(pw);
-    if (scan) FreeScanResult(scan);
+    if (pw) iTidy_CloseProgressWindow(pw);
+    if (scan) iTidy_FreeScanResult(scan);
     return NULL;
 }
 ```
@@ -1299,63 +1315,61 @@ if (!pw || !scan || !folderPaths) {
 ### Bevel Box Drawing (Reference Implementation)
 
 ```c
-void DrawBevelBox(
+void iTidy_Progress_DrawBevelBox(
     struct RastPort *rp,
-    WORD x, WORD y, WORD w, WORD h,
-    ULONG shinePen, ULONG shadowPen, ULONG fillPen,
+    WORD left, WORD top, WORD width, WORD height,
+    ULONG shine_pen, ULONG shadow_pen, ULONG fill_pen,
     BOOL recessed  /* TRUE = sunken, FALSE = raised */
 )
 {
     /* Outer bevel - 2 pixels wide */
-    SetAPen(rp, recessed ? shadowPen : shinePen);
-    Move(rp, x, y + h - 1);          /* Bottom-left */
-    Draw(rp, x, y);                  /* Top-left */
-    Draw(rp, x + w - 1, y);          /* Top-right */
+    SetAPen(rp, recessed ? shadow_pen : shine_pen);
+    Move(rp, left, top + height - 1);          /* Bottom-left */
+    Draw(rp, left, top);                        /* Top-left */
+    Draw(rp, left + width - 1, top);            /* Top-right */
     
-    SetAPen(rp, recessed ? shinePen : shadowPen);
-    Draw(rp, x + w - 1, y + h - 1);  /* Bottom-right */
-    Draw(rp, x, y + h - 1);          /* Bottom-left */
+    SetAPen(rp, recessed ? shine_pen : shadow_pen);
+    Draw(rp, left + width - 1, top + height - 1);  /* Bottom-right */
+    Draw(rp, left, top + height - 1);              /* Bottom-left */
     
     /* Inner bevel - 1 pixel inside */
-    SetAPen(rp, recessed ? shadowPen : shinePen);
-    Move(rp, x + 1, y + h - 2);
-    Draw(rp, x + 1, y + 1);
-    Draw(rp, x + w - 2, y + 1);
+    SetAPen(rp, recessed ? shadow_pen : shine_pen);
+    Move(rp, left + 1, top + height - 2);
+    Draw(rp, left + 1, top + 1);
+    Draw(rp, left + width - 2, top + 1);
     
-    SetAPen(rp, recessed ? shinePen : shadowPen);
-    Draw(rp, x + w - 2, y + h - 2);
-    Draw(rp, x + 1, y + h - 2);
+    SetAPen(rp, recessed ? shine_pen : shadow_pen);
+    Draw(rp, left + width - 2, top + height - 2);
+    Draw(rp, left + 1, top + height - 2);
     
     /* Fill interior */
-    SetAPen(rp, fillPen);
-    RectFill(rp, x + 2, y + 2, x + w - 3, y + h - 3);
+    SetAPen(rp, fill_pen);
+    RectFill(rp, left + 2, top + 2, left + width - 3, top + height - 3);
 }
 ```
 
 ### Progress Bar Fill (Reference Implementation)
 
 ```c
-void DrawProgressBarFill(
+void iTidy_Progress_DrawBarFill(
     struct RastPort *rp,
-    WORD x, WORD y, WORD w, WORD h,
-    ULONG barPen, ULONG fillPen,
+    WORD left, WORD top, WORD width, WORD height,
+    ULONG bar_pen, ULONG fill_pen,
     UWORD percent  /* 0-100 */
 )
 {
     /* Calculate fill width (inside 2px bevel) */
-    WORD interior_w = w - 4;
+    WORD interior_w = width - 4;
     WORD fill_w = (interior_w * percent) / 100;
     
+    /* Draw gray unfilled background first */
+    SetAPen(rp, fill_pen);
+    RectFill(rp, left + 2, top + 2, left + width - 3, top + height - 3);
+
     /* Draw blue fill portion */
     if (fill_w > 0) {
-        SetAPen(rp, barPen);
-        RectFill(rp, x + 2, y + 2, x + 2 + fill_w - 1, y + h - 3);
-    }
-    
-    /* Draw gray unfilled portion */
-    if (fill_w < interior_w) {
-        SetAPen(rp, fillPen);
-        RectFill(rp, x + 2 + fill_w, y + 2, x + w - 3, y + h - 3);
+        SetAPen(rp, bar_pen);
+        RectFill(rp, left + 2, top + 2, left + 2 + fill_w - 1, top + height - 3);
     }
 }
 ```
@@ -1363,40 +1377,40 @@ void DrawProgressBarFill(
 ### Text Clearing Helper (NEW - Essential for Clean Updates)
 
 ```c
-void ClearTextArea(
+void iTidy_Progress_ClearTextArea(
     struct RastPort *rp,
-    WORD x, WORD y,
-    UWORD width, UWORD height,
-    ULONG bgPen
+    WORD left, WORD top,
+    UWORD rect_width, UWORD rect_height,
+    ULONG bg_pen
 )
 {
     /* Fill rectangle with background color to erase old text */
-    SetAPen(rp, bgPen);
-    RectFill(rp, x, y, x + width - 1, y + height - 1);
+    SetAPen(rp, bg_pen);
+    RectFill(rp, left, top, left + rect_width - 1, top + rect_height - 1);
 }
 ```
 
 ### Text Drawing with Proper Measurements (NEW)
 
 ```c
-void DrawTextLabel(
+void iTidy_Progress_DrawTextLabel(
     struct RastPort *rp,
-    WORD x, WORD y,
+    WORD left, WORD top,
     const char *text,
-    ULONG textPen
+    ULONG text_pen
 )
 {
-    SetAPen(rp, textPen);
-    Move(rp, x, y + rp->Font->tf_Baseline);
+    SetAPen(rp, text_pen);
+    Move(rp, left, top + rp->Font->tf_Baseline);
     Text(rp, text, strlen(text));
 }
 
-void DrawPercentage(
+void iTidy_Progress_DrawPercentage(
     struct RastPort *rp,
     WORD right_x,  /* Right edge coordinate for right-alignment */
-    WORD y,
+    WORD top,
     const char *percent_text,  /* e.g., "45%" */
-    ULONG textPen
+    ULONG text_pen
 )
 {
     /* Measure text width for right-alignment */
@@ -1406,8 +1420,8 @@ void DrawPercentage(
     WORD text_x = right_x - text_width;
     
     /* Draw text */
-    SetAPen(rp, textPen);
-    Move(rp, text_x, y + rp->Font->tf_Baseline);
+    SetAPen(rp, text_pen);
+    Move(rp, text_x, top + rp->Font->tf_Baseline);
     Text(rp, percent_text, strlen(percent_text));
 }
 ```
