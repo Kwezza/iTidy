@@ -5,7 +5,95 @@ iTidy is an Amiga icon management utility that allows users to sort and arrange 
 
 ## Development Timeline
 
-### Latest: Folder View Window Performance Optimization (October 30, 2025)
+### Latest: Status Windows Design Specification (November 5, 2025)
+
+#### Comprehensive Progress Window Design Document Created
+* **Purpose**: Design reusable, professional status/progress windows for long-running operations
+* **Status**: Design Phase Complete - Implementation Pending
+* **Date**: November 5, 2025
+
+**Context:**
+With the backup/restore system fully operational, the next major enhancement is adding visual feedback 
+for long-running operations. Currently, operations like backup creation, archive restoration, and 
+recursive icon processing provide no visual progress indication, leaving users uncertain about 
+operation status and completion time.
+
+**Design Document Created:**
+- **File**: `docs/STATUS_WINDOWS_DESIGN.md`
+- **Scope**: Complete specification for two types of progress windows:
+  1. **Simple Progress Window** - Single-bar progress for linear operations (backups, restores)
+  2. **Recursive Progress Window** - Dual-bar progress for nested operations (recursive folder processing)
+
+**Key Design Features:**
+
+1. **Professional Appearance**
+   - Workbench 3.x compliant 3D beveled progress bars
+   - Matches system UI aesthetics with DrawInfo-based theming
+   - Respects user's font preferences and custom themes (MagicWB, NewIcons)
+
+2. **Fast Window Opening Pattern**
+   - Windows open instantly (< 0.1s) with immediate visual feedback
+   - Operations run with busy pointer active
+   - Deferred list population pattern proven in folder_view_window.c
+
+3. **User Experience Focus**
+   - Dual progress bars for recursive operations provide constant visual feedback
+   - Percentage indicators show concrete progress (not vague "processing...")
+   - Optional completion state with Close button for important operations
+   - Modal windows that don't block multitasking
+
+4. **Technical Excellence**
+   - Proper IDCMP_REFRESHWINDOW handling prevents visual artifacts
+   - Shared refresh handler utility (HandleProgressRefresh) keeps code DRY
+   - Smart redrawing only updates changed elements (optimized for 7MHz systems)
+   - Prescan phase yields to multitasking (Delay) to keep system responsive
+   - Future-proof ABI with reserved `volatile BOOL userCancelled` field
+
+5. **Pointer Management**
+   - WA_PointerType with POINTERTYPE_BUSY/NORMAL for WB 3.1+ custom cursor support
+   - Clear visual transitions between busy and normal states
+   - Professional UX - users always know system state
+
+6. **Implementation Plan**
+   - **Phase 1**: Common drawing primitives (bevel boxes, text rendering)
+   - **Phase 2**: Simple progress window for backup/restore operations
+   - **Phase 3**: Recursive progress window with prescan for folder processing
+   - **Phase 4**: Integration testing and polish
+
+**Directory Structure Planned:**
+```
+src/GUI/StatusWindows/
+├── progress_common.c/h      - Shared drawing and utility functions
+├── progress_window.c/h      - Simple single-bar progress window
+└── recursive_progress.c/h   - Dual-bar recursive progress window
+```
+
+**Estimated Code Size**: ~1,000 lines total
+
+**Integration Points:**
+- `backup_session.c` - Backup creation progress
+- `backup_restore.c` - Archive extraction progress  
+- `folder_view_window.c` - Catalog parsing progress
+- `layout_processor.c` - Recursive icon processing progress
+
+**Design Refinements Incorporated:**
+- Refresh handling extracted to utility function for code reusability
+- User abort support pre-planned to avoid future ABI breakage
+- Pointer type transitions documented for WB 3.1+ enhancement
+- Prescan safety with Delay(1) yielding to maintain system responsiveness
+- INTUITICKS support noted for future cooperative multitasking-safe animations
+
+**Next Steps:**
+Implementation will begin in the next programming phase, starting with Phase 1 (common drawing code). 
+The design is production-ready with all technical details, best practices, and lessons learned from 
+previous GUI implementations integrated.
+
+**Files Created:**
+- `docs/STATUS_WINDOWS_DESIGN.md` - Complete design specification (35+ pages)
+
+---
+
+### Folder View Window Performance Optimization (October 30, 2025)
 
 #### Fast Window Opening with Deferred List Population
 * **Purpose**: Improve perceived performance on slow machines by opening window immediately
