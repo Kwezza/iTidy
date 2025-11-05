@@ -49,6 +49,7 @@
 #include <stdio.h>
 
 #include "restore_window.h"
+#include "GUI/StatusWindows/progress_window.h"
 #include "../backup_restore.h"
 #include "../writeLog.h"
 #include "folder_view_window.h"
@@ -853,8 +854,29 @@ BOOL perform_restore_run(struct iTidyRestoreWindow *restore_data,
     append_to_log("Restoring from: %s\n", runPath);
     append_to_log("Restoring %lu folder(s)...\n", run_entry->folderCount);
     
+    /* Open progress window */
+    struct iTidy_ProgressWindow *progress_window = NULL;
+    sprintf(message, "Restoring %s", run_entry->runName);
+    progress_window = iTidy_OpenProgressWindow(restore_data->screen, 
+                                                message,
+                                                (UWORD)run_entry->folderCount);
+    if (!progress_window)
+    {
+        append_to_log("WARNING: Failed to open progress window, continuing without progress display\n");
+    }
+    
+    /* Store progress window pointer in restore context for callbacks */
+    restoreCtx.userData = progress_window;
+    
     /* Perform the actual restore */
     status = RestoreFullRun(&restoreCtx, runPath);
+    
+    /* Close progress window */
+    if (progress_window)
+    {
+        iTidy_CloseProgressWindow(progress_window);
+        progress_window = NULL;
+    }
     
     /* Log results */
     append_to_log("Restore completed with status: %s\n", GetRestoreStatusMessage(status));

@@ -74,6 +74,7 @@ typedef struct {
     BOOL restoreWindowGeometry;         /* TRUE to restore window positions/sizes (default TRUE) */
     RestoreStatistics stats;            /* Operation statistics */
     char lastError[256];                /* Last error message */
+    void *userData;                     /* Optional user data pointer (e.g., progress window) */
 } RestoreContext;
 
 /* ========================================================================

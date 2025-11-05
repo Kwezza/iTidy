@@ -11,6 +11,7 @@
 #include "backup_lha.h"
 #include "backup_paths.h"
 #include "file_directory_handling.h"
+#include "GUI/StatusWindows/progress_window.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,6 +46,7 @@ static BOOL RestoreWindowGeometry(const char *folderPath, const BackupArchiveEnt
 typedef struct {
     RestoreContext *restoreCtx;
     const char *runDir;
+    UWORD currentFolderIndex;    /* Tracks which folder we're processing (1-based) */
 } CatalogIterContext;
 
 /* Callback for ParseCatalog - processes each entry during full run restore */
@@ -53,10 +55,21 @@ static BOOL RestoreCatalogEntryCallback(const BackupArchiveEntry *entry, void *u
     RestoreContext *rctx = iterData->restoreCtx;
     char archivePath[MAX_RESTORE_PATH];
     const char *destPath;
+    char statusText[256];
     
     /* Skip failed backups (they have no valid archive) */
     if (!entry->successful) {
         return TRUE;  /* Continue parsing */
+    }
+    
+    /* Increment folder counter */
+    iterData->currentFolderIndex++;
+    
+    /* Update progress window if available */
+    if (rctx->userData) {
+        struct iTidy_ProgressWindow *progress_window = (struct iTidy_ProgressWindow*)rctx->userData;
+        snprintf(statusText, sizeof(statusText), "Restoring: %s", entry->originalPath);
+        iTidy_UpdateProgress(progress_window, iterData->currentFolderIndex, statusText);
     }
     
     /* Build full archive path */
@@ -492,7 +505,8 @@ RestoreStatus RestoreFullRun(RestoreContext *ctx, const char *runDirectory) {
     /* Setup context for catalog iteration */
     CatalogIterContext iterCtx = {
         .restoreCtx = ctx,
-        .runDir = runDirectory
+        .runDir = runDirectory,
+        .currentFolderIndex = 0
     };
     
     /* Read catalog and restore all entries */

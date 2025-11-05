@@ -74,6 +74,8 @@ GUI_SRCS = \
 	$(SRC_DIR)/GUI/restore_window.c \
 	$(SRC_DIR)/GUI/folder_view_window.c \
 	$(SRC_DIR)/GUI/StatusWindows/progress_common.c \
+	$(SRC_DIR)/GUI/StatusWindows/progress_window.c \
+	$(SRC_DIR)/GUI/StatusWindows/recursive_progress.c \
 	$(SRC_DIR)/GUI/test_simple_window.c
 
 # DOS subdirectory sources
