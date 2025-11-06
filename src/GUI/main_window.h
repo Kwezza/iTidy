@@ -32,6 +32,7 @@
 #define GID_APPLY            15
 #define GID_CANCEL           16
 #define GID_RESTORE          17
+#define GID_ENUMERATE        18
 
 /*------------------------------------------------------------------------*/
 /* Main Window Data Structure                                            */
@@ -62,6 +63,7 @@ struct iTidyMainWindow
     struct Gadget *restore_btn;
     struct Gadget *apply_btn;
     struct Gadget *cancel_btn;
+    struct Gadget *enumerate_btn;
     
     /* Current settings */
     char folder_path_buffer[256];

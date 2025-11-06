@@ -24,6 +24,7 @@
 #include "layout_preferences.h"
 #include "layout_processor.h"
 #include "writeLog.h"
+#include "window_enumerator.h"
 
 /*------------------------------------------------------------------------*/
 /* Window Constants                                                       */
@@ -639,6 +640,26 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     if (!gad)
     {
         printf("ERROR: Failed to create cancel button\n");
+        return FALSE;
+    }
+    
+    current_y += font_height + 16;
+    
+    /*====================================================================*/
+    /* ENUMERATE WINDOWS BUTTON (Debug Tool)                             */
+    /*====================================================================*/
+    ng.ng_LeftEdge = 30;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = 180;
+    ng.ng_Height = font_height + 8;
+    ng.ng_GadgetText = "Test Enumerate Windows";
+    ng.ng_GadgetID = GID_ENUMERATE;
+    ng.ng_Flags = PLACETEXT_IN;
+    
+    win_data->enumerate_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+    if (!gad)
+    {
+        printf("ERROR: Failed to create enumerate button\n");
         return FALSE;
     }
     
@@ -1282,6 +1303,35 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                 TAG_END);
                             win_data->skip_hidden_folders = (BOOL)checked;
                             printf("Skip hidden folders: %s\n", win_data->skip_hidden_folders ? "ON" : "OFF");
+                        }
+                        break;
+
+                    case GID_ENUMERATE:
+                        {
+                            FolderWindowTracker tracker;
+                            
+                            log_info(LOG_GUI, "=== Test Enumerate Windows button clicked ===\n");
+                            
+                            /* First, enumerate all windows */
+                            Debug_ListWorkbenchWindows();
+                            
+                            /* Now build the folder tracking list */
+                            log_info(LOG_GUI, "=== Building folder window tracker ===\n");
+                            if (BuildFolderWindowList(&tracker))
+                            {
+                                /* Print the tracker contents */
+                                Debug_PrintFolderWindowList(&tracker);
+                                
+                                /* Clean up */
+                                FreeFolderWindowList(&tracker);
+                                log_info(LOG_GUI, "=== Folder tracker freed ===\n");
+                            }
+                            else
+                            {
+                                log_error(LOG_GUI, "=== Failed to build folder tracker ===\n");
+                            }
+                            
+                            log_info(LOG_GUI, "=== Enumeration complete ===\n");
                         }
                         break;
 

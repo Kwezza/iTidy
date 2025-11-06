@@ -75,6 +75,8 @@ GUI_SRCS = \
 	$(SRC_DIR)/GUI/restore_window.c \
 	$(SRC_DIR)/GUI/folder_view_window.c \
 	$(SRC_DIR)/GUI/easy_request_helper.c \
+	$(SRC_DIR)/GUI/window_enumerator.c \
+	$(SRC_DIR)/GUI/wb_classify.c \
 	$(SRC_DIR)/GUI/StatusWindows/progress_common.c \
 	$(SRC_DIR)/GUI/StatusWindows/progress_window.c \
 	$(SRC_DIR)/GUI/StatusWindows/recursive_progress.c \
@@ -241,6 +243,8 @@ $(OUT_DIR)/GUI/advanced_window.o: $(SRC_DIR)/GUI/advanced_window.c $(SRC_DIR)/GU
 $(OUT_DIR)/GUI/restore_window.o: $(SRC_DIR)/GUI/restore_window.c $(SRC_DIR)/GUI/restore_window.h
 $(OUT_DIR)/GUI/folder_view_window.o: $(SRC_DIR)/GUI/folder_view_window.c $(SRC_DIR)/GUI/folder_view_window.h
 $(OUT_DIR)/GUI/easy_request_helper.o: $(SRC_DIR)/GUI/easy_request_helper.c $(INC_DIR)/easy_request_helper.h
+$(OUT_DIR)/GUI/window_enumerator.o: $(SRC_DIR)/GUI/window_enumerator.c $(INC_DIR)/window_enumerator.h
+$(OUT_DIR)/GUI/wb_classify.o: $(SRC_DIR)/GUI/wb_classify.c $(INC_DIR)/wb_classify.h
 
 # Platform-specific
 $(OUT_DIR)/platform/host_platform.o: $(SRC_DIR)/platform/host_platform.c $(INC_DIR)/platform/platform.h

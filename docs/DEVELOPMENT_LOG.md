@@ -5,7 +5,99 @@ iTidy is an Amiga icon management utility that allows users to sort and arrange 
 
 ## Development Timeline
 
-### Latest: Window Sizing Fix - Eliminated Double-Counted Padding (November 6, 2025)
+### Latest: Folder Window Tracking System with Smart Backdrop Detection (November 6, 2025)
+
+#### Implemented Window Geometry Restoration System
+* **Purpose**: Capture and restore folder window geometry before/after iTidy runs
+* **Status**: Complete
+* **Date**: November 6, 2025
+
+**Problem Addressed:**
+- When iTidy repositions/resizes folder windows, users only see icons move but not the window size change
+- Users need to restart Workbench to see the new window geometry
+- Need to capture window state before iTidy runs and restore it after
+
+**Requirements:**
+- Track all open folder windows before iTidy executes
+- Store window geometry (position, size, title)
+- Exclude system windows (backdrop desktop) that shouldn't be manipulated
+- Handle edge cases: folders named "Workbench", volume roots showing disk stats
+
+**Solution Implemented:**
+
+**Phase 1 - Basic Window Enumeration:**
+- Created `window_enumerator.c/h` module with `Debug_ListWorkbenchWindows()`
+- Uses Intuition's `LockPubScreen()` + `FirstWindow`/`NextWindow` traversal
+- Extracts owner task names via `window->UserPort->mp_SigTask->tc_Node.ln_Name`
+- Integrated iTidy logging system (`log_debug(LOG_GUI, ...)`)
+
+**Phase 2 - Flag Decoding and Classification:**
+- Added comprehensive flag decoder with symbolic names (winFlags[22], idcmpFlags[28])
+- Created `wb_classify.c/h` classification system with WbKind enum
+- Initially used complex IDCMP mask matching; simplified to "Workbench-owned + normal gadgets"
+- Classified all Workbench task-owned windows as `WBK_DRAWER_LIKELY`
+
+**Phase 3 - Dynamic Folder Tracking Array:**
+- Created `FolderWindowInfo` struct: window pointer, title[256], position, size
+- Created `FolderWindowTracker` struct: dynamic array with count/capacity
+- Implemented `BuildFolderWindowList()` with automatic array growth (starts at 16, doubles when full)
+- Stores only `WBK_DRAWER_LIKELY` windows for later restoration
+
+**Phase 4 - Backdrop Window Exclusion (The Challenge):**
+Multiple approaches tested to exclude the backdrop desktop window:
+
+1. **Title + Position Check** - Failed: Root window can be moved
+2. **Title + Full-Screen Size Check** - Failed: Root window can be resized
+3. **IDCMP Disk-Event Flags** - ✅ **SUCCESS!**
+
+**Final Solution - IDCMP Disk-Event Flag Detection:**
+```c
+if (win->IDCMPFlags & 0x00018000)  /* IDCMP_DISKINSERTED | IDCMP_DISKREMOVED */
+{
+    /* Skip this volume root backdrop window */
+    continue;
+}
+```
+
+**Why This Works:**
+- `IDCMP_DISKINSERTED` (0x00008000) and `IDCMP_DISKREMOVED` (0x00010000) are ONLY set on volume root backdrop windows
+- Backdrop window monitors disk insertion/removal to update icon display
+- Regular folders (even named "Workbench") don't have these flags
+- Manually opened volume folders (showing "17% full...") don't have these flags
+- Filter is immutable - user can't change it by moving/resizing windows
+
+**Test Cases Verified:**
+- ✅ Excludes backdrop desktop "Workbench" at (0,14) with disk event flags
+- ✅ Includes user folder "PC:Workbench" at (16,293) without disk event flags  
+- ✅ Includes volume root "Workbench 17% full..." at (263,178) without disk event flags
+- ✅ Works regardless of window position, size, or title
+
+**Files Created:**
+- `include/window_enumerator.h` - Public API and struct definitions
+- `src/GUI/window_enumerator.c` - Implementation with flag decoding
+- `include/wb_classify.h` - WbKind enum and classification API
+- `src/GUI/wb_classify.c` - Simplified ownership-based classification
+
+**Files Modified:**
+- `src/GUI/main_window.h` - Added GID_ENUMERATE and enumerate_btn
+- `src/GUI/main_window.c` - Added "Test Enumerate Windows" debug button
+- `Makefile` - Added window_enumerator.c and wb_classify.c to GUI_SRCS
+
+**API Functions:**
+- `Debug_ListWorkbenchWindows()` - Full enumeration with classification
+- `BuildFolderWindowList(FolderWindowTracker *tracker)` - Creates tracking array
+- `FreeFolderWindowList(FolderWindowTracker *tracker)` - Cleanup
+- `Debug_PrintFolderWindowList(FolderWindowTracker *tracker)` - Debug output
+
+**Next Steps:**
+- Integrate into actual iTidy run workflow (currently debug-only)
+- Implement window geometry restoration after icon repositioning
+- Add window matching logic (match by title, apply saved geometry)
+- Handle duplicate folder names (acknowledged as future enhancement)
+
+---
+
+### Window Sizing Fix - Eliminated Double-Counted Padding (November 6, 2025)
 
 #### Fixed Oversized Window Frames
 * **Purpose**: Correct window sizing calculation to eliminate excessive padding on right and bottom edges
