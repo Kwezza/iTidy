@@ -95,10 +95,11 @@ static void RedrawRecursiveWindow(APTR userData)
                                 rpw->folder_bar_w, rpw->folder_bar_h,
                                 pens.bar_pen, pens.fill_pen, folder_percent);
     
-    /* Draw current folder path */
+    /* Draw current folder path with truncation */
     if (rpw->last_folder_path[0] != '\0') {
-        iTidy_Progress_DrawTextLabel(rpw->window->RPort, rpw->path_x, rpw->path_y,
-                                      rpw->last_folder_path, pens.text_pen);
+        iTidy_Progress_DrawTruncatedText(rpw->window->RPort, rpw->path_x, rpw->path_y,
+                                          rpw->last_folder_path, rpw->path_max_width,
+                                          TRUE, pens.text_pen);  /* TRUE = path truncation */
     }
     
     /* Draw "Icons:" label */
@@ -376,36 +377,37 @@ struct iTidy_RecursiveProgressWindow* iTidy_OpenRecursiveProgress(
     InitRastPort(&temp_rp);
     SetFont(&temp_rp, font);
     
-    /* Pre-calculate layout positions (based on INNER window dimensions) */
-    window_width = RECURSIVE_WINDOW_WIDTH;
-    window_height = RECURSIVE_WINDOW_HEIGHT;
+    /* Pre-calculate layout positions using IControl preferences for borders */
+    /* This follows the same pattern as restore_window.c */
+    UWORD content_width = RECURSIVE_WINDOW_WIDTH;
+    UWORD content_height = RECURSIVE_WINDOW_HEIGHT;
     
-    /* Task label - top left */
-    rpw->label_x = MARGIN_LEFT;
-    rpw->label_y = MARGIN_TOP;
+    /* Task label - top left (border + margin) */
+    rpw->label_x = prefsIControl.currentLeftBarWidth + MARGIN_LEFT;
+    rpw->label_y = prefsIControl.currentWindowBarHeight + MARGIN_TOP;
     
     /* Percentage - top right */
     {
         char temp_percent[] = "100%";
         UWORD percent_width = (UWORD)TextLength(&temp_rp, temp_percent, 4);
-        rpw->percent_x = window_width - MARGIN_RIGHT;
-        rpw->percent_y = MARGIN_TOP;
+        rpw->percent_x = prefsIControl.currentLeftBarWidth + content_width - MARGIN_RIGHT;
+        rpw->percent_y = prefsIControl.currentWindowBarHeight + MARGIN_TOP;
     }
     
-    y_pos = MARGIN_TOP + rpw->font_height + TEXT_SPACING * 2;
+    y_pos = prefsIControl.currentWindowBarHeight + MARGIN_TOP + rpw->font_height + TEXT_SPACING * 2;
     
     /* Folder progress section */
-    rpw->folder_label_x = MARGIN_LEFT;
+    rpw->folder_label_x = prefsIControl.currentLeftBarWidth + MARGIN_LEFT;
     rpw->folder_label_y = y_pos;
     
     /* Reserve space for "Folders:" label */
     {
         UWORD label_width = (UWORD)TextLength(&temp_rp, "Folders:", 8);
-        rpw->folder_bar_x = MARGIN_LEFT + label_width + TEXT_SPACING * 2;
+        rpw->folder_bar_x = prefsIControl.currentLeftBarWidth + MARGIN_LEFT + label_width + TEXT_SPACING * 2;
     }
     
     rpw->folder_bar_y = y_pos - 4;  /* Align with text baseline */
-    rpw->folder_bar_w = window_width - rpw->folder_bar_x - MARGIN_RIGHT - 80;  /* Reserve for count */
+    rpw->folder_bar_w = content_width - (rpw->folder_bar_x - prefsIControl.currentLeftBarWidth) - MARGIN_RIGHT - 80;  /* Reserve for count */
     rpw->folder_bar_h = BAR_HEIGHT;
     
     /* Folder count - right of bar */
@@ -415,24 +417,24 @@ struct iTidy_RecursiveProgressWindow* iTidy_OpenRecursiveProgress(
     y_pos += BAR_HEIGHT + TEXT_SPACING;
     
     /* Current folder path */
-    rpw->path_x = MARGIN_LEFT;
+    rpw->path_x = prefsIControl.currentLeftBarWidth + MARGIN_LEFT;
     rpw->path_y = y_pos;
-    rpw->path_max_width = window_width - MARGIN_LEFT - MARGIN_RIGHT;
+    rpw->path_max_width = content_width - MARGIN_LEFT - MARGIN_RIGHT;
     
     y_pos += rpw->font_height + BAR_SPACING;
     
     /* Icon progress section */
-    rpw->icon_label_x = MARGIN_LEFT;
+    rpw->icon_label_x = prefsIControl.currentLeftBarWidth + MARGIN_LEFT;
     rpw->icon_label_y = y_pos;
     
     /* Reserve space for "Icons:" label */
     {
         UWORD label_width = (UWORD)TextLength(&temp_rp, "Icons:", 6);
-        rpw->icon_bar_x = MARGIN_LEFT + label_width + TEXT_SPACING * 2;
+        rpw->icon_bar_x = prefsIControl.currentLeftBarWidth + MARGIN_LEFT + label_width + TEXT_SPACING * 2;
     }
     
     rpw->icon_bar_y = y_pos - 4;  /* Align with text baseline */
-    rpw->icon_bar_w = window_width - rpw->icon_bar_x - MARGIN_RIGHT - 80;  /* Reserve for count */
+    rpw->icon_bar_w = content_width - (rpw->icon_bar_x - prefsIControl.currentLeftBarWidth) - MARGIN_RIGHT - 80;  /* Reserve for count */
     rpw->icon_bar_h = BAR_HEIGHT;
     
     /* Icon count - right of bar */
@@ -441,29 +443,16 @@ struct iTidy_RecursiveProgressWindow* iTidy_OpenRecursiveProgress(
     
     FreeScreenDrawInfo(screen, dri);
     
-    /* Calculate final window size using IControl preferences (like restore_window.c) */
-    {
-        UWORD final_width, final_height;
-        
-        /* Add window borders from IControl preferences to inner dimensions */
-        final_width = window_width + 
-                     prefsIControl.currentLeftBarWidth + 
-                     prefsIControl.currentBarWidth;
-        
-        final_height = window_height + 
-                      prefsIControl.currentWindowBarHeight + 
-                      prefsIControl.currentBarHeight;
-        
-        /* Calculate centered window position */
-        window_left = (screen->Width - final_width) / 2;
-        window_top = (screen->Height - final_height) / 2;
-        
-        /* Update to final outer dimensions */
-        window_width = final_width;
-        window_height = final_height;
-    }
+    /* Calculate total window size including borders */
+    window_width = prefsIControl.currentLeftBarWidth + content_width + prefsIControl.currentLeftBarWidth;
+    window_height = prefsIControl.currentWindowBarHeight + content_height;
+    
+    /* Calculate centered window position */
+    window_left = (screen->Width - window_width) / 2;
+    window_top = (screen->Height - window_height) / 2;
     
     /* Open window IMMEDIATELY */
+    /* Use WA_Width/Height to specify total window size including borders */
     rpw->window = OpenWindowTags(NULL,
         WA_Left, window_left,
         WA_Top, window_top,
@@ -599,32 +588,10 @@ void iTidy_UpdateFolderProgress(
                                       rpw->path_max_width, rpw->font_height,
                                       pens.fill_pen);
         
-        /* Draw new path (truncate if needed) */
-        {
-            char display_path[256];
-            UWORD path_width;
-            
-            strncpy(display_path, folder_path, sizeof(display_path) - 1);
-            display_path[sizeof(display_path) - 1] = '\0';
-            
-            path_width = (UWORD)TextLength(rpw->window->RPort, display_path, 
-                                           (LONG)strlen(display_path));
-            
-            /* Truncate if too long */
-            if (path_width > rpw->path_max_width) {
-                ULONG len = strlen(display_path);
-                while (len > 0 && path_width > rpw->path_max_width) {
-                    display_path[--len] = '\0';
-                    path_width = (UWORD)TextLength(rpw->window->RPort, display_path, (LONG)len);
-                }
-                if (len > 3) {
-                    strcpy(&display_path[len - 3], "...");
-                }
-            }
-            
-            iTidy_Progress_DrawTextLabel(rpw->window->RPort, rpw->path_x, rpw->path_y,
-                                          display_path, pens.text_pen);
-        }
+        /* Draw new path with smart truncation */
+        iTidy_Progress_DrawTruncatedText(rpw->window->RPort, rpw->path_x, rpw->path_y,
+                                          folder_path, rpw->path_max_width,
+                                          TRUE, pens.text_pen);  /* TRUE = path truncation */
         
         /* Cache path */
         strncpy(rpw->last_folder_path, folder_path, sizeof(rpw->last_folder_path) - 1);

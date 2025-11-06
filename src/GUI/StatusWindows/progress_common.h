@@ -66,6 +66,17 @@ void iTidy_Progress_DrawPercentage(
     const char *percent_text,
     ULONG text_pen);
 
+/* Draw text with smart truncation if it exceeds max_width.
+ * is_path=TRUE: Middle truncation (e.g., "Work:Programs/.../Tools")
+ * is_path=FALSE: End truncation (e.g., "Processing item...") */
+void iTidy_Progress_DrawTruncatedText(
+    struct RastPort *rp,
+    WORD left, WORD top,
+    const char *text,
+    UWORD max_width,
+    BOOL is_path,
+    ULONG text_pen);
+
 /* Redraw callback signature used by refresh handler */
 typedef void (*iTidy_Progress_RedrawFunc)(APTR userData);
 

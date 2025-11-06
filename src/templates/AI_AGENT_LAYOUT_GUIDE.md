@@ -1800,3 +1800,338 @@ This pattern makes your application feel fast, responsive, and professional, eve
 
 ---
 
+## 🎯 Handling Dynamic Text Overflow (Labels, Status Text, Paths)
+
+**THE PROBLEM:** When displaying dynamic text (file paths, status messages, folder names, etc.) in labels or gadgets, you cannot control the text length in advance. Long text will extend past gadget boundaries, overlapping adjacent controls or window borders.
+
+**SYMPTOMS:**
+- File paths extend beyond window right border
+- Long status text overlaps buttons or other gadgets
+- Folder names run into adjacent columns
+- Unprofessional appearance with text "bleeding" out of defined areas
+
+**ROOT CAUSE:** The Amiga graphics library `Text()` function has **no built-in clipping or truncation**. It will draw the entire string regardless of available space. Text drawing is your responsibility - the system won't automatically wrap or clip.
+
+### 🔍 Identifying Text That Needs Truncation
+
+**High-Risk Text Types:**
+- ✅ **File/directory paths** - Can be arbitrarily long (`Work:Programs/Graphics/DPaint/Icons/ToolDock/Config/Presets/...`)
+- ✅ **User-entered text** - Unpredictable length (search queries, custom names)
+- ✅ **Status messages** - May include paths or long descriptions
+- ✅ **List items** - Especially if generated from file/folder names
+- ✅ **Dynamic labels** - Text that changes at runtime based on data
+
+**Low-Risk Text (Usually Safe):**
+- ❌ Button labels - Fixed at compile time, you control length
+- ❌ Static window labels - "Run Number:", "Date:", etc.
+- ❌ Gadget titles - Usually short and predefined
+- ❌ Menu items - Fixed text, system handles clipping
+
+### ⚡ When to Apply Truncation
+
+**ALWAYS truncate when:**
+1. Text source is external (files, user input, system paths)
+2. Text length is unpredictable at compile time
+3. Text is displayed in a fixed-width area (label, listview, string gadget display)
+4. Text could reasonably exceed available space (paths, descriptions)
+
+**ASK THESE QUESTIONS:**
+- ❓ Could this text be longer than the allocated width?
+- ❓ Is the text coming from a file system path?
+- ❓ Is the text user-generated or user-configurable?
+- ❓ Could the text length vary based on user's system configuration?
+
+**If ANY answer is "yes" → Apply truncation!**
+
+### 🛠️ Truncation Strategies
+
+#### Strategy 1: Middle Truncation (Recommended for Paths)
+
+**When to use:** File/directory paths where both start and end are important.
+
+**Visual Example:**
+```
+Before: Work:Programs/Applications/Graphics/DPaint/Icons/ToolDock/Config/Presets/UserSettings
+After:  Work:Programs/.../UserSettings
+```
+
+**Why it's better:** Preserves context (volume/root) and destination (file/folder name).
+
+**Implementation:**
+```c
+/* Use iTidy's built-in truncation function */
+iTidy_Progress_DrawTruncatedText(
+    rp,                    /* RastPort */
+    left, top,             /* Position */
+    path_string,           /* Full text */
+    max_pixel_width,       /* Maximum width in pixels */
+    TRUE,                  /* TRUE = path/middle truncation */
+    text_pen);             /* Text color */
+```
+
+#### Strategy 2: End Truncation (For General Text)
+
+**When to use:** Status messages, descriptions, general text where beginning is most important.
+
+**Visual Example:**
+```
+Before: Processing item with very long name that goes on and on forever and ever
+After:  Processing item with very long name that goes...
+```
+
+**Why it's useful:** Natural left-to-right reading, keeps the most relevant context.
+
+**Implementation:**
+```c
+/* Use iTidy's built-in truncation function */
+iTidy_Progress_DrawTruncatedText(
+    rp,                    /* RastPort */
+    left, top,             /* Position */
+    status_text,           /* Full text */
+    max_pixel_width,       /* Maximum width in pixels */
+    FALSE,                 /* FALSE = end truncation */
+    text_pen);             /* Text color */
+```
+
+### 📏 Calculating Maximum Width
+
+**Critical:** Always use **pixel-based width**, not character count!
+
+**WRONG (character-based - breaks with proportional fonts):**
+```c
+/* DON'T DO THIS - assumes all characters same width */
+max_width = 40;  /* 40 characters - WRONG! */
+if (strlen(text) > max_width)
+    truncate(text);
+```
+
+**CORRECT (pixel-based - works with all fonts):**
+```c
+/* Calculate available width in pixels */
+UWORD content_width = 400;  /* Content area width */
+UWORD margin_left = 10;
+UWORD margin_right = 10;
+UWORD max_pixel_width = content_width - margin_left - margin_right;
+
+/* Use pixel width for truncation */
+iTidy_Progress_DrawTruncatedText(rp, x, y, text, max_pixel_width, TRUE, pen);
+```
+
+**For gadgets, use gadget width:**
+```c
+/* Get gadget dimensions */
+UWORD gadget_width = my_gadget->Width;
+UWORD padding = 8;  /* Internal padding */
+UWORD max_text_width = gadget_width - (2 * padding);
+
+/* Truncate to fit */
+iTidy_Progress_DrawTruncatedText(rp, x, y, text, max_text_width, FALSE, pen);
+```
+
+### 🔧 Implementation Pattern for Your Code
+
+**Step 1: Identify dynamic text in your layout**
+```c
+/* Example: Progress window showing current file being processed */
+struct MyWindow {
+    WORD status_x, status_y;      /* Position */
+    UWORD status_max_width;       /* Pre-calculated maximum width */
+    char current_file[256];       /* Current file being processed */
+};
+```
+
+**Step 2: Calculate maximum width during window setup**
+```c
+/* During window layout calculation */
+UWORD content_width = 400;  /* Your content area width */
+data->status_max_width = content_width - MARGIN_LEFT - MARGIN_RIGHT;
+
+append_to_log("Status text max width: %u pixels\n", data->status_max_width);
+```
+
+**Step 3: Use truncation when drawing text**
+```c
+/* When updating status text */
+void update_status(struct MyWindow *data, const char *new_file_path)
+{
+    /* Clear old text */
+    SetAPen(rp, bg_pen);
+    RectFill(rp, data->status_x, data->status_y,
+             data->status_x + data->status_max_width - 1,
+             data->status_y + font_height - 1);
+    
+    /* Draw new text with truncation */
+    iTidy_Progress_DrawTruncatedText(
+        rp,
+        data->status_x,
+        data->status_y,
+        new_file_path,
+        data->status_max_width,  /* Use pre-calculated width */
+        TRUE,                     /* Path truncation */
+        text_pen);
+}
+```
+
+### 📋 Checklist for Text Overflow Prevention
+
+**During Layout Design:**
+- [ ] Identify all text that could be dynamic or user-generated
+- [ ] Calculate maximum pixel width for each text area
+- [ ] Store maximum widths in window data structure
+- [ ] Plan truncation strategy (middle for paths, end for text)
+
+**During Implementation:**
+- [ ] Use `TextLength()` to measure text width accurately
+- [ ] Apply truncation to any text that could exceed max width
+- [ ] Test with very long paths (100+ characters)
+- [ ] Test with proportional fonts (Helvetica, etc.)
+- [ ] Verify text doesn't overlap adjacent gadgets
+
+**Testing Scenarios:**
+- [ ] Very long file path: `Work:Programs/...` (50+ folders deep)
+- [ ] Long filename: `This_Is_A_Very_Long_Filename_That_Goes_On_Forever.txt`
+- [ ] Short text that fits: `Work:Temp` (should display as-is)
+- [ ] Edge case: Text exactly at max width
+- [ ] Different fonts: Topaz 8, Topaz 9, Helvetica
+
+### 🎨 Visual Design Considerations
+
+**Ellipsis Placement:**
+- Middle truncation: `Start.../End` preserves most context
+- End truncation: `Text...` is standard convention
+- Never truncate without ellipsis - user won't know text was cut off
+
+**User Experience:**
+- ✅ **Good:** `Work:Programs/.../Tools` (clear what was truncated)
+- ❌ **Bad:** `Work:ProgramsTools` (looks like a weird path)
+- ❌ **Worse:** Text extends off screen (unprofessional)
+
+**Alignment Considerations:**
+```
+Before:
+[PC:Workbench/Programs/MagicWB/XEM-Icons/Toolsdoc→→→
+                                        (overlaps border!)
+
+After:
+[PC:Workbench/.../Toolsdock            ]
+                        (fits perfectly!)
+```
+
+### 🔥 Common Mistakes to Avoid
+
+**❌ MISTAKE 1: Character-count truncation**
+```c
+/* WRONG - assumes fixed character width */
+if (strlen(path) > 40)
+    path[40] = '\0';  /* Doesn't account for proportional fonts! */
+```
+
+**❌ MISTAKE 2: No ellipsis indicator**
+```c
+/* WRONG - user can't tell text was truncated */
+truncated_text[max_len] = '\0';  /* Just cut off, no "..." */
+```
+
+**❌ MISTAKE 3: Forgetting to clear old text**
+```c
+/* WRONG - old text ghosts behind new text */
+Text(rp, new_text, strlen(new_text));  /* Should clear first! */
+```
+
+**❌ MISTAKE 4: Hardcoded pixel widths**
+```c
+/* WRONG - doesn't adapt to different window sizes or fonts */
+max_width = 300;  /* Hardcoded - what if window is smaller? */
+```
+
+**✅ CORRECT APPROACH:**
+```c
+/* Calculate max width dynamically */
+UWORD max_width = window_content_width - margins;
+
+/* Measure actual text width */
+UWORD text_width = TextLength(rp, text, strlen(text));
+
+/* Truncate only if needed */
+if (text_width > max_width)
+{
+    iTidy_Progress_DrawTruncatedText(rp, x, y, text, max_width, TRUE, pen);
+}
+else
+{
+    /* Fits fine - draw normally */
+    SetAPen(rp, pen);
+    Move(rp, x, y + rp->Font->tf_Baseline);
+    Text(rp, text, strlen(text));
+}
+```
+
+### 📚 Reference Implementation
+
+iTidy's progress windows provide a complete reference implementation:
+
+**Files:**
+- `src/GUI/StatusWindows/progress_common.h` - Truncation API
+- `src/GUI/StatusWindows/progress_common.c` - Implementation (~120 lines)
+- `src/GUI/StatusWindows/progress_window.c` - Usage examples
+- `docs/BUGFIX_TEXT_TRUNCATION_SYSTEM.md` - Detailed documentation
+
+**Key Function:**
+```c
+void iTidy_Progress_DrawTruncatedText(
+    struct RastPort *rp,
+    WORD left, WORD top,
+    const char *text,
+    UWORD max_width,      /* Maximum width in PIXELS */
+    BOOL is_path,         /* TRUE=middle, FALSE=end truncation */
+    ULONG text_pen);
+```
+
+### 🎯 Decision Tree: Do I Need Truncation?
+
+```
+START: Analyzing text display
+│
+├─► Is text length FIXED at compile time? (button labels, static text)
+│   └─► NO TRUNCATION NEEDED
+│
+├─► Is text from FILE SYSTEM? (paths, filenames)
+│   └─► YES - Use MIDDLE TRUNCATION (path mode)
+│
+├─► Is text USER INPUT? (search, names, descriptions)
+│   └─► YES - Use END TRUNCATION (text mode)
+│
+├─► Could text REASONABLY exceed width? (status messages, descriptions)
+│   └─► YES - Use END TRUNCATION (text mode)
+│
+└─► Text is SHORT and CONTROLLED (dates, numbers, short labels)
+    └─► PROBABLY SAFE, but test with proportional fonts
+```
+
+### 💡 Pro Tips
+
+1. **Pre-calculate max widths** during window setup, not every draw
+2. **Cache truncated results** if same text is drawn repeatedly
+3. **Test with extreme cases** (200+ character paths)
+4. **Use separate function** for truncation - don't inline the logic
+5. **Log text that gets truncated** during development to verify
+6. **Consider tooltip or full-text display** on hover (advanced)
+
+### ⚠️ Critical Rules for AI Agents
+
+When generating code for iTidy windows:
+
+- ⚠️ **ALWAYS** check if text could be dynamic/user-generated
+- ⚠️ **ALWAYS** use pixel-based width calculations, not character counts
+- ⚠️ **ALWAYS** apply truncation to file paths (middle mode)
+- ⚠️ **ALWAYS** clear old text before drawing new text
+- ⚠️ **NEVER** assume text will fit - measure with `TextLength()`
+- ⚠️ **NEVER** hardcode maximum widths - calculate from layout
+- ✅ **PREFER** iTidy's built-in truncation functions
+- ✅ **TEST** with very long paths and proportional fonts
+- ✅ **DOCUMENT** which text fields use truncation and why
+
+**Remember:** Text overflow is an easy mistake to make and creates an unprofessional appearance. A few minutes implementing proper truncation prevents hours of debugging visual glitches later!
+
+---
+

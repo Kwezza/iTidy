@@ -59,6 +59,7 @@
 #include "../backup_restore.h"
 #include "../writeLog.h"
 #include "../Settings/IControlPrefs.h"
+#include "easy_request_helper.h"  /* Global EasyRequest helper */
 
 /*------------------------------------------------------------------------*/
 /* External Global Variables                                             */
@@ -661,11 +662,31 @@ void populate_run_list(struct iTidyRestoreWindow *restore_data,
         GTLV_Selected, (count > 0) ? 0 : ~0,
         TAG_END);
     
-    /* Select first entry if any */
+    /* Select first entry if any and enable buttons */
     if (count > 0)
     {
         restore_data->selected_run_index = 0;
         update_details_panel(restore_data, &entries[count - 1]);  /* Newest run */
+        
+        /* Enable restore and delete buttons */
+        if (restore_data->window != NULL)
+        {
+            GT_SetGadgetAttrs(restore_data->restore_run_btn,
+                            restore_data->window, NULL,
+                            GA_Disabled, FALSE,
+                            TAG_END);
+            
+            GT_SetGadgetAttrs(restore_data->delete_run_btn,
+                            restore_data->window, NULL,
+                            GA_Disabled, FALSE,
+                            TAG_END);
+            
+            /* Enable view folders if catalog exists */
+            GT_SetGadgetAttrs(restore_data->view_folders_btn,
+                            restore_data->window, NULL,
+                            GA_Disabled, !entries[count - 1].hasCatalog,
+                            TAG_END);
+        }
     }
 }
 
@@ -804,18 +825,20 @@ BOOL perform_restore_run(struct iTidyRestoreWindow *restore_data,
     if (restore_data == NULL || run_entry == NULL)
         return FALSE;
     
-    /* Show confirmation requester */
-    struct EasyStruct easy_struct;
+    /* Show confirmation requester using global helper */
+    if (restore_data->window == NULL)
+    {
+        append_to_log("ERROR: Window is NULL in perform_restore_run\n");
+        return FALSE;
+    }
     
     sprintf(message, "Restore all folders from %s?", run_entry->runName);
     
-    easy_struct.es_StructSize = sizeof(struct EasyStruct);
-    easy_struct.es_Flags = 0;
-    easy_struct.es_Title = "Confirm Restore";
-    easy_struct.es_TextFormat = message;
-    easy_struct.es_GadgetFormat = "Restore|Cancel";
-    
-    if (!EasyRequest(restore_data->window, &easy_struct, NULL))
+    /* Use new ShowEasyRequest() helper - ensures requester opens on correct screen */
+    if (!ShowEasyRequest(restore_data->window, 
+                         "Confirm Restore",
+                         message,
+                         "Restore|Cancel"))
     {
         append_to_log("Restore cancelled by user\n");
         return FALSE;
@@ -832,12 +855,11 @@ BOOL perform_restore_run(struct iTidyRestoreWindow *restore_data,
         append_to_log("ERROR: Failed to initialize restore context - LHA not available\n");
         
         sprintf(message, "LHA executable not found!\nRestore requires LHA to be installed.");
-        easy_struct.es_StructSize = sizeof(struct EasyStruct);
-        easy_struct.es_Flags = 0;
-        easy_struct.es_Title = "Restore Failed";
-        easy_struct.es_TextFormat = message;
-        easy_struct.es_GadgetFormat = "OK";
-        EasyRequest(restore_data->window, &easy_struct, NULL);
+        
+        ShowEasyRequest(restore_data->window,
+                       "Restore Failed",
+                       message,
+                       "OK");
         
         return FALSE;
     }
@@ -897,12 +919,10 @@ BOOL perform_restore_run(struct iTidyRestoreWindow *restore_data,
                 restoreCtx.stats.archivesRestored,
                 restoreCtx.stats.archivesFailed);
         
-        easy_struct.es_StructSize = sizeof(struct EasyStruct);
-        easy_struct.es_Flags = 0;
-        easy_struct.es_Title = "Restore Complete";
-        easy_struct.es_TextFormat = message;
-        easy_struct.es_GadgetFormat = "OK";
-        EasyRequest(restore_data->window, &easy_struct, NULL);
+        ShowEasyRequest(restore_data->window,
+                       "Restore Complete",
+                       message,
+                       "OK");
         
         restore_data->restore_performed = TRUE;
     }
@@ -925,12 +945,10 @@ BOOL perform_restore_run(struct iTidyRestoreWindow *restore_data,
                     statusMsg);
         }
         
-        easy_struct.es_StructSize = sizeof(struct EasyStruct);
-        easy_struct.es_Flags = 0;
-        easy_struct.es_Title = "Restore Failed";
-        easy_struct.es_TextFormat = message;
-        easy_struct.es_GadgetFormat = "OK";
-        EasyRequest(restore_data->window, &easy_struct, NULL);
+        ShowEasyRequest(restore_data->window,
+                       "Restore Failed",
+                       message,
+                       "OK");
     }
     
     return (status == RESTORE_OK);
@@ -1849,7 +1867,6 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                         {
                             struct RestoreRunEntry *selected_entry = 
                                 &restore_data->run_entries[restore_data->selected_run_index];
-                            struct EasyStruct easy_struct;
                             char message[512];
                             
                             /* Show confirmation requester */
@@ -1857,13 +1874,10 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                                     selected_entry->runName,
                                     selected_entry->folderCount);
                             
-                            easy_struct.es_StructSize = sizeof(struct EasyStruct);
-                            easy_struct.es_Flags = 0;
-                            easy_struct.es_Title = "Confirm Delete";
-                            easy_struct.es_TextFormat = message;
-                            easy_struct.es_GadgetFormat = "Delete|Cancel";
-                            
-                            if (EasyRequest(restore_data->window, &easy_struct, NULL))
+                            if (ShowEasyRequest(restore_data->window,
+                                               "Confirm Delete",
+                                               message,
+                                               "Delete|Cancel"))
                             {
                                 char run_path[512];
                                 
@@ -1914,20 +1928,22 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                                     
                                     /* Show success message */
                                     sprintf(message, "Backup run %s deleted successfully.", selected_entry->runName);
-                                    easy_struct.es_TextFormat = message;
-                                    easy_struct.es_GadgetFormat = "OK";
-                                    easy_struct.es_Title = "Delete Complete";
-                                    EasyRequest(restore_data->window, &easy_struct, NULL);
+                                    
+                                    ShowEasyRequest(restore_data->window,
+                                                   "Delete Complete",
+                                                   message,
+                                                   "OK");
                                 }
                                 else
                                 {
                                     append_to_log("ERROR: Failed to delete run: %s\n", run_path);
                                     
                                     sprintf(message, "Failed to delete backup run %s.\n\nThe directory may be in use or protected.\nCheck the log for details.", selected_entry->runName);
-                                    easy_struct.es_TextFormat = message;
-                                    easy_struct.es_GadgetFormat = "OK";
-                                    easy_struct.es_Title = "Delete Failed";
-                                    EasyRequest(restore_data->window, &easy_struct, NULL);
+                                    
+                                    ShowEasyRequest(restore_data->window,
+                                                   "Delete Failed",
+                                                   message,
+                                                   "OK");
                                 }
                             }
                             else

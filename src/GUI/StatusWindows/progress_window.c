@@ -84,8 +84,9 @@ static void RedrawProgressWindow(APTR userData)
     
     /* Draw helper text if present */
     if (pw->last_helper_text[0] != '\0') {
-        iTidy_Progress_DrawTextLabel(pw->window->RPort, pw->helper_x, pw->helper_y,
-                                      pw->last_helper_text, pens.text_pen);
+        iTidy_Progress_DrawTruncatedText(pw->window->RPort, pw->helper_x, pw->helper_y,
+                                          pw->last_helper_text, pw->helper_max_width,
+                                          TRUE, pens.text_pen);  /* TRUE = path truncation */
     }
 }
 
@@ -140,58 +141,46 @@ struct iTidy_ProgressWindow* iTidy_OpenProgressWindow(
     InitRastPort(&temp_rp);
     SetFont(&temp_rp, font);
     
-    /* Pre-calculate layout positions (based on INNER window dimensions) */
-    window_width = PROGRESS_WINDOW_WIDTH;
-    window_height = PROGRESS_WINDOW_HEIGHT;
+    /* Pre-calculate layout positions using IControl preferences for borders */
+    /* This follows the same pattern as restore_window.c */
+    UWORD content_width = PROGRESS_WINDOW_WIDTH;
+    UWORD content_height = PROGRESS_WINDOW_HEIGHT;
     
-    /* Task label - top left */
-    pw->label_x = MARGIN_LEFT;
-    pw->label_y = MARGIN_TOP;
+    /* Task label - top left (border + margin) */
+    pw->label_x = prefsIControl.currentLeftBarWidth + MARGIN_LEFT;
+    pw->label_y = prefsIControl.currentWindowBarHeight + MARGIN_TOP;
     
     /* Percentage - top right (reserve space for "100%") */
     {
         char temp_percent[] = "100%";
         UWORD percent_width = (UWORD)TextLength(&temp_rp, temp_percent, 4);
-        pw->percent_x = window_width - MARGIN_RIGHT;
-        pw->percent_y = MARGIN_TOP;
+        pw->percent_x = prefsIControl.currentLeftBarWidth + content_width - MARGIN_RIGHT;
+        pw->percent_y = prefsIControl.currentWindowBarHeight + MARGIN_TOP;
     }
     
     /* Progress bar - centered below labels */
-    pw->bar_x = MARGIN_LEFT;
-    pw->bar_y = MARGIN_TOP + pw->font_height + TEXT_SPACING * 2;
-    pw->bar_w = window_width - MARGIN_LEFT - MARGIN_RIGHT;
+    pw->bar_x = prefsIControl.currentLeftBarWidth + MARGIN_LEFT;
+    pw->bar_y = prefsIControl.currentWindowBarHeight + MARGIN_TOP + pw->font_height + TEXT_SPACING * 2;
+    pw->bar_w = content_width - MARGIN_LEFT - MARGIN_RIGHT;
     pw->bar_h = BAR_HEIGHT;
     
     /* Helper text - below progress bar */
-    pw->helper_x = MARGIN_LEFT;
+    pw->helper_x = prefsIControl.currentLeftBarWidth + MARGIN_LEFT;
     pw->helper_y = pw->bar_y + pw->bar_h + TEXT_SPACING * 2;
-    pw->helper_max_width = window_width - MARGIN_LEFT - MARGIN_RIGHT;
+    pw->helper_max_width = content_width - MARGIN_LEFT - MARGIN_RIGHT;
     
     FreeScreenDrawInfo(screen, dri);
     
-    /* Calculate final window size using IControl preferences (like restore_window.c) */
-    {
-        UWORD final_width, final_height;
-        
-        /* Add window borders from IControl preferences to inner dimensions */
-        final_width = window_width + 
-                     prefsIControl.currentLeftBarWidth + 
-                     prefsIControl.currentBarWidth;
-        
-        final_height = window_height + 
-                      prefsIControl.currentWindowBarHeight + 
-                      prefsIControl.currentBarHeight;
-        
-        /* Calculate centered window position */
-        window_left = (screen->Width - final_width) / 2;
-        window_top = (screen->Height - final_height) / 2;
-        
-        /* Update to final outer dimensions */
-        window_width = final_width;
-        window_height = final_height;
-    }
+    /* Calculate total window size including borders */
+    window_width = prefsIControl.currentLeftBarWidth + content_width + prefsIControl.currentLeftBarWidth;
+    window_height = prefsIControl.currentWindowBarHeight + content_height;
+    
+    /* Calculate centered window position */
+    window_left = (screen->Width - window_width) / 2;
+    window_top = (screen->Height - window_height) / 2;
     
     /* Open window IMMEDIATELY (no slow operations before this!) */
+    /* Use WA_Width/Height to specify total window size including borders */
     pw->window = OpenWindowTags(NULL,
         WA_Left, window_left,
         WA_Top, window_top,
@@ -310,9 +299,10 @@ void iTidy_UpdateProgress(
                                       pw->helper_max_width, pw->font_height,
                                       pens.fill_pen);
         
-        /* Draw new helper text */
-        iTidy_Progress_DrawTextLabel(pw->window->RPort, pw->helper_x, pw->helper_y,
-                                      helper_text, pens.text_pen);
+        /* Draw new helper text with truncation if needed */
+        iTidy_Progress_DrawTruncatedText(pw->window->RPort, pw->helper_x, pw->helper_y,
+                                          helper_text, pw->helper_max_width,
+                                          TRUE, pens.text_pen);  /* TRUE = path truncation */
         
         /* Cache for next comparison */
         strncpy(pw->last_helper_text, helper_text, sizeof(pw->last_helper_text) - 1);
@@ -354,9 +344,10 @@ void iTidy_ShowCompletionState(
                                   pw->helper_max_width, pw->font_height,
                                   pens.fill_pen);
     
-    /* Draw completion status */
-    iTidy_Progress_DrawTextLabel(pw->window->RPort, pw->helper_x, pw->helper_y,
-                                  status_text, pens.text_pen);
+    /* Draw completion status (use FALSE for non-path text) */
+    iTidy_Progress_DrawTruncatedText(pw->window->RPort, pw->helper_x, pw->helper_y,
+                                      status_text, pw->helper_max_width,
+                                      FALSE, pens.text_pen);  /* FALSE = end truncation */
     
     /* Update cached helper text */
     strncpy(pw->last_helper_text, status_text, sizeof(pw->last_helper_text) - 1);

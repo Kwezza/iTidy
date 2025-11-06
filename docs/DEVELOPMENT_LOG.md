@@ -5,7 +5,142 @@ iTidy is an Amiga icon management utility that allows users to sort and arrange 
 
 ## Development Timeline
 
-### Latest: Phase 3 — Recursive Progress Window Implementation Complete (November 5, 2025)
+### Latest: EasyRequest Helper Module Implementation (November 6, 2025)
+
+#### Global EasyRequest Helper with RTG Screen Fix
+* **Purpose**: Create reusable wrapper for AmigaOS requesters that fixes RTG screen placement issues
+* **Status**: Complete — standard mode production-ready, centered mode experimental
+* **Date**: November 6, 2025
+
+**Problem Addressed:**
+- EasyRequest dialogs appearing at top-left corner on RTG screens instead of on the parent window's screen
+- Code duplication: 7+ lines of EasyStruct boilerplate repeated throughout codebase
+
+**Solution Implemented:**
+- Created `src/GUI/easy_request_helper.c` and `include/easy_request_helper.h`
+- New function: `ShowEasyRequest()` — one-line wrapper for all requester dialogs
+- Ensures requesters always open on parent window's screen (fixes RTG issues)
+- Comprehensive debug logging for troubleshooting
+
+**Two Modes Available:**
+1. **Standard Mode (Production)**: Uses `EasyRequest()` — simple, reliable, WB 2.0+ compatible
+2. **Experimental Mode (Disabled)**: Uses `BuildEasyRequest()` + `MoveWindow()` to center requesters
+
+**Why Centered Mode Was Disabled:**
+- Attempted to center requesters using `MoveWindow()` after `BuildEasyRequest()`
+- Successful on fast machines, but caused visible flicker/snap on slow Amigas (~1 second)
+- Tried `ModifyIDCMP()` to hide window during move — still visible on slow hardware
+- Decision: Flicker impact outweighs centering benefit
+- Standard mode provides clean, reliable experience without visual artifacts
+
+**Migration Complete:**
+- Replaced 7 EasyRequest calls in `restore_window.c`:
+  - Confirm Restore dialog
+  - LHA Not Found error
+  - Restore Complete/Failed messages
+  - Delete Run confirmation and results
+- Reduced 7-line boilerplate to single function call throughout
+
+**Files Created:**
+- `include/easy_request_helper.h` — Public API
+- `src/GUI/easy_request_helper.c` — Implementation (150+ lines with both modes)
+
+**Documentation:**
+- `docs/EASY_REQUEST_HELPER_MODULE.md` — Full implementation details
+- `docs/EASY_REQUEST_HELPER_QUICKREF.md` — Quick reference guide for developers
+- `docs/EASY_REQUEST_DEBUG_LOG.md` — Debug logging documentation
+
+**Note for Future:**
+The centered mode code remains in place (guarded by `BUILD_WITH_MOVEWINDOW` ifdef) for potential future improvements. Alternative approaches to explore:
+- AutoRequest() with pre-positioned window creation
+- Custom OpenWindowTags() with WA_Left/WA_Top set before opening
+- Screen-relative positioning calculations
+
+For now, standard mode provides the best balance of reliability and user experience.
+
+---
+
+### Progress Window Layout Fixes and Text Truncation System (November 6, 2025)
+
+#### Progress Windows Layout Corrections and Smart Text Truncation
+* **Purpose**: Fix gadget positioning issues and implement text truncation to prevent overflow
+* **Status**: Complete and production-ready
+* **Date**: November 6, 2025
+
+**Problem Identified:**
+- Progress window labels appeared too high (overlapping title bar area)
+- Text extended past right window border
+- Incorrect use of `WA_InnerWidth/InnerHeight` without proper border calculations
+
+**Layout Fixes Applied:**
+- Changed from `WA_InnerWidth/InnerHeight` back to explicit `WA_Width/Height`
+- Now using `prefsIControl.currentLeftBarWidth` and `prefsIControl.currentWindowBarHeight` for accurate border sizes
+- All element positioning relative to borders + margins (consistent with `restore_window.c` pattern)
+- Applied to both `progress_window.c` and `recursive_progress.c`
+
+**Text Truncation System Implemented:**
+- New function: `iTidy_Progress_DrawTruncatedText()` in `progress_common.c`
+- **Middle truncation** for paths: `PC:Workbench/.../IconToolbar` (preserves volume and destination)
+- **End truncation** for text: `Processing item...` (natural left-to-right reading)
+- Uses `TextLength()` for accurate pixel-based measurements (works with all font types)
+- Replaced 25 lines of manual truncation code in `recursive_progress.c` with single function call
+
+**Files Modified:**
+- `src/GUI/StatusWindows/progress_common.h` — Added `iTidy_Progress_DrawTruncatedText()` declaration
+- `src/GUI/StatusWindows/progress_common.c` — Implemented smart truncation (~120 lines)
+- `src/GUI/StatusWindows/progress_window.c` — Fixed layout, added truncation to 3 locations
+- `src/GUI/StatusWindows/recursive_progress.c` — Fixed layout, replaced manual truncation with function
+
+**Benefits:**
+- Professional appearance: text never extends past window borders
+- Preserves context: middle truncation shows both start and end of paths
+- Consistent with Amiga File Requester conventions
+- Works correctly with all IControl preferences and screen resolutions
+- Efficient: only truncates when necessary
+
+**Documentation:**
+- `docs/BUGFIX_PROGRESS_WINDOW_LAYOUT.md` — Layout fix technical details
+- `docs/BUGFIX_TEXT_TRUNCATION_SYSTEM.md` — Truncation system design and implementation
+
+### Progress Window Integration into Restore Operations (November 5-6, 2025)
+
+#### Progress Window Integrated into Backup Restore System
+* **Purpose**: Integrate Phase 2/3 progress windows into actual iTidy restore operations
+* **Status**: Complete and production-ready
+* **Date**: November 5-6, 2025
+
+**Integration Complete:**
+- Progress window now displays during backup restore operations
+- Shows real-time progress as folders are extracted from LHA archives
+- Title: "Restoring Run_0013" (dynamically generated from run name)
+- Progress bar updates for each folder: "15 of 42 - 36%"
+- Status text shows current folder: "Restoring: PC:Workbench/Programs/MagicWB/..."
+- Window automatically closes when restore completes
+
+**Files Modified:**
+- `src/backup_restore.h` — Added `userData` field to RestoreContext for passing progress window pointer
+- `src/backup_restore.c` — Added progress window include, counter tracking, and update calls in callback
+- `src/GUI/restore_window.c` — Opens/closes progress window in `perform_restore_run()`
+- `src/GUI/StatusWindows/progress_window.c` — Fixed window border sizing using WA_InnerWidth/Height
+- `src/GUI/StatusWindows/recursive_progress.c` — Fixed window border sizing using WA_InnerWidth/Height
+
+**Implementation Details:**
+- RestoreContext.userData stores progress window pointer
+- CatalogIterContext.currentFolderIndex tracks folder count (1-based)
+- RestoreCatalogEntryCallback increments counter and updates progress for each folder
+- Progress updates show folder path and percentage complete
+- Graceful fallback if progress window fails to open (continues without progress)
+
+**Window Sizing Fix:**
+- Changed from manual border calculation using IControl preferences to WA_InnerWidth/WA_InnerHeight
+- Intuition now automatically adds proper borders including title bar
+- Fixes title bar being cut off and incorrect window dimensions
+- More reliable across different IControl settings and Workbench configurations
+
+**Documentation:**
+- `docs/PROGRESS_WINDOW_INTEGRATION.md` — Complete integration guide and technical details
+
+### Phase 3 — Recursive Progress Window Implementation Complete (November 5, 2025)
 
 #### Phase 3 Complete: Dual-Bar Progress Window with Prescan Fully Implemented
 * **Purpose**: Implement dual-bar progress window for recursive directory operations

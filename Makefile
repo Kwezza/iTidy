@@ -28,6 +28,7 @@ else
     # VBCC MIGRATION NOTE (Stage 4): Added -DDEBUG for debug logging
     # DEBUG BUILD: Added -g for debug symbols, -hunkdebug for symbol table
     # Note: VBCC warnings from system headers (51: bitfield, 61: array size) cannot be suppressed
+    # EASY_REQUEST_HELPER: -DBUILD_WITH_MOVEWINDOW disabled (causes flicker on slow Amigas)
     CC = vc
     CFLAGS = +aos68k -c99 -cpu=68020 -g -I$(INC_DIR) -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG
     LDFLAGS = +aos68k -cpu=68020 -g -hunkdebug -lamiga -lauto -lmieee
@@ -73,6 +74,7 @@ GUI_SRCS = \
 	$(SRC_DIR)/GUI/advanced_window.c \
 	$(SRC_DIR)/GUI/restore_window.c \
 	$(SRC_DIR)/GUI/folder_view_window.c \
+	$(SRC_DIR)/GUI/easy_request_helper.c \
 	$(SRC_DIR)/GUI/StatusWindows/progress_common.c \
 	$(SRC_DIR)/GUI/StatusWindows/progress_window.c \
 	$(SRC_DIR)/GUI/StatusWindows/recursive_progress.c \
@@ -238,6 +240,7 @@ $(OUT_DIR)/GUI/main_window.o: $(SRC_DIR)/GUI/main_window.c $(SRC_DIR)/GUI/main_w
 $(OUT_DIR)/GUI/advanced_window.o: $(SRC_DIR)/GUI/advanced_window.c $(SRC_DIR)/GUI/advanced_window.h
 $(OUT_DIR)/GUI/restore_window.o: $(SRC_DIR)/GUI/restore_window.c $(SRC_DIR)/GUI/restore_window.h
 $(OUT_DIR)/GUI/folder_view_window.o: $(SRC_DIR)/GUI/folder_view_window.c $(SRC_DIR)/GUI/folder_view_window.h
+$(OUT_DIR)/GUI/easy_request_helper.o: $(SRC_DIR)/GUI/easy_request_helper.c $(INC_DIR)/easy_request_helper.h
 
 # Platform-specific
 $(OUT_DIR)/platform/host_platform.o: $(SRC_DIR)/platform/host_platform.c $(INC_DIR)/platform/platform.h

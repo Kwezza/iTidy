@@ -170,6 +170,110 @@ void iTidy_Progress_DrawPercentage(
     Text(rp, (STRPTR)percent_text, (LONG)strlen(percent_text));
 }
 
+void iTidy_Progress_DrawTruncatedText(
+    struct RastPort *rp,
+    WORD left, WORD top,
+    const char *text,
+    UWORD max_width,
+    BOOL is_path,
+    ULONG text_pen)
+{
+    char buffer[256];
+    UWORD text_width;
+    ULONG text_len;
+    const char *ellipsis = "...";
+    UWORD ellipsis_width;
+    
+    if (!rp || !text)
+        return;
+    
+    text_len = strlen(text);
+    
+    /* Check if text fits as-is */
+    text_width = (UWORD)TextLength(rp, (STRPTR)text, (LONG)text_len);
+    if (text_width <= max_width)
+    {
+        /* Fits fine - draw as normal */
+        SetAPen(rp, text_pen);
+        Move(rp, left, top + rp->Font->tf_Baseline);
+        Text(rp, (STRPTR)text, (LONG)text_len);
+        return;
+    }
+    
+    /* Text needs truncation */
+    ellipsis_width = (UWORD)TextLength(rp, (STRPTR)ellipsis, 3);
+    
+    if (is_path)
+    {
+        /* Middle truncation for paths: "Work:Programs/.../Tools" */
+        ULONG start_chars, end_chars;
+        UWORD target_width = max_width - ellipsis_width;
+        ULONG half_target = target_width / 2;
+        
+        /* Find how many characters fit in first half */
+        for (start_chars = 0; start_chars < text_len; start_chars++)
+        {
+            UWORD w = (UWORD)TextLength(rp, (STRPTR)text, (LONG)start_chars);
+            if (w >= half_target)
+                break;
+        }
+        
+        /* Find how many characters fit in second half (measure from end) */
+        for (end_chars = 0; end_chars < text_len; end_chars++)
+        {
+            const char *end_start = text + text_len - end_chars;
+            UWORD w = (UWORD)TextLength(rp, (STRPTR)end_start, (LONG)end_chars);
+            if (w >= half_target)
+                break;
+        }
+        
+        /* Safety check - ensure we don't overflow buffer */
+        if (start_chars + 3 + end_chars >= sizeof(buffer))
+        {
+            start_chars = 50;  /* Fallback to safe values */
+            end_chars = 50;
+        }
+        
+        /* Build truncated string: "start...end" */
+        if (start_chars > 0)
+            strncpy(buffer, text, start_chars);
+        strcpy(buffer + start_chars, ellipsis);
+        if (end_chars > 0)
+            strcpy(buffer + start_chars + 3, text + text_len - end_chars);
+        
+        buffer[sizeof(buffer) - 1] = '\0';
+    }
+    else
+    {
+        /* End truncation for normal text: "Processing item..." */
+        ULONG fit_chars;
+        UWORD target_width = max_width - ellipsis_width;
+        
+        /* Find how many characters fit before ellipsis */
+        for (fit_chars = 0; fit_chars < text_len; fit_chars++)
+        {
+            UWORD w = (UWORD)TextLength(rp, (STRPTR)text, (LONG)fit_chars);
+            if (w >= target_width)
+                break;
+        }
+        
+        /* Safety check */
+        if (fit_chars + 3 >= sizeof(buffer))
+            fit_chars = sizeof(buffer) - 4;
+        
+        /* Build truncated string: "text..." */
+        if (fit_chars > 0)
+            strncpy(buffer, text, fit_chars);
+        strcpy(buffer + fit_chars, ellipsis);
+        buffer[sizeof(buffer) - 1] = '\0';
+    }
+    
+    /* Draw the truncated text */
+    SetAPen(rp, text_pen);
+    Move(rp, left, top + rp->Font->tf_Baseline);
+    Text(rp, (STRPTR)buffer, (LONG)strlen(buffer));
+}
+
 void iTidy_Progress_HandleRefresh(struct Window *win, iTidy_Progress_RedrawFunc redraw, APTR userData)
 {
     struct IntuiMessage *msg;
