@@ -1309,6 +1309,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                     case GID_ENUMERATE:
                         {
                             FolderWindowTracker tracker;
+                            ULONG i;
                             
                             log_info(LOG_GUI, "=== Test Enumerate Windows button clicked ===\n");
                             
@@ -1321,6 +1322,29 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                             {
                                 /* Print the tracker contents */
                                 Debug_PrintFolderWindowList(&tracker);
+                                
+                                /* Test: Find and resize "Programs" window to (20,20) 50x50 */
+                                log_info(LOG_GUI, "=== Testing ApplyWindowGeometry on 'Programs' ===\n");
+                                for (i = 0; i < tracker.count; i++)
+                                {
+                                    if (strcmp(tracker.windows[i].title, "Programs") == 0)
+                                    {
+                                        log_info(LOG_GUI, "Found 'Programs' window at index %lu\n", i);
+                                        if (ApplyWindowGeometry(tracker.windows[i].window, 20, 20, 50, 50))
+                                        {
+                                            log_info(LOG_GUI, "Successfully applied geometry to 'Programs'\n");
+                                        }
+                                        else
+                                        {
+                                            log_error(LOG_GUI, "Failed to apply geometry to 'Programs'\n");
+                                        }
+                                        break;
+                                    }
+                                }
+                                if (i >= tracker.count)
+                                {
+                                    log_info(LOG_GUI, "'Programs' window not found in tracker\n");
+                                }
                                 
                                 /* Clean up */
                                 FreeFolderWindowList(&tracker);

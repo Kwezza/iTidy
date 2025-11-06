@@ -26,6 +26,10 @@
 /* External library bases */
 extern struct IntuitionBase *IntuitionBase;
 
+/* External screen dimensions from main_gui.c */
+extern int screenWidth;
+extern int screenHight;
+
 /*------------------------------------------------------------------------*/
 /* Flag Decoding Tables and Helpers                                      */
 /*------------------------------------------------------------------------*/
@@ -645,6 +649,144 @@ void Debug_PrintFolderWindowList(const FolderWindowTracker *tracker)
     
     log_debug(LOG_GUI, "========================================\n");
     log_debug(LOG_GUI, "\n");
+}
+
+/*------------------------------------------------------------------------*/
+/**
+ * @brief Move and resize a window to specified geometry
+ * 
+ * This function applies new position and size to a window using Intuition's
+ * MoveWindow() and SizeWindow() functions. The window is moved first, then
+ * resized to avoid visual artifacts.
+ * 
+ * @param win Pointer to the Window to modify
+ * @param left New X position (screen coordinates)
+ * @param top New Y position (screen coordinates)  
+ * @param width New width in pixels
+ * @param height New height in pixels
+ * @return BOOL TRUE if successful, FALSE if window pointer is NULL
+ */
+/*------------------------------------------------------------------------*/
+BOOL ApplyWindowGeometry(struct Window *win, WORD left, WORD top, WORD width, WORD height)
+{
+    WORD deltaX, deltaY;
+    WORD deltaWidth, deltaHeight;
+    WORD adjustedLeft, adjustedTop;
+    WORD adjustedWidth, adjustedHeight;
+    WORD minWidth, minHeight;
+    BOOL adjusted = FALSE;
+    
+    if (!win)
+    {
+        log_error(LOG_GUI, "ApplyWindowGeometry: NULL window pointer\n");
+        return FALSE;
+    }
+    
+    /* Get minimum window dimensions from window structure */
+    minWidth = win->MinWidth > 0 ? win->MinWidth : 50;
+    minHeight = win->MinHeight > 0 ? win->MinHeight : 50;
+    
+    /* Start with requested geometry */
+    adjustedLeft = left;
+    adjustedTop = top;
+    adjustedWidth = width;
+    adjustedHeight = height;
+    
+    /* Validate and clamp width */
+    if (adjustedWidth < minWidth)
+    {
+        log_debug(LOG_GUI, "  Width %d too small (min=%d), clamping\n", adjustedWidth, minWidth);
+        adjustedWidth = minWidth;
+        adjusted = TRUE;
+    }
+    if (adjustedWidth > screenWidth)
+    {
+        log_debug(LOG_GUI, "  Width %d exceeds screen (%d), clamping\n", adjustedWidth, screenWidth);
+        adjustedWidth = screenWidth;
+        adjusted = TRUE;
+    }
+    
+    /* Validate and clamp height */
+    if (adjustedHeight < minHeight)
+    {
+        log_debug(LOG_GUI, "  Height %d too small (min=%d), clamping\n", adjustedHeight, minHeight);
+        adjustedHeight = minHeight;
+        adjusted = TRUE;
+    }
+    if (adjustedHeight > screenHight)
+    {
+        log_debug(LOG_GUI, "  Height %d exceeds screen (%d), clamping\n", adjustedHeight, screenHight);
+        adjustedHeight = screenHight;
+        adjusted = TRUE;
+    }
+    
+    /* Validate and clamp position - ensure window is at least partially visible */
+    if (adjustedLeft < 0)
+    {
+        log_debug(LOG_GUI, "  Left position %d negative, clamping to 0\n", adjustedLeft);
+        adjustedLeft = 0;
+        adjusted = TRUE;
+    }
+    if (adjustedLeft + adjustedWidth > screenWidth)
+    {
+        adjustedLeft = screenWidth - adjustedWidth;
+        if (adjustedLeft < 0) adjustedLeft = 0;
+        log_debug(LOG_GUI, "  Window extends past right edge, adjusting left to %d\n", adjustedLeft);
+        adjusted = TRUE;
+    }
+    
+    if (adjustedTop < 0)
+    {
+        log_debug(LOG_GUI, "  Top position %d negative, clamping to 0\n", adjustedTop);
+        adjustedTop = 0;
+        adjusted = TRUE;
+    }
+    if (adjustedTop + adjustedHeight > screenHight)
+    {
+        adjustedTop = screenHight - adjustedHeight;
+        if (adjustedTop < 0) adjustedTop = 0;
+        log_debug(LOG_GUI, "  Window extends past bottom edge, adjusting top to %d\n", adjustedTop);
+        adjusted = TRUE;
+    }
+    
+    /* Calculate deltas for movement */
+    deltaX = adjustedLeft - win->LeftEdge;
+    deltaY = adjustedTop - win->TopEdge;
+    
+    /* Calculate deltas for sizing */
+    deltaWidth = adjustedWidth - win->Width;
+    deltaHeight = adjustedHeight - win->Height;
+    
+    log_debug(LOG_GUI, "ApplyWindowGeometry: \"%s\"\n", win->Title ? win->Title : "(no title)");
+    log_debug(LOG_GUI, "  Screen:  %dx%d\n", screenWidth, screenHight);
+    log_debug(LOG_GUI, "  Current: (%d, %d) size %dx%d\n", 
+              win->LeftEdge, win->TopEdge, win->Width, win->Height);
+    log_debug(LOG_GUI, "  Target:  (%d, %d) size %dx%d%s\n", 
+              adjustedLeft, adjustedTop, adjustedWidth, adjustedHeight,
+              adjusted ? " (adjusted)" : "");
+    log_debug(LOG_GUI, "  Delta:   move (%d, %d) resize (%d, %d)\n", 
+              deltaX, deltaY, deltaWidth, deltaHeight);
+    
+    /* Move window if position changed */
+    if (deltaX != 0 || deltaY != 0)
+    {
+        MoveWindow(win, deltaX, deltaY);
+        log_debug(LOG_GUI, "  Moved window by (%d, %d)\n", deltaX, deltaY);
+    }
+    
+    /* Resize window if dimensions changed */
+    if (deltaWidth != 0 || deltaHeight != 0)
+    {
+        SizeWindow(win, deltaWidth, deltaHeight);
+        log_debug(LOG_GUI, "  Resized window by (%d, %d)\n", deltaWidth, deltaHeight);
+    }
+    
+    if (deltaX == 0 && deltaY == 0 && deltaWidth == 0 && deltaHeight == 0)
+    {
+        log_debug(LOG_GUI, "  No changes needed\n");
+    }
+    
+    return TRUE;
 }
 
 /* End of window_enumerator.c */

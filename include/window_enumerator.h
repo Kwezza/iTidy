@@ -112,4 +112,23 @@ void FreeFolderWindowList(FolderWindowTracker *tracker);
 /*------------------------------------------------------------------------*/
 void Debug_PrintFolderWindowList(const FolderWindowTracker *tracker);
 
+/**
+ * @brief Move and resize a window to specified geometry
+ * 
+ * Applies new position and size to a window. This is used to restore
+ * folder window geometry after iTidy has finished icon repositioning.
+ * 
+ * The function uses Intuition's MoveWindow() and SizeWindow() to change
+ * the window dimensions. Changes are immediate and visible to the user.
+ * 
+ * @param win Pointer to the Window to modify
+ * @param left New X position (screen coordinates)
+ * @param top New Y position (screen coordinates)
+ * @param width New width in pixels
+ * @param height New height in pixels
+ * @return BOOL TRUE if successful, FALSE if window pointer is NULL
+ */
+/*------------------------------------------------------------------------*/
+BOOL ApplyWindowGeometry(struct Window *win, WORD left, WORD top, WORD width, WORD height);
+
 #endif /* WINDOW_ENUMERATOR_H */

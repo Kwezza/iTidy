@@ -88,12 +88,60 @@ if (win->IDCMPFlags & 0x00018000)  /* IDCMP_DISKINSERTED | IDCMP_DISKREMOVED */
 - `BuildFolderWindowList(FolderWindowTracker *tracker)` - Creates tracking array
 - `FreeFolderWindowList(FolderWindowTracker *tracker)` - Cleanup
 - `Debug_PrintFolderWindowList(FolderWindowTracker *tracker)` - Debug output
+- `ApplyWindowGeometry(struct Window *win, WORD left, WORD top, WORD width, WORD height)` - Move and resize windows
+
+**Phase 5 - Window Geometry Application:**
+Implemented `ApplyWindowGeometry()` function to apply saved geometry to windows:
+
+```c
+BOOL ApplyWindowGeometry(struct Window *win, WORD left, WORD top, WORD width, WORD height)
+{
+    WORD deltaX = left - win->LeftEdge;
+    WORD deltaY = top - win->TopEdge;
+    WORD deltaWidth = width - win->Width;
+    WORD deltaHeight = height - win->Height;
+    
+    if (deltaX != 0 || deltaY != 0)
+        MoveWindow(win, deltaX, deltaY);
+    
+    if (deltaWidth != 0 || deltaHeight != 0)
+        SizeWindow(win, deltaWidth, deltaHeight);
+    
+    return TRUE;
+}
+```
+
+**Implementation Details:**
+- Uses Intuition's `MoveWindow()` and `SizeWindow()` APIs
+- Calculates deltas from current to target geometry (both APIs are delta-based)
+- Moves window first, then resizes to avoid visual artifacts
+- Comprehensive debug logging shows current, target, and delta values
+- Skips operations if no change needed
+
+**Testing Results:**
+- ✅ Test 1: "Programs" window (394,98) 399×354 → (20,20) 50×50
+  - Delta: move (-374, -78) resize (-349, -304)
+  - Successfully applied ✓
+- ✅ Test 2: User manually resized to (32,338) 768×262 → (20,20) 50×50
+  - Delta: move (-12, -318) resize (-718, -212)
+  - Successfully applied ✓
+- ✅ Window pointer remains valid across operations
+- ✅ Changes are immediate and visible to user
+
+**Complete Workflow Now Available:**
+1. Call `BuildFolderWindowList(&tracker)` before iTidy run
+2. Store tracker for later use
+3. iTidy repositions/resizes folder windows
+4. For each window in tracker:
+   - Find matching open window by title
+   - Call `ApplyWindowGeometry()` with saved geometry
+5. Call `FreeFolderWindowList(&tracker)` to cleanup
 
 **Next Steps:**
 - Integrate into actual iTidy run workflow (currently debug-only)
-- Implement window geometry restoration after icon repositioning
 - Add window matching logic (match by title, apply saved geometry)
 - Handle duplicate folder names (acknowledged as future enhancement)
+- Consider edge cases: windows closed during iTidy run, windows opened after tracking
 
 ---
 
