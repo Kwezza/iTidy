@@ -425,9 +425,9 @@ static void CalculateLayoutPositionsWithColumnCentering(IconArray *iconArray,
     iconSpacingX = prefs->iconSpacingX;
     iconSpacingY = prefs->iconSpacingY;
     
-    /* Starting positions and margins use spacing */
-    startX = iconSpacingX;
-    startY = iconSpacingY;
+    /* Starting positions use defined margins (ICON_START_X/Y) for proper window padding */
+    startX = ICON_START_X;
+    startY = ICON_START_Y;
     rightMargin = iconSpacingX;
     
     /* Phase 1 variables: Statistics and column calculation */

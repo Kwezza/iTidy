@@ -5,7 +5,62 @@ iTidy is an Amiga icon management utility that allows users to sort and arrange 
 
 ## Development Timeline
 
-### Latest: EasyRequest Helper Module Implementation (November 6, 2025)
+### Latest: Window Sizing Fix - Eliminated Double-Counted Padding (November 6, 2025)
+
+#### Fixed Oversized Window Frames
+* **Purpose**: Correct window sizing calculation to eliminate excessive padding on right and bottom edges
+* **Status**: Complete
+* **Date**: November 6, 2025
+
+**Problem Addressed:**
+- Windows were oversized with excessive padding on right and bottom edges
+- Multiple layers of padding/margins being added redundantly
+- Icons appeared too close to left/top edges but had large gaps on right/bottom
+
+**Root Cause Analysis:**
+1. Layout algorithm positioned icons starting at `ICON_START_X=10` and `ICON_START_Y=8`
+2. `resizeFolderToContents()` added additional margins (initially 16px, then 10px/8px)
+3. `repoistionWindow()` added `PADDING_WIDTH/HEIGHT` (initially 10px, then 4px)
+4. IControl borders added ~40px total (4+18+18 for left+right+scrollbar)
+5. Result: Triple-counted padding causing 20-30px excess space
+
+**Solution Implemented:**
+
+**Phase 1 - Initial Margin Reduction:**
+- Reduced margins in `resizeFolderToContents()` from 16px to 0px
+- Added debugging to understand IControl border contributions
+
+**Phase 2 - Padding Elimination:**
+- Set `PADDING_WIDTH` and `PADDING_HEIGHT` to 0 in `itidy_types.h`
+- Eliminated 8px (4×2) of redundant padding from window calculations
+
+**Phase 3 - Icon Start Position Fix:**
+- Updated `CalculateLayoutPositionsWithColumnCentering()` to use `ICON_START_X/Y` instead of `iconSpacingX/Y`
+- Ensured consistent 10px/8px margins from window edges
+
+**Phase 4 - Final Margin Removal:**
+- Set `rightMargin` and `bottomMargin` to 0 in `resizeFolderToContents()`
+- Layout algorithm already provides balanced spacing; no additional margins needed
+
+**Final Result:**
+- Balanced ~10px left/right and ~8px top/bottom spacing around icon area
+- IControl borders provide necessary window chrome (~40px total)
+- Works correctly for both regular folders and root folders with fuel gauge
+- Total window size reduction: ~18px width, ~16px height for typical 3×3 layout
+
+**Files Modified:**
+- `src/window_management.c` — Removed margin double-counting
+- `src/layout_processor.c` — Fixed icon starting positions
+- `src/itidy_types.h` — Eliminated PADDING_WIDTH/HEIGHT
+
+**Technical Details:**
+- Icon boundaries: Left=10, Top=8 (from ICON_START_X/Y constants)
+- Window chrome: ~40px width (4 left + 18 right + 18 scrollbar), ~48px height (16 top + 16 bottom + 16 scrollbar)
+- No additional padding needed — layout inherently balanced
+
+---
+
+### EasyRequest Helper Module Implementation (November 6, 2025)
 
 #### Global EasyRequest Helper with RTG Screen Fix
 * **Purpose**: Create reusable wrapper for AmigaOS requesters that fixes RTG screen placement issues

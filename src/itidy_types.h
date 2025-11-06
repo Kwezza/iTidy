@@ -14,8 +14,8 @@
 #define GAP_BETWEEN_ICON_AND_TEXT 2
 #define ICON_START_X 10
 #define ICON_START_Y 8
-#define PADDING_WIDTH 10
-#define PADDING_HEIGHT 10
+#define PADDING_WIDTH 0   /* Disabled - resizeFolderToContents adds explicit margins, IControl adds borders */
+#define PADDING_HEIGHT 0  /* Disabled - resizeFolderToContents adds explicit margins, IControl adds borders */
 #define ID_FONT MAKE_ID('F','O','N','T')
 
 /* Forward declarations for external structures */

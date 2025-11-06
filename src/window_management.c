@@ -86,8 +86,10 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray)
 {
 #if PLATFORM_AMIGA
     int i, maxWidth = 0, maxHeight = 0;
-    int rightMargin = 16;  /* Safety margin on right edge */
-    int bottomMargin = 16; /* Safety margin on bottom edge */
+    /* No extra margins needed - layout algorithm already positions icons with ICON_START_X/Y spacing
+     * on all sides, creating balanced padding. Additional margins would double-count the spacing. */
+    int rightMargin = 0;
+    int bottomMargin = 0;
 
 #ifdef DEBUG
     append_to_log("DEBUG: resizeFolderToContents ENTRY: dirPath='%s', iconArray->size=%d\n", 
@@ -323,6 +325,9 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight)
     append_to_log("Reposition window: %s (content: %d×%d)\n", dirPath, winWidth, winHeight);
     append_to_log("  Padding: %d, disableVolumeGauge: %d\n", 
                   PADDING_WIDTH, prefsWorkbench.disableVolumeGauge);
+    append_to_log("  IControl: currentBarWidth=%d, currentLeftBarWidth=%d, currentWindowBarHeight=%d, currentBarHeight=%d\n",
+                  prefsIControl.currentBarWidth, prefsIControl.currentLeftBarWidth,
+                  prefsIControl.currentWindowBarHeight, prefsIControl.currentBarHeight);
 #endif
     
     /* Add window chrome (borders, scrollbars, etc.) to width */
