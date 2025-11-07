@@ -531,7 +531,7 @@ BOOL BuildFolderWindowList(FolderWindowTracker *tracker)
                 
                 if (!newArray)
                 {
-                    log_error(LOG_GUI, "BuildFolderWindowList: Failed to expand array\n");
+                    log_error(LOG_GENERAL, "BuildFolderWindowList: Failed to expand array\n");
                     break;
                 }
                 
@@ -565,6 +565,7 @@ BOOL BuildFolderWindowList(FolderWindowTracker *tracker)
             info->top = win->TopEdge;
             info->width = win->Width;
             info->height = win->Height;
+            info->alreadyMoved = FALSE;  /* Initialize flag */
             
             tracker->count++;
         }
@@ -578,7 +579,21 @@ BOOL BuildFolderWindowList(FolderWindowTracker *tracker)
     /* Unlock the Workbench screen */
     UnlockPubScreen(NULL, wbScreen);
     
-    log_info(LOG_GUI, "BuildFolderWindowList: Tracked %lu folder window(s)\n", tracker->count);
+    log_info(LOG_GENERAL, "BuildFolderWindowList: Tracked %lu folder window(s)\n", tracker->count);
+    
+    /* Log details of each tracked window for debugging */
+    if (tracker->count > 0)
+    {
+        ULONG i;
+        log_debug(LOG_GENERAL, "Tracked windows:\n");
+        for (i = 0; i < tracker->count; i++)
+        {
+            log_debug(LOG_GENERAL, "  [%lu] '%s' at (%d,%d) size %dx%d\n",
+                     i, tracker->windows[i].title,
+                     tracker->windows[i].left, tracker->windows[i].top,
+                     tracker->windows[i].width, tracker->windows[i].height);
+        }
+    }
     
     return TRUE;
 }
@@ -653,6 +668,65 @@ void Debug_PrintFolderWindowList(const FolderWindowTracker *tracker)
 
 /*------------------------------------------------------------------------*/
 /**
+ * @brief Find an open window by title
+ * 
+ * Searches the Workbench screen for a window with the specified title.
+ * This is safer than using cached window pointers which can become stale
+ * if windows are closed/reopened by Workbench during icon processing.
+ * 
+ * NOTE: This function uses BuildFolderWindowList() to get a fresh snapshot
+ * of open folder windows, ensuring we don't use stale window pointers.
+ * 
+ * @param title The window title to search for (case-sensitive)
+ * @return struct Window* Pointer to the window if found, NULL otherwise
+ */
+/*------------------------------------------------------------------------*/
+struct Window *FindWindowByTitle(const char *title)
+{
+    FolderWindowTracker tracker;
+    struct Window *foundWin = NULL;
+    ULONG i;
+    
+    if (!title)
+    {
+        log_error(LOG_GENERAL, "FindWindowByTitle: NULL title\n");
+        return NULL;
+    }
+    
+    log_debug(LOG_GENERAL, "FindWindowByTitle: Searching for '%s'\n", title);
+    
+    /* Build a fresh snapshot of folder windows */
+    if (!BuildFolderWindowList(&tracker))
+    {
+        log_error(LOG_GENERAL, "FindWindowByTitle: Failed to build window list\n");
+        return NULL;
+    }
+    
+    /* Search for matching window title */
+    for (i = 0; i < tracker.count; i++)
+    {
+        if (strcmp(tracker.windows[i].title, title) == 0)
+        {
+            foundWin = tracker.windows[i].window;
+            log_debug(LOG_GENERAL, "FindWindowByTitle: Found window '%s' at (%d,%d) size %dx%d\n",
+                     title, foundWin->LeftEdge, foundWin->TopEdge, foundWin->Width, foundWin->Height);
+            break;
+        }
+    }
+    
+    if (!foundWin)
+    {
+        log_debug(LOG_GENERAL, "FindWindowByTitle: Window '%s' not found\n", title);
+    }
+    
+    /* Free the tracker memory */
+    FreeFolderWindowList(&tracker);
+    
+    return foundWin;
+}
+
+/*------------------------------------------------------------------------*/
+/**
  * @brief Move and resize a window to specified geometry
  * 
  * This function applies new position and size to a window using Intuition's
@@ -678,13 +752,13 @@ BOOL ApplyWindowGeometry(struct Window *win, WORD left, WORD top, WORD width, WO
     
     if (!win)
     {
-        log_error(LOG_GUI, "ApplyWindowGeometry: NULL window pointer\n");
+        log_error(LOG_GENERAL, "ApplyWindowGeometry: NULL window pointer\n");
         return FALSE;
     }
     
-    /* Get minimum window dimensions from window structure */
-    minWidth = win->MinWidth > 0 ? win->MinWidth : 50;
-    minHeight = win->MinHeight > 0 ? win->MinHeight : 50;
+    /* Use reasonable minimum dimensions (ignore window MinWidth/MinHeight as they can be garbage) */
+    minWidth = 50;
+    minHeight = 50;
     
     /* Start with requested geometry */
     adjustedLeft = left;
@@ -695,13 +769,13 @@ BOOL ApplyWindowGeometry(struct Window *win, WORD left, WORD top, WORD width, WO
     /* Validate and clamp width */
     if (adjustedWidth < minWidth)
     {
-        log_debug(LOG_GUI, "  Width %d too small (min=%d), clamping\n", adjustedWidth, minWidth);
+        log_debug(LOG_GENERAL, "  Width %d too small (min=%d), clamping\n", adjustedWidth, minWidth);
         adjustedWidth = minWidth;
         adjusted = TRUE;
     }
     if (adjustedWidth > screenWidth)
     {
-        log_debug(LOG_GUI, "  Width %d exceeds screen (%d), clamping\n", adjustedWidth, screenWidth);
+        log_debug(LOG_GENERAL, "  Width %d exceeds screen (%d), clamping\n", adjustedWidth, screenWidth);
         adjustedWidth = screenWidth;
         adjusted = TRUE;
     }
@@ -709,13 +783,13 @@ BOOL ApplyWindowGeometry(struct Window *win, WORD left, WORD top, WORD width, WO
     /* Validate and clamp height */
     if (adjustedHeight < minHeight)
     {
-        log_debug(LOG_GUI, "  Height %d too small (min=%d), clamping\n", adjustedHeight, minHeight);
+        log_debug(LOG_GENERAL, "  Height %d too small (min=%d), clamping\n", adjustedHeight, minHeight);
         adjustedHeight = minHeight;
         adjusted = TRUE;
     }
     if (adjustedHeight > screenHight)
     {
-        log_debug(LOG_GUI, "  Height %d exceeds screen (%d), clamping\n", adjustedHeight, screenHight);
+        log_debug(LOG_GENERAL, "  Height %d exceeds screen (%d), clamping\n", adjustedHeight, screenHight);
         adjustedHeight = screenHight;
         adjusted = TRUE;
     }
@@ -723,7 +797,7 @@ BOOL ApplyWindowGeometry(struct Window *win, WORD left, WORD top, WORD width, WO
     /* Validate and clamp position - ensure window is at least partially visible */
     if (adjustedLeft < 0)
     {
-        log_debug(LOG_GUI, "  Left position %d negative, clamping to 0\n", adjustedLeft);
+        log_debug(LOG_GENERAL, "  Left position %d negative, clamping to 0\n", adjustedLeft);
         adjustedLeft = 0;
         adjusted = TRUE;
     }
@@ -731,13 +805,13 @@ BOOL ApplyWindowGeometry(struct Window *win, WORD left, WORD top, WORD width, WO
     {
         adjustedLeft = screenWidth - adjustedWidth;
         if (adjustedLeft < 0) adjustedLeft = 0;
-        log_debug(LOG_GUI, "  Window extends past right edge, adjusting left to %d\n", adjustedLeft);
+        log_debug(LOG_GENERAL, "  Window extends past right edge, adjusting left to %d\n", adjustedLeft);
         adjusted = TRUE;
     }
     
     if (adjustedTop < 0)
     {
-        log_debug(LOG_GUI, "  Top position %d negative, clamping to 0\n", adjustedTop);
+        log_debug(LOG_GENERAL, "  Top position %d negative, clamping to 0\n", adjustedTop);
         adjustedTop = 0;
         adjusted = TRUE;
     }
@@ -745,7 +819,7 @@ BOOL ApplyWindowGeometry(struct Window *win, WORD left, WORD top, WORD width, WO
     {
         adjustedTop = screenHight - adjustedHeight;
         if (adjustedTop < 0) adjustedTop = 0;
-        log_debug(LOG_GUI, "  Window extends past bottom edge, adjusting top to %d\n", adjustedTop);
+        log_debug(LOG_GENERAL, "  Window extends past bottom edge, adjusting top to %d\n", adjustedTop);
         adjusted = TRUE;
     }
     
@@ -757,33 +831,52 @@ BOOL ApplyWindowGeometry(struct Window *win, WORD left, WORD top, WORD width, WO
     deltaWidth = adjustedWidth - win->Width;
     deltaHeight = adjustedHeight - win->Height;
     
-    log_debug(LOG_GUI, "ApplyWindowGeometry: \"%s\"\n", win->Title ? win->Title : "(no title)");
-    log_debug(LOG_GUI, "  Screen:  %dx%d\n", screenWidth, screenHight);
-    log_debug(LOG_GUI, "  Current: (%d, %d) size %dx%d\n", 
+    log_debug(LOG_GENERAL, "ApplyWindowGeometry: \"%s\"\n", win->Title ? win->Title : "(no title)");
+    log_debug(LOG_GENERAL, "  Screen:  %dx%d\n", screenWidth, screenHight);
+    log_debug(LOG_GENERAL, "  Current: (%d, %d) size %dx%d\n", 
               win->LeftEdge, win->TopEdge, win->Width, win->Height);
-    log_debug(LOG_GUI, "  Target:  (%d, %d) size %dx%d%s\n", 
+    log_debug(LOG_GENERAL, "  Target:  (%d, %d) size %dx%d%s\n", 
               adjustedLeft, adjustedTop, adjustedWidth, adjustedHeight,
               adjusted ? " (adjusted)" : "");
-    log_debug(LOG_GUI, "  Delta:   move (%d, %d) resize (%d, %d)\n", 
+    log_debug(LOG_GENERAL, "  Delta:   move (%d, %d) resize (%d, %d)\n", 
               deltaX, deltaY, deltaWidth, deltaHeight);
+    
+    /* 
+     * NOTE: MoveWindow() and SizeWindow() are designed to be called WITHOUT locking Intuition.
+     * LockIBase() was causing windows to become unresponsive and preventing proper refresh.
+     * These functions handle their own internal synchronization safely.
+     */
     
     /* Move window if position changed */
     if (deltaX != 0 || deltaY != 0)
     {
         MoveWindow(win, deltaX, deltaY);
-        log_debug(LOG_GUI, "  Moved window by (%d, %d)\n", deltaX, deltaY);
+        log_debug(LOG_GENERAL, "  Moved window by (%d, %d)\n", deltaX, deltaY);
     }
     
     /* Resize window if dimensions changed */
     if (deltaWidth != 0 || deltaHeight != 0)
     {
         SizeWindow(win, deltaWidth, deltaHeight);
-        log_debug(LOG_GUI, "  Resized window by (%d, %d)\n", deltaWidth, deltaHeight);
+        log_debug(LOG_GENERAL, "  Resized window by (%d, %d)\n", deltaWidth, deltaHeight);
+    }
+    
+    /* 
+     * After moving/resizing, refresh the window to ensure proper display.
+     * This prevents display corruption when other windows overlap.
+     */
+    if (deltaX != 0 || deltaY != 0 || deltaWidth != 0 || deltaHeight != 0)
+    {
+        /* Request a complete window refresh including frame and contents */
+        RefreshWindowFrame(win);
+        
+        /* Small delay to allow Intuition to complete the refresh */
+        Delay(1);  /* 1/50th second delay */
     }
     
     if (deltaX == 0 && deltaY == 0 && deltaWidth == 0 && deltaHeight == 0)
     {
-        log_debug(LOG_GUI, "  No changes needed\n");
+        log_debug(LOG_GENERAL, "  No changes needed\n");
     }
     
     return TRUE;

@@ -27,6 +27,7 @@
 /* Backup system integration */
 #include "backup_session.h"
 #include "backup_catalog.h"
+#include "window_enumerator.h"
 
 /* Global backup context (initialized by ProcessDirectoryWithPreferences) */
 static BackupContext *g_backupContext = NULL;
@@ -37,10 +38,12 @@ static int CompareIconsWithPreferences(const void *a, const void *b,
 static void SortIconArrayWithPreferences(IconArray *iconArray, 
                                         const LayoutPreferences *prefs);
 static BOOL ProcessSingleDirectory(const char *path, 
-                                   const LayoutPreferences *prefs);
+                                   const LayoutPreferences *prefs,
+                                   FolderWindowTracker *windowTracker);
 static BOOL ProcessDirectoryRecursive(const char *path, 
                                      const LayoutPreferences *prefs, 
-                                     int recursion_level);
+                                     int recursion_level,
+                                     FolderWindowTracker *windowTracker);
 
 /* Forward declarations for column centering */
 static void CalculateLayoutPositions(IconArray *iconArray, 
@@ -66,6 +69,8 @@ BOOL ProcessDirectoryWithPreferences(const char *path,
     BOOL success = FALSE;
     BackupContext localContext;
     BackupPreferences backupPrefs;
+    FolderWindowTracker windowTracker;
+    BOOL trackerBuilt = FALSE;
     
     if (!path || !prefs)
     {
@@ -77,6 +82,27 @@ BOOL ProcessDirectoryWithPreferences(const char *path,
     strncpy(sanitizedPath, path, sizeof(sanitizedPath) - 1);
     sanitizedPath[sizeof(sanitizedPath) - 1] = '\0';
     sanitizeAmigaPath(sanitizedPath);
+    
+    /* Build window tracker if window moving is enabled */
+    if (prefs->moveOpenWindows)
+    {
+        log_info(LOG_GENERAL, "\n*** Building window tracker for open folder windows ***\n");
+        if (BuildFolderWindowList(&windowTracker))
+        {
+            trackerBuilt = TRUE;
+            log_info(LOG_GENERAL, "Window tracker built successfully: %lu window(s) tracked\n", 
+                    windowTracker.count);
+        }
+        else
+        {
+            log_warning(LOG_GENERAL, "Failed to build window tracker - window moving disabled for this run\n");
+            /* Continue without window moving - not a fatal error */
+        }
+    }
+    else
+    {
+        log_info(LOG_GENERAL, "Window moving disabled in preferences\n");
+    }
     
     /* Initialize backup session if backup is enabled */
     if (prefs->backupPrefs.enableUndoBackup)
@@ -122,11 +148,20 @@ BOOL ProcessDirectoryWithPreferences(const char *path,
     /* Start processing */
     if (recursive)
     {
-        success = ProcessDirectoryRecursive(sanitizedPath, prefs, 0);
+        success = ProcessDirectoryRecursive(sanitizedPath, prefs, 0, 
+                                           trackerBuilt ? &windowTracker : NULL);
     }
     else
     {
-        success = ProcessSingleDirectory(sanitizedPath, prefs);
+        success = ProcessSingleDirectory(sanitizedPath, prefs,
+                                        trackerBuilt ? &windowTracker : NULL);
+    }
+    
+    /* Free window tracker if it was built */
+    if (trackerBuilt)
+    {
+        log_info(LOG_GENERAL, "Freeing window tracker\n");
+        FreeFolderWindowList(&windowTracker);
     }
     
     /* End backup session if one was started */
@@ -766,7 +801,8 @@ static void CalculateLayoutPositionsWithColumnCentering(IconArray *iconArray,
 /*========================================================================*/
 
 static BOOL ProcessSingleDirectory(const char *path, 
-                                   const LayoutPreferences *prefs)
+                                   const LayoutPreferences *prefs,
+                                   FolderWindowTracker *windowTracker)
 {
     BPTR lock = 0;
     IconArray *iconArray = NULL;
@@ -876,7 +912,7 @@ static BOOL ProcessSingleDirectory(const char *path,
     if (prefs->resizeWindows)
     {
         printf("  Resizing window...\n");
-        resizeFolderToContents((char *)path, iconArray);
+        resizeFolderToContents((char *)path, iconArray, windowTracker, prefs);
     }
     
     /* Save icon positions to disk */
@@ -910,7 +946,8 @@ static BOOL ProcessSingleDirectory(const char *path,
 
 static BOOL ProcessDirectoryRecursive(const char *path, 
                                      const LayoutPreferences *prefs, 
-                                     int recursion_level)
+                                     int recursion_level,
+                                     FolderWindowTracker *windowTracker)
 {
     BPTR lock = 0;
     struct FileInfoBlock *fib = NULL;
@@ -930,7 +967,7 @@ static BOOL ProcessDirectoryRecursive(const char *path,
     }
     
     /* Process this directory first */
-    if (!ProcessSingleDirectory(path, prefs))
+    if (!ProcessSingleDirectory(path, prefs, windowTracker))
     {
         return FALSE; /* Stop if current directory fails */
     }
@@ -987,7 +1024,7 @@ static BOOL ProcessDirectoryRecursive(const char *path,
                 
                 /* Recursively process subdirectory */
                 printf("\nEntering: %s\n", subdir);
-                ProcessDirectoryRecursive(subdir, prefs, recursion_level + 1);
+                ProcessDirectoryRecursive(subdir, prefs, recursion_level + 1, windowTracker);
             }
         }
         success = TRUE;

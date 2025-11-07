@@ -26,10 +26,14 @@
 #include "utilities.h"
 #include "writeLog.h"
 #include "icon_misc.h"
+#include "window_enumerator.h"
+#include "layout_preferences.h"
 
 void CleanupWindow(void);
 int FormatIconsAndWindow(char *folder);
-void resizeFolderToContents(char *dirPath, IconArray *iconArray);
+void resizeFolderToContents(char *dirPath, IconArray *iconArray, 
+                           FolderWindowTracker *windowTracker,
+                           const LayoutPreferences *prefs);
 int InitializeWindow(void);
 void repoistionWindow(char *dirPath, int winWidth, int winHeight);
 void SetIconFont(void); 

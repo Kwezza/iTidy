@@ -82,7 +82,104 @@ int FormatIconsAndWindow(char *folder)
 #endif
 }
 
-void resizeFolderToContents(char *dirPath, IconArray *iconArray)
+/*------------------------------------------------------------------------*/
+/**
+ * @brief Count path depth (number of '/' separators)
+ * 
+ * Counts the number of directory levels in a path to help distinguish
+ * between folders with the same name at different depths.
+ * Examples:
+ *   "Workbench:Programs" → 0
+ *   "Workbench:Programs/Games" → 1
+ *   "Workbench:Programs/MagicWB/Programs" → 2
+ * 
+ * @param path Full path to analyze
+ * @return Number of '/' separators (depth level)
+ */
+/*------------------------------------------------------------------------*/
+static int CountPathDepth(const char *path)
+{
+    int depth = 0;
+    const char *p;
+    
+    if (!path)
+        return 0;
+    
+    for (p = path; *p != '\0'; p++)
+    {
+        if (*p == '/')
+            depth++;
+    }
+    
+    return depth;
+}
+
+/*------------------------------------------------------------------------*/
+/**
+ * @brief Extract folder name from full path
+ * 
+ * Extracts the last component of a path to use for window title matching.
+ * Examples:
+ *   "Work:Games/Action" → "Action"
+ *   "DH0:Utilities" → "Utilities"
+ *   "Workbench:" → "Workbench:"
+ * 
+ * @param path Full path to folder
+ * @param folderName Buffer to receive folder name
+ * @param bufferSize Size of folderName buffer
+ */
+/*------------------------------------------------------------------------*/
+static void ExtractFolderNameFromPath(const char *path, char *folderName, size_t bufferSize)
+{
+    const char *lastSlash;
+    const char *lastColon;
+    const char *nameStart;
+    
+    if (!path || !folderName || bufferSize == 0)
+    {
+        if (folderName && bufferSize > 0)
+            folderName[0] = '\0';
+        return;
+    }
+    
+    /* Find last '/' or ':' in path */
+    lastSlash = strrchr(path, '/');
+    lastColon = strrchr(path, ':');
+    
+    /* Determine where the folder name starts */
+    if (lastSlash != NULL)
+    {
+        /* Path has '/' - use everything after last '/' */
+        nameStart = lastSlash + 1;
+    }
+    else if (lastColon != NULL)
+    {
+        /* Path has ':' but no '/' - check if it's a root volume */
+        if (*(lastColon + 1) == '\0')
+        {
+            /* Root volume like "DH0:" - use entire path including colon */
+            nameStart = path;
+        }
+        else
+        {
+            /* Path like "DH0:Folder" - use everything after colon */
+            nameStart = lastColon + 1;
+        }
+    }
+    else
+    {
+        /* No path separators - use entire string */
+        nameStart = path;
+    }
+    
+    /* Copy folder name to buffer */
+    strncpy(folderName, nameStart, bufferSize - 1);
+    folderName[bufferSize - 1] = '\0';
+}
+
+void resizeFolderToContents(char *dirPath, IconArray *iconArray,
+                           FolderWindowTracker *windowTracker,
+                           const LayoutPreferences *prefs)
 {
 #if PLATFORM_AMIGA
     int i, maxWidth = 0, maxHeight = 0;
@@ -139,9 +236,58 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray)
 
     /* Note: repoistionWindow will clamp to screen size and add chrome */
     repoistionWindow(dirPath, maxWidth, maxHeight);
+    
+    /* Move any open windows to match the newly saved geometry (if enabled) */
+    if (prefs && prefs->moveOpenWindows)
+    {
+        char folderName[256];
+        folderWindowSize savedGeometry;
+        UWORD viewMode;  /* Not used, but required by GetFolderWindowSettings */
+        struct Window *targetWindow;
+        
+        /* Get the geometry that was just saved by repoistionWindow */
+        if (GetFolderWindowSettings(dirPath, &savedGeometry, &viewMode))
+        {
+            /* Extract folder name from path for window title matching */
+            ExtractFolderNameFromPath(dirPath, folderName, sizeof(folderName));
+            
+            log_debug(LOG_GENERAL, "Looking for open window matching folder: '%s'\n", folderName);
+            
+            /* Find the window by title using a fresh window search.
+             * This is safer than using cached pointers which may have become stale. */
+            targetWindow = FindWindowByTitle(folderName);
+            
+            if (targetWindow)
+            {
+                log_info(LOG_GENERAL, "Found matching window '%s' - applying new geometry\n", folderName);
+                log_debug(LOG_GENERAL, "  Path: '%s', Depth: %d\n", dirPath, CountPathDepth(dirPath));
+                
+                if (ApplyWindowGeometry(targetWindow,
+                                      (WORD)savedGeometry.left, (WORD)savedGeometry.top,
+                                      (WORD)savedGeometry.width, (WORD)savedGeometry.height))
+                {
+                    log_info(LOG_GENERAL, "Successfully moved window '%s' to match saved geometry\n", folderName);
+                }
+                else
+                {
+                    log_warning(LOG_GENERAL, "Failed to apply geometry to window '%s'\n", folderName);
+                }
+            }
+            else
+            {
+                log_debug(LOG_GENERAL, "No open window found for '%s' - window may not be open\n", folderName);
+            }
+        }
+        else
+        {
+            log_warning(LOG_GENERAL, "Failed to read saved geometry for '%s'\n", dirPath);
+        }
+    }
 #else
     (void)dirPath;
     (void)iconArray;
+    (void)windowTracker;
+    (void)prefs;
 #endif
 }
 

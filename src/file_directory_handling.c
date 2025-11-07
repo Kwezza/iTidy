@@ -152,7 +152,8 @@ void ProcessDirectory(char *path, BOOL processSubDirs, int recursion_level)
             if (user_dontResize == FALSE) {
                 IconArray *tempIconArray = CreateIconArrayFromPath(lock, path);
                 if (tempIconArray) {
-                    resizeFolderToContents(path, tempIconArray);
+                    /* Old code path - no window tracker or prefs available */
+                    resizeFolderToContents(path, tempIconArray, NULL, NULL);
                     FreeIconArray(tempIconArray);
                 }
             }

@@ -124,6 +124,7 @@ typedef struct {
     
     /* Window Management */
     BOOL resizeWindows;              /* Auto-resize drawer windows */
+    BOOL moveOpenWindows;            /* Move/resize open folder windows to match saved geometry */
     UWORD minIconsPerRow;            /* Minimum columns (prevent 1×N layouts) */
     UWORD maxIconsPerRow;            /* Maximum columns (0 = no limit) */
     UWORD maxWindowWidthPct;         /* Max window width as % of screen */
@@ -172,6 +173,7 @@ typedef struct {
 #define DEFAULT_OPTIMIZE_COLUMNS    TRUE
 #define DEFAULT_TEXT_ALIGNMENT      TEXT_ALIGN_BOTTOM  /* Default: align icons to bottom of row */
 #define DEFAULT_RESIZE_WINDOWS      TRUE
+#define DEFAULT_MOVE_OPEN_WINDOWS   TRUE  /* Default: move open windows to match new geometry */
 #define DEFAULT_MIN_ICONS_PER_ROW   2   /* Prevent 1×N layouts */
 #define DEFAULT_MAX_ICONS_PER_ROW   0   /* Auto: Calculate from screen width */
 #define DEFAULT_MAX_WIDTH_PCT       55

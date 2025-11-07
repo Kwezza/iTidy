@@ -37,6 +37,7 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     
     /* Window Management */
     prefs->resizeWindows = DEFAULT_RESIZE_WINDOWS;
+    prefs->moveOpenWindows = DEFAULT_MOVE_OPEN_WINDOWS;
     prefs->minIconsPerRow = DEFAULT_MIN_ICONS_PER_ROW;
     prefs->maxIconsPerRow = DEFAULT_MAX_ICONS_PER_ROW;
     prefs->maxWindowWidthPct = DEFAULT_MAX_WIDTH_PCT;

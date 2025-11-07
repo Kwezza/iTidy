@@ -32,6 +32,7 @@ typedef struct FolderWindowInfo
     WORD top;                   /* Current Y position */
     WORD width;                 /* Current width */
     WORD height;                /* Current height */
+    BOOL alreadyMoved;          /* Flag to prevent moving same window twice */
 } FolderWindowInfo;
 
 /**
@@ -111,6 +112,19 @@ void FreeFolderWindowList(FolderWindowTracker *tracker);
  */
 /*------------------------------------------------------------------------*/
 void Debug_PrintFolderWindowList(const FolderWindowTracker *tracker);
+
+/**
+ * @brief Find an open window by title
+ * 
+ * Searches the Workbench screen for a folder window with the specified title.
+ * This uses BuildFolderWindowList internally to get a fresh snapshot of open
+ * folder windows, which is safer than using cached window pointers.
+ * 
+ * @param title The window title to search for (case-sensitive)
+ * @return struct Window* Pointer to the window if found, NULL otherwise
+ */
+/*------------------------------------------------------------------------*/
+struct Window *FindWindowByTitle(const char *title);
 
 /**
  * @brief Move and resize a window to specified geometry

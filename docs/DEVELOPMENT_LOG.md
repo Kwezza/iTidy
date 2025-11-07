@@ -5,12 +5,12 @@ iTidy is an Amiga icon management utility that allows users to sort and arrange 
 
 ## Development Timeline
 
-### Latest: Folder Window Tracking System with Smart Backdrop Detection (November 6, 2025)
+### Latest: Folder Window Tracking System with Smart Backdrop Detection (November 6-7, 2025)
 
 #### Implemented Window Geometry Restoration System
 * **Purpose**: Capture and restore folder window geometry before/after iTidy runs
 * **Status**: Complete
-* **Date**: November 6, 2025
+* **Date**: November 6-7, 2025
 
 **Problem Addressed:**
 - When iTidy repositions/resizes folder windows, users only see icons move but not the window size change
@@ -22,6 +22,31 @@ iTidy is an Amiga icon management utility that allows users to sort and arrange 
 - Store window geometry (position, size, title)
 - Exclude system windows (backdrop desktop) that shouldn't be manipulated
 - Handle edge cases: folders named "Workbench", volume roots showing disk stats
+- Safely move and resize windows with proper bounds checking
+
+**High-Level Architecture:**
+
+The window restoration system consists of three major components:
+
+1. **Window Discovery & Classification** - Identify and classify all open Workbench windows
+2. **Geometry Capture** - Store window positions, sizes, and identifiers in dynamic array
+3. **Geometry Restoration** - Find windows by title and apply saved geometry with validation
+
+**Core Data Structures:**
+```c
+typedef struct FolderWindowInfo {
+    struct Window *window;      /* Pointer to Window structure */
+    char title[256];            /* Window title for matching */
+    WORD left, top;             /* Position */
+    WORD width, height;         /* Dimensions */
+} FolderWindowInfo;
+
+typedef struct FolderWindowTracker {
+    FolderWindowInfo *windows;  /* Dynamic array */
+    ULONG count;                /* Current window count */
+    ULONG capacity;             /* Allocated capacity */
+} FolderWindowTracker;
+```
 
 **Solution Implemented:**
 
@@ -136,6 +161,35 @@ BOOL ApplyWindowGeometry(struct Window *win, WORD left, WORD top, WORD width, WO
    - Find matching open window by title
    - Call `ApplyWindowGeometry()` with saved geometry
 5. Call `FreeFolderWindowList(&tracker)` to cleanup
+
+**Phase 6 - Bounds Checking and Validation (November 7, 2025):**
+Added comprehensive validation to `ApplyWindowGeometry()` to ensure windows remain within screen boundaries:
+
+**Validation Implemented:**
+- **Minimum Size**: Respects `win->MinWidth`/`MinHeight` (defaults to 50×50)
+- **Maximum Size**: Clamps width/height to `screenWidth`/`screenHight`
+- **Position Bounds**: Prevents negative positions, ensures window stays on screen
+- **Edge Detection**: Adjusts position if window would extend past screen boundaries
+
+**Screen Dimension Access:**
+- Uses global `screenWidth` and `screenHight` variables from `main_gui.c`
+- Variables set by `InitializeWindow()` from actual Workbench screen
+- Ensures accurate bounds checking for current display mode
+
+**Enhanced Logging:**
+```
+ApplyWindowGeometry: "Programs"
+  Screen:  800x600
+  Current: (32, 338) size 768x262
+  Target:  (20, 20) size 50x50 (adjusted)
+  Delta:   move (-12, -318) resize (-718, -212)
+```
+
+**Safety Features:**
+- Logs each adjustment with reason (e.g., "Width exceeds screen, clamping")
+- Marks adjusted geometry with "(adjusted)" in output
+- Prevents windows from being sized/positioned off-screen
+- Handles edge cases: oversized windows, negative positions, out-of-bounds requests
 
 **Next Steps:**
 - Integrate into actual iTidy run workflow (currently debug-only)
