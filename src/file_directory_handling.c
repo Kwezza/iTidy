@@ -33,7 +33,7 @@ int HasSlaveFile(char *path)
     int fileCount = 0;
 
 #ifdef DEBUG
-    append_to_log("DEBUG: HasSlaveFile ENTRY: path='%s'\n", path);
+    log_debug(LOG_GENERAL, "HasSlaveFile ENTRY: path='%s'\n", path);
 #endif
 #ifdef DEBUGLocks
     append_to_log("Locking directory (HasSlaveFile): %s\n", path);
@@ -42,7 +42,7 @@ int HasSlaveFile(char *path)
     lock = Lock((STRPTR)path, ACCESS_READ);
     if (!lock) {
 #ifdef DEBUG
-        append_to_log("DEBUG: HasSlaveFile - Lock failed for '%s'\n", path);
+        log_debug(LOG_GENERAL, "HasSlaveFile - Lock failed for '%s'\n", path);
 #endif
         // Assume it has no slave file if we can't lock the directory
         return 0;
@@ -53,7 +53,7 @@ int HasSlaveFile(char *path)
     if (!fib) {
         Printf("Failed to allocate FileInfoBlock\n");
 #ifdef DEBUG
-        append_to_log("DEBUG: HasSlaveFile - AllocDosObject failed\n");
+        log_debug(LOG_GENERAL, "HasSlaveFile - AllocDosObject failed\n");
 #endif
 #ifdef DEBUGLocks
         append_to_log("Unlocking directory: %s\n", path);
@@ -63,11 +63,11 @@ int HasSlaveFile(char *path)
     }
 
 #ifdef DEBUG
-    append_to_log("DEBUG: HasSlaveFile - calling Examine()\n");
+    log_debug(LOG_GENERAL, "HasSlaveFile - calling Examine()\n");
 #endif
     if (Examine(lock, fib)) {
 #ifdef DEBUG
-        append_to_log("DEBUG: HasSlaveFile - Examine() successful, starting ExNext() loop\n");
+        log_debug(LOG_GENERAL, "HasSlaveFile - Examine() successful, starting ExNext() loop\n");
 #endif
         while (ExNext(lock, fib)) {
             fileCount++;
@@ -75,7 +75,7 @@ int HasSlaveFile(char *path)
                 const char *ext = strrchr(fib->fib_FileName, '.');
                 if (ext && strncasecmp_custom(ext, ".slave", 6) == 0) {
 #ifdef DEBUG
-                    append_to_log("DEBUG: HasSlaveFile - Found .slave file: '%s'\n", fib->fib_FileName);
+                    log_debug(LOG_GENERAL, "HasSlaveFile - Found .slave file: '%s'\n", fib->fib_FileName);
 #endif
                     hasSlave = 1;
                     break;
@@ -83,11 +83,11 @@ int HasSlaveFile(char *path)
             }
         }
 #ifdef DEBUG
-        append_to_log("DEBUG: HasSlaveFile - ExNext() loop completed, checked %d entries\n", fileCount);
+        log_debug(LOG_GENERAL, "HasSlaveFile - ExNext() loop completed, checked %d entries\n", fileCount);
 #endif
     } else {
 #ifdef DEBUG
-        append_to_log("DEBUG: HasSlaveFile - Examine() failed\n");
+        log_debug(LOG_GENERAL, "HasSlaveFile - Examine() failed\n");
 #endif
     }
 

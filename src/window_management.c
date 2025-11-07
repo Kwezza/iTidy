@@ -59,7 +59,7 @@ int FormatIconsAndWindow(char *folder)
     int minAverageWidthPercent = -100;
 
     lock = Lock(folder, ACCESS_READ);
-        #ifdef DEBUGLocks
+    #ifdef DEBUGLocks
     append_to_log("Locking directory (FormatIconsAndWindow): %s\n", folder);
     #endif
     if (lock)
@@ -71,7 +71,7 @@ int FormatIconsAndWindow(char *folder)
         printf("Failed to lock the directory: %s\n", folder);
         return 1;
     }
-            #ifdef DEBUGLocks
+    #ifdef DEBUGLocks
     append_to_log("Unlocking directory: %s\n", folder);
     #endif
     UnLock(lock);
@@ -188,10 +188,10 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray,
     int rightMargin = 0;
     int bottomMargin = 0;
 
-#ifdef DEBUG
-    append_to_log("DEBUG: resizeFolderToContents ENTRY: dirPath='%s', iconArray->size=%d\n", 
+
+    log_info(LOG_GENERAL, "resizeFolderToContents ENTRY: dirPath='%s', iconArray->size=%d\n", 
                   dirPath, iconArray ? iconArray->size : -1);
-#endif
+
 
     if (user_folderViewMode == DDVM_BYICON)
     {
@@ -209,10 +209,9 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray,
         maxWidth += rightMargin;
         maxHeight += bottomMargin;
         
-#ifdef DEBUG
-        append_to_log("DEBUG: Content dimensions: %d×%d (with margins)\n", 
-                      maxWidth, maxHeight);
-#endif
+
+        log_info(LOG_GENERAL, "Content dimensions: %d×%d (with margins)\n",                       maxWidth, maxHeight);
+
     }
     else
     {
@@ -220,17 +219,16 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray,
         maxHeight = WindowHeightTextOnly;
     }
 
-#ifdef DEBUG
-    append_to_log("DEBUG: Calculated maxWidth=%d, maxHeight=%d before calling repoistionWindow\n", 
-                  maxWidth, maxHeight);
-#endif
+
+    log_info(LOG_GENERAL, "Calculated maxWidth=%d, maxHeight=%d before calling repoistionWindow", maxWidth, maxHeight);
+
 
     /* Safety check: Don't call repoistionWindow with 0 dimensions when no icons found */
     if (iconArray->size == 0 && user_folderViewMode == DDVM_BYICON)
     {
-#ifdef DEBUG
-        append_to_log("DEBUG: Skipping repoistionWindow - no icons in folder\n");
-#endif
+
+        log_info(LOG_GENERAL, "Skipping repoistionWindow - no icons in folder");
+
         return;
     }
 
@@ -250,9 +248,9 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray,
         {
             /* Extract folder name from path for window title matching */
             ExtractFolderNameFromPath(dirPath, folderName, sizeof(folderName));
-            
-            log_debug(LOG_GENERAL, "Looking for open window matching folder: '%s'\n", folderName);
-            
+
+            log_info(LOG_GENERAL, "Looking for open window matching folder: '%s'\n", folderName);
+
             /* Find the window by title using a fresh window search.
              * This is safer than using cached pointers which may have become stale. */
             targetWindow = FindWindowByTitle(folderName);
@@ -260,8 +258,8 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray,
             if (targetWindow)
             {
                 log_info(LOG_GENERAL, "Found matching window '%s' - applying new geometry\n", folderName);
-                log_debug(LOG_GENERAL, "  Path: '%s', Depth: %d\n", dirPath, CountPathDepth(dirPath));
-                
+                log_info(LOG_GENERAL, "  Path: '%s', Depth: %d\n", dirPath, CountPathDepth(dirPath));
+
                 if (ApplyWindowGeometry(targetWindow,
                                       (WORD)savedGeometry.left, (WORD)savedGeometry.top,
                                       (WORD)savedGeometry.width, (WORD)savedGeometry.height))
@@ -270,7 +268,7 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray,
                 }
                 else
                 {
-                    log_warning(LOG_GENERAL, "Failed to apply geometry to window '%s'\n", folderName);
+                    log_info(LOG_GENERAL, "Failed to apply geometry to window '%s'\n", folderName);
                 }
             }
             else
@@ -468,10 +466,10 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight)
     folderWindowSize newFolderInfo;
     
 #ifdef DEBUG
-    append_to_log("Reposition window: %s (content: %d×%d)\n", dirPath, winWidth, winHeight);
-    append_to_log("  Padding: %d, disableVolumeGauge: %d\n", 
+    log_debug(LOG_GUI, "Reposition window: %s (content: %d×%d)", dirPath, winWidth, winHeight);
+    log_debug(LOG_GUI, "  Padding: %d, disableVolumeGauge: %d", 
                   PADDING_WIDTH, prefsWorkbench.disableVolumeGauge);
-    append_to_log("  IControl: currentBarWidth=%d, currentLeftBarWidth=%d, currentWindowBarHeight=%d, currentBarHeight=%d\n",
+    log_debug(LOG_GUI, "  IControl: currentBarWidth=%d, currentLeftBarWidth=%d, currentWindowBarHeight=%d, currentBarHeight=%d",
                   prefsIControl.currentBarWidth, prefsIControl.currentLeftBarWidth,
                   prefsIControl.currentWindowBarHeight, prefsIControl.currentBarHeight);
 #endif
@@ -485,7 +483,7 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight)
         finalWidth += prefsIControl.currentCGaugeWidth;
 
 #ifdef DEBUG
-        append_to_log("  Root dir detected and VolumeGauge enabled. Adding CGauge width: %d\n", 
+        log_debug(LOG_GUI, "  Root dir detected and VolumeGauge enabled. Adding CGauge width: %d", 
                       prefsIControl.currentCGaugeWidth);
 #endif
     }

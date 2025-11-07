@@ -151,8 +151,8 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
     }
 
 #ifdef DEBUG
-    append_to_log("CreateIconArrayFromPath ENTRY: lock=%ld, dirPath='%s'\n", (LONG)lock, dirPath);
-    append_to_log("Using OPTIMIZED pattern matching (MatchFirst/MatchNext)\n");
+    log_debug(LOG_ICONS, "CreateIconArrayFromPath ENTRY: lock=%ld, dirPath='%s'", (LONG)lock, dirPath);
+    log_debug(LOG_ICONS, "Using OPTIMIZED pattern matching (MatchFirst/MatchNext)");
 #endif
 
     iconArray->hasOnlyBorderlessIcons = false;
@@ -161,13 +161,13 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
     {
         fprintf(stderr, "Error: Failed to create icon array.\n");
 #ifdef DEBUG
-        append_to_log("ERROR: Failed to create icon array\n");
+        log_error(LOG_ICONS, "Failed to create icon array");
 #endif
         return NULL;
     }
 
 #ifdef DEBUG
-    append_to_log("Icon array created successfully\n");
+    log_debug(LOG_ICONS, "Icon array created successfully");
 #endif
 
     /* ================================================================
@@ -186,14 +186,14 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
     {
         fprintf(stderr, "Error: Failed to allocate AnchorPath for pattern matching.\n");
 #ifdef DEBUG
-        append_to_log("ERROR: Failed to allocate AnchorPath (out of memory?)\n");
+        log_error(LOG_ICONS, "Failed to allocate AnchorPath (out of memory?)");
 #endif
         FreeIconArray(iconArray);
         return NULL;
     }
 
 #ifdef DEBUG
-    append_to_log("AnchorPath allocated, preparing pattern-based scan\n");
+    log_debug(LOG_ICONS, "AnchorPath allocated, preparing pattern-based scan");
 #endif
 
     /* ================================================================
@@ -282,7 +282,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
         fib = &anchorPath->ap_Info;
         
 #ifdef DEBUG
-        append_to_log("DEBUG: Pattern matched .info file: '%s'\n", fib->fib_FileName);
+        log_debug(LOG_ICONS, "Pattern matched .info file: '%s'\n", fib->fib_FileName);
 #endif
         
         /* Update progress spinner (user feedback during long scans) */
@@ -299,7 +299,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
         GetFullPath(dirPath, fib, fullPathAndFile, sizeof(fullPathAndFile));
         
 #ifdef DEBUG
-        append_to_log("DEBUG: Full path to .info file: '%s'\n", fullPathAndFile);
+        log_debug(LOG_ICONS, "Full path to .info file: '%s'\n", fullPathAndFile);
 #endif
 
         /* ============================================================
@@ -316,7 +316,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
          */
         int isDiskIcon = isIconTypeDisk(fullPathAndFile, fib->fib_DirEntryType);
 #ifdef DEBUG
-        append_to_log("DEBUG: isIconTypeDisk('%s') = %d (0=not disk, 1=is disk)\n", fullPathAndFile, isDiskIcon);
+        log_debug(LOG_ICONS, "isIconTypeDisk('%s') = %d (0=not disk, 1=is disk)\n", fullPathAndFile, isDiskIcon);
 #endif
         if (isDiskIcon == 0)
         {
@@ -401,34 +401,43 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
 
                     /* Determine icon size based on format */
 #ifdef DEBUG
-                    append_to_log("Detecting icon type for: %s\n", fullPathAndFile);
+                    log_debug(LOG_ICONS, "Detecting icon type for: %s\n", fullPathAndFile);
 #endif
                     if (IsNewIconPath(fullPathAndFile) && user_forceStandardIcons==0)
                     {
 #ifdef DEBUG
-                        append_to_log("  -> Detected as NewIcon format\n");
+                        log_debug(LOG_ICONS, "  -> Detected as NewIcon format\n");
 #endif
                         newIcon.icon_type = icon_type_newIcon;
                         GetNewIconSizePath(fullPathAndFile, &iconSize);
                         count_icon_type_newIcon++;
+                        
+                        /* Log final detection result at INFO level */
+                        log_info(LOG_ICONS, "Icon type: NewIcon format - %s\n", fileNameNoInfo);
                     }
                     else if (isOS35IconFormat(fullPathAndFile) && user_forceStandardIcons==0)
                     {
                         newIcon.icon_type = icon_type_os35;
 #ifdef DEBUG
-                        append_to_log("  -> Detected as OS3.5 icon format\n");
+                        log_debug(LOG_ICONS, "  -> Detected as OS3.5 icon format\n");
 #endif
                         getOS35IconSize(fullPathAndFile, &iconSize);
                         count_icon_type_os35++;
+                        
+                        /* Log final detection result at INFO level */
+                        log_info(LOG_ICONS, "Icon type: OS3.5 format - %s\n", fileNameNoInfo);
                     }
                     else
                     {
                         newIcon.icon_type = icon_type_standard;
 #ifdef DEBUG
-                        append_to_log("  -> Detected as standard Workbench icon format\n");
+                        log_debug(LOG_ICONS, "  -> Detected as standard Workbench icon format\n");
 #endif
                         GetStandardIconSize(fullPathAndFile, &iconSize);
                         count_icon_type_standard++;
+                        
+                        /* Log final detection result at INFO level */
+                        log_info(LOG_ICONS, "Icon type: Standard Workbench format - %s\n", fileNameNoInfo);
                     }
 
 
@@ -580,7 +589,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                 else
                 {
 #ifdef DEBUG
-                    append_to_log("DEBUG: Skipping icon with empty or dot-only name: '%s'\n", fib->fib_FileName);
+                    log_debug(LOG_ICONS, "Skipping icon with empty or dot-only name: '%s'\n", fib->fib_FileName);
 #endif
                 }
             } /* End: if (isIconLeftOut()) */
@@ -632,23 +641,26 @@ append_to_log("Has only borderless icons: %d\n", iconArray->hasOnlyBorderlessIco
                         (endTime.tv_micro - startTime.tv_micro);
         elapsedMillis = elapsedMicros / 1000;
         
-        /* Log performance metrics */
-        append_to_log("\n==== ICON LOADING PERFORMANCE ====\n");
-        append_to_log("CreateIconArrayFromPath() execution time:\n");
-        append_to_log("  %lu microseconds (%lu.%03lu ms)\n", 
-                      elapsedMicros, elapsedMillis, elapsedMicros % 1000);
-        append_to_log("  Icons loaded: %d\n", iconArray->size);
-        if (iconArray->size > 0)
+        /* Log performance metrics only if enabled */
+        if (is_performance_logging_enabled())
         {
-            append_to_log("  Time per icon: %lu microseconds\n", 
-                          elapsedMicros / iconArray->size);
+            append_to_log("==== ICON LOADING PERFORMANCE ====");
+            append_to_log("CreateIconArrayFromPath() execution time:");
+            append_to_log("  %lu microseconds (%lu.%03lu ms)\n", 
+                          elapsedMicros, elapsedMillis, elapsedMicros % 1000);
+            append_to_log("  Icons loaded: %d\n", iconArray->size);
+            if (iconArray->size > 0)
+            {
+                append_to_log("  Time per icon: %lu microseconds\n", 
+                              elapsedMicros / iconArray->size);
+            }
+            append_to_log("  Folder: %s", dirPath);
+            append_to_log("==================================");
+            
+            /* Also print to console for immediate visibility */
+            printf("  [TIMING] Icon loading: %lu.%03lu ms for %lu icons\n",
+                   elapsedMillis, elapsedMicros % 1000, (unsigned long)iconArray->size);
         }
-        append_to_log("  Folder: %s\n", dirPath);
-        append_to_log("==================================\n\n");
-        
-        /* Also print to console for immediate visibility */
-        printf("  [TIMING] Icon loading: %lu.%03lu ms for %lu icons\n",
-               elapsedMillis, elapsedMicros % 1000, (unsigned long)iconArray->size);
     }
 
     return iconArray;
@@ -1146,7 +1158,7 @@ BOOL IsValidIcon(const char *iconPath)
     else
     {
         /* Failed to retrieve the DiskObject, so the icon is invalid */
-        append_to_log("Icon is NOT a valid icon: %s\n", iconPath);
+        log_message(LOG_ICONS, LOG_LEVEL_WARNING, "Icon is NOT a valid icon: %s", iconPath);
         return FALSE;
     }
 }

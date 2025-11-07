@@ -41,7 +41,125 @@ struct iTidyMainWindow {
 
 ## Development Timeline
 
-### Latest: Beta Options Preferences Persistence Fix (November 7, 2025)
+### Latest: Performance Logging Toggle Feature (November 7, 2025)
+
+#### Added User-Controllable Performance Logging
+* **Purpose**: Allow users to enable/disable performance timing logs via Beta Options
+* **Status**: Complete - Implemented and tested
+* **Date**: November 7, 2025
+
+**Feature Overview:**
+Performance logging was previously always enabled, cluttering logs with timing statistics. Users can now control this via a checkbox in the Beta Options window, keeping logs clean by default while allowing detailed performance analysis when needed.
+
+**Implementation Details:**
+
+**Files Modified:**
+1. `src/layout_preferences.h` - Added `enable_performance_logging` preference field and default
+2. `src/layout_preferences.c` - Initialize performance logging preference to FALSE
+3. `src/GUI/beta_options_window.h` - Added performance logging checkbox gadget and state
+4. `src/GUI/beta_options_window.c` - Created performance logging checkbox UI and handlers
+5. `src/GUI/main_window.h` - Added `beta_performance_logging` to temporary structure
+6. `src/GUI/main_window.c` - Integrated performance logging with apply/advanced flow
+7. `src/writeLog.h` - Added performance logging control functions
+8. `src/writeLog.c` - Implemented performance logging enable/disable with global flag
+9. `src/icon_management.c` - Made icon loading performance logs conditional
+10. `src/aspect_ratio_layout.c` - Made aspect ratio calculation performance logs conditional
+11. `src/main_gui.c` - Disabled performance logging by default on startup
+
+**Key Changes:**
+
+1. **Preference Structure:**
+```c
+typedef struct {
+    /* ... existing fields ... */
+    BOOL enable_performance_logging;  /* Enable performance timing logs */
+} LayoutPreferences;
+
+#define DEFAULT_PERFORMANCE_LOGGING_ENABLED  FALSE  /* Disabled by default */
+```
+
+2. **Beta Options Window:**
+   - Added new checkbox: "Enable performance timing logs"
+   - Gadget ID: `GID_BETA_PERFORMANCE_LOG` (2005)
+   - Default state: Unchecked (disabled)
+   - Position: After memory logging checkbox
+   - Window height adjusted to accommodate new checkbox
+
+3. **Global Performance Logging Control:**
+```c
+// writeLog.c
+static BOOL g_performanceLoggingEnabled = FALSE;
+
+void set_performance_logging_enabled(BOOL enabled);
+BOOL is_performance_logging_enabled(void);
+```
+
+4. **Conditional Performance Logging:**
+   - Icon loading performance (icon_management.c):
+     ```c
+     if (is_performance_logging_enabled()) {
+         append_to_log("==== ICON LOADING PERFORMANCE ====");
+         // ... timing statistics ...
+     }
+     ```
+   - Aspect ratio calculations (aspect_ratio_layout.c):
+     ```c
+     if (is_performance_logging_enabled()) {
+         append_to_log("==== FLOATING POINT PERFORMANCE ====");
+         // ... timing statistics ...
+     }
+     ```
+   - Logging statistics (writeLog.c):
+     ```c
+     if (!g_performanceLoggingEnabled) {
+         return;  // Skip printing stats
+     }
+     ```
+
+5. **Integration with Main Window:**
+   - Added `beta_performance_logging` field to `iTidyMainWindow` structure
+   - Initialized to `DEFAULT_PERFORMANCE_LOGGING_ENABLED` on startup
+   - Properly synced with preferences in Apply button handler
+   - Properly synced with Advanced window's temporary preferences
+   - Persists across Advanced window sessions
+
+**Data Flow:**
+```
+Program Start
+  ↓ set_performance_logging_enabled(FALSE) - Disabled by default
+User opens Beta Options window
+  ↓ Checkbox loads current state
+User enables performance logging
+  ↓ Checkbox state saved to preferences
+  ↓ set_performance_logging_enabled(TRUE) called immediately
+User clicks Apply button
+  ↓ Performance logging setting applied to processing
+  ↓ Icon loading/aspect ratio functions check flag
+  → Performance logs written only if enabled
+```
+
+**Performance Sections Controlled:**
+- Icon loading performance (CreateIconArrayFromPath execution time)
+- Aspect ratio calculation performance (CalculateLayoutWithAspectRatio execution time)
+- Logging system performance statistics (print_log_performance_stats output)
+
+**Benefits:**
+- Clean logs by default (no performance clutter)
+- Performance analysis available on-demand
+- Timing infrastructure always active (minimal overhead)
+- User-friendly toggle in Beta Options window
+- Immediate effect when setting is changed
+
+**Testing Notes:**
+- Compiled successfully with VBCC
+- No errors or warnings related to new code
+- Performance logging sections properly suppressed when disabled
+- Checkbox state persists across window sessions
+- Setting applies immediately when Beta Options OK is clicked
+
+---
+
+### Beta Options Preferences Persistence Fix (November 7, 2025)
 
 #### Fixed Settings Loss Across Advanced Window Sessions
 * **Purpose**: Ensure beta preferences persist when Advanced window is closed and reopened

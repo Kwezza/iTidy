@@ -319,7 +319,7 @@ void CalculateLayoutWithAspectRatio(const IconArray *iconArray,
             maxCols = 20;
         
 #ifdef DEBUG
-        append_to_log("Auto mode: effectiveWidth=%d, margins=%d, baseMaxCols=%d, maxCols=%d\n",
+        append_to_log("Auto mode: effectiveWidth=%d, margins=%d, baseMaxCols=%d, maxCols=%d",
                       effectiveWidth, margins, baseMaxCols, maxCols);
 #endif
     }
@@ -329,13 +329,13 @@ void CalculateLayoutWithAspectRatio(const IconArray *iconArray,
         maxCols = prefs->maxIconsPerRow;
         
 #ifdef DEBUG
-        append_to_log("Manual mode: maxCols=%d (from preferences)\n", maxCols);
+        append_to_log("Manual mode: maxCols=%d (from preferences)", maxCols);
 #endif
     }
     
     /* STAGE 1: Calculate ideal layout based on aspect ratio */
 #ifdef DEBUG
-    append_to_log("\n--- STAGE 1: Calculate Ideal Layout ---\n");
+    append_to_log("\n--- STAGE 1: Calculate Ideal Layout ---");
 #endif
     
     idealColumns = CalculateOptimalIconsPerRow(
@@ -358,22 +358,22 @@ void CalculateLayoutWithAspectRatio(const IconArray *iconArray,
                   chrome;
     
 #ifdef DEBUG
-    append_to_log("Ideal layout: %d cols × %d rows\n", idealColumns, idealRows);
-    append_to_log("Ideal window: %d×%d pixels\n", idealWidth, idealHeight);
+    append_to_log("Ideal layout: %d cols × %d rows", idealColumns, idealRows);
+    append_to_log("Ideal window: %d×%d pixels", idealWidth, idealHeight);
 #endif
     
     /* STAGE 2: Check if ideal layout fits on screen */
 #ifdef DEBUG
-    append_to_log("\n--- STAGE 2: Check Screen Fit ---\n");
+    append_to_log("\n--- STAGE 2: Check Screen Fit ---");
 #endif
     
     fitsWidth = (idealWidth <= maxUsableWidth);
     fitsHeight = (idealHeight <= maxUsableHeight);
     
 #ifdef DEBUG
-    append_to_log("Fits width: %s (%d <= %d)\n", 
+    append_to_log("Fits width: %s (%d <= %d)", 
                   fitsWidth ? "YES" : "NO", idealWidth, maxUsableWidth);
-    append_to_log("Fits height: %s (%d <= %d)\n", 
+    append_to_log("Fits height: %s (%d <= %d)", 
                   fitsHeight ? "YES" : "NO", idealHeight, maxUsableHeight);
 #endif
     
@@ -381,7 +381,7 @@ void CalculateLayoutWithAspectRatio(const IconArray *iconArray,
     {
         /* Perfect fit! Use ideal aspect ratio layout */
 #ifdef DEBUG
-        append_to_log("Result: FITS - Using ideal aspect ratio layout\n");
+        append_to_log("Result: FITS - Using ideal aspect ratio layout");
 #endif
         *finalColumns = idealColumns;
         *finalRows = idealRows;
@@ -390,7 +390,7 @@ void CalculateLayoutWithAspectRatio(const IconArray *iconArray,
     {
         /* Doesn't fit - apply overflow strategy */
 #ifdef DEBUG
-        append_to_log("\n--- STAGE 3: Apply Overflow Strategy ---\n");
+        append_to_log("\n--- STAGE 3: Apply Overflow Strategy ---");
         append_to_log("Overflow mode: ");
         switch (prefs->overflowMode)
         {
@@ -490,22 +490,25 @@ void CalculateLayoutWithAspectRatio(const IconArray *iconArray,
                         (endTime.tv_micro - startTime.tv_micro);
         elapsedMillis = elapsedMicros / 1000;
         
-        /* Log performance metrics */
-        append_to_log("\n==== FLOATING POINT PERFORMANCE ====\n");
-        append_to_log("CalculateLayoutWithAspectRatio() execution time:\n");
-        append_to_log("  %lu microseconds (%lu.%03lu ms)\n", 
-                      elapsedMicros, elapsedMillis, elapsedMicros % 1000);
-        append_to_log("  Icons processed: %d\n", iconArray->size);
-        if (iconArray->size > 0)
+        /* Log performance metrics only if enabled */
+        if (is_performance_logging_enabled())
         {
-            append_to_log("  Time per icon: %lu microseconds\n", 
-                          elapsedMicros / iconArray->size);
+            append_to_log("\n==== FLOATING POINT PERFORMANCE ====\n");
+            append_to_log("CalculateLayoutWithAspectRatio() execution time:\n");
+            append_to_log("  %lu microseconds (%lu.%03lu ms)\n", 
+                          elapsedMicros, elapsedMillis, elapsedMicros % 1000);
+            append_to_log("  Icons processed: %d\n", iconArray->size);
+            if (iconArray->size > 0)
+            {
+                append_to_log("  Time per icon: %lu microseconds\n", 
+                              elapsedMicros / iconArray->size);
+            }
+            append_to_log("====================================\n\n");
+            
+            /* Also print to console for immediate visibility */
+            printf("  [TIMING] Aspect ratio calculation: %lu.%03lu ms for %lu icons\n",
+                   elapsedMillis, elapsedMicros % 1000, (unsigned long)iconArray->size);
         }
-        append_to_log("====================================\n\n");
-        
-        /* Also print to console for immediate visibility */
-        printf("  [TIMING] Aspect ratio calculation: %lu.%03lu ms for %lu icons\n",
-               elapsedMillis, elapsedMicros % 1000, (unsigned long)iconArray->size);
     }
 }
 

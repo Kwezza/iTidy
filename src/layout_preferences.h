@@ -146,6 +146,11 @@ typedef struct {
     BOOL beta_openFoldersAfterProcessing;      /* Auto-open folders via Workbench during processing */
     BOOL beta_FindWindowOnWorkbenchAndUpdate;  /* Find open folder windows and move/resize them to match saved geometry */
     
+    /* Logging and Debug Settings */
+    UWORD logLevel;                            /* Log level: 0=DEBUG, 1=INFO, 2=WARN, 3=ERROR */
+    BOOL memoryLoggingEnabled;                 /* Enable memory allocation logging (creates memory_*.log) */
+    BOOL enable_performance_logging;           /* Enable performance timing logging for iTidy operations */
+    
     /* Backup Settings */
     BackupPreferences backupPrefs;   /* Embedded backup configuration */
 } LayoutPreferences;
@@ -172,9 +177,9 @@ typedef struct {
 #define DEFAULT_SORT_PRIORITY       SORT_PRIORITY_FOLDERS_FIRST
 #define DEFAULT_SORT_BY             SORT_BY_NAME
 #define DEFAULT_REVERSE_SORT        FALSE
-#define DEFAULT_CENTER_ICONS        FALSE
+#define DEFAULT_CENTER_ICONS        TRUE
 #define DEFAULT_OPTIMIZE_COLUMNS    TRUE
-#define DEFAULT_TEXT_ALIGNMENT      TEXT_ALIGN_BOTTOM  /* Default: align icons to bottom of row */
+#define DEFAULT_TEXT_ALIGNMENT      TEXT_ALIGN_MIDDLE /* Default: align icons to middle of row */
 #define DEFAULT_RESIZE_WINDOWS      TRUE
 #define DEFAULT_MIN_ICONS_PER_ROW   2   /* Prevent 1×N layouts */
 #define DEFAULT_MAX_ICONS_PER_ROW   0   /* Auto: Calculate from screen width */
@@ -188,6 +193,11 @@ typedef struct {
 /* Beta/Experimental Feature Defaults */
 #define DEFAULT_BETA_OPEN_FOLDERS_AFTER_PROCESSING         FALSE   /* Enable for testing */
 #define DEFAULT_BETA_FIND_WINDOW_ON_WORKBENCH_AND_UPDATE   FALSE   /* Enable for testing */
+
+/* Logging and Debug Defaults */
+#define DEFAULT_LOG_LEVEL                                  1       /* Default: INFO level (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR) */
+#define DEFAULT_MEMORY_LOGGING_ENABLED                     FALSE   /* Default: Disabled (can be very verbose) */
+#define DEFAULT_PERFORMANCE_LOGGING_ENABLED                FALSE   /* Default: Disabled (performance timing logs) */
 
 /* Icon Spacing Limits */
 #define MIN_ICON_SPACING            4    /* Minimum 4px (icons too close) */

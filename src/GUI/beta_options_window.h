@@ -18,8 +18,11 @@
 /*------------------------------------------------------------------------*/
 #define GID_BETA_OPEN_FOLDERS       2001
 #define GID_BETA_UPDATE_WINDOWS     2002
-#define GID_BETA_OK                 2003
-#define GID_BETA_CANCEL             2004
+#define GID_BETA_LOG_LEVEL          2003
+#define GID_BETA_MEMORY_LOGGING     2004
+#define GID_BETA_PERFORMANCE_LOG    2005
+#define GID_BETA_OK                 2006
+#define GID_BETA_CANCEL             2007
 
 /*------------------------------------------------------------------------*/
 /* Beta Options Window Data Structure                                    */
@@ -35,12 +38,18 @@ struct iTidyBetaOptionsWindow
     /* Gadget pointers for easy access */
     struct Gadget *open_folders_check;
     struct Gadget *update_windows_check;
+    struct Gadget *log_level_cycle;
+    struct Gadget *memory_logging_check;
+    struct Gadget *performance_logging_check;
     struct Gadget *ok_btn;
     struct Gadget *cancel_btn;
     
     /* Current settings */
     BOOL open_folders_enabled;          /* beta_openFoldersAfterProcessing */
     BOOL update_windows_enabled;        /* beta_FindWindowOnWorkbenchAndUpdate */
+    UWORD log_level_selected;           /* Log level: 0=DEBUG, 1=INFO, 2=WARN, 3=ERROR */
+    BOOL memory_logging_enabled;        /* Enable memory allocation logging */
+    BOOL performance_logging_enabled;   /* Enable performance timing logging */
     
     /* Pointer to preferences to update */
     LayoutPreferences *prefs;

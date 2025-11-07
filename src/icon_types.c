@@ -316,18 +316,18 @@ BOOL IsNewIconPath(const STRPTR filePath)
     if (toolTypes != NULL)
     {
 #ifdef DEBUG
-        append_to_log("Checking tooltypes for NewIcon signature...\n");
+        log_debug(LOG_ICONS, "Checking tooltypes for NewIcon signature...\n");
 #endif
         while (*toolTypes != NULL)
         {
 #ifdef DEBUG
-            append_to_log("  ToolType: '%s'\n", *toolTypes);
+            log_debug(LOG_ICONS, "  ToolType: '%s'\n", *toolTypes);
 #endif
             if (platform_stricmp(*toolTypes, "*** DON'T EDIT THE FOLLOWING LINES!! ***") == 0)
             {
                 newIconFormat = TRUE;
 #ifdef DEBUG
-                append_to_log("  -> NewIcon signature found!\n");
+                log_debug(LOG_ICONS, "  -> NewIcon signature found!\n");
 #endif
                 break;
             }
@@ -337,7 +337,7 @@ BOOL IsNewIconPath(const STRPTR filePath)
 #ifdef DEBUG
         if (!newIconFormat)
         {
-            append_to_log("  -> No NewIcon signature found (standard icon)\n");
+            log_debug(LOG_ICONS, "  -> No NewIcon signature found (standard icon)\n");
         }
 #endif
     }

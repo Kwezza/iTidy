@@ -712,6 +712,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     /* Initialize beta settings to defaults */
     win_data->beta_open_folders = DEFAULT_BETA_OPEN_FOLDERS_AFTER_PROCESSING;
     win_data->beta_update_windows = DEFAULT_BETA_FIND_WINDOW_ON_WORKBENCH_AND_UPDATE;
+    win_data->beta_performance_logging = DEFAULT_PERFORMANCE_LOGGING_ENABLED;
 
     /* Lock the Workbench screen */
     win_data->screen = LockPubScreen(NULL);
@@ -965,6 +966,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         /* Always apply beta settings (independent of advanced settings) */
                         prefs.beta_openFoldersAfterProcessing = win_data->beta_open_folders;
                         prefs.beta_FindWindowOnWorkbenchAndUpdate = win_data->beta_update_windows;
+                        prefs.enable_performance_logging = win_data->beta_performance_logging;
                         
                         /* Set skip hidden folders preference */
                         prefs.skipHiddenFolders = win_data->skip_hidden_folders;
@@ -1097,6 +1099,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                 /* Apply beta settings */
                                 temp_prefs.beta_openFoldersAfterProcessing = win_data->beta_open_folders;
                                 temp_prefs.beta_FindWindowOnWorkbenchAndUpdate = win_data->beta_update_windows;
+                                temp_prefs.enable_performance_logging = win_data->beta_performance_logging;
                             }
                             
                             /* Open advanced window (modal) */
@@ -1147,6 +1150,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                     /* Save beta settings to main window data */
                                     win_data->beta_open_folders = temp_prefs.beta_openFoldersAfterProcessing;
                                     win_data->beta_update_windows = temp_prefs.beta_FindWindowOnWorkbenchAndUpdate;
+                                    win_data->beta_performance_logging = temp_prefs.enable_performance_logging;
                                     
                                     printf("  (Settings will be applied when you click Apply button)\n");
                                 }

@@ -59,6 +59,11 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     prefs->beta_openFoldersAfterProcessing = DEFAULT_BETA_OPEN_FOLDERS_AFTER_PROCESSING;
     prefs->beta_FindWindowOnWorkbenchAndUpdate = DEFAULT_BETA_FIND_WINDOW_ON_WORKBENCH_AND_UPDATE;
     
+    /* Logging and Debug Settings */
+    prefs->logLevel = DEFAULT_LOG_LEVEL;
+    prefs->memoryLoggingEnabled = DEFAULT_MEMORY_LOGGING_ENABLED;
+    prefs->enable_performance_logging = DEFAULT_PERFORMANCE_LOGGING_ENABLED;
+    
     /* Backup Settings */
     prefs->backupPrefs.enableUndoBackup = FALSE;
     prefs->backupPrefs.useLha = TRUE;

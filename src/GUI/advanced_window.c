@@ -584,14 +584,14 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
     adv_data->vertical_align_selected = prefs->textAlignment;  /* 0=Top, 1=Middle, 2=Bottom */
     adv_data->reverse_sort_enabled = prefs->reverseSort;        /* Load reverse sort setting */
     
-    append_to_log("DEBUG: Loading prefs into adv_data on window open:\n");
-    append_to_log("  prefs->maxWindowWidthPct = %ld\n", (long)prefs->maxWindowWidthPct);
-    append_to_log("  prefs->textAlignment = %ld\n", (long)prefs->textAlignment);
-    append_to_log("  adv_data->max_width_pct_selected = %ld\n", (long)adv_data->max_width_pct_selected);
-    append_to_log("  adv_data->vertical_align_selected = %ld\n", (long)adv_data->vertical_align_selected);
-    append_to_log("  prefs->overflowMode = %ld\n", (long)prefs->overflowMode);
-    append_to_log("  prefs->aspectRatio = %.2f\n", prefs->aspectRatio);
-    append_to_log("  prefs->reverseSort = %s\n", prefs->reverseSort ? "YES" : "NO");
+    log_debug(LOG_GUI, "Loading prefs into adv_data on window open:\n");
+    log_debug(LOG_GUI, "  prefs->maxWindowWidthPct = %ld\n", (long)prefs->maxWindowWidthPct);
+    log_debug(LOG_GUI, "  prefs->textAlignment = %ld\n", (long)prefs->textAlignment);
+    log_debug(LOG_GUI, "  adv_data->max_width_pct_selected = %ld\n", (long)adv_data->max_width_pct_selected);
+    log_debug(LOG_GUI, "  adv_data->vertical_align_selected = %ld\n", (long)adv_data->vertical_align_selected);
+    log_debug(LOG_GUI, "  prefs->overflowMode = %ld\n", (long)prefs->overflowMode);
+    log_debug(LOG_GUI, "  prefs->aspectRatio = %.2f\n", prefs->aspectRatio);
+    log_debug(LOG_GUI, "  prefs->reverseSort = %s\n", prefs->reverseSort ? "YES" : "NO");
     
     /* Get Workbench screen */
     adv_data->screen = LockPubScreen(NULL);
@@ -827,16 +827,16 @@ void save_advanced_window_to_preferences(struct iTidyAdvancedWindow *adv_data)
     /* Save reverse sort setting */
     adv_data->prefs->reverseSort = adv_data->reverse_sort_enabled;
     
-    append_to_log("DEBUG: save_advanced_window_to_preferences() called:\n");
-    append_to_log("  adv_data->max_width_pct_selected = %ld\n", (long)adv_data->max_width_pct_selected);
-    append_to_log("  adv_data->vertical_align_selected = %ld\n", (long)adv_data->vertical_align_selected);
-    append_to_log("  adv_data->overflow_mode_selected = %ld\n", (long)adv_data->overflow_mode_selected);
-    append_to_log("  adv_data->aspect_preset_selected = %ld\n", (long)adv_data->aspect_preset_selected);
-    append_to_log("  adv_data->reverse_sort_enabled = %s\n", adv_data->reverse_sort_enabled ? "YES" : "NO");
-    append_to_log("  Saved prefs->maxWindowWidthPct = %ld\n", (long)adv_data->prefs->maxWindowWidthPct);
-    append_to_log("  Saved prefs->textAlignment = %ld\n", (long)adv_data->prefs->textAlignment);
-    append_to_log("  Saved prefs->overflowMode = %ld\n", (long)adv_data->prefs->overflowMode);
-    append_to_log("  Saved prefs->reverseSort = %s\n", adv_data->prefs->reverseSort ? "YES" : "NO");
+    log_debug(LOG_GUI, "save_advanced_window_to_preferences() called:\n");
+    log_debug(LOG_GUI, "  adv_data->max_width_pct_selected = %ld\n", (long)adv_data->max_width_pct_selected);
+    log_debug(LOG_GUI, "  adv_data->vertical_align_selected = %ld\n", (long)adv_data->vertical_align_selected);
+    log_debug(LOG_GUI, "  adv_data->overflow_mode_selected = %ld\n", (long)adv_data->overflow_mode_selected);
+    log_debug(LOG_GUI, "  adv_data->aspect_preset_selected = %ld\n", (long)adv_data->aspect_preset_selected);
+    log_debug(LOG_GUI, "  adv_data->reverse_sort_enabled = %s\n", adv_data->reverse_sort_enabled ? "YES" : "NO");
+    log_debug(LOG_GUI, "  Saved prefs->maxWindowWidthPct = %ld\n", (long)adv_data->prefs->maxWindowWidthPct);
+    log_debug(LOG_GUI, "  Saved prefs->textAlignment = %ld\n", (long)adv_data->prefs->textAlignment);
+    log_debug(LOG_GUI, "  Saved prefs->overflowMode = %ld\n", (long)adv_data->prefs->overflowMode);
+    log_debug(LOG_GUI, "  Saved prefs->reverseSort = %s\n", adv_data->prefs->reverseSort ? "YES" : "NO");
     
     printf("Advanced settings saved to preferences:\n");
     printf("  Aspect Ratio: %.2f (Custom: %s)\n", 
@@ -972,11 +972,11 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                                             GTCY_Active, &temp_number, TAG_END);
                             adv_data->vertical_align_selected = (WORD)temp_number;
                             
-                            append_to_log("DEBUG: Read gadget values on OK click:\n");
-                            append_to_log("  max_width_pct_selected = %ld\n", (long)adv_data->max_width_pct_selected);
-                            append_to_log("  vertical_align_selected = %ld\n", (long)adv_data->vertical_align_selected);
-                            append_to_log("  overflow_mode_selected = %ld\n", (long)adv_data->overflow_mode_selected);
-                            append_to_log("  aspect_preset_selected = %ld\n", (long)adv_data->aspect_preset_selected);
+                            log_debug(LOG_GUI, "Read gadget values on OK click:\n");
+                            log_debug(LOG_GUI, "  max_width_pct_selected = %ld\n", (long)adv_data->max_width_pct_selected);
+                            log_debug(LOG_GUI, "  vertical_align_selected = %ld\n", (long)adv_data->vertical_align_selected);
+                            log_debug(LOG_GUI, "  overflow_mode_selected = %ld\n", (long)adv_data->overflow_mode_selected);
+                            log_debug(LOG_GUI, "  aspect_preset_selected = %ld\n", (long)adv_data->aspect_preset_selected);
                         }
                         
                         /* Save to preferences */
@@ -1118,11 +1118,11 @@ void load_preferences_to_advanced_window(struct iTidyAdvancedWindow *adv_data)
         return;
     }
     
-    append_to_log("DEBUG: load_preferences_to_advanced_window() called:\n");
-    append_to_log("  Setting max_width_pct_cycle to: %ld\n", (long)adv_data->max_width_pct_selected);
-    append_to_log("  Setting vertical_align_cycle to: %ld\n", (long)adv_data->vertical_align_selected);
-    append_to_log("  Setting overflow_mode_cycle to: %ld\n", (long)adv_data->overflow_mode_selected);
-    append_to_log("  Setting aspect_ratio_cycle to: %ld\n", (long)adv_data->aspect_preset_selected);
+    log_debug(LOG_GUI, "load_preferences_to_advanced_window() called:\n");
+    log_debug(LOG_GUI, "  Setting max_width_pct_cycle to: %ld\n", (long)adv_data->max_width_pct_selected);
+    log_debug(LOG_GUI, "  Setting vertical_align_cycle to: %ld\n", (long)adv_data->vertical_align_selected);
+    log_debug(LOG_GUI, "  Setting overflow_mode_cycle to: %ld\n", (long)adv_data->overflow_mode_selected);
+    log_debug(LOG_GUI, "  Setting aspect_ratio_cycle to: %ld\n", (long)adv_data->aspect_preset_selected);
     
     /* Aspect ratio preset */
     GT_SetGadgetAttrs(adv_data->aspect_ratio_cycle, adv_data->window, NULL,

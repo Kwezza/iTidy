@@ -97,6 +97,7 @@ struct iTidyMainWindow
     /* Beta/Experimental settings */
     BOOL beta_open_folders;             /* Auto-open folders after processing */
     BOOL beta_update_windows;           /* Find and update open folder windows */
+    BOOL beta_performance_logging;      /* Enable performance timing logs */
 };
 
 /*------------------------------------------------------------------------*/

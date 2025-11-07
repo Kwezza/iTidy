@@ -175,8 +175,8 @@ BOOL ProcessDirectoryWithPreferences(const char *path,
         printf("  Folders backed up: %u\n", g_backupContext->foldersBackedUp);
         printf("  Total bytes archived: %lu\n", (unsigned long)g_backupContext->totalBytesArchived);
         printf("  Location: %s\n", g_backupContext->runDirectory);
-        
-        append_to_log("\n*** Backup session completed ***\n");
+
+        log_info(LOG_GENERAL, "\n*** Backup session completed ***\n");
         append_to_log("  Folders backed up: %u\n", g_backupContext->foldersBackedUp);
         append_to_log("  Failed backups: %u\n", g_backupContext->failedBackups);
         append_to_log("  Total bytes: %lu\n", (unsigned long)g_backupContext->totalBytesArchived);

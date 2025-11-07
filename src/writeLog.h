@@ -96,6 +96,28 @@ void reset_log_performance_stats(void);
 void print_log_performance_stats(void);
 
 /*---------------------------------------------------------------------------*/
+/* Global Log Level Control                                                  */
+/*---------------------------------------------------------------------------*/
+
+/* Set minimum log level for all categories */
+void set_global_log_level(LogLevel minLevel);
+
+/* Get current global log level */
+LogLevel get_global_log_level(void);
+
+/* Enable/disable memory category logging */
+void set_memory_logging_enabled(BOOL enabled);
+
+/* Check if memory logging is enabled */
+BOOL is_memory_logging_enabled(void);
+
+/* Enable/disable performance timing logging */
+void set_performance_logging_enabled(BOOL enabled);
+
+/* Check if performance logging is enabled */
+BOOL is_performance_logging_enabled(void);
+
+/*---------------------------------------------------------------------------*/
 /* Utility Functions                                                         */
 /*---------------------------------------------------------------------------*/
 

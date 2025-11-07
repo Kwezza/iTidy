@@ -231,6 +231,15 @@ int main(int argc, char **argv)
     /* Initialize enhanced logging system (TRUE = clean old logs) */
     initialize_log_system(TRUE);
     
+    /* Set default log level (DEBUG for testing, can be changed via Beta Options) */
+    set_global_log_level(LOG_LEVEL_DEBUG);
+    
+    /* Disable memory logging by default (can be enabled via Beta Options) */
+    set_memory_logging_enabled(FALSE);
+    
+    /* Disable performance logging by default (can be enabled via Beta Options) */
+    set_performance_logging_enabled(FALSE);
+    
     /* Initialize memory tracking if enabled */
     whd_memory_init();
     

@@ -58,12 +58,21 @@ static struct Gadget *create_beta_options_gadgets(struct iTidyBetaOptionsWindow 
     struct Gadget *gad = NULL;
     struct RastPort temp_rp;
     UWORD font_width, font_height;
-    UWORD checkbox_height, button_height;
+    UWORD checkbox_height, button_height, cycle_height;
     UWORD current_y;
     UWORD reference_width_pixels;
     UWORD button_width;
     UWORD max_button_text_width;
     UWORD ok_text_width, cancel_text_width;
+    
+    /* Log level cycle gadget labels */
+    static STRPTR log_level_labels[] = {
+        "DEBUG (Verbose)",
+        "INFO (Normal)",
+        "WARNING (Warnings only)",
+        "ERROR (Errors only)",
+        NULL
+    };
     
     /* Initialize temporary RastPort for text measurements */
     InitRastPort(&temp_rp);
@@ -76,6 +85,7 @@ static struct Gadget *create_beta_options_gadgets(struct iTidyBetaOptionsWindow 
     /* Calculate gadget heights */
     checkbox_height = font_height + 6;
     button_height = font_height + 6;
+    cycle_height = font_height + 6;
     
     /* Calculate reference width in pixels */
     reference_width_pixels = BETA_WINDOW_REFERENCE_WIDTH * font_width;
@@ -143,6 +153,78 @@ static struct Gadget *create_beta_options_gadgets(struct iTidyBetaOptionsWindow 
     if (!gad)
     {
         printf("ERROR: Failed to create update windows checkbox\n");
+        return NULL;
+    }
+    
+    current_y += checkbox_height + BETA_SPACE_Y;
+    
+    /*--------------------------------------------------------------------*/
+    /* Log Level Cycle Gadget                                            */
+    /*--------------------------------------------------------------------*/
+    ng.ng_LeftEdge = BETA_MARGIN_LEFT + prefsIControl.currentLeftBarWidth;
+    ng.ng_TopEdge = current_y + prefsIControl.currentWindowBarHeight;
+    ng.ng_Width = reference_width_pixels;
+    ng.ng_Height = cycle_height;
+    ng.ng_GadgetText = "Log Level:";
+    ng.ng_TextAttr = font;
+    ng.ng_GadgetID = GID_BETA_LOG_LEVEL;
+    ng.ng_Flags = PLACETEXT_LEFT;
+    ng.ng_VisualInfo = beta_data->visual_info;
+    
+    beta_data->log_level_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
+        GTCY_Labels, log_level_labels,
+        GTCY_Active, beta_data->log_level_selected,
+        TAG_END);
+    
+    if (!gad)
+    {
+        printf("ERROR: Failed to create log level cycle gadget\n");
+        return NULL;
+    }
+    
+    current_y += cycle_height + BETA_SPACE_Y;
+    
+    /*--------------------------------------------------------------------*/
+    /* Memory Logging Checkbox                                           */
+    /*--------------------------------------------------------------------*/
+    ng.ng_LeftEdge = BETA_MARGIN_LEFT + prefsIControl.currentLeftBarWidth;
+    ng.ng_TopEdge = current_y + prefsIControl.currentWindowBarHeight;
+    ng.ng_Width = 26;
+    ng.ng_Height = checkbox_height;
+    ng.ng_GadgetText = "Enable memory allocation logging";
+    ng.ng_GadgetID = GID_BETA_MEMORY_LOGGING;
+    ng.ng_Flags = PLACETEXT_RIGHT;
+    
+    beta_data->memory_logging_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
+        GTCB_Checked, beta_data->memory_logging_enabled,
+        TAG_END);
+    
+    if (!gad)
+    {
+        printf("ERROR: Failed to create memory logging checkbox\n");
+        return NULL;
+    }
+    
+    current_y += checkbox_height + BETA_SPACE_Y;
+    
+    /*--------------------------------------------------------------------*/
+    /* Performance Logging Checkbox                                      */
+    /*--------------------------------------------------------------------*/
+    ng.ng_LeftEdge = BETA_MARGIN_LEFT + prefsIControl.currentLeftBarWidth;
+    ng.ng_TopEdge = current_y + prefsIControl.currentWindowBarHeight;
+    ng.ng_Width = 26;
+    ng.ng_Height = checkbox_height;
+    ng.ng_GadgetText = "Enable performance timing logs";
+    ng.ng_GadgetID = GID_BETA_PERFORMANCE_LOG;
+    ng.ng_Flags = PLACETEXT_RIGHT;
+    
+    beta_data->performance_logging_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
+        GTCB_Checked, beta_data->performance_logging_enabled,
+        TAG_END);
+    
+    if (!gad)
+    {
+        printf("ERROR: Failed to create performance logging checkbox\n");
         return NULL;
     }
     
@@ -214,6 +296,9 @@ BOOL open_itidy_beta_options_window(struct iTidyBetaOptionsWindow *beta_data,
     /* Load current preference values into window structure */
     beta_data->open_folders_enabled = prefs->beta_openFoldersAfterProcessing;
     beta_data->update_windows_enabled = prefs->beta_FindWindowOnWorkbenchAndUpdate;
+    beta_data->log_level_selected = prefs->logLevel;
+    beta_data->memory_logging_enabled = prefs->memoryLoggingEnabled;
+    beta_data->performance_logging_enabled = prefs->enable_performance_logging;
     
     /* Lock Workbench screen */
     beta_data->screen = LockPubScreen("Workbench");
@@ -258,10 +343,12 @@ BOOL open_itidy_beta_options_window(struct iTidyBetaOptionsWindow *beta_data,
                    (BETA_WINDOW_REFERENCE_WIDTH * font_width) +
                    BETA_MARGIN_RIGHT + prefsIControl.currentBarWidth;
     
-    /* Height = margins + window chrome + 2 checkboxes + spacing + button row */
+    /* Height = margins + window chrome + 2 checkboxes + 1 cycle + 2 checkboxes + spacing + button row */
     window_height = BETA_MARGIN_TOP + prefsIControl.currentWindowBarHeight +
                     ((font_height + 6) * 2) +  /* 2 checkboxes */
-                    (BETA_SPACE_Y * 4) +       /* Spacing between elements */
+                    (font_height + 6) +        /* 1 cycle gadget */
+                    ((font_height + 6) * 2) +  /* 2 checkboxes (memory + performance logging) */
+                    (BETA_SPACE_Y * 7) +       /* Spacing between elements */
                     (font_height + 6) +        /* Button row */
                     BETA_MARGIN_BOTTOM + prefsIControl.currentBarHeight;
     
@@ -377,6 +464,23 @@ BOOL handle_beta_options_window_events(struct iTidyBetaOptionsWindow *beta_data)
                             (code == 1) ? TRUE : FALSE;
                         break;
                     
+                    case GID_BETA_LOG_LEVEL:
+                        /* Update log level selection from cycle gadget */
+                        beta_data->log_level_selected = code;
+                        break;
+                    
+                    case GID_BETA_MEMORY_LOGGING:
+                        /* Update memory logging checkbox */
+                        beta_data->memory_logging_enabled = 
+                            (code == 1) ? TRUE : FALSE;
+                        break;
+                    
+                    case GID_BETA_PERFORMANCE_LOG:
+                        /* Update performance logging checkbox */
+                        beta_data->performance_logging_enabled = 
+                            (code == 1) ? TRUE : FALSE;
+                        break;
+                    
                     case GID_BETA_OK:
                         /* Save settings and close */
                         save_beta_options_window_to_preferences(beta_data);
@@ -405,6 +509,9 @@ void load_preferences_to_beta_options_window(struct iTidyBetaOptionsWindow *beta
     /* Load values from preferences into window structure */
     beta_data->open_folders_enabled = beta_data->prefs->beta_openFoldersAfterProcessing;
     beta_data->update_windows_enabled = beta_data->prefs->beta_FindWindowOnWorkbenchAndUpdate;
+    beta_data->log_level_selected = beta_data->prefs->logLevel;
+    beta_data->memory_logging_enabled = beta_data->prefs->memoryLoggingEnabled;
+    beta_data->performance_logging_enabled = beta_data->prefs->enable_performance_logging;
     
     /* Update gadgets if window is open */
     if (beta_data->window_open && beta_data->window)
@@ -416,21 +523,56 @@ void load_preferences_to_beta_options_window(struct iTidyBetaOptionsWindow *beta
         GT_SetGadgetAttrs(beta_data->update_windows_check, beta_data->window, NULL,
             GTCB_Checked, beta_data->update_windows_enabled,
             TAG_END);
+        
+        GT_SetGadgetAttrs(beta_data->log_level_cycle, beta_data->window, NULL,
+            GTCY_Active, beta_data->log_level_selected,
+            TAG_END);
+        
+        GT_SetGadgetAttrs(beta_data->memory_logging_check, beta_data->window, NULL,
+            GTCB_Checked, beta_data->memory_logging_enabled,
+            TAG_END);
+        
+        GT_SetGadgetAttrs(beta_data->performance_logging_check, beta_data->window, NULL,
+            GTCB_Checked, beta_data->performance_logging_enabled,
+            TAG_END);
     }
 }
 
 void save_beta_options_window_to_preferences(struct iTidyBetaOptionsWindow *beta_data)
 {
+    LogLevel newLogLevel;
+    
     if (!beta_data || !beta_data->prefs)
         return;
     
     /* Save values from window structure to preferences */
     beta_data->prefs->beta_openFoldersAfterProcessing = beta_data->open_folders_enabled;
     beta_data->prefs->beta_FindWindowOnWorkbenchAndUpdate = beta_data->update_windows_enabled;
+    beta_data->prefs->logLevel = beta_data->log_level_selected;
+    beta_data->prefs->memoryLoggingEnabled = beta_data->memory_logging_enabled;
+    beta_data->prefs->enable_performance_logging = beta_data->performance_logging_enabled;
+    
+    /* Apply log level immediately */
+    newLogLevel = (LogLevel)beta_data->log_level_selected;
+    set_global_log_level(newLogLevel);
+    
+    /* Apply memory logging setting immediately */
+    set_memory_logging_enabled(beta_data->memory_logging_enabled);
+    
+    /* Apply performance logging setting immediately */
+    set_performance_logging_enabled(beta_data->performance_logging_enabled);
     
     append_to_log("Beta options updated:\n");
     append_to_log("  - Auto-open folders: %s\n", 
                   beta_data->open_folders_enabled ? "ENABLED" : "DISABLED");
     append_to_log("  - Update window geometry: %s\n", 
                   beta_data->update_windows_enabled ? "ENABLED" : "DISABLED");
+    append_to_log("  - Log level: %s\n",
+                  beta_data->log_level_selected == 0 ? "DEBUG" :
+                  beta_data->log_level_selected == 1 ? "INFO" :
+                  beta_data->log_level_selected == 2 ? "WARNING" : "ERROR");
+    append_to_log("  - Memory logging: %s\n",
+                  beta_data->memory_logging_enabled ? "ENABLED" : "DISABLED");
+    append_to_log("  - Performance logging: %s\n",
+                  beta_data->performance_logging_enabled ? "ENABLED" : "DISABLED");
 }

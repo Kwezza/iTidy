@@ -400,7 +400,7 @@ BOOL CreateLhaArchive(const char *lhaPath, const char *archivePath,
                       lhaPath, absArchivePath, listFile);
         
         if (len < MAX_COMMAND_LEN) {
-            append_to_log("[BACKUP] DEBUG: Listing archive contents to: %s\n", listFile);
+            log_debug(LOG_BACKUP, "Listing archive contents to: %s\n", listFile);
             ExecuteLhaCommand(listCommand);
         }
     }

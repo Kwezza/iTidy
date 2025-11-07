@@ -41,6 +41,11 @@ static char g_logTimestamp[32] = {0};
 static char g_logsDirectory[256] = {0};
 static BOOL g_logSystemInitialized = FALSE;
 
+// Global log level and memory tracking control
+static LogLevel g_globalLogLevel = LOG_LEVEL_DEBUG;
+static BOOL g_memoryLoggingEnabled = FALSE;
+static BOOL g_performanceLoggingEnabled = FALSE;
+
 // Logging performance tracking
 static ULONG totalLogCalls = 0;
 static ULONG totalLogMicroseconds = 0;
@@ -327,6 +332,46 @@ void set_log_level(LogCategory category, LogLevel minLevel) {
     }
 }
 
+void set_global_log_level(LogLevel minLevel) {
+    int i;
+    g_globalLogLevel = minLevel;
+    for (i = 0; i < LOG_CATEGORY_COUNT; i++) {
+        g_logCategories[i].minLevel = minLevel;
+    }
+}
+
+LogLevel get_global_log_level(void) {
+    return g_globalLogLevel;
+}
+
+void set_memory_logging_enabled(BOOL enabled) {
+    g_memoryLoggingEnabled = enabled;
+    if (!enabled) {
+        /* Disable memory category */
+        enable_log_category(LOG_MEMORY, FALSE);
+    } else {
+        /* Enable memory category */
+        enable_log_category(LOG_MEMORY, TRUE);
+    }
+}
+
+BOOL is_memory_logging_enabled(void) {
+    return g_memoryLoggingEnabled;
+}
+
+void set_performance_logging_enabled(BOOL enabled) {
+    g_performanceLoggingEnabled = enabled;
+    if (enabled) {
+        log_info(LOG_GENERAL, "Performance logging: ENABLED\n");
+    } else {
+        log_info(LOG_GENERAL, "Performance logging: DISABLED\n");
+    }
+}
+
+BOOL is_performance_logging_enabled(void) {
+    return g_performanceLoggingEnabled;
+}
+
 /*---------------------------------------------------------------------------*/
 /* Core Logging Function                                                     */
 /*---------------------------------------------------------------------------*/
@@ -375,6 +420,24 @@ void log_message(LogCategory category, LogLevel level, const char *format, ...) 
     vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
     
+    /* Strip newline characters to keep log format consistent */
+    {
+        char *src = buffer;
+        char *dst = buffer;
+        while (*src) {
+            if (*src != '\n' && *src != '\r') {
+                *dst++ = *src;
+            } else {
+                /* Replace newlines with spaces to maintain readability */
+                if (dst > buffer && *(dst - 1) != ' ') {
+                    *dst++ = ' ';
+                }
+            }
+            src++;
+        }
+        *dst = '\0';
+    }
+    
     /* Open log file (create if doesn't exist, append if it does) */
     logFile = Open(g_logCategories[category].filename, MODE_READWRITE);
     if (!logFile) {
@@ -393,6 +456,12 @@ void log_message(LogCategory category, LogLevel level, const char *format, ...) 
         
         /* Write message */
         bytesWritten = Write(logFile, buffer, strlen(buffer));
+        if (bytesWritten > 0) {
+            g_logCategories[category].bytesWritten += bytesWritten;
+        }
+        
+        /* Write newline to end the log entry */
+        bytesWritten = Write(logFile, "\n", 1);
         if (bytesWritten > 0) {
             g_logCategories[category].bytesWritten += bytesWritten;
         }
@@ -422,6 +491,7 @@ void log_message(LogCategory category, LogLevel level, const char *format, ...) 
             
             Write(logFile, errorPrefix, strlen(errorPrefix));
             Write(logFile, buffer, strlen(buffer));
+            Write(logFile, "\n", 1);
             Close(logFile);
             
             g_logCategories[LOG_ERRORS].messageCount++;
@@ -481,6 +551,11 @@ void print_log_performance_stats(void) {
     ULONG totalMillis;
     char buffer[512];
     int i;
+    
+    /* Only print if performance logging is enabled */
+    if (!g_performanceLoggingEnabled) {
+        return;
+    }
     
     log_info(LOG_GENERAL, "\n========== LOGGING PERFORMANCE STATS ==========\n");
     
