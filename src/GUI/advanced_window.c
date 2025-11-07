@@ -17,6 +17,7 @@
 #include <stdio.h>
 
 #include "advanced_window.h"
+#include "beta_options_window.h"
 #include "layout_preferences.h"
 #include "writeLog.h"
 
@@ -488,6 +489,28 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     if (!gad)
     {
         printf("ERROR: Failed to create reverse sort checkbox\n");
+        return NULL;
+    }
+    
+    current_y += button_height + 16;
+    
+    /*--------------------------------------------------------------------*/
+    /* Beta Options Button                                               */
+    /*--------------------------------------------------------------------*/
+    ng.ng_LeftEdge = 30;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = 120;
+    ng.ng_Height = button_height;
+    ng.ng_GadgetText = "Beta Options...";
+    ng.ng_GadgetID = GID_ADV_BETA_OPTIONS;
+    ng.ng_Flags = PLACETEXT_IN;
+    
+    adv_data->beta_options_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
+        TAG_END);
+    
+    if (!gad)
+    {
+        printf("ERROR: Failed to create Beta Options button\n");
         return NULL;
     }
     
@@ -1029,6 +1052,41 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                             adv_data->reverse_sort_enabled = (BOOL)checked;
                             printf("Reverse Sort: %s\n", 
                                    adv_data->reverse_sort_enabled ? "ENABLED" : "DISABLED");
+                        }
+                        break;
+                    
+                    case GID_ADV_BETA_OPTIONS:
+                        /* Open Beta Options window */
+                        {
+                            struct iTidyBetaOptionsWindow beta_window;
+                            
+                            printf("Opening Beta Options window...\n");
+                            
+                            if (open_itidy_beta_options_window(&beta_window, adv_data->prefs))
+                            {
+                                /* Run the beta options event loop */
+                                while (handle_beta_options_window_events(&beta_window))
+                                {
+                                    WaitPort(beta_window.window->UserPort);
+                                }
+                                
+                                /* Close the beta options window */
+                                close_itidy_beta_options_window(&beta_window);
+                                
+                                /* Log result */
+                                if (beta_window.changes_accepted)
+                                {
+                                    printf("Beta options saved\n");
+                                }
+                                else
+                                {
+                                    printf("Beta options cancelled\n");
+                                }
+                            }
+                            else
+                            {
+                                printf("ERROR: Failed to open Beta Options window\n");
+                            }
                         }
                         break;
                         

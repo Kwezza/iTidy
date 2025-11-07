@@ -93,6 +93,10 @@ struct iTidyMainWindow
     UWORD advanced_max_width_pct;       /* Max window width percentage */
     UWORD advanced_vertical_align;      /* TextAlignment value */
     BOOL advanced_reverse_sort;         /* Reverse sort order (Z->A) */
+    
+    /* Beta/Experimental settings */
+    BOOL beta_open_folders;             /* Auto-open folders after processing */
+    BOOL beta_update_windows;           /* Find and update open folder windows */
 };
 
 /*------------------------------------------------------------------------*/

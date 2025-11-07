@@ -9,6 +9,8 @@
 #include <platform/platform_io.h>
 #include <platform/amiga_headers.h>
 
+#include <proto/wb.h>
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -83,8 +85,8 @@ BOOL ProcessDirectoryWithPreferences(const char *path,
     sanitizedPath[sizeof(sanitizedPath) - 1] = '\0';
     sanitizeAmigaPath(sanitizedPath);
     
-    /* Build window tracker if window moving is enabled */
-    if (prefs->moveOpenWindows)
+    /* Build window tracker if window moving is enabled (beta feature) */
+    if (prefs->beta_FindWindowOnWorkbenchAndUpdate)
     {
         log_info(LOG_GENERAL, "\n*** Building window tracker for open folder windows ***\n");
         if (BuildFolderWindowList(&windowTracker))
@@ -928,6 +930,39 @@ static BOOL ProcessSingleDirectory(const char *path,
     else
     {
         printf("  Failed to save icon positions\n");
+    }
+    
+    /* Experimental Feature: Auto-open folders during processing
+     * When enabled, this calls Workbench's OpenWorkbenchObjectA() to open
+     * the folder window after iTidy has tidied the icons. This allows users
+     * to see the results in real-time during recursive operations.
+     */
+    if (prefs->beta_openFoldersAfterProcessing && success)
+    {
+        BOOL openResult;
+        
+#ifdef DEBUG
+        append_to_log("Opening folder window via Workbench: %s\n", path);
+#endif
+        
+        /* OpenWorkbenchObjectA() opens a folder window via Workbench.
+         * - First parameter: Full path to the folder
+         * - Second parameter: TagList (NULL for default behavior)
+         * 
+         * Note: workbench.library is auto-opened by proto/wb.h,
+         * so we don't need to manually OpenLibrary().
+         * 
+         * Returns: TRUE if successful, FALSE otherwise
+         */
+        openResult = OpenWorkbenchObjectA((CONST_STRPTR)path, NULL);
+        
+        if (!openResult)
+        {
+#ifdef DEBUG
+            append_to_log("Warning: Failed to open folder window for: %s\n", path);
+#endif
+            /* Non-fatal error - continue processing even if window open fails */
+        }
     }
     
     /* Print logging performance statistics */

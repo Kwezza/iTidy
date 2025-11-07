@@ -28,6 +28,7 @@
 #define GID_ADV_MAX_WIDTH_PCT     1012
 #define GID_ADV_VERTICAL_ALIGN    1013
 #define GID_ADV_REVERSE_SORT      1014
+#define GID_ADV_BETA_OPTIONS      1015
 #define GID_ADV_OK                1009
 #define GID_ADV_CANCEL            1010
 
@@ -76,6 +77,7 @@ struct iTidyAdvancedWindow
     struct Gadget *max_width_pct_cycle;
     struct Gadget *vertical_align_cycle;
     struct Gadget *reverse_sort_check;
+    struct Gadget *beta_options_btn;
     struct Gadget *ok_btn;
     struct Gadget *cancel_btn;
     

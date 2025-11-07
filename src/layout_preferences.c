@@ -37,7 +37,6 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     
     /* Window Management */
     prefs->resizeWindows = DEFAULT_RESIZE_WINDOWS;
-    prefs->moveOpenWindows = DEFAULT_MOVE_OPEN_WINDOWS;
     prefs->minIconsPerRow = DEFAULT_MIN_ICONS_PER_ROW;
     prefs->maxIconsPerRow = DEFAULT_MAX_ICONS_PER_ROW;
     prefs->maxWindowWidthPct = DEFAULT_MAX_WIDTH_PCT;
@@ -55,6 +54,10 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     
     /* Advanced Settings */
     prefs->skipHiddenFolders = DEFAULT_SKIP_HIDDEN_FOLDERS;
+    
+    /* Beta/Experimental Features */
+    prefs->beta_openFoldersAfterProcessing = DEFAULT_BETA_OPEN_FOLDERS_AFTER_PROCESSING;
+    prefs->beta_FindWindowOnWorkbenchAndUpdate = DEFAULT_BETA_FIND_WINDOW_ON_WORKBENCH_AND_UPDATE;
     
     /* Backup Settings */
     prefs->backupPrefs.enableUndoBackup = FALSE;

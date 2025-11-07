@@ -708,6 +708,10 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     
     /* Initialize advanced settings flag */
     win_data->has_advanced_settings = FALSE;
+    
+    /* Initialize beta settings to defaults */
+    win_data->beta_open_folders = DEFAULT_BETA_OPEN_FOLDERS_AFTER_PROCESSING;
+    win_data->beta_update_windows = DEFAULT_BETA_FIND_WINDOW_ON_WORKBENCH_AND_UPDATE;
 
     /* Lock the Workbench screen */
     win_data->screen = LockPubScreen(NULL);
@@ -958,6 +962,10 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                             prefs.reverseSort = win_data->advanced_reverse_sort;
                         }
                         
+                        /* Always apply beta settings (independent of advanced settings) */
+                        prefs.beta_openFoldersAfterProcessing = win_data->beta_open_folders;
+                        prefs.beta_FindWindowOnWorkbenchAndUpdate = win_data->beta_update_windows;
+                        
                         /* Set skip hidden folders preference */
                         prefs.skipHiddenFolders = win_data->skip_hidden_folders;
                         
@@ -1085,6 +1093,10 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                 temp_prefs.maxWindowWidthPct = win_data->advanced_max_width_pct;
                                 temp_prefs.textAlignment = win_data->advanced_vertical_align;
                                 temp_prefs.reverseSort = win_data->advanced_reverse_sort;
+                                
+                                /* Apply beta settings */
+                                temp_prefs.beta_openFoldersAfterProcessing = win_data->beta_open_folders;
+                                temp_prefs.beta_FindWindowOnWorkbenchAndUpdate = win_data->beta_update_windows;
                             }
                             
                             /* Open advanced window (modal) */
@@ -1131,6 +1143,10 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                     win_data->advanced_max_width_pct = temp_prefs.maxWindowWidthPct;
                                     win_data->advanced_vertical_align = temp_prefs.textAlignment;
                                     win_data->advanced_reverse_sort = temp_prefs.reverseSort;
+                                    
+                                    /* Save beta settings to main window data */
+                                    win_data->beta_open_folders = temp_prefs.beta_openFoldersAfterProcessing;
+                                    win_data->beta_update_windows = temp_prefs.beta_FindWindowOnWorkbenchAndUpdate;
                                     
                                     printf("  (Settings will be applied when you click Apply button)\n");
                                 }

@@ -237,8 +237,8 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray,
     /* Note: repoistionWindow will clamp to screen size and add chrome */
     repoistionWindow(dirPath, maxWidth, maxHeight);
     
-    /* Move any open windows to match the newly saved geometry (if enabled) */
-    if (prefs && prefs->moveOpenWindows)
+    /* Move any open windows to match the newly saved geometry (if beta feature enabled) */
+    if (prefs && prefs->beta_FindWindowOnWorkbenchAndUpdate)
     {
         char folderName[256];
         folderWindowSize savedGeometry;

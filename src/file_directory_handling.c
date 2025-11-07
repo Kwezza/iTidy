@@ -11,6 +11,7 @@
 #include <devices/trackdisk.h>
 #include <devices/timer.h>
 #include <clib/timer_protos.h>
+#include <proto/wb.h>
 
 #include "file_directory_handling.h"
 #include "utilities.h"

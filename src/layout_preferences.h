@@ -124,7 +124,6 @@ typedef struct {
     
     /* Window Management */
     BOOL resizeWindows;              /* Auto-resize drawer windows */
-    BOOL moveOpenWindows;            /* Move/resize open folder windows to match saved geometry */
     UWORD minIconsPerRow;            /* Minimum columns (prevent 1×N layouts) */
     UWORD maxIconsPerRow;            /* Maximum columns (0 = no limit) */
     UWORD maxWindowWidthPct;         /* Max window width as % of screen */
@@ -142,6 +141,10 @@ typedef struct {
     
     /* Advanced Settings */
     BOOL skipHiddenFolders;          /* Skip folders without .info files (hidden) */
+    
+    /* Beta/Experimental Features */
+    BOOL beta_openFoldersAfterProcessing;      /* Auto-open folders via Workbench during processing */
+    BOOL beta_FindWindowOnWorkbenchAndUpdate;  /* Find open folder windows and move/resize them to match saved geometry */
     
     /* Backup Settings */
     BackupPreferences backupPrefs;   /* Embedded backup configuration */
@@ -173,7 +176,6 @@ typedef struct {
 #define DEFAULT_OPTIMIZE_COLUMNS    TRUE
 #define DEFAULT_TEXT_ALIGNMENT      TEXT_ALIGN_BOTTOM  /* Default: align icons to bottom of row */
 #define DEFAULT_RESIZE_WINDOWS      TRUE
-#define DEFAULT_MOVE_OPEN_WINDOWS   TRUE  /* Default: move open windows to match new geometry */
 #define DEFAULT_MIN_ICONS_PER_ROW   2   /* Prevent 1×N layouts */
 #define DEFAULT_MAX_ICONS_PER_ROW   0   /* Auto: Calculate from screen width */
 #define DEFAULT_MAX_WIDTH_PCT       55
@@ -182,6 +184,10 @@ typedef struct {
 #define DEFAULT_ICON_SPACING_X      8    /* 8px horizontal spacing */
 #define DEFAULT_ICON_SPACING_Y      8    /* 8px vertical spacing */
 #define DEFAULT_SKIP_HIDDEN_FOLDERS TRUE   /* Default: ignore hidden folders */
+
+/* Beta/Experimental Feature Defaults */
+#define DEFAULT_BETA_OPEN_FOLDERS_AFTER_PROCESSING         FALSE   /* Enable for testing */
+#define DEFAULT_BETA_FIND_WINDOW_ON_WORKBENCH_AND_UPDATE   FALSE   /* Enable for testing */
 
 /* Icon Spacing Limits */
 #define MIN_ICON_SPACING            4    /* Minimum 4px (icons too close) */

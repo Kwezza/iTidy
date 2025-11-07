@@ -72,6 +72,7 @@ BACKUP_SRCS = \
 GUI_SRCS = \
 	$(SRC_DIR)/GUI/main_window.c \
 	$(SRC_DIR)/GUI/advanced_window.c \
+	$(SRC_DIR)/GUI/beta_options_window.c \
 	$(SRC_DIR)/GUI/restore_window.c \
 	$(SRC_DIR)/GUI/folder_view_window.c \
 	$(SRC_DIR)/GUI/easy_request_helper.c \

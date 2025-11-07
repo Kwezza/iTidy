@@ -3,9 +3,415 @@
 ## Project Overview
 iTidy is an Amiga icon management utility that allows users to sort and arrange icons in directories. The application features a GadTools-based GUI and supports multiple sorting modes with configurable layout presets.
 
+## Future Improvements
+
+### Main Window Architecture Refactoring (Priority: Medium)
+**Proposed**: Replace parallel state management with single LayoutPreferences instance
+
+**Current Problem:**
+- `iTidyMainWindow` structure duplicates almost every field from `LayoutPreferences`
+- Creates temporary `LayoutPreferences` structures and manually syncs fields
+- Error-prone: Easy to forget to sync new preference fields (beta settings bug)
+- ~100 lines of manual copying code between structures
+
+**Proposed Solution:**
+```c
+struct iTidyMainWindow {
+    /* ... UI elements ... */
+    LayoutPreferences prefs;  /* Single source of truth */
+    /* Remove: preset_selected, layout_selected, advanced_aspect_ratio, 
+       beta_open_folders, etc. - all replaced by prefs structure */
+};
+```
+
+**Benefits:**
+- Eliminates entire class of synchronization bugs
+- Reduces code by ~100 lines
+- Easier to add new preferences (one place only)
+- Cleaner architecture
+
+**Risks:**
+- Large refactor (~500 lines affected)
+- Requires extensive testing
+- Could introduce regressions
+
+**Recommendation**: Plan as dedicated refactoring task with full test coverage
+
+---
+
 ## Development Timeline
 
-### Latest: Folder Window Tracking System with Smart Backdrop Detection (November 6-7, 2025)
+### Latest: Beta Options Preferences Persistence Fix (November 7, 2025)
+
+#### Fixed Settings Loss Across Advanced Window Sessions
+* **Purpose**: Ensure beta preferences persist when Advanced window is closed and reopened
+* **Status**: Complete - Fixed and tested
+* **Date**: November 7, 2025
+
+**Problem Identified:**
+- Beta settings were lost when closing and reopening Advanced Settings window
+- Settings worked correctly within same Advanced window session
+- Root cause: Beta preferences saved to temporary `LayoutPreferences` structure but not persisted to main window data
+
+**Solution Implemented:**
+
+**Files Modified:**
+- `src/GUI/main_window.h` - Added `beta_open_folders` and `beta_update_windows` fields
+- `src/GUI/main_window.c` - Complete save/restore/apply cycle for beta preferences
+
+**Changes Made:**
+
+1. **Added Beta Fields to Main Window Structure:**
+```c
+struct iTidyMainWindow {
+    /* ... existing fields ... */
+    BOOL beta_open_folders;       /* Auto-open folders after processing */
+    BOOL beta_update_windows;     /* Find and update open folder windows */
+};
+```
+
+2. **Initialize Beta Settings on Startup:**
+   - `open_itidy_main_window()` now initializes beta fields to defaults
+   - Uses `DEFAULT_BETA_OPEN_FOLDERS_AFTER_PROCESSING` constant
+   - Uses `DEFAULT_BETA_FIND_WINDOW_ON_WORKBENCH_AND_UPDATE` constant
+
+3. **Restore Beta Settings When Opening Advanced Window:**
+   - `GID_ADVANCED` handler now restores beta values from `win_data` to `temp_prefs`
+   - Ensures Beta Options window sees user's previous choices
+
+4. **Save Beta Settings When Advanced Window Closes:**
+   - When user clicks OK in Advanced window
+   - Copies `temp_prefs.beta_*` back to `win_data->beta_*`
+   - Settings now persist across Advanced window sessions
+
+5. **Apply Beta Settings in Apply Button:**
+   - `GID_APPLY` handler copies beta settings from `win_data` to processing `prefs`
+   - Ensures user's beta choices are used during icon processing
+
+**Data Flow:**
+```
+Main Window (win_data)
+  ↓ Initialize to defaults
+  ↓ Restore to temp_prefs (Advanced window opens)
+  ↓ User modifies in Beta Options window
+  ↓ Save back to win_data (Advanced window closes)
+  ↓ Apply to processing prefs (Apply button)
+  → Beta settings used during icon processing
+```
+
+**Testing Results:**
+- ✅ Settings persist within same Advanced window session
+- ✅ Settings persist across Advanced window sessions
+- ✅ Settings applied correctly during icon processing
+- ✅ Build successful with no errors
+
+**Documentation:**
+- Created `docs/BUGFIX_BETA_OPTIONS_PERSISTENCE.md` - Complete fix analysis
+
+**Key Lesson:**
+Main window structure must be the single source of truth for all user preferences. Temporary structures must properly restore from and save back to main window data.
+
+**Architecture Note:**
+This fix highlights a design issue - the main window maintains parallel state (individual fields vs LayoutPreferences). 
+See "Future Improvements" section for proposed refactoring to use a single persistent LayoutPreferences instance.
+
+---
+
+### Beta Options Window Implementation (November 7, 2025)
+
+#### New GUI Window for Experimental Features
+* **Purpose**: Provide GUI controls for beta preference flags in LayoutPreferences
+* **Status**: Complete - Ready for testing
+* **Date**: November 7, 2025
+
+**Feature Overview:**
+- New modal "Beta Options" window accessible from Advanced Settings window
+- Two checkboxes controlling experimental window management features:
+  - "Auto-open folders after processing" (`beta_openFoldersAfterProcessing`)
+  - "Find and update open folder windows" (`beta_FindWindowOnWorkbenchAndUpdate`)
+- Standard OK/Cancel button layout with equal-width sizing
+- Changes saved directly to LayoutPreferences structure
+- Font-aware window sizing with proper IControl border calculations
+
+**Files Created:**
+- `src/GUI/beta_options_window.h` - Window structure and API definitions (~120 lines)
+- `src/GUI/beta_options_window.c` - Full implementation (~460 lines)
+- `docs/BETA_OPTIONS_WINDOW.md` - Complete technical documentation
+
+**Files Modified:**
+- `src/GUI/advanced_window.h` - Added `GID_ADV_BETA_OPTIONS` gadget ID and `beta_options_btn` member
+- `src/GUI/advanced_window.c` - Added "Beta Options..." button below "Reverse Sort" checkbox, implemented event handler
+- `Makefile` - Added `beta_options_window.c` to GUI_SRCS
+
+**Window Structure:**
+```c
+struct iTidyBetaOptionsWindow {
+    struct Screen *screen;              /* Workbench screen */
+    struct Window *window;              /* Modal window */
+    APTR visual_info;                   /* GadTools visual info */
+    struct Gadget *glist;               /* Gadget list */
+    BOOL window_open;                   /* Window state flag */
+    
+    /* Gadget pointers for easy access */
+    struct Gadget *open_folders_check;
+    struct Gadget *update_windows_check;
+    struct Gadget *ok_btn;
+    struct Gadget *cancel_btn;
+    
+    /* Current settings */
+    BOOL open_folders_enabled;          /* beta_openFoldersAfterProcessing */
+    BOOL update_windows_enabled;        /* beta_FindWindowOnWorkbenchAndUpdate */
+    
+    /* Pointer to preferences to update */
+    LayoutPreferences *prefs;
+    
+    /* Result flag */
+    BOOL changes_accepted;              /* TRUE if OK clicked, FALSE if Cancel */
+};
+```
+
+**API Functions:**
+- `open_itidy_beta_options_window()` - Opens modal window centered on Workbench screen
+- `close_itidy_beta_options_window()` - Cleanup and window closing
+- `handle_beta_options_window_events()` - Event loop processing (returns FALSE when window should close)
+- `load_preferences_to_beta_options_window()` - Load current values from prefs into gadgets
+- `save_beta_options_window_to_preferences()` - Save gadget values to prefs structure
+
+**Window Layout:**
+- **Reference width**: 55 characters (BETA_WINDOW_REFERENCE_WIDTH)
+- **Font-aware sizing**: Uses screen font for all measurements
+- **IControl compliance**: Gadget positions include `prefsIControl.currentLeftBarWidth` and `currentWindowBarHeight`
+- **Equal-width buttons**: Calculated to fit 2 buttons in reference width with proper spacing
+- **Centered on screen**: Window positioned at `(screenWidth - windowWidth) / 2`
+
+**Spacing Constants:**
+```c
+#define BETA_MARGIN_LEFT   10
+#define BETA_MARGIN_TOP    10
+#define BETA_MARGIN_RIGHT  10
+#define BETA_MARGIN_BOTTOM 10
+#define BETA_SPACE_X       8
+#define BETA_SPACE_Y       8
+#define BETA_BUTTON_TEXT_PADDING 8
+```
+
+**Gadget Layout:**
+1. **Checkbox 1**: "Auto-open folders after processing" (PLACETEXT_RIGHT)
+2. **Checkbox 2**: "Find and update open folder windows" (PLACETEXT_RIGHT)
+3. **Button Row**: OK and Cancel (equal width, PLACETEXT_IN)
+
+**Integration with Advanced Window:**
+```c
+case GID_ADV_BETA_OPTIONS:
+    /* Open Beta Options window */
+    {
+        struct iTidyBetaOptionsWindow beta_window;
+        
+        if (open_itidy_beta_options_window(&beta_window, adv_data->prefs)) {
+            /* Run event loop */
+            while (handle_beta_options_window_events(&beta_window)) {
+                WaitPort(beta_window.window->UserPort);
+            }
+            
+            /* Cleanup */
+            close_itidy_beta_options_window(&beta_window);
+        }
+    }
+    break;
+```
+
+**User Workflow:**
+1. Open Advanced Settings from main window
+2. Click "Beta Options..." button at bottom of Advanced window
+3. Enable/disable beta features using checkboxes
+4. Click OK to save changes or Cancel to discard
+5. Changes applied to preferences structure immediately
+6. Return to Advanced Settings window (remains open)
+
+**Design Patterns Used:**
+- **Modal Dialog**: Locks Workbench screen, prevents interaction with parent window
+- **Font-Aware Sizing**: Adapts to user's screen font preference
+- **IControl Border Compliance**: All positioning relative to window chrome
+- **Equal-Width Buttons**: Consistent with project button layout standards
+- **Proper Cleanup**: All resources freed on all exit paths
+
+**Technical Benefits:**
+- Clean separation of concerns - beta features in dedicated window
+- Follows project window creation patterns from AI_AGENT_GUIDE.md
+- Uses GadTools consistently with rest of application
+- Proper memory management with cleanup on all paths
+- Modal dialog prevents user confusion
+- Debug logging shows setting changes
+
+**Build Results:**
+- ✅ Compiles cleanly with VBCC (only standard SDK warnings)
+- ✅ Links successfully into `Bin/Amiga/iTidy`
+- ✅ All gadgets created correctly with proper positioning
+- ✅ Event handling implemented and tested
+- ✅ Window opens/closes without memory leaks
+
+**Known Issue (Fixed):**
+- Initial implementation did not persist settings across Advanced window sessions
+- Fixed in subsequent update by adding beta fields to iTidyMainWindow structure
+- See "Beta Options Preferences Persistence Fix" entry above
+
+**Future Enhancements:**
+- Add descriptive text explaining what each beta feature does
+- Add "Restore Defaults" button to reset to defaults
+- Add visual indicators for which features are stable vs experimental
+- May expand with additional beta features as they're developed
+- Consider adding tooltips or help context
+
+---
+
+### Beta Features Integrated into LayoutPreferences (November 7, 2025)
+
+#### Consolidation of Experimental Features into Preferences System
+* **Purpose**: Move experimental features from global variables into the centralized `LayoutPreferences` structure
+* **Status**: Beta features enabled by default for testing
+* **Date**: November 7, 2025
+
+**Feature Overview:**
+- Replaced scattered global variables with structured preferences
+- Two new beta preference flags for experimental window management features:
+  - `beta_openFoldersAfterProcessing` - Auto-open folders via Workbench after processing
+  - `beta_FindWindowOnWorkbenchAndUpdate` - Scan and move/resize open folder windows to match saved geometry
+
+**Implementation Changes:**
+
+**Added to LayoutPreferences Structure:**
+- `BOOL beta_openFoldersAfterProcessing` - Opens folders via `OpenWorkbenchObjectA()` after each folder is tidied
+- `BOOL beta_FindWindowOnWorkbenchAndUpdate` - Finds open Workbench windows and applies new geometry (replaces old `moveOpenWindows`)
+
+**Files Modified:**
+- `src/layout_preferences.h` - Added beta feature fields to LayoutPreferences struct, added default defines (both TRUE for testing)
+- `src/layout_preferences.c` - Initialize beta preferences in `InitLayoutPreferences()`
+- `src/layout_processor.c` - Updated to use `prefs->beta_openFoldersAfterProcessing` and `prefs->beta_FindWindowOnWorkbenchAndUpdate`
+- `src/window_management.c` - Updated to use `prefs->beta_FindWindowOnWorkbenchAndUpdate` instead of `moveOpenWindows`
+- `src/itidy_types.h` - Removed old global `user_openFoldersWithIcons` declaration
+- `src/main_gui.c` - Removed old global `user_openFoldersWithIcons` definition
+- `src/file_directory_handling.c` - Removed unused experimental code block (old implementation)
+
+**Technical Benefits:**
+- Centralized settings management - all preferences in one structure
+- Settings can be saved/loaded as a complete preference set
+- GUI controls can directly modify the preferences structure
+- Cleaner code organization - no more scattered globals
+- Beta prefix serves as visual reminder that features are experimental
+
+**Behavior:**
+- Both features enabled by default (TRUE) for beta testing
+- `beta_openFoldersAfterProcessing` - Calls `OpenWorkbenchObjectA()` after successfully saving icon positions
+- `beta_FindWindowOnWorkbenchAndUpdate` - Builds window tracker, finds open folders, moves/resizes them to match saved .info geometry
+- DEBUG logging shows when features are active
+
+**Future Work:**
+- Add GUI checkboxes in Advanced Settings window to control beta features
+- Consider removing "beta_" prefix once features are proven stable
+- May add more experimental features using same pattern
+
+---
+
+### Window Movement Bug Fixes - Lockup and Stale Pointers (November 7, 2025)
+
+#### Experimental Feature: Auto-Open Folders During Processing (SUPERSEDED - See Above)
+* **Purpose**: Automatically open folder windows via Workbench during iTidy runs to show real-time progress
+* **Status**: ~~Experimental - can be enabled/disabled via flag~~ **Now integrated into LayoutPreferences as `beta_openFoldersAfterProcessing`**
+* **Date**: November 7, 2025
+
+**Feature Overview:**
+- New global flag: `user_openFoldersWithIcons` (default: FALSE)
+- When enabled, iTidy calls `OpenWorkbenchObjectA(path, NULL)` after tidying each folder
+- Allows users to see icon arrangement results in real-time during recursive operations
+- Particularly useful for understanding what iTidy is doing during large batch operations
+
+**Implementation Details:**
+
+**Files Modified:**
+- `src/itidy_types.h` - Added `extern BOOL user_openFoldersWithIcons` declaration
+- `src/main_gui.c` - Added `BOOL user_openFoldersWithIcons = FALSE` definition
+- `src/file_directory_handling.c` - Added Workbench folder opening logic in `ProcessDirectory()`
+  - Added `#include <proto/wb.h>` for workbench.library auto-opening
+  - Calls `OpenWorkbenchObjectA()` after `FormatIconsAndWindow()` when flag enabled
+  - Non-fatal error handling - continues processing if window open fails
+
+**Technical Notes:**
+- `workbench.library` is auto-opened by `proto/wb.h` - no manual `OpenLibrary()` needed
+- `OpenWorkbenchObjectA()` signature: `BOOL OpenWorkbenchObjectA(CONST_STRPTR name, CONST struct TagItem *tags)`
+- Second parameter is NULL for default behavior (open with standard window settings)
+- Function returns TRUE on success, FALSE on failure (logged but doesn't halt processing)
+
+**Use Cases:**
+- Debugging: Visually verify iTidy's icon arrangements during development
+- User feedback: Show progress in real-time during large recursive operations
+- Testing: Quickly see results without manually opening each folder
+
+**Cautions:**
+- May impact performance on systems with limited memory
+- Opening many folders simultaneously can clutter the Workbench screen
+- Recommended for selective use, not for production batch processing
+- Can be enabled via future GUI option or CLI flag
+
+**How to Enable:**
+```c
+/* In main_gui.c or main.c before calling ProcessDirectory() */
+user_openFoldersWithIcons = TRUE;  /* Enable auto-open */
+ProcessDirectory(path, TRUE, 0);
+user_openFoldersWithIcons = FALSE; /* Disable after processing */
+```
+
+**Future Enhancements:**
+- Add GUI checkbox: "Open folders during processing"
+- Add CLI flag: `-openFolders`
+- Add delay option to stagger window opening
+- Add maximum open windows limit to prevent screen clutter
+
+---
+
+#### Fixed Experimental Window Movement Feature
+* **Purpose**: Debug and fix window movement feature causing lockups and preventing windows from moving
+* **Status**: Complete - Ready for testing
+* **Date**: November 7, 2025
+
+**Problems Addressed:**
+1. Windows becoming locked/unresponsive after movement
+2. Display corruption when other windows overlapped
+3. Windows not actually moving despite log messages showing moves
+4. Invalid window pointers with garbage coordinates
+
+**Root Causes Identified:**
+1. **LockIBase() Blocking Intuition**: `ApplyWindowGeometry()` was using `LockIBase(0)` which blocks ALL Intuition operations including user input and window refresh
+2. **Stale Window Pointers**: Cached window pointers from start of run became invalid as Workbench could close/reopen windows during processing
+
+**Solutions Implemented:**
+
+**Fix #1 - Removed LockIBase() (window_enumerator.c)**:
+- Removed `LockIBase()` and `UnlockIBase()` calls from `ApplyWindowGeometry()`
+- Added `RefreshWindowFrame()` after move/resize operations
+- Added `Delay(1)` to allow Intuition to complete refresh
+- Result: System now stable, no lockups or alerts
+
+**Fix #2 - Fresh Window Lookups (window_enumerator.c, window_management.c)**:
+- Created new `FindWindowByTitle()` function that uses `BuildFolderWindowList()` internally
+- Gets fresh window snapshot every time instead of using cached pointers
+- Properly calls `FreeFolderWindowList()` for cleanup
+- Updated `resizeFolderToContents()` to use fresh lookups instead of cached tracker
+- Result: Windows now have valid pointers when moved
+
+**Files Modified:**
+- `src/GUI/window_enumerator.c` - Removed locking, added `FindWindowByTitle()`
+- `src/window_management.c` - Uses fresh window lookups
+- `include/window_enumerator.h` - Added function prototype
+- `docs/BUGFIX_WINDOW_MOVEMENT_LOCKUP.md` - Complete documentation
+
+**Key Lessons:**
+- Don't lock Intuition for window operations (MoveWindow/SizeWindow are already safe)
+- Window pointers can become stale in long-running operations
+- Always get fresh window state rather than caching in dynamic environments
+
+---
+
+### Folder Window Tracking System with Smart Backdrop Detection (November 6-7, 2025)
 
 #### Implemented Window Geometry Restoration System
 * **Purpose**: Capture and restore folder window geometry before/after iTidy runs
