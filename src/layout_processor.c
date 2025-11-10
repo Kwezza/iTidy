@@ -19,6 +19,7 @@
 #include "layout_preferences.h"
 #include "file_directory_handling.h"
 #include "icon_management.h"
+#include "icon_types.h"
 #include "window_management.h"
 #include "utilities.h"
 #include "writeLog.h"
@@ -33,6 +34,9 @@
 
 /* Global backup context (initialized by ProcessDirectoryWithPreferences) */
 static BackupContext *g_backupContext = NULL;
+
+/* External global for default tool validation */
+extern BOOL g_ValidateDefaultTools;
 
 /* Forward declarations for helper functions */
 static int CompareIconsWithPreferences(const void *a, const void *b, 
@@ -106,6 +110,40 @@ BOOL ProcessDirectoryWithPreferences(const char *path,
         log_info(LOG_GENERAL, "Window moving disabled in preferences\n");
     }
     
+    /* Build PATH search list for default tool validation */
+    if (prefs->validate_default_tools)
+    {
+        log_info(LOG_GENERAL, "\n*** Building PATH search list for default tool validation ***\n");
+        if (BuildPathSearchList())
+        {
+            g_ValidateDefaultTools = TRUE;
+            log_info(LOG_GENERAL, "Default tool validation enabled\n");
+            
+            /* Free existing cache if present (from previous run) */
+            FreeToolCache();
+            
+            /* Initialize tool cache for performance */
+            if (InitToolCache())
+            {
+                log_info(LOG_GENERAL, "Tool cache initialized\n");
+            }
+            else
+            {
+                log_warning(LOG_GENERAL, "Failed to initialize tool cache - validation will be slower\n");
+            }
+        }
+        else
+        {
+            log_warning(LOG_GENERAL, "Failed to build PATH search list - validation disabled for this run\n");
+            g_ValidateDefaultTools = FALSE;
+        }
+    }
+    else
+    {
+        log_info(LOG_GENERAL, "Default tool validation disabled in preferences\n");
+        g_ValidateDefaultTools = FALSE;
+    }
+    
     /* Initialize backup session if backup is enabled */
     if (prefs->backupPrefs.enableUndoBackup)
     {
@@ -164,6 +202,20 @@ BOOL ProcessDirectoryWithPreferences(const char *path,
     {
         log_info(LOG_GENERAL, "Freeing window tracker\n");
         FreeFolderWindowList(&windowTracker);
+    }
+    
+    /* Free PATH search list if validation was enabled */
+    if (g_ValidateDefaultTools)
+    {
+        log_info(LOG_GENERAL, "\n*** Tool cache summary ***\n");
+        DumpToolCache();  /* Show all cached tools after processing */
+        
+        /* Note: Tool cache is NOT freed here - it remains available for post-processing */
+        log_info(LOG_GENERAL, "Tool cache retained for post-processing\n");
+        
+        log_info(LOG_GENERAL, "Freeing PATH search list\n");
+        FreePathSearchList();
+        g_ValidateDefaultTools = FALSE;
     }
     
     /* End backup session if one was started */

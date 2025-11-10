@@ -18,6 +18,10 @@
 #include "writeLog.h"
 #include "icon_misc.h"
 #include "dos/getDiskDetails.h"
+
+/* Global flag to enable/disable default tool validation */
+extern BOOL g_ValidateDefaultTools;
+
 BOOL AddIconToArray(IconArray *iconArray, const FullIconDetails *newIcon);
 BOOL checkIconFrame(const char *iconName);
 IconArray *CreateIconArray(void);

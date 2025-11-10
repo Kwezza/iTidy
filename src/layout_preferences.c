@@ -64,6 +64,9 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     prefs->memoryLoggingEnabled = DEFAULT_MEMORY_LOGGING_ENABLED;
     prefs->enable_performance_logging = DEFAULT_PERFORMANCE_LOGGING_ENABLED;
     
+    /* Default Tool Validation Settings */
+    prefs->validate_default_tools = DEFAULT_VALIDATE_DEFAULT_TOOLS;
+    
     /* Backup Settings */
     prefs->backupPrefs.enableUndoBackup = FALSE;
     prefs->backupPrefs.useLha = TRUE;

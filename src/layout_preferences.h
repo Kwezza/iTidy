@@ -151,6 +151,9 @@ typedef struct {
     BOOL memoryLoggingEnabled;                 /* Enable memory allocation logging (creates memory_*.log) */
     BOOL enable_performance_logging;           /* Enable performance timing logging for iTidy operations */
     
+    /* Default Tool Validation Settings */
+    BOOL validate_default_tools;               /* Enable default tool validation using system PATH */
+    
     /* Backup Settings */
     BackupPreferences backupPrefs;   /* Embedded backup configuration */
 } LayoutPreferences;
@@ -198,6 +201,9 @@ typedef struct {
 #define DEFAULT_LOG_LEVEL                                  1       /* Default: INFO level (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR) */
 #define DEFAULT_MEMORY_LOGGING_ENABLED                     FALSE   /* Default: Disabled (can be very verbose) */
 #define DEFAULT_PERFORMANCE_LOGGING_ENABLED                FALSE   /* Default: Disabled (performance timing logs) */
+
+/* Default Tool Validation Defaults */
+#define DEFAULT_VALIDATE_DEFAULT_TOOLS                     TRUE    /* Default: Enabled (validate default tools using system PATH) */
 
 /* Icon Spacing Limits */
 #define MIN_ICON_SPACING            4    /* Minimum 4px (icons too close) */

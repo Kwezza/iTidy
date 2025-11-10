@@ -44,6 +44,7 @@ typedef struct {
 
 /* Full icon details */
 typedef struct {
+    /* Integer fields (4 bytes each on 68k) */
     int icon_x;
     int icon_y;
     int icon_width;
@@ -54,12 +55,21 @@ typedef struct {
     int icon_max_height;
     int icon_type;
     int border_width;
+    
+    /* Pointer fields (4 bytes each on 68k) - grouped together */
     char *icon_text;
     char *icon_full_path;
+    char *default_tool;         /* Default tool path (may be NULL) */
+    
+    /* ULONG fields (4 bytes each) */
+    ULONG file_size;
+    
+    /* Struct fields (12 bytes for DateStamp: 3 LONGs) */
+    struct DateStamp file_date;
+    
+    /* BOOL fields (2 bytes each on Amiga) - grouped at end to minimize padding */
     BOOL is_folder;
     BOOL is_write_protected;
-    ULONG file_size;
-    struct DateStamp file_date;
 } FullIconDetails;
 
 /* Icon array */

@@ -41,6 +41,378 @@ struct iTidyMainWindow {
 
 ## Development Timeline
 
+### Latest: Default Tool Cache System with Hit Tracking (November 10, 2025)
+
+#### Implemented Persistent Tool Cache for Post-Processing Analysis
+* **Purpose**: Enable analysis of default tool usage patterns and missing tools across icon sets
+* **Status**: Complete - Cache system operational with persistence and hit counting
+* **Date**: November 10, 2025
+
+**Feature Overview:**
+Built a comprehensive tool cache system that persists after processing runs, enabling post-run analysis of default tool patterns. The cache tracks which tools exist on the system, their versions, full paths, and usage frequency.
+
+**Key Components:**
+
+1. **ToolCacheEntry Structure** (`src/icon_types.h`):
+   - `toolName`: Simple tool name (e.g., "MultiView")
+   - `exists`: Boolean indicating if tool was found on system
+   - `fullPath`: Complete path where tool was located
+   - `versionString`: Version info extracted from $VER: tag
+   - `hitCount`: Number of times this tool was referenced (NEW)
+
+2. **Cache Functions** (`src/icon_types.c`):
+   - `InitToolCache()`: Allocates initial capacity (20 entries, auto-expands)
+   - `SearchToolCache()`: Case-insensitive lookup with hit count increment
+   - `GetToolVersion()`: Extracts version strings from executable files
+   - `AddToolToCache()`: Adds validated tools with dynamic array expansion
+   - `DumpToolCache()`: Formatted output showing all tools with hit counts
+   - `FreeToolCache()`: Complete memory cleanup
+
+3. **PATH-Based Validation** (`src/icon_types.c`):
+   - `BuildPathSearchList()`: Reads actual system PATH from cli_CommandDir
+   - Uses AmigaDOS CLI structure for real PATH instead of hardcoded directories
+   - Case-insensitive tool matching (AmigaDOS filesystem characteristic)
+
+4. **Persistent Cache Architecture**:
+   - **Before Run**: FreeToolCache() clears any previous cache
+   - **During Run**: Cache accumulates tool data with hit counts
+   - **After Run**: Cache remains in memory (not freed)
+   - **On Exit**: FreeToolCache() called in main shutdown sequence
+
+**Technical Details:**
+
+*Cache Performance:*
+- First lookup per tool: Full disk Lock() and version extraction
+- Subsequent lookups: Instant cache hit (O(1) string compare vs disk I/O)
+- Dynamic expansion: Doubles capacity when full (starts at 20, grows to 40, 80, etc.)
+- Case-insensitive matching prevents duplicate entries for "MultiView", "multiview", "MULTIVIEW"
+
+*Version Extraction:*
+- Reads $VER: tag from executable files using 512-byte chunks
+- Handles standard Amiga version format (e.g., "MultiView 47.17 (9.1.2023)")
+- Returns NULL for files without version tags
+
+*Hit Count Tracking:*
+- Incremented on each cache hit in SearchToolCache()
+- Enables identification of most frequently used tools
+- Useful for prioritizing tool updates or showing usage statistics
+
+**Integration Points:**
+- `layout_processor.c`: Cache lifecycle management
+- `main_gui.c`: Final cleanup on program exit
+- `icon_types.c`: Core validation and caching logic
+
+**Output Format:**
+```
+========================================
+Tool Validation Cache Summary
+========================================
+Total tools cached: 28
+Cache capacity: 40
+
+Tool Name             | Hits | Status  | Full Path                              | Version
+----------------------|------|---------|----------------------------------------|---------------------------
+MultiView             |   45 | EXISTS  | Workbench:Utilities/MultiView          | MultiView 47.17 (9.1.2023)
+More                  |   12 | EXISTS  | Workbench:Utilities/More               | more 47.1 (24.5.2020)
+Installer             |    3 | EXISTS  | Workbench:System/Installer             | Installer 47.19 (8.3.2021)
+AWeb-II               |    1 | MISSING | (not found)                            | (no version)
+```
+
+**Future Development Opportunities:**
+
+The persistent cache system enables several planned features:
+
+1. **Missing Tool Report Window**:
+   - Show user which default tools are missing from their system
+   - Sortable by tool name or hit count
+   - One-click to clear/update icons with missing tools
+
+2. **Popular Tools Analysis**:
+   - Display most-used tools by hit count
+   - Suggest updates for frequently-referenced tools
+   - Identify which tools are actually being used vs installed
+
+3. **Default Tool Updater** (iTidy v2.0 spec):
+   - Bulk update outdated tool versions
+   - Suggest modern replacements for missing tools
+   - Fix broken default tool paths
+
+4. **System Analysis**:
+   - Generate reports on default tool usage patterns
+   - Identify orphaned or unnecessary tools
+   - Compare tool usage across different icon sets
+
+**Cache Lifecycle Example:**
+```
+Session Start:
+  → FreeToolCache() (clear any previous data)
+  → InitToolCache() (allocate new cache)
+
+Run Processing:
+  → Icon 1: "MultiView" → Cache miss → Validate → Add to cache (hitCount=0)
+  → Icon 2: "MultiView" → Cache hit  → hitCount=1
+  → Icon 3: "multiview" → Cache hit  → hitCount=2 (case-insensitive match!)
+  → Icon 4: "More"      → Cache miss → Validate → Add to cache (hitCount=0)
+  → Icon 5: "More"      → Cache hit  → hitCount=1
+
+End Processing:
+  → DumpToolCache() (display results)
+  → Cache REMAINS in memory (not freed)
+  → Available for post-processing analysis
+
+Program Exit:
+  → FreeToolCache() (cleanup all memory)
+```
+
+**Performance Impact:**
+- Eliminates redundant Lock() operations for repeated tools
+- Example: 45 references to "MultiView" = 1 disk access + 44 instant cache hits
+- Version extraction only performed once per unique tool
+- Typical cache size: 20-50 entries (minimal memory footprint)
+
+**Files Modified:**
+- `src/icon_types.h`: ToolCacheEntry structure with hitCount field
+- `src/icon_types.c`: Complete cache implementation (~400 lines)
+- `src/layout_processor.c`: Cache lifecycle management
+- `src/main_gui.c`: Exit cleanup integration
+- `include/icon_types.h`: Function declarations and extern declarations
+
+**Testing Notes:**
+- Cache correctly handles case variations (MultiView/multiview/MULTIVIEW)
+- Hit counts accurately reflect tool usage patterns
+- Memory properly freed on program exit (verified with memory tracking)
+- Cache persists after processing run as designed
+
+**Recommendation for Future Work:**
+The cache is now ready for post-processing features. Consider implementing the Missing Tool Report window next, as it provides immediate user value and uses the existing cache infrastructure. The hit count data can later enable "Most Used Tools" dashboard and intelligent tool update suggestions.
+
+---
+
+### Default Tool Infrastructure & Icon Reading Optimization (November 10, 2025)
+
+#### Implemented Foundation for v2.0 Default Tool Validator Feature
+* **Purpose**: Prepare infrastructure to support Default Tool validation and replacement feature from iTidy v2 spec
+* **Status**: Complete - Infrastructure ready, validator implementation next phase
+* **Date**: November 10, 2025
+
+**Feature Overview:**
+Added comprehensive infrastructure to read, store, and manage icon default tool paths. This lays the groundwork for the Default Tool Validator feature (iTidy v2.0 spec section 4.1), which will detect missing or obsolete default tools and replace them using a mapping table. Additionally, optimized icon reading to reduce disk I/O by ~75% - critical for floppy-based Amiga systems.
+
+**Performance Impact:**
+- **Before**: 3-4 disk reads per icon (GetIconPositionFromPath, IsNewIconPath, GetStandardIconSize, checkIconFrame)
+- **After**: 1 disk read per icon (GetIconDetailsFromDisk - reads everything at once)
+- **Improvement**: ~75% reduction in disk I/O operations
+- **Real-world impact**: For 100 icons: 300-400 operations → 100 operations (critical on floppy disks!)
+
+**Implementation Details:**
+
+**Files Modified:**
+1. `src/itidy_types.h` - Added `default_tool` field to `FullIconDetails` structure (with proper alignment)
+2. `src/icon_types.h` - Added `IconDetailsFromDisk` structure and optimized functions
+3. `src/icon_types.c` - Implemented `GetIconDetailsFromDisk()` and `SetIconDefaultTool()`
+4. `src/icon_management.c` - Replaced multiple disk reads with single optimized call
+5. `src/icon_management.c` - Added `default_tool` cleanup in `FreeIconArray()`
+
+**Key Changes:**
+
+1. **Structure Field Addition (with Amiga 68k Alignment Fix):**
+```c
+/* FullIconDetails - Properly aligned for Amiga 68000 architecture */
+typedef struct {
+    /* Integer fields (4 bytes each) */
+    int icon_x, icon_y, icon_width, icon_height;
+    int text_width, text_height;
+    int icon_max_width, icon_max_height;
+    int icon_type, border_width;
+    
+    /* Pointer fields (4 bytes each) - grouped together */
+    char *icon_text;
+    char *icon_full_path;
+    char *default_tool;      /* NEW: Default tool path */
+    
+    /* ULONG and struct fields (4+ bytes) */
+    ULONG file_size;
+    struct DateStamp file_date;
+    
+    /* BOOL fields (2 bytes on Amiga) - at end to minimize padding */
+    BOOL is_folder;
+    BOOL is_write_protected;
+} FullIconDetails;
+```
+
+**Critical Structure Alignment Issue Resolved:**
+- Initial implementation placed `default_tool` before `BOOL` fields
+- On Amiga, `BOOL` is 2 bytes (int16_t), not 4 bytes
+- Caused structure padding/alignment corruption
+- Integer values (60, 24) were interpreted as pointers (0x0000003c, 0x00000018)
+- Memory tracker caught invalid free() attempts
+- **Solution**: Reordered fields to group by size, BOOL fields at end
+
+2. **Optimized Icon Reading Structure:**
+```c
+typedef struct {
+    IconPosition position;   /* X, Y coordinates */
+    IconSize size;          /* Width, height */
+    int iconType;           /* Standard/NewIcon/OS3.5 */
+    BOOL hasFrame;          /* Border presence */
+    char *defaultTool;      /* Default tool path (caller must free) */
+    BOOL isNewIcon;         /* NewIcon format detected */
+    BOOL isOS35Icon;        /* OS3.5 format detected */
+} IconDetailsFromDisk;
+```
+
+3. **Single Disk Read Function:**
+```c
+BOOL GetIconDetailsFromDisk(const char *filePath, IconDetailsFromDisk *details) {
+    /* ONE GetDiskObject() call extracts:
+     * - Position (do_CurrentX, do_CurrentY)
+     * - Size (do_Gadget.Width, do_Gadget.Height)
+     * - Default Tool (do_DefaultTool) <- NEW!
+     * - Icon type (NewIcon/OS3.5 detection)
+     * - Frame status (IconControl on icon.library v44+)
+     */
+    diskObj = GetDiskObject(pathCopy);  // Single disk I/O
+    
+    details->position.x = diskObj->do_CurrentX;
+    details->position.y = diskObj->do_CurrentY;
+    details->size.width = diskObj->do_Gadget.Width;
+    details->size.height = diskObj->do_Gadget.Height;
+    
+    // NEW: Extract default tool
+    if (diskObj->do_DefaultTool != NULL && diskObj->do_DefaultTool[0] != '\0') {
+        details->defaultTool = strdup(diskObj->do_DefaultTool);
+    }
+    
+    // All other detection in same call...
+    FreeDiskObject(diskObj);
+}
+```
+
+4. **Default Tool Setter Function:**
+```c
+BOOL SetIconDefaultTool(const char *iconPath, const char *newDefaultTool) {
+    diskObj = GetDiskObject(pathCopy);
+    diskObj->do_DefaultTool = strdup(newDefaultTool);
+    result = PutDiskObject(pathCopy, diskObj);
+    FreeDiskObject(diskObj);
+    return result;
+}
+```
+
+5. **Icon Loading Optimization:**
+```c
+// OLD CODE (INEFFICIENT - 4 disk reads):
+iconPosition = GetIconPositionFromPath(fullPathAndFile);      // Read 1
+if (IsNewIconPath(fullPathAndFile)) {                         // Read 2
+    GetNewIconSizePath(fullPathAndFile, &iconSize);           // Read 3
+}
+if (checkIconFrame(fullPathAndFile)) {                        // Read 4
+    // ...
+}
+
+// NEW CODE (OPTIMIZED - 1 disk read):
+if (GetIconDetailsFromDisk(fullPathAndFile, &iconDetails)) {
+    newIcon.icon_x = iconDetails.position.x;
+    newIcon.icon_y = iconDetails.position.y;
+    iconSize = iconDetails.size;
+    newIcon.default_tool = iconDetails.defaultTool;  // NEW!
+    newIcon.icon_type = iconDetails.iconType;
+    // All data extracted in ONE disk operation
+}
+```
+
+6. **Logging Output:**
+```c
+log_info(LOG_ICONS, "  Default Tool: '%s' -> %s\n", defaultTool, iconName);
+log_info(LOG_ICONS, "  Default Tool: (none) -> %s\n", iconName);
+```
+
+**Example Log Output:**
+```
+[12:04:22][INFO]   Default Tool: 'MultiView' -> Roadshow.guide 
+[12:04:22][INFO]   Default Tool: 'AWeb-II' -> ipf-howto.html 
+[12:04:22][INFO]   Default Tool: 'Apdf' -> Roadshow.pdf 
+[12:04:22][INFO]   Default Tool: (none) -> Printable 
+```
+
+7. **Memory Management:**
+```c
+void FreeIconArray(IconArray *iconArray) {
+    for (i = 0; i < iconArray->size; i++) {
+        if (iconArray->array[i].icon_text != NULL)
+            whd_free(iconArray->array[i].icon_text);
+        if (iconArray->array[i].icon_full_path != NULL)
+            whd_free(iconArray->array[i].icon_full_path);
+        if (iconArray->array[i].default_tool != NULL)  // NEW!
+            whd_free(iconArray->array[i].default_tool);
+    }
+}
+```
+
+**Debugging Journey - Structure Alignment Bug:**
+
+1. **Initial Crash**: Software Failure (Error: 0100 0005, Task: 40406420)
+   - Amiga guru meditation crash on structure access
+
+2. **Memory Corruption Detected**: Memory tracker showed:
+   ```
+   [ERROR] Attempting to free UNTRACKED pointer 0x0000003c  (60 decimal - icon width!)
+   [ERROR] Attempting to free UNTRACKED pointer 0x00000018  (24 decimal - icon height!)
+   ```
+
+3. **Root Cause**: Structure field ordering caused misalignment
+   - `char *default_tool` (4 bytes) followed by `BOOL is_folder` (2 bytes)
+   - Compiler added padding, breaking binary layout
+   - Old code paths reading wrong memory offsets
+   - Integer fields interpreted as pointers during free()
+
+4. **Solution**: Reordered structure fields by size
+   - All 4-byte fields together (int, pointers, ULONG)
+   - struct fields (DateStamp = 3 LONGs = 12 bytes)
+   - 2-byte BOOL fields at end
+   - Minimizes padding, ensures stable layout
+
+**Architecture Notes:**
+
+**Amiga 68000 Type Sizes:**
+- `int` = 4 bytes
+- `char *` = 4 bytes (pointer)
+- `ULONG` = 4 bytes
+- `BOOL` = 2 bytes (int16_t)
+- `struct DateStamp` = 12 bytes (3 LONGs)
+
+**Next Phase Implementation:**
+With infrastructure complete, next steps for Default Tool Validator:
+
+1. **Create ToolMap Configuration:**
+   - `ToolMap.txt` - CSV mapping of old→new tool paths
+   - `Prefs:iTidy/Defaults.prefs` - User preferred tools
+
+2. **Validation Module:**
+   - Scan icons, check if `default_tool` file exists
+   - Lookup replacement in ToolMap
+   - Update icon using `SetIconDefaultTool()`
+
+3. **GUI Integration:**
+   - Add checkbox: `[✓] Validate Default Tools`
+   - Report: "Validated: 154 icons (12 updated)"
+
+**Benefits Achieved:**
+- ✅ Default tool data now available for all icons
+- ✅ 75% reduction in disk I/O (critical for floppy systems)
+- ✅ Foundation ready for Default Tool Validator feature
+- ✅ Cleaner code architecture
+- ✅ Better logging and debugging capabilities
+
+**Testing:**
+- Tested on WinUAE with Workbench 3.2
+- Verified default tool extraction from various icon types
+- Memory tracking confirmed no leaks or invalid frees
+- Performance improvement visible in logs
+- Structure alignment verified on real 68k architecture
+
+---
+
 ### Latest: Performance Logging Toggle Feature (November 7, 2025)
 
 #### Added User-Controllable Performance Logging

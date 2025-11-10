@@ -7,6 +7,10 @@
 #include <string.h>
 #include <stdlib.h>
 
+#ifdef __AMIGA__
+#include <dos/dosextens.h>
+#endif
+
 #include "itidy_types.h"
 #include "icon_management.h"
 #include "window_management.h"
@@ -665,4 +669,991 @@ int getOS35IconSize(const char *filename, IconSize *size)
 
     /* Return true if the "FACE" chunk was found and size was set */
     return foundFace;
+}
+
+/**
+ * GetIconDetailsFromDisk - Optimized function to read ALL icon details in ONE disk operation
+ * 
+ * This function performs a SINGLE GetDiskObject() call and extracts all necessary information:
+ * - Icon position (X, Y coordinates)
+ * - Icon size (width, height)
+ * - Icon type detection (Standard, NewIcon, OS3.5)
+ * - Frame status (border presence)
+ * - Default tool path
+ * 
+ * This replaces multiple separate disk reads and dramatically improves performance,
+ * especially on floppy-based systems.
+ * 
+ * @param filePath Path to icon file (with or without .info extension)
+ * @param details Pointer to IconDetailsFromDisk structure to fill
+ * @return TRUE if successful, FALSE on error
+ * 
+ * NOTE: Caller must free details->defaultTool if not NULL
+ */
+BOOL GetIconDetailsFromDisk(const char *filePath, IconDetailsFromDisk *details)
+{
+    struct DiskObject *diskObj = NULL;
+    char *pathCopy = NULL;
+    size_t pathLength;
+    BOOL success = FALSE;
+    
+    if (filePath == NULL || details == NULL)
+    {
+        return FALSE;
+    }
+    
+    /* Initialize the details structure */
+    memset(details, 0, sizeof(IconDetailsFromDisk));
+    details->position.x = NO_ICON_POSITION;
+    details->position.y = NO_ICON_POSITION;
+    details->hasFrame = TRUE;  /* Default assumption */
+    details->iconType = icon_type_standard;  /* Default assumption */
+    
+    /* Create a copy of the path and remove .info extension if present */
+    pathLength = strlen(filePath);
+    pathCopy = (char *)whd_malloc(pathLength + 1);
+    if (pathCopy == NULL)
+    {
+        return FALSE;
+    }
+    
+    strncpy(pathCopy, filePath, pathLength);
+    pathCopy[pathLength] = '\0';
+    
+    /* Remove .info extension if present */
+    if (pathLength > 5 && strncasecmp_custom(pathCopy + pathLength - 5, ".info", 5) == 0)
+    {
+        pathCopy[pathLength - 5] = '\0';
+    }
+    
+    /* ===== SINGLE DISK READ - Get all icon data ===== */
+    diskObj = GetDiskObject(pathCopy);
+    if (diskObj == NULL)
+    {
+#ifdef DEBUG
+        append_to_log("GetIconDetailsFromDisk: Unable to load icon: %s.info\n", pathCopy);
+#endif
+        whd_free(pathCopy);
+        return FALSE;
+    }
+    
+    /* Extract position */
+    details->position.x = diskObj->do_CurrentX;
+    details->position.y = diskObj->do_CurrentY;
+    
+    /* Extract size from gadget structure */
+    details->size.width = diskObj->do_Gadget.Width;
+    details->size.height = diskObj->do_Gadget.Height;
+    
+    /* Extract and copy default tool if present */
+    if (diskObj->do_DefaultTool != NULL && diskObj->do_DefaultTool[0] != '\0')
+    {
+        size_t toolLen = strlen(diskObj->do_DefaultTool);
+        details->defaultTool = (char *)whd_malloc(toolLen + 1);
+        if (details->defaultTool != NULL)
+        {
+            strcpy(details->defaultTool, diskObj->do_DefaultTool);
+#ifdef DEBUG
+            log_debug(LOG_ICONS, "GetIconDetailsFromDisk: Found default tool '%s' in %s\n", 
+                     diskObj->do_DefaultTool, pathCopy);
+#endif
+        }
+    }
+    else
+    {
+        details->defaultTool = NULL;
+#ifdef DEBUG
+        log_debug(LOG_ICONS, "GetIconDetailsFromDisk: No default tool in %s\n", pathCopy);
+#endif
+    }
+    
+    /* Detect icon type - check for NewIcon format */
+    details->isNewIcon = IsNewIcon(diskObj);
+    if (details->isNewIcon)
+    {
+        details->iconType = icon_type_newIcon;
+    }
+    
+    /* Check for OS3.5 icon format */
+    if (!details->isNewIcon)
+    {
+        details->isOS35Icon = (isOS35IconFormat(filePath) == 1);
+        if (details->isOS35Icon)
+        {
+            details->iconType = icon_type_os35;
+            /* Get more accurate size for OS3.5 icons */
+            getOS35IconSize(filePath, &details->size);
+        }
+    }
+    
+    /* Determine frame status (only on Amiga with icon.library v44+) */
+#if PLATFORM_AMIGA
+    {
+        struct Library *IconBase = OpenLibrary("icon.library", 44);
+        if (IconBase != NULL)
+        {
+            int32_t frameStatus = 0;
+            int32_t errorCode = 0;
+            
+            if (IconControl(diskObj,
+                           ICONCTRLA_GetFrameless, &frameStatus,
+                           ICONA_ErrorCode, &errorCode,
+                           TAG_END) == 1)
+            {
+                /* frameStatus == 0 means it HAS a frame */
+                details->hasFrame = (frameStatus == 0) ? TRUE : FALSE;
+            }
+            
+            CloseLibrary(IconBase);
+        }
+    }
+#endif
+    
+    success = TRUE;
+    
+    /* Cleanup */
+    FreeDiskObject(diskObj);
+    whd_free(pathCopy);
+    
+    return success;
+}
+
+/**
+ * SetIconDefaultTool - Update the default tool for an icon
+ * 
+ * @param iconPath Path to icon file (with or without .info extension)
+ * @param newDefaultTool New default tool path (or NULL to clear)
+ * @return TRUE if successful, FALSE on error
+ */
+BOOL SetIconDefaultTool(const char *iconPath, const char *newDefaultTool)
+{
+    struct DiskObject *diskObj = NULL;
+    char *pathCopy = NULL;
+    size_t pathLength;
+    BOOL success = FALSE;
+    
+    if (iconPath == NULL)
+    {
+        return FALSE;
+    }
+    
+    /* Create a copy of the path and remove .info extension if present */
+    pathLength = strlen(iconPath);
+    pathCopy = (char *)whd_malloc(pathLength + 1);
+    if (pathCopy == NULL)
+    {
+        return FALSE;
+    }
+    
+    strncpy(pathCopy, iconPath, pathLength);
+    pathCopy[pathLength] = '\0';
+    
+    /* Remove .info extension if present */
+    if (pathLength > 5 && strncasecmp_custom(pathCopy + pathLength - 5, ".info", 5) == 0)
+    {
+        pathCopy[pathLength - 5] = '\0';
+    }
+    
+    /* Read the icon */
+    diskObj = GetDiskObject(pathCopy);
+    if (diskObj == NULL)
+    {
+#ifdef DEBUG
+        append_to_log("SetIconDefaultTool: Unable to load icon: %s.info\n", pathCopy);
+#endif
+        whd_free(pathCopy);
+        return FALSE;
+    }
+    
+    /* Free old default tool if it exists */
+    if (diskObj->do_DefaultTool != NULL)
+    {
+        /* Note: do_DefaultTool memory is managed by icon.library, don't free it manually */
+    }
+    
+    /* Set new default tool */
+    if (newDefaultTool != NULL && newDefaultTool[0] != '\0')
+    {
+        /* Allocate and copy new tool string */
+        size_t toolLen = strlen(newDefaultTool);
+        char *newTool = (char *)whd_malloc(toolLen + 1);
+        if (newTool != NULL)
+        {
+            strcpy(newTool, newDefaultTool);
+            diskObj->do_DefaultTool = newTool;
+        }
+        else
+        {
+            FreeDiskObject(diskObj);
+            whd_free(pathCopy);
+            return FALSE;
+        }
+    }
+    else
+    {
+        diskObj->do_DefaultTool = NULL;
+    }
+    
+    /* Write the icon back to disk */
+    if (PutDiskObject(pathCopy, diskObj))
+    {
+        success = TRUE;
+#ifdef DEBUG
+        append_to_log("SetIconDefaultTool: Updated %s -> %s\n", 
+                     pathCopy, newDefaultTool ? newDefaultTool : "(none)");
+#endif
+    }
+    else
+    {
+#ifdef DEBUG
+        append_to_log("SetIconDefaultTool: Failed to write icon: %s.info\n", pathCopy);
+#endif
+    }
+    
+    /* Cleanup */
+    FreeDiskObject(diskObj);
+    whd_free(pathCopy);
+    
+    return success;
+}
+
+/*========================================================================*/
+/* Forward Declarations for Tool Cache Functions                         */
+/*========================================================================*/
+static ToolCacheEntry *SearchToolCache(const char *toolName);
+static char *GetToolVersion(const char *filePath);
+static ToolCacheEntry *AddToolToCache(const char *toolName, BOOL exists, const char *fullPath, const char *versionString);
+
+/**
+ * ValidateDefaultTool - Check if a default tool command/executable exists
+ * 
+ * This function validates whether a default tool specified in an icon can be found.
+ * Uses a cache to avoid repeated disk access for the same tools.
+ * 
+ * Enhanced with:
+ * - Tool cache for performance (avoids redundant lookups)
+ * - Version string extraction from executables
+ * - Full path tracking
+ * 
+ * Search Strategy:
+ * 1. Check cache first (fast path)
+ * 2. If path contains a colon (:) or slash (/), treat as explicit path - check directly
+ * 3. Otherwise, treat as command name and search the system PATH
+ * 4. Extract version information if found
+ * 5. Add result to cache
+ * 
+ * @param defaultTool The default tool string to validate (e.g., "MultiView" or "SYS:Utilities/More")
+ * @return TRUE if the tool exists and is accessible, FALSE otherwise
+ * 
+ * Examples:
+ *   ValidateDefaultTool("MultiView")              -> Searches PATH, caches result with version
+ *   ValidateDefaultTool("SYS:Utilities/MultiView") -> Checks exact path
+ *   ValidateDefaultTool("InvalidTool")             -> Returns FALSE, caches as missing
+ */
+BOOL ValidateDefaultTool(const char *defaultTool)
+{
+#if PLATFORM_AMIGA
+    BPTR lock = 0;
+    BOOL isExplicitPath = FALSE;
+    BOOL toolExists = FALSE;
+    char testPath[256];
+    char *foundPath = NULL;
+    char *versionStr = NULL;
+    ToolCacheEntry *cacheEntry;
+    int i;
+    
+    if (defaultTool == NULL || defaultTool[0] == '\0')
+    {
+        return FALSE;  /* No tool specified */
+    }
+    
+    /* Check cache first */
+    cacheEntry = SearchToolCache(defaultTool);
+    if (cacheEntry)
+    {
+#ifdef DEBUG
+        log_debug(LOG_ICONS, "ValidateDefaultTool: Cache hit for '%s' -> %s\n", 
+                 defaultTool, cacheEntry->exists ? "EXISTS" : "MISSING");
+#endif
+        return cacheEntry->exists;
+    }
+    
+    /* Not in cache - perform validation */
+    
+    /* Check if this is an explicit path (contains : or /) */
+    if (strchr(defaultTool, ':') != NULL || strchr(defaultTool, '/') != NULL)
+    {
+        isExplicitPath = TRUE;
+    }
+    
+    if (isExplicitPath)
+    {
+        /* Explicit path - check directly */
+#ifdef DEBUG
+        log_debug(LOG_ICONS, "ValidateDefaultTool: Checking explicit path '%s'\n", defaultTool);
+#endif
+        lock = Lock((CONST_STRPTR)defaultTool, ACCESS_READ);
+        if (lock)
+        {
+            UnLock(lock);
+            toolExists = TRUE;
+            foundPath = (char *)defaultTool;  /* Use the provided path as-is */
+#ifdef DEBUG
+            log_debug(LOG_ICONS, "  -> Found at explicit path\n");
+#endif
+        }
+        else
+        {
+#ifdef DEBUG
+            log_debug(LOG_ICONS, "  -> NOT found at explicit path\n");
+#endif
+        }
+    }
+    else
+    {
+        /* Simple command name - search system PATH */
+#ifdef DEBUG
+        log_debug(LOG_ICONS, "ValidateDefaultTool: Searching PATH for command '%s'\n", defaultTool);
+#endif
+        
+        /* Use global PATH list if available */
+        if (g_PathSearchList && g_PathSearchCount > 0)
+        {
+            for (i = 0; i < g_PathSearchCount && !toolExists; i++)
+            {
+                /* Build test path */
+                snprintf(testPath, sizeof(testPath), "%s%s", g_PathSearchList[i], defaultTool);
+                
+#ifdef DEBUG
+                log_debug(LOG_ICONS, "  -> Trying: %s\n", testPath);
+#endif
+                
+                lock = Lock((CONST_STRPTR)testPath, ACCESS_READ);
+                if (lock)
+                {
+                    UnLock(lock);
+                    toolExists = TRUE;
+                    foundPath = testPath;
+#ifdef DEBUG
+                    log_debug(LOG_ICONS, "  -> FOUND at: %s\n", testPath);
+#endif
+                }
+            }
+        }
+        else
+        {
+            /* Fallback: PATH list not built, try C: directory only */
+            log_warning(LOG_ICONS, "ValidateDefaultTool: PATH list not available, checking C: only\n");
+            snprintf(testPath, sizeof(testPath), "C:%s", defaultTool);
+            
+            lock = Lock((CONST_STRPTR)testPath, ACCESS_READ);
+            if (lock)
+            {
+                UnLock(lock);
+                toolExists = TRUE;
+                foundPath = testPath;
+            }
+        }
+        
+        if (!toolExists)
+        {
+#ifdef DEBUG
+            log_debug(LOG_ICONS, "  -> NOT found in any PATH directory\n");
+#endif
+        }
+    }
+    
+    /* Extract version if tool was found */
+    if (toolExists && foundPath)
+    {
+        versionStr = GetToolVersion(foundPath);
+#ifdef DEBUG
+        if (versionStr)
+        {
+            log_debug(LOG_ICONS, "  -> Version: %s\n", versionStr);
+        }
+#endif
+    }
+    
+    /* Add to cache */
+    AddToolToCache(defaultTool, toolExists, foundPath, versionStr);
+    
+    /* Free version string (it's been copied into cache) */
+    if (versionStr)
+    {
+        FreeVec(versionStr);
+    }
+    
+    return toolExists;
+#else
+    /* Host platform stub - assume tool exists */
+    (void)defaultTool;
+    return TRUE;
+#endif
+}
+
+/*========================================================================*/
+/* PATH Search List Implementation                                       */
+/*========================================================================*/
+
+/* Global PATH search list variables */
+char **g_PathSearchList = NULL;
+int g_PathSearchCount = 0;
+
+/**
+ * @brief Build PATH search list from AmigaDOS Process->pr_Path
+ * 
+ * Reads the system PATH from the current process's CLI structure
+ * and builds a global array of directory paths for tool validation.
+ * 
+ * This implementation:
+ * 1. Gets the current process structure
+ * 2. Gets the CLI structure from pr_CLI
+ * 3. Walks the cli_CommandDir BPTR linked list (the PATH)
+ * 4. Uses NameFromLock() to convert each BPTR to a path string
+ * 5. Stores paths in a dynamically allocated array
+ * 
+ * The cli_CommandDir is a BPTR linked list where each node contains:
+ *   - Next pointer (BPTR to next node)
+ *   - Lock (BPTR lock to the directory)
+ * 
+ * @return TRUE if PATH list was built successfully, FALSE on error
+ */
+BOOL BuildPathSearchList(void)
+{
+#if PLATFORM_AMIGA
+    struct Process *proc;
+    struct CommandLineInterface *cli;
+    BPTR pathPtr;
+    BPTR currentPath;
+    int count = 0;
+    int i;
+    char pathBuffer[256];
+    BPTR lock;
+    
+    /* Get current process */
+    proc = (struct Process *)FindTask(NULL);
+    if (!proc)
+    {
+        log_error(LOG_GENERAL, "BuildPathSearchList: Failed to get current process\n");
+        return FALSE;
+    }
+    
+    /* Get CLI structure - pr_CLI is a BPTR */
+    if (!proc->pr_CLI)
+    {
+        log_warning(LOG_GENERAL, "BuildPathSearchList: Not running from CLI (no pr_CLI)\n");
+        log_info(LOG_GENERAL, "BuildPathSearchList: Using C: as default PATH\n");
+        
+        /* Allocate array for just "C:" */
+        g_PathSearchList = (char **)AllocVec(sizeof(char *), MEMF_CLEAR);
+        if (!g_PathSearchList)
+        {
+            log_error(LOG_GENERAL, "BuildPathSearchList: Failed to allocate PATH array\n");
+            return FALSE;
+        }
+        
+        g_PathSearchList[0] = (char *)AllocVec(3, MEMF_CLEAR);  /* "C:" + null */
+        if (!g_PathSearchList[0])
+        {
+            FreeVec(g_PathSearchList);
+            g_PathSearchList = NULL;
+            log_error(LOG_GENERAL, "BuildPathSearchList: Failed to allocate C: string\n");
+            return FALSE;
+        }
+        
+        strcpy(g_PathSearchList[0], "C:");
+        g_PathSearchCount = 1;
+        return TRUE;
+    }
+    
+    cli = (struct CommandLineInterface *)BADDR(proc->pr_CLI);
+    if (!cli)
+    {
+        log_error(LOG_GENERAL, "BuildPathSearchList: Failed to get CLI structure\n");
+        return FALSE;
+    }
+    
+    /* Get cli_CommandDir (this is the PATH list) */
+    pathPtr = cli->cli_CommandDir;
+    
+    /* First pass: count the number of path entries */
+    currentPath = pathPtr;
+    while (currentPath)
+    {
+        /* Convert BPTR to actual pointer */
+        struct PathNode {
+            BPTR pn_Next;
+            BPTR pn_Lock;
+        } *pathNode;
+        
+        pathNode = (struct PathNode *)BADDR(currentPath);
+        if (!pathNode)
+            break;
+            
+        count++;
+        currentPath = pathNode->pn_Next;
+        
+        /* Safety limit */
+        if (count > 100)
+        {
+            log_warning(LOG_GENERAL, "BuildPathSearchList: Path list exceeds 100 entries, truncating\n");
+            break;
+        }
+    }
+    
+    if (count == 0)
+    {
+        log_info(LOG_GENERAL, "BuildPathSearchList: No PATH entries found, using C: as default\n");
+        
+        /* Allocate array for just "C:" */
+        g_PathSearchList = (char **)AllocVec(sizeof(char *), MEMF_CLEAR);
+        if (!g_PathSearchList)
+        {
+            log_error(LOG_GENERAL, "BuildPathSearchList: Failed to allocate PATH array\n");
+            return FALSE;
+        }
+        
+        g_PathSearchList[0] = (char *)AllocVec(3, MEMF_CLEAR);  /* "C:" + null */
+        if (!g_PathSearchList[0])
+        {
+            FreeVec(g_PathSearchList);
+            g_PathSearchList = NULL;
+            log_error(LOG_GENERAL, "BuildPathSearchList: Failed to allocate C: string\n");
+            return FALSE;
+        }
+        
+        strcpy(g_PathSearchList[0], "C:");
+        g_PathSearchCount = 1;
+        log_info(LOG_GENERAL, "BuildPathSearchList: Using default PATH: C:\n");
+        return TRUE;
+    }
+    
+    /* Allocate array for path strings */
+    g_PathSearchList = (char **)AllocVec(count * sizeof(char *), MEMF_CLEAR);
+    if (!g_PathSearchList)
+    {
+        log_error(LOG_GENERAL, "BuildPathSearchList: Failed to allocate PATH array for %d entries\n", count);
+        return FALSE;
+    }
+    
+    /* Second pass: extract path strings */
+    currentPath = pathPtr;
+    i = 0;
+    
+    log_info(LOG_GENERAL, "BuildPathSearchList: Reading system PATH (%d entries):\n", count);
+    
+    while (currentPath && i < count)
+    {
+        struct PathNode {
+            BPTR pn_Next;
+            BPTR pn_Lock;
+        } *pathNode;
+        
+        pathNode = (struct PathNode *)BADDR(currentPath);
+        if (!pathNode)
+            break;
+        
+        /* Get the lock to this directory */
+        lock = pathNode->pn_Lock;
+        if (lock)
+        {
+            /* Convert lock to path string */
+            if (NameFromLock(lock, pathBuffer, sizeof(pathBuffer)))
+            {
+                int len = strlen(pathBuffer);
+                
+                /* Ensure path ends with / or : */
+                if (len > 0 && pathBuffer[len - 1] != '/' && pathBuffer[len - 1] != ':')
+                {
+                    if (len < sizeof(pathBuffer) - 1)
+                    {
+                        pathBuffer[len] = '/';
+                        pathBuffer[len + 1] = '\0';
+                        len++;
+                    }
+                }
+                
+                /* Allocate and copy path string */
+                g_PathSearchList[i] = (char *)AllocVec(len + 1, MEMF_CLEAR);
+                if (g_PathSearchList[i])
+                {
+                    strcpy(g_PathSearchList[i], pathBuffer);
+                    log_info(LOG_GENERAL, "  [%d] %s\n", i + 1, pathBuffer);
+                    i++;
+                }
+                else
+                {
+                    log_error(LOG_GENERAL, "BuildPathSearchList: Failed to allocate string for path %d\n", i);
+                }
+            }
+            else
+            {
+                log_warning(LOG_GENERAL, "BuildPathSearchList: NameFromLock failed for path entry %d\n", i);
+            }
+        }
+        
+        currentPath = pathNode->pn_Next;
+    }
+    
+    g_PathSearchCount = i;
+    
+    if (g_PathSearchCount == 0)
+    {
+        log_error(LOG_GENERAL, "BuildPathSearchList: Failed to extract any valid paths\n");
+        FreeVec(g_PathSearchList);
+        g_PathSearchList = NULL;
+        return FALSE;
+    }
+    
+    log_info(LOG_GENERAL, "BuildPathSearchList: Successfully built PATH list with %d directories\n", 
+             g_PathSearchCount);
+    
+    return TRUE;
+#else
+    /* Host platform stub */
+    log_info(LOG_GENERAL, "BuildPathSearchList: Not supported on host platform\n");
+    return FALSE;
+#endif
+}
+
+/**
+ * @brief Free the PATH search list
+ * 
+ * Releases all memory allocated by BuildPathSearchList().
+ */
+void FreePathSearchList(void)
+{
+#if PLATFORM_AMIGA
+    int i;
+    
+    if (g_PathSearchList)
+    {
+        /* Free each path string */
+        for (i = 0; i < g_PathSearchCount; i++)
+        {
+            if (g_PathSearchList[i])
+            {
+                FreeVec(g_PathSearchList[i]);
+            }
+        }
+        
+        /* Free the array itself */
+        FreeVec(g_PathSearchList);
+        
+        g_PathSearchList = NULL;
+        g_PathSearchCount = 0;
+        
+        log_info(LOG_GENERAL, "FreePathSearchList: PATH list freed\n");
+    }
+#endif
+}
+
+/*========================================================================*/
+/* Tool Cache Implementation                                             */
+/*========================================================================*/
+
+/* Global tool cache variables */
+ToolCacheEntry *g_ToolCache = NULL;
+int g_ToolCacheCount = 0;
+int g_ToolCacheCapacity = 0;
+
+/**
+ * @brief Initialize the tool cache with initial capacity
+ * 
+ * @return TRUE if initialized successfully, FALSE on error
+ */
+BOOL InitToolCache(void)
+{
+#if PLATFORM_AMIGA
+    g_ToolCacheCapacity = 20;  /* Start with capacity for 20 tools */
+    g_ToolCache = (ToolCacheEntry *)AllocVec(g_ToolCacheCapacity * sizeof(ToolCacheEntry), MEMF_CLEAR);
+    
+    if (!g_ToolCache)
+    {
+        log_error(LOG_GENERAL, "InitToolCache: Failed to allocate cache array\n");
+        return FALSE;
+    }
+    
+    g_ToolCacheCount = 0;
+    log_info(LOG_GENERAL, "InitToolCache: Cache initialized (capacity: %d)\n", g_ToolCacheCapacity);
+    return TRUE;
+#else
+    return FALSE;
+#endif
+}
+
+/**
+ * @brief Search for a tool in the cache
+ * 
+ * Uses case-insensitive comparison since AmigaDOS paths are case-insensitive.
+ * Increments the hit count when a match is found.
+ * 
+ * @param toolName The tool name to search for
+ * @return Pointer to cache entry if found, NULL otherwise
+ */
+static ToolCacheEntry *SearchToolCache(const char *toolName)
+{
+#if PLATFORM_AMIGA
+    int i;
+    
+    if (!toolName || !g_ToolCache)
+        return NULL;
+    
+    for (i = 0; i < g_ToolCacheCount; i++)
+    {
+        if (g_ToolCache[i].toolName && platform_stricmp(g_ToolCache[i].toolName, toolName) == 0)
+        {
+            /* Increment hit counter */
+            g_ToolCache[i].hitCount++;
+            return &g_ToolCache[i];
+        }
+    }
+#endif
+    return NULL;
+}
+
+/**
+ * @brief Extract version string from an executable file
+ * 
+ * Reads the embedded version string from an Amiga executable.
+ * 
+ * @param filePath Full path to the executable
+ * @return Allocated string with version info, or NULL if not found (caller must free)
+ */
+static char *GetToolVersion(const char *filePath)
+{
+#if PLATFORM_AMIGA
+    BPTR file;
+    char buffer[512];
+    char *versionStr = NULL;
+    LONG bytesRead;
+    int i;
+    const char *versionTag = "$VER:";
+    int tagLen = 5;
+    
+    file = Open((CONST_STRPTR)filePath, MODE_OLDFILE);
+    if (!file)
+    {
+        return NULL;
+    }
+    
+    /* Read file in chunks looking for version string */
+    while ((bytesRead = Read(file, buffer, sizeof(buffer) - 1)) > 0)
+    {
+        buffer[bytesRead] = '\0';
+        
+        /* Search for $VER: tag */
+        for (i = 0; i < bytesRead - tagLen; i++)
+        {
+            if (memcmp(&buffer[i], versionTag, tagLen) == 0)
+            {
+                /* Found version tag, extract the string */
+                char *start = &buffer[i + tagLen];
+                char *end = start;
+                int len;
+                
+                /* Skip leading whitespace */
+                while (*end == ' ' || *end == '\t')
+                    end++;
+                start = end;
+                
+                /* Find end of version string (newline, null, or control char) */
+                while (*end && *end != '\n' && *end != '\r' && *end >= 32 && *end < 127)
+                    end++;
+                
+                len = end - start;
+                if (len > 0 && len < 200)
+                {
+                    versionStr = (char *)AllocVec(len + 1, MEMF_CLEAR);
+                    if (versionStr)
+                    {
+                        memcpy(versionStr, start, len);
+                        versionStr[len] = '\0';
+                    }
+                }
+                
+                Close(file);
+                return versionStr;
+            }
+        }
+    }
+    
+    Close(file);
+#endif
+    return NULL;
+}
+
+/**
+ * @brief Add a tool to the cache
+ * 
+ * @param toolName Simple tool name
+ * @param exists TRUE if tool was found
+ * @param fullPath Full path to tool (or NULL)
+ * @param versionString Version info (or NULL)
+ * @return Pointer to new cache entry, or NULL on error
+ */
+static ToolCacheEntry *AddToolToCache(const char *toolName, BOOL exists, const char *fullPath, const char *versionString)
+{
+#if PLATFORM_AMIGA
+    ToolCacheEntry *newEntry;
+    int nameLen, pathLen, verLen;
+    
+    if (!toolName || !g_ToolCache)
+        return NULL;
+    
+    /* Check if we need to expand the cache */
+    if (g_ToolCacheCount >= g_ToolCacheCapacity)
+    {
+        ToolCacheEntry *newCache;
+        int newCapacity = g_ToolCacheCapacity * 2;
+        
+        newCache = (ToolCacheEntry *)AllocVec(newCapacity * sizeof(ToolCacheEntry), MEMF_CLEAR);
+        if (!newCache)
+        {
+            log_error(LOG_GENERAL, "AddToolToCache: Failed to expand cache\n");
+            return NULL;
+        }
+        
+        /* Copy old entries */
+        memcpy(newCache, g_ToolCache, g_ToolCacheCount * sizeof(ToolCacheEntry));
+        
+        /* Free old cache */
+        FreeVec(g_ToolCache);
+        
+        g_ToolCache = newCache;
+        g_ToolCacheCapacity = newCapacity;
+        
+        log_info(LOG_GENERAL, "AddToolToCache: Cache expanded to %d entries\n", newCapacity);
+    }
+    
+    /* Add new entry */
+    newEntry = &g_ToolCache[g_ToolCacheCount];
+    
+    /* Allocate and copy tool name */
+    nameLen = strlen(toolName);
+    newEntry->toolName = (char *)AllocVec(nameLen + 1, MEMF_CLEAR);
+    if (!newEntry->toolName)
+    {
+        return NULL;
+    }
+    strcpy(newEntry->toolName, toolName);
+    
+    newEntry->exists = exists;
+    
+    /* Allocate and copy full path if provided */
+    if (fullPath)
+    {
+        pathLen = strlen(fullPath);
+        newEntry->fullPath = (char *)AllocVec(pathLen + 1, MEMF_CLEAR);
+        if (newEntry->fullPath)
+        {
+            strcpy(newEntry->fullPath, fullPath);
+        }
+    }
+    else
+    {
+        newEntry->fullPath = NULL;
+    }
+    
+    /* Allocate and copy version string if provided */
+    if (versionString)
+    {
+        verLen = strlen(versionString);
+        newEntry->versionString = (char *)AllocVec(verLen + 1, MEMF_CLEAR);
+        if (newEntry->versionString)
+        {
+            strcpy(newEntry->versionString, versionString);
+        }
+    }
+    else
+    {
+        newEntry->versionString = NULL;
+    }
+    
+    /* Initialize hit count to 0 (first access will increment it) */
+    newEntry->hitCount = 0;
+    
+    g_ToolCacheCount++;
+    
+    log_debug(LOG_ICONS, "AddToolToCache: Cached '%s' -> %s [%s] v:%s\n",
+             toolName,
+             exists ? "EXISTS" : "MISSING",
+             fullPath ? fullPath : "(none)",
+             versionString ? versionString : "(no version)");
+    
+    return newEntry;
+#else
+    return NULL;
+#endif
+}
+
+/**
+ * @brief Dump tool cache contents to log
+ */
+void DumpToolCache(void)
+{
+#if PLATFORM_AMIGA
+    int i;
+    
+    if (!g_ToolCache || g_ToolCacheCount == 0)
+    {
+        log_info(LOG_GENERAL, "\n*** Tool Cache: Empty ***\n");
+        return;
+    }
+    
+    log_info(LOG_GENERAL, "\n========================================\n");
+    log_info(LOG_GENERAL, "Tool Validation Cache Summary\n");
+    log_info(LOG_GENERAL, "========================================\n");
+    log_info(LOG_GENERAL, "Total tools cached: %d\n", g_ToolCacheCount);
+    log_info(LOG_GENERAL, "Cache capacity: %d\n\n", g_ToolCacheCapacity);
+    
+    log_info(LOG_GENERAL, "Tool Name             | Hits | Status  | Full Path                              | Version\n");
+    log_info(LOG_GENERAL, "----------------------|------|---------|----------------------------------------|---------------------------\n");
+    
+    for (i = 0; i < g_ToolCacheCount; i++)
+    {
+        log_info(LOG_GENERAL, "%-21s | %4d | %-7s | %-38s | %s\n",
+                g_ToolCache[i].toolName ? g_ToolCache[i].toolName : "(null)",
+                g_ToolCache[i].hitCount,
+                g_ToolCache[i].exists ? "EXISTS" : "MISSING",
+                g_ToolCache[i].fullPath ? g_ToolCache[i].fullPath : "(not found)",
+                g_ToolCache[i].versionString ? g_ToolCache[i].versionString : "(no version)");
+    }
+    
+    log_info(LOG_GENERAL, "========================================\n\n");
+#endif
+}
+
+/**
+ * @brief Free the tool cache
+ */
+void FreeToolCache(void)
+{
+#if PLATFORM_AMIGA
+    int i;
+    
+    if (g_ToolCache)
+    {
+        /* Free all strings in each entry */
+        for (i = 0; i < g_ToolCacheCount; i++)
+        {
+            if (g_ToolCache[i].toolName)
+                FreeVec(g_ToolCache[i].toolName);
+            if (g_ToolCache[i].fullPath)
+                FreeVec(g_ToolCache[i].fullPath);
+            if (g_ToolCache[i].versionString)
+                FreeVec(g_ToolCache[i].versionString);
+        }
+        
+        /* Free the array itself */
+        FreeVec(g_ToolCache);
+        
+        g_ToolCache = NULL;
+        g_ToolCacheCount = 0;
+        g_ToolCacheCapacity = 0;
+        
+        log_info(LOG_GENERAL, "FreeToolCache: Tool cache freed\n");
+    }
+#endif
 }

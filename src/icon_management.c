@@ -25,6 +25,9 @@
 /* External timer base for performance measurement */
 extern struct Device* TimerBase;
 
+/* Global flag to enable/disable default tool validation (set by layout processor) */
+BOOL g_ValidateDefaultTools = FALSE;
+
 void FreeIconArray(IconArray *iconArray)
 {
 
@@ -43,6 +46,10 @@ void FreeIconArray(IconArray *iconArray)
                 if (iconArray->array[i].icon_full_path != NULL)
                 {
                     whd_free(iconArray->array[i].icon_full_path);
+                } /* if */
+                if (iconArray->array[i].default_tool != NULL)
+                {
+                    whd_free(iconArray->array[i].default_tool);
                 } /* if */
             } /* for */
             whd_free(iconArray->array);
@@ -369,22 +376,26 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                      */
                     if (IsValidIcon(fullPathAndFileNoInfo))
                     {
+                        IconDetailsFromDisk iconDetails;
+                        
                         removeInfoExtension(fib->fib_FileName, fileNameNoInfo);
                     
-                        /* Reset newIcon to known defaults */
-                    newIcon.icon_type = icon_type_standard;
-                    newIcon.icon_height = 0;
-                    newIcon.icon_width = 0;
-                    newIcon.border_width = 0;
-                    newIcon.text_width = 0;
-                    newIcon.text_height = 0;
-                    newIcon.icon_max_width = 0;
-                    newIcon.icon_max_height = 0;
-                    newIcon.icon_x = 0;
-                    newIcon.icon_y = 0;
-                    newIcon.icon_text = NULL;
-                    newIcon.icon_full_path = NULL;
-                    newIcon.is_folder = false;
+                        /* Reset newIcon to known defaults - CRITICAL: Initialize ALL fields */
+                        memset(&newIcon, 0, sizeof(FullIconDetails));
+                        newIcon.icon_type = icon_type_standard;
+                        newIcon.icon_height = 0;
+                        newIcon.icon_width = 0;
+                        newIcon.border_width = 0;
+                        newIcon.text_width = 0;
+                        newIcon.text_height = 0;
+                        newIcon.icon_max_width = 0;
+                        newIcon.icon_max_height = 0;
+                        newIcon.icon_x = 0;
+                        newIcon.icon_y = 0;
+                        newIcon.icon_text = NULL;
+                        newIcon.icon_full_path = NULL;
+                        newIcon.default_tool = NULL;
+                        newIcon.is_folder = false;
 
 #ifdef DEBUG_MAX
                     append_to_log("-------------------------\n");
@@ -394,90 +405,126 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                     append_to_log("\nCalculating text extent.\n", fullPathAndFile);
 #endif
                     CalculateTextExtent(fileNameNoInfo, &textExtent);
-#ifdef DEBUG_MAX
-                    append_to_log("\nGetting current icon position.\n", fullPathAndFile);
-#endif
-                    iconPosition = GetIconPositionFromPath(fullPathAndFile);
 
-                    /* Determine icon size based on format */
+                    /* ========================================================
+                     * OPTIMIZED ICON READING - Single disk operation
+                     * ========================================================
+                     * Read ALL icon details in ONE GetDiskObject() call:
+                     * - Position, Size, Type, Frame, Default Tool
+                     * This reduces disk I/O by ~75% (was 3-4 reads per icon!)
+                     * Critical for floppy-based systems.
+                     * ======================================================== */
 #ifdef DEBUG
-                    log_debug(LOG_ICONS, "Detecting icon type for: %s\n", fullPathAndFile);
+                    log_debug(LOG_ICONS, "Reading icon details (optimized): %s\n", fullPathAndFile);
 #endif
-                    if (IsNewIconPath(fullPathAndFile) && user_forceStandardIcons==0)
+                    if (GetIconDetailsFromDisk(fullPathAndFile, &iconDetails))
                     {
-#ifdef DEBUG
-                        log_debug(LOG_ICONS, "  -> Detected as NewIcon format\n");
-#endif
-                        newIcon.icon_type = icon_type_newIcon;
-                        GetNewIconSizePath(fullPathAndFile, &iconSize);
-                        count_icon_type_newIcon++;
+                        /* Extract position */
+                        newIcon.icon_x = iconDetails.position.x;
+                        newIcon.icon_y = iconDetails.position.y;
+                        iconPosition = iconDetails.position; /* For compatibility */
                         
-                        /* Log final detection result at INFO level */
-                        log_info(LOG_ICONS, "Icon type: NewIcon format - %s\n", fileNameNoInfo);
-                    }
-                    else if (isOS35IconFormat(fullPathAndFile) && user_forceStandardIcons==0)
-                    {
-                        newIcon.icon_type = icon_type_os35;
-#ifdef DEBUG
-                        log_debug(LOG_ICONS, "  -> Detected as OS3.5 icon format\n");
-#endif
-                        getOS35IconSize(fullPathAndFile, &iconSize);
-                        count_icon_type_os35++;
+                        /* Extract size */
+                        iconSize = iconDetails.size;
                         
-                        /* Log final detection result at INFO level */
-                        log_info(LOG_ICONS, "Icon type: OS3.5 format - %s\n", fileNameNoInfo);
+                        /* Extract and store default tool */
+                        newIcon.default_tool = iconDetails.defaultTool; /* Transfer ownership */
+                        
+                        /* Log default tool information and validate existence (if enabled) */
+                        if (iconDetails.defaultTool != NULL && iconDetails.defaultTool[0] != '\0')
+                        {
+                            if (g_ValidateDefaultTools)
+                            {
+                                BOOL toolExists = ValidateDefaultTool(iconDetails.defaultTool);
+                                
+                                log_info(LOG_ICONS, "  Default Tool: '%s' -> %s [%s]\n", 
+                                        iconDetails.defaultTool, fileNameNoInfo,
+                                        toolExists ? "EXISTS" : "MISSING");
+                            }
+                            else
+                            {
+                                log_info(LOG_ICONS, "  Default Tool: '%s' -> %s\n", 
+                                        iconDetails.defaultTool, fileNameNoInfo);
+                            }
+                        }
+                        else
+                        {
+                            log_info(LOG_ICONS, "  Default Tool: (none) -> %s\n", fileNameNoInfo);
+                        }
+                        
+                        /* Determine icon type (respecting user_forceStandardIcons) */
+                        if (user_forceStandardIcons == 0)
+                        {
+                            if (iconDetails.isNewIcon)
+                            {
+                                newIcon.icon_type = icon_type_newIcon;
+                                count_icon_type_newIcon++;
+                                log_info(LOG_ICONS, "  Icon type: NewIcon format - %s\n", fileNameNoInfo);
+                            }
+                            else if (iconDetails.isOS35Icon)
+                            {
+                                newIcon.icon_type = icon_type_os35;
+                                count_icon_type_os35++;
+                                log_info(LOG_ICONS, "  Icon type: OS3.5 format - %s\n", fileNameNoInfo);
+                            }
+                            else
+                            {
+                                newIcon.icon_type = icon_type_standard;
+                                count_icon_type_standard++;
+                                log_info(LOG_ICONS, "  Icon type: Standard Workbench format - %s\n", fileNameNoInfo);
+                            }
+                        }
+                        else
+                        {
+                            /* User forcing standard icons */
+                            newIcon.icon_type = icon_type_standard;
+                            count_icon_type_standard++;
+                            log_info(LOG_ICONS, "  Icon type: Forced Standard format - %s\n", fileNameNoInfo);
+                        }
+                        
+                        /* Apply emboss rectangle size adjustments */
+                        if (prefsWorkbench.embossRectangleSize > 0)
+                        {
+                            newIcon.icon_height = iconSize.height + prefsWorkbench.embossRectangleSize;
+                            newIcon.icon_width = iconSize.width + prefsWorkbench.embossRectangleSize;
+                        }
+                        else
+                        {
+                            newIcon.icon_height = iconSize.height;
+                            newIcon.icon_width = iconSize.width;
+                        }
+                        
+                        /* Determine border width based on frame status */
+                        if (iconDetails.hasFrame || newIcon.icon_type == icon_type_standard)
+                        {
+                            newIcon.border_width = prefsWorkbench.embossRectangleSize;
+                        }
+                        else
+                        {
+                            newIcon.border_width = 0;
+                        }
+
+#ifdef DEBUG_MAX
+                        append_to_log("Icons size x: %d, y: %d, current at pos x: %d, y: %d border size:%d\n", 
+                                     iconSize.width, iconSize.height, newIcon.icon_x, newIcon.icon_y, newIcon.border_width);
+#endif
+
+                        if (newIcon.border_width == 0)
+                        {
+                            iconArray->hasOnlyBorderlessIcons = true;
+                        }
+
+                        newIcon.text_width = textExtent.te_Width;
+                        newIcon.text_height = textExtent.te_Height;
+                        newIcon.icon_max_width = MAX(iconSize.width + (newIcon.border_width * 2), textExtent.te_Width);
+                        newIcon.icon_max_height = iconSize.height + GAP_BETWEEN_ICON_AND_TEXT + textExtent.te_Height;
                     }
                     else
                     {
-                        newIcon.icon_type = icon_type_standard;
-#ifdef DEBUG
-                        log_debug(LOG_ICONS, "  -> Detected as standard Workbench icon format\n");
-#endif
-                        GetStandardIconSize(fullPathAndFile, &iconSize);
-                        count_icon_type_standard++;
-                        
-                        /* Log final detection result at INFO level */
-                        log_info(LOG_ICONS, "Icon type: Standard Workbench format - %s\n", fileNameNoInfo);
+                        /* Fallback if optimized read fails - skip this icon */
+                        append_to_log("Warning: Failed to read icon details for %s\n", fullPathAndFile);
+                        continue;
                     }
-
-
-                                if (prefsWorkbench.embossRectangleSize > 0)
-                                {
-                                    newIcon.icon_height = iconSize.height + prefsWorkbench.embossRectangleSize;
-                                    newIcon.icon_width = iconSize.width + prefsWorkbench.embossRectangleSize;
-                                }
-                                else
-                                {
-                                    newIcon.icon_height = iconSize.height;
-                                    newIcon.icon_width = iconSize.width;
-                                }
-#ifdef DEBUG_MAX
-                                append_to_log("Checking for icon frame\n");
-#endif
-                                if (checkIconFrame(fullPathAndFile) == 1 || newIcon.icon_type == icon_type_standard)
-                                {
-                                    newIcon.border_width = prefsWorkbench.embossRectangleSize;
-                                }
-                                // else
-                                {
-                                }
-                                // newIcon.has_border = checkIconFrame(fullPathAndFile);
-                                #ifdef DEBUG_MAX
-                                append_to_log("Icons size x: %d, y: %d, current at pos x: %d, y: %d border size:%d\n", iconSize.width, iconSize.height,newIcon.icon_x ,newIcon.icon_y,newIcon.border_width);
-
-                                #endif
-
-                                if (newIcon.border_width == 0)
-                                {
-                                    iconArray->hasOnlyBorderlessIcons = true;
-                                }
-
-                                newIcon.text_width = textExtent.te_Width;
-                                newIcon.text_height = textExtent.te_Height;
-                                newIcon.icon_max_width = MAX(iconSize.width + (newIcon.border_width * 2), textExtent.te_Width);
-                                newIcon.icon_max_height = iconSize.height + GAP_BETWEEN_ICON_AND_TEXT + textExtent.te_Height;
-                                newIcon.icon_x = iconPosition.x;
-                                newIcon.icon_y = iconPosition.y;
 
 #if PLATFORM_AMIGA
                                 newIcon.is_write_protected = (fib->fib_Protection & FIBF_WRITE) ? true : false;

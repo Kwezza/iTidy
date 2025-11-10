@@ -368,6 +368,15 @@ int main(int argc, char **argv)
 #endif
     }
 
+    /* Free tool cache if it exists */
+#ifdef DEBUG
+    log_debug(LOG_GENERAL, "DEBUG: Checking for tool cache to free...\n");
+#endif
+    FreeToolCache();
+#ifdef DEBUG
+    log_debug(LOG_GENERAL, "DEBUG: Tool cache cleanup completed\n");
+#endif
+
     /* Report memory status before shutdown */
     whd_memory_report();
     
