@@ -12,6 +12,8 @@
     #include <exec/memory.h>
     #include <libraries/dos.h>
     #include <dos/dosasl.h>          /* For pattern matching (MatchFirst/MatchNext) */
+    #include <dos/dostags.h>         /* For AllocDosObject tags (ADO_DirLen, etc.) */
+    #include <utility/tagitem.h>     /* For TAG_DONE */
     #include <workbench/workbench.h>
     #include <workbench/icon.h>
     #include <proto/exec.h>

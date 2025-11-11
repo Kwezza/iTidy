@@ -352,6 +352,8 @@ void set_memory_logging_enabled(BOOL enabled) {
     } else {
         /* Enable memory category */
         enable_log_category(LOG_MEMORY, TRUE);
+        /* Force DEBUG level for memory logging (allocations use log_debug) */
+        set_log_level(LOG_MEMORY, LOG_LEVEL_DEBUG);
     }
 }
 

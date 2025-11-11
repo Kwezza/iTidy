@@ -41,7 +41,115 @@ struct iTidyMainWindow {
 
 ## Development Timeline
 
-### Latest: Default Tool Cache System with Hit Tracking (November 10, 2025)
+### Latest: MatchNext() Crash Fix - AnchorPath Buffer Allocation (November 11, 2025)
+
+#### Fixed Critical Crash in Recursive Directory Processing
+* **Issue**: Program crashed during MatchNext() calls when processing icons recursively
+* **Root Cause**: Buffer overflow in AnchorPath structure - default 128-byte buffer too small for deep directory paths
+* **Status**: Fixed using manual allocation with 1024-byte buffer
+* **Date**: November 11, 2025
+
+**Problem Description:**
+The iTidy program would crash intermittently (Heisenbug) when processing directories in recursive mode. Crashes occurred specifically during MatchNext() AmigaDOS API calls, typically after successfully processing the first icon. The bug was reproducible on WinUAE without MMU enabled, but rarely occurred with MMU enabled (memory protection masked the overflow).
+
+**Investigation Process:**
+
+1. **Initial Symptoms**:
+   - Crash during MatchNext() after first icon processed
+   - Intermittent nature - sometimes worked, sometimes crashed immediately
+   - Non-MMU systems more susceptible (no memory protection)
+   - Deep directory paths triggered crashes more frequently
+
+2. **MMU Testing Evidence**:
+   - MMU enabled: 0 crashes, program ran successfully
+   - MMU disabled: Frequent immediate crashes
+   - Proved buffer overflow was writing beyond allocated memory
+
+3. **Failed Approach - Tag-Based Allocation**:
+   ```c
+   // Attempted using AllocDosObject() with tags
+   TagItem tags[] = {
+       { ADO_DirLen, 1024 },  // WRONG: ADO_DirLen is for CLI objects only
+       { TAG_DONE, 0 }
+   };
+   AnchorPath *ap = AllocDosObject(DOS_ANCHORPATH, tags);
+   ```
+   - Problem: ADO_DirLen tag is for CLI objects (Shell), not AnchorPath
+   - Result: ap_Strlen remained 0, buffer showed garbage data
+   - AllocDosObject ignored invalid tags silently
+
+4. **Second Failed Approach - ADO_Strlen Tag**:
+   Based on external research suggesting ADO_Strlen was the correct tag:
+   ```c
+   #define ADO_Strlen (DOS_BASE + 4)  // Manual definition
+   TagItem tags[] = {
+       { ADO_Strlen, 1024 },
+       { TAG_DONE, 0 }
+   };
+   ```
+   - Problem: ADO_Strlen tag doesn't exist in AmigaOS 3.2 SDK headers
+   - Manual tag value was incorrect, causing allocation failure
+   - Result: Immediate crash on program start
+   - Lesson: SDK version compatibility matters
+
+**Working Solution - Manual Allocation:**
+```c
+// Allocate AnchorPath with 1024-byte path buffer
+AnchorPath *ap = (AnchorPath *)AllocVec(
+    sizeof(AnchorPath) + 1024 - 1,  // -1 because AnchorPath includes 1 byte already
+    MEMF_CLEAR
+);
+
+if (ap) {
+    ap->ap_Strlen = 1024;  // Manually set buffer size
+    ap->ap_BreakBits = 0;
+    ap->ap_Flags = 0;
+    
+    // Use with MatchFirst/MatchNext...
+    
+    // Cleanup with FreeVec instead of FreeDosObject
+    FreeVec(ap);
+}
+```
+
+**Why This Works:**
+- `AllocVec()` allocates raw memory block sized for AnchorPath + 1024-byte buffer
+- Manual `ap_Strlen = 1024` tells AmigaDOS the buffer capacity
+- `MEMF_CLEAR` zeroes memory, preventing garbage data issues
+- `FreeVec()` properly deallocates the manually-allocated memory
+- More portable across AmigaOS versions than tag-based allocation
+- Compatible with all AmigaOS 2.0+ systems regardless of SDK version
+
+**Test Results:**
+- Successfully processed 26 directories recursively
+- 147 MatchNext() calls without crashes
+- Handled deep paths like "Work:My Files/Files from my old Amiga/Disks/SillySoccer15"
+- No crashes on non-MMU WinUAE configuration (where bug was reproducible)
+
+**Buffer Size Progression:**
+- Default: 128 bytes (insufficient for deep paths)
+- First attempt: 512 bytes (still too small)
+- Final solution: 1024 bytes (adequate for typical Amiga path depths)
+
+**Code Locations:**
+- `src/icon_management.c` lines ~200-230: AnchorPath allocation
+- `src/icon_management.c` lines ~775-790: AnchorPath cleanup
+- Added extensive diagnostic logging around MatchFirst/MatchNext for future debugging
+
+**Lessons Learned:**
+1. AmigaOS has different SDK versions with varying tag support
+2. Manual allocation is more portable than tag-based for older SDKs
+3. Tags like ADO_DirLen are object-specific (won't work for all DOS objects)
+4. MMU testing is valuable for catching buffer overflows
+5. Diagnostic logging essential for tracking buffer state in complex code paths
+6. Default buffer sizes in structures may be insufficient for real-world usage
+
+**Related Documentation:**
+- Full bug investigation: `docs/BUGFIX_MATCHNEXT_CRASH_RECURSIVE_MODE.md`
+
+---
+
+### Default Tool Cache System with Hit Tracking (November 10, 2025)
 
 #### Implemented Persistent Tool Cache for Post-Processing Analysis
 * **Purpose**: Enable analysis of default tool usage patterns and missing tools across icon sets

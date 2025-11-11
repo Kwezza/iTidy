@@ -1,0 +1,167 @@
+/*
+ * tool_cache_window.h - iTidy Tool Cache Window Header
+ * Displays default tool validation cache with filtering options
+ * GadTools-based window for Workbench 2.0+
+ */
+
+#ifndef ITIDY_TOOL_CACHE_WINDOW_H
+#define ITIDY_TOOL_CACHE_WINDOW_H
+
+#include <exec/types.h>
+#include <exec/lists.h>
+#include <intuition/intuition.h>
+#include <intuition/screens.h>
+#include <libraries/gadtools.h>
+
+/*------------------------------------------------------------------------*/
+/* Gadget IDs                                                             */
+/*------------------------------------------------------------------------*/
+#define GID_TOOL_LIST           4001
+#define GID_TOOL_FILTER_ALL     4002
+#define GID_TOOL_FILTER_VALID   4003
+#define GID_TOOL_FILTER_MISSING 4004
+#define GID_TOOL_CLOSE_BTN      4005
+
+/*------------------------------------------------------------------------*/
+/* Window Spacing Constants                                              */
+/*------------------------------------------------------------------------*/
+#define TOOL_WINDOW_SPACE_X         8       /* Horizontal spacing */
+#define TOOL_WINDOW_SPACE_Y         8       /* Vertical spacing */
+#define TOOL_WINDOW_MARGIN_LEFT     10      /* Left margin */
+#define TOOL_WINDOW_MARGIN_TOP      10      /* Top margin */
+#define TOOL_WINDOW_MARGIN_RIGHT    10      /* Right margin */
+#define TOOL_WINDOW_MARGIN_BOTTOM   10      /* Bottom margin */
+#define TOOL_WINDOW_BUTTON_PADDING  8       /* Button text padding */
+
+/*------------------------------------------------------------------------*/
+/* Standard Window Width                                                 */
+/*------------------------------------------------------------------------*/
+#define TOOL_WINDOW_WIDTH_CHARS     70      /* Width in characters */
+
+/*------------------------------------------------------------------------*/
+/* Filter Types                                                           */
+/*------------------------------------------------------------------------*/
+typedef enum {
+    TOOL_FILTER_ALL = 0,
+    TOOL_FILTER_VALID,
+    TOOL_FILTER_MISSING
+} ToolFilterType;
+
+/*------------------------------------------------------------------------*/
+/* Tool Cache Display Entry                                              */
+/*------------------------------------------------------------------------*/
+struct ToolCacheDisplayEntry
+{
+    struct Node node;               /* For linking in list */
+    char *tool_name;                /* Tool name */
+    char *display_text;             /* Formatted display text for listview */
+    BOOL exists;                    /* TRUE if tool exists */
+    int hit_count;                  /* Number of references */
+    char *full_path;                /* Full path or "(not found)" */
+    char *version;                  /* Version string or "(no version)" */
+};
+
+/*------------------------------------------------------------------------*/
+/* Tool Cache Window Data Structure                                      */
+/*------------------------------------------------------------------------*/
+struct iTidyToolCacheWindow
+{
+    struct Screen *screen;              /* Workbench screen */
+    struct Window *window;              /* Tool cache window */
+    APTR visual_info;                   /* GadTools visual info */
+    struct Gadget *glist;               /* Gadget list */
+    struct TextFont *system_font;       /* System default font (if opened) */
+    struct TextAttr system_font_attr;   /* Font attributes (must persist) */
+    BOOL window_open;                   /* Window state flag */
+    
+    /* Gadget pointers */
+    struct Gadget *tool_list;           /* ListView showing tools */
+    struct Gadget *filter_all_btn;      /* Show All button */
+    struct Gadget *filter_valid_btn;    /* Show Valid Only button */
+    struct Gadget *filter_missing_btn;  /* Show Missing Only button */
+    struct Gadget *close_btn;           /* Close button */
+    
+    /* Data */
+    struct List tool_entries;           /* List of ToolCacheDisplayEntry nodes */
+    struct List filtered_entries;       /* Filtered list for display */
+    ToolFilterType current_filter;      /* Current filter mode */
+    ULONG total_count;                  /* Total tools */
+    ULONG valid_count;                  /* Tools found */
+    ULONG missing_count;                /* Tools not found */
+    char summary_text[80];              /* Summary bar text */
+    char window_title[80];              /* Window title (must persist) */
+    
+    /* Details panel data (for selected tool) */
+    LONG selected_index;                /* Currently selected index (-1 = none) */
+    struct List details_list;           /* List for details panel */
+};
+
+/*------------------------------------------------------------------------*/
+/* Function Prototypes                                                    */
+/*------------------------------------------------------------------------*/
+
+/**
+ * @brief Open the Tool Cache Window
+ * 
+ * Opens a window showing the default tool validation cache with statistics
+ * and filtering options. Reads data from the global g_ToolCache.
+ * 
+ * @param tool_data Pointer to tool cache window data structure
+ * @return BOOL TRUE if successful, FALSE otherwise
+ */
+BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data);
+
+/**
+ * @brief Close the Tool Cache Window and cleanup resources
+ * 
+ * @param tool_data Pointer to tool cache window data structure
+ */
+void close_tool_cache_window(struct iTidyToolCacheWindow *tool_data);
+
+/**
+ * @brief Handle tool cache window events (main event loop)
+ * 
+ * @param tool_data Pointer to tool cache window data structure
+ * @return BOOL TRUE to continue, FALSE to close window
+ */
+BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data);
+
+/**
+ * @brief Build display list from global tool cache
+ * 
+ * Reads from extern g_ToolCache, g_ToolCacheCount and builds formatted
+ * display entries for the listview.
+ * 
+ * @param tool_data Pointer to tool cache window data
+ * @return BOOL TRUE if successful, FALSE on error
+ */
+BOOL build_tool_cache_display_list(struct iTidyToolCacheWindow *tool_data);
+
+/**
+ * @brief Apply filter to tool list
+ * 
+ * Filters the tool list based on current filter type (all/valid/missing).
+ * 
+ * @param tool_data Pointer to tool cache window data
+ */
+void apply_tool_filter(struct iTidyToolCacheWindow *tool_data);
+
+/**
+ * @brief Update details panel for selected tool
+ * 
+ * Updates the details listview with information about the currently
+ * selected tool entry.
+ * 
+ * @param tool_data Pointer to tool cache window data
+ * @param selected_index Index of selected tool (-1 for none)
+ */
+void update_tool_details(struct iTidyToolCacheWindow *tool_data, LONG selected_index);
+
+/**
+ * @brief Free all tool cache display entries
+ * 
+ * @param tool_data Pointer to tool cache window data
+ */
+void free_tool_cache_entries(struct iTidyToolCacheWindow *tool_data);
+
+#endif /* ITIDY_TOOL_CACHE_WINDOW_H */

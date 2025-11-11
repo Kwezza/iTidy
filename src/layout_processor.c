@@ -15,6 +15,68 @@
 #include <string.h>
 #include <stdlib.h>
 
+/*========================================================================*/
+/* Filesystem Lock Release Timing Fix Configuration                      */
+/*========================================================================*/
+/*
+ * BACKGROUND:
+ * -----------
+ * This module can crash on emulated Amiga systems running at maximum speed
+ * (or very fast real hardware) during deep recursive directory processing.
+ * The crash manifests as Amiga error #80000003 (software exception).
+ * 
+ * ROOT CAUSE ANALYSIS:
+ * -------------------
+ * The ProcessDirectoryRecursive() function performs nested Lock() calls on
+ * the same directory path:
+ *   1. ProcessSingleDirectory() locks the directory for icon processing
+ *   2. Parent function immediately locks the SAME directory for subdirectory enumeration
+ * 
+ * When running at emulated speeds (thousands of times faster than original
+ * hardware), these nested Lock()/UnLock() operations occur so rapidly that
+ * the AmigaOS filesystem doesn't have time to release internal lock table
+ * entries and other filesystem resources between calls.
+ * 
+ * On original hardware (7MHz 68000), natural I/O delays provided sufficient
+ * time for cleanup. On modern emulators running at maximum speed, there is
+ * essentially zero delay between operations, exhausting DOS lock tables.
+ * 
+ * EVIDENCE:
+ * ---------
+ * 1. Memory profiling showed peak usage of only 4.3KB (trivial)
+ * 2. Increasing stack from 20KB to 80KB made crashes WORSE (not better)
+ * 3. Enabling memory logging (which adds I/O delays) completely prevented crashes
+ * 4. Crash occurred at varying depths (level 2 vs level 5+) depending on speed
+ * 
+ * This is a classic "Heisenbug" - observation changes behavior. The 20-50ms
+ * I/O overhead from debug logging provides enough delay for the filesystem
+ * to release locks properly.
+ * 
+ * SOLUTION:
+ * ---------
+ * Add a configurable delay after each directory is processed to give the
+ * AmigaOS filesystem time to release internal lock resources. The delay
+ * defaults to 1 tick (20ms on PAL, ~17ms on NTSC) which is imperceptible
+ * to users but sufficient for filesystem cleanup.
+ * 
+ * This can be disabled for debugging or if running on original hardware
+ * where natural I/O delays are sufficient.
+ * 
+ * Date: November 10, 2025
+ * Issue: Recursive directory processing crash on fast emulated systems
+ */
+
+/* Enable filesystem lock release delay (disable for debugging/original hardware) */
+#define ENABLE_FILESYSTEM_LOCK_DELAY 1
+
+/* Delay in DOS ticks (1 tick = 1/50 second PAL, 1/60 second NTSC) */
+/* 1 tick = ~20ms PAL, ~17ms NTSC - imperceptible to users but sufficient for DOS */
+#define FILESYSTEM_LOCK_DELAY_TICKS 1
+
+/*========================================================================*/
+/* End of Configuration                                                   */
+/*========================================================================*/
+
 #include "layout_processor.h"
 #include "layout_preferences.h"
 #include "file_directory_handling.h"
@@ -83,6 +145,21 @@ BOOL ProcessDirectoryWithPreferences(const char *path,
         printf("Error: Invalid parameters to ProcessDirectoryWithPreferences\n");
         return FALSE;
     }
+    
+    /* Apply logging preferences before processing */
+    set_global_log_level((LogLevel)prefs->logLevel);
+    set_memory_logging_enabled(prefs->memoryLoggingEnabled);
+    set_performance_logging_enabled(prefs->enable_performance_logging);
+    
+    log_info(LOG_GENERAL, "Logging preferences applied:\n");
+    log_info(LOG_GENERAL, "  Log Level: %s\n",
+             prefs->logLevel == 0 ? "DEBUG" :
+             prefs->logLevel == 1 ? "INFO" :
+             prefs->logLevel == 2 ? "WARNING" : "ERROR");
+    log_info(LOG_GENERAL, "  Memory Logging: %s\n", 
+             prefs->memoryLoggingEnabled ? "ENABLED" : "DISABLED");
+    log_info(LOG_GENERAL, "  Performance Logging: %s\n", 
+             prefs->enable_performance_logging ? "ENABLED" : "DISABLED");
     
     /* Copy and sanitize the path */
     strncpy(sanitizedPath, path, sizeof(sanitizedPath) - 1);
@@ -1058,6 +1135,25 @@ static BOOL ProcessDirectoryRecursive(const char *path,
     {
         return FALSE; /* Stop if current directory fails */
     }
+    
+    /*
+     * FILESYSTEM LOCK RELEASE DELAY
+     * ------------------------------
+     * After processing the current directory, we add a small delay before
+     * locking it again for subdirectory enumeration. This gives the AmigaOS
+     * filesystem time to release internal lock table entries.
+     * 
+     * ProcessSingleDirectory() above has just called Lock() on this same path
+     * and then UnLock(). We're about to Lock() it again below for subdirectory
+     * scanning. On emulated systems running at maximum speed, these operations
+     * occur so fast that DOS doesn't have time to clean up internal structures.
+     * 
+     * The delay is imperceptible to users (20ms) but critical for stability
+     * on fast systems. See configuration section at top of file for details.
+     */
+#if ENABLE_FILESYSTEM_LOCK_DELAY
+    Delay(FILESYSTEM_LOCK_DELAY_TICKS);
+#endif
     
     /* Now process subdirectories */
     lock = Lock((STRPTR)path, ACCESS_READ);

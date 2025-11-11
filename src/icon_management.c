@@ -2,6 +2,10 @@
 #include <platform/platform_io.h>
 #include <platform/amiga_headers.h>
 
+#if PLATFORM_AMIGA
+#include <dos/dostags.h>  /* For DOS tags */
+#endif
+
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
@@ -157,6 +161,9 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
         GetSysTime(&startTime);
     }
 
+    /* CRITICAL DEBUG: Use append_to_log as fallback */
+    append_to_log(">>> CreateIconArrayFromPath ENTRY: lock=%ld, dirPath='%s'\n", (LONG)lock, dirPath);
+
 #ifdef DEBUG
     log_debug(LOG_ICONS, "CreateIconArrayFromPath ENTRY: lock=%ld, dirPath='%s'", (LONG)lock, dirPath);
     log_debug(LOG_ICONS, "Using OPTIMIZED pattern matching (MatchFirst/MatchNext)");
@@ -182,13 +189,44 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
      * ================================================================
      * AnchorPath contains:
      *   - ap_Info: Embedded FileInfoBlock for matched files
-     *   - ap_Buf: Buffer containing full path to matched file
-     *   - ap_Strlen: Length of string in buffer
+     *   - ap_Buf: Variable-length buffer at end of structure
+     *   - ap_Strlen: Size of buffer (must be set before MatchFirst!)
      * 
-     * This is more efficient than separate FIB allocation.
+     * IMPORTANT: Manual allocation method (documented pattern)
+     * 
+     * While AllocDosObject() with ADO_Strlen tag is the "official" way,
+     * we use manual allocation here for maximum compatibility and control.
+     * 
+     * This is a well-documented pattern in Amiga programming:
+     * - Allocate sizeof(AnchorPath) + buffer_size as single block
+     * - Set ap_Strlen to buffer size before calling MatchFirst
+     * - ap_Buf automatically points to memory after the structure
+     * 
+     * Note: We initially tried ADO_Strlen tag but it caused issues,
+     * likely due to SDK version incompatibilities. The manual method
+     * works reliably across all Amiga OS versions.
      * ================================================================
      */
+#if PLATFORM_AMIGA
+    {
+        LONG bufferSize = 1024;  /* Large buffer for deep paths */
+        LONG totalSize = sizeof(struct AnchorPath) + bufferSize - 1;  /* -1 because ap_Buf[1] already in struct */
+        
+        /* Allocate AnchorPath + buffer as single block */
+        anchorPath = (struct AnchorPath *)AllocVec(totalSize, MEMF_CLEAR);
+        if (anchorPath)
+        {
+            /* Initialize the AnchorPath fields manually */
+            anchorPath->ap_Strlen = bufferSize;  /* Tell DOS about buffer size */
+            anchorPath->ap_BreakBits = 0;
+            anchorPath->ap_FoundBreak = 0;
+            anchorPath->ap_Flags = 0;
+            /* ap_Buf is already part of the structure at the end */
+        }
+    }
+#else
     anchorPath = (struct AnchorPath *)AllocDosObject(DOS_ANCHORPATH, NULL);
+#endif
     if (!anchorPath)
     {
         fprintf(stderr, "Error: Failed to allocate AnchorPath for pattern matching.\n");
@@ -200,7 +238,15 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
     }
 
 #ifdef DEBUG
-    log_debug(LOG_ICONS, "AnchorPath allocated, preparing pattern-based scan");
+    log_debug(LOG_ICONS, "AnchorPath allocated successfully");
+    append_to_log(">>> AFTER ALLOCATION: anchorPath=%p, ap_Buf=%p, ap_Strlen=%ld\n",
+                 anchorPath, anchorPath->ap_Buf, anchorPath->ap_Strlen);
+    if (anchorPath->ap_Buf) {
+        append_to_log(">>> AFTER ALLOCATION: First 20 bytes of ap_Buf: [%02x %02x %02x %02x %02x...]\n",
+                     (unsigned char)anchorPath->ap_Buf[0], (unsigned char)anchorPath->ap_Buf[1],
+                     (unsigned char)anchorPath->ap_Buf[2], (unsigned char)anchorPath->ap_Buf[3],
+                     (unsigned char)anchorPath->ap_Buf[4]);
+    }
 #endif
 
     /* ================================================================
@@ -276,6 +322,8 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
     if (matchResult == 0)
     {
         append_to_log("MatchFirst successful, entering processing loop\n");
+        append_to_log(">>> AFTER MATCHFIRST: ap_Strlen=%ld, ap_Buf='%s'\n",
+                     anchorPath->ap_Strlen, anchorPath->ap_Buf ? anchorPath->ap_Buf : "(null)");
     }
     else
     {
@@ -406,6 +454,9 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
 #endif
                     CalculateTextExtent(fileNameNoInfo, &textExtent);
 
+                    /* CRITICAL DEBUG */
+                    append_to_log(">>> About to call GetIconDetailsFromDisk for: %s\n", fullPathAndFile);
+
                     /* ========================================================
                      * OPTIMIZED ICON READING - Single disk operation
                      * ========================================================
@@ -416,13 +467,23 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                      * ======================================================== */
 #ifdef DEBUG
                     log_debug(LOG_ICONS, "Reading icon details (optimized): %s\n", fullPathAndFile);
+                    log_debug(LOG_ICONS, "  fullPathAndFile='%s'\n", fullPathAndFile);
+                    log_debug(LOG_ICONS, "  fileNameNoInfo='%s'\n", fileNameNoInfo);
+                    log_debug(LOG_ICONS, "  Calling GetIconDetailsFromDisk...\n");
 #endif
                     if (GetIconDetailsFromDisk(fullPathAndFile, &iconDetails))
                     {
+                        append_to_log(">>> GetIconDetailsFromDisk SUCCESS\n");
+#ifdef DEBUG
+                        log_debug(LOG_ICONS, "  GetIconDetailsFromDisk SUCCESS\n");
+#endif
                         /* Extract position */
                         newIcon.icon_x = iconDetails.position.x;
                         newIcon.icon_y = iconDetails.position.y;
                         iconPosition = iconDetails.position; /* For compatibility */
+#ifdef DEBUG
+                        log_debug(LOG_ICONS, "  Position: x=%d, y=%d\n", newIcon.icon_x, newIcon.icon_y);
+#endif
                         
                         /* Extract size */
                         iconSize = iconDetails.size;
@@ -518,127 +579,172 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                         newIcon.text_height = textExtent.te_Height;
                         newIcon.icon_max_width = MAX(iconSize.width + (newIcon.border_width * 2), textExtent.te_Width);
                         newIcon.icon_max_height = iconSize.height + GAP_BETWEEN_ICON_AND_TEXT + textExtent.te_Height;
+                        
+                        /* Capture file protection, size and date from FileInfoBlock */
+#if PLATFORM_AMIGA
+                        newIcon.is_write_protected = (fib->fib_Protection & FIBF_WRITE) ? true : false;
+#else
+                        newIcon.is_write_protected = false; /* Host stub */
+#endif
+
+#ifdef DEBUG_MAX
+                        append_to_log("Icon is write protected: %d\n", newIcon.is_write_protected);
+#endif
+#ifdef DEBUG_MAX
+                        append_to_log("calculated border: %d\n", (newIcon.border_width * 2));
+#endif
+
+                        /* Determine if it's a folder or a file */
+#ifdef DEBUG
+                        log_debug(LOG_ICONS, "  Calling isDirectory('%s')...\n", fullPathAndFile);
+#endif
+                        newIcon.is_folder = isDirectory(fullPathAndFile);
+#ifdef DEBUG
+                        log_debug(LOG_ICONS, "  isDirectory returned: %d\n", newIcon.is_folder);
+#endif
+                        
+                        /* Capture file size and date from FileInfoBlock */
+#if PLATFORM_AMIGA
+#ifdef DEBUG
+                        log_debug(LOG_ICONS, "  Capturing file metadata from fib\n");
+                        log_debug(LOG_ICONS, "  is_folder=%d\n", newIcon.is_folder);
+#endif
+                        if (newIcon.is_folder)
+                        {
+                            newIcon.file_size = 0;  /* Folders have no size */
+                        }
+                        else
+                        {
+                            newIcon.file_size = fib->fib_Size;
+#ifdef DEBUG
+                            log_debug(LOG_ICONS, "  file_size=%ld\n", newIcon.file_size);
+#endif
+                        }
+                        /* Copy the DateStamp structure */
+                        newIcon.file_date.ds_Days = fib->fib_Date.ds_Days;
+                        newIcon.file_date.ds_Minute = fib->fib_Date.ds_Minute;
+                        newIcon.file_date.ds_Tick = fib->fib_Date.ds_Tick;
+#ifdef DEBUG
+                        log_debug(LOG_ICONS, "  date: days=%ld, min=%ld, tick=%ld\n", 
+                                 newIcon.file_date.ds_Days, newIcon.file_date.ds_Minute, newIcon.file_date.ds_Tick);
+#endif
+#else
+                        newIcon.file_size = 0;  /* Host stub */
+                        newIcon.file_date.ds_Days = 0;
+                        newIcon.file_date.ds_Minute = 0;
+                        newIcon.file_date.ds_Tick = 0;
+#endif
+                        
+#ifdef DEBUG_MAX
+                        append_to_log("Allocating memory for icon path.\n");
+#endif
+#ifdef DEBUG
+                        log_debug(LOG_ICONS, "  Allocating icon_full_path (%d bytes)...\n", strlen(fullPathAndFile) + 1);
+#endif
+                        /* Allocate and copy the full path and icon text */
+                        newIcon.icon_full_path = (char *)whd_malloc(strlen(fullPathAndFile) + 1);
+                        if (!newIcon.icon_full_path)
+                        {
+                            fprintf(stderr, "Error: Failed to allocate memory for icon full path.\n");
+#ifdef DEBUG
+                            log_error(LOG_ICONS, "  MALLOC FAILED for icon_full_path\n");
+#endif
+                            FreeIconArray(iconArray);
+#if PLATFORM_AMIGA
+                            MatchEnd(anchorPath);
+                            FreeDosObject(DOS_ANCHORPATH, anchorPath);
+#else
+                            whd_free(anchorPath);
+#endif
+                            return NULL;
+                        }
+                        memset(newIcon.icon_full_path, 0, strlen(fullPathAndFile) + 1);
+                        strcpy(newIcon.icon_full_path, fullPathAndFile);
+#ifdef DEBUG
+                        log_debug(LOG_ICONS, "  icon_full_path='%s'\n", newIcon.icon_full_path);
+#endif
+
+                        textLength = strlen(fileNameNoInfo) + 1;
+#ifdef DEBUG
+                        log_debug(LOG_ICONS, "  Allocating icon_text (%d bytes)...\n", textLength);
+#endif
+                        newIcon.icon_text = (char *)whd_malloc(textLength);
+                        if (!newIcon.icon_text)
+                        {
+                            fprintf(stderr, "Error: Failed to allocate memory for icon text.\n");
+#ifdef DEBUG
+                            log_error(LOG_ICONS, "  MALLOC FAILED for icon_text\n");
+#endif
+                            whd_free(newIcon.icon_full_path);
+                            FreeIconArray(iconArray);
+#if PLATFORM_AMIGA
+                            MatchEnd(anchorPath);
+                            FreeDosObject(DOS_ANCHORPATH, anchorPath);
+#else
+                            whd_free(anchorPath);
+#endif
+                            return NULL;
+                        }
+                        memset(newIcon.icon_text, 0, textLength);
+                        strcpy(newIcon.icon_text, fileNameNoInfo);
+#ifdef DEBUG
+                        log_debug(LOG_ICONS, "  icon_text='%s'\n", newIcon.icon_text);
+#endif
+
+                        /* Update the maximum width */
+                        if (newIcon.icon_max_width > maxWidth)
+                        {
+                            maxWidth = newIcon.icon_max_width;
+                        }
+
+#ifdef DEBUG
+                        log_debug(LOG_ICONS, "  Adding icon to array...\n");
+#endif
+                        append_to_log(">>> About to call AddIconToArray, fileCount=%d\n", fileCount);
+                        /* Add new icon to the array */
+                        if (!AddIconToArray(iconArray, &newIcon))
+                        {
+                            fprintf(stderr, "Error: Failed to add icon to array.\n");
+                            append_to_log(">>> ERROR: AddIconToArray FAILED!\n");
+#ifdef DEBUG
+                            log_error(LOG_ICONS, "  AddIconToArray FAILED\n");
+#endif
+                            whd_free(newIcon.icon_text);
+                            whd_free(newIcon.icon_full_path);
+                            FreeIconArray(iconArray);
+#if PLATFORM_AMIGA
+                            MatchEnd(anchorPath);
+                            FreeDosObject(DOS_ANCHORPATH, anchorPath);
+#else
+                            whd_free(anchorPath);
+#endif
+                            return NULL;
+                        }
+
+                        append_to_log(">>> AddIconToArray SUCCESS, fileCount now %d\n", fileCount + 1);
+#ifdef DEBUG
+                        log_debug(LOG_ICONS, "  Icon added successfully, fileCount now: %d\n", fileCount + 1);
+#endif
+                        fileCount++;
                     }
                     else
                     {
+#ifdef DEBUG
+                        log_warning(LOG_ICONS, "GetIconDetailsFromDisk FAILED for '%s'\n", fullPathAndFile);
+#endif
                         /* Fallback if optimized read fails - skip this icon */
                         append_to_log("Warning: Failed to read icon details for %s\n", fullPathAndFile);
                         continue;
                     }
-
-#if PLATFORM_AMIGA
-                                newIcon.is_write_protected = (fib->fib_Protection & FIBF_WRITE) ? true : false;
-#else
-                                newIcon.is_write_protected = false; /* Host stub */
-#endif
-
-#ifdef DEBUG_MAX
-                                append_to_log("Icon is write protected: %d\n", newIcon.is_write_protected);
-                                #endif
-#ifdef DEBUG_MAX
-                                append_to_log("calculated border: %d\n", (newIcon.border_width * 2));
-#endif
-
-                                /* Determine if it's a folder or a file */
-                                newIcon.is_folder = isDirectory(fullPathAndFile);
-                                
-                                /* Capture file size and date from FileInfoBlock */
-#if PLATFORM_AMIGA
-                                if (newIcon.is_folder)
-                                {
-                                    newIcon.file_size = 0;  /* Folders have no size */
-                                }
-                                else
-                                {
-                                    newIcon.file_size = fib->fib_Size;
-                                }
-                                /* Copy the DateStamp structure */
-                                newIcon.file_date.ds_Days = fib->fib_Date.ds_Days;
-                                newIcon.file_date.ds_Minute = fib->fib_Date.ds_Minute;
-                                newIcon.file_date.ds_Tick = fib->fib_Date.ds_Tick;
-#else
-                                newIcon.file_size = 0;  /* Host stub */
-                                newIcon.file_date.ds_Days = 0;
-                                newIcon.file_date.ds_Minute = 0;
-                                newIcon.file_date.ds_Tick = 0;
-#endif
-                                
-#ifdef DEBUG_MAX
-                                append_to_log("Allocating memory for icon path.\n");
-
-#endif
-                                /* Allocate and copy the full path and icon text */
-                                newIcon.icon_full_path = (char *)whd_malloc(strlen(fullPathAndFile) + 1);
-                                if (!newIcon.icon_full_path)
-                                {
-                                    fprintf(stderr, "Error: Failed to allocate memory for icon full path.\n");
-                                    FreeIconArray(iconArray);
-#if PLATFORM_AMIGA
-                                    MatchEnd(anchorPath);
-                                    FreeDosObject(DOS_ANCHORPATH, anchorPath);
-#else
-                                    whd_free(anchorPath);
-#endif
-                                    return NULL;
-                                }
-                                memset(newIcon.icon_full_path, 0, strlen(fullPathAndFile) + 1);
-                                strcpy(newIcon.icon_full_path, fullPathAndFile);
-
-                                textLength = strlen(fib->fib_FileName) + 1;
-                                newIcon.icon_text = (char *)whd_malloc(textLength);
-                                if (!newIcon.icon_text)
-                                {
-                                    fprintf(stderr, "Error: Failed to allocate memory for icon text.\n");
-                                    whd_free(newIcon.icon_full_path);
-                                    FreeIconArray(iconArray);
-#if PLATFORM_AMIGA
-                                    MatchEnd(anchorPath);
-                                    FreeDosObject(DOS_ANCHORPATH, anchorPath);
-#else
-                                    whd_free(anchorPath);
-#endif
-                                    return NULL;
-                                }
-                                memset(newIcon.icon_text, 0, textLength);
-                                strcpy(newIcon.icon_text, fib->fib_FileName);
-
-                                /* Update the maximum width */
-                                if (newIcon.icon_max_width > maxWidth)
-                                {
-                                    maxWidth = newIcon.icon_max_width;
-                                }
-
-                                /* Add new icon to the array */
-                                if (!AddIconToArray(iconArray, &newIcon))
-                                {
-                                    fprintf(stderr, "Error: Failed to add icon to array.\n");
-                                    whd_free(newIcon.icon_text);
-                                    whd_free(newIcon.icon_full_path);
-                                    FreeIconArray(iconArray);
-#if PLATFORM_AMIGA
-                                    MatchEnd(anchorPath);
-                                    FreeDosObject(DOS_ANCHORPATH, anchorPath);
-#else
-                                    whd_free(anchorPath);
-#endif
-                                    return NULL;
-                    }
-
-                    fileCount++;
-                    }
-                    else
-                    {
-                        fprintf(stderr, "Error: Unknown or corrupted icon file: %s\n", fullPathAndFile);
-                        //iconsErrorTracker.count++;
-                        AddIconError(&iconsErrorTracker, fullPathAndFile);
-                    }
-                } /* End: if (fileNameNoInfo not empty or dot) */
-                else
-                {
+                    /* End: if (GetIconDetailsFromDisk) */
+                } /* End: if (IsValidIcon) */
+            } /* End: if (fileNameNoInfo not empty or dot) */
+            else
+            {
 #ifdef DEBUG
-                    log_debug(LOG_ICONS, "Skipping icon with empty or dot-only name: '%s'\n", fib->fib_FileName);
+                log_debug(LOG_ICONS, "Skipping icon with empty or dot-only name: '%s'\n", fib->fib_FileName);
 #endif
-                }
+            }
             } /* End: if (isIconLeftOut()) */
         } /* End: if (isIconTypeDisk()) */
         
@@ -652,7 +758,18 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
          * ============================================================
          */
         eraseSpinner();
+        append_to_log(">>> About to call MatchNext, fileCount=%d\n", fileCount);
+#ifdef DEBUG
+        append_to_log(">>> AnchorPath buffer strlen=%ld, buf='%s'\n", 
+                     anchorPath->ap_Strlen, anchorPath->ap_Buf ? anchorPath->ap_Buf : "(null)");
+#endif
         matchResult = MatchNext(anchorPath);
+        append_to_log(">>> MatchNext returned: %ld\n", matchResult);
+        
+        /* Small delay to let DOS cleanup locks (similar to layout_processor fix) */
+        #if PLATFORM_AMIGA
+        Delay(1);  /* 1 tick = ~20ms, prevents MatchNext crashes on fast systems */
+        #endif
     } /* End: pattern matching while loop */
 
     /* ================================================================
@@ -662,11 +779,17 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
      * allocated by MatchFirst(). Failing to call this will cause
      * memory leaks.
      * 
-     * Then free the AnchorPath structure we allocated.
+     * Then free our manually allocated AnchorPath (buffer included).
      * ================================================================
      */
     MatchEnd(anchorPath);
+    
+#if PLATFORM_AMIGA
+    /* Free manually allocated AnchorPath+buffer as single block */
+    FreeVec(anchorPath);
+#else
     FreeDosObject(DOS_ANCHORPATH, anchorPath);
+#endif
 
     /* Set the largest icon width */
     iconArray->BiggestWidthPX = maxWidth;

@@ -961,11 +961,38 @@ BOOL ValidateDefaultTool(const char *defaultTool)
     char *versionStr = NULL;
     ToolCacheEntry *cacheEntry;
     int i;
+    struct Process *proc;
+    APTR oldWindowPtr;
     
     if (defaultTool == NULL || defaultTool[0] == '\0')
     {
         return FALSE;  /* No tool specified */
     }
+    
+    /* ================================================================
+     * DISABLE VOLUME REQUESTERS
+     * ================================================================
+     * When validating default tools, we may encounter paths to devices
+     * that aren't currently mounted (e.g., "DeluxePaintIII:DPaint" when
+     * the floppy/CD isn't inserted).
+     * 
+     * Normally, AmigaDOS Lock() would display a volume requester asking
+     * the user to insert the disk. This would:
+     * - Block the entire validation process
+     * - Require user interaction for every unmounted device
+     * - Make processing large directories with old files impractical
+     * 
+     * By setting pr_WindowPtr to -1, we disable all DOS requesters for
+     * this process. Lock() will simply fail and return NULL instead of
+     * showing the "Please insert volume..." requester.
+     * 
+     * This is restored at the end of the function to maintain normal
+     * DOS behavior for other operations.
+     * ================================================================
+     */
+    proc = (struct Process *)FindTask(NULL);
+    oldWindowPtr = proc->pr_WindowPtr;
+    proc->pr_WindowPtr = (APTR)-1;  /* Disable DOS requesters */
     
     /* Check cache first */
     cacheEntry = SearchToolCache(defaultTool);
@@ -975,6 +1002,8 @@ BOOL ValidateDefaultTool(const char *defaultTool)
         log_debug(LOG_ICONS, "ValidateDefaultTool: Cache hit for '%s' -> %s\n", 
                  defaultTool, cacheEntry->exists ? "EXISTS" : "MISSING");
 #endif
+        /* Restore DOS requesters before returning */
+        proc->pr_WindowPtr = oldWindowPtr;
         return cacheEntry->exists;
     }
     
@@ -1083,6 +1112,9 @@ BOOL ValidateDefaultTool(const char *defaultTool)
     {
         FreeVec(versionStr);
     }
+    
+    /* Restore DOS requesters */
+    proc->pr_WindowPtr = oldWindowPtr;
     
     return toolExists;
 #else

@@ -32,7 +32,7 @@
 #define GID_APPLY            15
 #define GID_CANCEL           16
 #define GID_RESTORE          17
-#define GID_ENUMERATE        18
+#define GID_VIEW_TOOL_CACHE  18
 
 /*------------------------------------------------------------------------*/
 /* Main Window Data Structure                                            */
@@ -63,7 +63,7 @@ struct iTidyMainWindow
     struct Gadget *restore_btn;
     struct Gadget *apply_btn;
     struct Gadget *cancel_btn;
-    struct Gadget *enumerate_btn;
+    struct Gadget *view_tool_cache_btn;
     
     /* Current settings */
     char folder_path_buffer[256];
@@ -98,6 +98,8 @@ struct iTidyMainWindow
     BOOL beta_open_folders;             /* Auto-open folders after processing */
     BOOL beta_update_windows;           /* Find and update open folder windows */
     BOOL beta_performance_logging;      /* Enable performance timing logs */
+    BOOL beta_memory_logging;           /* Enable memory allocation logging */
+    UWORD beta_log_level;               /* Log level: 0=DEBUG, 1=INFO, 2=WARN, 3=ERROR */
 };
 
 /*------------------------------------------------------------------------*/

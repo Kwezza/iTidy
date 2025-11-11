@@ -75,6 +75,7 @@ GUI_SRCS = \
 	$(SRC_DIR)/GUI/beta_options_window.c \
 	$(SRC_DIR)/GUI/restore_window.c \
 	$(SRC_DIR)/GUI/folder_view_window.c \
+	$(SRC_DIR)/GUI/tool_cache_window.c \
 	$(SRC_DIR)/GUI/easy_request_helper.c \
 	$(SRC_DIR)/GUI/window_enumerator.c \
 	$(SRC_DIR)/GUI/wb_classify.c \

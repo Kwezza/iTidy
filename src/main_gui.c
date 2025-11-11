@@ -65,7 +65,7 @@
 
 /* VBCC: Set stack size to 20KB at compile time */
 #ifdef __AMIGA__
-long __stack = 20000L;
+long __stack = 80000L;
 #endif
 
 /* Define global variables */

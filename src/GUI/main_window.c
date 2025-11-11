@@ -21,10 +21,19 @@
 #include "main_window.h"
 #include "advanced_window.h"
 #include "restore_window.h"
+#include "tool_cache_window.h"
+#include "easy_request_helper.h"
 #include "layout_preferences.h"
 #include "layout_processor.h"
 #include "writeLog.h"
 #include "window_enumerator.h"
+#include "../icon_types.h"
+
+/*------------------------------------------------------------------------*/
+/* External Tool Cache Variables                                         */
+/*------------------------------------------------------------------------*/
+extern ToolCacheEntry *g_ToolCache;
+extern int g_ToolCacheCount;
 
 /*------------------------------------------------------------------------*/
 /* Window Constants                                                       */
@@ -652,14 +661,14 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 180;
     ng.ng_Height = font_height + 8;
-    ng.ng_GadgetText = "Test Enumerate Windows";
-    ng.ng_GadgetID = GID_ENUMERATE;
+    ng.ng_GadgetText = "View Tool Cache";
+    ng.ng_GadgetID = GID_VIEW_TOOL_CACHE;
     ng.ng_Flags = PLACETEXT_IN;
     
-    win_data->enumerate_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+    win_data->view_tool_cache_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
     if (!gad)
     {
-        printf("ERROR: Failed to create enumerate button\n");
+        printf("ERROR: Failed to create view tool cache button\n");
         return FALSE;
     }
     
@@ -713,6 +722,8 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     win_data->beta_open_folders = DEFAULT_BETA_OPEN_FOLDERS_AFTER_PROCESSING;
     win_data->beta_update_windows = DEFAULT_BETA_FIND_WINDOW_ON_WORKBENCH_AND_UPDATE;
     win_data->beta_performance_logging = DEFAULT_PERFORMANCE_LOGGING_ENABLED;
+    win_data->beta_memory_logging = DEFAULT_MEMORY_LOGGING_ENABLED;
+    win_data->beta_log_level = DEFAULT_LOG_LEVEL;
 
     /* Lock the Workbench screen */
     win_data->screen = LockPubScreen(NULL);
@@ -967,6 +978,8 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         prefs.beta_openFoldersAfterProcessing = win_data->beta_open_folders;
                         prefs.beta_FindWindowOnWorkbenchAndUpdate = win_data->beta_update_windows;
                         prefs.enable_performance_logging = win_data->beta_performance_logging;
+                        prefs.memoryLoggingEnabled = win_data->beta_memory_logging;
+                        prefs.logLevel = win_data->beta_log_level;
                         
                         /* Set skip hidden folders preference */
                         prefs.skipHiddenFolders = win_data->skip_hidden_folders;
@@ -1095,12 +1108,14 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                 temp_prefs.maxWindowWidthPct = win_data->advanced_max_width_pct;
                                 temp_prefs.textAlignment = win_data->advanced_vertical_align;
                                 temp_prefs.reverseSort = win_data->advanced_reverse_sort;
-                                
-                                /* Apply beta settings */
-                                temp_prefs.beta_openFoldersAfterProcessing = win_data->beta_open_folders;
-                                temp_prefs.beta_FindWindowOnWorkbenchAndUpdate = win_data->beta_update_windows;
-                                temp_prefs.enable_performance_logging = win_data->beta_performance_logging;
                             }
+                            
+                            /* Always apply beta settings (independent of advanced settings) */
+                            temp_prefs.beta_openFoldersAfterProcessing = win_data->beta_open_folders;
+                            temp_prefs.beta_FindWindowOnWorkbenchAndUpdate = win_data->beta_update_windows;
+                            temp_prefs.enable_performance_logging = win_data->beta_performance_logging;
+                            temp_prefs.memoryLoggingEnabled = win_data->beta_memory_logging;
+                            temp_prefs.logLevel = win_data->beta_log_level;
                             
                             /* Open advanced window (modal) */
                             if (open_itidy_advanced_window(&adv_data, &temp_prefs))
@@ -1151,6 +1166,8 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                     win_data->beta_open_folders = temp_prefs.beta_openFoldersAfterProcessing;
                                     win_data->beta_update_windows = temp_prefs.beta_FindWindowOnWorkbenchAndUpdate;
                                     win_data->beta_performance_logging = temp_prefs.enable_performance_logging;
+                                    win_data->beta_memory_logging = temp_prefs.memoryLoggingEnabled;
+                                    win_data->beta_log_level = temp_prefs.logLevel;
                                     
                                     printf("  (Settings will be applied when you click Apply button)\n");
                                 }
@@ -1326,56 +1343,55 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         }
                         break;
 
-                    case GID_ENUMERATE:
+                    case GID_VIEW_TOOL_CACHE:
                         {
-                            FolderWindowTracker tracker;
-                            ULONG i;
+                            struct iTidyToolCacheWindow tool_window;
                             
-                            log_info(LOG_GUI, "=== Test Enumerate Windows button clicked ===\n");
+                            log_info(LOG_GUI, "View Tool Cache button clicked\n");
                             
-                            /* First, enumerate all windows */
-                            Debug_ListWorkbenchWindows();
-                            
-                            /* Now build the folder tracking list */
-                            log_info(LOG_GUI, "=== Building folder window tracker ===\n");
-                            if (BuildFolderWindowList(&tracker))
+                            /* Check if tool cache exists and has data */
+                            if (g_ToolCache == NULL || g_ToolCacheCount == 0)
                             {
-                                /* Print the tracker contents */
-                                Debug_PrintFolderWindowList(&tracker);
+                                /* Cache doesn't exist or is empty - show info message */
+                                (void)ShowEasyRequest(
+                                    win_data->window,
+                                    "No Tool Cache Data",
+                                    "The default tool cache is empty.\n"
+                                    "\n"
+                                    "Please run the main iTidy processing\n"
+                                    "function first to scan icons and build\n"
+                                    "the tool cache data.",
+                                    "OK");
                                 
-                                /* Test: Find and resize "Programs" window to (20,20) 50x50 */
-                                log_info(LOG_GUI, "=== Testing ApplyWindowGeometry on 'Programs' ===\n");
-                                for (i = 0; i < tracker.count; i++)
+                                log_info(LOG_GUI, "Tool cache is empty - user notified\n");
+                                break;
+                            }
+                            
+                            log_info(LOG_GUI, "Opening tool cache window (cache has %d entries)\n", g_ToolCacheCount);
+                            
+                            /* Open tool cache window */
+                            if (open_tool_cache_window(&tool_window))
+                            {
+                                /* Event loop */
+                                while (handle_tool_cache_window_events(&tool_window))
                                 {
-                                    if (strcmp(tracker.windows[i].title, "Programs") == 0)
-                                    {
-                                        log_info(LOG_GUI, "Found 'Programs' window at index %lu\n", i);
-                                        if (ApplyWindowGeometry(tracker.windows[i].window, 20, 20, 50, 50))
-                                        {
-                                            log_info(LOG_GUI, "Successfully applied geometry to 'Programs'\n");
-                                        }
-                                        else
-                                        {
-                                            log_error(LOG_GUI, "Failed to apply geometry to 'Programs'\n");
-                                        }
-                                        break;
-                                    }
-                                }
-                                if (i >= tracker.count)
-                                {
-                                    log_info(LOG_GUI, "'Programs' window not found in tracker\n");
+                                    WaitPort(tool_window.window->UserPort);
                                 }
                                 
-                                /* Clean up */
-                                FreeFolderWindowList(&tracker);
-                                log_info(LOG_GUI, "=== Folder tracker freed ===\n");
+                                /* Cleanup */
+                                close_tool_cache_window(&tool_window);
+                                log_info(LOG_GUI, "Tool cache window closed\n");
                             }
                             else
                             {
-                                log_error(LOG_GUI, "=== Failed to build folder tracker ===\n");
+                                log_error(LOG_GUI, "Failed to open tool cache window\n");
+                                (void)ShowEasyRequest(
+                                    win_data->window,
+                                    "Error",
+                                    "Failed to open tool cache window.\n"
+                                    "Check the log for details.",
+                                    "OK");
                             }
-                            
-                            log_info(LOG_GUI, "=== Enumeration complete ===\n");
                         }
                         break;
 
