@@ -144,6 +144,32 @@ if (ap) {
 5. Diagnostic logging essential for tracking buffer state in complex code paths
 6. Default buffer sizes in structures may be insufficient for real-world usage
 
+**Official AmigaOS Documentation Confirmation:**
+
+External confirmation from AmigaOS experts validates the manual allocation approach:
+
+> *"On AmigaOS 3.1/3.2, AllocDosObject(DOS_ANCHORPATH, …) does not have a tag to size the AnchorPath path buffer. The classic headers/docs say: if you want full pathnames, you must allocate a buffer at the end of AnchorPath and put its size in ap_Strlen yourself (i.e., sizeof(struct AnchorPath)+N). The same docs define ERROR_BUFFER_OVERFLOW = 303, which is what you'll hit if the buffer is too small."*
+
+**Key Clarifications:**
+- **ADO_DirLen**: Only for DOS_CLI objects (shell current dir/prompt buffers), not DOS_ANCHORPATH
+  - Listed in `dostags.i` for CLI-specific operations
+  - This is why ADO_DirLen had no effect on AnchorPath allocation
+  
+- **ADO_Strlen**: AmigaOS 4 addition only, not part of 3.x SDK
+  - Not available in classic AmigaOS 3.1/3.2 headers
+  - Explains why manual tag definition caused immediate crash
+  
+- **Manual Allocation**: The documented, official method for AmigaOS 3.x
+  - `sizeof(struct AnchorPath) + N` is the classic approach
+  - Setting `ap_Strlen` manually is required and correct
+  - This is exactly what the classic AmigaOS documentation describes
+
+**ERROR_BUFFER_OVERFLOW (303):**
+The official error code for insufficient AnchorPath buffer. Our crashes were likely this error causing system instability due to the overflow writing beyond allocated memory (especially visible on non-MMU systems).
+
+**Conclusion:**
+The implemented fix using `AllocVec(sizeof(AnchorPath) + 1024 - 1, MEMF_CLEAR)` with manual `ap_Strlen = 1024` is not just a workaround—it's the **correct, documented, and portable method** for AmigaOS 3.x systems as specified in the official classic AmigaOS documentation.
+
 **Related Documentation:**
 - Full bug investigation: `docs/BUGFIX_MATCHNEXT_CRASH_RECURSIVE_MODE.md`
 
