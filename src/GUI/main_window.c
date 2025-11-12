@@ -1348,26 +1348,15 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                             struct iTidyToolCacheWindow tool_window;
                             
                             log_info(LOG_GUI, "View Tool Cache button clicked\n");
-                            
-                            /* Check if tool cache exists and has data */
-                            if (g_ToolCache == NULL || g_ToolCacheCount == 0)
-                            {
-                                /* Cache doesn't exist or is empty - show info message */
-                                (void)ShowEasyRequest(
-                                    win_data->window,
-                                    "No Tool Cache Data",
-                                    "The default tool cache is empty.\n"
-                                    "\n"
-                                    "Please run the main iTidy processing\n"
-                                    "function first to scan icons and build\n"
-                                    "the tool cache data.",
-                                    "OK");
-                                
-                                log_info(LOG_GUI, "Tool cache is empty - user notified\n");
-                                break;
-                            }
-                            
                             log_info(LOG_GUI, "Opening tool cache window (cache has %d entries)\n", g_ToolCacheCount);
+                            
+                            /* Initialize scan parameters for Rebuild Cache button */
+                            strncpy(tool_window.scan_path, win_data->folder_path_buffer, sizeof(tool_window.scan_path) - 1);
+                            tool_window.scan_path[sizeof(tool_window.scan_path) - 1] = '\0';
+                            tool_window.scan_recursive = win_data->recursive_subdirs;
+                            
+                            log_info(LOG_GUI, "Initialized scan parameters: path='%s', recursive=%d\n", 
+                                     tool_window.scan_path, tool_window.scan_recursive);
                             
                             /* Open tool cache window */
                             if (open_tool_cache_window(&tool_window))

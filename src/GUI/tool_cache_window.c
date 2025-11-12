@@ -9,6 +9,7 @@
 #include "../itidy_types.h"
 #include "../Settings/IControlPrefs.h"
 #include "../writeLog.h"
+#include "../layout_processor.h"
 
 #include <exec/memory.h>
 #include <intuition/gadgetclass.h>
@@ -700,12 +701,15 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     /* Calculate details panel height */
     details_listview_height = listview_line_height * 5;  /* 5 detail lines */
     
-    /* Pre-calculate equal-width buttons (3 filter buttons + close) */
-    UWORD button_count = 4;
+    /* Pre-calculate equal-width buttons (3 filter buttons + rebuild + close = 5 buttons) */
+    UWORD button_count = 5;
     
     /* Find maximum button text width */
     max_btn_text_width = TextLength(&temp_rp, "Show Missing Only", 17);
     temp_width = TextLength(&temp_rp, "Show Valid Only", 15);
+    if (temp_width > max_btn_text_width)
+        max_btn_text_width = temp_width;
+    temp_width = TextLength(&temp_rp, "Rebuild Cache", 13);
     if (temp_width > max_btn_text_width)
         max_btn_text_width = temp_width;
     temp_width = TextLength(&temp_rp, "Show All", 8);
@@ -849,8 +853,21 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
         goto cleanup_error;
     }
     
-    /* Close button */
+    /* Rebuild Cache button */
     ng.ng_LeftEdge = current_x + (3 * equal_button_width) + (3 * TOOL_WINDOW_SPACE_X);
+    ng.ng_Width = equal_button_width;
+    ng.ng_GadgetText = "Rebuild Cache";
+    ng.ng_GadgetID = GID_TOOL_REBUILD_CACHE;
+    
+    tool_data->rebuild_cache_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+    if (gad == NULL)
+    {
+        append_to_log("ERROR: Could not create Rebuild Cache button\n");
+        goto cleanup_error;
+    }
+    
+    /* Close button */
+    ng.ng_LeftEdge = current_x + (4 * equal_button_width) + (4 * TOOL_WINDOW_SPACE_X);
     ng.ng_Width = equal_button_width;
     ng.ng_GadgetText = "Close";
     ng.ng_GadgetID = GID_TOOL_CLOSE_BTN;
@@ -1060,6 +1077,44 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                         populate_tool_list(tool_data);
                         tool_data->selected_index = -1;
                         update_tool_details(tool_data, -1);
+                        break;
+                    
+                    case GID_TOOL_REBUILD_CACHE:
+                        log_info(LOG_GUI, "[TOOL_CACHE] Rebuild Cache button clicked\n");
+                        
+                        /* Check if we have a scan path */
+                        if (tool_data->scan_path[0] == '\0')
+                        {
+                            log_warning(LOG_GUI, "No scan path set - cannot rebuild cache\n");
+                            /* Could show an error requester here */
+                            break;
+                        }
+                        
+                        log_info(LOG_GUI, "Rescanning: %s (recursive=%s)\n", 
+                                tool_data->scan_path,
+                                tool_data->scan_recursive ? "YES" : "NO");
+                        
+                        /* Rescan the directory to rebuild tool cache */
+                        if (ScanDirectoryForToolsOnly(tool_data->scan_path, tool_data->scan_recursive))
+                        {
+                            log_info(LOG_GUI, "Tool cache rebuilt successfully\n");
+                            
+                            /* Rebuild display list from refreshed cache */
+                            build_tool_cache_display_list(tool_data);
+                            apply_tool_filter(tool_data);
+                            populate_tool_list(tool_data);
+                            
+                            /* Clear selection and details */
+                            tool_data->selected_index = -1;
+                            update_tool_details(tool_data, -1);
+                            
+                            log_info(LOG_GUI, "Display updated with new cache data\n");
+                        }
+                        else
+                        {
+                            log_error(LOG_GUI, "Failed to rebuild tool cache\n");
+                            /* Could show an error requester here */
+                        }
                         break;
                         
                     case GID_TOOL_CLOSE_BTN:

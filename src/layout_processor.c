@@ -113,6 +113,10 @@ static BOOL ProcessDirectoryRecursive(const char *path,
                                      int recursion_level,
                                      FolderWindowTracker *windowTracker);
 
+/* Forward declarations for tool scanning (Phase 1: Rebuild Cache) */
+static BOOL ScanSingleDirectoryForTools(const char *path);
+static BOOL ScanDirectoryRecursiveForTools(const char *path, int recursion_level);
+
 /* Forward declarations for column centering */
 static void CalculateLayoutPositions(IconArray *iconArray, 
                                     const LayoutPreferences *prefs,
@@ -315,6 +319,218 @@ BOOL ProcessDirectoryWithPreferences(const char *path,
     }
     
     return success;
+}
+
+/*========================================================================*/
+/* Scan Directory for Default Tools Only (No Tidying)                    */
+/*========================================================================*/
+/**
+ * @brief Scan directories and build default tool cache without tidying icons
+ * 
+ * This function walks through directories and loads icons purely to validate
+ * their default tools and populate the tool cache. Unlike ProcessDirectoryWithPreferences,
+ * it does NOT sort, layout, resize, or save any changes to icons.
+ * 
+ * Use this when you want to rebuild the tool cache for the Tool Cache Window
+ * without modifying any icon positions.
+ * 
+ * @param path Directory path to scan
+ * @param recursive TRUE to scan subdirectories recursively
+ * @return TRUE if scan completed successfully
+ */
+BOOL ScanDirectoryForToolsOnly(const char *path, BOOL recursive)
+{
+    char sanitizedPath[512];
+    BOOL success = FALSE;
+    
+    if (!path)
+    {
+        log_error(LOG_GENERAL, "ScanDirectoryForToolsOnly: Invalid path parameter\n");
+        return FALSE;
+    }
+    
+    /* Copy and sanitize the path */
+    strncpy(sanitizedPath, path, sizeof(sanitizedPath) - 1);
+    sanitizedPath[sizeof(sanitizedPath) - 1] = '\0';
+    sanitizeAmigaPath(sanitizedPath);
+    
+    /* Build PATH search list for default tool validation */
+    log_info(LOG_GENERAL, "\n*** Building PATH search list for default tool scanning ***\n");
+    if (!BuildPathSearchList())
+    {
+        log_error(LOG_GENERAL, "Failed to build PATH search list - scan aborted\n");
+        return FALSE;
+    }
+    
+    g_ValidateDefaultTools = TRUE;
+    log_info(LOG_GENERAL, "Default tool validation enabled\n");
+    
+    /* Free existing cache and initialize fresh */
+    FreeToolCache();
+    if (!InitToolCache())
+    {
+        log_warning(LOG_GENERAL, "Failed to initialize tool cache - scan will be slower\n");
+    }
+    
+    /* Load left-out icons from the device's .backdrop file */
+    loadLeftOutIcons(sanitizedPath);
+    
+    log_info(LOG_GENERAL, "\nScanning for default tools: %s\n", sanitizedPath);
+    log_info(LOG_GENERAL, "Recursive: %s\n", recursive ? "Yes" : "No");
+    log_info(LOG_GENERAL, "Mode: SCAN TOOLS ONLY (no tidying)\n\n");
+    
+    /* Start scanning */
+    if (recursive)
+    {
+        success = ScanDirectoryRecursiveForTools(sanitizedPath, 0);
+    }
+    else
+    {
+        success = ScanSingleDirectoryForTools(sanitizedPath);
+    }
+    
+    /* Show results */
+    log_info(LOG_GENERAL, "\n*** Tool scanning complete ***\n");
+    DumpToolCache();
+    
+    /* Note: Tool cache remains active for viewing in Tool Cache Window */
+    log_info(LOG_GENERAL, "Tool cache retained for viewing (call FreeToolCache() when done)\n");
+    
+    /* Free PATH search list */
+    log_info(LOG_GENERAL, "Freeing PATH search list\n");
+    FreePathSearchList();
+    g_ValidateDefaultTools = FALSE;
+    
+    return success;
+}
+
+/*========================================================================*/
+/* Scan Single Directory for Tools (Helper Function)                     */
+/*========================================================================*/
+static BOOL ScanSingleDirectoryForTools(const char *path)
+{
+    BPTR lock = 0;
+    IconArray *iconArray = NULL;
+    BOOL success = FALSE;
+    
+    log_info(LOG_GENERAL, "  Scanning: %s\n", path);
+    
+    /* Lock the directory */
+    lock = Lock((STRPTR)path, ACCESS_READ);
+    if (!lock)
+    {
+        LONG error = IoErr();
+        log_error(LOG_GENERAL, "Failed to lock directory: %s (error: %ld)\n", path, error);
+        return FALSE;
+    }
+    
+    /* Create icon array - this automatically validates default tools */
+    iconArray = CreateIconArrayFromPath(lock, path);
+    
+    if (!iconArray)
+    {
+        log_warning(LOG_GENERAL, "  No icons found or error reading directory\n");
+        UnLock(lock);
+        return FALSE;
+    }
+    
+    log_info(LOG_GENERAL, "  Found %lu icons (tools validated)\n", (unsigned long)iconArray->size);
+    success = TRUE;
+    
+    /* Clean up - we only needed the icons to validate tools */
+    FreeIconArray(iconArray);
+    UnLock(lock);
+    
+    return success;
+}
+
+/*========================================================================*/
+/* Scan Directory Recursively for Tools (Helper Function)                */
+/*========================================================================*/
+static BOOL ScanDirectoryRecursiveForTools(const char *path, int recursion_level)
+{
+    BPTR lock = 0;
+    struct FileInfoBlock *fib = NULL;
+    char subdir[512];
+    BOOL success = FALSE;
+    
+    /* Safety check for recursion depth */
+    if (recursion_level > 50)
+    {
+        log_warning(LOG_GENERAL, "Maximum recursion depth reached at: %s\n", path);
+        return FALSE;
+    }
+    
+    /* Scan this directory first */
+    if (!ScanSingleDirectoryForTools(path))
+    {
+        return FALSE; /* Stop if current directory fails */
+    }
+    
+    /* Small delay to prevent filesystem lock issues on fast systems */
+#if ENABLE_FILESYSTEM_LOCK_DELAY
+    Delay(FILESYSTEM_LOCK_DELAY_TICKS);
+#endif
+    
+    /* Now scan subdirectories */
+    lock = Lock((STRPTR)path, ACCESS_READ);
+    if (!lock)
+    {
+        return FALSE;
+    }
+    
+    fib = AllocDosObject(DOS_FIB, NULL);
+    if (!fib)
+    {
+        UnLock(lock);
+        return FALSE;
+    }
+    
+    if (Examine(lock, fib))
+    {
+        while (ExNext(lock, fib))
+        {
+            /* Only process directories, skip files */
+            if (fib->fib_DirEntryType > 0)
+            {
+                /* Build subdirectory path */
+                if (path[strlen(path) - 1] == ':')
+                {
+                    snprintf(subdir, sizeof(subdir), "%s%s", path, fib->fib_FileName);
+                }
+                else
+                {
+                    snprintf(subdir, sizeof(subdir), "%s/%s", path, fib->fib_FileName);
+                }
+                
+                /* Check for hidden folders (no .info file) */
+                {
+                    char iconPath[520];
+                    BPTR iconLock;
+                    
+                    snprintf(iconPath, sizeof(iconPath), "%s.info", subdir);
+                    iconLock = Lock((STRPTR)iconPath, ACCESS_READ);
+                    
+                    if (!iconLock)
+                    {
+                        /* Hidden folder - skip it */
+                        log_debug(LOG_GENERAL, "Skipping hidden folder: %s\n", subdir);
+                        continue;
+                    }
+                    UnLock(iconLock);
+                }
+                
+                /* Recursively scan subdirectory */
+                log_info(LOG_GENERAL, "\nEntering: %s\n", subdir);
+                ScanDirectoryRecursiveForTools(subdir, recursion_level + 1);
+            }
+        }
+    }
+    
+    FreeDosObject(DOS_FIB, fib);
+    UnLock(lock);
+    
+    return TRUE;
 }
 
 /*========================================================================*/

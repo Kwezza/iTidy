@@ -40,4 +40,31 @@ BOOL ProcessDirectoryWithPreferences(const char *path,
                                     BOOL recursive, 
                                     const LayoutPreferences *prefs);
 
+/**
+ * @brief Scan directory for default tools only (no tidying)
+ * 
+ * Walks through directories and loads icons purely to validate their
+ * default tools and populate the tool cache. Does NOT sort, layout,
+ * resize, or save any changes to icons.
+ * 
+ * This is useful for rebuilding the tool cache in the Tool Cache Window
+ * without modifying any icon positions.
+ * 
+ * @param path Directory path to scan (e.g., "Work:Projects")
+ * @param recursive TRUE to scan subdirectories recursively
+ * @return TRUE if scan completed successfully, FALSE on error
+ * 
+ * @note The tool cache remains active after scanning. Call FreeToolCache()
+ *       when you're done viewing the results.
+ * 
+ * @example
+ * // Rebuild tool cache for Tool Cache Window
+ * if (ScanDirectoryForToolsOnly("Work:", TRUE))
+ * {
+ *     printf("Tool cache rebuilt - %d tools found\n", g_ToolCacheCount);
+ *     DumpToolCache();
+ * }
+ */
+BOOL ScanDirectoryForToolsOnly(const char *path, BOOL recursive);
+
 #endif /* LAYOUT_PROCESSOR_H */
