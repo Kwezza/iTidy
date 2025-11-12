@@ -52,7 +52,8 @@ typedef enum {
 /*------------------------------------------------------------------------*/
 struct ToolCacheDisplayEntry
 {
-    struct Node node;               /* For linking in list */
+    struct Node node;               /* For linking in tool_entries list */
+    struct Node filter_node;        /* For linking in filtered_entries list */
     char *tool_name;                /* Tool name */
     char *display_text;             /* Formatted display text for listview */
     BOOL exists;                    /* TRUE if tool exists */
@@ -76,6 +77,7 @@ struct iTidyToolCacheWindow
     
     /* Gadget pointers */
     struct Gadget *tool_list;           /* ListView showing tools */
+    struct Gadget *details_listview;    /* ListView showing file details */
     struct Gadget *filter_all_btn;      /* Show All button */
     struct Gadget *filter_valid_btn;    /* Show Valid Only button */
     struct Gadget *filter_missing_btn;  /* Show Missing Only button */

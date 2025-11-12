@@ -26,10 +26,102 @@
 extern struct GfxBase *GfxBase;
 
 /*------------------------------------------------------------------------*/
+/* Layout Configuration                                                   */
+/*------------------------------------------------------------------------*/
+#define TOOL_NAME_COLUMN_WIDTH  40  /* Maximum characters for tool name column */
+
+/*------------------------------------------------------------------------*/
 /* Forward Declarations                                                   */
 /*------------------------------------------------------------------------*/
 static void populate_tool_list(struct iTidyToolCacheWindow *tool_data);
 static void populate_details_panel(struct iTidyToolCacheWindow *tool_data);
+static void truncate_tool_name_middle(const char *tool_name, char *output, int max_length);
+
+/*------------------------------------------------------------------------*/
+/* Truncate Tool Name in Middle                                          */
+/*------------------------------------------------------------------------*/
+/**
+ * @brief Truncate a tool name in the middle with "..." if too long
+ * 
+ * For Amiga paths like "Workbench:Programs/Wordworth7/Wordworth", this will
+ * truncate to show the device/start and the program name, e.g.:
+ * "Workbench:...Wordworth" (22 chars max)
+ * 
+ * @param tool_name Original tool name/path
+ * @param output Buffer to store truncated result (must be at least max_length+1)
+ * @param max_length Maximum length for the output string
+ */
+static void truncate_tool_name_middle(const char *tool_name, char *output, int max_length)
+{
+    int len;
+    int left_part_len;
+    int right_part_len;
+    int i;
+    const char *last_slash;
+    const char *last_colon;
+    
+    if (tool_name == NULL || output == NULL || max_length < 10)
+    {
+        if (output != NULL && max_length > 0)
+            output[0] = '\0';
+        return;
+    }
+    
+    len = strlen(tool_name);
+    
+    /* If it fits, just copy it */
+    if (len <= max_length)
+    {
+        strcpy(output, tool_name);
+        return;
+    }
+    
+    /* Find the last slash or colon to identify the program name */
+    last_slash = strrchr(tool_name, '/');
+    last_colon = strrchr(tool_name, ':');
+    
+    /* Determine which separator is last */
+    if (last_slash == NULL && last_colon == NULL)
+    {
+        /* No path separators - just truncate in middle */
+        left_part_len = (max_length - 3) / 2;
+        right_part_len = max_length - 3 - left_part_len;
+        
+        strncpy(output, tool_name, left_part_len);
+        output[left_part_len] = '\0';
+        strcat(output, "...");
+        strncat(output, tool_name + len - right_part_len, right_part_len);
+    }
+    else
+    {
+        /* We have path separators - try to show device and program name */
+        const char *separator = (last_slash > last_colon) ? last_slash : last_colon;
+        int program_name_len = strlen(separator); /* Includes the separator */
+        
+        /* Calculate how much space we have for the left part */
+        /* Format: "device:...program" or "device:.../program" */
+        left_part_len = max_length - 3 - program_name_len;
+        
+        if (left_part_len < 5)
+        {
+            /* Not enough space to show device - just show end with ellipsis */
+            strcpy(output, "...");
+            strncat(output, separator, max_length - 3);
+            output[max_length] = '\0';
+        }
+        else
+        {
+            /* Show device/start + ... + program name */
+            strncpy(output, tool_name, left_part_len);
+            output[left_part_len] = '\0';
+            strcat(output, "...");
+            strcat(output, separator);
+        }
+    }
+    
+    /* Ensure null termination */
+    output[max_length] = '\0';
+}
 
 /*------------------------------------------------------------------------*/
 /* Build Tool Cache Display List                                         */
@@ -63,6 +155,8 @@ BOOL build_tool_cache_display_list(struct iTidyToolCacheWindow *tool_data)
     /* Build display entries from global cache */
     for (i = 0; i < g_ToolCacheCount; i++)
     {
+        char truncated_name[TOOL_NAME_COLUMN_WIDTH + 1];  /* Buffer for truncated tool name */
+        
         /* Allocate entry */
         entry = (struct ToolCacheDisplayEntry *)AllocVec(sizeof(struct ToolCacheDisplayEntry), MEMF_CLEAR);
         if (entry == NULL)
@@ -79,11 +173,26 @@ BOOL build_tool_cache_display_list(struct iTidyToolCacheWindow *tool_data)
         entry->full_path = g_ToolCache[i].fullPath;  /* Point to cache data */
         entry->version = g_ToolCache[i].versionString;  /* Point to cache data */
         
+        /* Truncate tool name if needed (max TOOL_NAME_COLUMN_WIDTH chars to fit in column) */
+        truncate_tool_name_middle(
+            entry->tool_name ? entry->tool_name : "(unknown)",
+            truncated_name,
+            TOOL_NAME_COLUMN_WIDTH
+        );
+        
+        /* Log if truncation occurred */
+        if (entry->tool_name && strlen(entry->tool_name) > TOOL_NAME_COLUMN_WIDTH)
+        {
+            append_to_log("  Truncated: '%s' -> '%s'\n", entry->tool_name, truncated_name);
+        }
+        
         /* Format display text: "Tool Name             | Hits | Status  " */
         /* Use fixed-width format for column alignment */
-        sprintf(buffer, "%-22s| %4d | %s",
-            entry->tool_name ? entry->tool_name : "(unknown)",
-            entry->hit_count,
+        /* Add 1 to hit_count for display (user-friendly numbering starting from 1) */
+        sprintf(buffer, "%-*s| %4d | %s",
+            TOOL_NAME_COLUMN_WIDTH,
+            truncated_name,
+            entry->hit_count + 1,
             entry->exists ? "EXISTS " : "MISSING");
         
         /* Allocate and copy display text */
@@ -126,11 +235,15 @@ void apply_tool_filter(struct iTidyToolCacheWindow *tool_data)
 {
     struct ToolCacheDisplayEntry *entry;
     struct Node *node;
+    ULONG count = 0;
     
     if (tool_data == NULL)
         return;
     
-    /* Clear filtered list */
+    /* Clear filtered list by rebuilding it */
+    /* NOTE: The filtered_entries list uses the filter_node member of each entry.
+       This allows the same entry to appear in both tool_entries (via node) 
+       and filtered_entries (via filter_node) simultaneously. */
     NewList(&tool_data->filtered_entries);
     
     /* Build filtered list based on current filter */
@@ -140,31 +253,40 @@ void apply_tool_filter(struct iTidyToolCacheWindow *tool_data)
     {
         entry = (struct ToolCacheDisplayEntry *)node;
         
-        /* Apply filter */
+        /* Apply filter and add to filtered list using filter_node */
         switch (tool_data->current_filter)
         {
             case TOOL_FILTER_ALL:
-                /* Add all entries */
-                AddTail(&tool_data->filtered_entries, (struct Node *)entry);
+                /* Add all entries using filter_node */
+                entry->filter_node.ln_Name = entry->display_text;  /* Point to same display text */
+                AddTail(&tool_data->filtered_entries, &entry->filter_node);
+                count++;
                 break;
                 
             case TOOL_FILTER_VALID:
                 /* Only add tools that exist */
                 if (entry->exists)
-                    AddTail(&tool_data->filtered_entries, (struct Node *)entry);
+                {
+                    entry->filter_node.ln_Name = entry->display_text;
+                    AddTail(&tool_data->filtered_entries, &entry->filter_node);
+                    count++;
+                }
                 break;
                 
             case TOOL_FILTER_MISSING:
                 /* Only add missing tools */
                 if (!entry->exists)
-                    AddTail(&tool_data->filtered_entries, (struct Node *)entry);
+                {
+                    entry->filter_node.ln_Name = entry->display_text;
+                    AddTail(&tool_data->filtered_entries, &entry->filter_node);
+                    count++;
+                }
                 break;
         }
     }
     
     append_to_log("apply_tool_filter: Filter=%d, Result count=%lu\n",
-        tool_data->current_filter, 
-        IsListEmpty(&tool_data->filtered_entries) ? 0 : 1);  /* Simplified count */
+        tool_data->current_filter, count);
 }
 
 /*------------------------------------------------------------------------*/
@@ -176,11 +298,13 @@ void update_tool_details(struct iTidyToolCacheWindow *tool_data, LONG selected_i
     struct Node *node;
     struct Node *detail_node;
     LONG index = 0;
-    char buffer[256];
-    int max_label_len;
+    char buffer[512];
+    int i;
     
     if (tool_data == NULL)
         return;
+    
+    log_info(LOG_GUI, "[TOOL_CACHE] update_tool_details() called with selected_index=%ld\n", selected_index);
     
     /* Clear details list */
     while ((detail_node = RemHead(&tool_data->details_list)) != NULL)
@@ -196,6 +320,7 @@ void update_tool_details(struct iTidyToolCacheWindow *tool_data, LONG selected_i
     /* If nothing selected, show empty details */
     if (selected_index < 0)
     {
+        log_info(LOG_GUI, "[TOOL_CACHE] No tool selected (index < 0), clearing details\n");
         populate_details_panel(tool_data);
         return;
     }
@@ -207,117 +332,172 @@ void update_tool_details(struct iTidyToolCacheWindow *tool_data, LONG selected_i
     {
         if (index == selected_index)
         {
-            entry = (struct ToolCacheDisplayEntry *)node;
+            /* Calculate entry pointer from filter_node offset */
+            /* filter_node is the second member of ToolCacheDisplayEntry, after node */
+            entry = (struct ToolCacheDisplayEntry *)((char *)node - sizeof(struct Node));
             
-            /* Calculate maximum label length for colon-aligned formatting */
-            const char *labels[] = {
-                "Tool Name:",
-                "Status:",
-                "Hit Count:",
-                "Full Path:",
-                "Version:"
-            };
-            max_label_len = 0;
-            for (int i = 0; i < 5; i++)
+            log_info(LOG_GUI, "[TOOL_CACHE] Found selected entry: tool_name='%s'\n", 
+                         entry->tool_name ? entry->tool_name : "(null)");
+            
+            /* Find the corresponding cache entry to get file references */
+            for (i = 0; i < g_ToolCacheCount; i++)
             {
-                int len = strlen(labels[i]);
-                if (len > max_label_len)
-                    max_label_len = len;
+                if (g_ToolCache[i].toolName && entry->tool_name && 
+                    strcmp(g_ToolCache[i].toolName, entry->tool_name) == 0)
+                {
+                    int j;
+                    
+                    log_info(LOG_GUI, "[TOOL_CACHE] Matched cache entry %d: fileCount=%d\n", 
+                                 i, g_ToolCache[i].fileCount);
+                    
+                    /* Add tool name on first line */
+                    sprintf(buffer, "Tool:   %s",
+                        entry->tool_name ? entry->tool_name : "(unknown)");
+                    
+                    detail_node = (struct Node *)AllocVec(sizeof(struct Node), MEMF_CLEAR);
+                    if (detail_node)
+                    {
+                        detail_node->ln_Name = (char *)AllocVec(strlen(buffer) + 1, MEMF_CLEAR);
+                        if (detail_node->ln_Name)
+                        {
+                            strcpy(detail_node->ln_Name, buffer);
+                            AddTail(&tool_data->details_list, detail_node);
+                        }
+                        else
+                        {
+                            FreeVec(detail_node);
+                        }
+                    }
+                    
+                    /* Add status and version on second line */
+                    sprintf(buffer, "Status: %s  |  Version: %s",
+                        entry->exists ? "EXISTS" : "MISSING",
+                        entry->version ? entry->version : "(no version)");
+                    
+                    detail_node = (struct Node *)AllocVec(sizeof(struct Node), MEMF_CLEAR);
+                    if (detail_node)
+                    {
+                        detail_node->ln_Name = (char *)AllocVec(strlen(buffer) + 1, MEMF_CLEAR);
+                        if (detail_node->ln_Name)
+                        {
+                            strcpy(detail_node->ln_Name, buffer);
+                            AddTail(&tool_data->details_list, detail_node);
+                        }
+                        else
+                        {
+                            FreeVec(detail_node);
+                        }
+                    }
+                    
+                    /* Add separator using simple dashes (Amiga doesn't support Unicode box chars) */
+                    sprintf(buffer, "--------------------------------------------------------------------");
+                    detail_node = (struct Node *)AllocVec(sizeof(struct Node), MEMF_CLEAR);
+                    if (detail_node)
+                    {
+                        detail_node->ln_Name = (char *)AllocVec(strlen(buffer) + 1, MEMF_CLEAR);
+                        if (detail_node->ln_Name)
+                        {
+                            strcpy(detail_node->ln_Name, buffer);
+                            AddTail(&tool_data->details_list, detail_node);
+                        }
+                        else
+                        {
+                            FreeVec(detail_node);
+                        }
+                    }
+                    
+                    /* Add file references */
+                    if (g_ToolCache[i].fileCount > 0 && g_ToolCache[i].referencingFiles)
+                    {
+                        for (j = 0; j < g_ToolCache[i].fileCount; j++)
+                        {
+                            if (g_ToolCache[i].referencingFiles[j])
+                            {
+                                /* Truncate long paths if needed */
+                                char truncated_path[80];
+                                truncate_tool_name_middle(g_ToolCache[i].referencingFiles[j], 
+                                                         truncated_path, 70);
+                                
+                                sprintf(buffer, "%s", truncated_path);
+                                
+                                detail_node = (struct Node *)AllocVec(sizeof(struct Node), MEMF_CLEAR);
+                                if (detail_node)
+                                {
+                                    detail_node->ln_Name = (char *)AllocVec(strlen(buffer) + 1, MEMF_CLEAR);
+                                    if (detail_node->ln_Name)
+                                    {
+                                        strcpy(detail_node->ln_Name, buffer);
+                                        AddTail(&tool_data->details_list, detail_node);
+                                    }
+                                    else
+                                    {
+                                        FreeVec(detail_node);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        /* Add footer if truncated */
+                        if (g_ToolCache[i].fileCount >= TOOL_CACHE_MAX_FILES_PER_TOOL)
+                        {
+                            sprintf(buffer, "(showing first %d files, more may exist)", 
+                                   TOOL_CACHE_MAX_FILES_PER_TOOL);
+                            detail_node = (struct Node *)AllocVec(sizeof(struct Node), MEMF_CLEAR);
+                            if (detail_node)
+                            {
+                                detail_node->ln_Name = (char *)AllocVec(strlen(buffer) + 1, MEMF_CLEAR);
+                                if (detail_node->ln_Name)
+                                {
+                                    strcpy(detail_node->ln_Name, buffer);
+                                    AddTail(&tool_data->details_list, detail_node);
+                                }
+                                else
+                                {
+                                    FreeVec(detail_node);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        /* No files found */
+                        sprintf(buffer, "(no files using this tool)");
+                        detail_node = (struct Node *)AllocVec(sizeof(struct Node), MEMF_CLEAR);
+                        if (detail_node)
+                        {
+                            detail_node->ln_Name = (char *)AllocVec(strlen(buffer) + 1, MEMF_CLEAR);
+                            if (detail_node->ln_Name)
+                            {
+                                strcpy(detail_node->ln_Name, buffer);
+                                AddTail(&tool_data->details_list, detail_node);
+                            }
+                            else
+                            {
+                                FreeVec(detail_node);
+                            }
+                        }
+                    }
+                    
+                    break;  /* Found the tool, exit loop */
+                }
             }
             
-            /* Create detail lines with colon-aligned formatting */
-            /* Tool Name */
-            sprintf(buffer, "%*s %s", max_label_len, "Tool Name:",
-                entry->tool_name ? entry->tool_name : "(unknown)");
-            detail_node = (struct Node *)AllocVec(sizeof(struct Node), MEMF_CLEAR);
-            if (detail_node)
-            {
-                detail_node->ln_Name = (char *)AllocVec(strlen(buffer) + 1, MEMF_CLEAR);
-                if (detail_node->ln_Name)
-                {
-                    strcpy(detail_node->ln_Name, buffer);
-                    AddTail(&tool_data->details_list, detail_node);
-                }
-                else
-                {
-                    FreeVec(detail_node);
-                }
-            }
-            
-            /* Status */
-            sprintf(buffer, "%*s %s", max_label_len, "Status:",
-                entry->exists ? "Found on System" : "MISSING");
-            detail_node = (struct Node *)AllocVec(sizeof(struct Node), MEMF_CLEAR);
-            if (detail_node)
-            {
-                detail_node->ln_Name = (char *)AllocVec(strlen(buffer) + 1, MEMF_CLEAR);
-                if (detail_node->ln_Name)
-                {
-                    strcpy(detail_node->ln_Name, buffer);
-                    AddTail(&tool_data->details_list, detail_node);
-                }
-                else
-                {
-                    FreeVec(detail_node);
-                }
-            }
-            
-            /* Hit Count */
-            sprintf(buffer, "%*s %d references", max_label_len, "Hit Count:",
-                entry->hit_count);
-            detail_node = (struct Node *)AllocVec(sizeof(struct Node), MEMF_CLEAR);
-            if (detail_node)
-            {
-                detail_node->ln_Name = (char *)AllocVec(strlen(buffer) + 1, MEMF_CLEAR);
-                if (detail_node->ln_Name)
-                {
-                    strcpy(detail_node->ln_Name, buffer);
-                    AddTail(&tool_data->details_list, detail_node);
-                }
-                else
-                {
-                    FreeVec(detail_node);
-                }
-            }
-            
-            /* Full Path */
-            sprintf(buffer, "%*s %s", max_label_len, "Full Path:",
-                entry->full_path ? entry->full_path : "(not found)");
-            detail_node = (struct Node *)AllocVec(sizeof(struct Node), MEMF_CLEAR);
-            if (detail_node)
-            {
-                detail_node->ln_Name = (char *)AllocVec(strlen(buffer) + 1, MEMF_CLEAR);
-                if (detail_node->ln_Name)
-                {
-                    strcpy(detail_node->ln_Name, buffer);
-                    AddTail(&tool_data->details_list, detail_node);
-                }
-                else
-                {
-                    FreeVec(detail_node);
-                }
-            }
-            
-            /* Version */
-            sprintf(buffer, "%*s %s", max_label_len, "Version:",
-                entry->version ? entry->version : "(no version)");
-            detail_node = (struct Node *)AllocVec(sizeof(struct Node), MEMF_CLEAR);
-            if (detail_node)
-            {
-                detail_node->ln_Name = (char *)AllocVec(strlen(buffer) + 1, MEMF_CLEAR);
-                if (detail_node->ln_Name)
-                {
-                    strcpy(detail_node->ln_Name, buffer);
-                    AddTail(&tool_data->details_list, detail_node);
-                }
-                else
-                {
-                    FreeVec(detail_node);
-                }
-            }
-            
-            break;
+            break;  /* Found the selected entry, exit loop */
         }
+    }
+    
+    /* Count details list items for logging */
+    {
+        int detail_count = 0;
+        struct Node *count_node;
+        for (count_node = tool_data->details_list.lh_Head; 
+             count_node->ln_Succ != NULL; 
+             count_node = count_node->ln_Succ)
+        {
+            detail_count++;
+        }
+        log_info(LOG_GUI, "[TOOL_CACHE] Calling populate_details_panel() with %d items in details_list\n", 
+                     detail_count);
     }
     
     /* Update details listview */
@@ -382,9 +562,36 @@ static void populate_tool_list(struct iTidyToolCacheWindow *tool_data)
 /*------------------------------------------------------------------------*/
 static void populate_details_panel(struct iTidyToolCacheWindow *tool_data)
 {
-    /* Details panel will be implemented as a second listview below the main list */
-    /* For now, this is a placeholder for future implementation */
-    /* The details will be updated when a tool is selected */
+    if (tool_data == NULL || tool_data->window == NULL || tool_data->details_listview == NULL)
+    {
+        log_info(LOG_GUI, "[TOOL_CACHE] populate_details_panel() FAILED: NULL pointer (tool_data=%p, window=%p, details_listview=%p)\n",
+                     (void*)tool_data, 
+                     (void*)(tool_data ? tool_data->window : NULL),
+                     (void*)(tool_data ? tool_data->details_listview : NULL));
+        return;
+    }
+    
+    log_info(LOG_GUI, "[TOOL_CACHE] populate_details_panel() called - detaching list\n");
+    
+    /* Detach list from gadget (mandatory for safe update) */
+    GT_SetGadgetAttrs(tool_data->details_listview, tool_data->window, NULL,
+        GTLV_Labels, ~0,
+        TAG_END);
+    
+    log_info(LOG_GUI, "[TOOL_CACHE] populate_details_panel() - attaching new list\n");
+    
+    /* Attach details list */
+    GT_SetGadgetAttrs(tool_data->details_listview, tool_data->window, NULL,
+        GTLV_Labels, &tool_data->details_list,
+        GTLV_Top, 0,  /* Scroll to top */
+        TAG_END);
+    
+    log_info(LOG_GUI, "[TOOL_CACHE] populate_details_panel() - refreshing window\n");
+    
+    /* Refresh just the details listview gadget, not the entire window */
+    RefreshGList(tool_data->details_listview, tool_data->window, NULL, 1);
+    
+    log_info(LOG_GUI, "[TOOL_CACHE] populate_details_panel() COMPLETE\n");
 }
 
 /*------------------------------------------------------------------------*/
@@ -559,7 +766,7 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     
     tool_data->tool_list = gad = CreateGadget(LISTVIEW_KIND, gad, &ng,
         GTLV_Labels, NULL,  /* Will populate after building list */
-        GTLV_Selected, ~0,
+        GTLV_ShowSelected, NULL,
         TAG_END);
     
     if (gad == NULL)
@@ -583,7 +790,7 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     ng.ng_GadgetID = GID_TOOL_LIST + 100;  /* Non-interactive, just for display */
     ng.ng_Flags = PLACETEXT_ABOVE;
     
-    gad = CreateGadget(LISTVIEW_KIND, gad, &ng,
+    tool_data->details_listview = gad = CreateGadget(LISTVIEW_KIND, gad, &ng,
         GTLV_Labels, &tool_data->details_list,
         GTLV_ReadOnly, TRUE,
         TAG_END);
@@ -826,6 +1033,7 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                         GT_GetGadgetAttrs(tool_data->tool_list, tool_data->window, NULL,
                             GTLV_Selected, &selected,
                             TAG_END);
+                        log_info(LOG_GUI, "[TOOL_CACHE] Tool selected: index=%ld\n", selected);
                         update_tool_details(tool_data, selected);
                         break;
                     }

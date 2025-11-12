@@ -83,12 +83,15 @@ void FreePathSearchList(void);
 /* Tool Cache - Validated tool information cache                         */
 /*========================================================================*/
 
+/* Maximum number of file references to store per tool */
+#define TOOL_CACHE_MAX_FILES_PER_TOOL  200
+
 /**
  * @brief Cache entry for a validated default tool
  * 
  * Stores information about a tool that has been validated, including
- * its existence, location, and version. This prevents repeated disk
- * access for the same tool.
+ * its existence, location, version, and list of files that use it.
+ * This prevents repeated disk access for the same tool.
  */
 typedef struct {
     char *toolName;        /* Simple tool name (e.g., "MultiView") */
@@ -96,6 +99,11 @@ typedef struct {
     char *fullPath;        /* Full path where found (e.g., "Workbench:Utilities/MultiView") or NULL if not found */
     char *versionString;   /* Version info (e.g., "MultiView 47.17") or NULL if unavailable */
     int hitCount;          /* Number of times this cache entry was accessed */
+    
+    /* NEW: File reference tracking */
+    char **referencingFiles;  /* Array of file paths that use this tool */
+    int fileCount;            /* Number of files currently stored */
+    int fileCapacity;         /* Allocated capacity for files array */
 } ToolCacheEntry;
 
 /* Global tool cache */
@@ -120,6 +128,18 @@ BOOL InitToolCache(void);
  * at program shutdown.
  */
 void FreeToolCache(void);
+
+/**
+ * @brief Add a file reference to a tool cache entry
+ * 
+ * Tracks which files use a particular default tool. This builds up a list
+ * of file paths that reference each tool, up to TOOL_CACHE_MAX_FILES_PER_TOOL.
+ * 
+ * @param toolName The tool name to add a file reference for
+ * @param filePath The file path that uses this tool
+ * @return TRUE if added successfully, FALSE on error or if limit reached
+ */
+BOOL AddFileReferenceToToolCache(const char *toolName, const char *filePath);
 
 /**
  * @brief Dump tool cache contents to log

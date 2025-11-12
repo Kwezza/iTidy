@@ -498,6 +498,9 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                             {
                                 BOOL toolExists = ValidateDefaultTool(iconDetails.defaultTool);
                                 
+                                /* Track which file uses this tool */
+                                AddFileReferenceToToolCache(iconDetails.defaultTool, fullPathAndFile);
+                                
                                 log_info(LOG_ICONS, "  Default Tool: '%s' -> %s [%s]\n", 
                                         iconDetails.defaultTool, fileNameNoInfo,
                                         toolExists ? "EXISTS" : "MISSING");

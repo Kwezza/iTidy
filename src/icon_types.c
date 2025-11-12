@@ -1606,6 +1606,11 @@ static ToolCacheEntry *AddToolToCache(const char *toolName, BOOL exists, const c
     /* Initialize hit count to 0 (first access will increment it) */
     newEntry->hitCount = 0;
     
+    /* Initialize file reference tracking */
+    newEntry->referencingFiles = NULL;
+    newEntry->fileCount = 0;
+    newEntry->fileCapacity = 0;
+    
     g_ToolCacheCount++;
     
     log_debug(LOG_ICONS, "AddToolToCache: Cached '%s' -> %s [%s] v:%s\n",
@@ -1621,12 +1626,118 @@ static ToolCacheEntry *AddToolToCache(const char *toolName, BOOL exists, const c
 }
 
 /**
+ * @brief Add a file reference to a tool cache entry
+ * 
+ * Tracks which files use a particular default tool. This builds up a list
+ * of file paths that reference each tool, up to TOOL_CACHE_MAX_FILES_PER_TOOL.
+ * 
+ * @param toolName The tool name to add a file reference for
+ * @param filePath The file path that uses this tool
+ * @return TRUE if added successfully, FALSE on error or if limit reached
+ */
+BOOL AddFileReferenceToToolCache(const char *toolName, const char *filePath)
+{
+#if PLATFORM_AMIGA
+    ToolCacheEntry *entry;
+    char *newFilePath;
+    int i, filePathLen;
+    
+    if (!toolName || !filePath || !g_ToolCache)
+        return FALSE;
+    
+    /* Find the tool in the cache */
+    entry = NULL;
+    for (i = 0; i < g_ToolCacheCount; i++)
+    {
+        if (g_ToolCache[i].toolName && strcmp(g_ToolCache[i].toolName, toolName) == 0)
+        {
+            entry = &g_ToolCache[i];
+            break;
+        }
+    }
+    
+    if (!entry)
+    {
+        log_debug(LOG_ICONS, "AddFileReferenceToToolCache: Tool '%s' not found in cache\n", toolName);
+        return FALSE;
+    }
+    
+    /* Check if we've reached the limit */
+    if (entry->fileCount >= TOOL_CACHE_MAX_FILES_PER_TOOL)
+    {
+        log_debug(LOG_ICONS, "AddFileReferenceToToolCache: Max file limit reached for '%s'\n", toolName);
+        return FALSE;  /* Silently stop adding files */
+    }
+    
+    /* Allocate array if needed */
+    if (entry->referencingFiles == NULL)
+    {
+        entry->fileCapacity = 20;  /* Start with 20, grow as needed */
+        entry->referencingFiles = (char **)AllocVec(entry->fileCapacity * sizeof(char *), MEMF_CLEAR);
+        if (!entry->referencingFiles)
+        {
+            log_error(LOG_GENERAL, "AddFileReferenceToToolCache: Failed to allocate file array\n");
+            return FALSE;
+        }
+    }
+    
+    /* Expand array if needed */
+    if (entry->fileCount >= entry->fileCapacity)
+    {
+        char **newArray;
+        int newCapacity = entry->fileCapacity * 2;
+        
+        /* Cap at max files */
+        if (newCapacity > TOOL_CACHE_MAX_FILES_PER_TOOL)
+            newCapacity = TOOL_CACHE_MAX_FILES_PER_TOOL;
+        
+        newArray = (char **)AllocVec(newCapacity * sizeof(char *), MEMF_CLEAR);
+        if (!newArray)
+        {
+            log_error(LOG_GENERAL, "AddFileReferenceToToolCache: Failed to expand file array\n");
+            return FALSE;
+        }
+        
+        /* Copy existing pointers */
+        memcpy(newArray, entry->referencingFiles, entry->fileCount * sizeof(char *));
+        
+        /* Free old array */
+        FreeVec(entry->referencingFiles);
+        
+        entry->referencingFiles = newArray;
+        entry->fileCapacity = newCapacity;
+    }
+    
+    /* Allocate and copy file path */
+    filePathLen = strlen(filePath);
+    newFilePath = (char *)AllocVec(filePathLen + 1, MEMF_CLEAR);
+    if (!newFilePath)
+    {
+        log_error(LOG_GENERAL, "AddFileReferenceToToolCache: Failed to allocate file path\n");
+        return FALSE;
+    }
+    strcpy(newFilePath, filePath);
+    
+    /* Add to array */
+    entry->referencingFiles[entry->fileCount] = newFilePath;
+    entry->fileCount++;
+    
+    log_debug(LOG_ICONS, "AddFileReferenceToToolCache: Added file '%s' to tool '%s' (%d/%d)\n",
+             filePath, toolName, entry->fileCount, TOOL_CACHE_MAX_FILES_PER_TOOL);
+    
+    return TRUE;
+#else
+    return FALSE;
+#endif
+}
+
+/**
  * @brief Dump tool cache contents to log
  */
 void DumpToolCache(void)
 {
 #if PLATFORM_AMIGA
-    int i;
+    int i, j;
     
     if (!g_ToolCache || g_ToolCacheCount == 0)
     {
@@ -1640,17 +1751,36 @@ void DumpToolCache(void)
     log_info(LOG_GENERAL, "Total tools cached: %d\n", g_ToolCacheCount);
     log_info(LOG_GENERAL, "Cache capacity: %d\n\n", g_ToolCacheCapacity);
     
-    log_info(LOG_GENERAL, "Tool Name             | Hits | Status  | Full Path                              | Version\n");
-    log_info(LOG_GENERAL, "----------------------|------|---------|----------------------------------------|---------------------------\n");
+    log_info(LOG_GENERAL, "Tool Name             | Hits | Status  | Files | Full Path                              | Version\n");
+    log_info(LOG_GENERAL, "----------------------|------|---------|-------|----------------------------------------|---------------------------\n");
     
     for (i = 0; i < g_ToolCacheCount; i++)
     {
-        log_info(LOG_GENERAL, "%-21s | %4d | %-7s | %-38s | %s\n",
+        log_info(LOG_GENERAL, "%-21s | %4d | %-7s | %5d | %-38s | %s\n",
                 g_ToolCache[i].toolName ? g_ToolCache[i].toolName : "(null)",
                 g_ToolCache[i].hitCount,
                 g_ToolCache[i].exists ? "EXISTS" : "MISSING",
+                g_ToolCache[i].fileCount,
                 g_ToolCache[i].fullPath ? g_ToolCache[i].fullPath : "(not found)",
                 g_ToolCache[i].versionString ? g_ToolCache[i].versionString : "(no version)");
+        
+        /* If tool has file references, dump them */
+        if (g_ToolCache[i].fileCount > 0 && g_ToolCache[i].referencingFiles)
+        {
+            log_info(LOG_GENERAL, "    Files using this tool:\n");
+            for (j = 0; j < g_ToolCache[i].fileCount; j++)
+            {
+                if (g_ToolCache[i].referencingFiles[j])
+                {
+                    log_info(LOG_GENERAL, "      [%3d] %s\n", j + 1, g_ToolCache[i].referencingFiles[j]);
+                }
+            }
+            if (g_ToolCache[i].fileCount >= TOOL_CACHE_MAX_FILES_PER_TOOL)
+            {
+                log_info(LOG_GENERAL, "      (max capacity reached - %d files)\n", TOOL_CACHE_MAX_FILES_PER_TOOL);
+            }
+            log_info(LOG_GENERAL, "\n");
+        }
     }
     
     log_info(LOG_GENERAL, "========================================\n\n");
@@ -1663,7 +1793,7 @@ void DumpToolCache(void)
 void FreeToolCache(void)
 {
 #if PLATFORM_AMIGA
-    int i;
+    int i, j;
     
     if (g_ToolCache)
     {
@@ -1676,6 +1806,17 @@ void FreeToolCache(void)
                 FreeVec(g_ToolCache[i].fullPath);
             if (g_ToolCache[i].versionString)
                 FreeVec(g_ToolCache[i].versionString);
+            
+            /* Free file references */
+            if (g_ToolCache[i].referencingFiles)
+            {
+                for (j = 0; j < g_ToolCache[i].fileCount; j++)
+                {
+                    if (g_ToolCache[i].referencingFiles[j])
+                        FreeVec(g_ToolCache[i].referencingFiles[j]);
+                }
+                FreeVec(g_ToolCache[i].referencingFiles);
+            }
         }
         
         /* Free the array itself */
