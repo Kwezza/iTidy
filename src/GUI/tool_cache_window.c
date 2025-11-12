@@ -1082,20 +1082,11 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                     case GID_TOOL_REBUILD_CACHE:
                         log_info(LOG_GUI, "[TOOL_CACHE] Rebuild Cache button clicked\n");
                         
-                        /* Check if we have a scan path */
-                        if (tool_data->scan_path[0] == '\0')
-                        {
-                            log_warning(LOG_GUI, "No scan path set - cannot rebuild cache\n");
-                            /* Could show an error requester here */
-                            break;
-                        }
-                        
-                        log_info(LOG_GUI, "Rescanning: %s (recursive=%s)\n", 
-                                tool_data->scan_path,
-                                tool_data->scan_recursive ? "YES" : "NO");
+                        /* Use global preferences for scan path and recursive mode */
+                        log_info(LOG_GUI, "Rescanning using global preferences\n");
                         
                         /* Rescan the directory to rebuild tool cache */
-                        if (ScanDirectoryForToolsOnly(tool_data->scan_path, tool_data->scan_recursive))
+                        if (ScanDirectoryForToolsOnly())
                         {
                             log_info(LOG_GUI, "Tool cache rebuilt successfully\n");
                             

@@ -698,6 +698,9 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
         return FALSE;
     }
 
+    /* Initialize global preferences on first window open */
+    InitializeGlobalPreferences();
+
     /* Initialize structure */
     memset(win_data, 0, sizeof(struct iTidyMainWindow));
     strcpy(win_data->folder_path_buffer, "PC:");
@@ -717,13 +720,6 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     
     /* Initialize advanced settings flag */
     win_data->has_advanced_settings = FALSE;
-    
-    /* Initialize beta settings to defaults */
-    win_data->beta_open_folders = DEFAULT_BETA_OPEN_FOLDERS_AFTER_PROCESSING;
-    win_data->beta_update_windows = DEFAULT_BETA_FIND_WINDOW_ON_WORKBENCH_AND_UPDATE;
-    win_data->beta_performance_logging = DEFAULT_PERFORMANCE_LOGGING_ENABLED;
-    win_data->beta_memory_logging = DEFAULT_MEMORY_LOGGING_ENABLED;
-    win_data->beta_log_level = DEFAULT_LOG_LEVEL;
 
     /* Lock the Workbench screen */
     win_data->screen = LockPubScreen(NULL);
@@ -924,31 +920,22 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
 
                     case GID_APPLY:
                     {
-                        LayoutPreferences prefs;
+                        LayoutPreferences *prefs;
                         BOOL success;
                         
                         printf("\n===============================================\n");
                         printf("Apply button clicked - Processing icons...\n");
                         printf("===============================================\n\n");
                         
-                        /* Initialize with defaults */
-                        InitLayoutPreferences(&prefs);
+                        /* Get mutable access to global preferences */
+                        prefs = (LayoutPreferences *)GetGlobalPreferences();
                         
                         /* Apply preset if one was selected */
                         append_to_log("Applying preset: %s\n", preset_labels[win_data->preset_selected]);
-                        ApplyPreset(&prefs, win_data->preset_selected);
-                        
-                        /* Log GUI selections before mapping */
-                        append_to_log("GUI Selections: layout=%d, sort=%d, order=%d, sortby=%d, center=%d, optimize=%d\n",
-                                    win_data->layout_selected,
-                                    win_data->sort_selected,
-                                    win_data->order_selected,
-                                    win_data->sortby_selected,
-                                    win_data->center_icons,
-                                    win_data->optimize_columns);
+                        ApplyPreset(prefs, win_data->preset_selected);
                         
                         /* Override with user's GUI selections */
-                        MapGuiToPreferences(&prefs,
+                        MapGuiToPreferences(prefs,
                             win_data->layout_selected,
                             win_data->sort_selected,
                             win_data->order_selected,
@@ -956,49 +943,28 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                             win_data->center_icons,
                             win_data->optimize_columns);
                         
-                        /* Apply advanced settings if user configured them */
-                        if (win_data->has_advanced_settings)
-                        {
-                            printf("Applying advanced settings to preferences\n");
-                            prefs.aspectRatio = win_data->advanced_aspect_ratio;
-                            prefs.useCustomAspectRatio = win_data->advanced_use_custom_ratio;
-                            prefs.customAspectWidth = win_data->advanced_custom_width;
-                            prefs.customAspectHeight = win_data->advanced_custom_height;
-                            prefs.overflowMode = win_data->advanced_overflow_mode;
-                            prefs.iconSpacingX = win_data->advanced_spacing_x;
-                            prefs.iconSpacingY = win_data->advanced_spacing_y;
-                            prefs.minIconsPerRow = win_data->advanced_min_icons_row;
-                            prefs.maxIconsPerRow = win_data->advanced_max_icons_row;
-                            prefs.maxWindowWidthPct = win_data->advanced_max_width_pct;
-                            prefs.textAlignment = win_data->advanced_vertical_align;
-                            prefs.reverseSort = win_data->advanced_reverse_sort;
-                        }
+                        /* Set folder path and recursive mode from GUI */
+                        strncpy(prefs->folder_path, win_data->folder_path_buffer, sizeof(prefs->folder_path) - 1);
+                        prefs->folder_path[sizeof(prefs->folder_path) - 1] = '\0';
+                        prefs->recursive_subdirs = win_data->recursive_subdirs;
                         
-                        /* Always apply beta settings (independent of advanced settings) */
-                        prefs.beta_openFoldersAfterProcessing = win_data->beta_open_folders;
-                        prefs.beta_FindWindowOnWorkbenchAndUpdate = win_data->beta_update_windows;
-                        prefs.enable_performance_logging = win_data->beta_performance_logging;
-                        prefs.memoryLoggingEnabled = win_data->beta_memory_logging;
-                        prefs.logLevel = win_data->beta_log_level;
+                        /* Set skip hidden folders and backup preferences from GUI */
+                        prefs->skipHiddenFolders = win_data->skip_hidden_folders;
+                        prefs->enable_backup = win_data->enable_backup;
+                        prefs->enable_icon_upgrade = win_data->enable_icon_upgrade;
+                        prefs->backupPrefs.enableUndoBackup = win_data->enable_backup;
                         
-                        /* Set skip hidden folders preference */
-                        prefs.skipHiddenFolders = win_data->skip_hidden_folders;
-                        
-                        /* Set backup preferences from GUI */
-                        prefs.backupPrefs.enableUndoBackup = win_data->enable_backup;
-                        /* Keep other backup settings at defaults (useLha=TRUE, path="Work:iTidyBackups/") */
+                        /* Advanced settings are already in global prefs (set by Advanced window) */
+                        /* Beta settings are already in global prefs (set by Beta Options window) */
                         
                         /* Print preferences for debugging */
-                        print_layout_preferences(&prefs, 
-                                               win_data->folder_path_buffer,
-                                               win_data->recursive_subdirs);
+                        print_layout_preferences(prefs, 
+                                               prefs->folder_path,
+                                               prefs->recursive_subdirs);
                         
-                        /* Process the directory with preferences */
+                        /* Process the directory with global preferences */
                         printf("\n>>> Starting icon processing...\n\n");
-                        success = ProcessDirectoryWithPreferences(
-                            win_data->folder_path_buffer,
-                            win_data->recursive_subdirs,
-                            &prefs);
+                        success = ProcessDirectoryWithPreferences();
                         
                         /* Show result */
                         printf("\n===============================================\n");
@@ -1077,9 +1043,8 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                             
                             printf("Advanced button clicked - opening Advanced Settings window\n");
                             
-                            /* Get current preferences from main window GUI state */
-                            memset(&temp_prefs, 0, sizeof(LayoutPreferences));
-                            InitLayoutPreferences(&temp_prefs);
+                            /* Get current global preferences */
+                            memcpy(&temp_prefs, GetGlobalPreferences(), sizeof(LayoutPreferences));
                             
                             /* Apply current preset to get baseline settings */
                             ApplyPreset(&temp_prefs, win_data->preset_selected);
@@ -1092,30 +1057,6 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                 win_data->sortby_selected,
                                 win_data->center_icons,
                                 win_data->optimize_columns);
-                            
-                            /* If we already have advanced settings, apply those too */
-                            if (win_data->has_advanced_settings)
-                            {
-                                temp_prefs.aspectRatio = win_data->advanced_aspect_ratio;
-                                temp_prefs.useCustomAspectRatio = win_data->advanced_use_custom_ratio;
-                                temp_prefs.customAspectWidth = win_data->advanced_custom_width;
-                                temp_prefs.customAspectHeight = win_data->advanced_custom_height;
-                                temp_prefs.overflowMode = win_data->advanced_overflow_mode;
-                                temp_prefs.iconSpacingX = win_data->advanced_spacing_x;
-                                temp_prefs.iconSpacingY = win_data->advanced_spacing_y;
-                                temp_prefs.minIconsPerRow = win_data->advanced_min_icons_row;
-                                temp_prefs.maxIconsPerRow = win_data->advanced_max_icons_row;
-                                temp_prefs.maxWindowWidthPct = win_data->advanced_max_width_pct;
-                                temp_prefs.textAlignment = win_data->advanced_vertical_align;
-                                temp_prefs.reverseSort = win_data->advanced_reverse_sort;
-                            }
-                            
-                            /* Always apply beta settings (independent of advanced settings) */
-                            temp_prefs.beta_openFoldersAfterProcessing = win_data->beta_open_folders;
-                            temp_prefs.beta_FindWindowOnWorkbenchAndUpdate = win_data->beta_update_windows;
-                            temp_prefs.enable_performance_logging = win_data->beta_performance_logging;
-                            temp_prefs.memoryLoggingEnabled = win_data->beta_memory_logging;
-                            temp_prefs.logLevel = win_data->beta_log_level;
                             
                             /* Open advanced window (modal) */
                             if (open_itidy_advanced_window(&adv_data, &temp_prefs))
@@ -1137,37 +1078,19 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                 ModifyIDCMP(win_data->window, 
                                     IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW);
                                 
-                                /* If changes were accepted, save to window data for Apply button */
+                                /* If changes were accepted, update global preferences */
                                 if (adv_data.changes_accepted)
                                 {
-                                    printf("Advanced settings accepted - saved for Apply\n");
+                                    printf("Advanced settings accepted - updating global preferences\n");
                                     printf("  Aspect Ratio: %.2f\n", temp_prefs.aspectRatio);
                                     printf("  Overflow Mode: %d\n", temp_prefs.overflowMode);
                                     printf("  Spacing: %hux%hu\n", 
                                            temp_prefs.iconSpacingX,
                                            temp_prefs.iconSpacingY);
                                     
-                                    /* Save advanced settings to main window data */
+                                    /* Update global preferences with advanced settings */
+                                    UpdateGlobalPreferences(&temp_prefs);
                                     win_data->has_advanced_settings = TRUE;
-                                    win_data->advanced_aspect_ratio = temp_prefs.aspectRatio;
-                                    win_data->advanced_use_custom_ratio = temp_prefs.useCustomAspectRatio;
-                                    win_data->advanced_custom_width = temp_prefs.customAspectWidth;
-                                    win_data->advanced_custom_height = temp_prefs.customAspectHeight;
-                                    win_data->advanced_overflow_mode = temp_prefs.overflowMode;
-                                    win_data->advanced_spacing_x = temp_prefs.iconSpacingX;
-                                    win_data->advanced_spacing_y = temp_prefs.iconSpacingY;
-                                    win_data->advanced_min_icons_row = temp_prefs.minIconsPerRow;
-                                    win_data->advanced_max_icons_row = temp_prefs.maxIconsPerRow;
-                                    win_data->advanced_max_width_pct = temp_prefs.maxWindowWidthPct;
-                                    win_data->advanced_vertical_align = temp_prefs.textAlignment;
-                                    win_data->advanced_reverse_sort = temp_prefs.reverseSort;
-                                    
-                                    /* Save beta settings to main window data */
-                                    win_data->beta_open_folders = temp_prefs.beta_openFoldersAfterProcessing;
-                                    win_data->beta_update_windows = temp_prefs.beta_FindWindowOnWorkbenchAndUpdate;
-                                    win_data->beta_performance_logging = temp_prefs.enable_performance_logging;
-                                    win_data->beta_memory_logging = temp_prefs.memoryLoggingEnabled;
-                                    win_data->beta_log_level = temp_prefs.logLevel;
                                     
                                     printf("  (Settings will be applied when you click Apply button)\n");
                                 }
@@ -1350,13 +1273,8 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                             log_info(LOG_GUI, "View Tool Cache button clicked\n");
                             log_info(LOG_GUI, "Opening tool cache window (cache has %d entries)\n", g_ToolCacheCount);
                             
-                            /* Initialize scan parameters for Rebuild Cache button */
-                            strncpy(tool_window.scan_path, win_data->folder_path_buffer, sizeof(tool_window.scan_path) - 1);
-                            tool_window.scan_path[sizeof(tool_window.scan_path) - 1] = '\0';
-                            tool_window.scan_recursive = win_data->recursive_subdirs;
-                            
-                            log_info(LOG_GUI, "Initialized scan parameters: path='%s', recursive=%d\n", 
-                                     tool_window.scan_path, tool_window.scan_recursive);
+                            /* Global preferences already contain scan path and recursive mode */
+                            /* No need to initialize - tool cache window will use global prefs */
                             
                             /* Open tool cache window */
                             if (open_tool_cache_window(&tool_window))

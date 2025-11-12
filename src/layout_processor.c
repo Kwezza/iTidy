@@ -133,10 +133,9 @@ static int CompareDateStamps(const struct DateStamp *date1, const struct DateSta
 /* Main Processing Function                                              */
 /*========================================================================*/
 
-BOOL ProcessDirectoryWithPreferences(const char *path, 
-                                    BOOL recursive, 
-                                    const LayoutPreferences *prefs)
+BOOL ProcessDirectoryWithPreferences(void)
 {
+    const LayoutPreferences *prefs;
     char sanitizedPath[512];
     BOOL success = FALSE;
     BackupContext localContext;
@@ -144,9 +143,18 @@ BOOL ProcessDirectoryWithPreferences(const char *path,
     FolderWindowTracker windowTracker;
     BOOL trackerBuilt = FALSE;
     
-    if (!path || !prefs)
+    /* Get global preferences */
+    prefs = GetGlobalPreferences();
+    if (!prefs)
     {
-        printf("Error: Invalid parameters to ProcessDirectoryWithPreferences\n");
+        printf("Error: Failed to get global preferences\n");
+        return FALSE;
+    }
+    
+    /* Validate path from preferences */
+    if (!prefs->folder_path || prefs->folder_path[0] == '\0')
+    {
+        printf("Error: No folder path set in preferences\n");
         return FALSE;
     }
     
@@ -165,8 +173,8 @@ BOOL ProcessDirectoryWithPreferences(const char *path,
     log_info(LOG_GENERAL, "  Performance Logging: %s\n", 
              prefs->enable_performance_logging ? "ENABLED" : "DISABLED");
     
-    /* Copy and sanitize the path */
-    strncpy(sanitizedPath, path, sizeof(sanitizedPath) - 1);
+    /* Copy and sanitize the path from preferences */
+    strncpy(sanitizedPath, prefs->folder_path, sizeof(sanitizedPath) - 1);
     sanitizedPath[sizeof(sanitizedPath) - 1] = '\0';
     sanitizeAmigaPath(sanitizedPath);
     
@@ -264,10 +272,10 @@ BOOL ProcessDirectoryWithPreferences(const char *path,
     loadLeftOutIcons(sanitizedPath);
     
     printf("\nProcessing: %s\n", sanitizedPath);
-    printf("Recursive: %s\n", recursive ? "Yes" : "No");
+    printf("Recursive: %s\n", prefs->recursive_subdirs ? "Yes" : "No");
     
     /* Start processing */
-    if (recursive)
+    if (prefs->recursive_subdirs)
     {
         success = ProcessDirectoryRecursive(sanitizedPath, prefs, 0, 
                                            trackerBuilt ? &windowTracker : NULL);
@@ -331,26 +339,33 @@ BOOL ProcessDirectoryWithPreferences(const char *path,
  * their default tools and populate the tool cache. Unlike ProcessDirectoryWithPreferences,
  * it does NOT sort, layout, resize, or save any changes to icons.
  * 
- * Use this when you want to rebuild the tool cache for the Tool Cache Window
- * without modifying any icon positions.
+ * Uses the global preferences for path, recursive mode, and skipHiddenFolders setting.
  * 
- * @param path Directory path to scan
- * @param recursive TRUE to scan subdirectories recursively
  * @return TRUE if scan completed successfully
  */
-BOOL ScanDirectoryForToolsOnly(const char *path, BOOL recursive)
+BOOL ScanDirectoryForToolsOnly(void)
 {
+    const LayoutPreferences *prefs;
     char sanitizedPath[512];
     BOOL success = FALSE;
     
-    if (!path)
+    /* Get global preferences */
+    prefs = GetGlobalPreferences();
+    if (!prefs)
     {
-        log_error(LOG_GENERAL, "ScanDirectoryForToolsOnly: Invalid path parameter\n");
+        log_error(LOG_GENERAL, "ScanDirectoryForToolsOnly: Failed to get global preferences\n");
         return FALSE;
     }
     
-    /* Copy and sanitize the path */
-    strncpy(sanitizedPath, path, sizeof(sanitizedPath) - 1);
+    /* Validate path from preferences */
+    if (!prefs->folder_path || prefs->folder_path[0] == '\0')
+    {
+        log_error(LOG_GENERAL, "ScanDirectoryForToolsOnly: No folder path set in preferences\n");
+        return FALSE;
+    }
+    
+    /* Copy and sanitize the path from preferences */
+    strncpy(sanitizedPath, prefs->folder_path, sizeof(sanitizedPath) - 1);
     sanitizedPath[sizeof(sanitizedPath) - 1] = '\0';
     sanitizeAmigaPath(sanitizedPath);
     
@@ -376,11 +391,11 @@ BOOL ScanDirectoryForToolsOnly(const char *path, BOOL recursive)
     loadLeftOutIcons(sanitizedPath);
     
     log_info(LOG_GENERAL, "\nScanning for default tools: %s\n", sanitizedPath);
-    log_info(LOG_GENERAL, "Recursive: %s\n", recursive ? "Yes" : "No");
+    log_info(LOG_GENERAL, "Recursive: %s\n", prefs->recursive_subdirs ? "Yes" : "No");
     log_info(LOG_GENERAL, "Mode: SCAN TOOLS ONLY (no tidying)\n\n");
     
     /* Start scanning */
-    if (recursive)
+    if (prefs->recursive_subdirs)
     {
         success = ScanDirectoryRecursiveForTools(sanitizedPath, 0);
     }

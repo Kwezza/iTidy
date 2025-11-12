@@ -3,10 +3,24 @@
  * 
  * Provides functions for initializing, managing, and applying
  * layout preference presets.
+ * 
+ * Includes global preference singleton for application-wide access.
  */
 
 #include <string.h>
 #include "layout_preferences.h"
+
+/*========================================================================*/
+/* Global Preferences Singleton                                          */
+/*========================================================================*/
+/**
+ * @brief Global application preferences
+ * 
+ * Single source of truth for all iTidy preferences. Initialized at
+ * startup via InitializeGlobalPreferences() and accessed throughout
+ * the application via GetGlobalPreferences().
+ */
+static LayoutPreferences g_AppPreferences;
 
 /*========================================================================*/
 /**
@@ -22,6 +36,10 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     
     /* Clear structure */
     memset(prefs, 0, sizeof(LayoutPreferences));
+    
+    /* Folder and Scanning Settings */
+    prefs->folder_path[0] = '\0';       /* Empty path initially */
+    prefs->recursive_subdirs = FALSE;
     
     /* Layout Settings */
     prefs->layoutMode = DEFAULT_LAYOUT_MODE;
@@ -51,6 +69,10 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     prefs->customAspectWidth = 16;   /* Default 16:10 = 1.6 */
     prefs->customAspectHeight = 10;
     prefs->useCustomAspectRatio = FALSE;
+    
+    /* Backup and Icon Upgrade Settings */
+    prefs->enable_backup = FALSE;
+    prefs->enable_icon_upgrade = FALSE;
     
     /* Advanced Settings */
     prefs->skipHiddenFolders = DEFAULT_SKIP_HIDDEN_FOLDERS;
@@ -210,6 +232,115 @@ void MapGuiToPreferences(LayoutPreferences *prefs,
     /* Map checkbox states */
     prefs->centerIconsInColumn = center;
     prefs->useColumnWidthOptimization = optimize;
+}
+
+/*========================================================================*/
+/**
+ * @brief Initialize global preferences to default values
+ * 
+ * Call this once at application startup to initialize the global
+ * preference singleton with sensible defaults (Classic preset).
+ * 
+ * @note This MUST be called before any other preference functions
+ */
+/*========================================================================*/
+void InitializeGlobalPreferences(void)
+{
+    InitLayoutPreferences(&g_AppPreferences);
+}
+
+/*========================================================================*/
+/**
+ * @brief Get read-only access to global preferences
+ * 
+ * Returns a const pointer to the global preference singleton. Use this
+ * to access current application preferences from anywhere in the code.
+ * 
+ * @return Const pointer to global LayoutPreferences
+ * 
+ * @example
+ *   const LayoutPreferences *prefs = GetGlobalPreferences();
+ *   if (prefs->skipHiddenFolders) { ... }
+ */
+/*========================================================================*/
+const LayoutPreferences* GetGlobalPreferences(void)
+{
+    return &g_AppPreferences;
+}
+
+/*========================================================================*/
+/**
+ * @brief Update global preferences with new values
+ * 
+ * Updates the global preference singleton with values from the provided
+ * LayoutPreferences structure. Typically called from GUI event handlers
+ * when the user clicks "Apply" or "OK".
+ * 
+ * @param newPrefs Pointer to LayoutPreferences with new values
+ * 
+ * @note If newPrefs is NULL, this function does nothing
+ */
+/*========================================================================*/
+void UpdateGlobalPreferences(const LayoutPreferences *newPrefs)
+{
+    if (newPrefs == NULL)
+        return;
+    
+    /* Copy entire structure */
+    memcpy(&g_AppPreferences, newPrefs, sizeof(LayoutPreferences));
+}
+
+/*========================================================================*/
+/**
+ * @brief Set the scan path in global preferences
+ * 
+ * Convenience setter for updating just the folder path. Useful for
+ * simple operations that don't need to construct a full LayoutPreferences
+ * structure.
+ * 
+ * @param path New folder path (copied to internal buffer)
+ * 
+ * @note Path is limited to 255 characters
+ * @note If path is NULL or empty, this function does nothing
+ */
+/*========================================================================*/
+void SetGlobalScanPath(const char *path)
+{
+    if (path == NULL || path[0] == '\0')
+        return;
+    
+    /* Copy path safely */
+    strncpy(g_AppPreferences.folder_path, path, sizeof(g_AppPreferences.folder_path) - 1);
+    g_AppPreferences.folder_path[sizeof(g_AppPreferences.folder_path) - 1] = '\0';
+}
+
+/*========================================================================*/
+/**
+ * @brief Set recursive scanning mode in global preferences
+ * 
+ * Convenience setter for toggling recursive subdirectory scanning.
+ * 
+ * @param recursive TRUE to enable recursive scanning, FALSE to disable
+ */
+/*========================================================================*/
+void SetGlobalRecursiveMode(BOOL recursive)
+{
+    g_AppPreferences.recursive_subdirs = recursive;
+}
+
+/*========================================================================*/
+/**
+ * @brief Set skip hidden folders mode in global preferences
+ * 
+ * Convenience setter for controlling whether hidden folders (those
+ * without .info files) are processed.
+ * 
+ * @param skip TRUE to skip hidden folders, FALSE to process them
+ */
+/*========================================================================*/
+void SetGlobalSkipHiddenFolders(BOOL skip)
+{
+    g_AppPreferences.skipHiddenFolders = skip;
 }
 
 /* End of layout_preferences.c */

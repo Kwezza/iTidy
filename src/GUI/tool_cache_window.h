@@ -98,10 +98,6 @@ struct iTidyToolCacheWindow
     /* Details panel data (for selected tool) */
     LONG selected_index;                /* Currently selected index (-1 = none) */
     struct List details_list;           /* List for details panel */
-    
-    /* Scan path for Rebuild Cache */
-    char scan_path[512];                /* Last scanned path (for rebuild) */
-    BOOL scan_recursive;                /* Last recursive setting */
 };
 
 /*------------------------------------------------------------------------*/

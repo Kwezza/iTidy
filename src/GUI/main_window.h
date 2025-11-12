@@ -65,8 +65,7 @@ struct iTidyMainWindow
     struct Gadget *cancel_btn;
     struct Gadget *view_tool_cache_btn;
     
-    /* Current settings */
-    char folder_path_buffer[256];
+    /* Temporary GUI state (for gadget selections only) */
     WORD preset_selected;
     WORD layout_selected;
     WORD sort_selected;
@@ -79,27 +78,11 @@ struct iTidyMainWindow
     BOOL enable_icon_upgrade;
     BOOL skip_hidden_folders;
     
-    /* Advanced settings (overrides preset defaults when set) */
-    BOOL has_advanced_settings;         /* TRUE if user configured advanced settings */
-    float advanced_aspect_ratio;
-    BOOL advanced_use_custom_ratio;
-    UWORD advanced_custom_width;
-    UWORD advanced_custom_height;
-    UWORD advanced_overflow_mode;
-    UWORD advanced_spacing_x;
-    UWORD advanced_spacing_y;
-    UWORD advanced_min_icons_row;
-    UWORD advanced_max_icons_row;
-    UWORD advanced_max_width_pct;       /* Max window width percentage */
-    UWORD advanced_vertical_align;      /* TextAlignment value */
-    BOOL advanced_reverse_sort;         /* Reverse sort order (Z->A) */
+    /* Temporary folder path buffer (for string gadget only) */
+    char folder_path_buffer[256];
     
-    /* Beta/Experimental settings */
-    BOOL beta_open_folders;             /* Auto-open folders after processing */
-    BOOL beta_update_windows;           /* Find and update open folder windows */
-    BOOL beta_performance_logging;      /* Enable performance timing logs */
-    BOOL beta_memory_logging;           /* Enable memory allocation logging */
-    UWORD beta_log_level;               /* Log level: 0=DEBUG, 1=INFO, 2=WARN, 3=ERROR */
+    /* Advanced settings override flag */
+    BOOL has_advanced_settings;         /* TRUE if user configured advanced settings */
 };
 
 /*------------------------------------------------------------------------*/

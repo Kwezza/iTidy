@@ -110,6 +110,10 @@ typedef struct {
  *       serialized for saving/loading user preferences.
  */
 typedef struct {
+    /* Folder and Scanning Settings */
+    char folder_path[256];           /* Target folder path for processing */
+    BOOL recursive_subdirs;          /* Process subdirectories recursively */
+    
     /* Layout Settings */
     LayoutMode layoutMode;           /* Row-major or column-major */
     SortOrder sortOrder;             /* Horizontal or vertical sorting */
@@ -138,6 +142,10 @@ typedef struct {
     UWORD customAspectWidth;         /* Custom ratio numerator (e.g., 16) */
     UWORD customAspectHeight;        /* Custom ratio denominator (e.g., 10) */
     BOOL useCustomAspectRatio;       /* TRUE if "Custom" selected */
+    
+    /* Backup and Icon Upgrade Settings */
+    BOOL enable_backup;              /* Create backup before processing */
+    BOOL enable_icon_upgrade;        /* Upgrade icon formats during processing */
     
     /* Advanced Settings */
     BOOL skipHiddenFolders;          /* Skip folders without .info files (hidden) */
@@ -239,5 +247,69 @@ void ApplyPreset(LayoutPreferences *prefs, int preset);
 void MapGuiToPreferences(LayoutPreferences *prefs,
                          int layout, int sort, int order, int sortby,
                          BOOL center, BOOL optimize);
+
+/*========================================================================*/
+/* Global Preferences Access Functions                                   */
+/*========================================================================*/
+
+/**
+ * @brief Initialize global preferences to default values
+ * 
+ * Call this once at application startup to initialize the global
+ * preference singleton with sensible defaults (Classic preset).
+ * 
+ * @note This MUST be called before any other preference functions
+ */
+void InitializeGlobalPreferences(void);
+
+/**
+ * @brief Get read-only access to global preferences
+ * 
+ * Returns a const pointer to the global preference singleton. Use this
+ * to access current application preferences from anywhere in the code.
+ * 
+ * @return Const pointer to global LayoutPreferences (never NULL)
+ */
+const LayoutPreferences* GetGlobalPreferences(void);
+
+/**
+ * @brief Update global preferences with new values
+ * 
+ * Updates the global preference singleton with values from the provided
+ * LayoutPreferences structure. Typically called from GUI event handlers
+ * when the user clicks "Apply" or "OK".
+ * 
+ * @param newPrefs Pointer to LayoutPreferences with new values
+ */
+void UpdateGlobalPreferences(const LayoutPreferences *newPrefs);
+
+/**
+ * @brief Set the scan path in global preferences
+ * 
+ * Convenience setter for updating just the folder path.
+ * 
+ * @param path New folder path (copied to internal buffer)
+ * @note Path is limited to 255 characters
+ */
+void SetGlobalScanPath(const char *path);
+
+/**
+ * @brief Set recursive scanning mode in global preferences
+ * 
+ * Convenience setter for toggling recursive subdirectory scanning.
+ * 
+ * @param recursive TRUE to enable recursive scanning, FALSE to disable
+ */
+void SetGlobalRecursiveMode(BOOL recursive);
+
+/**
+ * @brief Set skip hidden folders mode in global preferences
+ * 
+ * Convenience setter for controlling whether hidden folders (those
+ * without .info files) are processed.
+ * 
+ * @param skip TRUE to skip hidden folders, FALSE to process them
+ */
+void SetGlobalSkipHiddenFolders(BOOL skip);
 
 #endif /* LAYOUT_PREFERENCES_H */

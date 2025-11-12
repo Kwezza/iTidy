@@ -3,45 +3,90 @@
 ## Project Overview
 iTidy is an Amiga icon management utility that allows users to sort and arrange icons in directories. The application features a GadTools-based GUI and supports multiple sorting modes with configurable layout presets.
 
-## Future Improvements
-
-### Main Window Architecture Refactoring (Priority: Medium)
-**Proposed**: Replace parallel state management with single LayoutPreferences instance
-
-**Current Problem:**
-- `iTidyMainWindow` structure duplicates almost every field from `LayoutPreferences`
-- Creates temporary `LayoutPreferences` structures and manually syncs fields
-- Error-prone: Easy to forget to sync new preference fields (beta settings bug)
-- ~100 lines of manual copying code between structures
-
-**Proposed Solution:**
-```c
-struct iTidyMainWindow {
-    /* ... UI elements ... */
-    LayoutPreferences prefs;  /* Single source of truth */
-    /* Remove: preset_selected, layout_selected, advanced_aspect_ratio, 
-       beta_open_folders, etc. - all replaced by prefs structure */
-};
-```
-
-**Benefits:**
-- Eliminates entire class of synchronization bugs
-- Reduces code by ~100 lines
-- Easier to add new preferences (one place only)
-- Cleaner architecture
-
-**Risks:**
-- Large refactor (~500 lines affected)
-- Requires extensive testing
-- Could introduce regressions
-
-**Recommendation**: Plan as dedicated refactoring task with full test coverage
-
 ---
 
 ## Development Timeline
 
-### Latest: MatchNext() Crash Fix - AnchorPath Buffer Allocation (November 11, 2025)
+### Latest: Global Preferences Architecture Refactoring (November 12, 2025)
+
+#### Implemented Single Source of Truth for Application Preferences
+* **Status**: Complete and tested
+* **Impact**: Major architectural improvement - eliminated fragmented preference management
+* **Code Reduction**: ~150 lines of manual field copying and synchronization code removed
+* **Date**: November 12, 2025
+
+**Problem Solved:**
+The application suffered from fragmented preference management across multiple areas:
+- `main_window.c` stored 30+ individual fields directly in window struct
+- `tool_cache_window.c` had separate `scan_path` and `scan_recursive` fields
+- `ScanDirectoryForToolsOnly()` had hardcoded behaviors instead of respecting user preferences
+- Manual field-by-field copying between structures in multiple places
+- No consistency - same user preferences handled differently in different contexts
+
+**Solution Implemented:**
+Created global singleton pattern with clean accessor functions:
+- `g_AppPreferences` - Static global in `layout_preferences.c`
+- `InitializeGlobalPreferences()` - Called once at startup
+- `GetGlobalPreferences()` - Read-only access for consumers
+- `UpdateGlobalPreferences()` - Update from GUI or other sources
+- Convenience setters: `SetGlobalScanPath()`, `SetGlobalRecursiveMode()`, `SetGlobalSkipHiddenFolders()`
+
+**Changes Made Across Four Phases:**
+
+**Phase 1: Global Infrastructure**
+- Added `g_AppPreferences` singleton to `layout_preferences.c`
+- Implemented all accessor functions
+- Created convenience setters for common operations
+
+**Phase 2: main_window.c Cleanup**
+- Extended `LayoutPreferences` structure with:
+  - `folder_path[256]` - Target folder for processing
+  - `recursive_subdirs` - Recursive scanning flag
+  - `enable_backup` - Backup before processing flag
+  - `enable_icon_upgrade` - Icon format upgrade flag
+- Removed 30+ individual fields from `iTidyMainWindow` struct (all `advanced_*` and `beta_*` fields)
+- Simplified Apply button handler from ~70 lines to ~40 lines
+- Simplified Advanced button handler - eliminated manual field copying
+- Added `InitializeGlobalPreferences()` call at window startup
+
+**Phase 3: layout_processor.c Updates**
+- Changed `ProcessDirectoryWithPreferences()` signature from 3 parameters to 0 (void)
+- Changed `ScanDirectoryForToolsOnly()` signature from 2 parameters to 0 (void)
+- Both functions now read all settings from global preferences via `GetGlobalPreferences()`
+- Updated all internal references to use `prefs->folder_path` and `prefs->recursive_subdirs`
+
+**Phase 4: tool_cache_window.c Cleanup**
+- Removed `scan_path[512]` field from `iTidyToolCacheWindow` struct
+- Removed `scan_recursive` field from `iTidyToolCacheWindow` struct
+- Simplified Rebuild Cache button handler from ~25 lines to ~8 lines
+- Eliminated manual initialization before opening tool cache window
+
+**Benefits Achieved:**
+- ✅ Single source of truth for all preferences
+- ✅ Consistent behavior across all features
+- ✅ Less code duplication and manual mapping
+- ✅ Future-proof - new preferences require minimal changes
+- ✅ Easier testing and debugging
+- ✅ Fixes preference synchronization bugs (e.g., recursive flag, skipHiddenFolders)
+
+**Files Modified:**
+- `src/layout_preferences.h` - Added new fields and function prototypes
+- `src/layout_preferences.c` - Implemented global singleton and accessors
+- `src/layout_processor.h` - Updated function signatures
+- `src/layout_processor.c` - Modified to use global preferences
+- `src/GUI/main_window.h` - Removed duplicate fields from window struct
+- `src/GUI/main_window.c` - Simplified preference handling
+- `src/GUI/tool_cache_window.h` - Removed scan_path/scan_recursive fields
+- `src/GUI/tool_cache_window.c` - Simplified to use global preferences
+
+**Testing:**
+- ✅ All phases compiled cleanly with no errors
+- ✅ Manual testing confirmed no regressions
+- ✅ Preference flow working correctly across all windows
+
+---
+
+### MatchNext() Crash Fix - AnchorPath Buffer Allocation (November 11, 2025)
 
 #### Fixed Critical Crash in Recursive Directory Processing
 * **Issue**: Program crashed during MatchNext() calls when processing icons recursively
