@@ -1085,6 +1085,25 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                         /* Use global preferences for scan path and recursive mode */
                         log_info(LOG_GUI, "Rescanning using global preferences\n");
                         
+                        /* Set busy pointer during scan */
+                        SetWindowPointer(tool_data->window, WA_BusyPointer, TRUE, TAG_END);
+                        
+                        /* Clear display before scanning (visual feedback that rebuild is happening) */
+                        log_info(LOG_GUI, "[TOOL_CACHE] Clearing old display before rebuild\n");
+                        free_tool_cache_entries(tool_data);
+                        tool_data->total_count = 0;
+                        tool_data->valid_count = 0;
+                        tool_data->missing_count = 0;
+                        NewList(&tool_data->tool_entries);
+                        NewList(&tool_data->filtered_entries);
+                        GT_SetGadgetAttrs(tool_data->tool_list, tool_data->window, NULL,
+                            GTLV_Labels, ~0,  /* Detach */
+                            TAG_END);
+                        GT_SetGadgetAttrs(tool_data->tool_list, tool_data->window, NULL,
+                            GTLV_Labels, NULL,  /* Empty list */
+                            TAG_END);
+                        RefreshGList(tool_data->tool_list, tool_data->window, NULL, 1);
+                        
                         /* Rescan the directory to rebuild tool cache */
                         if (ScanDirectoryForToolsOnly())
                         {
@@ -1106,6 +1125,9 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                             log_error(LOG_GUI, "Failed to rebuild tool cache\n");
                             /* Could show an error requester here */
                         }
+                        
+                        /* Clear busy pointer */
+                        SetWindowPointer(tool_data->window, WA_Pointer, NULL, TAG_END);
                         break;
                         
                     case GID_TOOL_CLOSE_BTN:

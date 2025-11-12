@@ -922,10 +922,29 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                     {
                         LayoutPreferences *prefs;
                         BOOL success;
+                        char *current_path;
+                        ULONG recursive_checked = 0;
                         
                         printf("\n===============================================\n");
                         printf("Apply button clicked - Processing icons...\n");
                         printf("===============================================\n\n");
+                        
+                        /* Read current folder path from string gadget (in case user typed it) */
+                        GT_GetGadgetAttrs(win_data->folder_path, win_data->window, NULL,
+                            GTST_String, &current_path,
+                            TAG_END);
+                        
+                        if (current_path != NULL)
+                        {
+                            strncpy(win_data->folder_path_buffer, current_path, sizeof(win_data->folder_path_buffer) - 1);
+                            win_data->folder_path_buffer[sizeof(win_data->folder_path_buffer) - 1] = '\0';
+                        }
+                        
+                        /* Read current recursive checkbox state */
+                        GT_GetGadgetAttrs(win_data->recursive_check, win_data->window, NULL,
+                            GTCB_Checked, &recursive_checked,
+                            TAG_END);
+                        win_data->recursive_subdirs = (BOOL)recursive_checked;
                         
                         /* Get mutable access to global preferences */
                         prefs = (LayoutPreferences *)GetGlobalPreferences();
@@ -1269,12 +1288,45 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                     case GID_VIEW_TOOL_CACHE:
                         {
                             struct iTidyToolCacheWindow tool_window;
+                            LayoutPreferences *prefs;
+                            char *current_path;
+                            ULONG recursive_checked = 0;
                             
                             log_info(LOG_GUI, "View Tool Cache button clicked\n");
                             log_info(LOG_GUI, "Opening tool cache window (cache has %d entries)\n", g_ToolCacheCount);
                             
-                            /* Global preferences already contain scan path and recursive mode */
-                            /* No need to initialize - tool cache window will use global prefs */
+                            /* Read current folder path from string gadget (in case user typed it) */
+                            GT_GetGadgetAttrs(win_data->folder_path, win_data->window, NULL,
+                                GTST_String, &current_path,
+                                TAG_END);
+                            
+                            log_info(LOG_GUI, "String gadget value: '%s'\n", current_path ? current_path : "(null)");
+                            log_info(LOG_GUI, "Buffer before update: '%s'\n", win_data->folder_path_buffer);
+                            
+                            if (current_path != NULL)
+                            {
+                                strncpy(win_data->folder_path_buffer, current_path, sizeof(win_data->folder_path_buffer) - 1);
+                                win_data->folder_path_buffer[sizeof(win_data->folder_path_buffer) - 1] = '\0';
+                            }
+                            
+                            log_info(LOG_GUI, "Buffer after update: '%s'\n", win_data->folder_path_buffer);
+                            
+                            /* Read current recursive checkbox state */
+                            GT_GetGadgetAttrs(win_data->recursive_check, win_data->window, NULL,
+                                GTCB_Checked, &recursive_checked,
+                                TAG_END);
+                            win_data->recursive_subdirs = (BOOL)recursive_checked;
+                            
+                            log_info(LOG_GUI, "Recursive checkbox state: %s\n", win_data->recursive_subdirs ? "YES" : "NO");
+                            
+                            /* Update global preferences with current GUI values for Rebuild Cache button */
+                            prefs = (LayoutPreferences *)GetGlobalPreferences();
+                            strncpy(prefs->folder_path, win_data->folder_path_buffer, sizeof(prefs->folder_path) - 1);
+                            prefs->folder_path[sizeof(prefs->folder_path) - 1] = '\0';
+                            prefs->recursive_subdirs = win_data->recursive_subdirs;
+                            
+                            log_info(LOG_GUI, "Updated global prefs: path='%s', recursive=%s\n",
+                                     prefs->folder_path, prefs->recursive_subdirs ? "YES" : "NO");
                             
                             /* Open tool cache window */
                             if (open_tool_cache_window(&tool_window))
