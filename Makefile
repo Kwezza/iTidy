@@ -51,6 +51,7 @@ CORE_SRCS = \
 	$(SRC_DIR)/file_directory_handling.c \
 	$(SRC_DIR)/window_management.c \
 	$(SRC_DIR)/utilities.c \
+	$(SRC_DIR)/path_utilities.c \
 	$(SRC_DIR)/spinner.c \
 	$(SRC_DIR)/writeLog.c \
 	$(SRC_DIR)/cli_utilities.c \
@@ -224,6 +225,7 @@ $(OUT_DIR)/icon_management.o: $(SRC_DIR)/icon_management.c $(SRC_DIR)/icon_manag
 $(OUT_DIR)/file_directory_handling.o: $(SRC_DIR)/file_directory_handling.c $(SRC_DIR)/file_directory_handling.h
 $(OUT_DIR)/window_management.o: $(SRC_DIR)/window_management.c $(SRC_DIR)/window_management.h
 $(OUT_DIR)/utilities.o: $(SRC_DIR)/utilities.c $(SRC_DIR)/utilities.h
+$(OUT_DIR)/path_utilities.o: $(SRC_DIR)/path_utilities.c $(SRC_DIR)/path_utilities.h
 $(OUT_DIR)/spinner.o: $(SRC_DIR)/spinner.c $(SRC_DIR)/spinner.h
 $(OUT_DIR)/writeLog.o: $(SRC_DIR)/writeLog.c $(SRC_DIR)/writeLog.h
 $(OUT_DIR)/cli_utilities.o: $(SRC_DIR)/cli_utilities.c $(SRC_DIR)/cli_utilities.h

@@ -11,6 +11,7 @@
 #include "../Settings/IControlPrefs.h"
 #include "../writeLog.h"
 #include "../layout_processor.h"
+#include "../path_utilities.h"
 
 #include <exec/memory.h>
 #include <intuition/gadgetclass.h>
@@ -37,93 +38,6 @@ extern struct GfxBase *GfxBase;
 /*------------------------------------------------------------------------*/
 static void populate_tool_list(struct iTidyToolCacheWindow *tool_data);
 static void populate_details_panel(struct iTidyToolCacheWindow *tool_data);
-static void truncate_tool_name_middle(const char *tool_name, char *output, int max_length);
-
-/*------------------------------------------------------------------------*/
-/* Truncate Tool Name in Middle                                          */
-/*------------------------------------------------------------------------*/
-/**
- * @brief Truncate a tool name in the middle with "..." if too long
- * 
- * For Amiga paths like "Workbench:Programs/Wordworth7/Wordworth", this will
- * truncate to show the device/start and the program name, e.g.:
- * "Workbench:...Wordworth" (22 chars max)
- * 
- * @param tool_name Original tool name/path
- * @param output Buffer to store truncated result (must be at least max_length+1)
- * @param max_length Maximum length for the output string
- */
-static void truncate_tool_name_middle(const char *tool_name, char *output, int max_length)
-{
-    int len;
-    int left_part_len;
-    int right_part_len;
-    int i;
-    const char *last_slash;
-    const char *last_colon;
-    
-    if (tool_name == NULL || output == NULL || max_length < 10)
-    {
-        if (output != NULL && max_length > 0)
-            output[0] = '\0';
-        return;
-    }
-    
-    len = strlen(tool_name);
-    
-    /* If it fits, just copy it */
-    if (len <= max_length)
-    {
-        strcpy(output, tool_name);
-        return;
-    }
-    
-    /* Find the last slash or colon to identify the program name */
-    last_slash = strrchr(tool_name, '/');
-    last_colon = strrchr(tool_name, ':');
-    
-    /* Determine which separator is last */
-    if (last_slash == NULL && last_colon == NULL)
-    {
-        /* No path separators - just truncate in middle */
-        left_part_len = (max_length - 3) / 2;
-        right_part_len = max_length - 3 - left_part_len;
-        
-        strncpy(output, tool_name, left_part_len);
-        output[left_part_len] = '\0';
-        strcat(output, "...");
-        strncat(output, tool_name + len - right_part_len, right_part_len);
-    }
-    else
-    {
-        /* We have path separators - try to show device and program name */
-        const char *separator = (last_slash > last_colon) ? last_slash : last_colon;
-        int program_name_len = strlen(separator); /* Includes the separator */
-        
-        /* Calculate how much space we have for the left part */
-        /* Format: "device:...program" or "device:.../program" */
-        left_part_len = max_length - 3 - program_name_len;
-        
-        if (left_part_len < 5)
-        {
-            /* Not enough space to show device - just show end with ellipsis */
-            strcpy(output, "...");
-            strncat(output, separator, max_length - 3);
-            output[max_length] = '\0';
-        }
-        else
-        {
-            /* Show device/start + ... + program name */
-            strncpy(output, tool_name, left_part_len);
-            output[left_part_len] = '\0';
-            strcat(output, "...");
-            strcat(output, separator);
-        }
-    }
-    
-    /* Ensure null termination */
-    output[max_length] = '\0';
-}
 
 /*------------------------------------------------------------------------*/
 /* Build Tool Cache Display List                                         */
@@ -133,6 +47,8 @@ BOOL build_tool_cache_display_list(struct iTidyToolCacheWindow *tool_data)
     int i;
     struct ToolCacheDisplayEntry *entry;
     char buffer[256];
+    char header_buffer[256];
+    char separator_buffer[256];
     
     if (tool_data == NULL)
         return FALSE;
@@ -153,6 +69,63 @@ BOOL build_tool_cache_display_list(struct iTidyToolCacheWindow *tool_data)
     }
     
     append_to_log("build_tool_cache_display_list: Processing %d cached tools\n", g_ToolCacheCount);
+    
+    /* ---- ADD COLUMN HEADER ROWS ---- */
+    
+    /* First header row: Column names */
+    sprintf(header_buffer, "%-*s| %4s | %s",
+        TOOL_NAME_COLUMN_WIDTH,
+        "Tool",
+        "Refs",
+        "Status");
+    
+    entry = (struct ToolCacheDisplayEntry *)whd_malloc(sizeof(struct ToolCacheDisplayEntry));
+    if (entry == NULL)
+    {
+        append_to_log("ERROR: Failed to allocate header entry\n");
+        return FALSE;
+    }
+    memset(entry, 0, sizeof(struct ToolCacheDisplayEntry));
+    
+    entry->display_text = (char *)whd_malloc(strlen(header_buffer) + 1);
+    if (entry->display_text == NULL)
+    {
+        FreeVec(entry);
+        return FALSE;
+    }
+    memset(entry->display_text, 0, strlen(header_buffer) + 1);
+    strcpy(entry->display_text, header_buffer);
+    entry->node.ln_Name = entry->display_text;
+    AddTail(&tool_data->tool_entries, (struct Node *)entry);
+    
+    /* Second header row: Separator line */
+    /* Fill with dashes to match the total width */
+    /* Format: 40 (tool) + "| " (2) + 4 (refs) + " | " (3) + 7 (status) = 56 total */
+    memset(separator_buffer, '-', 56);
+    separator_buffer[56] = '\0';
+    
+    entry = (struct ToolCacheDisplayEntry *)whd_malloc(sizeof(struct ToolCacheDisplayEntry));
+    if (entry == NULL)
+    {
+        append_to_log("ERROR: Failed to allocate separator entry\n");
+        free_tool_cache_entries(tool_data);
+        return FALSE;
+    }
+    memset(entry, 0, sizeof(struct ToolCacheDisplayEntry));
+    
+    entry->display_text = (char *)whd_malloc(strlen(separator_buffer) + 1);
+    if (entry->display_text == NULL)
+    {
+        FreeVec(entry);
+        free_tool_cache_entries(tool_data);
+        return FALSE;
+    }
+    memset(entry->display_text, 0, strlen(separator_buffer) + 1);
+    strcpy(entry->display_text, separator_buffer);
+    entry->node.ln_Name = entry->display_text;
+    AddTail(&tool_data->tool_entries, (struct Node *)entry);
+    
+    /* ---- END HEADER ROWS ---- */
     
     /* Build display entries from global cache */
     for (i = 0; i < g_ToolCacheCount; i++)
@@ -176,12 +149,16 @@ BOOL build_tool_cache_display_list(struct iTidyToolCacheWindow *tool_data)
         entry->full_path = g_ToolCache[i].fullPath;  /* Point to cache data */
         entry->version = g_ToolCache[i].versionString;  /* Point to cache data */
         
-        /* Truncate tool name if needed (max TOOL_NAME_COLUMN_WIDTH chars to fit in column) */
-        truncate_tool_name_middle(
+        /* Abbreviate tool name with /../ notation if needed (max TOOL_NAME_COLUMN_WIDTH chars) */
+        if (!iTidy_ShortenPathWithParentDir(
             entry->tool_name ? entry->tool_name : "(unknown)",
             truncated_name,
-            TOOL_NAME_COLUMN_WIDTH
-        );
+            TOOL_NAME_COLUMN_WIDTH))
+        {
+            /* Path already fits or couldn't be abbreviated - copy as-is (up to max length) */
+            strncpy(truncated_name, entry->tool_name ? entry->tool_name : "(unknown)", TOOL_NAME_COLUMN_WIDTH);
+            truncated_name[TOOL_NAME_COLUMN_WIDTH] = '\0';
+        }
         
         /* Log if truncation occurred */
         if (entry->tool_name && strlen(entry->tool_name) > TOOL_NAME_COLUMN_WIDTH)
@@ -256,6 +233,14 @@ void apply_tool_filter(struct iTidyToolCacheWindow *tool_data)
          node = node->ln_Succ)
     {
         entry = (struct ToolCacheDisplayEntry *)node;
+        
+        /* Always include header rows (they have NULL tool_name) */
+        if (entry->tool_name == NULL)
+        {
+            entry->filter_node.ln_Name = entry->display_text;
+            AddTail(&tool_data->filtered_entries, &entry->filter_node);
+            continue;  /* Skip filter logic for headers */
+        }
         
         /* Apply filter and add to filtered list using filter_node */
         switch (tool_data->current_filter)
@@ -423,10 +408,15 @@ void update_tool_details(struct iTidyToolCacheWindow *tool_data, LONG selected_i
                         {
                             if (g_ToolCache[i].referencingFiles[j])
                             {
-                                /* Truncate long paths if needed */
+                                /* Abbreviate long paths with /../ notation if needed */
                                 char truncated_path[80];
-                                truncate_tool_name_middle(g_ToolCache[i].referencingFiles[j], 
-                                                         truncated_path, 70);
+                                if (!iTidy_ShortenPathWithParentDir(g_ToolCache[i].referencingFiles[j], 
+                                                                     truncated_path, 70))
+                                {
+                                    /* Path already fits - copy as-is (up to max length) */
+                                    strncpy(truncated_path, g_ToolCache[i].referencingFiles[j], 70);
+                                    truncated_path[70] = '\0';
+                                }
                                 
                                 sprintf(buffer, "%s", truncated_path);
                                 

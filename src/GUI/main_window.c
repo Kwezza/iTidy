@@ -1288,12 +1288,23 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                     case GID_VIEW_TOOL_CACHE:
                         {
                             struct iTidyToolCacheWindow tool_window;
+                            LayoutPreferences *prefs;
                             
                             log_info(LOG_GUI, "View Tool Cache button clicked\n");
                             log_info(LOG_GUI, "Opening tool cache window (cache has %d entries)\n", g_ToolCacheCount);
                             
-                            /* Global preferences already contain scan path and recursive mode */
-                            /* No need to initialize - tool cache window will use global prefs */
+                            /* Sync current GUI folder path and recursive mode to global preferences */
+                            /* This ensures Rebuild Cache works even if user hasn't clicked Apply yet */
+                            prefs = (LayoutPreferences *)GetGlobalPreferences();
+                            if (prefs)
+                            {
+                                strncpy(prefs->folder_path, win_data->folder_path_buffer, sizeof(prefs->folder_path) - 1);
+                                prefs->folder_path[sizeof(prefs->folder_path) - 1] = '\0';
+                                prefs->recursive_subdirs = win_data->recursive_subdirs;
+                                log_info(LOG_GUI, "Synced folder path to global prefs: %s (recursive: %s)\n",
+                                         prefs->folder_path,
+                                         prefs->recursive_subdirs ? "Yes" : "No");
+                            }
                             
                             /* Open tool cache window */
                             if (open_tool_cache_window(&tool_window))

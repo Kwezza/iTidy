@@ -7,7 +7,59 @@ iTidy is an Amiga icon management utility that allows users to sort and arrange 
 
 ## Development Timeline
 
-### Latest: Memory Tracking System Integration (November 13, 2025)
+### Latest: Path Utilities Module (November 13, 2025)
+
+#### Created Reusable Global Path Truncation/Abbreviation Functions
+* **Status**: Complete and tested
+* **Impact**: Eliminated code duplication, provided project-wide path formatting utilities
+* **Code Reduction**: 85+ lines of duplicated truncation logic removed
+* **Date**: November 13, 2025
+
+**New Module Created:**
+- `src/path_utilities.h` - Header with three global functions
+- `src/path_utilities.c` - Implementation with iTidy_ prefix convention
+
+**Functions Provided:**
+1. **`iTidy_TruncatePathMiddle()`** - Character-based middle truncation for fixed-width fonts
+   ```c
+   char shortened[41];
+   iTidy_TruncatePathMiddle("Workbench:Programs/Wordworth7/Wordworth", shortened, 40);
+   // Result: "Workbench:...Wordworth"
+   ```
+
+2. **`iTidy_TruncatePathMiddlePixels()`** - Pixel-based truncation for proportional fonts
+   ```c
+   struct RastPort *rp;  // Already initialized with SetFont()
+   char shortened[256];
+   iTidy_TruncatePathMiddlePixels(rp, "Work:Projects/Programming/Tool", shortened, 150);
+   // Result: "Work:Proj.../Tool" (measured to fit exactly)
+   ```
+
+3. **`iTidy_ShortenPathWithParentDir()`** - Intelligent Amiga-style `/../` abbreviation
+   ```c
+   char abbrev[51];
+   iTidy_ShortenPathWithParentDir("Work:Tools/Test/Test2/Test4/Super deep/final/Copy_of_MultiView", abbrev, 40);
+   // Result: "Work:Tools/../Copy_of_MultiView"
+   // Returns TRUE if shortened, FALSE if already fits
+   ```
+
+**Refactoring Completed:**
+- Updated `tool_cache_window.c` to use new functions
+- Removed static `truncate_tool_name_middle()` function (85 lines)
+- Updated Makefile with new source file and dependency rules
+- Fixed double-slash bug in `/../` abbreviation logic
+
+**Usage Pattern:**
+The `/../` function tries intelligent abbreviation first, falls back to regular truncation if needed. Perfect for deep nested paths while preserving readability.
+
+**Build System:**
+- Added to `CORE_SRCS` in Makefile
+- Dependency rule: `$(OUT_DIR)/path_utilities.o: $(SRC_DIR)/path_utilities.c $(SRC_DIR)/path_utilities.h`
+- Compiles cleanly with zero warnings
+
+---
+
+### Memory Tracking System Integration (November 13, 2025)
 
 #### Replaced All Direct Memory Allocations with Tracked Wrappers
 * **Status**: Complete and verified
