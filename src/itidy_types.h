@@ -98,8 +98,6 @@ extern int count_icon_type_newIcon;
 extern int count_icon_type_os35;
 extern int count_icon_corrupted;
 
-extern BOOL user_dontResize;
-extern BOOL user_cleanupWHDLoadFolders;
 extern BOOL user_folderViewMode;
 extern BOOL user_folderFlags;
 extern BOOL user_stripIconPosition;

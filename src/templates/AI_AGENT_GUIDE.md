@@ -550,6 +550,191 @@ GT_GetGadgetAttrs(data->your_integer, data->window, NULL,
                   GTIN_Number, &number, TAG_END);
 ```
 
+### ⚠️ CRITICAL: String Gadget Pointer Issue
+
+#### The Problem: GT_GetGadgetAttrs Returns a Pointer, Not a Copy
+When reading string gadget values with `GT_GetGadgetAttrs()`, the `GTST_String` attribute returns a **pointer to the internal gadget buffer**, not a copy of the string. Treating this incorrectly leads to:
+- **Volume requesters** appearing for non-existent devices (e.g., "@c+1")
+- **Memory corruption** when attempting to write to the buffer address
+- **Garbage data** being passed to functions expecting valid strings
+- **Crashes** or unpredictable behavior
+
+#### Why This Happens
+The GadTools API for string gadgets works differently than you might expect:
+
+```c
+/* ❌ WRONG WAY - Passing buffer instead of pointer-to-pointer! */
+char folder_path_buffer[256];
+
+GT_GetGadgetAttrs(data->folder_path, data->window, NULL,
+    GTST_String, (ULONG)folder_path_buffer,  /* This writes garbage to buffer! */
+    TAG_END);
+
+/* folder_path_buffer now contains corrupted data like "@c+1" */
+/* Using this path causes volume requesters or crashes */
+```
+
+**What's happening:**
+1. You pass the **address of your buffer** as the value
+2. GadTools expects a **pointer to a pointer** (`STRPTR *`)
+3. Instead of getting the string pointer, GadTools writes **the buffer address** as data
+4. This corrupts your buffer with the memory address itself
+5. When you use the "path", it contains garbage like "@c+1" (hex memory address interpreted as text)
+6. AmigaDOS tries to access this as a device name = volume requester appears
+
+#### The Solution: Use Pointer-to-Pointer
+You must use a **pointer variable** and pass its **address**:
+
+```c
+/* ✅ CORRECT WAY - Use pointer-to-pointer! */
+STRPTR currentPath = NULL;  /* Pointer to string */
+
+/* Pass the ADDRESS of the pointer */
+GT_GetGadgetAttrs(data->folder_path, data->window, NULL,
+    GTST_String, (ULONG)&currentPath,  /* &currentPath = pointer to pointer */
+    TAG_END);
+
+/* currentPath now points to the gadget's internal string buffer */
+/* This is the actual string data - you can read it safely */
+
+/* Check if valid */
+if (!currentPath || currentPath[0] == '\0')
+{
+    /* Empty string */
+    return;
+}
+
+/* If you need a copy, make one */
+char myBuffer[256];
+strncpy(myBuffer, currentPath, sizeof(myBuffer) - 1);
+myBuffer[sizeof(myBuffer) - 1] = '\0';
+
+/* Now myBuffer has a safe copy of the string */
+```
+
+#### Complete Example: Reading Folder Path
+```c
+case GID_COUNT_FOLDERS:
+{
+    ULONG folderCount = 0;
+    LayoutPreferences scanPrefs;
+    STRPTR currentPath = NULL;  /* Pointer to the gadget's string */
+    
+    /* Get pointer to the gadget's internal string buffer */
+    GT_GetGadgetAttrs(data->folder_path, data->window, NULL,
+        GTST_String, (ULONG)&currentPath,  /* Pass pointer-to-pointer */
+        TAG_END);
+    
+    /* Validate the pointer */
+    if (!currentPath || currentPath[0] == '\0')
+    {
+        ShowEasyRequest(data->window, "Error", 
+            "Please enter a folder path first.", "OK");
+        break;
+    }
+    
+    /* Copy to your structure (if needed for later use) */
+    strncpy(scanPrefs.folder_path, currentPath, 
+           sizeof(scanPrefs.folder_path) - 1);
+    scanPrefs.folder_path[sizeof(scanPrefs.folder_path) - 1] = '\0';
+    
+    /* Now safe to use scanPrefs.folder_path */
+    if (CountFoldersWithIcons(scanPrefs.folder_path, &scanPrefs, &folderCount))
+    {
+        printf("Found %lu folders\n", folderCount);
+    }
+    break;
+}
+```
+
+#### Why the Pointer Approach Works
+1. `GT_GetGadgetAttrs()` expects a **pointer to where it should store the result**
+2. For `GTST_String`, the result is a `STRPTR` (pointer to string)
+3. So you need a `STRPTR*` (pointer to pointer to string)
+4. By declaring `STRPTR currentPath` and passing `&currentPath`, you provide the correct type
+5. After the call, `currentPath` points to the gadget's internal buffer
+6. You can read this buffer safely, but **don't modify it directly**
+7. Make a copy if you need to store or modify the string
+
+#### Comparison with Setting String Values
+Note the asymmetry in the API:
+
+```c
+/* GETTING a string - use pointer-to-pointer */
+STRPTR currentPath = NULL;
+GT_GetGadgetAttrs(data->string_gad, window, NULL,
+    GTST_String, (ULONG)&currentPath,  /* &currentPath = STRPTR* */
+    TAG_END);
+
+/* SETTING a string - pass the string pointer directly */
+GT_SetGadgetAttrs(data->string_gad, window, NULL,
+    GTST_String, (ULONG)"New Value",  /* Direct string pointer */
+    TAG_END);
+```
+
+#### Symptoms of This Bug
+- ✗ Volume requester appears asking for device like "@c+1" or other garbage
+- ✗ Function receives corrupted path data
+- ✗ Memory address gets interpreted as device name
+- ✗ Crashes when trying to access "path" that's actually a memory address
+- ✗ No compiler warnings (everything type-casts to ULONG)
+- ✗ Very confusing to debug without knowing the pointer-to-pointer requirement
+
+#### Pattern for Other Data Types
+This pointer-to-pointer pattern applies to **any** `GT_GetGadgetAttrs()` call:
+
+```c
+/* For checkboxes - pointer to ULONG */
+ULONG checked = 0;
+GT_GetGadgetAttrs(checkbox, window, NULL,
+    GTCB_Checked, (ULONG)&checked,  /* Pass &checked (ULONG*) */
+    TAG_END);
+
+/* For sliders - pointer to LONG */
+LONG level = 0;
+GT_GetGadgetAttrs(slider, window, NULL,
+    GTSL_Level, (ULONG)&level,  /* Pass &level (LONG*) */
+    TAG_END);
+
+/* For strings - pointer to STRPTR */
+STRPTR text = NULL;
+GT_GetGadgetAttrs(string, window, NULL,
+    GTST_String, (ULONG)&text,  /* Pass &text (STRPTR*) */
+    TAG_END);
+```
+
+#### Real-World Impact: iTidy Count Folders Bug
+This bug in iTidy's "Count Folders" button caused:
+- Volume requester appearing with device "@c+1" when button clicked
+- Completely non-functional folder counting feature
+- Confusing error that didn't indicate the root cause
+- User had valid path in text field, but function received garbage
+- Required deep investigation to identify pointer issue
+
+**After fix:**
+- ✅ Folder path read correctly from string gadget
+- ✅ CountFoldersWithIcons() receives valid path
+- ✅ No volume requesters or garbage data
+- ✅ Feature works as expected
+
+#### Summary of the Rule
+**For STRING gadgets with GT_GetGadgetAttrs():**
+- ✅ **DO** use `STRPTR` pointer variable (e.g., `STRPTR currentPath = NULL`)
+- ✅ **DO** pass **address of the pointer** using `&` operator
+- ✅ **DO** validate pointer is not NULL before use
+- ✅ **DO** make a copy with `strncpy()` if you need to store or modify the string
+- ❌ **DON'T** pass buffer address directly
+- ❌ **DON'T** pass `(ULONG)buffer` expecting a string copy
+- ❌ **DON'T** modify the returned pointer's data (it's the gadget's internal buffer)
+
+**For STRING gadgets with GT_SetGadgetAttrs():**
+- ✅ Pass the string pointer directly (not pointer-to-pointer)
+- This is the asymmetry in the API - reading and writing work differently
+
+**The Pattern to Remember:**
+- Reading: `GT_GetGadgetAttrs(gad, win, NULL, ATTR, (ULONG)&variable, TAG_END)` - Pass address
+- Writing: `GT_SetGadgetAttrs(gad, win, NULL, ATTR, (ULONG)value, TAG_END)` - Pass value
+
 ### Update Gadget Values
 ```c
 GT_SetGadgetAttrs(data->your_string, data->window, NULL,

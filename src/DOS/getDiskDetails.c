@@ -14,6 +14,7 @@
  * - Used C99 features: inline, //, mixed declarations
  */
 
+#include "platform/platform.h"
 #include "getDiskDetails.h"
 #include <ctype.h>
 #include <proto/exec.h>
@@ -74,13 +75,14 @@ DeviceInfo GetDeviceInfo(const char *path)
     deviceInfo.storageUnits[sizeof(deviceInfo.storageUnits) - 1] = '\0';
     
     // Allocate InfoData structure
-    infoData = (struct InfoData *)AllocVec(sizeof(struct InfoData), MEMF_CLEAR);
+    infoData = (struct InfoData *)whd_malloc(sizeof(struct InfoData));
     if (!infoData) {
 #ifdef DEBUG
         Printf("Error: Unable to allocate InfoData structure\n");
 #endif
         return deviceInfo;
     }
+    memset(infoData, 0, sizeof(struct InfoData));
     
     // Lock the device/volume with shared lock
     lock = Lock(path, SHARED_LOCK);

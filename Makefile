@@ -56,7 +56,8 @@ CORE_SRCS = \
 	$(SRC_DIR)/cli_utilities.c \
 	$(SRC_DIR)/layout_preferences.c \
 	$(SRC_DIR)/layout_processor.c \
-	$(SRC_DIR)/aspect_ratio_layout.c
+	$(SRC_DIR)/aspect_ratio_layout.c \
+	$(SRC_DIR)/folder_scanner.c
 
 # Backup system source files
 BACKUP_SRCS = \

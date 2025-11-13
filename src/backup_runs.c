@@ -7,6 +7,7 @@
  * Date: October 24, 2025
  */
 
+#include "platform/platform.h"
 #include "backup_runs.h"
 #include "backup_paths.h"
 #include <string.h>
@@ -14,7 +15,7 @@
 #include <ctype.h>
 
 /* Platform-specific includes */
-#ifdef PLATFORM_HOST
+#if PLATFORM_HOST
     #include <sys/stat.h>
     #include <sys/types.h>
     #include <dirent.h>
@@ -44,7 +45,7 @@
  * @brief Create a single directory (not recursive)
  */
 static BOOL CreateSingleDirectory(const char *path) {
-#ifdef PLATFORM_HOST
+#if PLATFORM_HOST
     struct stat st;
     
     /* Check if already exists */
@@ -52,13 +53,13 @@ static BOOL CreateSingleDirectory(const char *path) {
         if (S_ISDIR(st.st_mode)) {
             return TRUE; /* Already exists */
         }
-        DEBUG_LOG("Path exists but is not a directory: %s", path);
+        /* DEBUG_LOG("Path exists but is not a directory: %s", path); */
         return FALSE;
     }
     
     /* Create directory */
     if (mkdir(path, 0755) == 0) {
-        DEBUG_LOG("Created directory: %s", path);
+        /* DEBUG_LOG("Created directory: %s", path); */
         return TRUE;
     }
     
@@ -67,7 +68,7 @@ static BOOL CreateSingleDirectory(const char *path) {
         return TRUE;
     }
     
-    DEBUG_LOG("Failed to create directory: %s (errno=%d)", path, errno);
+    /* DEBUG_LOG("Failed to create directory: %s (errno=%d)", path, errno); */
     return FALSE;
 #else
     BPTR lock;
@@ -83,7 +84,7 @@ static BOOL CreateSingleDirectory(const char *path) {
     lock = CreateDir((STRPTR)path);
     if (lock) {
         UnLock(lock);
-        DEBUG_LOG("Created directory: %s", path);
+        /* DEBUG_LOG("Created directory: %s", path); */
         return TRUE;
     }
     
@@ -94,7 +95,7 @@ static BOOL CreateSingleDirectory(const char *path) {
         return TRUE;
     }
     
-    DEBUG_LOG("Failed to create directory: %s", path);
+    /* DEBUG_LOG("Failed to create directory: %s", path); */
     return FALSE;
 #endif
 }
@@ -164,7 +165,7 @@ UWORD FindHighestRunNumber(const char *backupRoot) {
         return 0;
     }
     
-#ifdef PLATFORM_HOST
+#if PLATFORM_HOST
     DIR *dir;
     struct dirent *entry;
     struct stat st;
@@ -172,7 +173,7 @@ UWORD FindHighestRunNumber(const char *backupRoot) {
     
     dir = opendir(backupRoot);
     if (!dir) {
-        DEBUG_LOG("Cannot open backup root: %s", backupRoot);
+        /* DEBUG_LOG("Cannot open backup root: %s", backupRoot); */
         return 0;
     }
     
@@ -190,7 +191,7 @@ UWORD FindHighestRunNumber(const char *backupRoot) {
             current = ParseRunNumber(entry->d_name);
             if (current > 0 && current > highest) {
                 highest = current;
-                DEBUG_LOG("Found run: %s (number=%u)", entry->d_name, current);
+                /* DEBUG_LOG("Found run: %s (number=%u)", entry->d_name, current); */
             }
         }
     }
@@ -204,12 +205,12 @@ UWORD FindHighestRunNumber(const char *backupRoot) {
     char pattern[MAX_BACKUP_PATH * 2];  /* Larger to accommodate full paths */
     
     /* Allocate anchor structure with extra space for full pathnames */
-    anchor = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath) + 512, 
-                                           MEMF_CLEAR);
+    anchor = (struct AnchorPath *)whd_malloc(sizeof(struct AnchorPath) + 512);
     if (!anchor) {
-        DEBUG_LOG("Failed to allocate AnchorPath");
+        /* DEBUG_LOG("Failed to allocate AnchorPath"); */
         return 0;
     }
+    memset(anchor, 0, sizeof(struct AnchorPath) + 512);
     
     anchor->ap_BreakBits = 0;
     anchor->ap_Strlen = 512;  /* BUGFIX: Must set buffer length! */
@@ -239,7 +240,7 @@ UWORD FindHighestRunNumber(const char *backupRoot) {
     FreeVec(anchor);
 #endif
     
-    DEBUG_LOG("Highest run number found: %u", highest);
+    /* DEBUG_LOG("Highest run number found: %u", highest); */
     return highest;
 }
 
@@ -250,7 +251,7 @@ UWORD CountRunDirectories(const char *backupRoot) {
         return 0;
     }
     
-#ifdef PLATFORM_HOST
+#if PLATFORM_HOST
     DIR *dir;
     struct dirent *entry;
     struct stat st;
@@ -282,11 +283,11 @@ UWORD CountRunDirectories(const char *backupRoot) {
     LONG result;
     char pattern[MAX_BACKUP_PATH * 2];  /* Larger to accommodate full paths */
     
-    anchor = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath) + 512, 
-                                           MEMF_CLEAR);
+    anchor = (struct AnchorPath *)whd_malloc(sizeof(struct AnchorPath) + 512);
     if (!anchor) {
         return 0;
     }
+    memset(anchor, 0, sizeof(struct AnchorPath) + 512);
     
     anchor->ap_BreakBits = 0;
     anchor->ap_Strlen = 512;  /* BUGFIX: Must set buffer length! */
@@ -319,7 +320,7 @@ BOOL BackupRootExists(const char *backupRoot) {
         return FALSE;
     }
     
-#ifdef PLATFORM_HOST
+#if PLATFORM_HOST
     struct stat st;
     if (stat(backupRoot, &st) == 0 && S_ISDIR(st.st_mode)) {
         return TRUE;
@@ -368,7 +369,7 @@ BOOL CreateBackupRoot(const char *backupRoot) {
             if (!CreateSingleDirectory(tempPath)) {
                 /* Ignore error if directory exists */
                 if (!BackupRootExists(tempPath)) {
-                    DEBUG_LOG("Failed to create intermediate directory: %s", tempPath);
+                    /* DEBUG_LOG("Failed to create intermediate directory: %s", tempPath); */
                 }
             }
             *p = '/';
@@ -379,12 +380,12 @@ BOOL CreateBackupRoot(const char *backupRoot) {
     /* Create final directory */
     if (!CreateSingleDirectory(tempPath)) {
         if (!BackupRootExists(tempPath)) {
-            DEBUG_LOG("Failed to create backup root: %s", tempPath);
+            /* DEBUG_LOG("Failed to create backup root: %s", tempPath); */
             return FALSE;
         }
     }
     
-    DEBUG_LOG("Backup root ready: %s", backupRoot);
+    /* DEBUG_LOG("Backup root ready: %s", backupRoot); */
     return TRUE;
 }
 
@@ -399,7 +400,7 @@ BOOL GetRunDirectoryPath(char *outPath, const char *backupRoot, UWORD runNumber)
     }
     
     if (!RUN_NUMBER_VALID(runNumber)) {
-        DEBUG_LOG("Invalid run number: %u", runNumber);
+        /* DEBUG_LOG("Invalid run number: %u", runNumber); */
         return FALSE;
     }
     
@@ -418,7 +419,7 @@ BOOL GetRunDirectoryPath(char *outPath, const char *backupRoot, UWORD runNumber)
     }
     
     if (length >= MAX_BACKUP_PATH) {
-        DEBUG_LOG("Run directory path too long: %d chars", length);
+        /* DEBUG_LOG("Run directory path too long: %d chars", length); */
         return FALSE;
     }
     
@@ -430,13 +431,13 @@ BOOL CreateNextRunDirectory(const char *backupRoot, char *outRunPath, UWORD *out
     UWORD nextRun;
     
     if (!backupRoot || !outRunPath || !outRunNumber) {
-        DEBUG_LOG("Invalid parameters to CreateNextRunDirectory");
+        /* DEBUG_LOG("Invalid parameters to CreateNextRunDirectory"); */
         return FALSE;
     }
     
     /* Ensure backup root exists */
     if (!CreateBackupRoot(backupRoot)) {
-        DEBUG_LOG("Failed to create backup root");
+        /* DEBUG_LOG("Failed to create backup root"); */
         return FALSE;
     }
     
@@ -445,7 +446,7 @@ BOOL CreateNextRunDirectory(const char *backupRoot, char *outRunPath, UWORD *out
     
     /* Calculate next run number */
     if (highestRun >= MAX_RUN_NUMBER) {
-        DEBUG_LOG("Maximum run number reached: %u", highestRun);
+        /* DEBUG_LOG("Maximum run number reached: %u", highestRun); */
         return FALSE;
     }
     
@@ -458,12 +459,12 @@ BOOL CreateNextRunDirectory(const char *backupRoot, char *outRunPath, UWORD *out
     
     /* Create the run directory */
     if (!CreateSingleDirectory(outRunPath)) {
-        DEBUG_LOG("Failed to create run directory: %s", outRunPath);
+        /* DEBUG_LOG("Failed to create run directory: %s", outRunPath); */
         return FALSE;
     }
     
     *outRunNumber = nextRun;
-    DEBUG_LOG("Created new run: %s (number=%u)", outRunPath, nextRun);
+    /* DEBUG_LOG("Created new run: %s (number=%u)", outRunPath, nextRun); */
     
     return TRUE;
 }

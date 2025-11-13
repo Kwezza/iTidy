@@ -88,6 +88,7 @@
 #include "icon_misc.h"
 #include "spinner.h"
 #include "aspect_ratio_layout.h"
+#include "folder_scanner.h"
 
 /* Backup system integration */
 #include "backup_session.h"
@@ -273,6 +274,29 @@ BOOL ProcessDirectoryWithPreferences(void)
     
     printf("\nProcessing: %s\n", sanitizedPath);
     printf("Recursive: %s\n", prefs->recursive_subdirs ? "Yes" : "No");
+    
+    /* Pre-scan folders if recursive mode is enabled (for progress tracking) */
+    if (prefs->recursive_subdirs)
+    {
+        ULONG totalFolders = 0;
+        
+        log_info(LOG_GENERAL, "\n*** Starting pre-scan to count folders with icons ***\n");
+        printf("Pre-scanning folders for progress tracking...\n");
+        
+        if (CountFoldersWithIcons(sanitizedPath, prefs, &totalFolders))
+        {
+            log_info(LOG_GENERAL, "Pre-scan complete: Found %lu folder(s) with icons\n", totalFolders);
+            printf("Found %lu folder(s) with icons to process\n", totalFolders);
+            
+            /* TODO: Initialize progress bar with totalFolders as maximum */
+            /* This will be implemented when progress window integration is added */
+        }
+        else
+        {
+            log_warning(LOG_GENERAL, "Pre-scan failed - continuing without progress tracking\n");
+            printf("Warning: Pre-scan failed, continuing without folder count\n");
+        }
+    }
     
     /* Start processing */
     if (prefs->recursive_subdirs)

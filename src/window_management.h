@@ -30,7 +30,6 @@
 #include "layout_preferences.h"
 
 void CleanupWindow(void);
-int FormatIconsAndWindow(char *folder);
 void resizeFolderToContents(char *dirPath, IconArray *iconArray, 
                            FolderWindowTracker *windowTracker,
                            const LayoutPreferences *prefs);

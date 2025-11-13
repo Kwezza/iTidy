@@ -5,6 +5,7 @@
  * Intuition window opening is causing the 7FFF0000 errors.
  */
 
+#include "platform/platform.h"
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/gadtools.h>
@@ -59,50 +60,56 @@ BOOL open_simple_test_window(struct SimpleTestWindow *test_data, UWORD run_numbe
         struct TestFolderEntry *entry;
         
         /* Root folder */
-        entry = (struct TestFolderEntry *)AllocVec(sizeof(struct TestFolderEntry), MEMF_CLEAR);
+        entry = (struct TestFolderEntry *)whd_malloc(sizeof(struct TestFolderEntry));
         if (entry)
         {
+            memset(entry, 0, sizeof(struct TestFolderEntry));
             strcpy(entry->display_text, "Work:");
             entry->node.ln_Name = entry->display_text;
             AddTail(&test_data->folder_list, (struct Node *)entry);
         }
         
         /* Level 1 folders */
-        entry = (struct TestFolderEntry *)AllocVec(sizeof(struct TestFolderEntry), MEMF_CLEAR);
+        entry = (struct TestFolderEntry *)whd_malloc(sizeof(struct TestFolderEntry));
         if (entry)
         {
+            memset(entry, 0, sizeof(struct TestFolderEntry));
             strcpy(entry->display_text, ":..Documents");
             entry->node.ln_Name = entry->display_text;
             AddTail(&test_data->folder_list, (struct Node *)entry);
         }
         
-        entry = (struct TestFolderEntry *)AllocVec(sizeof(struct TestFolderEntry), MEMF_CLEAR);
+        entry = (struct TestFolderEntry *)whd_malloc(sizeof(struct TestFolderEntry));
         if (entry)
         {
+            memset(entry, 0, sizeof(struct TestFolderEntry));
             strcpy(entry->display_text, ":  :..Reports");
             entry->node.ln_Name = entry->display_text;
             AddTail(&test_data->folder_list, (struct Node *)entry);
         }
         
-        entry = (struct TestFolderEntry *)AllocVec(sizeof(struct TestFolderEntry), MEMF_CLEAR);
+        entry = (struct TestFolderEntry *)whd_malloc(sizeof(struct TestFolderEntry));
         if (entry)
         {
+            memset(entry, 0, sizeof(struct TestFolderEntry));
             strcpy(entry->display_text, ":..Projects");
             entry->node.ln_Name = entry->display_text;
             AddTail(&test_data->folder_list, (struct Node *)entry);
         }
         
-        entry = (struct TestFolderEntry *)AllocVec(sizeof(struct TestFolderEntry), MEMF_CLEAR);
+        entry = (struct TestFolderEntry *)whd_malloc(sizeof(struct TestFolderEntry));
         if (entry)
         {
+            memset(entry, 0, sizeof(struct TestFolderEntry));
             strcpy(entry->display_text, ":  :..ClientA");
             entry->node.ln_Name = entry->display_text;
             AddTail(&test_data->folder_list, (struct Node *)entry);
         }
         
-        entry = (struct TestFolderEntry *)AllocVec(sizeof(struct TestFolderEntry), MEMF_CLEAR);
+        entry = (struct TestFolderEntry *)whd_malloc(sizeof(struct TestFolderEntry));
         if (entry)
         {
+            memset(entry, 0, sizeof(struct TestFolderEntry));
             strcpy(entry->display_text, ":  :..ClientB");
             entry->node.ln_Name = entry->display_text;
             AddTail(&test_data->folder_list, (struct Node *)entry);

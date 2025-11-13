@@ -8,6 +8,7 @@
  * the 7FFF0000 MuForce errors that occurred with complex font handling.
  */
 
+#include "platform/platform.h"
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/gadtools.h>
@@ -231,13 +232,16 @@ BOOL open_folder_view_window(struct iTidyFolderViewWindow *folder_data,
         struct FolderEntry *entry;
         
         /* Root folder */
-        entry = (struct FolderEntry *)AllocVec(sizeof(struct FolderEntry), MEMF_CLEAR);
+        entry = (struct FolderEntry *)whd_malloc(sizeof(struct FolderEntry));
         if (entry)
         {
-            entry->path = AllocVec(strlen("Work:") + 1, MEMF_CLEAR);
-            entry->display_text = AllocVec(64, MEMF_CLEAR);
+            memset(entry, 0, sizeof(struct FolderEntry));
+            entry->path = (char *)whd_malloc(strlen("Work:") + 1);
+            entry->display_text = (char *)whd_malloc(64);
             if (entry->path && entry->display_text)
             {
+                memset(entry->path, 0, strlen("Work:") + 1);
+                memset(entry->display_text, 0, 64);
                 strcpy(entry->path, "Work:");
                 strcpy(entry->display_text, "Work:");
                 entry->depth = 0;
@@ -828,12 +832,13 @@ static BOOL parse_catalog_callback(const char *line, struct iTidyFolderViewWindo
             }
             
             /* Allocate folder entry */
-            entry = (struct FolderEntry *)AllocVec(sizeof(struct FolderEntry), MEMF_CLEAR);
+            entry = (struct FolderEntry *)whd_malloc(sizeof(struct FolderEntry));
             if (entry == NULL)
             {
                 append_to_log("ERROR: Failed to allocate folder entry\n");
                 return FALSE;
             }
+            memset(entry, 0, sizeof(struct FolderEntry));
             
             /* Copy and clean up the path (only the Original Path column content) */
             /* Create a temporary buffer for the path column only */
@@ -858,12 +863,13 @@ static BOOL parse_catalog_callback(const char *line, struct iTidyFolderViewWindo
             }
             
             /* Allocate and copy the cleaned path */
-            entry->path = AllocVec(copy_len + 1, MEMF_CLEAR);
+            entry->path = (char *)whd_malloc(copy_len + 1);
             if (entry->path == NULL)
             {
                 FreeVec(entry);
                 return FALSE;
             }
+            memset(entry->path, 0, copy_len + 1);
             
             strcpy(entry->path, temp_path);
             path_len = strlen(entry->path);
@@ -873,8 +879,14 @@ static BOOL parse_catalog_callback(const char *line, struct iTidyFolderViewWindo
             entry->depth = depth;
             
             /* Format display text with tree lines and size */
-            entry->display_text = AllocVec(300, MEMF_CLEAR);  /* Larger buffer for size info */
+            entry->display_text = (char *)whd_malloc(300);  /* Larger buffer for size info */
             if (entry->display_text == NULL)
+            {
+                whd_free(entry->path);
+                whd_free(entry);
+                return FALSE;
+            }
+            memset(entry->display_text, 0, 300);
             {
                 FreeVec(entry->path);
                 FreeVec(entry);

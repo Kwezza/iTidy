@@ -7,8 +7,10 @@
  * Date: October 24, 2025
  */
 
+#include "platform/platform.h"
+
 /* Platform-specific includes FIRST */
-#ifdef PLATFORM_HOST
+#if PLATFORM_HOST
     #ifdef _WIN32
         #define WIN32_LEAN_AND_MEAN
         #include <windows.h>
@@ -93,7 +95,7 @@ BOOL GetTempDirectory(char *tempDirOut) {
         return FALSE;
     }
     
-#ifdef PLATFORM_HOST
+#if PLATFORM_HOST
     #ifdef _WIN32
         /* Windows: Use TEMP environment variable */
         char *temp = getenv("TEMP");
@@ -146,7 +148,7 @@ BOOL DeleteMarkerFile(const char *markerPath) {
         return FALSE;
     }
     
-#ifdef PLATFORM_HOST
+#if PLATFORM_HOST
     return (remove(markerPath) == 0);
 #else
     return DeleteFile((STRPTR)markerPath);
@@ -163,17 +165,17 @@ BOOL CreatePathMarkerFile(const char *markerPath, const char *originalPath,
     char timestamp[32];
     
     if (!markerPath || !originalPath) {
-        DEBUG_LOG("Invalid parameters for CreatePathMarkerFile");
+        append_to_log("[BACKUP] Invalid parameters for CreatePathMarkerFile\n");
         return FALSE;
     }
     
-    DEBUG_LOG("Creating path marker: %s", markerPath);
-    DEBUG_LOG("Original path: %s", originalPath);
+    append_to_log("[BACKUP] Creating path marker: %s\n", markerPath);
+    append_to_log("[BACKUP] Original path: %s\n", originalPath);
     
-#ifdef PLATFORM_HOST
+#if PLATFORM_HOST
     fp = fopen(markerPath, "w");
     if (!fp) {
-        DEBUG_LOG("Failed to create marker file: %s", markerPath);
+        /* DEBUG_LOG("Failed to create marker file: %s", markerPath); */
         return FALSE;
     }
     
@@ -194,7 +196,7 @@ BOOL CreatePathMarkerFile(const char *markerPath, const char *originalPath,
     /* Amiga implementation */
     BPTR file = Open((STRPTR)markerPath, MODE_NEWFILE);
     if (!file) {
-        DEBUG_LOG("Failed to create marker file: %s", markerPath);
+        /* DEBUG_LOG("Failed to create marker file: %s", markerPath); */
         return FALSE;
     }
     
@@ -260,12 +262,12 @@ BOOL ReadPathMarkerFile(const char *markerPath, char *originalPathOut,
         return FALSE;
     }
     
-    DEBUG_LOG("Reading path marker: %s", markerPath);
+    /* DEBUG_LOG("Reading path marker: %s", markerPath); */
     
-#ifdef PLATFORM_HOST
+#if PLATFORM_HOST
     fp = fopen(markerPath, "r");
     if (!fp) {
-        DEBUG_LOG("Failed to open marker file: %s", markerPath);
+        /* DEBUG_LOG("Failed to open marker file: %s", markerPath); */
         return FALSE;
     }
     
@@ -281,7 +283,7 @@ BOOL ReadPathMarkerFile(const char *markerPath, char *originalPathOut,
         originalPathOut[len-1] = '\0';
     }
     
-    DEBUG_LOG("Original path from marker: %s", originalPathOut);
+    /* DEBUG_LOG("Original path from marker: %s", originalPathOut); */
     
     /* Optionally read archive index from line 3 */
     if (archiveIndexOut) {
@@ -305,7 +307,7 @@ BOOL ReadPathMarkerFile(const char *markerPath, char *originalPathOut,
     /* Amiga implementation */
     BPTR file = Open((STRPTR)markerPath, MODE_OLDFILE);
     if (!file) {
-        DEBUG_LOG("Failed to open marker file: %s", markerPath);
+        /* DEBUG_LOG("Failed to open marker file: %s", markerPath); */
         return FALSE;
     }
     
@@ -324,7 +326,7 @@ BOOL ReadPathMarkerFile(const char *markerPath, char *originalPathOut,
         *newline = '\0';
     }
     
-    DEBUG_LOG("Original path from marker: %s", originalPathOut);
+    /* DEBUG_LOG("Original path from marker: %s", originalPathOut); */
     
     /* Archive index reading on Amiga would require more parsing */
     if (archiveIndexOut) {
@@ -356,12 +358,12 @@ BOOL ExtractAndReadMarker(const char *archivePath, const char *lhaPath,
         }
     }
     
-    DEBUG_LOG("Extracting marker from: %s", archivePath);
-    DEBUG_LOG("Target temp directory: %s", tempDirectory);
+    /* DEBUG_LOG("Extracting marker from: %s", archivePath); */
+    /* DEBUG_LOG("Target temp directory: %s", tempDirectory); */
     
     /* Extract entire archive to temp (single file extraction doesn't work reliably) */
     if (!ExtractLhaArchive(lhaPath, archivePath, tempDirectory)) {
-        DEBUG_LOG("Failed to extract archive");
+        /* DEBUG_LOG("Failed to extract archive"); */
         return FALSE;
     }
     
@@ -370,14 +372,14 @@ BOOL ExtractAndReadMarker(const char *archivePath, const char *lhaPath,
         return FALSE;
     }
     
-    DEBUG_LOG("Expected marker path: %s", markerPath);
+    /* DEBUG_LOG("Expected marker path: %s", markerPath); */
 #ifndef PLATFORM_HOST
     append_to_log("[BACKUP] Expected marker path: %s\n", markerPath);
 #endif
     
     /* Small delay to ensure file system sync (host OS may need it) */
     /* Also retry a few times in case LHA hasn't finished writing */
-#ifdef PLATFORM_HOST
+#if PLATFORM_HOST
     int retries = 5;
     while (retries > 0) {
         #ifdef _WIN32
@@ -399,7 +401,7 @@ BOOL ExtractAndReadMarker(const char *archivePath, const char *lhaPath,
         
         retries--;
         if (retries > 0) {
-            DEBUG_LOG("Marker not found yet, retrying... (%d attempts left)", retries);
+            /* DEBUG_LOG("Marker not found yet, retrying... (%d attempts left)", retries); */
         }
     }
 #else
@@ -411,11 +413,14 @@ BOOL ExtractAndReadMarker(const char *archivePath, const char *lhaPath,
             /* List files in temp directory for debugging */
             BPTR dirLock = Lock((STRPTR)tempDirectory, ACCESS_READ);
             if (dirLock) {
-                struct FileInfoBlock *fib = (struct FileInfoBlock *)AllocVec(sizeof(struct FileInfoBlock), MEMF_PUBLIC | MEMF_CLEAR);
-                if (fib && Examine(dirLock, fib)) {
-                    append_to_log("[BACKUP] Files in %s:\n", tempDirectory);
-                    while (ExNext(dirLock, fib)) {
-                        append_to_log("[BACKUP]   - %s\n", fib->fib_FileName);
+                struct FileInfoBlock *fib = (struct FileInfoBlock *)whd_malloc(sizeof(struct FileInfoBlock));
+                if (fib) {
+                    memset(fib, 0, sizeof(struct FileInfoBlock));
+                    if (Examine(dirLock, fib)) {
+                        append_to_log("[BACKUP] Files in %s:\n", tempDirectory);
+                        while (ExNext(dirLock, fib)) {
+                            append_to_log("[BACKUP]   - %s\n", fib->fib_FileName);
+                        }
                     }
                 }
                 if (fib) FreeVec(fib);
@@ -486,7 +491,7 @@ BOOL ArchiveHasMarker(const char *archivePath, const char *lhaPath) {
     /* Check if marker exists */
     BuildMarkerPath(markerPath, tempDir);
     
-#ifdef PLATFORM_HOST
+#if PLATFORM_HOST
     hasMarker = (access(markerPath, F_OK) == 0);
 #else
     BPTR lock = Lock((STRPTR)markerPath, ACCESS_READ);

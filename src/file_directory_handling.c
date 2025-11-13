@@ -8,6 +8,7 @@
  * - C99 features: inline, //, mixed declarations
  */
 
+#include "platform/platform.h"
 #include <devices/trackdisk.h>
 #include <devices/timer.h>
 #include <clib/timer_protos.h>
@@ -24,198 +25,6 @@
 
 /* External timer base for performance measurement */
 extern struct Device* TimerBase;
-
-int HasSlaveFile(char *path)
-{
-    BPTR lock;
-    struct FileInfoBlock *fib;
-    int hasSlave = 0;
-    int fileCount = 0;
-
-#ifdef DEBUG
-    log_debug(LOG_GENERAL, "HasSlaveFile ENTRY: path='%s'\n", path);
-#endif
-#ifdef DEBUGLocks
-    append_to_log("Locking directory (HasSlaveFile): %s\n", path);
-#endif
-
-    lock = Lock((STRPTR)path, ACCESS_READ);
-    if (!lock) {
-#ifdef DEBUG
-        log_debug(LOG_GENERAL, "HasSlaveFile - Lock failed for '%s'\n", path);
-#endif
-        // Assume it has no slave file if we can't lock the directory
-        return 0;
-    }
-
-    // VBCC MIGRATION: Use AllocDosObject instead of AllocMem
-    fib = AllocDosObject(DOS_FIB, NULL);
-    if (!fib) {
-        Printf("Failed to allocate FileInfoBlock\n");
-#ifdef DEBUG
-        log_debug(LOG_GENERAL, "HasSlaveFile - AllocDosObject failed\n");
-#endif
-#ifdef DEBUGLocks
-        append_to_log("Unlocking directory: %s\n", path);
-#endif
-        UnLock(lock);
-        return 0;
-    }
-
-#ifdef DEBUG
-    log_debug(LOG_GENERAL, "HasSlaveFile - calling Examine()\n");
-#endif
-    if (Examine(lock, fib)) {
-#ifdef DEBUG
-        log_debug(LOG_GENERAL, "HasSlaveFile - Examine() successful, starting ExNext() loop\n");
-#endif
-        while (ExNext(lock, fib)) {
-            fileCount++;
-            if (fib->fib_DirEntryType < 0) {  // File, not directory
-                const char *ext = strrchr(fib->fib_FileName, '.');
-                if (ext && strncasecmp_custom(ext, ".slave", 6) == 0) {
-#ifdef DEBUG
-                    log_debug(LOG_GENERAL, "HasSlaveFile - Found .slave file: '%s'\n", fib->fib_FileName);
-#endif
-                    hasSlave = 1;
-                    break;
-                }
-            }
-        }
-#ifdef DEBUG
-        log_debug(LOG_GENERAL, "HasSlaveFile - ExNext() loop completed, checked %d entries\n", fileCount);
-#endif
-    } else {
-#ifdef DEBUG
-        log_debug(LOG_GENERAL, "HasSlaveFile - Examine() failed\n");
-#endif
-    }
-
-    // VBCC MIGRATION: Use FreeDosObject instead of FreeMem
-    FreeDosObject(DOS_FIB, fib);
-#ifdef DEBUGLocks
-    append_to_log("Unlocking directory: %s\n", path);
-#endif
-    UnLock(lock);
-    return hasSlave;
-}
-
-void ProcessDirectory(char *path, BOOL processSubDirs, int recursion_level)
-{
-    BPTR lock = 0;  // VBCC MIGRATION: BPTR initialized to 0, not NULL
-    struct FileInfoBlock *fib = NULL;
-    char subdir[4096];
-
-#ifdef DEBUG
-    append_to_log("ProcessDirectory ENTRY: path='%s', processSubDirs=%d, recursion_level=%d\n", 
-                  path, processSubDirs, recursion_level);
-#endif
-
-    // Sanitize the path to ensure it's properly formatted for the Amiga file system
-    sanitizeAmigaPath(path);
-    
-#ifdef DEBUG
-    append_to_log("After sanitizeAmigaPath: path='%s'\n", path);
-#endif
-
-#ifdef DEBUGLocks
-    // Log the current directory and recursion level for debugging purposes
-    append_to_log("Locking directory at level %d: %s\n", recursion_level, path);
-#endif
-
-    // Attempt to lock the directory for reading
-    lock = Lock((STRPTR)path, ACCESS_READ);
-    
-#ifdef DEBUG
-    append_to_log("Lock() returned: %ld\n", (LONG)lock);
-#endif
-    
-    if (!lock) {
-        // If locking fails, log error and return
-        LONG error = IoErr();
-#ifdef DEBUG
-        append_to_log("Failed to lock %s at level %d, error: %ld\n", path, recursion_level, error);
-#endif
-        return;
-    }
-
-#ifdef DEBUG
-    append_to_log("Lock successful, checking WHDLoad cleanup flag: %d\n", user_cleanupWHDLoadFolders);
-#endif
-
-    // If WHDLoad cleanup is enabled, check for .slave files in the directory
-    if (user_cleanupWHDLoadFolders == TRUE) {
-#ifdef DEBUG
-        append_to_log("Calling HasSlaveFile('%s')\n", path);
-#endif
-        if (HasSlaveFile(path)) {
-            // Resize the folder to fit its contents if resizing is allowed
-            if (user_dontResize == FALSE) {
-                IconArray *tempIconArray = CreateIconArrayFromPath(lock, path);
-                if (tempIconArray) {
-                    /* Old code path - no window tracker or prefs available */
-                    resizeFolderToContents(path, tempIconArray, NULL, NULL);
-                    FreeIconArray(tempIconArray);
-                }
-            }
-#ifdef DEBUGLocks
-            append_to_log("Unlocking directory at level %d: %s\n", recursion_level, path);
-#endif
-            // Always unlock the directory before returning
-            UnLock(lock);
-            return;
-        }
-    }
-
-    // VBCC MIGRATION: Use AllocDosObject for FileInfoBlock
-    fib = AllocDosObject(DOS_FIB, NULL);
-    if (!fib) {
-        // Log a message if memory allocation fails
-        Printf("Failed to allocate FileInfoBlock at level %d\n", recursion_level);
-#ifdef DEBUGLocks
-        append_to_log("Unlocking directory at level %d: %s\n", recursion_level, path);
-#endif
-        // Unlock the directory before returning
-        UnLock(lock);
-        return;
-    }
-
-    // Examine the directory to check for contents
-    if (Examine(lock, fib)) {
-        // Format the icons for the current directory
-        FormatIconsAndWindow(path);
-
-        // If processing subdirectories is allowed, handle them recursively
-        if (processSubDirs == TRUE) {
-            while (ExNext(lock, fib)) {
-                if (fib->fib_DirEntryType > 0) { // Process only directories
-                    // VBCC MIGRATION: Use snprintf for safety
-                    // Check if path ends with ':' (root device) - if so, don't add '/'
-                    if (path[strlen(path) - 1] == ':') {
-                        snprintf(subdir, sizeof(subdir), "%s%s", path, fib->fib_FileName);
-                    } else {
-                        snprintf(subdir, sizeof(subdir), "%s/%s", path, fib->fib_FileName);
-                    }
-                    // Recursively process the subdirectory and increment the recursion level
-                    ProcessDirectory(subdir, TRUE, recursion_level + 1);
-                }
-            }
-        }
-    } else {
-        // Log an error message if directory examination fails
-        LONG error = IoErr();
-        Printf("Failed to examine directory at level %d: %s (error: %ld)\n", 
-               recursion_level, path, error);
-    }
-
-    // Cleanup: Free allocated memory and unlock the directory
-    // VBCC MIGRATION: Use FreeDosObject instead of FreeMem
-    FreeDosObject(DOS_FIB, fib);
-#ifdef DEBUGLocks
-    append_to_log("Unlocking directory at level %d: %s\n", recursion_level, path);
-#endif
-    UnLock(lock);
-}
 
 void GetFullPath(const char *directory, struct FileInfoBlock *fib, char *fullPath, int fullPathSize)
 {
@@ -710,13 +519,13 @@ void sanitizeAmigaPath(char *path)
 
     len = strlen(path) + 1; // Include null terminator
     
-    // VBCC MIGRATION: AllocVec is already correct here
-    sanitizedPath = (char *)AllocVec(len, MEMF_CLEAR);
+    sanitizedPath = (char *)whd_malloc(len);
     if (!sanitizedPath) {
         // Memory allocation failed
         Printf("Failed to allocate memory for path sanitization\n");
         return;
     }
+    memset(sanitizedPath, 0, len);
 
     i = 0;
     j = 0;
@@ -744,7 +553,7 @@ void sanitizeAmigaPath(char *path)
     path[len - 1] = '\0';  // Ensure null termination
     
     // Copy back to the original path and free the allocated memory
-    FreeVec(sanitizedPath);
+    whd_free(sanitizedPath);
 }
 
 BOOL GetWriteProtection(const char *filename)

@@ -4,6 +4,7 @@
  * GadTools-based window for Workbench 2.0+
  */
 
+#include "platform/platform.h"
 #include "tool_cache_window.h"
 #include "../icon_types.h"
 #include "../itidy_types.h"
@@ -159,13 +160,14 @@ BOOL build_tool_cache_display_list(struct iTidyToolCacheWindow *tool_data)
         char truncated_name[TOOL_NAME_COLUMN_WIDTH + 1];  /* Buffer for truncated tool name */
         
         /* Allocate entry */
-        entry = (struct ToolCacheDisplayEntry *)AllocVec(sizeof(struct ToolCacheDisplayEntry), MEMF_CLEAR);
+        entry = (struct ToolCacheDisplayEntry *)whd_malloc(sizeof(struct ToolCacheDisplayEntry));
         if (entry == NULL)
         {
             append_to_log("ERROR: Failed to allocate display entry\n");
             free_tool_cache_entries(tool_data);
             return FALSE;
         }
+        memset(entry, 0, sizeof(struct ToolCacheDisplayEntry));
         
         /* Copy tool data */
         entry->tool_name = g_ToolCache[i].toolName;  /* Point to cache data - don't duplicate */
@@ -197,13 +199,14 @@ BOOL build_tool_cache_display_list(struct iTidyToolCacheWindow *tool_data)
             entry->exists ? "EXISTS " : "MISSING");
         
         /* Allocate and copy display text */
-        entry->display_text = (char *)AllocVec(strlen(buffer) + 1, MEMF_CLEAR);
+        entry->display_text = (char *)whd_malloc(strlen(buffer) + 1);
         if (entry->display_text == NULL)
         {
             FreeVec(entry);
             free_tool_cache_entries(tool_data);
             return FALSE;
         }
+        memset(entry->display_text, 0, strlen(buffer) + 1);
         strcpy(entry->display_text, buffer);
         
         /* Set node name for GadTools listview */
@@ -355,12 +358,14 @@ void update_tool_details(struct iTidyToolCacheWindow *tool_data, LONG selected_i
                     sprintf(buffer, "Tool:   %s",
                         entry->tool_name ? entry->tool_name : "(unknown)");
                     
-                    detail_node = (struct Node *)AllocVec(sizeof(struct Node), MEMF_CLEAR);
+                    detail_node = (struct Node *)whd_malloc(sizeof(struct Node));
                     if (detail_node)
                     {
-                        detail_node->ln_Name = (char *)AllocVec(strlen(buffer) + 1, MEMF_CLEAR);
+                        memset(detail_node, 0, sizeof(struct Node));
+                        detail_node->ln_Name = (char *)whd_malloc(strlen(buffer) + 1);
                         if (detail_node->ln_Name)
                         {
+                            memset(detail_node->ln_Name, 0, strlen(buffer) + 1);
                             strcpy(detail_node->ln_Name, buffer);
                             AddTail(&tool_data->details_list, detail_node);
                         }
@@ -375,12 +380,14 @@ void update_tool_details(struct iTidyToolCacheWindow *tool_data, LONG selected_i
                         entry->exists ? "EXISTS" : "MISSING",
                         entry->version ? entry->version : "(no version)");
                     
-                    detail_node = (struct Node *)AllocVec(sizeof(struct Node), MEMF_CLEAR);
+                    detail_node = (struct Node *)whd_malloc(sizeof(struct Node));
                     if (detail_node)
                     {
-                        detail_node->ln_Name = (char *)AllocVec(strlen(buffer) + 1, MEMF_CLEAR);
+                        memset(detail_node, 0, sizeof(struct Node));
+                        detail_node->ln_Name = (char *)whd_malloc(strlen(buffer) + 1);
                         if (detail_node->ln_Name)
                         {
+                            memset(detail_node->ln_Name, 0, strlen(buffer) + 1);
                             strcpy(detail_node->ln_Name, buffer);
                             AddTail(&tool_data->details_list, detail_node);
                         }
@@ -392,12 +399,14 @@ void update_tool_details(struct iTidyToolCacheWindow *tool_data, LONG selected_i
                     
                     /* Add separator using simple dashes (Amiga doesn't support Unicode box chars) */
                     sprintf(buffer, "--------------------------------------------------------------------");
-                    detail_node = (struct Node *)AllocVec(sizeof(struct Node), MEMF_CLEAR);
+                    detail_node = (struct Node *)whd_malloc(sizeof(struct Node));
                     if (detail_node)
                     {
-                        detail_node->ln_Name = (char *)AllocVec(strlen(buffer) + 1, MEMF_CLEAR);
+                        memset(detail_node, 0, sizeof(struct Node));
+                        detail_node->ln_Name = (char *)whd_malloc(strlen(buffer) + 1);
                         if (detail_node->ln_Name)
                         {
+                            memset(detail_node->ln_Name, 0, strlen(buffer) + 1);
                             strcpy(detail_node->ln_Name, buffer);
                             AddTail(&tool_data->details_list, detail_node);
                         }
@@ -421,12 +430,14 @@ void update_tool_details(struct iTidyToolCacheWindow *tool_data, LONG selected_i
                                 
                                 sprintf(buffer, "%s", truncated_path);
                                 
-                                detail_node = (struct Node *)AllocVec(sizeof(struct Node), MEMF_CLEAR);
+                                detail_node = (struct Node *)whd_malloc(sizeof(struct Node));
                                 if (detail_node)
                                 {
-                                    detail_node->ln_Name = (char *)AllocVec(strlen(buffer) + 1, MEMF_CLEAR);
+                                    memset(detail_node, 0, sizeof(struct Node));
+                                    detail_node->ln_Name = (char *)whd_malloc(strlen(buffer) + 1);
                                     if (detail_node->ln_Name)
                                     {
+                                        memset(detail_node->ln_Name, 0, strlen(buffer) + 1);
                                         strcpy(detail_node->ln_Name, buffer);
                                         AddTail(&tool_data->details_list, detail_node);
                                     }
@@ -443,12 +454,14 @@ void update_tool_details(struct iTidyToolCacheWindow *tool_data, LONG selected_i
                         {
                             sprintf(buffer, "(showing first %d files, more may exist)", 
                                    TOOL_CACHE_MAX_FILES_PER_TOOL);
-                            detail_node = (struct Node *)AllocVec(sizeof(struct Node), MEMF_CLEAR);
+                            detail_node = (struct Node *)whd_malloc(sizeof(struct Node));
                             if (detail_node)
                             {
-                                detail_node->ln_Name = (char *)AllocVec(strlen(buffer) + 1, MEMF_CLEAR);
+                                memset(detail_node, 0, sizeof(struct Node));
+                                detail_node->ln_Name = (char *)whd_malloc(strlen(buffer) + 1);
                                 if (detail_node->ln_Name)
                                 {
+                                    memset(detail_node->ln_Name, 0, strlen(buffer) + 1);
                                     strcpy(detail_node->ln_Name, buffer);
                                     AddTail(&tool_data->details_list, detail_node);
                                 }
@@ -463,12 +476,14 @@ void update_tool_details(struct iTidyToolCacheWindow *tool_data, LONG selected_i
                     {
                         /* No files found */
                         sprintf(buffer, "(no files using this tool)");
-                        detail_node = (struct Node *)AllocVec(sizeof(struct Node), MEMF_CLEAR);
+                        detail_node = (struct Node *)whd_malloc(sizeof(struct Node));
                         if (detail_node)
                         {
-                            detail_node->ln_Name = (char *)AllocVec(strlen(buffer) + 1, MEMF_CLEAR);
+                            memset(detail_node, 0, sizeof(struct Node));
+                            detail_node->ln_Name = (char *)whd_malloc(strlen(buffer) + 1);
                             if (detail_node->ln_Name)
                             {
+                                memset(detail_node->ln_Name, 0, strlen(buffer) + 1);
                                 strcpy(detail_node->ln_Name, buffer);
                                 AddTail(&tool_data->details_list, detail_node);
                             }
@@ -1085,25 +1100,6 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                         /* Use global preferences for scan path and recursive mode */
                         log_info(LOG_GUI, "Rescanning using global preferences\n");
                         
-                        /* Set busy pointer during scan */
-                        SetWindowPointer(tool_data->window, WA_BusyPointer, TRUE, TAG_END);
-                        
-                        /* Clear display before scanning (visual feedback that rebuild is happening) */
-                        log_info(LOG_GUI, "[TOOL_CACHE] Clearing old display before rebuild\n");
-                        free_tool_cache_entries(tool_data);
-                        tool_data->total_count = 0;
-                        tool_data->valid_count = 0;
-                        tool_data->missing_count = 0;
-                        NewList(&tool_data->tool_entries);
-                        NewList(&tool_data->filtered_entries);
-                        GT_SetGadgetAttrs(tool_data->tool_list, tool_data->window, NULL,
-                            GTLV_Labels, ~0,  /* Detach */
-                            TAG_END);
-                        GT_SetGadgetAttrs(tool_data->tool_list, tool_data->window, NULL,
-                            GTLV_Labels, NULL,  /* Empty list */
-                            TAG_END);
-                        RefreshGList(tool_data->tool_list, tool_data->window, NULL, 1);
-                        
                         /* Rescan the directory to rebuild tool cache */
                         if (ScanDirectoryForToolsOnly())
                         {
@@ -1125,9 +1121,6 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                             log_error(LOG_GUI, "Failed to rebuild tool cache\n");
                             /* Could show an error requester here */
                         }
-                        
-                        /* Clear busy pointer */
-                        SetWindowPointer(tool_data->window, WA_Pointer, NULL, TAG_END);
                         break;
                         
                     case GID_TOOL_CLOSE_BTN:

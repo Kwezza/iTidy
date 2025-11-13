@@ -1110,7 +1110,7 @@ BOOL ValidateDefaultTool(const char *defaultTool)
     /* Free version string (it's been copied into cache) */
     if (versionStr)
     {
-        FreeVec(versionStr);
+        whd_free(versionStr);
     }
     
     /* Restore DOS requesters */
@@ -1178,21 +1178,23 @@ BOOL BuildPathSearchList(void)
         log_info(LOG_GENERAL, "BuildPathSearchList: Using C: as default PATH\n");
         
         /* Allocate array for just "C:" */
-        g_PathSearchList = (char **)AllocVec(sizeof(char *), MEMF_CLEAR);
+        g_PathSearchList = (char **)whd_malloc(sizeof(char *));
         if (!g_PathSearchList)
         {
             log_error(LOG_GENERAL, "BuildPathSearchList: Failed to allocate PATH array\n");
             return FALSE;
         }
+        memset(g_PathSearchList, 0, sizeof(char *));
         
-        g_PathSearchList[0] = (char *)AllocVec(3, MEMF_CLEAR);  /* "C:" + null */
+        g_PathSearchList[0] = (char *)whd_malloc(3);  /* "C:" + null */
         if (!g_PathSearchList[0])
         {
-            FreeVec(g_PathSearchList);
+            whd_free(g_PathSearchList);
             g_PathSearchList = NULL;
             log_error(LOG_GENERAL, "BuildPathSearchList: Failed to allocate C: string\n");
             return FALSE;
         }
+        memset(g_PathSearchList[0], 0, 3);
         
         strcpy(g_PathSearchList[0], "C:");
         g_PathSearchCount = 1;
@@ -1239,21 +1241,23 @@ BOOL BuildPathSearchList(void)
         log_info(LOG_GENERAL, "BuildPathSearchList: No PATH entries found, using C: as default\n");
         
         /* Allocate array for just "C:" */
-        g_PathSearchList = (char **)AllocVec(sizeof(char *), MEMF_CLEAR);
+        g_PathSearchList = (char **)whd_malloc(sizeof(char *));
         if (!g_PathSearchList)
         {
             log_error(LOG_GENERAL, "BuildPathSearchList: Failed to allocate PATH array\n");
             return FALSE;
         }
+        memset(g_PathSearchList, 0, sizeof(char *));
         
-        g_PathSearchList[0] = (char *)AllocVec(3, MEMF_CLEAR);  /* "C:" + null */
+        g_PathSearchList[0] = (char *)whd_malloc(3);  /* "C:" + null */
         if (!g_PathSearchList[0])
         {
-            FreeVec(g_PathSearchList);
+            whd_free(g_PathSearchList);
             g_PathSearchList = NULL;
             log_error(LOG_GENERAL, "BuildPathSearchList: Failed to allocate C: string\n");
             return FALSE;
         }
+        memset(g_PathSearchList[0], 0, 3);
         
         strcpy(g_PathSearchList[0], "C:");
         g_PathSearchCount = 1;
@@ -1262,12 +1266,13 @@ BOOL BuildPathSearchList(void)
     }
     
     /* Allocate array for path strings */
-    g_PathSearchList = (char **)AllocVec(count * sizeof(char *), MEMF_CLEAR);
+    g_PathSearchList = (char **)whd_malloc(count * sizeof(char *));
     if (!g_PathSearchList)
     {
         log_error(LOG_GENERAL, "BuildPathSearchList: Failed to allocate PATH array for %d entries\n", count);
         return FALSE;
     }
+    memset(g_PathSearchList, 0, count * sizeof(char *));
     
     /* Second pass: extract path strings */
     currentPath = pathPtr;
@@ -1307,9 +1312,10 @@ BOOL BuildPathSearchList(void)
                 }
                 
                 /* Allocate and copy path string */
-                g_PathSearchList[i] = (char *)AllocVec(len + 1, MEMF_CLEAR);
+                g_PathSearchList[i] = (char *)whd_malloc(len + 1);
                 if (g_PathSearchList[i])
                 {
+                    memset(g_PathSearchList[i], 0, len + 1);
                     strcpy(g_PathSearchList[i], pathBuffer);
                     log_info(LOG_GENERAL, "  [%d] %s\n", i + 1, pathBuffer);
                     i++;
@@ -1333,7 +1339,7 @@ BOOL BuildPathSearchList(void)
     if (g_PathSearchCount == 0)
     {
         log_error(LOG_GENERAL, "BuildPathSearchList: Failed to extract any valid paths\n");
-        FreeVec(g_PathSearchList);
+        whd_free(g_PathSearchList);
         g_PathSearchList = NULL;
         return FALSE;
     }
@@ -1366,12 +1372,12 @@ void FreePathSearchList(void)
         {
             if (g_PathSearchList[i])
             {
-                FreeVec(g_PathSearchList[i]);
+                whd_free(g_PathSearchList[i]);
             }
         }
         
         /* Free the array itself */
-        FreeVec(g_PathSearchList);
+        whd_free(g_PathSearchList);
         
         g_PathSearchList = NULL;
         g_PathSearchCount = 0;
@@ -1399,13 +1405,15 @@ BOOL InitToolCache(void)
 {
 #if PLATFORM_AMIGA
     g_ToolCacheCapacity = 20;  /* Start with capacity for 20 tools */
-    g_ToolCache = (ToolCacheEntry *)AllocVec(g_ToolCacheCapacity * sizeof(ToolCacheEntry), MEMF_CLEAR);
+    g_ToolCache = (ToolCacheEntry *)whd_malloc(g_ToolCacheCapacity * sizeof(ToolCacheEntry));
     
     if (!g_ToolCache)
     {
         log_error(LOG_GENERAL, "InitToolCache: Failed to allocate cache array\n");
         return FALSE;
     }
+    
+    memset(g_ToolCache, 0, g_ToolCacheCapacity * sizeof(ToolCacheEntry));
     
     g_ToolCacheCount = 0;
     log_info(LOG_GENERAL, "InitToolCache: Cache initialized (capacity: %d)\n", g_ToolCacheCapacity);
@@ -1497,9 +1505,10 @@ static char *GetToolVersion(const char *filePath)
                 len = end - start;
                 if (len > 0 && len < 200)
                 {
-                    versionStr = (char *)AllocVec(len + 1, MEMF_CLEAR);
+                    versionStr = (char *)whd_malloc(len + 1);
                     if (versionStr)
                     {
+                        memset(versionStr, 0, len + 1);
                         memcpy(versionStr, start, len);
                         versionStr[len] = '\0';
                     }
@@ -1540,18 +1549,20 @@ static ToolCacheEntry *AddToolToCache(const char *toolName, BOOL exists, const c
         ToolCacheEntry *newCache;
         int newCapacity = g_ToolCacheCapacity * 2;
         
-        newCache = (ToolCacheEntry *)AllocVec(newCapacity * sizeof(ToolCacheEntry), MEMF_CLEAR);
+        newCache = (ToolCacheEntry *)whd_malloc(newCapacity * sizeof(ToolCacheEntry));
         if (!newCache)
         {
             log_error(LOG_GENERAL, "AddToolToCache: Failed to expand cache\n");
             return NULL;
         }
         
+        memset(newCache, 0, newCapacity * sizeof(ToolCacheEntry));
+        
         /* Copy old entries */
         memcpy(newCache, g_ToolCache, g_ToolCacheCount * sizeof(ToolCacheEntry));
         
         /* Free old cache */
-        FreeVec(g_ToolCache);
+        whd_free(g_ToolCache);
         
         g_ToolCache = newCache;
         g_ToolCacheCapacity = newCapacity;
@@ -1564,11 +1575,12 @@ static ToolCacheEntry *AddToolToCache(const char *toolName, BOOL exists, const c
     
     /* Allocate and copy tool name */
     nameLen = strlen(toolName);
-    newEntry->toolName = (char *)AllocVec(nameLen + 1, MEMF_CLEAR);
+    newEntry->toolName = (char *)whd_malloc(nameLen + 1);
     if (!newEntry->toolName)
     {
         return NULL;
     }
+    memset(newEntry->toolName, 0, nameLen + 1);
     strcpy(newEntry->toolName, toolName);
     
     newEntry->exists = exists;
@@ -1577,9 +1589,10 @@ static ToolCacheEntry *AddToolToCache(const char *toolName, BOOL exists, const c
     if (fullPath)
     {
         pathLen = strlen(fullPath);
-        newEntry->fullPath = (char *)AllocVec(pathLen + 1, MEMF_CLEAR);
+        newEntry->fullPath = (char *)whd_malloc(pathLen + 1);
         if (newEntry->fullPath)
         {
+            memset(newEntry->fullPath, 0, pathLen + 1);
             strcpy(newEntry->fullPath, fullPath);
         }
     }
@@ -1592,9 +1605,10 @@ static ToolCacheEntry *AddToolToCache(const char *toolName, BOOL exists, const c
     if (versionString)
     {
         verLen = strlen(versionString);
-        newEntry->versionString = (char *)AllocVec(verLen + 1, MEMF_CLEAR);
+        newEntry->versionString = (char *)whd_malloc(verLen + 1);
         if (newEntry->versionString)
         {
+            memset(newEntry->versionString, 0, verLen + 1);
             strcpy(newEntry->versionString, versionString);
         }
     }
@@ -1673,12 +1687,13 @@ BOOL AddFileReferenceToToolCache(const char *toolName, const char *filePath)
     if (entry->referencingFiles == NULL)
     {
         entry->fileCapacity = 20;  /* Start with 20, grow as needed */
-        entry->referencingFiles = (char **)AllocVec(entry->fileCapacity * sizeof(char *), MEMF_CLEAR);
+        entry->referencingFiles = (char **)whd_malloc(entry->fileCapacity * sizeof(char *));
         if (!entry->referencingFiles)
         {
             log_error(LOG_GENERAL, "AddFileReferenceToToolCache: Failed to allocate file array\n");
             return FALSE;
         }
+        memset(entry->referencingFiles, 0, entry->fileCapacity * sizeof(char *));
     }
     
     /* Expand array if needed */
@@ -1691,18 +1706,20 @@ BOOL AddFileReferenceToToolCache(const char *toolName, const char *filePath)
         if (newCapacity > TOOL_CACHE_MAX_FILES_PER_TOOL)
             newCapacity = TOOL_CACHE_MAX_FILES_PER_TOOL;
         
-        newArray = (char **)AllocVec(newCapacity * sizeof(char *), MEMF_CLEAR);
+        newArray = (char **)whd_malloc(newCapacity * sizeof(char *));
         if (!newArray)
         {
             log_error(LOG_GENERAL, "AddFileReferenceToToolCache: Failed to expand file array\n");
             return FALSE;
         }
         
+        memset(newArray, 0, newCapacity * sizeof(char *));
+        
         /* Copy existing pointers */
         memcpy(newArray, entry->referencingFiles, entry->fileCount * sizeof(char *));
         
         /* Free old array */
-        FreeVec(entry->referencingFiles);
+        whd_free(entry->referencingFiles);
         
         entry->referencingFiles = newArray;
         entry->fileCapacity = newCapacity;
@@ -1710,12 +1727,13 @@ BOOL AddFileReferenceToToolCache(const char *toolName, const char *filePath)
     
     /* Allocate and copy file path */
     filePathLen = strlen(filePath);
-    newFilePath = (char *)AllocVec(filePathLen + 1, MEMF_CLEAR);
+    newFilePath = (char *)whd_malloc(filePathLen + 1);
     if (!newFilePath)
     {
         log_error(LOG_GENERAL, "AddFileReferenceToToolCache: Failed to allocate file path\n");
         return FALSE;
     }
+    memset(newFilePath, 0, filePathLen + 1);
     strcpy(newFilePath, filePath);
     
     /* Add to array */
@@ -1801,11 +1819,11 @@ void FreeToolCache(void)
         for (i = 0; i < g_ToolCacheCount; i++)
         {
             if (g_ToolCache[i].toolName)
-                FreeVec(g_ToolCache[i].toolName);
+                whd_free(g_ToolCache[i].toolName);
             if (g_ToolCache[i].fullPath)
-                FreeVec(g_ToolCache[i].fullPath);
+                whd_free(g_ToolCache[i].fullPath);
             if (g_ToolCache[i].versionString)
-                FreeVec(g_ToolCache[i].versionString);
+                whd_free(g_ToolCache[i].versionString);
             
             /* Free file references */
             if (g_ToolCache[i].referencingFiles)
@@ -1813,14 +1831,14 @@ void FreeToolCache(void)
                 for (j = 0; j < g_ToolCache[i].fileCount; j++)
                 {
                     if (g_ToolCache[i].referencingFiles[j])
-                        FreeVec(g_ToolCache[i].referencingFiles[j]);
+                        whd_free(g_ToolCache[i].referencingFiles[j]);
                 }
-                FreeVec(g_ToolCache[i].referencingFiles);
+                whd_free(g_ToolCache[i].referencingFiles);
             }
         }
         
         /* Free the array itself */
-        FreeVec(g_ToolCache);
+        whd_free(g_ToolCache);
         
         g_ToolCache = NULL;
         g_ToolCacheCount = 0;

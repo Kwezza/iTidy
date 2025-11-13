@@ -93,8 +93,6 @@ int count_icon_type_newIcon = 0;
 int count_icon_type_os35 = 0;
 int count_icon_corrupted = 0;
 
-BOOL user_dontResize;
-BOOL user_cleanupWHDLoadFolders;
 BOOL user_folderViewMode;
 BOOL user_folderFlags;
 BOOL user_stripIconPosition;
@@ -114,12 +112,13 @@ void AddIconError(IconErrorTrackerStruct *tracker, STRPTR filePath)
     {
         /* Double the size of the array */
         ULONG newSize = tracker->size * 2;
-        newList = AllocVec(newSize * sizeof(STRPTR), MEMF_CLEAR);
+        newList = whd_malloc(newSize * sizeof(STRPTR));
         if (newList == NULL)
         {
             printf("Error reallocating memory for icon error list\n");
             return;
         }
+        memset(newList, 0, newSize * sizeof(STRPTR));
 
         /* Copy old data */
         for (i = 0; i < tracker->count; i++)
@@ -136,9 +135,10 @@ void AddIconError(IconErrorTrackerStruct *tracker, STRPTR filePath)
     }
 
     /* Allocate memory for the file path and store it */
-    tracker->list[tracker->count] = AllocVec(strlen(filePath) + 1, MEMF_CLEAR);
+    tracker->list[tracker->count] = whd_malloc(strlen(filePath) + 1);
     if (tracker->list[tracker->count] != NULL)
     {
+        memset(tracker->list[tracker->count], 0, strlen(filePath) + 1);
         strcpy(tracker->list[tracker->count], filePath);
         tracker->count++;
     }
@@ -186,10 +186,8 @@ int main(int argc, char **argv)
 #endif
 
     /* GUI MIGRATION: Initialize default settings (previously set from CLI args) */
-    user_dontResize = FALSE;
     user_folderViewMode = DDVM_BYICON;
     user_folderFlags = DDFLAGS_SHOWICONS;
-    user_cleanupWHDLoadFolders = TRUE;
     user_stripIconPosition = FALSE;
     user_forceStandardIcons = FALSE;
     
@@ -203,17 +201,18 @@ int main(int argc, char **argv)
     }
 
     /* KEEP: Font preferences allocation */
-    fontPrefs = AllocVec(sizeof(struct FontPrefs), MEMF_CLEAR);
+    fontPrefs = whd_malloc(sizeof(struct FontPrefs));
     if (!fontPrefs)
     {
         printf("Error: Failed to allocate memory for fontPrefs\n");
         return 1;
     }
+    memset(fontPrefs, 0, sizeof(struct FontPrefs));
 
     /* KEEP: Initialize the error tracker */
     iconsErrorTracker.size = ERROR_LIST_INITIAL_SIZE;
     iconsErrorTracker.count = 0;
-    iconsErrorTracker.list = AllocVec(iconsErrorTracker.size * sizeof(STRPTR), MEMF_CLEAR);
+    iconsErrorTracker.list = whd_malloc(iconsErrorTracker.size * sizeof(STRPTR));
 
     if (iconsErrorTracker.list == NULL)
     {

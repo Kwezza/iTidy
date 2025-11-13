@@ -7,152 +7,36 @@ iTidy is an Amiga icon management utility that allows users to sort and arrange 
 
 ## Development Timeline
 
-### Latest: Tool Cache Window - Rebuild Cache Feature Complete (November 12, 2025)
+### Latest: Memory Tracking System Integration (November 13, 2025)
 
-#### Implemented Standalone Tool Cache Scanning with GUI Integration
-* **Status**: Complete and tested
-* **Impact**: Users can now analyze and rebuild default tool cache without running full iTidy processing
-* **Features**: Recursive scanning, busy pointer feedback, proper state synchronization
-* **Date**: November 12, 2025
+#### Replaced All Direct Memory Allocations with Tracked Wrappers
+* **Status**: Complete and verified
+* **Impact**: Full memory leak detection now active across entire codebase
+* **Files Modified**: 13 source files, 52 allocation sites updated
+* **Date**: November 13, 2025
 
-**Problem Addressed:**
-After implementing the global preferences refactoring, the Tool Cache Window needed a way to rebuild its cache without requiring users to run the full iTidy icon processing workflow. The window should respect current GUI settings (folder path and recursive mode) and provide visual feedback during long operations.
+**Problem Identified:**
+Code review found 52 direct `AllocVec()` calls bypassing the existing memory tracking system (`whd_malloc`/`whd_free` wrappers in `platform/platform.h`). This prevented detection of memory leaks during development and testing.
 
-**Features Implemented:**
+**Solution Implemented:**
+Systematically replaced all direct allocations:
+- **Pattern**: `AllocVec(size, MEMF_CLEAR)` → `whd_malloc(size) + memset(ptr, 0, size)`
+- **Files affected**: icon_management.c, backup_session.c, backup_runs.c, backup_marker.c, folder_view_window.c, window_enumerator.c, tool_cache_window.c, restore_window.c, main_gui.c, getDiskDetails.c, writeLog.c, file_directory_handling.c, test_simple_window.c
+- **Added**: `#include "platform/platform.h"` to all affected files
+- **Fixed**: Include path issues in subdirectory files (DOS/, GUI/)
 
-1. **Rebuild Cache Button** - Added to Tool Cache Window
-   - Positioned between filter buttons and Close button
-   - Scans directory for default tools without tidying icon positions
-   - Uses global preferences for path and recursive mode
-   - Shows busy pointer during operation
-   - Clears old display before scanning (visual feedback)
+**Critical Bug Found and Fixed:**
+Memory tracking revealed leaks during testing:
+- **icon_management.c:793**: `FreeVec(anchorPath)` → `whd_free(anchorPath)` (26 instances, 33,930 bytes)
+- **file_directory_handling.c:556**: `FreeVec(sanitizedPath)` → `whd_free(sanitizedPath)` (1 instance, 14 bytes)
 
-2. **Global Preferences Synchronization** - Fixed critical state management bugs
-   - **Issue 1**: Folder path not synced when using Browse button
-     - Solution: Read string gadget value via `GT_GetGadgetAttrs()` before using
-   - **Issue 2**: Recursive checkbox state not synced unless clicked
-     - Solution: Read checkbox state via `GT_GetGadgetAttrs()` before using
-   - Applied to both "View Tool Cache" and "Apply" button handlers
+These allocations used `whd_malloc()` but freed with `FreeVec()`, causing tracking mismatch. Fix confirmed via clean memory report showing 0 leaks.
 
-3. **Display Clearing on Rebuild** - Ensures clean state
-   - Explicitly frees old display entries before scanning
-   - Reinitializes lists with `NewList()`
-   - Clears listview gadget for immediate visual feedback
-   - Prevents stale pointers to freed memory
-
-**Technical Implementation:**
-
-**Files Modified:**
-- `src/layout_processor.h` - Added `ScanDirectoryForToolsOnly()` declaration
-- `src/layout_processor.c` - Implemented tool-only scanning functions
-- `src/GUI/tool_cache_window.h` - Added rebuild_cache_btn gadget
-- `src/GUI/tool_cache_window.c` - Added button, event handler, display clearing logic
-- `src/GUI/main_window.c` - Fixed preference synchronization in two handlers
-
-**Key Code Changes:**
-
-1. **Scanning Functions** (layout_processor.c):
-```c
-BOOL ScanDirectoryForToolsOnly(void)
-{
-    const LayoutPreferences *prefs = GetGlobalPreferences();
-    // Uses prefs->folder_path and prefs->recursive_subdirs
-    // Calls FreeToolCache() then InitToolCache()
-    // Branches to recursive or single-directory scan
-}
-```
-
-2. **Preference Synchronization** (main_window.c):
-```c
-/* Read current folder path from string gadget */
-GT_GetGadgetAttrs(win_data->folder_path, win_data->window, NULL,
-    GTST_String, &current_path, TAG_END);
-strncpy(win_data->folder_path_buffer, current_path, ...);
-
-/* Read current recursive checkbox state */
-GT_GetGadgetAttrs(win_data->recursive_check, win_data->window, NULL,
-    GTCB_Checked, &recursive_checked, TAG_END);
-win_data->recursive_subdirs = (BOOL)recursive_checked;
-```
-
-3. **Display Clearing** (tool_cache_window.c):
-```c
-/* Clear display before scanning */
-free_tool_cache_entries(tool_data);
-NewList(&tool_data->tool_entries);
-NewList(&tool_data->filtered_entries);
-GT_SetGadgetAttrs(tool_data->tool_list, ..., GTLV_Labels, ~0, TAG_END);  // Detach
-GT_SetGadgetAttrs(tool_data->tool_list, ..., GTLV_Labels, NULL, TAG_END); // Empty
-```
-
-**Bug Fixes:**
-
-1. **String Gadget Not Read on Button Click**
-   - Root cause: Relied on `win_data->folder_path_buffer` which was only updated by Browse button
-   - Users could type path directly or use other methods
-   - Fix: Always read current gadget value via `GT_GetGadgetAttrs()` before use
-   - Applied to both "View Tool Cache" and "Apply" handlers
-
-2. **Recursive Checkbox State Not Synced**
-   - Root cause: `win_data->recursive_subdirs` only updated when checkbox clicked
-   - If checkbox was already in desired state, event never fired
-   - Fix: Read actual checkbox state from gadget before using
-   - Ensures visual state matches internal state
-
-3. **Stale Display Entries on Rebuild**
-   - Root cause: Display list not explicitly cleared before rebuild
-   - Old entries pointed to freed memory after `FreeToolCache()`
-   - Fix: Clear display, reinitialize lists, detach/clear gadget before scanning
-   - Provides immediate visual feedback and prevents corruption
-
-**User Workflow:**
-
-1. **Open Tool Cache Window**:
-   - Click "View Tool Cache" button on main window
-   - Folder path and recursive flag automatically synced from GUI
-   - Window opens showing existing cache (if any)
-
-2. **Rebuild Cache**:
-   - Click "Rebuild Cache" button
-   - Listview clears immediately (visual feedback)
-   - Busy pointer appears
-   - Background scan executes (respects recursive setting)
-   - Display populates with fresh results
-   - Pointer returns to normal
-
-3. **Change Settings and Rebuild**:
-   - User can change folder path or recursive checkbox on main window
-   - Click "View Tool Cache" again (or keep it open and click Rebuild)
-   - New settings automatically applied
-
-**Testing Results:**
-- ✅ Browse button → View Tool Cache → Rebuild Cache works correctly
-- ✅ Manual path entry → View Tool Cache → Rebuild Cache works correctly
-- ✅ Recursive checkbox state properly synced regardless of click history
-- ✅ Display clears before rebuild (no stale entries)
-- ✅ Busy pointer shows during long scans
-- ✅ Works for both recursive and non-recursive scans
-
-**Logging Added:**
-```
-[GUI] View Tool Cache button clicked
-[GUI] String gadget value: 'Work:My Files'
-[GUI] Buffer before update: 'PC:'
-[GUI] Buffer after update: 'Work:My Files'
-[GUI] Recursive checkbox state: YES
-[GUI] Updated global prefs: path='Work:My Files', recursive=YES
-[GUI] [TOOL_CACHE] Rebuild Cache button clicked
-[GUI] [TOOL_CACHE] Clearing old display before rebuild
-[GENERAL] Scanning for default tools: Work:My Files
-[GENERAL] Recursive: Yes
-```
-
-**Benefits Achieved:**
-- ✅ Tool Cache Window now fully self-contained
-- ✅ No need to run full iTidy processing to analyze tools
-- ✅ Proper state synchronization prevents bugs
-- ✅ Visual feedback during operations
-- ✅ Clean rebuild every time (no stale data)
+**Result:**
+- All memory allocations now properly tracked
+- Memory leak detection fully operational
+- Real-time leak reports at program exit
+- Peak memory usage tracking enabled
 
 ---
 

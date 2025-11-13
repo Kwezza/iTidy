@@ -8,8 +8,10 @@
  * Task: 7 - Session Manager
  */
 
+#include "platform/platform.h"
+
 /* Platform-specific includes */
-#ifdef PLATFORM_HOST
+#if PLATFORM_HOST
     #ifdef _WIN32
         #define WIN32_LEAN_AND_MEAN
         #include <windows.h>
@@ -46,7 +48,7 @@
 
 BOOL InitBackupSession(BackupContext *ctx, const BackupPreferences *prefs, const char *sourceDirectory) {
     if (!ctx || !prefs) {
-        DEBUG_LOG("Invalid parameters for InitBackupSession");
+        /* DEBUG_LOG("Invalid parameters for InitBackupSession"); */
 #ifndef PLATFORM_HOST
         append_to_log("[BACKUP] ERROR: Invalid parameters for InitBackupSession\n");
 #endif
@@ -55,7 +57,7 @@ BOOL InitBackupSession(BackupContext *ctx, const BackupPreferences *prefs, const
     
     /* Validate preferences */
     if (!prefs->enableUndoBackup || !prefs->useLha) {
-        DEBUG_LOG("Backup disabled in preferences");
+        /* DEBUG_LOG("Backup disabled in preferences"); */
 #ifndef PLATFORM_HOST
         append_to_log("[BACKUP] Backup disabled in preferences\n");
 #endif
@@ -63,7 +65,7 @@ BOOL InitBackupSession(BackupContext *ctx, const BackupPreferences *prefs, const
     }
     
     if (strlen(prefs->backupRootPath) == 0) {
-        DEBUG_LOG("Backup root path not set");
+        /* DEBUG_LOG("Backup root path not set"); */
 #ifndef PLATFORM_HOST
         append_to_log("[BACKUP] ERROR: Backup root path not set\n");
 #endif
@@ -89,7 +91,7 @@ BOOL InitBackupSession(BackupContext *ctx, const BackupPreferences *prefs, const
     
     /* Check if LHA is available */
     if (!CheckLhaAvailable(ctx->lhaPath)) {
-        DEBUG_LOG("LHA not found - backup disabled");
+        /* DEBUG_LOG("LHA not found - backup disabled"); */
 #ifndef PLATFORM_HOST
         append_to_log("[BACKUP] ERROR: LHA not found - backup disabled\n");
 #endif
@@ -97,33 +99,33 @@ BOOL InitBackupSession(BackupContext *ctx, const BackupPreferences *prefs, const
         return FALSE;
     }
     ctx->lhaAvailable = TRUE;
-    DEBUG_LOG("LHA found at: %s", ctx->lhaPath);
+    /* DEBUG_LOG("LHA found at: %s", ctx->lhaPath); */
 #ifndef PLATFORM_HOST
     append_to_log("[BACKUP] LHA found at: %s\n", ctx->lhaPath);
 #endif
     
     /* Get next run number and create run directory */
     if (!CreateNextRunDirectory(prefs->backupRootPath, ctx->runDirectory, &ctx->runNumber)) {
-        DEBUG_LOG("Failed to create run directory");
+        /* DEBUG_LOG("Failed to create run directory"); */
 #ifndef PLATFORM_HOST
         append_to_log("[BACKUP] ERROR: Failed to create run directory\n");
 #endif
         return FALSE;
     }
-    DEBUG_LOG("Created run directory: %s (run %d)", ctx->runDirectory, ctx->runNumber);
+    /* DEBUG_LOG("Created run directory: %s (run %d)", ctx->runDirectory, ctx->runNumber); */
 #ifndef PLATFORM_HOST
     append_to_log("[BACKUP] Created run directory: %s (run %u)\n", ctx->runDirectory, ctx->runNumber);
 #endif
     
     /* Create catalog */
     if (!CreateCatalog(ctx)) {
-        DEBUG_LOG("Failed to create catalog");
+        /* DEBUG_LOG("Failed to create catalog"); */
 #ifndef PLATFORM_HOST
         append_to_log("[BACKUP] ERROR: Failed to create catalog\n");
 #endif
         return FALSE;
     }
-    DEBUG_LOG("Catalog created successfully");
+    /* DEBUG_LOG("Catalog created successfully"); */
 #ifndef PLATFORM_HOST
     append_to_log("[BACKUP] Catalog created successfully\n");
 #endif
@@ -135,7 +137,7 @@ BOOL InitBackupSession(BackupContext *ctx, const BackupPreferences *prefs, const
     ctx->totalBytesArchived = 0;
     ctx->sessionActive = TRUE;
     
-    DEBUG_LOG("Backup session initialized successfully");
+    /* DEBUG_LOG("Backup session initialized successfully"); */
 #ifndef PLATFORM_HOST
     append_to_log("[BACKUP] Session initialized successfully\n");
 #endif
@@ -147,10 +149,10 @@ void CloseBackupSession(BackupContext *ctx) {
         return;
     }
     
-    DEBUG_LOG("Closing backup session...");
-    DEBUG_LOG("  Folders backed up: %d", ctx->foldersBackedUp);
-    DEBUG_LOG("  Failed backups: %d", ctx->failedBackups);
-    DEBUG_LOG("  Total bytes: %lu", ctx->totalBytesArchived);
+    /* DEBUG_LOG("Closing backup session..."); */
+    /* DEBUG_LOG("  Folders backed up: %d", ctx->foldersBackedUp); */
+    /* DEBUG_LOG("  Failed backups: %d", ctx->failedBackups); */
+    /* DEBUG_LOG("  Total bytes: %lu", ctx->totalBytesArchived); */
     
     /* Close catalog (writes footer with statistics) */
     if (ctx->catalogOpen) {
@@ -161,7 +163,7 @@ void CloseBackupSession(BackupContext *ctx) {
     ctx->sessionActive = FALSE;
     ctx->catalogOpen = FALSE;
     
-    DEBUG_LOG("Backup session closed");
+    /* DEBUG_LOG("Backup session closed"); */
 }
 
 BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath, UWORD iconCount) {
@@ -173,34 +175,34 @@ BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath, UWORD icon
     
     /* Validate parameters */
     if (!ctx || !folderPath) {
-        DEBUG_LOG("Invalid parameters for BackupFolder");
+        /* DEBUG_LOG("Invalid parameters for BackupFolder"); */
         return BACKUP_INVALID_PARAMS;
     }
     
     if (!BACKUP_CONTEXT_VALID(ctx)) {
-        DEBUG_LOG("Invalid backup context");
+        /* DEBUG_LOG("Invalid backup context"); */
         return BACKUP_INVALID_PARAMS;
     }
     
     if (!ctx->sessionActive) {
-        DEBUG_LOG("Backup session not active");
+        /* DEBUG_LOG("Backup session not active"); */
         return BACKUP_FAIL;
     }
     
     /* Validate archive index is within range */
     if (!ARCHIVE_INDEX_VALID(ctx->archiveIndex)) {
-        DEBUG_LOG("Archive index out of range: %d", ctx->archiveIndex);
+        /* DEBUG_LOG("Archive index out of range: %d", ctx->archiveIndex); */
         return BACKUP_FAIL;
     }
     
-    DEBUG_LOG("Backing up folder: %s (index: %d)", folderPath, ctx->archiveIndex);
+    /* DEBUG_LOG("Backing up folder: %s (index: %d)", folderPath, ctx->archiveIndex); */
 #ifndef PLATFORM_HOST
     append_to_log("[BACKUP] Backing up folder: %s (index: %u)\n", folderPath, ctx->archiveIndex);
 #endif
     
     /* Check if folder has .info files */
     if (!FolderHasInfoFiles(folderPath)) {
-        DEBUG_LOG("Folder has no .info files, skipping");
+        /* DEBUG_LOG("Folder has no .info files, skipping"); */
 #ifndef PLATFORM_HOST
         append_to_log("[BACKUP] Folder has no .info files, skipping\n");
 #endif
@@ -210,12 +212,12 @@ BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath, UWORD icon
     /* If icon count not provided, count them now */
     if (iconCount == 0) {
         iconCount = CountInfoFiles(folderPath);
-        DEBUG_LOG("Counted %hu .info files", iconCount);
+        /* DEBUG_LOG("Counted %hu .info files", iconCount); */
 #ifndef PLATFORM_HOST
         append_to_log("[BACKUP] Counted %hu .info files\n", iconCount);
 #endif
     } else {
-        DEBUG_LOG("Using provided icon count: %hu", iconCount);
+        /* DEBUG_LOG("Using provided icon count: %hu", iconCount); */
 #ifndef PLATFORM_HOST
         append_to_log("[BACKUP] Using provided icon count: %hu\n", iconCount);
 #endif
@@ -223,27 +225,27 @@ BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath, UWORD icon
     
     /* Determine if this is a root folder */
     isRoot = IsRootFolder(folderPath);
-    DEBUG_LOG("Root folder: %s", isRoot ? "YES" : "NO");
+    /* DEBUG_LOG("Root folder: %s", isRoot ? "YES" : "NO"); */
 #ifndef PLATFORM_HOST
     append_to_log("[BACKUP] Root folder: %s\n", isRoot ? "YES" : "NO");
 #endif
     
     /* Calculate archive path */
     CalculateArchivePath(archivePath, ctx->runDirectory, ctx->archiveIndex);
-    DEBUG_LOG("Archive path: %s", archivePath);
+    /* DEBUG_LOG("Archive path: %s", archivePath); */
 #ifndef PLATFORM_HOST
     append_to_log("[BACKUP] Archive path: %s\n", archivePath);
 #endif
     
     /* Calculate and ensure subfolder exists */
     CalculateSubfolderPath(subfolderPath, ctx->runDirectory, ctx->archiveIndex);
-    DEBUG_LOG("Ensuring subfolder exists: %s", subfolderPath);
+    /* DEBUG_LOG("Ensuring subfolder exists: %s", subfolderPath); */
 #ifndef PLATFORM_HOST
     append_to_log("[BACKUP] Ensuring subfolder exists: %s\n", subfolderPath);
 #endif
     
     /* Create subfolder directory if needed */
-#ifdef PLATFORM_HOST
+#if PLATFORM_HOST
     #ifdef _WIN32
     _mkdir(subfolderPath);
     #else
@@ -259,9 +261,9 @@ BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath, UWORD icon
 #endif
     
     /* Create LHA archive of folder contents */
-    DEBUG_LOG("Creating archive...");
+    /* DEBUG_LOG("Creating archive..."); */
     if (!CreateLhaArchive(ctx->lhaPath, archivePath, folderPath)) {
-        DEBUG_LOG("Failed to create archive");
+        /* DEBUG_LOG("Failed to create archive"); */
         ctx->failedBackups++;
         
         /* Log failed backup to catalog */
@@ -284,41 +286,41 @@ BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath, UWORD icon
         ctx->archiveIndex++;
         return BACKUP_ARCHIVE_ERROR;
     }
-    DEBUG_LOG("Archive created successfully");
+    /* DEBUG_LOG("Archive created successfully"); */
 #ifndef PLATFORM_HOST
     append_to_log("[BACKUP] Archive created successfully\n");
 #endif
     
     /* Create path marker */
-    DEBUG_LOG("Creating path marker...");
+    /* DEBUG_LOG("Creating path marker..."); */
 #ifndef PLATFORM_HOST
     append_to_log("[BACKUP] Creating path marker...\n");
 #endif
     if (!CreateTempPathMarker(markerPath, folderPath, ctx->archiveIndex, NULL)) {
-        DEBUG_LOG("Failed to create path marker");
+        /* DEBUG_LOG("Failed to create path marker"); */
 #ifndef PLATFORM_HOST
         append_to_log("[BACKUP] WARNING: Failed to create path marker (non-fatal)\n");
 #endif
         /* Non-fatal - archive exists, just missing marker */
     } else {
-        DEBUG_LOG("Path marker created: %s", markerPath);
+        /* DEBUG_LOG("Path marker created: %s", markerPath); */
 #ifndef PLATFORM_HOST
         append_to_log("[BACKUP] Path marker created: %s\n", markerPath);
 #endif
         
         /* Add marker to archive */
-        DEBUG_LOG("Adding marker to archive...");
+        /* DEBUG_LOG("Adding marker to archive..."); */
 #ifndef PLATFORM_HOST
         append_to_log("[BACKUP] Adding marker to archive...\n");
 #endif
         if (!AddFileToArchive(ctx->lhaPath, archivePath, markerPath)) {
-            DEBUG_LOG("Failed to add marker to archive");
+            /* DEBUG_LOG("Failed to add marker to archive"); */
 #ifndef PLATFORM_HOST
             append_to_log("[BACKUP] WARNING: Failed to add marker to archive (non-fatal)\n");
 #endif
             /* Non-fatal - can still restore using catalog */
         } else {
-            DEBUG_LOG("Marker added successfully");
+            /* DEBUG_LOG("Marker added successfully"); */
 #ifndef PLATFORM_HOST
             append_to_log("[BACKUP] Marker added successfully\n");
 #endif
@@ -383,7 +385,7 @@ BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath, UWORD icon
     
     /* Append to catalog */
     if (!AppendCatalogEntry(ctx, &entry)) {
-        DEBUG_LOG("Failed to append catalog entry");
+        /* DEBUG_LOG("Failed to append catalog entry"); */
         /* Non-fatal - archive exists and can be recovered */
     }
     
@@ -392,7 +394,7 @@ BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath, UWORD icon
     ctx->foldersBackedUp++;
     ctx->totalBytesArchived += entry.sizeBytes;
     
-    DEBUG_LOG("Folder backed up successfully");
+    /* DEBUG_LOG("Folder backed up successfully"); */
     return BACKUP_OK;
 }
 
@@ -405,7 +407,7 @@ BOOL FolderHasInfoFiles(const char *folderPath) {
         return FALSE;
     }
     
-#ifdef PLATFORM_HOST
+#if PLATFORM_HOST
     /* Host implementation using opendir/readdir */
     DIR *dir;
     struct dirent *entry;
@@ -413,7 +415,7 @@ BOOL FolderHasInfoFiles(const char *folderPath) {
     
     dir = opendir(folderPath);
     if (!dir) {
-        DEBUG_LOG("Failed to open directory: %s", folderPath);
+        /* DEBUG_LOG("Failed to open directory: %s", folderPath); */
         return FALSE;
     }
     
@@ -445,10 +447,11 @@ BOOL FolderHasInfoFiles(const char *folderPath) {
      * - The filename (up to 107 chars on FFS)
      * - Pattern characters
      * Allocating 512 bytes provides safe margin */
-    anchor = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath) + 512, MEMF_CLEAR);
+    anchor = (struct AnchorPath *)whd_malloc(sizeof(struct AnchorPath) + 512);
     if (!anchor) {
         return FALSE;
     }
+    memset(anchor, 0, sizeof(struct AnchorPath) + 512);
     
     anchor->ap_BreakBits = 0;
     anchor->ap_Strlen = 512;
@@ -472,14 +475,14 @@ UWORD CountInfoFiles(const char *folderPath) {
         return 0;
     }
     
-#ifdef PLATFORM_HOST
+#if PLATFORM_HOST
     /* Host implementation using opendir/readdir */
     DIR *dir;
     struct dirent *entry;
     
     dir = opendir(folderPath);
     if (!dir) {
-        DEBUG_LOG("Failed to open directory: %s", folderPath);
+        /* DEBUG_LOG("Failed to open directory: %s", folderPath); */
         return 0;
     }
     
@@ -504,10 +507,11 @@ UWORD CountInfoFiles(const char *folderPath) {
     snprintf(pattern, sizeof(pattern), "%s#?.info", folderPath);
     
     /* Allocate anchor structure with larger buffer */
-    anchor = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath) + 512, MEMF_CLEAR);
+    anchor = (struct AnchorPath *)whd_malloc(sizeof(struct AnchorPath) + 512);
     if (!anchor) {
         return 0;
     }
+    memset(anchor, 0, sizeof(struct AnchorPath) + 512);
     
     anchor->ap_BreakBits = 0;
     anchor->ap_Strlen = 512;

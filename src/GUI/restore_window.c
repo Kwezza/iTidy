@@ -28,6 +28,7 @@
  * - Columns align because character widths are consistent
  */
 
+#include "platform/platform.h"
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <exec/lists.h>
@@ -494,15 +495,15 @@ ULONG scan_backup_runs(const char *backup_root,
     append_to_log("scan_backup_runs: Highest run number = %u\n", highest_run);
     
     /* Allocate entries array (max possible size) */
-    entries = (struct RestoreRunEntry *)AllocVec(
-        sizeof(struct RestoreRunEntry) * highest_run,
-        MEMF_CLEAR);
+    entries = (struct RestoreRunEntry *)whd_malloc(
+        sizeof(struct RestoreRunEntry) * highest_run);
     
     if (entries == NULL)
     {
         append_to_log("scan_backup_runs: Failed to allocate memory for entries\n");
         return 0;
     }
+    memset(entries, 0, sizeof(struct RestoreRunEntry) * highest_run);
     
     /* Scan each run from 1 to highest */
     for (i = 1; i <= highest_run; i++)
@@ -632,24 +633,24 @@ void populate_run_list(struct iTidyRestoreWindow *restore_data,
     }
     
     /* Create new list */
-    restore_data->run_list_strings = (struct List *)AllocVec(
-        sizeof(struct List),
-        MEMF_CLEAR);
+    restore_data->run_list_strings = (struct List *)whd_malloc(
+        sizeof(struct List));
     
     if (restore_data->run_list_strings == NULL)
         return;
     
+    memset(restore_data->run_list_strings, 0, sizeof(struct List));
     NewList(restore_data->run_list_strings);
     
     /* Add entries to list (in reverse order - newest first) */
     for (i = 0; i < count; i++)
     {
         ULONG idx = count - 1 - i;  /* Reverse order */
-        node = (struct Node *)AllocVec(sizeof(struct Node) + 
-                                       strlen(entries[idx].displayString) + 1,
-                                       MEMF_CLEAR);
+        node = (struct Node *)whd_malloc(sizeof(struct Node) + 
+                                       strlen(entries[idx].displayString) + 1);
         if (node != NULL)
         {
+            memset(node, 0, sizeof(struct Node) + strlen(entries[idx].displayString) + 1);
             node->ln_Name = (char *)(node + 1);
             strcpy(node->ln_Name, entries[idx].displayString);
             AddTail(restore_data->run_list_strings, node);
@@ -725,9 +726,10 @@ void update_details_panel(struct iTidyRestoreWindow *restore_data,
     else
     {
         /* Allocate list for first time */
-        restore_data->details_list_strings = (struct List *)AllocVec(sizeof(struct List), MEMF_CLEAR);
+        restore_data->details_list_strings = (struct List *)whd_malloc(sizeof(struct List));
         if (restore_data->details_list_strings == NULL)
             return;
+        memset(restore_data->details_list_strings, 0, sizeof(struct List));
         NewList(restore_data->details_list_strings);
     }
     
@@ -789,12 +791,14 @@ void update_details_panel(struct iTidyRestoreWindow *restore_data,
     /* Create list nodes */
     for (i = 0; i < 7; i++)
     {
-        node = (struct Node *)AllocVec(sizeof(struct Node), MEMF_CLEAR);
+        node = (struct Node *)whd_malloc(sizeof(struct Node));
         if (node != NULL)
         {
-            node->ln_Name = (STRPTR)AllocVec(strlen(line_buffer[i]) + 1, MEMF_CLEAR);
+            memset(node, 0, sizeof(struct Node));
+            node->ln_Name = (STRPTR)whd_malloc(strlen(line_buffer[i]) + 1);
             if (node->ln_Name != NULL)
             {
+                memset(node->ln_Name, 0, strlen(line_buffer[i]) + 1);
                 strcpy(node->ln_Name, line_buffer[i]);
                 AddTail(list, node);
             }

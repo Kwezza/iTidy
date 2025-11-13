@@ -50,38 +50,6 @@ void CleanupWindow(void)
 #endif
 }
 
-int FormatIconsAndWindow(char *folder)
-{
-#if PLATFORM_AMIGA
-    /* VBCC MIGRATION NOTE (Stage 4): Fixed BPTR type for lock */
-    BPTR lock;
-    int newWidth = 320;
-    int minAverageWidthPercent = -100;
-
-    lock = Lock(folder, ACCESS_READ);
-    #ifdef DEBUGLocks
-    append_to_log("Locking directory (FormatIconsAndWindow): %s\n", folder);
-    #endif
-    if (lock)
-    {
-        minAverageWidthPercent = ArrangeIcons(lock, folder, newWidth);
-    }
-    else
-    {
-        printf("Failed to lock the directory: %s\n", folder);
-        return 1;
-    }
-    #ifdef DEBUGLocks
-    append_to_log("Unlocking directory: %s\n", folder);
-    #endif
-    UnLock(lock);
-    return 0;
-#else
-    (void)folder;
-    return 0;
-#endif
-}
-
 /*------------------------------------------------------------------------*/
 /**
  * @brief Count path depth (number of '/' separators)

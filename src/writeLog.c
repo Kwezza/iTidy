@@ -14,6 +14,7 @@
  * - Memory tracking logs write immediately (high-frequency)
  */
 
+#include "platform/platform.h"
 #include "writeLog.h"
 #include "file_directory_handling.h"
 #include <devices/timer.h>
@@ -204,10 +205,11 @@ static void clean_logs_directory(void) {
     
     snprintf(pattern, sizeof(pattern), "%s#?", g_logsDirectory);
     
-    anchor = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath) + 512, MEMF_CLEAR);
+    anchor = (struct AnchorPath *)whd_malloc(sizeof(struct AnchorPath) + 512);
     if (!anchor) {
         return;
     }
+    memset(anchor, 0, sizeof(struct AnchorPath) + 512);
     
     anchor->ap_BreakBits = 0;
     anchor->ap_Strlen = 0;

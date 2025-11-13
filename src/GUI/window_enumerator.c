@@ -6,6 +6,7 @@
  * with their titles and filesystem paths.
  */
 
+#include "platform/platform.h"
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <exec/tasks.h>
@@ -485,13 +486,14 @@ BOOL BuildFolderWindowList(FolderWindowTracker *tracker)
     }
     
     /* Allocate initial array */
-    tracker->windows = AllocVec(capacity * sizeof(FolderWindowInfo), MEMF_CLEAR);
+    tracker->windows = (FolderWindowInfo *)whd_malloc(capacity * sizeof(FolderWindowInfo));
     if (!tracker->windows)
     {
         log_error(LOG_GUI, "BuildFolderWindowList: Failed to allocate memory\n");
         UnlockPubScreen(NULL, wbScreen);
         return FALSE;
     }
+    memset(tracker->windows, 0, capacity * sizeof(FolderWindowInfo));
     tracker->capacity = capacity;
     
     /* Lock IntuitionBase for window list traversal */
@@ -527,13 +529,14 @@ BOOL BuildFolderWindowList(FolderWindowTracker *tracker)
             if (tracker->count >= tracker->capacity)
             {
                 ULONG newCapacity = tracker->capacity * 2;
-                FolderWindowInfo *newArray = AllocVec(newCapacity * sizeof(FolderWindowInfo), MEMF_CLEAR);
+                FolderWindowInfo *newArray = (FolderWindowInfo *)whd_malloc(newCapacity * sizeof(FolderWindowInfo));
                 
                 if (!newArray)
                 {
                     log_error(LOG_GENERAL, "BuildFolderWindowList: Failed to expand array\n");
                     break;
                 }
+                memset(newArray, 0, newCapacity * sizeof(FolderWindowInfo));
                 
                 /* Copy old data */
                 CopyMem(tracker->windows, newArray, tracker->count * sizeof(FolderWindowInfo));

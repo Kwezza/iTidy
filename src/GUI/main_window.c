@@ -25,6 +25,7 @@
 #include "easy_request_helper.h"
 #include "layout_preferences.h"
 #include "layout_processor.h"
+#include "folder_scanner.h"
 #include "writeLog.h"
 #include "window_enumerator.h"
 #include "../icon_types.h"
@@ -655,7 +656,7 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     current_y += font_height + 16;
     
     /*====================================================================*/
-    /* ENUMERATE WINDOWS BUTTON (Debug Tool)                             */
+    /* VIEW TOOL CACHE BUTTON (Debug Tool)                               */
     /*====================================================================*/
     ng.ng_LeftEdge = 30;
     ng.ng_TopEdge = current_y;
@@ -669,6 +670,24 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     if (!gad)
     {
         printf("ERROR: Failed to create view tool cache button\n");
+        return FALSE;
+    }
+    
+    /*====================================================================*/
+    /* COUNT FOLDERS BUTTON (Debug Tool)                                 */
+    /*====================================================================*/
+    ng.ng_LeftEdge = 230;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = 180;
+    ng.ng_Height = font_height + 8;
+    ng.ng_GadgetText = "Count Folders";
+    ng.ng_GadgetID = GID_COUNT_FOLDERS;
+    ng.ng_Flags = PLACETEXT_IN;
+    
+    win_data->count_folders_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+    if (!gad)
+    {
+        printf("ERROR: Failed to create count folders button\n");
         return FALSE;
     }
     
@@ -922,29 +941,10 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                     {
                         LayoutPreferences *prefs;
                         BOOL success;
-                        char *current_path;
-                        ULONG recursive_checked = 0;
                         
                         printf("\n===============================================\n");
                         printf("Apply button clicked - Processing icons...\n");
                         printf("===============================================\n\n");
-                        
-                        /* Read current folder path from string gadget (in case user typed it) */
-                        GT_GetGadgetAttrs(win_data->folder_path, win_data->window, NULL,
-                            GTST_String, &current_path,
-                            TAG_END);
-                        
-                        if (current_path != NULL)
-                        {
-                            strncpy(win_data->folder_path_buffer, current_path, sizeof(win_data->folder_path_buffer) - 1);
-                            win_data->folder_path_buffer[sizeof(win_data->folder_path_buffer) - 1] = '\0';
-                        }
-                        
-                        /* Read current recursive checkbox state */
-                        GT_GetGadgetAttrs(win_data->recursive_check, win_data->window, NULL,
-                            GTCB_Checked, &recursive_checked,
-                            TAG_END);
-                        win_data->recursive_subdirs = (BOOL)recursive_checked;
                         
                         /* Get mutable access to global preferences */
                         prefs = (LayoutPreferences *)GetGlobalPreferences();
@@ -1288,45 +1288,12 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                     case GID_VIEW_TOOL_CACHE:
                         {
                             struct iTidyToolCacheWindow tool_window;
-                            LayoutPreferences *prefs;
-                            char *current_path;
-                            ULONG recursive_checked = 0;
                             
                             log_info(LOG_GUI, "View Tool Cache button clicked\n");
                             log_info(LOG_GUI, "Opening tool cache window (cache has %d entries)\n", g_ToolCacheCount);
                             
-                            /* Read current folder path from string gadget (in case user typed it) */
-                            GT_GetGadgetAttrs(win_data->folder_path, win_data->window, NULL,
-                                GTST_String, &current_path,
-                                TAG_END);
-                            
-                            log_info(LOG_GUI, "String gadget value: '%s'\n", current_path ? current_path : "(null)");
-                            log_info(LOG_GUI, "Buffer before update: '%s'\n", win_data->folder_path_buffer);
-                            
-                            if (current_path != NULL)
-                            {
-                                strncpy(win_data->folder_path_buffer, current_path, sizeof(win_data->folder_path_buffer) - 1);
-                                win_data->folder_path_buffer[sizeof(win_data->folder_path_buffer) - 1] = '\0';
-                            }
-                            
-                            log_info(LOG_GUI, "Buffer after update: '%s'\n", win_data->folder_path_buffer);
-                            
-                            /* Read current recursive checkbox state */
-                            GT_GetGadgetAttrs(win_data->recursive_check, win_data->window, NULL,
-                                GTCB_Checked, &recursive_checked,
-                                TAG_END);
-                            win_data->recursive_subdirs = (BOOL)recursive_checked;
-                            
-                            log_info(LOG_GUI, "Recursive checkbox state: %s\n", win_data->recursive_subdirs ? "YES" : "NO");
-                            
-                            /* Update global preferences with current GUI values for Rebuild Cache button */
-                            prefs = (LayoutPreferences *)GetGlobalPreferences();
-                            strncpy(prefs->folder_path, win_data->folder_path_buffer, sizeof(prefs->folder_path) - 1);
-                            prefs->folder_path[sizeof(prefs->folder_path) - 1] = '\0';
-                            prefs->recursive_subdirs = win_data->recursive_subdirs;
-                            
-                            log_info(LOG_GUI, "Updated global prefs: path='%s', recursive=%s\n",
-                                     prefs->folder_path, prefs->recursive_subdirs ? "YES" : "NO");
+                            /* Global preferences already contain scan path and recursive mode */
+                            /* No need to initialize - tool cache window will use global prefs */
                             
                             /* Open tool cache window */
                             if (open_tool_cache_window(&tool_window))
@@ -1349,6 +1316,101 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                     "Error",
                                     "Failed to open tool cache window.\n"
                                     "Check the log for details.",
+                                    "OK");
+                            }
+                        }
+                        break;
+
+                    case GID_COUNT_FOLDERS:
+                        {
+                            ULONG folderCount = 0;
+                            LayoutPreferences scanPrefs;
+                            char message[256];
+                            STRPTR currentPath = NULL;
+                            
+                            log_info(LOG_GUI, "Count Folders button clicked\n");
+                            
+                            /* Get current folder path pointer from string gadget */
+                            GT_GetGadgetAttrs(win_data->folder_path, win_data->window, NULL,
+                                            GTST_String, (ULONG)&currentPath,
+                                            TAG_END);
+                            
+                            /* Check if path is valid */
+                            if (!currentPath || currentPath[0] == '\0')
+                            {
+                                log_warning(LOG_GUI, "No folder path entered\n");
+                                (void)ShowEasyRequest(
+                                    win_data->window,
+                                    "No Path",
+                                    "Please enter a folder path first.",
+                                    "OK");
+                                break;
+                            }
+                            
+                            /* Create preferences structure with current settings */
+                            memset(&scanPrefs, 0, sizeof(LayoutPreferences));
+                            
+                            /* Set path and recursive mode from GUI */
+                            strncpy(scanPrefs.folder_path, currentPath, 
+                                   sizeof(scanPrefs.folder_path) - 1);
+                            scanPrefs.folder_path[sizeof(scanPrefs.folder_path) - 1] = '\0';
+                            scanPrefs.recursive_subdirs = win_data->recursive_subdirs;
+                            scanPrefs.skipHiddenFolders = win_data->skip_hidden_folders;
+                            
+                            log_info(LOG_GUI, "Scanning path: %s (recursive=%s, skipHidden=%s)\n", 
+                                    scanPrefs.folder_path,
+                                    scanPrefs.recursive_subdirs ? "YES" : "NO",
+                                    scanPrefs.skipHiddenFolders ? "YES" : "NO");
+                            
+                            /* Set busy pointer */
+                            SetWindowPointer(win_data->window, WA_BusyPointer, TRUE, TAG_END);
+                            
+                            /* Perform the scan */
+                            if (CountFoldersWithIcons(scanPrefs.folder_path, &scanPrefs, &folderCount))
+                            {
+                                /* Clear busy pointer */
+                                SetWindowPointer(win_data->window, WA_Pointer, NULL, TAG_END);
+                                
+                                /* Format result message */
+                                if (scanPrefs.recursive_subdirs)
+                                {
+                                    snprintf(message, sizeof(message),
+                                            "Found %lu folder%s with icons\n"
+                                            "(recursive scan of %s)",
+                                            folderCount, 
+                                            folderCount == 1 ? "" : "s",
+                                            scanPrefs.folder_path);
+                                }
+                                else
+                                {
+                                    snprintf(message, sizeof(message),
+                                            "Found %lu folder%s with icons\n"
+                                            "(in %s only)",
+                                            folderCount, 
+                                            folderCount == 1 ? "" : "s",
+                                            scanPrefs.folder_path);
+                                }
+                                
+                                log_info(LOG_GUI, "Scan complete: %lu folders\n", folderCount);
+                                
+                                /* Show result */
+                                (void)ShowEasyRequest(
+                                    win_data->window,
+                                    "Folder Count",
+                                    message,
+                                    "OK");
+                            }
+                            else
+                            {
+                                /* Clear busy pointer */
+                                SetWindowPointer(win_data->window, WA_Pointer, NULL, TAG_END);
+                                
+                                log_error(LOG_GUI, "Folder scan failed\n");
+                                (void)ShowEasyRequest(
+                                    win_data->window,
+                                    "Scan Failed",
+                                    "Failed to scan folders.\n"
+                                    "Check that the path is valid.",
                                     "OK");
                             }
                         }
