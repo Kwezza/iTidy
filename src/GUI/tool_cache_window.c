@@ -6,6 +6,7 @@
 
 #include "platform/platform.h"
 #include "tool_cache_window.h"
+#include "default_tool_update_window.h"
 #include "../icon_types.h"
 #include "../itidy_types.h"
 #include "../Settings/IControlPrefs.h"
@@ -305,6 +306,9 @@ void update_tool_details(struct iTidyToolCacheWindow *tool_data, LONG selected_i
     
     /* Store selected index */
     tool_data->selected_index = selected_index;
+    
+    /* Clear details selection when tool changes */
+    tool_data->selected_details_index = -1;
     
     /* If nothing selected, show empty details */
     if (selected_index < 0)
@@ -631,6 +635,7 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     NewList(&tool_data->details_list);
     tool_data->current_filter = TOOL_FILTER_ALL;
     tool_data->selected_index = -1;
+    tool_data->selected_details_index = -1;
     
     /* Lock Workbench screen */
     tool_data->screen = LockPubScreen(NULL);
@@ -789,6 +794,26 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     current_y = gad->TopEdge + actual_listview_height + TOOL_WINDOW_SPACE_Y;
     
     /*--------------------------------------------------------------------*/
+    /* REPLACE TOOL (BATCH) BUTTON - Under upper listview                */
+    /*--------------------------------------------------------------------*/
+    ng.ng_LeftEdge = current_x;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = equal_button_width * 2;  /* Make it wider */
+    ng.ng_Height = button_height;
+    ng.ng_GadgetText = "Replace Tool (Batch)";
+    ng.ng_GadgetID = GID_TOOL_REPLACE_BATCH;
+    ng.ng_Flags = PLACETEXT_IN;
+    
+    tool_data->replace_batch_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+    if (gad == NULL)
+    {
+        append_to_log("ERROR: Could not create Replace Tool (Batch) button\n");
+        goto cleanup_error;
+    }
+    
+    current_y = gad->TopEdge + gad->Height + TOOL_WINDOW_SPACE_Y;
+    
+    /*--------------------------------------------------------------------*/
     /* DETAILS PANEL LISTVIEW                                            */
     /*--------------------------------------------------------------------*/
     ng.ng_LeftEdge = current_x;
@@ -796,17 +821,37 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     ng.ng_Width = listview_width;
     ng.ng_Height = details_listview_height;
     ng.ng_GadgetText = "";
-    ng.ng_GadgetID = GID_TOOL_LIST + 100;  /* Non-interactive, just for display */
+    ng.ng_GadgetID = GID_TOOL_DETAILS_LIST;
     ng.ng_Flags = PLACETEXT_ABOVE;
     
     tool_data->details_listview = gad = CreateGadget(LISTVIEW_KIND, gad, &ng,
         GTLV_Labels, &tool_data->details_list,
-        GTLV_ReadOnly, TRUE,
+        GTLV_ShowSelected, NULL,
         TAG_END);
     
     if (gad == NULL)
     {
         append_to_log("ERROR: Could not create details listview\n");
+        goto cleanup_error;
+    }
+    
+    current_y = gad->TopEdge + gad->Height + TOOL_WINDOW_SPACE_Y;
+    
+    /*--------------------------------------------------------------------*/
+    /* REPLACE TOOL (SINGLE) BUTTON - Under details panel                */
+    /*--------------------------------------------------------------------*/
+    ng.ng_LeftEdge = current_x;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = equal_button_width * 2;  /* Make it wider */
+    ng.ng_Height = button_height;
+    ng.ng_GadgetText = "Replace Tool (Single)";
+    ng.ng_GadgetID = GID_TOOL_REPLACE_SINGLE;
+    ng.ng_Flags = PLACETEXT_IN;
+    
+    tool_data->replace_single_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+    if (gad == NULL)
+    {
+        append_to_log("ERROR: Could not create Replace Tool (Single) button\n");
         goto cleanup_error;
     }
     
@@ -875,7 +920,7 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     ng.ng_LeftEdge = current_x + (4 * equal_button_width) + (4 * TOOL_WINDOW_SPACE_X);
     ng.ng_Width = equal_button_width;
     ng.ng_GadgetText = "Close";
-    ng.ng_GadgetID = GID_TOOL_CLOSE_BTN;
+    ng.ng_GadgetID = GID_TOOL_CACHE_CLOSE;
     
     tool_data->close_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
     if (gad == NULL)
@@ -1060,6 +1105,18 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                         break;
                     }
                     
+                    case GID_TOOL_DETAILS_LIST:
+                    {
+                        /* Details list item selected */
+                        LONG selected = ~0;
+                        GT_GetGadgetAttrs(tool_data->details_listview, tool_data->window, NULL,
+                            GTLV_Selected, &selected,
+                            TAG_END);
+                        tool_data->selected_details_index = selected;
+                        log_info(LOG_GUI, "[TOOL_CACHE] Details item selected: index=%ld\n", selected);
+                        break;
+                    }
+                    
                     case GID_TOOL_FILTER_ALL:
                         tool_data->current_filter = TOOL_FILTER_ALL;
                         apply_tool_filter(tool_data);
@@ -1113,7 +1170,288 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                         }
                         break;
                         
-                    case GID_TOOL_CLOSE_BTN:
+                    case GID_TOOL_REPLACE_BATCH:
+                    {
+                        struct ToolCacheDisplayEntry *entry;
+                        struct Node *node;
+                        LONG index = 0;
+                        int i, j;
+                        struct iTidy_DefaultToolUpdateWindow *update_window;
+                        struct iTidy_DefaultToolUpdateContext update_ctx;
+                        char **icon_paths_array = NULL;
+                        
+                        log_info(LOG_GUI, "[TOOL_CACHE] Replace Tool (Batch) button clicked\n");
+                        
+                        /* Check if a tool is selected */
+                        if (tool_data->selected_index < 0)
+                        {
+                            log_info(LOG_GUI, "[TOOL_CACHE] No tool selected\n");
+                            ShowEasyRequest(tool_data->window, 
+                                "No Tool Selected",
+                                "Please select a tool from the list first.",
+                                "OK", NULL);
+                            break;
+                        }
+                        
+                        /* Allocate window structure on HEAP to avoid stack overflow */
+                        update_window = (struct iTidy_DefaultToolUpdateWindow *)whd_malloc(sizeof(struct iTidy_DefaultToolUpdateWindow));
+                        if (update_window == NULL)
+                        {
+                            log_error(LOG_GUI, "[TOOL_CACHE] Failed to allocate update window structure\n");
+                            ShowEasyRequest(tool_data->window,
+                                "Memory Error",
+                                "Could not allocate memory for update window.",
+                                "OK", NULL);
+                            break;
+                        }
+                        
+                        /* Find selected entry in filtered list */
+                        for (node = tool_data->filtered_entries.lh_Head; 
+                             node->ln_Succ != NULL; 
+                             node = node->ln_Succ, index++)
+                        {
+                            if (index == tool_data->selected_index)
+                            {
+                                /* Calculate entry pointer from filter_node offset */
+                                entry = (struct ToolCacheDisplayEntry *)((char *)node - sizeof(struct Node));
+                                
+                                /* Validate this is not a header row */
+                                if (entry->tool_name == NULL)
+                                {
+                                    log_info(LOG_GUI, "[TOOL_CACHE] Header row selected, ignoring\n");
+                                    ShowEasyRequest(tool_data->window,
+                                        "Invalid Selection",
+                                        "Please select a tool entry, not the header.",
+                                        "OK", NULL);
+                                    FreeVec(update_window);
+                                    break;
+                                }
+                                
+                                /* Find the corresponding cache entry */
+                                for (i = 0; i < g_ToolCacheCount; i++)
+                                {
+                                    if (g_ToolCache[i].toolName && 
+                                        strcmp(g_ToolCache[i].toolName, entry->tool_name) == 0)
+                                    {
+                                        /* Allocate icon paths array */
+                                        icon_paths_array = (char **)whd_malloc(g_ToolCache[i].fileCount * sizeof(char *));
+                                        if (icon_paths_array == NULL)
+                                        {
+                                            log_error(LOG_GUI, "[TOOL_CACHE] Failed to allocate icon paths array\n");
+                                            FreeVec(update_window);
+                                            break;
+                                        }
+                                        
+                                        /* Copy icon path pointers (they're already allocated in g_ToolCache) */
+                                        for (j = 0; j < g_ToolCache[i].fileCount; j++)
+                                        {
+                                            icon_paths_array[j] = g_ToolCache[i].referencingFiles[j];
+                                        }
+                                        
+                                        /* Populate context for batch mode */
+                                        memset(&update_ctx, 0, sizeof(update_ctx));
+                                        update_ctx.mode = UPDATE_MODE_BATCH;
+                                        update_ctx.current_tool = g_ToolCache[i].toolName;
+                                        update_ctx.icon_count = g_ToolCache[i].fileCount;
+                                        update_ctx.icon_paths = icon_paths_array;
+                                        
+                                        log_info(LOG_GUI, "[TOOL_CACHE] Opening batch update window for %d icons\n",
+                                                     update_ctx.icon_count);
+                                        
+                                        /* Initialize window data structure */
+                                        memset(update_window, 0, sizeof(struct iTidy_DefaultToolUpdateWindow));
+                                        
+                                        /* Open the update window */
+                                        if (iTidy_OpenDefaultToolUpdateWindow(update_window, &update_ctx))
+                                        {
+                                            /* Run the event loop */
+                                            while (iTidy_HandleDefaultToolUpdateEvents(update_window))
+                                            {
+                                                /* Keep processing events */
+                                            }
+                                            
+                                            /* Close the window */
+                                            iTidy_CloseDefaultToolUpdateWindow(update_window);
+                                            
+                                            log_info(LOG_GUI, "[TOOL_CACHE] Batch update completed\n");
+                                        }
+                                        else
+                                        {
+                                            log_error(LOG_GUI, "[TOOL_CACHE] Failed to open batch update window\n");
+                                        }
+                                        
+                                        /* Free the window structure */
+                                        FreeVec(update_window);
+                                        
+                                        /* Free the icon paths array (but not the strings themselves) */
+                                        if (icon_paths_array != NULL)
+                                            FreeVec(icon_paths_array);
+                                        
+                                        break;
+                                    }
+                                }
+                                
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                    
+                    case GID_TOOL_REPLACE_SINGLE:
+                    {
+                        struct ToolCacheDisplayEntry *entry;
+                        struct Node *node;
+                        LONG index = 0;
+                        int i, file_index;
+                        struct iTidy_DefaultToolUpdateWindow *update_window;
+                        struct iTidy_DefaultToolUpdateContext update_ctx;
+                        
+                        log_info(LOG_GUI, "[TOOL_CACHE] Replace Tool (Single) button clicked\n");
+                        
+                        /* Check if a tool is selected */
+                        if (tool_data->selected_index < 0)
+                        {
+                            log_info(LOG_GUI, "[TOOL_CACHE] No tool selected\n");
+                            ShowEasyRequest(tool_data->window,
+                                "No Tool Selected",
+                                "Please select a tool from the upper list first.",
+                                "OK", NULL);
+                            break;
+                        }
+                        
+                        /* Check if a specific file is selected in details */
+                        if (tool_data->selected_details_index < 0)
+                        {
+                            log_info(LOG_GUI, "[TOOL_CACHE] No file selected in details\n");
+                            ShowEasyRequest(tool_data->window,
+                                "No File Selected",
+                                "Please select a specific icon file from the lower list.",
+                                "OK", NULL);
+                            break;
+                        }
+                        
+                        /* Allocate window structure on HEAP to avoid stack overflow */
+                        update_window = (struct iTidy_DefaultToolUpdateWindow *)whd_malloc(sizeof(struct iTidy_DefaultToolUpdateWindow));
+                        if (update_window == NULL)
+                        {
+                            log_error(LOG_GUI, "[TOOL_CACHE] Failed to allocate update window structure\n");
+                            ShowEasyRequest(tool_data->window,
+                                "Memory Error",
+                                "Could not allocate memory for update window.",
+                                "OK", NULL);
+                            break;
+                        }
+                        if (tool_data->selected_details_index < 0)
+                        {
+                            log_info(LOG_GUI, "[TOOL_CACHE] No file selected in details\n");
+                            ShowEasyRequest(tool_data->window,
+                                "No File Selected",
+                                "Please select a specific icon file from the lower list.",
+                                "OK", NULL);
+                            break;
+                        }
+                        
+                        /* Find selected entry in filtered list */
+                        for (node = tool_data->filtered_entries.lh_Head; 
+                             node->ln_Succ != NULL; 
+                             node = node->ln_Succ, index++)
+                        {
+                            if (index == tool_data->selected_index)
+                            {
+                                /* Calculate entry pointer from filter_node offset */
+                                entry = (struct ToolCacheDisplayEntry *)((char *)node - sizeof(struct Node));
+                                
+                                /* Validate this is not a header row */
+                                if (entry->tool_name == NULL)
+                                {
+                                    log_info(LOG_GUI, "[TOOL_CACHE] Header row selected, ignoring\n");
+                                    ShowEasyRequest(tool_data->window,
+                                        "Invalid Selection",
+                                        "Please select a tool entry, not the header.",
+                                        "OK", NULL);
+                                    FreeVec(update_window);
+                                    break;
+                                }
+                                
+                                /* Find the corresponding cache entry */
+                                for (i = 0; i < g_ToolCacheCount; i++)
+                                {
+                                    if (g_ToolCache[i].toolName && 
+                                        strcmp(g_ToolCache[i].toolName, entry->tool_name) == 0)
+                                    {
+                                        /* Check if there is at least one file */
+                                        if (g_ToolCache[i].fileCount < 1)
+                                        {
+                                            log_info(LOG_GUI, "[TOOL_CACHE] No files using this tool\n");
+                                            ShowEasyRequest(tool_data->window,
+                                                "No Files Found",
+                                                "This tool has no associated icon files.",
+                                                "OK", NULL);
+                                            FreeVec(update_window);
+                                            break;
+                                        }
+                                        
+                                        /* Calculate file index from selected details index */
+                                        /* Details list has: Tool name (line 0), Status/Version (line 1), Separator (line 2), Files (3+) */
+                                        file_index = tool_data->selected_details_index - 3;
+                                        
+                                        /* Validate file index */
+                                        if (file_index < 0 || file_index >= g_ToolCache[i].fileCount)
+                                        {
+                                            log_info(LOG_GUI, "[TOOL_CACHE] Invalid file selection (selected header/separator)\n");
+                                            ShowEasyRequest(tool_data->window,
+                                                "Invalid Selection",
+                                                "Please select a file entry (not the header or separator).",
+                                                "OK", NULL);
+                                            FreeVec(update_window);
+                                            break;
+                                        }
+                                        
+                                        /* Populate context for single mode using selected file */
+                                        memset(&update_ctx, 0, sizeof(update_ctx));
+                                        update_ctx.mode = UPDATE_MODE_SINGLE;
+                                        update_ctx.current_tool = g_ToolCache[i].toolName;
+                                        update_ctx.single_info_path = g_ToolCache[i].referencingFiles[file_index];
+                                        
+                                        log_info(LOG_GUI, "[TOOL_CACHE] Opening single update window for file [%d]: %s\n",
+                                                     file_index, update_ctx.single_info_path);
+                                        
+                                        /* Initialize window data structure */
+                                        memset(update_window, 0, sizeof(struct iTidy_DefaultToolUpdateWindow));
+                                        
+                                        /* Open the update window */
+                                        if (iTidy_OpenDefaultToolUpdateWindow(update_window, &update_ctx))
+                                        {
+                                            /* Run the event loop */
+                                            while (iTidy_HandleDefaultToolUpdateEvents(update_window))
+                                            {
+                                                /* Keep processing events */
+                                            }
+                                            
+                                            /* Close the window */
+                                            iTidy_CloseDefaultToolUpdateWindow(update_window);
+                                            
+                                            log_info(LOG_GUI, "[TOOL_CACHE] Single update completed\n");
+                                        }
+                                        else
+                                        {
+                                            log_error(LOG_GUI, "[TOOL_CACHE] Failed to open single update window\n");
+                                        }
+                                        
+                                        /* Free the window structure */
+                                        FreeVec(update_window);
+                                        
+                                        break;
+                                    }
+                                }
+                                
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                        
+                    case GID_TOOL_CACHE_CLOSE:
                         return FALSE;  /* Close window */
                 }
                 break;

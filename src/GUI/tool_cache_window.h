@@ -21,7 +21,10 @@
 #define GID_TOOL_FILTER_VALID   4003
 #define GID_TOOL_FILTER_MISSING 4004
 #define GID_TOOL_REBUILD_CACHE  4005
-#define GID_TOOL_CLOSE_BTN      4006
+#define GID_TOOL_CACHE_CLOSE    4006
+#define GID_TOOL_REPLACE_BATCH  4007
+#define GID_TOOL_REPLACE_SINGLE 4008
+#define GID_TOOL_DETAILS_LIST   4009
 
 /*------------------------------------------------------------------------*/
 /* Window Spacing Constants                                              */
@@ -84,6 +87,8 @@ struct iTidyToolCacheWindow
     struct Gadget *filter_missing_btn;  /* Show Missing Only button */
     struct Gadget *rebuild_cache_btn;   /* Rebuild Cache button */
     struct Gadget *close_btn;           /* Close button */
+    struct Gadget *replace_batch_btn;   /* Replace Tool (Batch) button */
+    struct Gadget *replace_single_btn;  /* Replace Tool (Single) button */
     
     /* Data */
     struct List tool_entries;           /* List of ToolCacheDisplayEntry nodes */
@@ -97,6 +102,7 @@ struct iTidyToolCacheWindow
     
     /* Details panel data (for selected tool) */
     LONG selected_index;                /* Currently selected index (-1 = none) */
+    LONG selected_details_index;        /* Selected index in details panel (-1 = none) */
     struct List details_list;           /* List for details panel */
 };
 

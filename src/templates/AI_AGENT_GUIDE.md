@@ -134,34 +134,70 @@ ng.ng_Flags = PLACETEXT_IN;
 data->your_button = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
 ```
 
-### String Input
+### String Input with Separate Label (RECOMMENDED)
+
+**IMPORTANT:** For proper label alignment, use a separate TEXT gadget instead of PLACETEXT_LEFT:
+
 ```c
-ng.ng_LeftEdge = current_x;
-ng.ng_TopEdge = current_y;
+/* Step 1: Create separate TEXT label for proper left-margin alignment */
+STRPTR label_text = "Label:";
+UWORD label_width = TextLength(&temp_rp, label_text, strlen(label_text));
+
+ng.ng_LeftEdge = current_x;  /* Aligns with left margin */
+ng.ng_TopEdge = current_y + (string_height - font_height) / 2;  /* Vertically centered with string */
+ng.ng_Width = label_width;
+ng.ng_Height = font_height;
+ng.ng_GadgetText = NULL;
+ng.ng_GadgetID = 0;  /* Non-interactive */
+ng.ng_Flags = 0;
+
+data->label = gad = CreateGadget(TEXT_KIND, gad, &ng,
+    GTTX_Text, label_text,
+    GTTX_Border, FALSE,
+    TAG_END);
+
+/* Step 2: Create string gadget WITHOUT label */
+ng.ng_LeftEdge = current_x + label_width + 4;  /* After label + small gap */
+ng.ng_TopEdge = current_y;  /* Row baseline */
 ng.ng_Width = font_dims->button_width;
-ng.ng_Height = font_dims->string_height;
-ng.ng_GadgetText = "Label:";
+ng.ng_Height = string_height;
+ng.ng_GadgetText = NULL;  /* No label - we created our own! */
 ng.ng_GadgetID = YOUR_STRING_ID;
-ng.ng_Flags = PLACETEXT_LEFT;
+ng.ng_Flags = 0;  /* No PLACETEXT flag */
+
 data->your_string = gad = CreateGadget(STRING_KIND, gad, &ng,
-                                      GTST_MaxChars, 64,
-                                      GTST_String, "",
-                                      TAG_END);
+    GTST_MaxChars, 64,
+    GTST_String, "",
+    TAG_END);
+
+/* Step 3: Refresh the TEXT label after window opens */
+RefreshGList(data->label, data->window, NULL, 1);
 ```
+
+**Why separate labels are better:**
+- ✅ Labels align perfectly at left margin with other gadgets
+- ✅ Vertical centering formula works consistently: `label_top = baseline + (string_height - font_height) / 2`
+- ✅ No complex PLACETEXT_LEFT positioning calculations needed
+- ✅ See `docs/GADTOOLS_LAYOUT_ALIGNMENT_STRATEGY.md` for complete details
 
 ### Checkbox
 ```c
 ng.ng_LeftEdge = current_x;
 ng.ng_TopEdge = current_y;
 ng.ng_Width = font_dims->button_height;
-ng.ng_Height = font_dims->button_height;
+ng.ng_Height = font_height + 4;  /* CRITICAL: Add +4 for label text padding with PLACETEXT_RIGHT */
 ng.ng_GadgetText = "Option Name";
 ng.ng_GadgetID = YOUR_CHECKBOX_ID;
 ng.ng_Flags = PLACETEXT_RIGHT;
 data->your_checkbox = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
                                         GTCB_Checked, FALSE,
                                         TAG_END);
+
+/* CRITICAL: Use gad->Height for spacing, not ng.ng_Height */
+current_y += gad->Height + spacing;
 ```
+
+**IMPORTANT:** Checkboxes with `PLACETEXT_RIGHT` need extra height (`font_height + 4`) to accommodate the label text properly. Using just `font_height` creates cramped spacing.
 
 ### ListView
 ```c
@@ -717,6 +753,396 @@ This bug in iTidy's "Count Folders" button caused:
 - ✅ No volume requesters or garbage data
 - ✅ Feature works as expected
 
+---
+
+## ⚠️ TEXT_KIND Gadgets Require Explicit Refresh
+
+### The Problem: Blank TEXT Gadgets After Window Opens
+
+When creating `TEXT_KIND` gadgets to display static text (using `GTTX_Text` tag), the text content **will not appear** unless you explicitly refresh the gadgets after the window is opened. This is a GadTools quirk that's easy to miss.
+
+#### Symptoms
+- ✗ TEXT_KIND gadget appears as empty/blank (no text visible)
+- ✗ Gadget is created successfully (no errors)
+- ✗ Text string is correctly passed to `GTTX_Text` tag
+- ✗ Other gadgets (buttons, string gadgets) display normally
+- ✗ Bordered TEXT gadgets show the border but no text inside
+- ✗ **Borderless TEXT gadgets (used as labels) show nothing at all**
+
+#### Why This Happens
+GadTools TEXT_KIND gadgets require a **post-window-open refresh** to render their text content. Unlike other gadget types that self-render when the window opens, TEXT gadgets need explicit `RefreshGList()` calls. **This applies to both bordered and borderless TEXT gadgets.**
+
+#### The Solution: Refresh After Window Opens
+
+```c
+/* ❌ WRONG - Text won't display! */
+data->window = OpenWindowTags(NULL,
+    WA_Gadgets, data->glist,
+    /* ... other tags ... */
+    TAG_END);
+
+/* At this point, TEXT gadgets are blank! */
+data->window_open = TRUE;
+```
+
+```c
+/* ✅ CORRECT - Refresh TEXT gadgets after opening */
+data->window = OpenWindowTags(NULL,
+    WA_Gadgets, data->glist,
+    /* ... other tags ... */
+    TAG_END);
+
+if (data->window == NULL)
+    return FALSE;
+
+/* Refresh the entire window first */
+GT_RefreshWindow(data->window, NULL);
+
+/* Then refresh each TEXT gadget */
+RefreshGList(data->current_tool_text, data->window, NULL, 1);
+RefreshGList(data->mode_text, data->window, NULL, 1);
+
+data->window_open = TRUE;
+```
+
+#### Complete Example: TEXT Gadget with Label
+
+```c
+/* Create TEXT gadget with label above it */
+ng.ng_LeftEdge = current_x;
+ng.ng_TopEdge = current_y;
+ng.ng_Width = reference_width;
+ng.ng_Height = font_height + 4;
+ng.ng_GadgetText = "Current tool:";  /* Label text */
+ng.ng_GadgetID = 0;  /* Non-interactive */
+ng.ng_Flags = PLACETEXT_ABOVE;
+
+data->current_tool_text = gad = CreateGadget(TEXT_KIND, gad, &ng,
+    GTTX_Text, tool_name_string,  /* The text to display */
+    GTTX_Border, TRUE,  /* Optional: show border around text */
+    TAG_END);
+
+/* ... create other gadgets ... */
+
+/* Open window */
+data->window = OpenWindowTags(NULL,
+    WA_Gadgets, data->glist,
+    /* ... */
+    TAG_END);
+
+/* CRITICAL: Refresh TEXT gadgets */
+GT_RefreshWindow(data->window, NULL);
+RefreshGList(data->current_tool_text, data->window, NULL, 1);
+```
+
+#### When to Refresh TEXT Gadgets
+1. **After window opens** (mandatory)
+2. **After updating text content** with `GT_SetGadgetAttrs()`
+3. **After window refresh events** (IDCMP_REFRESHWINDOW)
+
+#### Dynamic Text Updates
+
+If you update TEXT gadget content dynamically:
+
+```c
+/* Update the text */
+GT_SetGadgetAttrs(data->current_tool_text, data->window, NULL,
+    GTTX_Text, new_tool_name,
+    TAG_END);
+
+/* Must refresh to see the change */
+RefreshGList(data->current_tool_text, data->window, NULL, 1);
+```
+
+#### Real-World Impact: iTidy Default Tool Window
+This bug in iTidy's "Replace Default Tool" window caused:
+- Current tool name appearing as blank bordered box
+- Mode text (e.g., "Batch Mode: 1 icon(s)") not displaying
+- Window looked incomplete/broken despite correct implementation
+- Debug logs showed text being set correctly, but nothing displayed
+
+**After fix:**
+- ✅ Added `GT_RefreshWindow()` and `RefreshGList()` calls after window opened
+- ✅ TEXT gadgets display correctly
+- ✅ Current tool name shows full path
+- ✅ Mode text displays icon count
+
+#### Best Practice Checklist
+When using TEXT_KIND gadgets:
+- [ ] Create gadget with `GTTX_Text` tag
+- [ ] Open window with `WA_Gadgets`
+- [ ] Call `GT_RefreshWindow(window, NULL)` after opening
+- [ ] Call `RefreshGList(text_gadget, window, NULL, 1)` for each TEXT gadget
+- [ ] Refresh again after any `GT_SetGadgetAttrs()` updates to text content
+
+---
+
+## ⚠️ Amiga Stack Overflow: Allocate Large Structures on the Heap
+
+### The Problem: Memory Corruption from Stack Overflow
+
+The Amiga has a **very limited stack size** (typically only 4KB by default). Allocating large structures on the stack, especially inside nested function calls or event handlers, can cause **stack overflow** that manifests as seemingly random memory corruption elsewhere in your program.
+
+#### Symptoms of Stack Overflow
+- ✗ Memory corruption in **unrelated** data structures
+- ✗ Parent window title bar showing garbage characters (e.g., "updated@@@@@@@@@@@@@@")
+- ✗ Random crashes or Enforcer hits
+- ✗ Corruption appears when opening child windows or modal dialogs
+- ✗ Works fine in emulators with large stacks, fails on real hardware
+- ✗ Corruption is consistent and reproducible but seems disconnected from the actual bug location
+
+#### Why This Happens
+When you declare a large structure as a local variable, it's allocated on the **stack**. If the stack grows too large, it overwrites adjacent memory areas, which might contain:
+- Parent window data structures
+- Global variables
+- Other function's stack frames
+- System structures
+
+**Critical stack consumers:**
+- Large char arrays (e.g., `char buffer[256]`)
+- Window data structures (often 500-1000+ bytes)
+- Multiple nested function calls
+- Event handler callbacks (already deep in the stack)
+
+#### Real-World Example: iTidy Default Tool Update Window
+
+**Before (WRONG - causes memory corruption):**
+
+```c
+/* In tool_cache_window.c button handler */
+case GID_TOOL_REPLACE_SINGLE:
+{
+    struct iTidy_DefaultToolUpdateWindow update_window;  /* ~1KB on stack! */
+    struct iTidy_DefaultToolUpdateContext update_ctx;
+    
+    /* ... validation code ... */
+    
+    memset(&update_window, 0, sizeof(update_window));
+    
+    if (iTidy_OpenDefaultToolUpdateWindow(&update_window, &update_ctx))
+    {
+        while (iTidy_HandleDefaultToolUpdateEvents(&update_window))
+        {
+            /* Event loop */
+        }
+        iTidy_CloseDefaultToolUpdateWindow(&update_window);
+    }
+    
+    break;
+}
+```
+
+**Problem:** The `iTidy_DefaultToolUpdateWindow` structure contains:
+- 4 char arrays × 256 bytes = 1,024 bytes
+- ~15 pointers and other fields = ~100 bytes
+- **Total: ~1.1KB on the stack!**
+
+This caused the tool_cache_window's title to show "updated@@@@@@@@@@@@@@" because the stack overflow wrote the word "updated" (from mode_label string) into the parent window's title buffer.
+
+**After (CORRECT - allocate on heap):**
+
+```c
+/* In tool_cache_window.c button handler */
+case GID_TOOL_REPLACE_SINGLE:
+{
+    struct iTidy_DefaultToolUpdateWindow *update_window;  /* Just a pointer! */
+    struct iTidy_DefaultToolUpdateContext update_ctx;
+    
+    /* ... validation code ... */
+    
+    /* Allocate on HEAP to avoid stack overflow */
+    update_window = (struct iTidy_DefaultToolUpdateWindow *)whd_malloc(
+        sizeof(struct iTidy_DefaultToolUpdateWindow));
+    
+    if (update_window == NULL)
+    {
+        ShowEasyRequest(tool_data->window,
+            "Memory Error",
+            "Could not allocate memory for update window.",
+            "OK", NULL);
+        break;
+    }
+    
+    memset(update_window, 0, sizeof(struct iTidy_DefaultToolUpdateWindow));
+    
+    if (iTidy_OpenDefaultToolUpdateWindow(update_window, &update_ctx))
+    {
+        while (iTidy_HandleDefaultToolUpdateEvents(update_window))
+        {
+            /* Event loop */
+        }
+        iTidy_CloseDefaultToolUpdateWindow(update_window);
+    }
+    
+    /* CRITICAL: Free the heap allocation */
+    FreeVec(update_window);
+    
+    break;
+}
+```
+
+#### The Solution: Use Heap Allocation for Large Structures
+
+**Rule of thumb:** If a structure is **> 200 bytes**, allocate it on the heap, not the stack.
+
+```c
+/* ❌ WRONG - Stack allocation of large structure */
+void some_function(void)
+{
+    struct LargeWindowData window_data;  /* 800 bytes on stack! */
+    /* ... use window_data ... */
+}
+
+/* ✅ CORRECT - Heap allocation */
+void some_function(void)
+{
+    struct LargeWindowData *window_data;
+    
+    window_data = (struct LargeWindowData *)whd_malloc(sizeof(struct LargeWindowData));
+    if (window_data == NULL)
+    {
+        /* Handle allocation failure */
+        return;
+    }
+    
+    memset(window_data, 0, sizeof(struct LargeWindowData));
+    
+    /* ... use window_data ... */
+    
+    /* CRITICAL: Don't forget to free! */
+    FreeVec(window_data);
+}
+```
+
+#### Cleanup Patterns: Handle Early Exits
+
+When using heap allocation, you **must** free memory on all code paths, including error exits:
+
+```c
+case GID_SOME_BUTTON:
+{
+    struct SomeWindow *window_data;
+    
+    /* Allocate */
+    window_data = (struct SomeWindow *)whd_malloc(sizeof(struct SomeWindow));
+    if (window_data == NULL)
+    {
+        ShowError("Out of memory");
+        break;  /* OK - nothing to free yet */
+    }
+    
+    /* Validate inputs */
+    if (some_validation_failed)
+    {
+        ShowError("Invalid input");
+        FreeVec(window_data);  /* MUST free before break! */
+        break;
+    }
+    
+    /* Another validation */
+    if (another_check_failed)
+    {
+        ShowError("Another error");
+        FreeVec(window_data);  /* MUST free before break! */
+        break;
+    }
+    
+    /* Normal processing */
+    if (open_window(window_data))
+    {
+        run_event_loop(window_data);
+        close_window(window_data);
+    }
+    
+    /* Free on success path */
+    FreeVec(window_data);
+    break;
+}
+```
+
+#### Debugging Stack Overflow Issues
+
+**Identifying stack overflow:**
+1. Look for memory corruption that seems "random" or "unrelated"
+2. Check if corruption happens when opening windows/dialogs
+3. Look for large local variable declarations (struct arrays, char buffers)
+4. Calculate approximate stack usage:
+   - Each function call: ~20-40 bytes (return address, saved registers)
+   - Each local variable: sum of all sizes
+   - Nested calls multiply the cost
+
+**Tools:**
+- **Enforcer** - Will show hits when stack overflows into other memory
+- **MungWall** - Can detect some heap corruption (but not stack issues)
+- **Manual calculation** - Add up structure sizes in nested calls
+
+#### Structures to Watch Out For
+
+Common iTidy structures that are too large for stack:
+
+```c
+/* ❌ Too large for stack (allocate on heap instead) */
+struct iTidy_DefaultToolUpdateWindow;    /* ~1.1KB */
+struct iTidy_ToolCacheWindow;            /* ~800 bytes */
+struct iTidy_ProgressWindow;             /* ~600 bytes */
+struct iTidy_RecursiveProgressWindow;    /* ~700 bytes */
+
+/* ✅ OK for stack (small enough) */
+struct iTidy_DefaultToolUpdateContext;   /* ~20 bytes - just pointers */
+struct NewGadget;                        /* ~40 bytes */
+struct TextAttr;                         /* ~12 bytes */
+```
+
+#### Best Practice Checklist
+
+When adding new windows or large data structures:
+
+- [ ] Calculate structure size (use `sizeof()` in debug log if unsure)
+- [ ] If structure > 200 bytes, use heap allocation
+- [ ] Always check allocation returned non-NULL
+- [ ] Use `memset()` to zero-initialize heap-allocated structures
+- [ ] Free memory on **all** exit paths (success and error)
+- [ ] Consider adding size comment next to structure definition
+- [ ] Test on real Amiga hardware, not just emulators
+
+#### Pattern Summary
+
+```c
+/* Event handler pattern for large structures */
+case GID_BUTTON:
+{
+    struct LargeData *data;
+    
+    /* 1. Allocate on heap */
+    data = (struct LargeData *)whd_malloc(sizeof(struct LargeData));
+    if (data == NULL)
+    {
+        show_error("Out of memory");
+        break;
+    }
+    
+    /* 2. Initialize */
+    memset(data, 0, sizeof(struct LargeData));
+    
+    /* 3. Use it */
+    if (process_data(data))
+    {
+        /* Success path */
+    }
+    else
+    {
+        /* Error path - still need to free! */
+        show_error("Processing failed");
+    }
+    
+    /* 4. Always free before exit */
+    FreeVec(data);
+    break;
+}
+```
+
+---
+
 #### Summary of the Rule
 **For STRING gadgets with GT_GetGadgetAttrs():**
 - ✅ **DO** use `STRPTR` pointer variable (e.g., `STRPTR currentPath = NULL`)
@@ -1170,6 +1596,152 @@ For EVERY window with ListView gadgets:
 - [ ] `setup_newlook_menus()` - Menu system setup
 - [ ] `cleanup_newlook_menus()` - Resource cleanup
 - [ ] `main()` - Main program loop and window handling
+
+## ⚠️ Critical Spacing and Height Rules
+
+### TEXT Gadget Heights - Use Consistent Values
+
+**PROBLEM:** Mixing different height values for TEXT_KIND gadgets creates uneven vertical spacing.
+
+```c
+/* ❌ WRONG - Inconsistent heights create uneven gaps */
+ng.ng_Height = prefsIControl.currentWindowBarHeight;  /* First label: 15-20px */
+label1 = CreateGadget(TEXT_KIND, ...);
+current_y += label1->Height + SPACE_Y;  /* Large gap */
+
+ng.ng_Height = font_height;  /* Second label: 8px */
+label2 = CreateGadget(TEXT_KIND, ...);
+current_y += label2->Height + SPACE_Y;  /* Small gap */
+
+/* Result: Visually unbalanced spacing between rows */
+```
+
+```c
+/* ✅ CORRECT - Consistent font_height for all simple text labels */
+ng.ng_Height = font_height;  /* All labels: 8px */
+label1 = CreateGadget(TEXT_KIND, ...);
+current_y += label1->Height + SPACE_Y;  /* Consistent gap */
+
+ng.ng_Height = font_height;
+label2 = CreateGadget(TEXT_KIND, ...);
+current_y += label2->Height + SPACE_Y;  /* Consistent gap */
+
+/* Result: Even, professional spacing throughout */
+```
+
+**RULE:**
+- ✅ **Use `font_height`** for all simple text labels and info displays
+- ✅ **Use `currentWindowBarHeight`** ONLY for prominent section headers that should match title bar appearance
+- ❌ **DON'T mix** both types in the same column of labels
+
+### Checkbox Height - Always Add Padding for Labels
+
+**PROBLEM:** Checkboxes with `PLACETEXT_RIGHT` or `PLACETEXT_LEFT` need extra height for the label text.
+
+```c
+/* ❌ WRONG - Checkbox too small for label text */
+ng.ng_Width = font_height;
+ng.ng_Height = font_height;  /* Only 8px - label text gets cramped */
+ng.ng_GadgetText = "Enable feature";
+ng.ng_Flags = PLACETEXT_RIGHT;
+checkbox = CreateGadget(CHECKBOX_KIND, gad, &ng, ...);
+
+/* Result: Tight, cramped spacing to next gadget */
+```
+
+```c
+/* ✅ CORRECT - Add +4 padding for label text */
+ng.ng_Width = font_height;
+ng.ng_Height = font_height + 4;  /* 12px - proper padding for label */
+ng.ng_GadgetText = "Enable feature";
+ng.ng_Flags = PLACETEXT_RIGHT;
+checkbox = CreateGadget(CHECKBOX_KIND, gad, &ng, ...);
+
+current_y += checkbox->Height + SPACE_Y;  /* Balanced spacing */
+
+/* Result: Comfortable, professional spacing */
+```
+
+**RULE:**
+- ✅ **Always use `font_height + 4`** for checkbox height when using labels
+- ✅ **Pattern from main_window.c** - this is the iTidy standard
+- ❌ **DON'T use just `font_height`** - creates cramped appearance
+
+### Consistent Spacing - Avoid Random Multipliers
+
+**PROBLEM:** Inconsistent use of spacing multipliers creates visual imbalance.
+
+```c
+/* ❌ WRONG - Inconsistent spacing multipliers */
+current_y += gad1->Height + SPACE_Y;      /* 8px gap */
+current_y += gad2->Height + SPACE_Y * 2;  /* 16px gap - why? */
+current_y += gad3->Height + SPACE_Y;      /* 8px gap again */
+
+/* Result: Middle gap looks wrong, breaks visual rhythm */
+```
+
+```c
+/* ✅ CORRECT - Consistent spacing throughout */
+current_y += gad1->Height + SPACE_Y;  /* 8px gap */
+current_y += gad2->Height + SPACE_Y;  /* 8px gap */
+current_y += gad3->Height + SPACE_Y;  /* 8px gap */
+
+/* Result: Clean, professional vertical rhythm */
+```
+
+**RULE:**
+- ✅ **Use `SPACE_Y` consistently** between all gadget rows
+- ✅ **Use `SPACE_Y * 2`** ONLY for deliberate visual separation (e.g., before major section breaks)
+- ❌ **DON'T use random multipliers** without a clear design reason
+
+### Always Use Actual Gadget Height
+
+**PROBLEM:** Using requested height instead of actual height causes miscalculations.
+
+```c
+/* ❌ WRONG - Using ng.ng_Height instead of actual */
+ng.ng_Height = font_height + 4;
+checkbox = CreateGadget(CHECKBOX_KIND, gad, &ng, ...);
+current_y += ng.ng_Height + SPACE_Y;  /* Might not match actual! */
+```
+
+```c
+/* ✅ CORRECT - Always use gad->Height after creation */
+ng.ng_Height = font_height + 4;
+checkbox = CreateGadget(CHECKBOX_KIND, gad, &ng, ...);
+current_y += checkbox->Height + SPACE_Y;  /* Uses actual rendered height */
+```
+
+**RULE:**
+- ✅ **Always use `gad->Height`** after `CreateGadget()` returns
+- ✅ **Never assume** `ng.ng_Height` equals actual rendered height
+- ✅ **Especially important** for ListView gadgets (height snapping to rows)
+
+### Complete Spacing Checklist
+
+When creating window layouts:
+- [ ] All simple TEXT labels use `font_height` (not `currentWindowBarHeight`)
+- [ ] All checkboxes with labels use `font_height + 4` (not just `font_height`)
+- [ ] Consistent `SPACE_Y` used between all rows (no random `* 2` multipliers)
+- [ ] Always use `gad->Height` for spacing calculations (not `ng.ng_Height`)
+- [ ] Test window appearance - gaps should look visually even
+- [ ] No gadget rows should appear cramped or have excessive spacing
+
+### Real-World Example: Default Tool Update Window
+
+This window had all these spacing issues and was fixed:
+
+**Before (uneven spacing):**
+- Current tool label: `currentWindowBarHeight` (20px) + `SPACE_Y` = **28px gap**
+- Mode label: `font_height` (8px) + `SPACE_Y * 2` = **24px gap** 
+- Checkbox: `font_height` (8px) + `SPACE_Y` = **16px gap**
+- Result: Gaps of 28px, 24px, 16px - visually unbalanced
+
+**After (even spacing):**
+- Current tool label: `font_height` (8px) + `SPACE_Y` = **16px gap**
+- Mode label: `font_height` (8px) + `SPACE_Y` = **16px gap**
+- Checkbox: `font_height + 4` (12px) + `SPACE_Y` = **20px gap**
+- Result: Gaps of 16px, 16px, 20px - visually balanced and professional
 
 ## 🍽️ NewLook Menu Template Patterns
 
