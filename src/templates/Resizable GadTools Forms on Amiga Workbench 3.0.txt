@@ -1,0 +1,522 @@
+Resizable GadTools Forms on Amiga Workbench 3.0
+
+Sources consulted:
+
+Amiga ROM Kernel Reference Manuals – Official Intuition documentation on window sizing events and gadget flags
+archive.org
+wiki.amigaos.net
+.
+
+Commodore Developer Docs (Wiki) – Details on GimmeZeroZero windows, border sizes, and coordinate systems
+retrocomputing.stackexchange.com
+wiki.amigaos.net
+.
+
+Developer Forum Discussions – Insights from experienced Amiga developers (Thomas Rapp, “broadblues”, etc.) on GadTools resizing techniques and pitfalls
+amigans.net
+amigans.net
+.
+
+AmigaOS Change Logs – Notes on Workbench 3.1 Intuition improvements (window resize optimizations)
+gregdonner.org
+.
+
+1. Core OS contracts (Intuition & GadTools behavior)
+
+Window Resize Events: On AmigaOS 2.x/3.x, Intuition handles window resizing via two key IDCMP events: IDCMP_SIZEVERIFY and IDCMP_NEWSIZE. If your window’s IDCMP includes IDCMP_SIZEVERIFY, Intuition will send a message before a resize is allowed. Intuition waits for your reply before letting the user actually drag the size gadget
+archive.org
+. This gives your app a chance to prepare (e.g. suspend rendering or remove gadgets) so that resizing happens cleanly. Once the user finishes resizing (releases the size gadget), Intuition sends an IDCMP_NEWSIZE message. At that point, your code can query the new Window.Width and Window.Height (or the inner dimensions) and rearrange the contents accordingly
+archive.org
+. Notably, Intuition guarantees at least one IDCMP_NEWSIZE event even if the window’s size didn’t actually change (e.g. user clicked the size gadget but didn’t drag)
+archive.org
+. On AmigaOS 3.0 and 3.1, window resizing is not live – the window’s content doesn’t continuously update during the drag. The user sees an outline, and only when they release do you get IDCMP_NEWSIZE and the window is redrawn at the new size. (AmigaOS 4 introduced “live resize” with multiple NEWSIZE events – we’ll discuss that under quirks.) Your code should be written to handle any number of IDCMP_NEWSIZE events, but on 3.x it will typically be one per resize action.
+
+“GimmeZeroZero” Windows: Intuition offers a convenient option for window coordinates: the WFLG_GIMMEZEROZERO flag (set via WA_GimmeZeroZero tag). A GimmeZeroZero (GZZ) window automatically adjusts such that the window’s inner drawing area starts at coordinate (0,0). Intuition essentially gives you a larger outer window to include the borders, so you can position gadgets and graphics in a clean 0-based space
+retrocomputing.stackexchange.com
+retrocomputing.stackexchange.com
+. In a GZZ window, Window.BorderLeft/Top etc. still indicate the border thickness, but your gadget coordinates can be (0,0) for the top-left of the usable area. This relieves you from manually offsetting everything by the border size. The trade-off is that GZZ windows consume a bit more RAM and are slightly slower when moving or resizing because Intuition must manage two “planes” (the inner and outer)
+retrocomputing.stackexchange.com
+retrocomputing.stackexchange.com
+. (Commodore notes that having many GZZ windows can cause noticeable lag on classic hardware
+retrocomputing.stackexchange.com
+.) In practice, a single GZZ window in a program is fine on A1200-class machines, but be mindful if you open many of them.
+
+Coordinate Systems and Borders: Whether or not you use GZZ affects how you calculate gadget coordinates. Every Intuition window has border dimensions given by Window.BorderLeft, BorderTop, BorderRight, BorderBottom. For a non-GZZ window, these are the pixel offsets from the window’s outer edge to the inner drawable area (set when the window opens and constant thereafter
+wiki.amigaos.net
+). For example, if BorderLeft=4 and BorderTop=11, the pixel (0,0) of the inner region is at (4,11) in the outer window coordinate space. Commodore’s docs advise that you should offset gadget coordinates by the border size: e.g. an intended inner position (x,y) becomes (x + BorderLeft, y + BorderTop)
+wiki.amigaos.net
+. The inner width of the window is (Window.Width - BorderLeft - BorderRight), and similarly the inner height is (Window.Height - BorderTop - BorderBottom). In other words, the drawable area spans from (BorderLeft, BorderTop) up to (Width-1-BorderRight, Height-1-BorderBottom) in window coordinates
+wiki.amigaos.net
+. With a GZZ window, you can largely ignore border offsets in your layout calculations – Intuition ensures the inner area starts at (0,0). Without GZZ, you either calculate offsets after opening the window (using the actual Window.Border* values) or predict them using the screen’s font and gadget sizes (as shown below).
+
+Border Size Calculations: The top and bottom border size depends on the presence of a title bar and system gadgets. On Workbench screens, screen->WBorTop, WBorBottom, etc. give base border thickness (in pixels) for that screen. Typically, the top border height on an Intuition screen equals WBorTop + screen->Font->ta_YSize + 1 if you have a title bar (the +1 is a padding)
+wiki.amigaos.net
+. For example, on a standard Workbench 2.x screen with an 8-pixel high Topaz font, WBorTop might be 0 and the title bar adds ~9 pixels, so BorderTop ~9. If you have no title or gadgets, the top border is much smaller
+wiki.amigaos.net
+. The right/bottom borders also increase if a sizing gadget is present. There’s no official API to get the size gadget’s dimensions before opening – most developers used known constants. For instance, in one example Commodore gave, the presence of a sizing gadget would add 13 pixels to BorderRight in lo-res (or 18 in hi-res), and 11 pixels to BorderBottom in lo-res (10 in hi-res)
+wiki.amigaos.net
+wiki.amigaos.net
+. In practice, you can simply open your window and then read Window.BorderLeft et al., which Intuition has set correctly. Many developers set their window’s minimum size such that it accommodates all gadgets at the initial layout, so reading the borders post-open is sufficient for layout math.
+
+IDCMP Frequency and Ordering: As mentioned, on AmigaOS 3.x you receive one IDCMP_NEWSIZE after the user finishes resizing (or immediately after a programmatic SizeWindow() call). The window’s new size is already applied by the time you handle IDCMP_NEWSIZE – your gadgets and drawing are likely still in the old positions until you update them. If you enable IDCMP_REFRESHWINDOW (which GadTools windows must – see below), those refresh messages will intermix with resize events. However, Intuition will not send refresh events continuously during a size drag; refresh events are deferred until sizing is done (unless you’ve opted into certain dynamic behaviours). Intuition’s guarantee is that if you handle IDCMP_NEWSIZE, adjust your content, and refresh, the user will see the final layout in the new window size. (If the user cancels the drag – e.g. presses Esc or right-clicks while dragging – Intuition simply won’t change the window size and will not send IDCMP_NEWSIZE.) Important: If you use IDCMP_SIZEVERIFY, your code must reply to that message quickly. Intuition waits for your reply while the user is dragging, effectively freezing Intuition’s UI. If you take too long (more than a few seconds), Intuition will “give up” and allow the resize without waiting
+scratch.grimore.org
+. So, do only minimal work in SIZEVERIFY (e.g. record a flag or remove gadgets) and reply immediately.
+
+GadTools Gadget Constraints: The GadTools library (introduced in OS2.0) provides higher-level GUI gadgets but imposes some restrictions. Notably, GadTools gadgets cannot be marked with relative size/position flags
+wiki.amigaos.net
+. In pure Intuition, one could set flags like GFLG_RELRIGHT or GFLG_RELWIDTH on a gadget to have Intuition auto-move or auto-resize it when the window size changes (we’ll explain these flags in the next section). But GadTools does not support this – you must not set those flags in the NewGadget or Gadget structure for a GadTools gadget
+wiki.amigaos.net
+. (Internally, GadTools might use its own layout logic, and these flags would interfere.) This means that GadTools relies on the application to reposition and resize gadgets on IDCMP_NEWSIZE. In summary, Intuition guarantees you’ll be told when a window resizes, but it’s up to your code to adjust any GadTools UI elements accordingly. The only automatic adjustments Intuition will do are: redraw the window borders (including system gadgets) and clear the newly exposed background if it’s a SimpleRefresh window. GadTools won’t magically move your gadgets – your program must handle that.
+
+Refresh Handling: One more contract to note: if you use GadTools, your window must handle refresh events properly. GadTools gadgets have their own imagery that Intuition doesn’t fully manage under the hood; you are required to call GT_BeginRefresh() and GT_EndRefresh() around your custom redraw code in IDCMP_REFRESHWINDOW
+wiki.amigaos.net
+wiki.amigaos.net
+. You also should not open a GadTools window with WFLG_NOCAREREFRESH – GadTools needs those refresh events
+wiki.amigaos.net
+. In practice, if you use the standard pattern (WA_SimpleRefresh or WA_SmartRefresh plus handling IDCMP_REFRESHWINDOW as above), Intuition will ensure that when portions of your window are uncovered or exposed (including after a resize), it will trigger an IDCMP_REFRESHWINDOW. By the time you get that, Intuition has already redrawn the window borders and any Intuition gadgets. But for GadTools gadgets, you need to call GT_BeginRefresh(win) and GT_EndRefresh(win, TRUE) (with your own drawing in between if needed) so that GadTools can redraw its gadget interiors
+wiki.amigaos.net
+wiki.amigaos.net
+. Usually, if you reposition gadgets on IDCMP_NEWSIZE, you’ll follow up by refreshing them (more on this later). The key point: Intuition defines what you must do, but leaves how you lay out gadgets to you when windows shrink or grow.
+
+2. Patterns & idioms for resizable forms
+
+When implementing a dynamically resizable form with GadTools, developers in the AmigaOS 2.x/3.x era followed a few common patterns. The goal is to make certain UI elements anchor to window edges or stretch when the window grows, in order to use the available space intelligently. Below we describe practical layout strategies with GadTools (which lacks a layout engine, so you will do some math).
+
+Anchoring Gadgets: Anchoring means keeping a gadget a fixed distance from one or more window borders as the window size changes. Classic examples: OK/Cancel buttons at the bottom of a dialog. We want these buttons to always appear near the bottom edge (and perhaps aligned to the right side, or centered) regardless of the window height. To achieve this, calculate their position based on the current window size minus a margin. For instance, suppose you have a “Cancel” button that should sit 10 pixels from the right border and 5 pixels above the bottom border. If the window’s inner width (the usable width inside borders) is innerW and inner height is innerH, you would set:
+
+Cancel.LeftEdge = innerW - (buttonWidth + 10)
+
+Cancel.TopEdge = innerH - (buttonHeight + 5).
+
+This ensures a 10px gap to the right and 5px gap to the bottom. Similarly, an “OK” button that should be 10px from the left border and 5px from bottom would simply keep a fixed LeftEdge (e.g. 10) and TopEdge = innerH - (buttonHeight + 5).
+
+If you want a button centered at the bottom, you can compute its LeftEdge as (innerW - buttonWidth) / 2 (and still TopEdge = innerH - (buttonHeight + vertical_margin)). You might predefine these “margins” from the initial layout. For example, if initially the Cancel button was at X=200 when inner width was 300, the right margin was (300 - (200 + buttonWidth)). You can store that (here 300-200-buttonWidth = margin). On resize, recalc new X as newInnerWidth - buttonWidth - margin. This general technique – storing each gadget’s distance from the right and/or bottom edges – is useful for anchoring.
+
+Common anchoring patterns include:
+
+Bottom-right corner: as in the Cancel example above. Often used for “Cancel” or “Close” buttons. The gadget moves in both X and Y when the window is resized.
+
+Bottom-left corner: fixed X (distance from left border constant), Y moves with window height. Often “OK” if paired with Cancel, or a Help button on the bottom-left.
+
+Bottom-center: X position recalculated as window width changes (to remain centered), Y moves with window height.
+
+Top-right or top-left: e.g. a gadget like a search field at top that stays 8px below the title bar and 8px from the right border – here Y is fixed (relative to top) and X moves as window width changes.
+
+Top-center: e.g. a title label centered at top – X recenters on width change, Y fixed.
+
+Essentially, for each gadget, decide which edges it should stay “glued” to. For left/top anchoring, it’s easy (LeftEdge/TopEdge remain constant offsets from left/top border). For right/bottom anchoring, you’ll use the window’s current inner size to calculate positions as above. Intuition’s native relative gadget flags would have done this for you (e.g. GFLG_RELRIGHT means LeftEdge is interpreted as distance from right border
+scribd.com
+scribd.com
+), but since GadTools forbids those, you implement the equivalent in C.
+
+Stretching Gadgets: Some gadgets should expand in size when the window grows. A prime example is a ListView: if the user makes the window larger, they probably expect the list to show more items (taller) or avoid a scrollbar (wider). Another example is a text input field (String Gadget) that should lengthen as the window widens. To handle stretching, you usually anchor the gadget to both sides in one dimension. For instance, to make a ListView fill all available space, anchor it on left, top, right, and bottom. That means its new width = innerW - left_margin - right_margin, and new height = innerH - top_margin - bottom_margin. You determine the left_margin and top_margin from the initial placement (e.g. 10 px from left, 10 px from top) and similarly right_margin (initial difference between gadget’s right edge and window’s right border) and bottom_margin. At runtime on IDCMP_NEWSIZE, compute:
+
+listGadget.Width = innerW - left_margin - right_margin
+
+listGadget.Height = innerH - top_margin - bottom_margin.
+
+If any of these values would go below some minimum (e.g. a ListView shouldn’t be less than, say, 5 lines tall), you might enforce a clamp or have set a WA_MinHeight. Typically, though, you set the window’s WA_MinWidth/MinHeight so that gadgets never shrink to unusable sizes.
+
+For a horizontally stretchy string gadget, you anchor it to the left and right sides: keep its TopEdge constant, and compute new Width = innerW - left_margin - right_margin. Its Height remains the same (string gadgets are one-line high). If you have a label to the left of the string field, you might keep the label fixed and only stretch the string gadget next to it.
+
+Another pattern is a multi-column layout where, say, a second column of gadgets might shift when the window grows. You can treat the whole second column as anchored to the right side (thus it moves outward as width increases). If you also want it to move a bit when width decreases (so it’s not squashed right against the first column), you might do a proportion of the extra space – but that gets complex. In classic GadTools apps, usually gadgets either stayed in place or stretched fully; proportional layouts were rare without custom code.
+
+Data Structures for Layout: To manage these calculations, many developers set up a small table or structure for their gadgets’ layout properties. For example, you might define:
+
+struct GadgetLayout {
+    struct Gadget *gad;
+    UWORD flags;  // e.g. bit0: ANCHOR_LEFT, bit1: ANCHOR_RIGHT, bit2: ANCHOR_TOP, bit3: ANCHOR_BOTTOM
+    UWORD baseLeft, baseTop;         // initial position at base window size
+    UWORD baseWidth, baseHeight;     // initial size
+    UWORD baseInnerWidth, baseInnerHeight; // the inner window size when this layout was recorded
+};
+
+
+When you open the window initially (say at the designed minimum size), you populate this array for each gadget. For a gadget meant to stretch horizontally, you’d set flags ANCHOR_LEFT and ANCHOR_RIGHT. For one that’s just anchored to bottom-right, you’d set ANCHOR_RIGHT and ANCHOR_BOTTOM (and maybe none for left/top). The baseInnerWidth is the inner width at design time – maybe you stored the window’s initial inner size. Then on IDCMP_NEWSIZE, you iterate over this array and for each entry compute new positions/sizes. For example, if a gadget has ANCHOR_RIGHT flag, you compute its new LeftEdge as:
+
+deltaW = currentInnerWidth - layout.baseInnerWidth;
+if (flags & ANCHOR_RIGHT && !(flags & ANCHOR_LEFT)) {
+    // anchored right only (not left): move gadget by the window's width change
+    gad->LeftEdge = layout.baseLeft + deltaW;
+}
+if (flags & ANCHOR_RIGHT && flags & ANCHOR_LEFT) {
+    // anchored both sides: stretch width
+    gad->LeftEdge = layout.baseLeft; // stays the same left
+    gad->Width    = layout.baseWidth + deltaW;
+}
+
+
+And so on for vertical (ANCHOR_BOTTOM similarly uses deltaH = currentInnerHeight - baseInnerHeight). This is just one approach – some programs instead stored “margins” from each side rather than absolute base coordinates. For instance, store rightMargin = baseInnerWidth - (baseLeft + baseWidth) for a gadget, then at runtime do gad->LeftEdge = newInnerWidth - (gad->Width + rightMargin). Use whatever approach is simpler for your UI. The key is to have a record of what each gadget should do when the window grows or shrinks.
+
+Reposition vs. Recreate Gadgets: Once you compute new coordinates, how do you apply them? There are two main idioms: in-place repositioning or full rebuild. In-place means you adjust the existing Gadget structures and tell Intuition to redraw them at the new positions. Full rebuild means you delete all gadgets and call your creation routine again with the new sizes.
+
+Reposition in place: GadTools doesn’t provide a direct function to move a gadget, but you can remove and re-add gadgets. Typically, one would call RemoveGList(window, firstGadget, -1) to detach all gadgets from the window (making them invisible). Then update each gadget’s LeftEdge, TopEdge, Width, Height as computed. Then call AddGList(window, firstGadget, ~0, -1, NULL) to add them back, followed by GT_RefreshWindow(window, NULL) to force a redraw of all GadTools gadgets
+wiki.amigaos.net
+wiki.amigaos.net
+. This approach can preserve the actual gadget pointers (so any data in Gadget.SpecialInfo etc. remains intact) – you’re just moving them. It’s quite efficient if you only have a handful of gadgets. One important note: if a gadget consists of multiple sub-gadgets (like a ListView with its scrollbar), you must ensure all parts are accounted for. GadTools returns a pointer to the first gadget in a group; when you RemoveGList that, it removes the whole group. When you AddGList it back, GadTools/Intuition will handle re-linking the internal buddies. But you must update the dimensions in the main gadget’s structure so that the sub-gadgets (e.g. the scrollbar) will have the right new positions. In practice, modifying the ListView’s Width and Height is enough – the scrollbar’s position is defined relative to the list area and will shift automatically when you re-add (because its LeftEdge is something like list.LeftEdge+list.Width, etc., computed at creation time). However, not all GadTools gadgets support dynamic changes safely. (GadTools doesn’t document this, because it wasn’t really intended to do dynamic GUIs.)
+
+Destroy and recreate: This method is simpler conceptually: when the window is resized, free all the gadgets and build them again from scratch with new coordinates. Thomas Rapp, a seasoned Amiga developer, points out that “existing gadgets cannot be changed after they were created. So in order to change the window size you have to destroy and recreate the entire GUI.”
+amigans.net
+ This means calling FreeGadgets(firstGadget) (or individually FreeVisualInfo, etc., if used) and then making new GadTools gadgets with CreateGadget() calls for the new layout. You would likely also call WindowLimits() to update WA_MinWidth/MinHeight if those change (or you keep them the same). Then attach the fresh gadgets with SetGadgetChain() or AddGList. The advantage here is that GadTools will re-compute any gadget internals (like proportional gadget knob sizes, etc.) cleanly. The downside is a bit more flicker – effectively the gadgets will all disappear and reappear. Users might notice the list box contents refresh, etc. If done on every small resize step this would be ugly, but since on 3.0 the resize is not live, it happens just once when the user lets go. You can mitigate flicker by clever ordering (see next section). Recreating is also simpler if your UI is complex, since you can reuse the same code that built it initially, rather than manually adjusting dozens of fields.
+
+Many programs chose one of the above. Some even avoided resizing entirely (fixed-size windows), which is simplest of all. But since our goal is dynamic layout, you will likely implement either in-place or rebuild. Either way, ensure you refresh the gadgets after moving them. If you left the window open during this (i.e. you did not close and reopen it), you should call GT_RefreshWindow() once gadgets are back in place
+wiki.amigaos.net
+wiki.amigaos.net
+. GadTools will redraw their interiors. If you only adjusted a few gadgets, you could also use RefreshGList() on each, but usually just refreshing the whole window is fine (it only repaints GadTools gadgets, not the whole window).
+
+Minimum and Maximum Size Handling: To provide a good user experience, set your window’s WA_MinWidth, WA_MinHeight (and optionally max) when opening it. Typically you set the min size equal to your designed layout size (so nothing overlaps or truncates at the smallest size). GadTools doesn’t compute this for you – you as the programmer determine what’s too small. For example, if your form has two buttons side by side that together are 120px wide, plus 20px margins, you’d set WA_MinWidth ~ 140. If you have a list that should show at least 3 items and each item is, say, 10px tall, plus some fixed controls of height 30px, you might set WA_MinHeight accordingly. It’s better to err on a slightly larger min than to allow an unreadable UI.
+
+For maximum size, many apps left WA_MaxWidth/WA_MaxHeight at 0 (meaning “no limit” – the user can stretch until perhaps the screen bounds). If your content truly has a natural max (for instance, an image viewer might not benefit from being larger than the image dimensions), you can set a max to prevent excessive empty space. In Workbench 3.x, there’s no harm in large windows except performance on redraw. If you do set max, be sure it’s ≥ min (Intuition will ignore invalid values).
+
+When a window can’t shrink below the min, the system prevents the user from dragging it smaller. If the user somehow programmatically resizes it smaller (not common), Intuition will clamp it. Thus you typically won’t get IDCMP_NEWSIZE for a size below your min. But it is good to code defensively: when recomputing gadget sizes, use MAX(newWidth, someMinimum) in your calculations if needed. Also, consider how your layout behaves if the window is extremely large. Often, it’s fine – gadgets just anchor/stretch and there may be big gaps, which is acceptable. If it’s not, you might impose a WA_MaxWidth.
+
+Graceful Degradation: If a user does manage to shrink the window so much that your gadgets overlap or content is cut off (maybe you didn’t set min size, or screen is very small), try to handle it gracefully. This could mean simply allowing some overlap (ugly but not crashing), or disabling some gadgets. One common approach is to disable or hide scrollbars if there’s no room – but since we can enforce min sizes, this is rarely needed on AmigaOS. The best practice is to carefully choose min size such that all gadgets have at least their “natural” space (including space for labels with the chosen font). Remember that Workbench font can be changed by the user; a taller or wider font effectively makes your UI more cramped. So leave a little extra margin in your min dimensions to account for that, or actively calculate gadget/text sizes at startup (explained next).
+
+3. Known landmines & quirks (WB 3.0–3.1)
+
+Designing resizable GadTools GUIs on classic Amigas comes with a few caveats. Below are some pitfalls and how to avoid them:
+
+GadTools vs Relative Gadget Flags: As noted, GadTools does not support the GFLG_RELWIDTH/RELHEIGHT/RELRIGHT/RELBOTTOM flags
+wiki.amigaos.net
+. If you attempt to set those in a NewGadget or Gadget structure, you may get undefined behavior. Best case, Intuition just ignores them; worst case, gadgets might render incorrectly or not at all. For example, a GadTools button with GFLG_RELWIDTH might never draw, because GadTools wasn’t expecting that flag and might not allocate imagery for width=0. The Amiga RKMs explicitly warned that violating these rules could cause “subtle or blatant problems” in current or future GadTools versions
+wiki.amigaos.net
+. Bottom line: do not use those flags – implement resizing in your own code (as we do here).
+
+Multi-part Gadgets (ListViews, scrollers, sliders): Some GadTools gadgets are “compound” – a ListView, for instance, actually consists of a display area plus an attached vertical scrollbar gadget. When you create a ListView with CreateGadget(LISTVIEW_KIND, ...), GadTools internally creates the scrollbar as a sibling gadget. If you later move the ListView’s position or size, you must consider the scrollbar too. If you remove and re-add the ListView gadget, Intuition will automatically handle the scrollbar’s refresh. But if you try to tweak the ListView Gadget structure in place, note that the scrollbar’s gadget struct is separate (usually right after the list in the gadget list). A safe approach is to always remove the entire ListView gadget (which implicitly removes the scrollbar) and re-add it after resizing. GadTools will recalc the scrollbar position based on the new size. Also, be mindful of GLG_ListView labels: if you have a pointer to the list’s labels, you might need to update the visible count after resize (e.g. more lines fit). Usually GadTools does this if you just refresh the gadget. If you find the ListView contents flicker heavily or reset scroll position on resize, consider saving the GTLV_Top (first visible item index) and restoring it via GT_SetGadgetAttrs() after re-adding the gadget.
+
+Flicker and Redraw Artifacts: Window resizing can cause momentary flicker – e.g. gadgets being erased and redrawn. On AmigaOS 3.0 with the default SimpleRefresh windows, Intuition will clear newly exposed areas with the screen’s background pattern, then your gadgets draw. If you remove and re-add gadgets, you might see them disappear for an instant. There are a few strategies to minimize flicker:
+
+Use IDCMP_SIZEVERIFY: As mentioned, handling IDCMP_SIZEVERIFY lets you do work before the actual resize occurs. A common trick is to remove all gadgets during SIZEVERIFY, so that as the window is being dragged, no gadget rendering happens at intermediate sizes
+amigans.net
+. Then on IDCMP_NEWSIZE, you recompute and add them back. The user just sees the window border being dragged and then the gadgets pop into their new spots when they release. This can greatly reduce flicker because you avoid gadgets partially drawing in odd places during the drag. Do remember to reply immediately to SIZEVERIFY after removing the gadgets (don’t leave the message unreplied while you compute everything – compute after replying if needed).
+
+Freeze Updates: Intuition has a function LockWindowRefresh(window) that can freeze a window’s visuals, but it’s generally used for custom rendering scenarios. In GadTools context, removing gadgets achieves a similar effect (there’s nothing to draw). You could alternatively LockWindowRefresh, move gadgets, then UnlockWindowRefresh and RefreshGList. This is a bit advanced; in most cases, using SIZEVERIFY or the remove/add method is enough.
+
+Double-buffering custom drawing: If your window has a canvas you draw on (not just GadTools), you might consider an off-screen RastPort to redraw into, then copy to the window in one go after resizing. This doesn’t apply directly to GadTools gadgets (which draw themselves), but if you have a mixed interface (gadgets + custom graphics), this can help. AmigaOS’s Intuition library doesn’t double-buffer windows for you (except in BOOPSI layers with some effort), so this is manual.
+
+SmartRefresh windows: If flicker is severe, ensure you opened the window with WA_SmartRefresh (not SimpleRefresh). SmartRefresh keeps a backing store of the window’s contents (excluding gadgets, which you still must redraw). It can reduce the need to redraw everything on minor expose events. However, on a full resize, SmartRefresh will likely throw away the backing store and still require redraw of gadgets. So this is a minor help.
+
+On Workbench 3.0, flicker is usually manageable. In Workbench 3.1, Intuition was optimized to erase and redraw “GREL” (relatively positioned) gadgets more efficiently
+gregdonner.org
+. That mostly benefits programs using raw Intuition relative gadgets, but it also means the system gadget (size gadget) and window border are cleaned up faster during resize. Still, GadTools apps benefit indirectly (slightly less border trash while resizing).
+
+Rapid/Continuous Resizing (OS4 note): Although not directly applicable to 3.0/3.1, it’s worth noting for completeness: AmigaOS 4 introduced continuous window resizing (the content updates live as you drag). If you port your 3.0 code to OS4, you might find you receive a flood of IDCMP_NEWSIZE events. Redrawing the entire UI for each one can cause flicker or slow down the drag. One recommended pattern (per Andy Broad, “broadblues”) is to set a flag when a NEWSIZE is received and postpone the actual recalculation until the event queue is drained
+amigans.net
+amigans.net
+. In pseudo-code: process all incoming IDCMP messages in a loop, and if you saw any IDCMP_NEWSIZE, set needs_resize=TRUE. After the inner message loop, if needs_resize is TRUE, do one resize update and clear the flag
+amigans.net
+amigans.net
+. This way, if 10 resize events came in quickly, you handle only the final state. This approach isn’t usually necessary on 3.x (since you get one event at the end), but it does no harm to implement it – it makes your code future-proof and robust against any scenario where multiple NEWSIZE might occur. In fact, broadblues used this to update GadTools-based windows in programs originally written for 3.x (like AWeb’s old GUI) to behave nicely under OS4’s live-resize
+amigans.net
+amigans.net
+.
+
+Fonts and UI Scaling: As mentioned, different Workbench fonts can cause layout issues. Always test your program with a larger system font (for example, topaz/8 versus a proportional font like Helvetica/15). GadTools will use the system font for gadget text unless you override it (most apps don’t override for GadTools). This means if the font is bigger, text labels might not fit in the gadget widths you chose. Workbench 2.0+ introduced font-sensitive UI concepts, but GadTools is only semi font-sensitive – it doesn’t automatically resize your gadgets, but things like default button height might be tied to font height. There are a couple of things you can do:
+
+Calculate gadget width for text: For a button or checkbox label, use IntuitionBase->GraphicsBase (or GfxBase) to measure the text. For example, use TextLength(&screen->RastPort, label, strlen(label)) to get pixel width of a string in the screen’s font. Add some padding (gadgets usually have a few pixels padding horizontally). Then use that as the gadget’s width if it’s larger than your default. This ensures no label truncation. For multiline listviews or such, also consider widest item.
+
+Use layout spacing, not absolute coordinates: Instead of hardcoding that gadget B starts at X=100, maybe compute it at runtime as gadA.LeftEdge + gadA.Width + 10 (to leave 10px gap after gadget A). This way, if gadA was made wider due to font, gadget B moves accordingly. This is a rudimentary layout approach but helps.
+
+Baseline alignment: If you have labels and fields, you might need to adjust vertical positioning if the font height changes. Often, vertical positions are chosen with the assumption of an 8-11 px tall font. If the font is much taller, your form might start to look cramped vertically. You could detect screen->Font->ta_YSize and slightly increase some TopEdge offsets or the window’s min height. There’s no one-size-fits-all formula; it’s mostly testing and adjusting margins.
+
+GadTools gadget minimums: GadTools does choose a default minimum height for some gadgets based on the font (for example, a button will be at least as tall as the text plus border). But if you explicitly set a Height in NewGadget, that’s taken as absolute. A good practice is to set gadget heights to 0 in NewGadget for gadgets like buttons and let GadTools pick the “proper” height for the current font. (According to anecdotes, a NewGadget height of 0 with GadTools might trigger it to use the system default. This isn’t well-documented in RKMs, but many devs did leave dimensions as 0 for GadTools menus and such to auto-size.)
+
+Obtaining Inner Dimensions: A quick tip: AmigaOS 2.x provided WA_InnerWidth and WA_InnerHeight tags for OpenWindowTags(). If you prefer to specify “I want the inner content area to be 320×200” directly, you can use those tags instead of calculating outer size with borders. These tags automatically set WFLG_GIMMEZEROZERO and adjust the window so that the inner area is at least that size
+amigans.net
+amigans.net
+. This is useful when initially opening a window to a specific content size without having to know border thickness. (It doesn’t help during resize events, but for initial placement it’s convenient.)
+
+Intuition Quirks in 3.0 vs 3.1: Workbench 3.1 (Kickstart 40.x) fixed and improved a few things around resizing. As noted, the redraw of old borders and relative gadgets was optimized
+gregdonner.org
+ – on 3.0 you might have seen a flash of the old size gadget or old gadget frames lingering for a frame during resize, which 3.1 reduces. Also, 3.1 introduced an official RefreshWindowFrame() call to redraw window borders if needed (not usually needed for simple apps). No major GadTools-specific bugs in 3.0 are documented regarding resizing, but there is a subtle one: if your window had no depth gadget and you resized it, 3.1’s new optimizations initially had a bug leaving a small redraw issue
+gregdonner.org
+, which was then fixed in Intuition 40.29. This is an edge case and likely not noticeable unless you remove the depth gadget (which most windows keep by default). Another improvement in 3.1+ Intuition: you can call WindowLimits() at runtime to change min/max size after open
+wiki.amigaos.net
+, even during a sizing (it queues the update). On 3.0, changing limits on the fly isn’t directly available (you’d have to use undocumented tricks or close & reopen).
+
+In summary, stick to documented approaches and test on real hardware if possible. Avoid using unsupported flags or touching internal GadTools data. Use IDCMP events as intended. By doing so, you’ll sidestep most quirks.
+
+4. Worked examples
+
+Let’s look at a few real (or representative) examples of resizable GadTools windows. These illustrate different implementation approaches:
+
+Example 1: “File Logger” Utility – Stretchy List and Fixed Buttons
+Imagine a simple utility that displays a list of log messages and has “Pause” and “Clear” buttons at the bottom. The list should expand to fill the window, and the buttons stay bottom-centered.
+
+Initial Layout: The window opens with a list gadget taking up most of the area (with a vertical scrollbar) and two buttons below it (side by side, centered). Suppose initial inner window size is 400×200. We place the “Pause” button at (innerWidth/2 - 80, innerHeight - 30) and “Clear” at (innerWidth/2 + 8, innerHeight - 30), so they are next to each other with an 16px gap, roughly centered. (Each button ~70px wide, 20px tall, plus margins.)
+
+Gadget Creation: We use GadTools LISTVIEW_KIND for the list. In the NewGadget, we set left=10, top=10, width= innerWidth-20, height= innerHeight-50 (leaving space for buttons). For the buttons, we use BUTTON_KIND gadgets. We might actually create them with dummy coords initially, or precisely compute as above. It’s okay to compute initial positions using the known initial size.
+
+Window Tags: We open the window with WA_SizeGadget, TRUE, WA_DragBar, TRUE, WA_CloseGadget, TRUE, WA_DepthGadget, TRUE, WA_MinWidth = 300 (so list not too narrow, and buttons fit), WA_MinHeight = 100, for example. Also WA_IDCMP includes IDCMP_NEWSIZE|IDCMP_REFRESHWINDOW|IDCMP_CLOSEWINDOW|IDCMP_SIZEVERIFY. We likely also use WA_GimmeZeroZero, TRUE to simplify gadget coords (so (0,0) is inner top-left).
+
+Resize Handling (Code): When we receive IDCMP_SIZEVERIFY, we remove the list and buttons from the window:
+
+case IDCMP_SIZEVERIFY:
+    RemoveGList(win, firstGadget, -1);
+    ReplyMsg((struct Message*)imsg);
+    break;
+
+
+We reply immediately to let Intuition proceed. Now the window will resize (with gadgets not present, avoiding partial draws). Next, on IDCMP_NEWSIZE, we recalc:
+
+case IDCMP_NEWSIZE:
+    innerW = win->Width  - win->BorderLeft - win->BorderRight;
+    innerH = win->Height - win->BorderTop  - win->BorderBottom;
+    // Resize listview gadget:
+    listGad->Width  = innerW - 20;
+    listGad->Height = innerH - 50;
+    // Reposition buttons:
+    UWORD btnY = innerH - 30;
+    pauseGad->LeftEdge = innerW/2 - 80;
+    pauseGad->TopEdge  = btnY;
+    clearGad->LeftEdge = innerW/2 + 8;
+    clearGad->TopEdge  = btnY;
+    // Re-add gadgets and refresh
+    AddGList(win, firstGadget, ~0, -1, NULL);
+    GT_RefreshWindow(win, NULL);
+    break;
+
+
+(Here firstGadget is the head of our gadget list; listGad, pauseGad, clearGad are pointers to specific gadgets in the list, obtained when creating them.) We also handle IDCMP_REFRESHWINDOW events by calling GT_BeginRefresh(win) and GT_EndRefresh(win, TRUE) as required (not shown for brevity).
+
+Result: As the user drags the size gadget, they see only the window outline. When they release it, the window’s list area snaps to the new size, and the buttons reposition at the bottom. The content of the list (if any) is preserved because we didn’t free it – we only removed and re-added the gadget. GadTools automatically updates the scrollbar range if the Height changed (it bases it on number of items vs. visible lines). The user can’t shrink below 300×100, so the buttons never overlap or get cut off.
+
+Pros/Cons: This approach uses in-place repositioning. It’s efficient (we didn’t free or reallocate gadgets, just moved them). Flicker is minimal due to using SIZEVERIFY. The code is a bit manual but straightforward for a few gadgets. One downside: if the list was scrolled to a certain position, re-adding the gadget resets its Top (scroll position) to 0 by default. We might address that by storing GT_GetGadgetAttrs(listGad, GTLV_Top, &oldTop) before removal and then after adding, calling GT_SetGadgetAttrs(listGad, win, NULL, GTLV_Top, oldTop, TAG_END). Another consideration: if the user had something selected in the list, removing and adding will temporarily lose the selection highlight (though GadTools may remember the state internally). Typically, one can call GT_SetGadgetAttrs(listGad, GTLV_Selected, oldSelected, TAG_END) to restore a selection. These are details to keep in mind.
+
+Example 2: “Settings” Dialog – Recreate on Resize
+Consider a preferences window with several options: a couple of checkboxes at top, a text input field that stretches across, and OK/Cancel at the bottom-right. This window might choose to rebuild gadgets on resize, perhaps because there are many gadgets and recalculating each is complex. Instead, the program uses a layout function to (re)create gadgets given a width/height.
+
+Layout Function: create_gadgets(innerW, innerH) – this function frees any existing gadgets and then allocates a new gadget list based on the given inner dimensions. For example:
+
+void create_gadgets(UWORD innerW, UWORD innerH) {
+    if (firstGadget) FreeGadgets(firstGadget);
+    struct NewGadget ng;
+    ng.visinfo = visualInfo;
+    ng.text = NULL;
+    ng.font = NULL;
+    // Checkbox 1 at (10,10)
+    ng.leftEdge = 10; ng.topEdge = 10;
+    ng.width =  <computed width>; ng.height =  <computed height>;
+    ng.gadgetText = "Enable feature";
+    firstGadget = CreateGadget(CHECKBOX_KIND, NULL, &ng,
+                               GT_Underscore, '_', TAG_END);
+    // Checkbox 2 at (10, checkbox1.BottomEdge + 8)
+    ...
+    // Text field (string gadget) below checkboxes:
+    ng.leftEdge = 10;
+    ng.topEdge = checkbox2_top + checkbox2_height + 10;
+    ng.width = innerW - 20;
+    ng.height = stringHeight;
+    ng.gadgetText = NULL;
+    struct Gadget *stringGad = CreateGadget(STRING_KIND, firstGadget, &ng,
+                               GTST_MaxChars, 100, TAG_END);
+    // OK button
+    UWORD okW=50, okH=15;
+    ng.leftEdge = innerW - okW - 60;  // 60 px from right (for Cancel next to it)
+    ng.topEdge  = innerH - okH - 10;
+    ng.width = okW; ng.height = okH;
+    ng.gadgetText = "_OK";
+    struct Gadget *okGad = CreateGadget(BUTTON_KIND, stringGad, &ng, TAG_END);
+    // Cancel button  (to right of OK)
+    ng.leftEdge = innerW - okW - 10;
+    ng.gadgetText = "_Cancel";
+    struct Gadget *cancelGad = CreateGadget(BUTTON_KIND, okGad, &ng, TAG_END);
+    // ... etc.
+}
+
+
+This is a sketch – the key point is we calculate positions relative to innerW and innerH. We might have fixed widths for buttons, and dynamic width for the string gadget. After creation, firstGadget points to the head of the list.
+
+Initial Open: We call create_gadgets(initialInnerW, initialInnerH) before opening the window (since GadTools allows preparing gadgets and passing them via WA_FirstGadget). Or we create after open using AddGList. Either way, we keep firstGadget for later.
+
+Resize Handling: On IDCMP_NEWSIZE, we compute new innerW/innerH as usual. Then we rebuild:
+
+case IDCMP_NEWSIZE:
+    innerW = win->Width - win->BorderLeft - win->BorderRight;
+    innerH = win->Height - win->BorderTop - win->BorderBottom;
+    create_gadgets(innerW, innerH);
+    // Attach new gadget list
+    AddGList(win, firstGadget, ~0, -1, NULL);
+    GT_RefreshWindow(win, NULL);
+    break;
+
+
+If we anticipate frequent resizing, we might remove the old gadgets in SIZEVERIFY (to reduce flicker) just like Example 1. That means we’d remove before resizing (and free them), then in NEWSIZE we create new ones and add. There will be a slight delay as gadgets are freed and reallocated – on a fast 68030 this is usually not noticeable for <20 gadgets.
+
+Behavior: As the window is resized and you release, the gadgets all get recreated in their new positions. The checkboxes stay at top fixed left, the string field stretches, OK/Cancel stick to bottom-right. Because we always free and recreate, their content states (e.g. text in the string gadget, or whether a checkbox was checked) will reset unless we preserve them. A robust implementation would retrieve the state before free (e.g. store whether the checkbox was checked, store the current string text) and then after creating new gadgets, apply those values. This is extra complexity and one of the cons of the recreate method. For preferences windows, you might avoid allowing resize at all, precisely to avoid such state carryover issues. If you do allow resizing, a user probably hasn’t typed a lot into a field before resizing, but it can happen.
+
+Pros/Cons: This rebuild approach is easier to code when you already have a function for layout. It ensures all gadgets are freshly suited to the new size. It can, however, be heavier if you have many gadgets. Also, because gadget pointers change, any earlier references (like okGad pointer) need updating. One way to manage this is to not keep raw struct Gadget* pointers for individual gadgets, but instead keep indices or IDs and find the gadget after recreation (e.g. store gadget IDs in ng_GadgetID and use FindGadget() by ID). GadTools does set GadgetID from NewGadget, which you can use to identify gadgets after recreating. The flicker here may be a tad more than repositioning: users might see the gadgets all blank out and redraw. With SIZEVERIFY use, it won’t be too bad – everything disappears during drag and reappears after, which looks almost the same as method 1 to the user.
+
+Example 3: Real-World “MultiView” Behavior
+MultiView (the AmigaOS image/text viewer, not open-sourced but familiar) is an example of a program that opens on the Workbench screen and allows resizing. Its GUI is minimal (just a menu and a single display area), but consider a hypothetical simplified MultiView with a GadTools GUI: say it has a scrollable text area (ListView or textual display) and maybe a few controls like zoom buttons. If implemented with GadTools, one might do the following:
+
+The text display could be a custom gadget or simply a borderless window region where text is drawn (MultiView actually uses a BOOPSI gadget for text, but let’s assume GadTools for argument). If GadTools, perhaps use a non-editable string gadget or listview for text lines.
+
+On resize, the text area should expand. MultiView would recalc how many lines of text fit and update the scroll accordingly. This is similar to Example 1’s list gadget. It would anchor on all sides.
+
+If there were “Zoom In/Out” buttons in the bottom-right corner, those would anchor bottom-right.
+
+MultiView’s case is interesting because it uses a BOOPSI gadget for images which automatically scales with the window (BOOPSI classes can handle GM_LAYOUT method for resizing). But under our constraints (no BOOPSI except GadTools itself), we’d treat the image or text area as a single custom draw area that we redraw on NEWSIZE.
+
+Although we don’t have the actual MultiView code, the pattern is: one big area filling most of the window (so computed width/height as inner size minus margins for any controls), plus some small controls anchored to edges. This is a common layout in many programs (viewer, editor, etc.).
+
+Pros/Cons Summary:
+
+In-place update (Example 1): Preserves gadget state, minimal allocations. Code must carefully adjust each gadget’s coords. Great for small UIs or when you want to avoid flicker. Confirmed to work by many developers. Con: If you miss adjusting something (e.g. forget to resize a gadget’s width), you might get graphical glitches (part of gadget not redrawn). Always refresh after moving gadgets; GadTools will repaint them fully if you use GT_RefreshWindow
+wiki.amigaos.net
+. Also, if your gadget count is large, writing all those adjustments can be tedious (but could be generated or looped as shown).
+
+Recreation (Example 2): Simplifies the logic by reusing the initial creation code. Ensures each gadget’s imagery is recalculated properly by GadTools. Con: Gadget values (content) need to be restored, and frequent freeing/alloc could fragment memory a bit (not a huge issue for UIs with <100 gadgets on classic systems). Flicker can be more noticeable if not managed, but using IDCMP_SIZEVERIFY to remove before free and adding after new create helps.
+
+Hybrid: Some advanced apps used a mix: e.g. reposition simple gadgets in place, but destroy/recreate something complex like an entire sub-gadget tree. This is rarely needed on 3.x due to no live refresh.
+
+Finally, remember that not all Amiga developers bothered with resizable windows using GadTools. A notable quote: “I never put a sizing gadget into a window when working with GadTools. I layout the gadgets and calculate the needed space and then open the window with fixed size.”
+amigans.net
+ – many chose fixed layouts to avoid the hassle. But with proper technique, resizable GadTools UIs can be done, as we’ve shown.
+
+5. Implementation checklist
+
+When implementing a new resizable Workbench 3.0 GadTools form in C, use this checklist to cover all bases:
+
+Window Opening:
+
+Choose a public screen (e.g. Workbench) and obtain VisualInfo if using GadTools (via GetVisualInfo() for proper styling). Lock the screen if needed (Workbench lock not needed if using WA_PubScreenName,NULL which auto-locks).
+
+Set up window OpenWindowTags. Key tags/flags:
+
+WA_DragBar, TRUE (most resizable windows have a drag bar),
+
+WA_DepthGadget, TRUE and WA_CloseGadget, TRUE as appropriate,
+
+WA_SizeGadget, TRUE to get the sizing gadget (consider also WA_SizeBRight and WA_SizeBBottom if you want the size gadget in both borders – usually you specify both so the size gadget appears as a diagonal in the bottom-right corner),
+
+WA_GimmeZeroZero, TRUE if you want inner coordinates starting at (0,0). If you use this, design your gadget layout for an inner rectangle without considering border offsets – Intuition will handle the border. Otherwise, be prepared to offset by Window.BorderLeft/Top when positioning gadgets.
+
+WA_MinWidth / WA_MinHeight set to your calculated minimum inner size + borders. If using GZZ, these min values are inner dimensions (since OS3.0, IIRC WA_MinWidth respects GZZ by applying to inner area when GZZ is set). If not using GZZ, include border space in the min calcs or simply open window then call WindowLimits(win, minW, minH, maxW, maxH).
+
+WA_MaxWidth / WA_MaxHeight if you want to restrict max size (often 0 for no limit).
+
+WA_IDCMP (or WA_NotifyIdcmp) including at least IDCMP_NEWSIZE and IDCMP_REFRESHWINDOW. If you plan to use the verify trick, include IDCMP_SIZEVERIFY. Also add other events you need (close, gadget events, etc.). Do not set WFLG_NOCAREREFRESH – GadTools needs refresh events
+wiki.amigaos.net
+.
+
+WA_SimpleRefresh or WA_SmartRefresh. For forms with lots of gadgets, SmartRefresh is recommended on OS3.x. SimpleRefresh also works but you must redraw everything on expose. Since we handle refresh events manually (calling GT_Begin/EndRefresh around our own drawing if any), either is fine. SmartRefresh reduces some flicker by keeping a backing store, but gadgets will redraw via your refresh handling anyway.
+
+Optionally WA_InnerWidth/WA_InnerHeight to specify initial inner area directly (this automatically sets GZZ).
+
+Window title (WA_Title) if desired – note if no title and no gadgets in borders, top border will be very thin as docs say
+wiki.amigaos.net
+.
+
+Open the window. Check for success. If using WA_PubScreenName, "Workbench", no need to manually LockPubScreen (OS will handle). If you did LockPubScreen earlier, remember to UnlockPubScreen after opening the window.
+
+Initial Gadget Setup:
+
+Prepare GadTools (open gadtools.library if not already, get VisualInfo).
+
+Create your gadgets. Use CreateGadgetA() or the non-varargs form. Chain them in the desired order.
+
+When filling the NewGadget structure, for any gadget that should stretch or move, you might initially set a placeholder size/position appropriate for the initial window size.
+
+It’s okay to set some gadget dimensions to 0 if you want GadTools to auto-calc (e.g. button width 0 might auto-width to fit its text, but do not set relative flags like GFLG_RELWIDTH – GadTools will reject those
+wiki.amigaos.net
+).
+
+Assign ng_GadgetID for each if you plan to identify them later (not required, but useful).
+
+If you have a menu bar, create menus via GadTools as well (though menus don’t typically change on resize, so not our focus here).
+
+Add gadgets to the window. Either pass WA_FirstGadget, firstGadget when opening, or if you created after open, use AddGList(window, firstGadget, -1, -1, NULL) followed by GT_RefreshWindow(window, NULL) to draw them
+wiki.amigaos.net
+wiki.amigaos.net
+.
+
+Set up any initial gadget values (e.g. populate a ListView or set default text in a string) with GT_SetGadgetAttrs() as needed.
+
+Compute Base Client Area: After opening, note Window.BorderLeft/Top etc. If not using GZZ, you’ll need these for coordinate math. Compute the initial inner width/height:
+
+UWORD baseInnerW = win->Width - win->BorderLeft - win->BorderRight;
+UWORD baseInnerH = win->Height - win->BorderTop - win->BorderBottom;
+
+
+You might store these if you plan to compute relative movements (for delta calculations). If using GZZ, you can also read win->GZZWidth and win->GZZHeight (available on V36+, which is OS2.0+, as GZZ didn’t exist earlier)
+retrocomputing.stackexchange.com
+retrocomputing.stackexchange.com
+ – these directly give inner dimensions.
+
+Anchoring/Stretch Plan: For each gadget, decide how it should behave. Document this in code comments or a small data table. For example:
+
+// Gadget roles: 
+// listView: anchors on all 4 sides (full resize).
+// okButton: anchors bottom-right.
+// cancelButton: anchors bottom-right (placed left of okButton by fixed offset).
+// label: anchors top-left (no move).
+// inputField: anchors left/right (stretches horizontally), fixed top.
+
+
+This makes it clear in code what to compute on resize.
+
+IDCMP Resize Handler: In your main event loop, handle IDCMP_NEWSIZE (and possibly IDCMP_SIZEVERIFY). A typical sequence:
+
+case IDCMP_SIZEVERIFY:
+    // Optionally remove gadgets to avoid flicker
+    RemoveGList(win, firstGadget, -1);
+    ReplyMsg(msg);
+    break;
+case IDCMP_NEWSIZE:
+    innerW = win->Width - win->BorderLeft - win->BorderRight;
+    innerH = win->Height - win->BorderTop - win->BorderBottom;
+    // Reposition/Recalculate gadgets:
+    // e.g., listViewGad->Width = innerW - listLeftMargin - listRightMargin;
+    // listViewGad->Height = innerH - listTopMargin - listBottomMargin;
+    // okButtonGad->LeftEdge = innerW - okButtonWidth - rightMargin;
+    // okButtonGad->TopEdge  = innerH - okButtonHeight - bottomMargin;
+    // cancelButtonGad similarly...
+    // inputFieldGad->Width = innerW - inputLeftMargin - inputRightMargin;
+    // (If using a table of gadgets with flags, loop and compute each.)
+    AddGList(win, firstGadget, ~0, -1, NULL);
+    GT_RefreshWindow(win, NULL);
+    break;
+
+
+Make sure to re-add all gadgets you removed. (If you removed the whole list with firstGadget, a single AddGList with count -1 adds them all back.) If you did not remove gadgets in SIZEVERIFY (some prefer not to), then in IDCMP_NEWSIZE you should either call RemoveGList -> adjust -> AddGList, or use MoveSensor() for each gadget. It’s usually easier to remove all, adjust, re-add, to avoid partial draws mid-move.
+
+Also, if not using SIZEVERIFY, remove/re-add in NEWSIZE still works but the user might briefly see the old gadgets redraw in weird places during the drag (because Intuition might redraw portions of them when window grows). SIZEVERIFY is the cleaner approach to avoid that.
+
+Refresh and Begin/EndRefresh: If you removed gadgets, the window might not automatically get a refresh event for the newly exposed area (since we suppressed drawing during drag). After re-adding, we call GT_RefreshWindow which takes care of redrawing GadTools gadgets
+wiki.amigaos.net
+. If you have any custom drawing (bitmaps, lines, etc.), you should redraw those too now. Typically you would do that either right after refreshing gadgets, or rely on the next IDCMP_REFRESHWINDOW. Often, resizing will trigger an IDCMP_REFRESHWINDOW anyway (Intuition considers the window damaged by size change), so your event loop should catch that and do:
+
+case IDCMP_REFRESHWINDOW:
+    GT_BeginRefresh(win);
+    // (if custom graphics, redraw them here)
+    GT_EndRefresh(win, TRUE);
+    break;
+
+
+GadTools gadgets are automatically included in GT_Begin/EndRefresh (it ensures their imagery is fully up to date)
+wiki.amigaos.net
+wiki.amigaos.net
+. If you already did GT_RefreshWindow, you might set the second parameter of GT_EndRefresh(win, TRUE) to TRUE to indicate refresh done. (In general, always do the Begin/End pair even if you think gadgets are drawn – GadTools documentation insists on it for correctness
+wiki.amigaos.net
+.)
+
+Event Ordering: Ensure your code handles the case where multiple IDCMP_NEWSIZE come before you finish processing (on OS4 this happens – use the flag method as discussed). On 3.0 it’s usually sequential. Also, handle IDCMP_CLOSEWINDOW (to exit loop) and any gadget-up events as normal.
+
+Final Touches & Testing:
+
+Test resizing by rapidly dragging the window larger and smaller. Check that gadgets stay anchored and sized correctly, and there’s no moment where the window is blank or flickering excessively. A slight flicker when releasing is normal (that’s gadgets redraw).
+
+Test minimum size: try to resize to the smallest allowed – gadgets should just exactly fit. Intuition will prevent going smaller if MinWidth/MinHeight are set correctly. If you find you can still make it too small, you may have miscomputed the min values (remember to include border sizes if not GZZ).
+
+Test on different Workbench fonts: switch to a larger font in Prefs, or test on a higher resolution screen if available. See if any text gets cut off. If so, you may need to increase gadget widths or use dynamic measurement at startup.
+
+Test on both OS 3.0 and 3.1 if possible (or at least on 3.1 in an emulator and 3.0 if you have an A1200 with 3.0 ROM). There should be no differences in functionality, except 3.1 might appear slightly smoother on the redraw as noted.
+
+If your program might run on OS2.04, test there as well (GadTools exists in 2.04 and resizing logic is the same). Just be mindful of any tags not in 2.04 – e.g. WA_InnerWidth is V36 (2.0) so it’s fine; most things we used are V36+.
+
+Test unusual scenarios: open your window, iconify and deiconify (does it properly redraw on restore? Usually yes, Intuition will send refresh). Open on a public screen of a different resolution (if you support that) – does everything still compute correctly?
+
+Memory check: if you recreate gadgets many times (user keeps resizing), watch for any memory leaks. GadTools should free gadgets on FreeGadgets, but if you forgot to free or if you allocate any dynamic data for gadget lists, ensure it’s freed.
+
+By following this checklist, you should have a robust, flicker-free (or minimal flicker) resizable GUI on Amiga Workbench 3.0, using only Intuition and GadTools. While GadTools doesn’t make it as easy as modern GUI toolkits (there’s no automatic layout), the combination of Intuition’s resize messages and a bit of calculation can yield a smooth result. Just remember that GadTools was not designed for heavy realtime resizing, so keep the UI responsive by doing minimal work in the resize loop. The techniques above are proven by Amiga developers and should serve you well in implementing your resizable form. Good luck, and happy coding!
