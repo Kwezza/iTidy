@@ -9,6 +9,117 @@ This project provides two specialized templates designed for AI agents (like Git
 
 Both templates are AI-friendly with clear modification instructions and template usage guides.
 
+---
+
+## ⚠️ CRITICAL: GadTools Coordinate System Rules (READ THIS FIRST!)
+
+### The #1 Cause of Gadget Positioning Bugs
+
+**WRONG ASSUMPTION:** "NewGadget.ng_TopEdge = 0 positions a gadget at the top of the client area (below the title bar)."
+
+**CORRECT REALITY:** GadTools gadgets use **window-relative coordinates** where (0,0) is the **outer top-left corner of the window**, including the title bar. Setting `ng_TopEdge = 0` will place your gadget **ON TOP OF the title bar**, making it invisible or corrupted.
+
+### The Mandatory BorderTop Calculation Formula
+
+Before creating ANY gadget, calculate the window's BorderTop using this RKM-documented formula:
+
+```c
+struct Screen *screen = LockPubScreen("Workbench");
+
+/* CRITICAL: The ONLY correct formula for BorderTop */
+WORD border_top    = screen->WBorTop + screen->Font->ta_YSize + 1;
+WORD border_left   = screen->WBorLeft;
+WORD border_right  = screen->WBorRight;
+WORD border_bottom = screen->WBorBottom;
+
+UnlockPubScreen(NULL, screen);
+```
+
+**Why this formula:**
+- `WBorTop` = thin border at window top (typically 2-4 pixels)
+- `Font->ta_YSize` = height of screen font used for title bar text
+- `+ 1` = spacing pixel (required by RKM specification)
+- **Result** = exact BorderTop that Intuition will use
+
+### Correct Gadget Positioning Pattern
+
+```c
+/* Start positioning BELOW the title bar */
+WORD margin = 5;
+WORD current_y = border_top + margin;  /* NOT just margin! */
+WORD current_x = border_left + margin;
+
+/* Create gadgets with proper window-relative offsets */
+struct NewGadget ng;
+ng.ng_LeftEdge = current_x;           /* Offset by border_left */
+ng.ng_TopEdge  = current_y;           /* Offset by border_top */
+ng.ng_Width    = gadget_width;
+ng.ng_Height   = gadget_height;
+ng.ng_GadgetText = "My Gadget";
+ng.ng_GadgetID = MY_GADGET_ID;
+
+gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+```
+
+### Window Height Must Include Borders
+
+```c
+/* Calculate content height (gadget Y positions already include border_top) */
+UWORD content_height = last_gadget_Y + gadget_height + bottom_margin;
+
+/* Add borders to get TOTAL window height */
+UWORD window_height = content_height + border_top + border_bottom;
+
+/* Open window */
+window = OpenWindowTags(NULL,
+    WA_Width, window_width,
+    WA_Height, window_height,  /* Total height INCLUDING borders */
+    WA_Gadgets, glist,
+    TAG_END);
+```
+
+### Verification: Your Calculation MUST Match Reality
+
+After opening the window, verify your BorderTop calculation was correct:
+
+```c
+if (window->BorderTop != border_top) {
+    printf("ERROR: BorderTop mismatch! Calculated=%d, Actual=%d\n",
+           border_top, window->BorderTop);
+    /* Your formula is WRONG - fix it! */
+}
+```
+
+**Expected result: ZERO difference.** If you see any difference, you're using the wrong formula.
+
+### Common Fatal Mistakes (DON'T DO THESE!)
+
+❌ `ng_TopEdge = 0` or `ng_TopEdge = margin` (overlaps title bar)  
+❌ Guessing `border_top = 16` or using `font_height * 2` (breaks on different fonts/configs)  
+❌ Using only `screen->WBorTop` (forgets title bar font height)  
+❌ Forgetting the `+ 1` in the formula  
+❌ Assuming `BorderTop == BorderBottom` (they can differ!)  
+❌ Calculating window height without adding borders
+
+### Why This Formula Works Everywhere
+
+The formula adapts automatically to:
+- Different screen fonts (Topaz 8, Helvetica 11, Times 15, etc.)
+- IControl preferences (users can enlarge title bars in WB 3.2)
+- Different Workbench versions (3.0, 3.1, 3.2)
+- Custom screen modes and resolutions
+- NewLook, MagicWB, and other visual enhancements
+
+**It reads actual screen metrics, not hardcoded assumptions.**
+
+### Reference Implementation
+
+See `amiga_window_template.c` → `calculate_font_dimensions()` for a complete working example that achieves **zero-pixel positioning errors** across all tested configurations.
+
+**BOTTOM LINE:** Use the formula `border_top = screen->WBorTop + screen->Font->ta_YSize + 1` for ALL gadget positioning. No exceptions, no shortcuts, no guessing.
+
+---
+
 ## �️ Amiga SDK Naming Collision Policy (MANDATORY)
 
 AmigaOS headers define many short, common identifiers and macros (for example SHINEPEN, SHADOWPEN, FILLPEN, TEXTPEN). To avoid accidental conflicts and macro expansion surprises, iTidy adopts a strict naming convention for all project-owned symbols.
@@ -134,70 +245,34 @@ ng.ng_Flags = PLACETEXT_IN;
 data->your_button = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
 ```
 
-### String Input with Separate Label (RECOMMENDED)
-
-**IMPORTANT:** For proper label alignment, use a separate TEXT gadget instead of PLACETEXT_LEFT:
-
+### String Input
 ```c
-/* Step 1: Create separate TEXT label for proper left-margin alignment */
-STRPTR label_text = "Label:";
-UWORD label_width = TextLength(&temp_rp, label_text, strlen(label_text));
-
-ng.ng_LeftEdge = current_x;  /* Aligns with left margin */
-ng.ng_TopEdge = current_y + (string_height - font_height) / 2;  /* Vertically centered with string */
-ng.ng_Width = label_width;
-ng.ng_Height = font_height;
-ng.ng_GadgetText = NULL;
-ng.ng_GadgetID = 0;  /* Non-interactive */
-ng.ng_Flags = 0;
-
-data->label = gad = CreateGadget(TEXT_KIND, gad, &ng,
-    GTTX_Text, label_text,
-    GTTX_Border, FALSE,
-    TAG_END);
-
-/* Step 2: Create string gadget WITHOUT label */
-ng.ng_LeftEdge = current_x + label_width + 4;  /* After label + small gap */
-ng.ng_TopEdge = current_y;  /* Row baseline */
+ng.ng_LeftEdge = current_x;
+ng.ng_TopEdge = current_y;
 ng.ng_Width = font_dims->button_width;
-ng.ng_Height = string_height;
-ng.ng_GadgetText = NULL;  /* No label - we created our own! */
+ng.ng_Height = font_dims->string_height;
+ng.ng_GadgetText = "Label:";
 ng.ng_GadgetID = YOUR_STRING_ID;
-ng.ng_Flags = 0;  /* No PLACETEXT flag */
-
+ng.ng_Flags = PLACETEXT_LEFT;
 data->your_string = gad = CreateGadget(STRING_KIND, gad, &ng,
-    GTST_MaxChars, 64,
-    GTST_String, "",
-    TAG_END);
-
-/* Step 3: Refresh the TEXT label after window opens */
-RefreshGList(data->label, data->window, NULL, 1);
+                                      GTST_MaxChars, 64,
+                                      GTST_String, "",
+                                      TAG_END);
 ```
-
-**Why separate labels are better:**
-- ✅ Labels align perfectly at left margin with other gadgets
-- ✅ Vertical centering formula works consistently: `label_top = baseline + (string_height - font_height) / 2`
-- ✅ No complex PLACETEXT_LEFT positioning calculations needed
-- ✅ See `docs/GADTOOLS_LAYOUT_ALIGNMENT_STRATEGY.md` for complete details
 
 ### Checkbox
 ```c
 ng.ng_LeftEdge = current_x;
 ng.ng_TopEdge = current_y;
 ng.ng_Width = font_dims->button_height;
-ng.ng_Height = font_height + 4;  /* CRITICAL: Add +4 for label text padding with PLACETEXT_RIGHT */
+ng.ng_Height = font_dims->button_height;
 ng.ng_GadgetText = "Option Name";
 ng.ng_GadgetID = YOUR_CHECKBOX_ID;
 ng.ng_Flags = PLACETEXT_RIGHT;
 data->your_checkbox = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
                                         GTCB_Checked, FALSE,
                                         TAG_END);
-
-/* CRITICAL: Use gad->Height for spacing, not ng.ng_Height */
-current_y += gad->Height + spacing;
 ```
-
-**IMPORTANT:** Checkboxes with `PLACETEXT_RIGHT` need extra height (`font_height + 4`) to accommodate the label text properly. Using just `font_height` creates cramped spacing.
 
 ### ListView
 ```c
@@ -585,581 +660,6 @@ LONG number;
 GT_GetGadgetAttrs(data->your_integer, data->window, NULL,
                   GTIN_Number, &number, TAG_END);
 ```
-
-### ⚠️ CRITICAL: String Gadget Pointer Issue
-
-#### The Problem: GT_GetGadgetAttrs Returns a Pointer, Not a Copy
-When reading string gadget values with `GT_GetGadgetAttrs()`, the `GTST_String` attribute returns a **pointer to the internal gadget buffer**, not a copy of the string. Treating this incorrectly leads to:
-- **Volume requesters** appearing for non-existent devices (e.g., "@c+1")
-- **Memory corruption** when attempting to write to the buffer address
-- **Garbage data** being passed to functions expecting valid strings
-- **Crashes** or unpredictable behavior
-
-#### Why This Happens
-The GadTools API for string gadgets works differently than you might expect:
-
-```c
-/* ❌ WRONG WAY - Passing buffer instead of pointer-to-pointer! */
-char folder_path_buffer[256];
-
-GT_GetGadgetAttrs(data->folder_path, data->window, NULL,
-    GTST_String, (ULONG)folder_path_buffer,  /* This writes garbage to buffer! */
-    TAG_END);
-
-/* folder_path_buffer now contains corrupted data like "@c+1" */
-/* Using this path causes volume requesters or crashes */
-```
-
-**What's happening:**
-1. You pass the **address of your buffer** as the value
-2. GadTools expects a **pointer to a pointer** (`STRPTR *`)
-3. Instead of getting the string pointer, GadTools writes **the buffer address** as data
-4. This corrupts your buffer with the memory address itself
-5. When you use the "path", it contains garbage like "@c+1" (hex memory address interpreted as text)
-6. AmigaDOS tries to access this as a device name = volume requester appears
-
-#### The Solution: Use Pointer-to-Pointer
-You must use a **pointer variable** and pass its **address**:
-
-```c
-/* ✅ CORRECT WAY - Use pointer-to-pointer! */
-STRPTR currentPath = NULL;  /* Pointer to string */
-
-/* Pass the ADDRESS of the pointer */
-GT_GetGadgetAttrs(data->folder_path, data->window, NULL,
-    GTST_String, (ULONG)&currentPath,  /* &currentPath = pointer to pointer */
-    TAG_END);
-
-/* currentPath now points to the gadget's internal string buffer */
-/* This is the actual string data - you can read it safely */
-
-/* Check if valid */
-if (!currentPath || currentPath[0] == '\0')
-{
-    /* Empty string */
-    return;
-}
-
-/* If you need a copy, make one */
-char myBuffer[256];
-strncpy(myBuffer, currentPath, sizeof(myBuffer) - 1);
-myBuffer[sizeof(myBuffer) - 1] = '\0';
-
-/* Now myBuffer has a safe copy of the string */
-```
-
-#### Complete Example: Reading Folder Path
-```c
-case GID_COUNT_FOLDERS:
-{
-    ULONG folderCount = 0;
-    LayoutPreferences scanPrefs;
-    STRPTR currentPath = NULL;  /* Pointer to the gadget's string */
-    
-    /* Get pointer to the gadget's internal string buffer */
-    GT_GetGadgetAttrs(data->folder_path, data->window, NULL,
-        GTST_String, (ULONG)&currentPath,  /* Pass pointer-to-pointer */
-        TAG_END);
-    
-    /* Validate the pointer */
-    if (!currentPath || currentPath[0] == '\0')
-    {
-        ShowEasyRequest(data->window, "Error", 
-            "Please enter a folder path first.", "OK");
-        break;
-    }
-    
-    /* Copy to your structure (if needed for later use) */
-    strncpy(scanPrefs.folder_path, currentPath, 
-           sizeof(scanPrefs.folder_path) - 1);
-    scanPrefs.folder_path[sizeof(scanPrefs.folder_path) - 1] = '\0';
-    
-    /* Now safe to use scanPrefs.folder_path */
-    if (CountFoldersWithIcons(scanPrefs.folder_path, &scanPrefs, &folderCount))
-    {
-        printf("Found %lu folders\n", folderCount);
-    }
-    break;
-}
-```
-
-#### Why the Pointer Approach Works
-1. `GT_GetGadgetAttrs()` expects a **pointer to where it should store the result**
-2. For `GTST_String`, the result is a `STRPTR` (pointer to string)
-3. So you need a `STRPTR*` (pointer to pointer to string)
-4. By declaring `STRPTR currentPath` and passing `&currentPath`, you provide the correct type
-5. After the call, `currentPath` points to the gadget's internal buffer
-6. You can read this buffer safely, but **don't modify it directly**
-7. Make a copy if you need to store or modify the string
-
-#### Comparison with Setting String Values
-Note the asymmetry in the API:
-
-```c
-/* GETTING a string - use pointer-to-pointer */
-STRPTR currentPath = NULL;
-GT_GetGadgetAttrs(data->string_gad, window, NULL,
-    GTST_String, (ULONG)&currentPath,  /* &currentPath = STRPTR* */
-    TAG_END);
-
-/* SETTING a string - pass the string pointer directly */
-GT_SetGadgetAttrs(data->string_gad, window, NULL,
-    GTST_String, (ULONG)"New Value",  /* Direct string pointer */
-    TAG_END);
-```
-
-#### Symptoms of This Bug
-- ✗ Volume requester appears asking for device like "@c+1" or other garbage
-- ✗ Function receives corrupted path data
-- ✗ Memory address gets interpreted as device name
-- ✗ Crashes when trying to access "path" that's actually a memory address
-- ✗ No compiler warnings (everything type-casts to ULONG)
-- ✗ Very confusing to debug without knowing the pointer-to-pointer requirement
-
-#### Pattern for Other Data Types
-This pointer-to-pointer pattern applies to **any** `GT_GetGadgetAttrs()` call:
-
-```c
-/* For checkboxes - pointer to ULONG */
-ULONG checked = 0;
-GT_GetGadgetAttrs(checkbox, window, NULL,
-    GTCB_Checked, (ULONG)&checked,  /* Pass &checked (ULONG*) */
-    TAG_END);
-
-/* For sliders - pointer to LONG */
-LONG level = 0;
-GT_GetGadgetAttrs(slider, window, NULL,
-    GTSL_Level, (ULONG)&level,  /* Pass &level (LONG*) */
-    TAG_END);
-
-/* For strings - pointer to STRPTR */
-STRPTR text = NULL;
-GT_GetGadgetAttrs(string, window, NULL,
-    GTST_String, (ULONG)&text,  /* Pass &text (STRPTR*) */
-    TAG_END);
-```
-
-#### Real-World Impact: iTidy Count Folders Bug
-This bug in iTidy's "Count Folders" button caused:
-- Volume requester appearing with device "@c+1" when button clicked
-- Completely non-functional folder counting feature
-- Confusing error that didn't indicate the root cause
-- User had valid path in text field, but function received garbage
-- Required deep investigation to identify pointer issue
-
-**After fix:**
-- ✅ Folder path read correctly from string gadget
-- ✅ CountFoldersWithIcons() receives valid path
-- ✅ No volume requesters or garbage data
-- ✅ Feature works as expected
-
----
-
-## ⚠️ TEXT_KIND Gadgets Require Explicit Refresh
-
-### The Problem: Blank TEXT Gadgets After Window Opens
-
-When creating `TEXT_KIND` gadgets to display static text (using `GTTX_Text` tag), the text content **will not appear** unless you explicitly refresh the gadgets after the window is opened. This is a GadTools quirk that's easy to miss.
-
-#### Symptoms
-- ✗ TEXT_KIND gadget appears as empty/blank (no text visible)
-- ✗ Gadget is created successfully (no errors)
-- ✗ Text string is correctly passed to `GTTX_Text` tag
-- ✗ Other gadgets (buttons, string gadgets) display normally
-- ✗ Bordered TEXT gadgets show the border but no text inside
-- ✗ **Borderless TEXT gadgets (used as labels) show nothing at all**
-
-#### Why This Happens
-GadTools TEXT_KIND gadgets require a **post-window-open refresh** to render their text content. Unlike other gadget types that self-render when the window opens, TEXT gadgets need explicit `RefreshGList()` calls. **This applies to both bordered and borderless TEXT gadgets.**
-
-#### The Solution: Refresh After Window Opens
-
-```c
-/* ❌ WRONG - Text won't display! */
-data->window = OpenWindowTags(NULL,
-    WA_Gadgets, data->glist,
-    /* ... other tags ... */
-    TAG_END);
-
-/* At this point, TEXT gadgets are blank! */
-data->window_open = TRUE;
-```
-
-```c
-/* ✅ CORRECT - Refresh TEXT gadgets after opening */
-data->window = OpenWindowTags(NULL,
-    WA_Gadgets, data->glist,
-    /* ... other tags ... */
-    TAG_END);
-
-if (data->window == NULL)
-    return FALSE;
-
-/* Refresh the entire window first */
-GT_RefreshWindow(data->window, NULL);
-
-/* Then refresh each TEXT gadget */
-RefreshGList(data->current_tool_text, data->window, NULL, 1);
-RefreshGList(data->mode_text, data->window, NULL, 1);
-
-data->window_open = TRUE;
-```
-
-#### Complete Example: TEXT Gadget with Label
-
-```c
-/* Create TEXT gadget with label above it */
-ng.ng_LeftEdge = current_x;
-ng.ng_TopEdge = current_y;
-ng.ng_Width = reference_width;
-ng.ng_Height = font_height + 4;
-ng.ng_GadgetText = "Current tool:";  /* Label text */
-ng.ng_GadgetID = 0;  /* Non-interactive */
-ng.ng_Flags = PLACETEXT_ABOVE;
-
-data->current_tool_text = gad = CreateGadget(TEXT_KIND, gad, &ng,
-    GTTX_Text, tool_name_string,  /* The text to display */
-    GTTX_Border, TRUE,  /* Optional: show border around text */
-    TAG_END);
-
-/* ... create other gadgets ... */
-
-/* Open window */
-data->window = OpenWindowTags(NULL,
-    WA_Gadgets, data->glist,
-    /* ... */
-    TAG_END);
-
-/* CRITICAL: Refresh TEXT gadgets */
-GT_RefreshWindow(data->window, NULL);
-RefreshGList(data->current_tool_text, data->window, NULL, 1);
-```
-
-#### When to Refresh TEXT Gadgets
-1. **After window opens** (mandatory)
-2. **After updating text content** with `GT_SetGadgetAttrs()`
-3. **After window refresh events** (IDCMP_REFRESHWINDOW)
-
-#### Dynamic Text Updates
-
-If you update TEXT gadget content dynamically:
-
-```c
-/* Update the text */
-GT_SetGadgetAttrs(data->current_tool_text, data->window, NULL,
-    GTTX_Text, new_tool_name,
-    TAG_END);
-
-/* Must refresh to see the change */
-RefreshGList(data->current_tool_text, data->window, NULL, 1);
-```
-
-#### Real-World Impact: iTidy Default Tool Window
-This bug in iTidy's "Replace Default Tool" window caused:
-- Current tool name appearing as blank bordered box
-- Mode text (e.g., "Batch Mode: 1 icon(s)") not displaying
-- Window looked incomplete/broken despite correct implementation
-- Debug logs showed text being set correctly, but nothing displayed
-
-**After fix:**
-- ✅ Added `GT_RefreshWindow()` and `RefreshGList()` calls after window opened
-- ✅ TEXT gadgets display correctly
-- ✅ Current tool name shows full path
-- ✅ Mode text displays icon count
-
-#### Best Practice Checklist
-When using TEXT_KIND gadgets:
-- [ ] Create gadget with `GTTX_Text` tag
-- [ ] Open window with `WA_Gadgets`
-- [ ] Call `GT_RefreshWindow(window, NULL)` after opening
-- [ ] Call `RefreshGList(text_gadget, window, NULL, 1)` for each TEXT gadget
-- [ ] Refresh again after any `GT_SetGadgetAttrs()` updates to text content
-
----
-
-## ⚠️ Amiga Stack Overflow: Allocate Large Structures on the Heap
-
-### The Problem: Memory Corruption from Stack Overflow
-
-The Amiga has a **very limited stack size** (typically only 4KB by default). Allocating large structures on the stack, especially inside nested function calls or event handlers, can cause **stack overflow** that manifests as seemingly random memory corruption elsewhere in your program.
-
-#### Symptoms of Stack Overflow
-- ✗ Memory corruption in **unrelated** data structures
-- ✗ Parent window title bar showing garbage characters (e.g., "updated@@@@@@@@@@@@@@")
-- ✗ Random crashes or Enforcer hits
-- ✗ Corruption appears when opening child windows or modal dialogs
-- ✗ Works fine in emulators with large stacks, fails on real hardware
-- ✗ Corruption is consistent and reproducible but seems disconnected from the actual bug location
-
-#### Why This Happens
-When you declare a large structure as a local variable, it's allocated on the **stack**. If the stack grows too large, it overwrites adjacent memory areas, which might contain:
-- Parent window data structures
-- Global variables
-- Other function's stack frames
-- System structures
-
-**Critical stack consumers:**
-- Large char arrays (e.g., `char buffer[256]`)
-- Window data structures (often 500-1000+ bytes)
-- Multiple nested function calls
-- Event handler callbacks (already deep in the stack)
-
-#### Real-World Example: iTidy Default Tool Update Window
-
-**Before (WRONG - causes memory corruption):**
-
-```c
-/* In tool_cache_window.c button handler */
-case GID_TOOL_REPLACE_SINGLE:
-{
-    struct iTidy_DefaultToolUpdateWindow update_window;  /* ~1KB on stack! */
-    struct iTidy_DefaultToolUpdateContext update_ctx;
-    
-    /* ... validation code ... */
-    
-    memset(&update_window, 0, sizeof(update_window));
-    
-    if (iTidy_OpenDefaultToolUpdateWindow(&update_window, &update_ctx))
-    {
-        while (iTidy_HandleDefaultToolUpdateEvents(&update_window))
-        {
-            /* Event loop */
-        }
-        iTidy_CloseDefaultToolUpdateWindow(&update_window);
-    }
-    
-    break;
-}
-```
-
-**Problem:** The `iTidy_DefaultToolUpdateWindow` structure contains:
-- 4 char arrays × 256 bytes = 1,024 bytes
-- ~15 pointers and other fields = ~100 bytes
-- **Total: ~1.1KB on the stack!**
-
-This caused the tool_cache_window's title to show "updated@@@@@@@@@@@@@@" because the stack overflow wrote the word "updated" (from mode_label string) into the parent window's title buffer.
-
-**After (CORRECT - allocate on heap):**
-
-```c
-/* In tool_cache_window.c button handler */
-case GID_TOOL_REPLACE_SINGLE:
-{
-    struct iTidy_DefaultToolUpdateWindow *update_window;  /* Just a pointer! */
-    struct iTidy_DefaultToolUpdateContext update_ctx;
-    
-    /* ... validation code ... */
-    
-    /* Allocate on HEAP to avoid stack overflow */
-    update_window = (struct iTidy_DefaultToolUpdateWindow *)whd_malloc(
-        sizeof(struct iTidy_DefaultToolUpdateWindow));
-    
-    if (update_window == NULL)
-    {
-        ShowEasyRequest(tool_data->window,
-            "Memory Error",
-            "Could not allocate memory for update window.",
-            "OK", NULL);
-        break;
-    }
-    
-    memset(update_window, 0, sizeof(struct iTidy_DefaultToolUpdateWindow));
-    
-    if (iTidy_OpenDefaultToolUpdateWindow(update_window, &update_ctx))
-    {
-        while (iTidy_HandleDefaultToolUpdateEvents(update_window))
-        {
-            /* Event loop */
-        }
-        iTidy_CloseDefaultToolUpdateWindow(update_window);
-    }
-    
-    /* CRITICAL: Free the heap allocation */
-    FreeVec(update_window);
-    
-    break;
-}
-```
-
-#### The Solution: Use Heap Allocation for Large Structures
-
-**Rule of thumb:** If a structure is **> 200 bytes**, allocate it on the heap, not the stack.
-
-```c
-/* ❌ WRONG - Stack allocation of large structure */
-void some_function(void)
-{
-    struct LargeWindowData window_data;  /* 800 bytes on stack! */
-    /* ... use window_data ... */
-}
-
-/* ✅ CORRECT - Heap allocation */
-void some_function(void)
-{
-    struct LargeWindowData *window_data;
-    
-    window_data = (struct LargeWindowData *)whd_malloc(sizeof(struct LargeWindowData));
-    if (window_data == NULL)
-    {
-        /* Handle allocation failure */
-        return;
-    }
-    
-    memset(window_data, 0, sizeof(struct LargeWindowData));
-    
-    /* ... use window_data ... */
-    
-    /* CRITICAL: Don't forget to free! */
-    FreeVec(window_data);
-}
-```
-
-#### Cleanup Patterns: Handle Early Exits
-
-When using heap allocation, you **must** free memory on all code paths, including error exits:
-
-```c
-case GID_SOME_BUTTON:
-{
-    struct SomeWindow *window_data;
-    
-    /* Allocate */
-    window_data = (struct SomeWindow *)whd_malloc(sizeof(struct SomeWindow));
-    if (window_data == NULL)
-    {
-        ShowError("Out of memory");
-        break;  /* OK - nothing to free yet */
-    }
-    
-    /* Validate inputs */
-    if (some_validation_failed)
-    {
-        ShowError("Invalid input");
-        FreeVec(window_data);  /* MUST free before break! */
-        break;
-    }
-    
-    /* Another validation */
-    if (another_check_failed)
-    {
-        ShowError("Another error");
-        FreeVec(window_data);  /* MUST free before break! */
-        break;
-    }
-    
-    /* Normal processing */
-    if (open_window(window_data))
-    {
-        run_event_loop(window_data);
-        close_window(window_data);
-    }
-    
-    /* Free on success path */
-    FreeVec(window_data);
-    break;
-}
-```
-
-#### Debugging Stack Overflow Issues
-
-**Identifying stack overflow:**
-1. Look for memory corruption that seems "random" or "unrelated"
-2. Check if corruption happens when opening windows/dialogs
-3. Look for large local variable declarations (struct arrays, char buffers)
-4. Calculate approximate stack usage:
-   - Each function call: ~20-40 bytes (return address, saved registers)
-   - Each local variable: sum of all sizes
-   - Nested calls multiply the cost
-
-**Tools:**
-- **Enforcer** - Will show hits when stack overflows into other memory
-- **MungWall** - Can detect some heap corruption (but not stack issues)
-- **Manual calculation** - Add up structure sizes in nested calls
-
-#### Structures to Watch Out For
-
-Common iTidy structures that are too large for stack:
-
-```c
-/* ❌ Too large for stack (allocate on heap instead) */
-struct iTidy_DefaultToolUpdateWindow;    /* ~1.1KB */
-struct iTidy_ToolCacheWindow;            /* ~800 bytes */
-struct iTidy_ProgressWindow;             /* ~600 bytes */
-struct iTidy_RecursiveProgressWindow;    /* ~700 bytes */
-
-/* ✅ OK for stack (small enough) */
-struct iTidy_DefaultToolUpdateContext;   /* ~20 bytes - just pointers */
-struct NewGadget;                        /* ~40 bytes */
-struct TextAttr;                         /* ~12 bytes */
-```
-
-#### Best Practice Checklist
-
-When adding new windows or large data structures:
-
-- [ ] Calculate structure size (use `sizeof()` in debug log if unsure)
-- [ ] If structure > 200 bytes, use heap allocation
-- [ ] Always check allocation returned non-NULL
-- [ ] Use `memset()` to zero-initialize heap-allocated structures
-- [ ] Free memory on **all** exit paths (success and error)
-- [ ] Consider adding size comment next to structure definition
-- [ ] Test on real Amiga hardware, not just emulators
-
-#### Pattern Summary
-
-```c
-/* Event handler pattern for large structures */
-case GID_BUTTON:
-{
-    struct LargeData *data;
-    
-    /* 1. Allocate on heap */
-    data = (struct LargeData *)whd_malloc(sizeof(struct LargeData));
-    if (data == NULL)
-    {
-        show_error("Out of memory");
-        break;
-    }
-    
-    /* 2. Initialize */
-    memset(data, 0, sizeof(struct LargeData));
-    
-    /* 3. Use it */
-    if (process_data(data))
-    {
-        /* Success path */
-    }
-    else
-    {
-        /* Error path - still need to free! */
-        show_error("Processing failed");
-    }
-    
-    /* 4. Always free before exit */
-    FreeVec(data);
-    break;
-}
-```
-
----
-
-#### Summary of the Rule
-**For STRING gadgets with GT_GetGadgetAttrs():**
-- ✅ **DO** use `STRPTR` pointer variable (e.g., `STRPTR currentPath = NULL`)
-- ✅ **DO** pass **address of the pointer** using `&` operator
-- ✅ **DO** validate pointer is not NULL before use
-- ✅ **DO** make a copy with `strncpy()` if you need to store or modify the string
-- ❌ **DON'T** pass buffer address directly
-- ❌ **DON'T** pass `(ULONG)buffer` expecting a string copy
-- ❌ **DON'T** modify the returned pointer's data (it's the gadget's internal buffer)
-
-**For STRING gadgets with GT_SetGadgetAttrs():**
-- ✅ Pass the string pointer directly (not pointer-to-pointer)
-- This is the asymmetry in the API - reading and writing work differently
-
-**The Pattern to Remember:**
-- Reading: `GT_GetGadgetAttrs(gad, win, NULL, ATTR, (ULONG)&variable, TAG_END)` - Pass address
-- Writing: `GT_SetGadgetAttrs(gad, win, NULL, ATTR, (ULONG)value, TAG_END)` - Pass value
 
 ### Update Gadget Values
 ```c
@@ -1597,152 +1097,6 @@ For EVERY window with ListView gadgets:
 - [ ] `cleanup_newlook_menus()` - Resource cleanup
 - [ ] `main()` - Main program loop and window handling
 
-## ⚠️ Critical Spacing and Height Rules
-
-### TEXT Gadget Heights - Use Consistent Values
-
-**PROBLEM:** Mixing different height values for TEXT_KIND gadgets creates uneven vertical spacing.
-
-```c
-/* ❌ WRONG - Inconsistent heights create uneven gaps */
-ng.ng_Height = prefsIControl.currentWindowBarHeight;  /* First label: 15-20px */
-label1 = CreateGadget(TEXT_KIND, ...);
-current_y += label1->Height + SPACE_Y;  /* Large gap */
-
-ng.ng_Height = font_height;  /* Second label: 8px */
-label2 = CreateGadget(TEXT_KIND, ...);
-current_y += label2->Height + SPACE_Y;  /* Small gap */
-
-/* Result: Visually unbalanced spacing between rows */
-```
-
-```c
-/* ✅ CORRECT - Consistent font_height for all simple text labels */
-ng.ng_Height = font_height;  /* All labels: 8px */
-label1 = CreateGadget(TEXT_KIND, ...);
-current_y += label1->Height + SPACE_Y;  /* Consistent gap */
-
-ng.ng_Height = font_height;
-label2 = CreateGadget(TEXT_KIND, ...);
-current_y += label2->Height + SPACE_Y;  /* Consistent gap */
-
-/* Result: Even, professional spacing throughout */
-```
-
-**RULE:**
-- ✅ **Use `font_height`** for all simple text labels and info displays
-- ✅ **Use `currentWindowBarHeight`** ONLY for prominent section headers that should match title bar appearance
-- ❌ **DON'T mix** both types in the same column of labels
-
-### Checkbox Height - Always Add Padding for Labels
-
-**PROBLEM:** Checkboxes with `PLACETEXT_RIGHT` or `PLACETEXT_LEFT` need extra height for the label text.
-
-```c
-/* ❌ WRONG - Checkbox too small for label text */
-ng.ng_Width = font_height;
-ng.ng_Height = font_height;  /* Only 8px - label text gets cramped */
-ng.ng_GadgetText = "Enable feature";
-ng.ng_Flags = PLACETEXT_RIGHT;
-checkbox = CreateGadget(CHECKBOX_KIND, gad, &ng, ...);
-
-/* Result: Tight, cramped spacing to next gadget */
-```
-
-```c
-/* ✅ CORRECT - Add +4 padding for label text */
-ng.ng_Width = font_height;
-ng.ng_Height = font_height + 4;  /* 12px - proper padding for label */
-ng.ng_GadgetText = "Enable feature";
-ng.ng_Flags = PLACETEXT_RIGHT;
-checkbox = CreateGadget(CHECKBOX_KIND, gad, &ng, ...);
-
-current_y += checkbox->Height + SPACE_Y;  /* Balanced spacing */
-
-/* Result: Comfortable, professional spacing */
-```
-
-**RULE:**
-- ✅ **Always use `font_height + 4`** for checkbox height when using labels
-- ✅ **Pattern from main_window.c** - this is the iTidy standard
-- ❌ **DON'T use just `font_height`** - creates cramped appearance
-
-### Consistent Spacing - Avoid Random Multipliers
-
-**PROBLEM:** Inconsistent use of spacing multipliers creates visual imbalance.
-
-```c
-/* ❌ WRONG - Inconsistent spacing multipliers */
-current_y += gad1->Height + SPACE_Y;      /* 8px gap */
-current_y += gad2->Height + SPACE_Y * 2;  /* 16px gap - why? */
-current_y += gad3->Height + SPACE_Y;      /* 8px gap again */
-
-/* Result: Middle gap looks wrong, breaks visual rhythm */
-```
-
-```c
-/* ✅ CORRECT - Consistent spacing throughout */
-current_y += gad1->Height + SPACE_Y;  /* 8px gap */
-current_y += gad2->Height + SPACE_Y;  /* 8px gap */
-current_y += gad3->Height + SPACE_Y;  /* 8px gap */
-
-/* Result: Clean, professional vertical rhythm */
-```
-
-**RULE:**
-- ✅ **Use `SPACE_Y` consistently** between all gadget rows
-- ✅ **Use `SPACE_Y * 2`** ONLY for deliberate visual separation (e.g., before major section breaks)
-- ❌ **DON'T use random multipliers** without a clear design reason
-
-### Always Use Actual Gadget Height
-
-**PROBLEM:** Using requested height instead of actual height causes miscalculations.
-
-```c
-/* ❌ WRONG - Using ng.ng_Height instead of actual */
-ng.ng_Height = font_height + 4;
-checkbox = CreateGadget(CHECKBOX_KIND, gad, &ng, ...);
-current_y += ng.ng_Height + SPACE_Y;  /* Might not match actual! */
-```
-
-```c
-/* ✅ CORRECT - Always use gad->Height after creation */
-ng.ng_Height = font_height + 4;
-checkbox = CreateGadget(CHECKBOX_KIND, gad, &ng, ...);
-current_y += checkbox->Height + SPACE_Y;  /* Uses actual rendered height */
-```
-
-**RULE:**
-- ✅ **Always use `gad->Height`** after `CreateGadget()` returns
-- ✅ **Never assume** `ng.ng_Height` equals actual rendered height
-- ✅ **Especially important** for ListView gadgets (height snapping to rows)
-
-### Complete Spacing Checklist
-
-When creating window layouts:
-- [ ] All simple TEXT labels use `font_height` (not `currentWindowBarHeight`)
-- [ ] All checkboxes with labels use `font_height + 4` (not just `font_height`)
-- [ ] Consistent `SPACE_Y` used between all rows (no random `* 2` multipliers)
-- [ ] Always use `gad->Height` for spacing calculations (not `ng.ng_Height`)
-- [ ] Test window appearance - gaps should look visually even
-- [ ] No gadget rows should appear cramped or have excessive spacing
-
-### Real-World Example: Default Tool Update Window
-
-This window had all these spacing issues and was fixed:
-
-**Before (uneven spacing):**
-- Current tool label: `currentWindowBarHeight` (20px) + `SPACE_Y` = **28px gap**
-- Mode label: `font_height` (8px) + `SPACE_Y * 2` = **24px gap** 
-- Checkbox: `font_height` (8px) + `SPACE_Y` = **16px gap**
-- Result: Gaps of 28px, 24px, 16px - visually unbalanced
-
-**After (even spacing):**
-- Current tool label: `font_height` (8px) + `SPACE_Y` = **16px gap**
-- Mode label: `font_height` (8px) + `SPACE_Y` = **16px gap**
-- Checkbox: `font_height + 4` (12px) + `SPACE_Y` = **20px gap**
-- Result: Gaps of 16px, 16px, 20px - visually balanced and professional
-
 ## 🍽️ NewLook Menu Template Patterns
 
 ### Menu Structure Example
@@ -1805,3 +1159,156 @@ The NewLook menu template provides:
 - **Keyboard Shortcuts**: Support for Amiga+key combinations
 - **Visual Info Integration**: Proper font and color handling
 - **Event Loop Integration**: Seamless integration with window message loop
+
+---
+
+## 📌 Additional OS3.0/3.1 Contracts and Patterns (MANDATORY FOR AI AGENTS)
+
+The following rules refine and extend the existing guidance, based on confirmed behaviour of Intuition and GadTools under **AmigaOS 3.0/3.1**. They do not replace earlier sections, but make some implicit assumptions explicit and should be treated as authoritative where they overlap.
+
+### ⚙️ OS3 Window & IDCMP Contracts
+
+#### Window Lifetime Rules
+
+- A window’s `struct Window *` is a **handle owned by Intuition**:
+  - It is valid only between `OpenWindowTags()` and `CloseWindow()`.
+  - After `CloseWindow()`, **never** read or write any fields in the `Window` struct.
+- Gadgets, menus, and VisualInfo must **stay alive** while the window is open:
+  - Do **not** call `FreeGadgets()` or `FreeMenus()` until **after** the window is closed.
+  - `FreeVisualInfo()` must also happen after the window is closed and all GadTools gadgets using it are freed.
+
+#### IDCMP Message Loop Pattern
+
+All template windows should follow this event loop shape:
+
+```c
+BOOL running = TRUE;
+ULONG win_sig = 1L << data->window->UserPort->mp_SigBit;
+/* Optional: handle CTRL+C from CLI */
+ULONG break_sig = SIGBREAKF_CTRL_C;
+
+while (running)
+{
+    ULONG sigs = Wait(win_sig | break_sig);
+
+    if (sigs & break_sig)
+    {
+        /* User pressed Ctrl+C in CLI */
+        running = FALSE;
+    }
+
+    if (sigs & win_sig)
+    {
+        struct IntuiMessage *msg;
+        while ((msg = GT_GetIMsg(data->window->UserPort)) != NULL)
+        {
+            ULONG  msg_class = msg->Class;
+            UWORD  msg_code  = msg->Code;
+            struct Gadget *gad = (struct Gadget *)msg->IAddress;
+
+            GT_ReplyIMsg(msg);
+
+            switch (msg_class)
+            {
+                case IDCMP_CLOSEWINDOW:
+                    running = FALSE;   /* DO NOT CloseWindow() here */
+                    break;
+
+                case IDCMP_GADGETUP:
+                case IDCMP_GADGETDOWN:
+                    handle_window_gadget_event(data, msg_class, gad, msg_code);
+                    break;
+
+                case IDCMP_MENUPICK:
+                    running = handle_window_menu_pick(data, msg_code);
+                    break;
+
+                case IDCMP_REFRESHWINDOW:
+                    GT_BeginRefresh(data->window);
+                    GT_EndRefresh(data->window, TRUE);
+                    break;
+
+                case IDCMP_NEWSIZE:
+                    handle_window_resize(data);
+                    break;
+            }
+        }
+    }
+}
+
+/* Now safe to close window and free resources */
+close_window_and_cleanup(data);
+```
+
+**Critical rules:**
+
+- **NEVER** call `CloseWindow()` inside the message loop.
+  - Set a `running = FALSE` flag and close after the loop exits.
+- **ALWAYS** call `GT_ReplyIMsg(msg)` exactly once for every `GT_GetIMsg()`.
+- If an AI agent adds new IDCMP flags (e.g. `IDCMP_NEWSIZE`), it **must** add cases for them in the loop, even if they just call a stub handler.
+- Do not use shared IDCMP ports or `ModifyIDCMP()` on template windows – one `UserPort` per window is the supported pattern for iTidy.
+
+---
+
+### 🧹 Canonical Cleanup Order (OS3.0/3.1)
+
+This is the **official** shutdown order for any window that uses GadTools gadgets and/or ListViews. Follow this sequence and only skip steps that are truly unused:
+
+1. **Detach dynamic ListView labels** (if any):
+   - For each ListView gadget:
+     - `GT_SetGadgetAttrs(listview, window, NULL, GTLV_Labels, ~0UL, TAG_END);`
+2. **Free ListView backing data**:
+   - Walk your Exec `struct List` of nodes, free all node structs and strings.
+3. **Clear menu strip from the window** (if menus are attached):
+   - `ClearMenuStrip(window);`
+4. **Close the window**:
+   - `CloseWindow(window);`
+   - Set the window pointer in your data struct to `NULL`.
+5. **Free GadTools gadgets**:
+   - `FreeGadgets(glist);`
+   - Set the gadget list pointer to `NULL`.
+6. **Free menus** (NewLook menu template):
+   - `FreeMenus(menu_strip);`
+7. **Free VisualInfo**:
+   - `FreeVisualInfo(visual_info);`
+8. **Free DrawInfo and unlock Workbench screen** (if you locked it):
+   - `FreeScreenDrawInfo(screen, draw_info);`
+   - `UnlockPubScreen(NULL, screen);`
+
+> ❗ **NEVER** free gadgets or menus while a window is still open on them.  
+> ❗ **NEVER** use a VisualInfo after its gadgets or screen are freed.
+
+---
+
+### 📝 String Gadgets Are Not Auto-Committed
+
+On AmigaOS 3.0/3.1, GadTools `STRING_KIND` gadgets:
+
+- Generate events on **Enter** / activation.
+- **Do NOT** generate a special event when they simply lose focus (user clicks into another gadget).
+
+This means:
+
+- If the user types into a string field and then immediately clicks “OK”, you **cannot** rely on a past `IDCMP_GADGETUP` from the string gadget.
+- The safest pattern is to **re-read all relevant string gadgets** right before processing the OK/Apply button.
+
+**Safe pattern: sync strings before using them**
+
+```c
+static VOID sync_window_strings(struct TemplateWindowData *data)
+{
+    STRPTR text = NULL;
+
+    if (data->window == NULL)
+        return;
+
+    if (data->string_path != NULL)
+    {
+        GT_GetGadgetAttrs(data->string_path, data->window, NULL,
+                          STRINGA_TextVal, (ULONG)&text,
+                          TAG_END);
+
+        if (text != NULL)
+        {
+            strncpy(data->path_buffer, text, sizeof(data->path_buffer) - 1);
+            data->path_buffer[sizeof(data->path_buffer) - 1] = '

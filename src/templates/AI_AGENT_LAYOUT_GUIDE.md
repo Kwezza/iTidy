@@ -2,6 +2,114 @@
 
 This document provides critical guidance for AI agents working with the Amiga window template. These patterns were discovered through extensive debugging and must be followed exactly to avoid layout issues.
 
+---
+
+## 🚨 SECTION 0: GadTools Coordinate System (MANDATORY - READ FIRST!)
+
+### The Fatal Mistake That Breaks All Layouts
+
+**MISCONCEPTION:** "NewGadget coordinates start at the client area, so ng_TopEdge = 0 is below the title bar."
+
+**REALITY:** GadTools uses **window-relative coordinates** where (0,0) is the **window's outer top-left corner** (the title bar itself). Positioning gadgets at ng_TopEdge = 0 or ng_TopEdge = 5 will cause them to **overlap the title bar**.
+
+### The Only Correct Formula (From Amiga RKMs)
+
+Calculate BorderTop **before** creating gadgets:
+
+```c
+struct Screen *screen = LockPubScreen("Workbench");
+
+/* CRITICAL: This formula is NON-NEGOTIABLE */
+WORD border_top    = screen->WBorTop + screen->Font->ta_YSize + 1;
+WORD border_left   = screen->WBorLeft;
+WORD border_right  = screen->WBorRight;
+WORD border_bottom = screen->WBorBottom;
+
+UnlockPubScreen(NULL, screen);
+```
+
+**Formula breakdown:**
+- `WBorTop` = window's top border thickness (typically 2-4 pixels)
+- `Font->ta_YSize` = screen font height used for title bar text
+- `+ 1` = required spacing pixel per RKM specification
+- **Result** = exact BorderTop that matches `window->BorderTop` after creation
+
+### Correct Gadget Positioning
+
+```c
+/* Initialize positioning BELOW the title bar */
+WORD margin = 5;
+WORD current_y = border_top + margin;  /* NOT just margin! */
+WORD current_x = border_left + margin;
+
+/* Create gadgets with window-relative coordinates */
+struct NewGadget ng;
+ng.ng_LeftEdge = current_x;  /* Includes border_left */
+ng.ng_TopEdge  = current_y;  /* Includes border_top */
+ng.ng_Width    = gadget_width;
+ng.ng_Height   = gadget_height;
+
+gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+
+/* Move to next gadget position */
+current_y += gadget_height + spacing;
+```
+
+### Window Size Must Include Borders
+
+```c
+/* Calculate content area size (gadgets already offset by border_top) */
+UWORD content_height = last_gadget_Y + gadget_height + bottom_margin;
+
+/* Add borders for TOTAL window size */
+UWORD window_height = content_height + border_top + border_bottom;
+
+/* Open window with total dimensions */
+window = OpenWindowTags(NULL,
+    WA_Height, window_height,  /* Includes borders */
+    TAG_END);
+```
+
+### Mandatory Verification
+
+After opening the window, verify your calculation:
+
+```c
+if (window->BorderTop != border_top) {
+    /* CRITICAL ERROR: Formula is wrong! */
+    printf("BorderTop ERROR: Calculated=%d, Actual=%d\n",
+           border_top, window->BorderTop);
+}
+```
+
+**Expected result: ZERO difference.** Any difference means you're using the wrong formula.
+
+### Common Fatal Errors
+
+❌ **NEVER** use `ng_TopEdge = 0` or `ng_TopEdge = margin` alone  
+❌ **NEVER** guess `border_top = 16` or use hardcoded values  
+❌ **NEVER** use `font_height * 2` or other multipliers  
+❌ **NEVER** use only `screen->WBorTop` (misses title font height!)  
+❌ **NEVER** forget the `+ 1` in the formula  
+❌ **NEVER** assume `BorderTop == BorderBottom` (they can differ!)
+
+### Why This Formula is Universal
+
+Adapts automatically to:
+- Different fonts (Topaz 8, Helvetica 11, Times 15, etc.)
+- IControl prefs (enlarged title bars in WB 3.2)
+- All Workbench versions (3.0, 3.1, 3.2)
+- Custom screen modes and resolutions
+- Visual enhancements (NewLook, MagicWB)
+
+**It reads actual screen metrics instead of assuming values.**
+
+### Reference Implementation
+
+See `amiga_window_template.c` → `calculate_font_dimensions()` for production code that achieves **zero-pixel positioning errors** in all tested configurations.
+
+---
+
 ## ⚠️ CRITICAL: ListView Scroll Buttons Require IDCMP_GADGETDOWN
 
 **If your window has a ListView gadget with scroll arrow buttons:**
@@ -158,22 +266,20 @@ button_width = TextLength(&temp_rp, "Button Text", 11) + BUTTON_TEXT_PADDING;
 button_height = font_height + 6;
 string_height = font_height + 6;
 listview_line_height = font_height + 2;
-checkbox_height = font_height + 4;  /* CRITICAL: +4 for label padding with PLACETEXT_RIGHT */
+checkbox_height = font_height + 4;
 ```
-
-**IMPORTANT:** Checkboxes with `PLACETEXT_RIGHT` or `PLACETEXT_LEFT` must use `font_height + 4`, not just `font_height`, to provide proper padding for the label text.
 
 ### Complete Window Structure Template
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ Window Title Bar                                      [×]  │ ← prefsIControl.currentWindowBarHeight
+│ Window Title Bar                                      [×]  │ ← currentWindowBarHeight
 ├────────────────────────────────────────────────────────────┤
-│ ← MARGIN_LEFT (10px)                 ↑ MARGIN_TOP (10px)  │
-│                                       ↓                     │
+│ ← MARGIN_LEFT (10px)                                       │
+│                                                             │
 │   [Label:]  [Input Field ──]  [Action Btn ──────────────] │ ← PATTERN_INPUT_ROW
-│             └─35 chars────┘    └─Extends to ref width──┘  │   (current_y starts here!)
-│                                                             │   (SPACE_Y below)
+│             └─35 chars────┘    └─Extends to ref width──┘  │   (SPACE_Y below)
+│                                                             │
 │   [Reference Content Area ──────────────────────────────]  │ ← PATTERN_REFERENCE_CONTENT
 │   [                                                      ]  │   (Usually ListView)
 │   [           60-65 characters wide                      ]  │
@@ -190,345 +296,9 @@ checkbox_height = font_height + 4;  /* CRITICAL: +4 for label padding with PLACE
 │                                                             │
 └────────────────────────────────────────────────────────────┘
   ← MARGIN_BOTTOM (10px)
-
-NOTE: current_y = prefsIControl.currentWindowBarHeight + MARGIN_TOP
-      First gadget row starts AFTER accounting for title bar height!
 ```
 
 ## 📋 APPLYING STANDARD PATTERNS: Step-by-Step Guide
-
-### Step 0: Account for Window Chrome (MANDATORY FIRST STEP)
-
-**Before calculating any gadget positions, you MUST account for window chrome (title bars, borders, etc.).**
-
-iTidy uses the `prefsIControl` global structure to get accurate window chrome dimensions from the user's IControl preferences. This ensures your layout works correctly regardless of the user's Workbench settings.
-
-#### Available Chrome Measurements
-
-```c
-/* From Settings/IControlPrefs.h - External global */
-extern struct IControlPrefsDetails prefsIControl;
-
-/* Available measurements: */
-prefsIControl.currentWindowBarHeight;    /* Window title bar height */
-prefsIControl.currentTitleBarHeight;     /* Screen title bar height */
-prefsIControl.currentBarWidth;           /* Border width */
-prefsIControl.currentBarHeight;          /* Border height */
-prefsIControl.currentLeftBarWidth;       /* Left border width */
-```
-
-#### When to Use Each Measurement
-
-1. **Title Bar Height** (`currentWindowBarHeight`)
-   - Use when positioning first gadget row below title bar
-   - Use for TEXT_KIND labels that should match title bar appearance
-   - **Example:** `current_y = prefsIControl.currentWindowBarHeight + MARGIN_TOP;`
-
-2. **Border Widths** (`currentBarWidth`, `currentLeftBarWidth`)
-   - Usually handled automatically by GadTools
-   - Rarely needed in manual calculations
-   - Only use if doing custom rendering
-
-3. **Title Bar for Labels** (common pattern)
-   - TEXT_KIND gadgets used as section headers/labels can match title bar height
-   - **Example:** `ng.ng_Height = prefsIControl.currentWindowBarHeight;`
-
-#### Critical Pattern: Start Y Position
-
-**Always start gadget layout below the title bar:**
-
-```c
-/* ✅ CORRECT - Account for title bar */
-UWORD current_x = WINDOW_MARGIN_LEFT;
-UWORD current_y = prefsIControl.currentWindowBarHeight + WINDOW_MARGIN_TOP;
-
-/* First gadget starts BELOW title bar with proper margin */
-ng.ng_TopEdge = current_y;
-```
-
-```c
-/* ❌ WRONG - Gadgets will overlap title bar */
-UWORD current_x = WINDOW_MARGIN_LEFT;
-UWORD current_y = WINDOW_MARGIN_TOP;  /* Missing title bar height! */
-
-ng.ng_TopEdge = current_y;  /* This will be too high! */
-```
-
-#### Complete Initialization Pattern
-
-```c
-/* After getting font metrics... */
-
-/*--------------------------------------------------------------------*/
-/* INITIALIZE LAYOUT CURSORS (Account for window chrome)            */
-/*--------------------------------------------------------------------*/
-UWORD current_x = WINDOW_MARGIN_LEFT;
-UWORD current_y = prefsIControl.currentWindowBarHeight + WINDOW_MARGIN_TOP;
-
-append_to_log("Window chrome: title_bar_height=%d\n", 
-             prefsIControl.currentWindowBarHeight);
-append_to_log("Starting layout at: x=%d, y=%d\n", current_x, current_y);
-```
-
-#### Using Title Bar Height for Labels
-
-When creating TEXT_KIND gadgets as section headers or labels:
-
-```c
-/* Create label that matches title bar height */
-ng.ng_LeftEdge = current_x;
-ng.ng_TopEdge = current_y;
-ng.ng_Width = reference_width;
-ng.ng_Height = prefsIControl.currentWindowBarHeight;  /* Match title bar */
-ng.ng_GadgetText = NULL;
-ng.ng_GadgetID = 0;
-ng.ng_Flags = 0;
-
-data->section_label = gad = CreateGadget(TEXT_KIND, gad, &ng,
-    GTTX_Text, "Current Section: Details",
-    GTTX_Border, FALSE,  /* No border for label */
-    TAG_END);
-
-current_y += gad->Height + WINDOW_SPACE_Y;
-```
-
-#### Real-World Example: Default Tool Update Window
-
-```c
-/* From default_tool_update_window.c */
-
-/* Initialize layout cursor */
-current_x = TOOL_UPDATE_WINDOW_MARGIN_LEFT;
-current_y = prefsIControl.currentWindowBarHeight + TOOL_UPDATE_WINDOW_MARGIN_TOP;
-
-/* Create "Current tool: xxx" label matching title bar height */
-ng.ng_LeftEdge = current_x;
-ng.ng_TopEdge = current_y;
-ng.ng_Width = reference_width;
-ng.ng_Height = prefsIControl.currentWindowBarHeight;  /* Professional look */
-ng.ng_GadgetText = NULL;
-ng.ng_GadgetID = 0;
-ng.ng_Flags = 0;
-
-data->current_tool_text = gad = CreateGadget(TEXT_KIND, gad, &ng,
-    GTTX_Text, data->current_tool_label,  /* Pre-formatted string */
-    GTTX_Border, FALSE,
-    TAG_END);
-
-current_y += gad->Height + TOOL_UPDATE_WINDOW_SPACE_Y;
-```
-
-#### Why This Matters
-
-- **User preferences respected:** Different users may have different title bar heights (50%, 67%, 75%, 100%)
-- **Correct spacing:** Gadgets won't overlap window chrome
-- **Professional appearance:** Labels match system UI consistency
-- **No hardcoded values:** Works across all Workbench configurations
-
-#### Checklist: Window Chrome Setup
-
-Before creating any gadgets:
-- [ ] Include `#include "../Settings/IControlPrefs.h"`
-- [ ] Declare external: `extern struct IControlPrefsDetails prefsIControl;`
-- [ ] Initialize `current_y` with title bar height + margin
-- [ ] Use `prefsIControl.currentWindowBarHeight` for label gadget heights (optional)
-- [ ] Log chrome values for debugging: `append_to_log("Title bar height: %d\n", ...)`
-
----
-
-### Step 0.5: Label + Input Gadget Vertical Alignment (CRITICAL)
-
-**⚠️ IMPORTANT:** When placing a TEXT gadget (label) next to a taller input gadget (STRING, BUTTON), you **MUST** vertically center the label to achieve professional alignment.
-
-#### The Problem
-
-String gadgets and buttons have borders/padding that make them taller than plain text:
-- `font_height` = pure text height (e.g., 8 pixels)
-- `string_height = font_height + 6` = text + border padding (e.g., 14 pixels)
-- `button_height = font_height + 6` = text + border padding (e.g., 14 pixels)
-
-If you place a label at the same `TopEdge` as the input gadget, **the label text appears too high** because it doesn't have the border padding.
-
-**Visual Example of the Problem:**
-
-```
-Without vertical centering (WRONG):
-┌────────────────────────────────────┐
-│ Change to:  ┌──────────────┐      │ ← Label text is too high
-│             │ Input Field  │      │   (not centered in row)
-│             └──────────────┘      │
-└────────────────────────────────────┘
-
-With vertical centering (CORRECT):
-┌────────────────────────────────────┐
-│             ┌──────────────┐      │
-│ Change to:  │ Input Field  │      │ ← Label perfectly centered
-│             └──────────────┘      │   with input gadget
-└────────────────────────────────────┘
-```
-
-#### The Solution: Vertical Centering Formula
-
-```c
-label_top = row_baseline + (taller_gadget_height - label_height) / 2
-```
-
-For typical string/button rows:
-```c
-label_top = current_y + (string_height - font_height) / 2
-```
-
-Since `string_height = font_height + 6`, this becomes:
-```c
-label_top = current_y + 3  /* (font_height + 6 - font_height) / 2 = 3 */
-```
-
-#### Complete Pattern: Label + String + Button Row
-
-```c
-/* STEP 1: Define row baseline */
-UWORD row_baseline = current_y;
-
-/* STEP 2: Measure label width accurately */
-STRPTR label_text = "Change to:";
-UWORD label_width = TextLength(&temp_rp, label_text, strlen(label_text));
-
-/* STEP 3: Create label gadget (VERTICALLY CENTERED) */
-ng.ng_LeftEdge = current_x;  /* Left margin */
-ng.ng_TopEdge = row_baseline + (string_height - font_height) / 2;  /* Centered! */
-ng.ng_Width = label_width;
-ng.ng_Height = font_height;
-ng.ng_GadgetText = NULL;
-ng.ng_GadgetID = 0;  /* Non-interactive */
-ng.ng_Flags = 0;
-
-data->label = gad = CreateGadget(TEXT_KIND, gad, &ng,
-    GTTX_Text, label_text,
-    GTTX_Border, FALSE,
-    TAG_END);
-
-/* STEP 4: Create string gadget (AT BASELINE) */
-ng.ng_LeftEdge = current_x + label_width + 4;  /* After label + gap */
-ng.ng_TopEdge = row_baseline;  /* Baseline position */
-ng.ng_Width = input_width;
-ng.ng_Height = string_height;
-ng.ng_GadgetText = NULL;  /* No label - we created our own! */
-ng.ng_GadgetID = GID_INPUT_STRING;
-ng.ng_Flags = 0;
-
-data->input_string = gad = CreateGadget(STRING_KIND, gad, &ng,
-    GTST_String, "",
-    GTST_MaxChars, 255,
-    TAG_END);
-
-/* STEP 5: Create action button (AT BASELINE, extends to reference width) */
-ng.ng_LeftEdge = current_x + label_width + 4 + input_width + WINDOW_SPACE_X;
-ng.ng_TopEdge = row_baseline;  /* Same baseline */
-ng.ng_Width = browse_btn_width;  /* Pre-calculated to extend right */
-ng.ng_Height = button_height;
-ng.ng_GadgetText = "Browse...";
-ng.ng_GadgetID = GID_BROWSE_BTN;
-ng.ng_Flags = PLACETEXT_IN;
-
-data->browse_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
-
-/* STEP 6: Advance to next row using tallest gadget */
-current_y = row_baseline + button_height + WINDOW_SPACE_Y;
-
-/* STEP 7: After window opens, refresh the TEXT label */
-RefreshGList(data->label, data->window, NULL, 1);
-```
-
-#### Why This Works
-
-1. **Row baseline** (`current_y`) defines where the taller gadgets (string, button) are positioned
-2. **Label is offset** by `(string_height - font_height) / 2` to center it vertically
-3. **String and button** share the same baseline (both at `current_y`)
-4. **Result:** Label text appears perfectly centered alongside the input gadgets
-
-#### Common Centering Values
-
-| Gadget Type | Height Formula | Typical Height | Label Offset |
-|-------------|---------------|----------------|--------------|
-| STRING | `font_height + 6` | 14px (with 8px font) | +3px |
-| BUTTON | `font_height + 6` | 14px (with 8px font) | +3px |
-| CHECKBOX | `font_height` | 8px (with 8px font) | 0px (no offset needed) |
-
-#### Key Rules for Label Alignment
-
-- ✅ **DO** use separate TEXT gadget for labels (not PLACETEXT_LEFT)
-- ✅ **DO** vertically center label using `(taller_height - font_height) / 2`
-- ✅ **DO** position string/button at row baseline (`current_y`)
-- ✅ **DO** refresh TEXT labels after window opens with `RefreshGList()`
-- ✅ **DO** measure label width with `TextLength()` for accuracy
-- ❌ **DON'T** use PLACETEXT_LEFT (breaks left margin alignment)
-- ❌ **DON'T** position label and input at same TopEdge (label appears too high)
-- ❌ **DON'T** hardcode pixel offsets like `+3` (calculate dynamically)
-
-#### Real-World Example: Default Tool Update Window
-
-```c
-/* From default_tool_update_window.c */
-
-/* "Change to:" label + string + browse button row */
-
-/* Label (vertically centered) */
-ng.ng_LeftEdge = current_x;
-ng.ng_TopEdge = current_y + (string_height - font_height) / 2;
-ng.ng_Width = label_width;
-ng.ng_Height = font_height;
-
-data->change_to_label = gad = CreateGadget(TEXT_KIND, gad, &ng,
-    GTTX_Text, "Change to:",
-    GTTX_Border, FALSE,
-    TAG_END);
-
-/* String gadget (at baseline) */
-ng.ng_LeftEdge = current_x + label_width + 4;
-ng.ng_TopEdge = current_y;  /* Row baseline */
-ng.ng_Width = input_width;
-ng.ng_Height = string_height;
-
-data->new_path_string = gad = CreateGadget(STRING_KIND, gad, &ng,
-    GTST_String, data->new_tool_path,
-    GTST_MaxChars, 255,
-    GA_ReadOnly, TRUE,
-    TAG_END);
-
-/* Browse button (at baseline, extends to reference width) */
-ng.ng_LeftEdge = current_x + label_width + 4 + input_width + WINDOW_SPACE_X;
-ng.ng_TopEdge = current_y;  /* Same baseline */
-ng.ng_Width = browse_btn_width;
-ng.ng_Height = button_height;
-
-data->browse_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
-
-/* Result: "Change to:" label is perfectly centered with input and button */
-```
-
-#### Why Separate Labels Are Superior to PLACETEXT_LEFT
-
-| Aspect | Separate TEXT Gadget | PLACETEXT_LEFT |
-|--------|---------------------|----------------|
-| **Left Alignment** | ✅ Label at exact left margin | ❌ Label position is relative to gadget |
-| **Vertical Centering** | ✅ Easy with simple formula | ❌ Complex calculations needed |
-| **Multi-Gadget Rows** | ✅ Works perfectly | ❌ Hard to align with other gadgets |
-| **ListView Alignment** | ✅ Label aligns with ListView below | ❌ Misaligned due to label space |
-| **Code Clarity** | ✅ Clear, explicit positioning | ❌ Confusing offset calculations |
-| **Maintainability** | ✅ Easy to understand and modify | ❌ Fragile, breaks easily |
-
-#### Checklist: Label + Input Alignment
-
-When creating label + input rows:
-- [ ] Calculate `row_baseline = current_y`
-- [ ] Measure label width with `TextLength()`
-- [ ] Position label at `baseline + (string_height - font_height) / 2`
-- [ ] Position input at `baseline`
-- [ ] Position button (if any) at `baseline`
-- [ ] Advance `current_y` using tallest gadget height
-- [ ] Refresh TEXT labels after window opens
-
----
 
 ### Step 1: Choose Window Size
 Determine which standard size fits your content needs:
@@ -1251,65 +1021,17 @@ BOOL handle_window_events(struct WindowData *data)
 
 ### 0.1. ListView Label Text Positioning (CRITICAL)
 
-**⚠️ DANGER: ListView labels with `PLACETEXT_ABOVE` are placed ABOVE `ng.ng_TopEdge`!**
-
-**THE PROBLEM:** When you create a ListView with `ng.ng_GadgetText = "Label"` and `PLACETEXT_ABOVE`, GadTools places the label text **ABOVE** the `ng.ng_TopEdge` position you specify. This means the label can overwrite gadgets positioned above the ListView!
-
-**VISUAL EXAMPLE OF THE BUG:**
-
-```
-Before ListView creation:
-┌──────────────────────────────────────┐
-│  [Update Button]                     │ ← current_y = 100
-│                                      │ ← current_y = 120 (after button + space)
-│  (ListView will be created here)    │ ← ng.ng_TopEdge = 120
-└──────────────────────────────────────┘
-
-After ListView creation with PLACETEXT_ABOVE:
-┌──────────────────────────────────────┐
-│  [Update Button]                     │ ← Y = 100
-│  Update Progress:  ← LABEL OVERLAPS! │ ← Y = 107 (placed ABOVE ng.ng_TopEdge!)
-│  ┌────────────────────────────────┐  │ ← ng.ng_TopEdge = 120
-│  │ ListView content starts here   │  │
-│  │                                │  │
-│  └────────────────────────────────┘  │
-└──────────────────────────────────────┘
-```
-
-**CRITICAL RULE:** If you use `PLACETEXT_ABOVE` with a ListView, you **MUST** account for the label space by adding `font_height + gap` to `current_y` **BEFORE** setting `ng.ng_TopEdge`.
+**THE PROBLEM:** ListView gadgets with `PLACETEXT_ABOVE` labels add extra vertical space above the ListView that varies with font size. If you don't account for this, your layout calculations will be wrong and gadgets will overlap or have incorrect spacing.
 
 **SYMPTOMS:**
-- ListView label overlaps the gadget positioned immediately above it
-- Label text appears to "overwrite" buttons, text gadgets, or other elements
-- Layout looks correct for ListView itself, but label is in wrong position
+- ListView appears lower than expected
+- Gadgets above ListView overlap with the label
 - Vertical spacing calculations don't match actual positions
 - Layout breaks when user changes font size
 
-**ROOT CAUSE:** When you use `ng.ng_GadgetText` with `PLACETEXT_ABOVE`, GadTools automatically adds vertical space above the ListView for the label text (typically `font_height + small_gap`). The label is rendered **starting at `ng.ng_TopEdge - label_height`**, not at `ng.ng_TopEdge`!
+**ROOT CAUSE:** When you use `ng.ng_GadgetText` with `PLACETEXT_ABOVE`, GadTools automatically adds vertical space above the ListView for the label text (typically `font_height + small_gap`). This space is NOT included in `ng.ng_Height` and must be accounted for separately.
 
-**❌ WRONG WAY #1 (causes label to overlap gadgets above - COMMON BUG!):**
-```c
-/* Create Update button */
-ng.ng_TopEdge = current_y;
-ng.ng_Height = button_height;
-ng.ng_GadgetText = "Update Default Tool";
-update_btn = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
-
-/* Move down for next gadget */
-current_y += button_height + SPACE_Y;  /* current_y = 120 */
-
-/* Create ListView - BUG: Label will overlap button! */
-ng.ng_TopEdge = current_y;  /* ng.ng_TopEdge = 120 */
-ng.ng_Height = listview_height;
-ng.ng_GadgetText = "Update Progress:";  /* Label placed at Y=107 (ABOVE 120)! */
-ng.ng_Flags = PLACETEXT_ABOVE;
-
-listview = CreateGadget(LISTVIEW_KIND, gad, &ng, TAG_END);
-
-/* RESULT: "Update Progress:" label overlaps the "Update Default Tool" button! */
-```
-
-**❌ WRONG WAY #2 (hardcoded offset - breaks with font changes):**
+**❌ WRONG WAY #1 (hardcoded offset - breaks with font changes):**
 ```c
 /* BAD: Hardcoded offset for label space */
 ng.ng_LeftEdge = MARGIN_LEFT;
@@ -1341,37 +1063,7 @@ listview = CreateGadget(LISTVIEW_KIND, gad, &ng, TAG_END);
 current_y = ng.ng_TopEdge + listview->Height;  /* Still confusing! */
 ```
 
-**✅ CORRECT WAY #1 - Reserve Space for Label (if using PLACETEXT_ABOVE):**
-
-If you want to use the built-in `PLACETEXT_ABOVE` label, you **MUST** add label space to `current_y` **BEFORE** setting `ng.ng_TopEdge`:
-
-```c
-/* Create Update button */
-ng.ng_TopEdge = current_y;
-ng.ng_Height = button_height;
-ng.ng_GadgetText = "Update Default Tool";
-update_btn = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
-
-/* Move down for next gadget */
-current_y += button_height + SPACE_Y;
-
-/* CRITICAL: Reserve space for ListView label BEFORE creating it! */
-UWORD label_space = font_height + 4;  /* GadTools adds this above ListView */
-current_y += label_space;  /* Move down to make room for label */
-
-/* Now create ListView - label will fit in reserved space */
-ng.ng_TopEdge = current_y;
-ng.ng_Height = listview_height;
-ng.ng_GadgetText = "Update Progress:";  /* Label placed in reserved space */
-ng.ng_Flags = PLACETEXT_ABOVE;
-
-listview = CreateGadget(LISTVIEW_KIND, gad, &ng, TAG_END);
-
-/* Move down for next gadget */
-current_y = listview->TopEdge + listview->Height + SPACE_Y;
-```
-
-**✅ CORRECT WAY #2 - Use Empty Label with Separate TEXT Gadget (RECOMMENDED):**
+**✅ CORRECT WAY - Use Empty Label (RECOMMENDED):**
 
 The **simplest and most reliable approach** is to use an **empty string** for `ng.ng_GadgetText` and create a separate TEXT gadget for the label. This gives you complete control over positioning and eliminates font-dependent spacing issues.
 
@@ -1418,12 +1110,31 @@ current_y = listview->TopEdge + actual_listview_height + WINDOW_SPACE_Y;
 ng.ng_TopEdge = current_y;
 ```
 
-**KEY TAKEAWAYS:**
+**ALTERNATIVE - Calculate Label Space (More Complex):**
 
-1. **PLACETEXT_ABOVE labels are placed ABOVE `ng.ng_TopEdge`** - they can overwrite gadgets above!
-2. **If using PLACETEXT_ABOVE:** Add `font_height + 4` to `current_y` BEFORE setting `ng.ng_TopEdge`
-3. **Recommended approach:** Use empty label (`""`) and create separate TEXT gadget for full control
-4. **Real-world bug:** Default Tool Update window's "Update Progress:" label overlapped "Update Default Tool" button due to missing label space reservation
+If you must use `PLACETEXT_ABOVE` with a label, you need to account for the label space in all your calculations:
+
+```c
+/* Calculate label space (GadTools adds font_height + small gap above ListView) */
+UWORD label_space = font_height + 4;  /* Approximate, may vary */
+
+ng.ng_LeftEdge = current_x;
+ng.ng_TopEdge = current_y + label_space;  /* Reserve space for label */
+ng.ng_Width = listview_width;
+ng.ng_Height = (font_height + 2) * 10;
+ng.ng_GadgetText = "Items:";
+ng.ng_GadgetID = GID_LISTVIEW;
+ng.ng_Flags = PLACETEXT_ABOVE;
+
+listview = CreateGadget(LISTVIEW_KIND, gad, &ng, TAG_END);
+
+/* CRITICAL: Account for label space when calculating total height */
+UWORD total_height = label_space + listview->Height;
+current_y = ng.ng_TopEdge + listview->Height;  /* Base position + actual height */
+
+/* OR use the gadget's TopEdge which already accounts for label */
+current_y = listview->TopEdge + listview->Height + WINDOW_SPACE_Y;
+```
 
 **WHY EMPTY LABEL IS BETTER:**
 
@@ -1829,27 +1540,17 @@ button->Width = new_calculated_width;  // Visual update doesn't happen
 13. **Not testing with different fonts** - Layout may work with one font but fail with others
 14. **Inconsistent button text padding** - Always use `BUTTON_TEXT_PADDING` constant
 
-### Spacing and Height Errors ⚠️ CRITICAL
-15. **Using inconsistent TEXT gadget heights** - Mixing `currentWindowBarHeight` and `font_height` creates uneven gaps
-    - **SOLUTION:** Use `font_height` for all simple text labels; only use `currentWindowBarHeight` for section headers
-16. **Using double spacing inconsistently** - Adding `SPACE_Y * 2` in some places but not others creates visual imbalance
-    - **SOLUTION:** Use consistent `SPACE_Y` spacing between all gadget rows unless there's a specific design reason
-17. **Wrong checkbox height** - Using `font_height` instead of `font_height + 4` for checkboxes with labels
-    - **SOLUTION:** Always use `font_height + 4` for CHECKBOX_KIND gadgets with `PLACETEXT_RIGHT` or `PLACETEXT_LEFT`
-18. **Not using actual gadget height for spacing** - Using `ng.ng_Height` instead of `gad->Height` after creation
-    - **SOLUTION:** Always use `gad->Height` after `CreateGadget()` returns for accurate spacing calculations
-
 ### Standard Pattern Violations
-19. **Not using standard window sizes** - Use 40/60/80 char widths, not arbitrary values
-20. **Wrong button count for window size** - Small=2, Medium=3, Large=4 buttons
-21. **Not using pre-calculation block** - All dimensions must be calculated before CreateGadget()
-22. **Ignoring standard spacing constants** - Use `WINDOW_SPACE_X`, `WINDOW_SPACE_Y`, etc.
-23. **Not following pattern structure** - INPUT_ROW → REFERENCE_CONTENT → EQUAL_BUTTON_ROW
+15. **Not using standard window sizes** - Use 40/60/80 char widths, not arbitrary values
+16. **Wrong button count for window size** - Small=2, Medium=3, Large=4 buttons
+17. **Not using pre-calculation block** - All dimensions must be calculated before CreateGadget()
+18. **Ignoring standard spacing constants** - Use `WINDOW_SPACE_X`, `WINDOW_SPACE_Y`, etc.
+19. **Not following pattern structure** - INPUT_ROW → REFERENCE_CONTENT → EQUAL_BUTTON_ROW
 
 ### Resource Management Errors
-24. **Using GT_GetGadgetAttrs() for geometry** - Direct structure access is more reliable
-25. **Not freeing DrawInfo resources** - Always call `FreeScreenDrawInfo()` when done
-26. **Memory leaks in error paths** - Ensure cleanup_error: label frees all resources
+20. **Using GT_GetGadgetAttrs() for geometry** - Direct structure access is more reliable
+21. **Not freeing DrawInfo resources** - Always call `FreeScreenDrawInfo()` when done
+22. **Memory leaks in error paths** - Ensure cleanup_error: label frees all resources
 
 ## 🚀 Quick Reference Checklist
 
@@ -1904,10 +1605,6 @@ button->Width = new_calculated_width;  // Visual update doesn't happen
 - [ ] Check button alignment (left and right edges)
 - [ ] Verify all buttons have equal widths
 - [ ] Ensure labels are not truncated
-- [ ] **Verify visual spacing** - All vertical gaps should look even
-- [ ] **Check TEXT label heights** - Should all be `font_height` (not mixed with `currentWindowBarHeight`)
-- [ ] **Check checkbox height** - Should be `font_height + 4` (not just `font_height`)
-- [ ] **Verify consistent spacing** - All gaps should use `SPACE_Y` (not random multipliers)
 
 ## 📊 Standard Measurements Quick Reference
 
@@ -2546,3 +2243,82 @@ When generating code for iTidy windows:
 
 ---
 
+---
+
+## 📌 Additional Layout Rules for OS3.0/3.1 (MANDATORY FOR AI AGENTS)
+
+The following rules extend the existing layout patterns with confirmed behaviour from **AmigaOS 3.0/3.1**. They are meant to be used together with the existing patterns (reference content column, equal button rows, etc.).
+
+### 📏 Resizing Policy & IDCMP_NEWSIZE
+
+The Dynamic Window Template supports **resizable** windows on Workbench 3.x, but resizing must be treated carefully to avoid broken layouts.
+
+#### Default iTidy Policy
+
+- Template windows use:
+  - `WA_SizeGadget, TRUE`
+  - `WA_SizeBBottom, TRUE`
+  - `WA_SizeBRight, TRUE`
+  - `IDCMP_NEWSIZE` in the IDCMP mask
+- The default `handle_window_resize()` implementation:
+  - Re-validates the window size
+  - Triggers a full GadTools refresh (`GT_RefreshWindow()` and/or `GT_BeginRefresh`/`GT_EndRefresh` as needed).
+
+#### Rules for AI Agents
+
+- **Do not** remove `IDCMP_NEWSIZE` if the window has a size gadget.
+- **Do not** reposition gadgets inside `IDCMP_REFRESHWINDOW`:
+  - Refresh is for **redrawing**, not for re-layout.
+- If an agent introduces a new layout pattern that depends on window size:
+  - All size-dependent calculations must happen:
+    - Either at window creation time, or
+    - Inside the `IDCMP_NEWSIZE` handler, using the **same layout rules** as initial creation.
+
+**Safe minimum NEWSIZE handler:**
+
+```c
+case IDCMP_NEWSIZE:
+    handle_window_resize(data);  /* Reuse the template's resize helper */
+    break;
+```
+
+If an agent needs more complex behaviour (e.g. resizing the ListView but keeping buttons fixed-height), it must **extend** `handle_window_resize()` instead of inventing a new layout path.
+
+---
+
+### 📚 ListView Height vs Layout (Reminder)
+
+GadTools `LISTVIEW_KIND` gadgets on OS3:
+
+- Snap their **actual rendering height** to an integer number of text lines.
+- The height you pass to `CreateGadget()` is only a **request**.
+
+For layout:
+
+- Always use the **post-creation gadget height** in your geometry calculations:
+  - After `CreateGadget(LISTVIEW_KIND, ...)`:
+    - Read `listview->Height` and base:
+      - Button row `TopEdge`
+      - Window bottom (`WA_Height`)
+      - Any “advanced” panel below the list
+    - on that actual value.
+
+This is already handled in the Dynamic Window Template. AI agents must **not** replace this with hard-coded pixel values, or the window will be misaligned on different fonts and screen modes.
+
+---
+
+### 🚫 No Advanced IDCMP/Layout Hacks
+
+To keep layouts predictable on real Amiga hardware:
+
+- Do **not**:
+  - Share IDCMP ports between multiple windows.
+  - Use `ModifyIDCMP()` on template windows to add/remove events dynamically.
+  - Move gadgets by poking into their `LeftEdge`/`TopEdge` fields at random times.
+- Do:
+  - Recompute positions using the **same layout formulas** as initial creation.
+  - Keep all geometry changes inside:
+    - The window creation function, and/or
+    - The `IDCMP_NEWSIZE` handler.
+
+If a layout change cannot be expressed in terms of the existing patterns (`PATTERN_INPUT_ROW`, `PATTERN_REFERENCE_CONTENT`, `PATTERN_EQUAL_BUTTON_ROW`, etc.), the agent should stop and request a new pattern design instead of inventing ad-hoc geometry.

@@ -3,7 +3,15 @@
  *  $Id: simplemenu.c,v 2.0 2025/07/01 15:00:00 user Exp $
  *                                                                        *
  *  SimpleMenu - Workbench 3.x NewLook Menu Template                      *
- *  Template for creating modern Amiga menus with proper appearance       *
+ *  Template for creating modern Ami
+ *  IMPORTANT LIMITATION (for AI agents):                            *
+ *  - This template intentionally does NOT use IDCMP_MENUVERIFY or     *
+ *    MENUVERIFY.                                                      *
+ *  - Do NOT add IDCMP_MENUVERIFY to the IDCMP mask.                   *
+ *  - All menu behaviour must be implemented via IDCMP_MENUPICK only,  *
+ *    using ItemAddress() + GTMENUITEM_USERDATA() as shown below.      *
+ *                                                                      *
+ga menus with proper appearance       *
  *                                                                        *
  *  TEMPLATE USAGE GUIDE FOR AI AGENTS:                                   *
  *  ====================================                                  *
@@ -345,7 +353,7 @@ int main(void)
 		WA_Top, WINDOW_TOP,
 		WA_Width, WINDOW_WIDTH,
 		WA_Height, WINDOW_HEIGHT,
-		WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_MENUPICK,
+		WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_MENUPICK | IDCMP_REFRESHWINDOW | IDCMP_NEWSIZE,
 		WA_Flags, WFLG_SIZEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_CLOSEGADGET | WFLG_ACTIVATE,
 		WA_Title, WINDOW_TITLE,
 		WA_PubScreenName, "Workbench",
@@ -365,32 +373,52 @@ int main(void)
 	Printf("NewLook menu template ready\n");
 	
 	/* Main event loop */
+	{
+	ULONG win_sig = 0;
+	ULONG sigs = 0;
+
+	win_sig = 1L << my_window->UserPort->mp_SigBit;
+
 	while (continue_running)
 	{
-		Wait(1L << my_window->UserPort->mp_SigBit);
-		msg = GT_GetIMsg(my_window->UserPort);
-		if (msg)
+		sigs = Wait(win_sig);
+
+		if (sigs & win_sig)
 		{
-			msg_class = msg->Class;
-			menu_number = msg->Code;
-			GT_ReplyIMsg(msg);
-			
-			switch (msg_class)
+			while ((msg = GT_GetIMsg(my_window->UserPort)) != NULL)
 			{
-				case IDCMP_CLOSEWINDOW:
-					continue_running = FALSE;
-					break;
-					
-				case IDCMP_MENUPICK:
-					continue_running = handle_menu_selection(menu_number);
-					break;
-					
-				default:
-					break;
-			} /* switch */
-		} /* if */
+				msg_class   = msg->Class;
+				menu_number = msg->Code;
+				GT_ReplyIMsg(msg);
+				
+				switch (msg_class)
+				{
+					case IDCMP_CLOSEWINDOW:
+						continue_running = FALSE;
+						break;
+						
+					case IDCMP_MENUPICK:
+						continue_running = handle_menu_selection(menu_number);
+						break;
+						
+					case IDCMP_REFRESHWINDOW:
+						GT_BeginRefresh(my_window);
+						GT_EndRefresh(my_window, TRUE);
+						break;
+						
+					case IDCMP_NEWSIZE:
+						/* Simple template: nothing special to do yet.
+						 * More advanced apps may adjust layout here.
+						 */
+						break;
+						
+					default:
+						break;
+				} /* switch */
+			} /* while messages */
+		} /* if win_sig */
 	} /* while */
-	
+}	
 	/* Cleanup and exit */
 	ClearMenuStrip(my_window);
 	CloseWindow(my_window);

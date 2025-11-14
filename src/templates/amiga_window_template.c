@@ -1,14 +1,15 @@
 /*------------------------------------------------------------------------*/
 /*                                                                        *
- * amiga_window_template.c - Dynamic Amiga Window Template               *
- * Version compatible with vbcc +aos68k                                  *
+ * amiga_window_template.c - Standalone Dynamic Amiga Window Template    *
+ * Version compatible with vbcc +aos68k and Workbench 3.x                *
  *                                                                        *
- * This is a clean, warning-free version of the Amiga Window Template    *
- * for strict ANSI C (C89) compilation with vbcc on Amiga systems.       *
+ * This is a completely self-contained example showing how to create     *
+ * dynamic Amiga windows with proper font-aware layout calculations.     *
+ * No external dependencies - just standard Amiga OS 3.x APIs.           *
  *                                                                        */
 /*------------------------------------------------------------------------*/
 
-/* Dynamic Amiga Window Creation Template - Clean Version
+/* STANDALONE AMIGA WINDOW TEMPLATE
  *
  * TEMPLATE USAGE:
  * 1. Copy this template for new window creation
@@ -17,8 +18,21 @@
  * 4. Update data structure and gadget IDs
  * 5. Implement window event handling
  * 6. Test thoroughly with different font sizes and screen resolutions
- * 7. Always run with debug output enabled during development
- * 8. Verify no gadget overlap occurs with various font combinations
+ *
+ * IMPORTANT LAYOUT RULES (see AI_AGENT_LAYOUT_GUIDE.md):
+ * - When using PLACETEXT_ABOVE with a label, you MUST add space BEFORE
+ *   positioning the gadget: current_y += font_height + 4
+ * - The label space is NOT included in ng.ng_Height
+ * - Account for this spacing in window height calculations
+ * - Alternative: Use empty label ("") and create separate TEXT gadget
+ *
+ * IMPORTANT CONSOLE OUTPUT (see amiga_gui_research_3x.md):
+ * - When launched from Workbench (argc==0), there is NO console
+ * - Calling printf() without a console can crash the program
+ * - SOLUTION: Check argc in main(), if 0 then Open("CON:...") first
+ * - See test_window_template.c for the correct pattern
+ * - NOTE: This template .c file contains debug printf() calls that
+ *   assume the calling program has handled console setup properly
  *
  * TESTING CHECKLIST:
  * - Run with Topaz 8 font (default)
@@ -28,11 +42,16 @@
  * - Verify window size accommodates all content
  * - Ensure no label overlap or truncation
  * - Test window resizing functionality
+ * - Test launch from CLI (with console)
+ * - Test launch from Workbench (verify console opens)
+ *
+ * REQUIREMENTS:
+ * - AmigaOS 3.x (Workbench 3.0+)
+ * - intuition.library v37+
+ * - graphics.library v37+
+ * - gadtools.library v37+
  */
 
-#include <platform.h>
-
-#ifdef PLATFORM_AMIGA
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <exec/lists.h>
@@ -40,17 +59,14 @@
 #include <intuition/intuition.h>
 #include <intuition/gadgetclass.h>
 #include <libraries/gadtools.h>
-#include <string.h>
-#else
-#include <string.h>
-#endif
-#include <stdio.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/gadtools.h>
 #include <proto/graphics.h>
+#include <string.h>
+#include <stdio.h>
 
-#include <templates\amiga_window_template.h>
+#include "amiga_window_template.h"
 
 /*------------------------------------------------------------------------*/
 /* TEMPLATE CONSTANTS - Replace with actual values for your window       */
@@ -182,9 +198,33 @@ static void calculate_font_dimensions(struct Screen *screen, struct FontDimensio
     } /* if */
 
     /* Calculate window title bar and border offsets */
-    font_dims->title_bar_height = font_dims->font_height * 2;
-    font_dims->window_top_edge = font_dims->title_bar_height + screen->WBorTop + TEMPLATE_SPACE_Y;
+    /* CRITICAL: Based on expert advice and RKM documentation:
+     * - GadTools gadgets (NewGadget) are positioned relative to the WINDOW's
+     *   top-left corner, where (0,0) is the outer corner INCLUDING the title bar.
+     * - To position gadgets BELOW the title bar, we MUST offset by BorderTop.
+     * - We can calculate BorderTop BEFORE opening the window using the formula:
+     *   BorderTop = screen->WBorTop + screen->Font->ta_YSize + 1
+     * 
+     * This is the standard Amiga pattern documented in the RKMs and used throughout
+     * all classic Amiga software including iTidy's own windows.
+     */
+    font_dims->title_bar_height = screen->WBorTop + screen->Font->ta_YSize + 1;
+    font_dims->window_top_edge = font_dims->title_bar_height + TEMPLATE_SPACE_Y;
     font_dims->window_left_edge = screen->WBorLeft + TEMPLATE_SPACE_X;
+    font_dims->window_bottom_edge = screen->WBorBottom + TEMPLATE_SPACE_Y;
+    
+    printf("DEBUG: === SCREEN CHROME VALUES ===\n");
+    printf("DEBUG: Screen WBorTop=%d, WBorBottom=%d, WBorLeft=%d, WBorRight=%d\n",
+           screen->WBorTop, screen->WBorBottom, screen->WBorLeft, screen->WBorRight);
+    printf("DEBUG: Screen Font->ta_YSize=%d (font height)\n", (int)screen->Font->ta_YSize);
+    printf("DEBUG: Screen BarHeight=%d (Workbench screen title bar)\n", screen->BarHeight);
+    printf("DEBUG: Calculated BorderTop (WBorTop + ta_YSize + 1) = %d + %d + 1 = %u\n",
+           (int)screen->WBorTop, (int)screen->Font->ta_YSize, (unsigned int)font_dims->title_bar_height);
+    printf("DEBUG: Font dimensions - font_height=%u, font_width=%u\n",
+           (unsigned int)font_dims->font_height, (unsigned int)font_dims->font_width);
+    printf("DEBUG: Gadget positioning (window-relative) - top_offset=%u, left_offset=%u\n",
+           (unsigned int)font_dims->window_top_edge, (unsigned int)font_dims->window_left_edge);
+    printf("DEBUG: === END CHROME VALUES ===\n");
 } /* calculate_font_dimensions */
 
 /*------------------------------------------------------------------------*/
@@ -193,7 +233,7 @@ static void calculate_font_dimensions(struct Screen *screen, struct FontDimensio
  *
  * This function creates and adds 20 test items to the ListView for testing
  * purposes. Each item contains sample text and is properly linked into the list.
- * The items are allocated using WHD_ALLOC() and must be freed with WHD_FREE().
+ * Memory is allocated using AllocVec() and must be freed with FreeVec().
  *
  * @param data Pointer to window data structure
  * @return BOOL TRUE if successful, FALSE otherwise
@@ -237,19 +277,18 @@ BOOL populate_listview_test_data(struct TemplateWindowData *data)
     /* Create and add each test item to the list */
     for (i = 0; i < 20; i++)
     {
-        /* Allocate memory for the ListView item */
-        item = (struct ListViewItem *)WHD_ALLOC(sizeof(struct ListViewItem));
+        /* Allocate memory for the ListView item using AllocVec */
+        item = (struct ListViewItem *)AllocVec(sizeof(struct ListViewItem), MEMF_CLEAR);
         if (item == NULL)
         {
             return FALSE;
         } /* if */
-        memset(item, 0, sizeof(struct ListViewItem));
 
-        /* Allocate memory for the text string */
-        item->text = (STRPTR)WHD_ALLOC(strlen(test_items[i]) + 1);
+        /* Allocate memory for the text string using AllocVec */
+        item->text = (STRPTR)AllocVec(strlen(test_items[i]) + 1, MEMF_CLEAR);
         if (item->text == NULL)
         {
-            WHD_FREE(item);
+            FreeVec(item);
             return FALSE;
         } /* if */
 
@@ -279,8 +318,8 @@ BOOL populate_listview_test_data(struct TemplateWindowData *data)
 /**
  * @brief Free all ListView items and clear the list
  *
- * This function properly frees all ListView items and clears the list.
- * Call this before closing the window to prevent memory leaks.
+ * This function properly frees all ListView items and clears the list
+ * using FreeVec(). Call this before closing the window to prevent memory leaks.
  *
  * @param data Pointer to window data structure
  */
@@ -307,14 +346,14 @@ void free_listview_items(struct TemplateWindowData *data)
         /* Remove the item from the list */
         Remove((struct Node *)item);
 
-        /* Free the text string */
+        /* Free the text string using FreeVec */
         if (item->text != NULL)
         {
-            WHD_FREE(item->text);
+            FreeVec(item->text);
         } /* if */
 
-        /* Free the item structure */
-        WHD_FREE(item);
+        /* Free the item structure using FreeVec */
+        FreeVec(item);
 
         item = next_item;
     } /* while */
@@ -349,6 +388,9 @@ static void debug_print_gadget_positions(struct TemplateWindowData *data)
 
     printf("DEBUG: === ACTUAL GADGET POSITIONS AND SIZES ===\n");
     printf("DEBUG: Window size: %d x %d\n", data->window->Width, data->window->Height);
+    printf("DEBUG: Window borders: Left=%d, Right=%d, Top=%d, Bottom=%d\n",
+           data->window->BorderLeft, data->window->BorderRight,
+           data->window->BorderTop, data->window->BorderBottom);
     printf("DEBUG: Window inner size: %d x %d\n",
            data->window->Width - data->window->BorderLeft - data->window->BorderRight,
            data->window->Height - data->window->BorderTop - data->window->BorderBottom);
@@ -437,6 +479,17 @@ static BOOL create_template_gadgets(struct TemplateWindowData *data, struct Font
     /*====================================================================*/
     /* CREATE LISTVIEW FIRST - MUST BE FIRST FOR HEIGHT DISCOVERY        */
     /*====================================================================*/
+
+    /* IMPORTANT: Following AI_AGENT_LAYOUT_GUIDE.md recommendations:
+     * When using PLACETEXT_ABOVE with a label, you MUST add space for the label
+     * before positioning the ListView, otherwise the label appears cramped against
+     * the window border. The label space is NOT included in ng.ng_Height.
+     * 
+     * Space needed = font_height + small_gap (typically 4 pixels)
+     */
+    
+    /* Add space for the "List" label that will appear above the ListView */
+    current_y += font_dims->font_height + 4;  /* Label height + gap */
 
     /* Main ListView - positioned at left side of window */
     ng.ng_LeftEdge = current_x;
@@ -529,7 +582,7 @@ static BOOL create_template_gadgets(struct TemplateWindowData *data, struct Font
     {
         UWORD listview_start_y = data->main_listview->TopEdge;               /* Actual position */
         UWORD listview_actual_height_from_gadget = data->main_listview->Height;  /* Actual height */
-        UWORD listview_bottom = listview_start_y + listview_actual_height_from_gadget + font_dims->font_height;
+        UWORD listview_bottom = listview_start_y + listview_actual_height_from_gadget;
         current_y = listview_bottom + TEMPLATE_SPACE_Y * 2;
         current_x = font_dims->window_left_edge;
 
@@ -652,15 +705,20 @@ BOOL create_template_window(struct TemplateWindowData *data)
                            20;                                       /* Extra padding */
         } /* block */
 
-        /* Calculate height: ListView + label + button row + margins + window borders */
-        /* CRITICAL: Use ACTUAL ListView height, not calculated/requested height */
-        window_height = font_dims.window_top_edge +      /* Top margin with title bar */
-                        font_dims.font_height +          /* ListView label "List" */
-                        actual_listview_height +         /* ACTUAL ListView height (post-snapping) */
-                        (TEMPLATE_SPACE_Y * 2) +         /* Spacing before buttons */
-                        font_dims.button_height +        /* Button height */
-                        TEMPLATE_SPACE_Y +               /* Bottom margin */
-                        20;                              /* Extra border space */
+        /* Calculate height: Button position + button height + margins + borders */
+        /* CRITICAL: Now we can calculate the EXACT window height using the pre-calculated
+         * BorderTop value (screen->WBorTop + screen->Font->ta_YSize + 1) and BorderBottom.
+         * No more guessing! */
+        {
+            UWORD client_content_height = data->ok_button->TopEdge + font_dims.button_height + TEMPLATE_SPACE_Y;
+            UWORD exact_border_top = font_dims.title_bar_height;
+            UWORD exact_border_bottom = data->screen->WBorBottom;
+            window_height = client_content_height + exact_border_top + exact_border_bottom;
+            
+            printf("DEBUG: Window height calculation: client_content=%u + BorderTop=%u + BorderBottom=%u = total=%u\n",
+                   (unsigned int)client_content_height, (unsigned int)exact_border_top, 
+                   (unsigned int)exact_border_bottom, (unsigned int)window_height);
+        }
 
         printf("DEBUG: Calculated window size: %ux%u (ListView actual height: %u)\n",
                (unsigned int)window_width, (unsigned int)window_height, (unsigned int)actual_listview_height);
@@ -695,6 +753,17 @@ BOOL create_template_window(struct TemplateWindowData *data)
     {
         return FALSE;
     } /* if */
+
+    /* IMPORTANT: Now we have the ACTUAL window borders from Intuition! */
+    printf("DEBUG: *** ACTUAL WINDOW BORDERS (from Intuition) ***\n");
+    printf("DEBUG: window->BorderTop = %d (actual title bar height)\n", data->window->BorderTop);
+    printf("DEBUG: window->BorderBottom = %d\n", data->window->BorderBottom);
+    printf("DEBUG: window->BorderLeft = %d\n", data->window->BorderLeft);
+    printf("DEBUG: window->BorderRight = %d\n", data->window->BorderRight);
+    printf("DEBUG: Our estimate was %u, actual is %d (difference: %d)\n",
+           (unsigned int)font_dims.title_bar_height, data->window->BorderTop,
+           (int)data->window->BorderTop - (int)font_dims.title_bar_height);
+    printf("DEBUG: *** END ACTUAL BORDERS ***\n");
 
     /* Set the window's menu strip if available */
     if (data->menu != NULL)
@@ -736,6 +805,14 @@ void close_template_window(struct TemplateWindowData *data)
     {
         return;
     } /* if */
+
+    /* Detach ListView labels BEFORE closing window or freeing list data */
+    if (data->window != NULL && data->main_listview != NULL)
+    {
+        GT_SetGadgetAttrs(data->main_listview, data->window, NULL,
+                          GTLV_Labels, ~0UL,
+                          TAG_END);
+    }
 
     /* Close window if it's open */
     if (data->window != NULL)
