@@ -414,6 +414,21 @@ Initial Gadget Setup:
 
 Prepare GadTools (open gadtools.library if not already, get VisualInfo).
 
+**Font-Aware Gadget Sizing (CRITICAL):**
+- [ ] After opening window, obtain screen->RastPort
+- [ ] For each gadget with text labels, call:
+      ```c
+      UWORD textW = TextLength(&screen->RastPort, labelText, strlen(labelText));
+      gadgetWidth = MAX(minWidth, textW + (2 * GADGET_TEXT_PADDING));
+      ```
+- [ ] For vertical sizing, check `screen->Font->ta_YSize` and adjust:
+      ```c
+      gadgetHeight = MAX(minHeight, screen->Font->ta_YSize + VERTICAL_PADDING);
+      ```
+- [ ] Apply these calculated dimensions to NewGadget before CreateGadget()
+- [ ] ⚠️ GadTools buttons with `ng_Height = 0` will auto-size to font - use this when possible
+- [ ] Store minimum required dimensions for use in WA_MinWidth/WA_MinHeight calculations
+
 Create your gadgets. Use CreateGadgetA() or the non-varargs form. Chain them in the desired order.
 
 When filling the NewGadget structure, for any gadget that should stretch or move, you might initially set a placeholder size/position appropriate for the initial window size.

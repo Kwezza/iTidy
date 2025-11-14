@@ -1,15 +1,15 @@
 ################################################################################
-# Amiga GadTools resize template - single source build script (vbcc +aos68k)
+# Amiga GadTools Templates - Build Script (vbcc +aos68k)
 ################################################################################
 
+# Target executable
 TARGET  = amiga_window_resize_template
 OBJS    = $(TARGET).o
 
-# NOTE: Do not use the name "VBCC" here—vc relies on the VBCC env var
-# to locate its config files. Overriding it breaks the compiler setup.
+# Compiler and flags
 CC      = vc
-CFLAGS  = +aos68k -c99 -cpu=68020 -g -DDEBUG -D__AMIGA__
-LDFLAGS = +aos68k -cpu=68020 -g -hunkdebug -lamiga -lauto -lmieee
+CFLAGS  = +aos68k -c99 -cpu=68020 -size -D__AMIGA__
+LDFLAGS = +aos68k -cpu=68020 -final -s -lamiga -lauto -lmieee
 
 .PHONY: all clean
 

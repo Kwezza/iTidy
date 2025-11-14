@@ -1,0 +1,199 @@
+Properly Erasing Window Contents Before Re-Adding GadTools Gadgets (AmigaOS 3.0/3.1)
+Overview of the Resizing and Redraw Problem
+
+When using Intuition’s GadTools library on AmigaOS 2.x/3.x, dynamically resizing a window and rebuilding its gadgets can lead to flicker or “ghost” visuals. The main issue is that after removing gadgets and resizing, remnants of the old gadget imagery may remain on the window until new content overwrites them. Intuition’s refresh mechanisms must be used correctly to get a clean redraw. In particular, developers need to understand the window refresh modes and how Intuition handles (or doesn’t handle) clearing the background on a resize. The goal is to ensure that when gadgets are removed and re-added upon an IDCMP_NEWSIZE (window resized) event, the window’s interior is properly cleared to avoid leftover graphics.
+
+Refresh Modes: WA_SimpleRefresh vs WA_SmartRefresh
+
+Amiga Intuition windows can be opened in different refresh modes, which determine how redraws are handled when a window is uncovered or resized. The two relevant modes are Simple Refresh and Smart Refresh (NoCare refresh is not suitable for GadTools, as discussed later).
+
+WA_SimpleRefresh (simple refresh): In this mode, the application takes full responsibility for updating the window’s content in response to exposure or resize. Intuition does not maintain hidden portions of the window; any time part of the window that was previously obscured or any newly exposed area (e.g. after expanding the window) becomes visible, Intuition will notify the app via a refresh event and expect the app to redraw those regions itself
+wiki.amigaos.net
+wiki.amigaos.net
+. This typically means the program must redraw everything (or at least the damaged areas) on an IDCMP_REFRESHWINDOW message. Simple Refresh uses less memory since no off-screen backing store is kept, but places more burden on the application to handle redraws.
+
+WA_SmartRefresh (smart refresh): In this mode, Intuition maintains an off-screen buffer for the window’s content
+wiki.amigaos.net
+. When portions of the window are uncovered or the window is moved, Intuition automatically restores those areas from the buffer, avoiding the need for the app to redraw them. The application only needs to render parts of the window that weren’t previously drawn – for example, regions that become visible when the window is sized larger
+wiki.amigaos.net
+wiki.amigaos.net
+. Smart Refresh uses more memory (to store obscured parts) but can reduce flicker since Intuition handles most expose events internally. However, even in Smart mode, if the window grows in size, the newly exposed area (the increase in width/height) has no cached content and will be added to Intuition’s “damage region” for the app to fill in
+wiki.amigaos.net
+.
+
+Which to use for clean redraws? Both Simple and Smart refresh can be made to work, but you should not use the NoCare/NoRefresh mode with GadTools. GadTools requires that the window deliver refresh events (so Intuition can synchronize gadget redraws), meaning the window must be opened with either Simple or Smart refresh (the WFLG_NOCAREREFRESH flag must be off)
+markreds.it
+. In practice, many GadTools-based programs in OS2/3 used Simple Refresh windows with explicit redraw handling
+markreds.it
+. A Smart Refresh window is also viable and will automatically preserve unchanged parts of the UI on expose; however, when doing dynamic gadget layouts on resize, Smart Refresh’s backing-store might preserve outdated gadget imagery if you don’t properly clear or invalidate it. The key is that regardless of mode, one must correctly handle the refresh events and possibly manually clear areas when gadgets change. The window’s refresh mode itself doesn’t completely prevent flicker – it mainly determines how much Intuition helps with preserving content. Many developers choose Simple Refresh for GadTools windows and simply redraw the interface on resize, ensuring a clean slate each time (at the cost of more drawing). Smart Refresh can reduce redraw work, but you must be cautious to erase any obsolete parts (since Intuition might otherwise restore them from its buffer).
+
+In summary, to get clean redraw behavior after a resize, use either Simple or Smart refresh (but not NoCare). This ensures Intuition will notify your application of areas that need redrawing. Smart refresh will automatically handle restoring previously drawn areas (reducing what needs manual redraw), whereas simple refresh means you redraw everything – both can be flicker-free if done right. The crucial part is how you handle the clearing and redrawing of gadget areas during the resize event, which we address next.
+
+Does Intuition Clear the Background on IDCMP_NEWSIZE?
+
+A common question is whether Intuition automatically clears the window’s background (interior) when the window is resized. The answer is partially, but not in a way that absolves the application from work:
+
+Automatic border & gadget redraw: Intuition will always take care of redrawing the window borders and any Intuition gadgets (including GadTools gadgets) that remain in the window when a refresh is needed
+wiki.amigaos.net
+wiki.amigaos.net
+. In fact, by the time your app receives an IDCMP_REFRESHWINDOW message, Intuition has already refreshed the window’s border and all gadgets in it (as they currently exist)
+wiki.amigaos.net
+. This means you do not need to manually redraw window borders or existing gadget imagery during a refresh event – Intuition/GadTools do that for you. For example, if your window has a sizing gadget or other border gadgets, they will be updated automatically as the window resizes. GadTools gadgets that have been added to the window are also redrawn by Intuition/GadTools as needed during an expose/refresh.
+
+Newly exposed interior areas: Intuition will not paint your application’s custom content or blank out the whole interior on a resize. What it does is mark newly revealed regions as damaged and send your program a refresh event so you can repaint those areas
+wiki.amigaos.net
+wiki.amigaos.net
+. For a Simple Refresh window, any part of the window that was previously obscured or any new space uncovered by enlarging the window is simply left empty (often showing as blank or background-colored) until your code draws something there
+wiki.amigaos.net
+wiki.amigaos.net
+. Intuition doesn’t automatically fill the interior with a solid color or saved image – it relies on your redraw handling. For Smart Refresh windows, previously covered areas are restored from the off-screen buffer, so they appear as they were before being obscured (preventing flicker). But if the window grew larger, the extension – the extra width/height – has no cached content, so that region will initially be empty and included in the refresh event for the app to draw
+wiki.amigaos.net
+wiki.amigaos.net
+. In either case, Intuition doesn’t spontaneously erase or repaint the interior background for you on a size change; it either leaves it blank (Simple) or restores old pixels (Smart) and then asks you to render anything that’s missing.
+
+Clearing gadget areas on move/resize: One thing Intuition will do is ensure that if a gadget moves or resizes due to the window resizing, the gadget’s old imagery is removed. Specifically, for gadgets that use the GFLG_RELRIGHT/RELBOTTOM/RELWIDTH/RELHEIGHT flags (gadgets defined to automatically reposition or resize with the window), Intuition guarantees their entire imagery stays within the gadget’s defined select-box so it can erase the previous drawing when the gadget shifts
+wiki.amigaos.net
+. The ROM Kernel Manual notes that when using relative-positioned gadgets, “This allows Intuition to erase the gadget's imagery when the window is sized”
+wiki.amigaos.net
+. In other words, as the window changes and Intuition computes a new position for such a gadget, it will blank out the gadget’s old position (since the gadget might be drawn at a new location now) to prevent overlapping visuals. If this were not done, you’d see the gadget drawn in both the old and new locations. Intuition handles this automatically for gadgets that it knows are moving. So if you define your GadTools gadgets with relative coordinates (so they shift with the window edges), Intuition will remove the gadget’s old drawing before rendering it in the new spot
+wiki.amigaos.net
+. However, if you are manually removing and re-adding gadgets (instead of relying on GFLG_RELxxx), Intuition doesn’t inherently know what area needs clearing beyond the general “new area” damage region. A removed gadget is simply gone; clearing its remains becomes the developer’s responsibility (as we’ll discuss below).
+
+Conclusion: Intuition does not automatically clear the entire window background on a resize – it only handles the standard decorations and any gadget imagery that it is actively managing. Newly exposed window areas are left for the application to paint (after receiving an IDCMP_REFRESHWINDOW). If you remove a gadget, Intuition will not magically erase the pixels that gadget drew; unless the gadget was marked relative (in which case Intuition will cover its old select-box), those pixels would remain until you explicitly overwrite or clear them. Thus, to avoid artifacts, the developer often must manually erase or redraw portions of the window after resizing or gadget removal. The next sections cover how to do that.
+
+Preventing Leftover Gadget Visuals and Redraw Artifacts
+
+When you remove gadgets from a window and then resize or re-layout, the old gadget imagery can persist as “stale” graphics if not properly cleared. For example, if you had a button gadget drawn in the window, simply removing it via RemoveGList() will not by itself wipe out the button’s pixels – they’ll remain until something else overwrites that area. To prevent such leftover visuals when you add new gadgets, you should erase the window’s content (or at least the gadget’s region) before redrawing gadgets. Here are the techniques and best practices for doing this cleanly:
+
+Use RemoveGList and then immediately clear the gadget’s rectangle: The official documentation suggests a safe sequence to update gadget imagery: “remove the gadget, erase the rectangle of the gadget's select area, [make changes], add the gadget back, and refresh it.”
+scratch.grimore.org
+. In practice, when resizing leads you to remove a set of gadgets (perhaps to replace them with a differently laid-out set), you should remove them and then promptly clear their former screen area. You can clear by drawing an empty background over it – for instance, use graphics.library/EraseRect() or RectFill() with the window’s background pen. This ensures that any pixels from the old gadget are gone. The reason this is necessary is that refresh functions typically assume the underlying area is blank before drawing a gadget
+scratch.grimore.org
+. If you skip erasing, the new gadget imagery might not completely cover the old, resulting in a jumbled appearance. A concrete example from the RKMs: switching a gadget from selected to unselected state by just redrawing it can leave the highlight rectangle behind, because RefreshGList()/GT_RefreshWindow() only draws the gadget’s border and text and “never knows to erase the field area around the text and inside the gadget” – the area remains complemented from before
+scratch.grimore.org
+. The solution in such cases is to blank out that area first, then redraw
+scratch.grimore.org
+scratch.grimore.org
+. The same principle applies on resize: erase old gadget areas before drawing new layout.
+
+Coordinate with the sizing process: It’s important to clear and redraw at the right time. For dynamic window resizing, a common approach is:
+
+On the IDCMP_SIZEVERIFY message (which Intuition sends before a window is actually resized by the user), remove all gadgets from the window preemptively. This is a trick to reduce flicker during the live resize operation. Amiga developers have noted that doing the removals on SIZEVERIFY helps because it makes the window essentially empty while the user is dragging, so Intuition isn’t constantly redrawing gadgets in intermediate positions
+amigans.net
+. You would likely also freeze or avoid heavy drawing during the drag. Note that IDCMP_SIZEVERIFY messages must be handled quickly (they time out if you delay too long)
+scratch.grimore.org
+ – the user’s sizing will be halted if you don’t respond promptly, so any work here should be minimal (just flagging gadgets off, etc., not lengthy calculations).
+
+When the IDCMP_NEWSIZE event arrives (indicating the user released the sizing gadget and the window is now at its new dimensions), you then perform the GUI rebuild. At this point you can calculate new gadget coordinates, create and add your gadgets with AddGList(). But before adding them, you may want to clear the whole window interior or the specific regions where gadgets were, to ensure a clean slate. Often it’s simplest to clear the entire window’s clip rectangle to the backdrop color, because the layout might change such that it’s hard to know which exact areas need erasing. A quick EraseRect(window->RPort, left, top, right, bottom) covering the window’s inner region (or SetRast to fill with a background pen) can wipe any residual imagery.
+
+After that, add the new gadgets and call the GadTools refresh function to draw them (see next section). With this sequence, the user sees the old gadgets disappear when they begin the resize (reducing intermediate artifacts), and once resizing is done, the new gadgets pop into place on a clean background.
+
+This approach was hinted at by experienced developers. For example, one developer on an Amiga forum explained “to reduce flickering when resizing the window one could remove all gadgets from it on an IDCMP_SIZEVERIFY message”
+amigans.net
+ – effectively making the window empty (and thus nothing flickers) during the drag – and then re-add gadgets after sizing. The Amiga ROM Kernel manuals also describe a similar tactic for updating a gadget’s look: remove it, clear its area, then re-add
+scratch.grimore.org
+. They specifically note that if a gadget’s size/position is relative to the window, you must compute its rectangle based on the current window size and ensure the window doesn’t change size mid-operation. They recommend using IDCMP_SIZEVERIFY to pause any resizing until you’ve done the remove-and-erase sequence
+scratch.grimore.org
+. In other words, handle gadget removal/erasure while the window isn’t actively changing size.
+
+Avoid overlapping old/new gadget imagery: If you are not removing a gadget but simply moving it or resizing it, make sure to leverage the GFLG_RELXXX flags or the “shadow gadget” trick mentioned earlier
+wiki.amigaos.net
+. Ensuring a gadget’s imagery stays within its defined select-box (or a covering dummy gadget) means Intuition will reliably clear the gadget’s previous drawing when the window changes
+wiki.amigaos.net
+. This is more of a design-time consideration (how you define your gadget structure) to prevent ghosts when gadgets shift position.
+
+By following these practices – clearing out old gadget areas and timing your gadget removals/additions with Intuition’s sizing signals – you can avoid most redraw artifacts. The window’s content will be properly erased and refreshed, so leftover button outlines or text from the old layout won’t linger behind the new gadgets.
+
+Using GT_RefreshWindow() vs Manual Clearing
+
+GT_RefreshWindow() is the GadTools function that finalizes rendering of gadgets after you add them to a window. According to the Autodocs, you should call GT_RefreshWindow(win, NULL) immediately after adding gadgets (via AddGList()) to ensure they are drawn on the window
+markreds.it
+. This function triggers GadTools to draw all newly added gadgets from scratch. However, it’s important to realize what GT_RefreshWindow does and does not do:
+
+It will cause the gadgets’ imagery to be rendered (buttons, sliders, text, etc. will appear). It essentially automates calling RefreshGList() on all GadTools gadgets just added
+markreds.it
+.
+
+It will not automatically erase anything that isn’t covered by new gadget imagery. If the previous layout had a gadget in a spot that now is supposed to be blank (or a different gadget smaller than the old one), GT_RefreshWindow alone won’t clear that area – it only draws the current gadgets. GadTools assumes that any area not covered by the new gadgets is either unchanged or has been cleared by you. This is why the pre-clear step is needed: for example, if an old gadget left a large “inverted” area but the new gadget only covers part of that, GT_RefreshWindow will draw the new one and the rest of the old inverted rectangle would remain visible around it
+scratch.grimore.org
+ if you didn’t erase it.
+
+In short, GT_RefreshWindow() is necessary to draw your re-added gadgets (and should always be used right after adding them
+markreds.it
+), but it is not sufficient to clean up visuals that are no longer relevant. Manual clearing (e.g. using EraseRect/RectFill or similar with the window’s RastPort) is expected whenever you need to blank out areas that are not immediately overwritten by something else.
+
+To illustrate, consider the case from the RKMs where a gadget’s state changes from selected (highlighted) to unselected: simply turning off the selected flag and calling a refresh would leave the highlight pixels intact because the gadget’s normal image doesn’t cover where the highlight was
+scratch.grimore.org
+. The recommended solution was to remove the gadget and clear its whole select-box area before redrawing
+scratch.grimore.org
+. The same logic applies on resize: if your new gadget layout doesn’t 100% cover every pixel the old layout occupied, you need to erase those leftover pixels yourself. So, you might do something like: remove old gadgets -> EraseRect(window->RPort, window->BorderLeft, window->BorderTop, window->Width - window->BorderRight - 1, window->Height - window->BorderBottom - 1) (to clear the inner region) -> add new gadgets -> GT_RefreshWindow() to draw them.
+
+One more Intuition function worth mentioning is BeginRefresh()/EndRefresh(). In a refresh event context, one would use GT_BeginRefresh(win) and GT_EndRefresh(win, TRUE) for GadTools windows
+markreds.it
+. These calls bracket your custom redraw code and restrict drawing to only damaged areas, and they signal Intuition that you’ve finished handling the refresh. If you have no custom drawing (only gadgets), you still need to call these in response to IDCMP_REFRESHWINDOW to let Intuition know it can clear the damage region
+markreds.it
+. In a resize scenario, after you’ve added gadgets and called GT_RefreshWindow, you may then receive an IDCMP_REFRESHWINDOW (because the window got bigger or was partially obscured during resizing). In that case, you should call GT_BeginRefresh/GT_EndRefresh as the minimal action
+markreds.it
+. This doesn’t explicitly erase anything visible (by that point your gadgets are drawn and presumably background is cleared), but it completes the refresh cycle and helps avoid any flicker or “stuck” damage regions. If you already cleared and redrew everything manually, your custom refresh code might be empty – yet you still must call the begin/end to satisfy Intuition’s requirements (since GadTools forbids WA_NoCareRefresh)
+markreds.it
+.
+
+Summary: Always use GT_RefreshWindow() after adding GadTools gadgets to render them
+markreds.it
+, but don’t expect it to wipe away old gadget remnants – do that yourself with filling routines before calling the refresh. And continue to handle IDCMP_REFRESHWINDOW properly (with GT_BeginRefresh/GT_EndRefresh) to ensure Intuition’s housekeeping is satisfied and your window updates are finalized without glitches
+markreds.it
+.
+
+Historical Best Practices to Minimize Resizing Flicker (OS2.x/3.x)
+
+On classic AmigaOS (2.x/3.x), GUI resizing was less common (many GadTools-based programs used fixed-size windows) due to the manual work required to make it smooth. Those who implemented resizable GadTools UIs adopted several best practices to avoid flicker and graphical garbage:
+
+Plan gadget layout for resizing: If you know the window will be resizable, design your GadTools gadgets with the RELWIDTH/RELHEIGHT and relative positioning flags when possible. This lets Intuition handle moving those gadgets as the window grows or shrinks, and Intuition will automatically erase and redraw their imagery in the new positions
+wiki.amigaos.net
+. For example, a listview might be set to always fill the window’s width/height by using relative size flags, rather than you manually destroying and recreating it. This reduces the need for complete teardown/rebuild on every size change (though GadTools has limitations – gadgets can move, but their fundamental type or arrangement can’t easily change without recreation).
+
+Use the outline-sizing (dragging) mechanism to your advantage: On AmigaOS 3.1 and earlier, window resizing by the user is not live-updated – the system typically drags an outline and only updates the window contents when the user releases the mouse. This means your application usually receives one IDCMP_NEWSIZE at the end of the resize, not a flood of continuous events (contrast with OS4 which introduced live resizing and thus many NEWSIZE events)
+amigans.net
+. This makes it easier to avoid flicker: you can simply do the layout update once per resize. (If you do opt into continuous updates via IDCMP_INTUITICKS or similar, then you would need to throttle redraws, but that was rare on 3.x.) So, handle IDCMP_NEWSIZE by recalculating positions and redrawing once. Some developers also set a flag on NEWSIZE and processed it after reading all pending messages, to avoid redundant multiple redraws if Intuition sent more than one event; on OS4 this became necessary due to continuous resizing events
+amigans.net
+amigans.net
+, but on 3.x usually one event suffices unless the program itself calls SizeWindow() repeatedly.
+
+Remove gadgets during sizing to avoid intermediate redraws: As discussed, responding to IDCMP_SIZEVERIFY by temporarily removing gadgets can make resizing appear smoother
+amigans.net
+. The user will see the window contents vanish (or stop updating) during the drag, then reappear when done – which, while a bit abrupt, is often preferable to seeing gadgets half-drawn or flickering. Just ensure you re-add them on the final NEWSIZE. Also be mindful to do the minimum in SIZEVERIFY and return quickly, or the system might cancel the resize (Intuition will abort a resize if the SIZEVERIFY reply isn’t prompt)
+scratch.grimore.org
+.
+
+Double-buffer manual drawing if any: If your window had custom drawing (graphics) in addition to gadgets, you might reduce flicker by buffering those drawings. For instance, redraw into an off-screen RastPort then blit it to the window in one go. But for pure GadTools interfaces, this is usually not needed if you follow the proper refresh protocol.
+
+Consider using LockLayer or turn off rendering during changes: Intuition’s layers library allows locking a window’s layer for rapid updates. In Intuition, bracketing your redraw in BeginRefresh/EndRefresh automatically locks the layer
+archive.org
+archive.org
+. If you have to add/remove many gadgets, you are effectively doing that outside of a refresh event, so explicit layer locking is not typically exposed at the application level (except perhaps via LockWindowLayers() in later OS versions). A simpler approach on classic OS was to blank the window (or open a blank screen behind) while rearranging, though this is rarely needed given the outline-resize model. Ensuring all drawing occurs after the final size is set (and not during the user’s drag) is the main concern.
+
+Perform minimal work for speed: Avoid heavy computations or disk access during the resize/redraw path. The faster you remove old UI and draw the new UI, the less noticeable any flicker or blanking period will be. GadTools itself is fairly quick for drawing standard widgets, especially if you’re just using the system pens and not doing custom graphics in between.
+
+Know the limits of GadTools: Finally, note that GadTools (which was introduced in OS2.0) is a relatively simple toolkit. It does not automatically reflow or relayout gadgets; the developer must manage that. Because of this, some Amiga programmers chose to forego resizable windows with GadTools or switched to more advanced frameworks (like BOOPSI/Reaction or MUI in later OS versions) for complex UIs. As one developer candidly put it, “I never put a sizing gadget when working with GadTools... to change the window size you have to destroy and recreate the entire GUI.”
+amigans.net
+ That was indeed the straightforward (if brute-force) method: tear down and rebuild. It works, but you must code it carefully to avoid flicker using the techniques above. If done right, the result can be flicker-free, but it’s a manual process on classic AmigaOS.
+
+In summary, to avoid flicker and garbage when resizing GadTools windows on AmigaOS 2.x/3.1: use an appropriate refresh mode (Simple or Smart) that provides refresh events, handle those events by clearing and redrawing damaged areas (with GadTools calls wrapped in GT_BeginRefresh/GT_EndRefresh), remove or relocate gadgets before resizing if needed (and clear their footprints), and redraw the new gadgets only after the size is final (using GT_RefreshWindow() to render them). These steps, informed by both the official RKMs and seasoned developer advice, will ensure your window redraws cleanly with minimal artifacts after a resize. By following the historical best practices, even GadTools GUIs can be made to resize relatively smoothly on the classic Amiga platform
+scratch.grimore.org
+amigans.net
+.
+
+Sources: The behavior and recommendations above are based on Amiga ROM Kernel reference documentation and Autodocs
+wiki.amigaos.net
+wiki.amigaos.net
+wiki.amigaos.net
+, as well as insights from Amiga developers and example code on handling GadTools refresh and resizing
+scratch.grimore.org
+amigans.net
+. These sources include official descriptions of Simple vs Smart refresh and Intuition’s damage/refresh logic
+wiki.amigaos.net
+wiki.amigaos.net
+, the GadTools library manual guidelines for refreshing gadget imagery (GT_RefreshWindow, GT_BeginRefresh/EndRefresh)
+markreds.it
+markreds.it
+, and practical advice published on Amiga forums and in example programs. By adhering to those guidelines, you can avoid the common pitfalls of leftover graphics and flicker when rebuilding GadTools-based interfaces on window resize.
