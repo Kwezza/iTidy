@@ -39,6 +39,14 @@ typedef struct {
     int max_width;             /* Maximum width in characters (0 = unlimited) */
     iTidy_ColumnAlign align;   /* Text alignment */
     BOOL flexible;             /* TRUE if column should absorb extra space */
+    BOOL is_path;              /* TRUE if column contains Amiga paths - uses /../ notation
+                                * When TRUE: Long paths are intelligently abbreviated using
+                                * Amiga-style "/../" notation (e.g., "Work:Projects/../tool.c")
+                                * instead of simple truncation with "...". This preserves
+                                * device name, first directory, and filename for better
+                                * readability. Requires path_utilities module.
+                                * When FALSE: Standard text truncation is used.
+                                */
 } iTidy_ColumnConfig;
 
 /*---------------------------------------------------------------------------*/
@@ -70,17 +78,18 @@ typedef struct {
  * Example:
  * @code
  * iTidy_ColumnConfig cols[] = {
- *     {"Date/Time", 20, 20, ITIDY_ALIGN_LEFT, FALSE},
- *     {"Mode", 6, 8, ITIDY_ALIGN_LEFT, FALSE},
- *     {"Path", 30, 0, ITIDY_ALIGN_LEFT, TRUE},  // Flexible
- *     {"Count", 4, 6, ITIDY_ALIGN_RIGHT, FALSE}
+ *     {"Date/Time", 20, 20, ITIDY_ALIGN_LEFT, FALSE, FALSE},
+ *     {"Mode", 6, 8, ITIDY_ALIGN_LEFT, FALSE, FALSE},
+ *     {"Path", 30, 0, ITIDY_ALIGN_LEFT, TRUE, TRUE},    // Flexible + path formatting
+ *     {"Count", 4, 6, ITIDY_ALIGN_RIGHT, FALSE, FALSE}
  * };
  * 
- * const char *row1[] = {"20251124_111654", "Batch", "PC:Workbench", "2"};
+ * const char *row1[] = {"20251124_111654", "Batch", "PC:Workbench/Tools/Programs/Copy_Of_m8.ww.info", "2"};
  * const char *row2[] = {"20251124_111711", "Single", "PC:dump.txt.info", "1"};
  * const char **rows[] = {row1, row2};
  * 
  * struct List *list = iTidy_FormatListViewColumns(cols, 4, rows, 2, 80);
+ * // Result: Path column shows "PC:Workbench/../Copy_Of_m8.ww.info" instead of truncated
  * GT_SetGadgetAttrs(listview, window, NULL, GTLV_Labels, list, TAG_DONE);
  * @endcode
  */

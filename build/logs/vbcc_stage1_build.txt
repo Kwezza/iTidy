@@ -1,4 +1,4 @@
-Build started: 18/11/2025 14:30:05.36 
+Build started: 18/11/2025 14:41:36.84 
  
 Cleaning all builds...
 build\logs\vbcc_stage1_build.txt - The process cannot access the file because it is being used by another process.
@@ -211,7 +211,7 @@ warning 153 in line 568 of "src\GUI\default_tool_restore_window.c": statement ha
 Compiling [build/amiga/GUI/listview_formatter.o] from src/GUI/listview_formatter.c
 vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/GUI/listview_formatter.c -o build/amiga/GUI/listview_formatter.o
 >    NewList(list);
-warning 161 in line 273 of "src\GUI\listview_formatter.c": implicit declaration of function <NewList>
+warning 161 in line 332 of "src\GUI\listview_formatter.c": implicit declaration of function <NewList>
 Compiling [build/amiga/GUI/easy_request_helper.o] from src/GUI/easy_request_helper.c
 vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/GUI/easy_request_helper.c -o build/amiga/GUI/easy_request_helper.o
 Compiling [build/amiga/GUI/window_enumerator.o] from src/GUI/window_enumerator.c

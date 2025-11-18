@@ -32,6 +32,7 @@
 #include "easy_request_helper.h"
 #include "../writeLog.h"
 #include "../Settings/IControlPrefs.h"  /* For prefsIControl global */
+#include "../string_functions.h"
 
 /* NewList macro if not available */
 #ifndef NewList
@@ -169,6 +170,7 @@ static void populate_session_list(iTidy_ToolRestoreData *data)
     const char ***data_rows = NULL;
     const char **row_data = NULL;
     char **changed_strings = NULL;
+    char **formatted_dates = NULL;
     int row_index;
     
     log_debug(LOG_GUI, "populate_session_list: Starting...\n");
@@ -193,28 +195,32 @@ static void populate_session_list(iTidy_ToolRestoreData *data)
         log_warning(LOG_GUI, "populate_session_list: No sessions found - creating empty list\n");
         /* No sessions - create empty formatted list with just headers */
         columns[0].title = "Date/Time";
-        columns[0].min_width = 20;
+        columns[0].min_width = 10;
         columns[0].max_width = 20;
         columns[0].align = ITIDY_ALIGN_LEFT;
         columns[0].flexible = FALSE;
+        columns[0].is_path = FALSE;
         
         columns[1].title = "Mode";
         columns[1].min_width = 6;
         columns[1].max_width = 8;
         columns[1].align = ITIDY_ALIGN_LEFT;
         columns[1].flexible = FALSE;
+        columns[1].is_path = FALSE;
         
         columns[2].title = "Path";
         columns[2].min_width = 30;
         columns[2].max_width = 0;
         columns[2].align = ITIDY_ALIGN_LEFT;
         columns[2].flexible = TRUE;
+        columns[2].is_path = TRUE;
         
         columns[3].title = "Changed";
         columns[3].min_width = 7;
         columns[3].max_width = 12;
         columns[3].align = ITIDY_ALIGN_RIGHT;
         columns[3].flexible = FALSE;
+        columns[3].is_path = FALSE;
         
         data->session_display_list = iTidy_FormatListViewColumns(columns, 4, NULL, 0, 0);
         
@@ -228,38 +234,44 @@ static void populate_session_list(iTidy_ToolRestoreData *data)
     
     /* Define columns */
     columns[0].title = "Date/Time";
-    columns[0].min_width = 20;
+    columns[0].min_width = 0;
     columns[0].max_width = 20;
     columns[0].align = ITIDY_ALIGN_LEFT;
     columns[0].flexible = FALSE;
+    columns[0].is_path = FALSE;
     
     columns[1].title = "Mode";
-    columns[1].min_width = 6;
+    columns[1].min_width = 0;
     columns[1].max_width = 8;
     columns[1].align = ITIDY_ALIGN_LEFT;
     columns[1].flexible = FALSE;
+    columns[1].is_path = FALSE;
     
     columns[2].title = "Path";
     columns[2].min_width = 30;
     columns[2].max_width = 0;  /* Unlimited */
     columns[2].align = ITIDY_ALIGN_LEFT;
     columns[2].flexible = TRUE;  /* This column absorbs extra space */
+    columns[2].is_path = TRUE;   /* Enable path abbreviation with /../ notation */
     
     columns[3].title = "Changed";
-    columns[3].min_width = 7;
+    columns[3].min_width = 0;
     columns[3].max_width = 12;
     columns[3].align = ITIDY_ALIGN_RIGHT;
     columns[3].flexible = FALSE;
+    columns[3].is_path = FALSE;
     
     /* Allocate data rows array */
     log_debug(LOG_GUI, "populate_session_list: Allocating arrays for %u rows\n", count);
     data_rows = (const char ***)whd_malloc(sizeof(const char **) * count);
     changed_strings = (char **)whd_malloc(sizeof(char *) * count);
+    formatted_dates = (char **)whd_malloc(sizeof(char *) * count);
     
-    if (!data_rows || !changed_strings) {
+    if (!data_rows || !changed_strings || !formatted_dates) {
         log_error(LOG_GUI, "Failed to allocate data arrays\n");
         if (data_rows) whd_free(data_rows);
         if (changed_strings) whd_free(changed_strings);
+        if (formatted_dates) whd_free(formatted_dates);
         return;
     }
     
@@ -292,8 +304,24 @@ static void populate_session_list(iTidy_ToolRestoreData *data)
         }
         sprintf(changed_strings[row_index], "%d", session->icons_changed);
         
+        /* Allocate and format date string */
+        formatted_dates[row_index] = (char *)whd_malloc(32);
+        if (!formatted_dates[row_index]) {
+            log_error(LOG_GUI, "Failed to allocate formatted date string\n");
+            whd_free(changed_strings[row_index]);
+            whd_free((void *)row_data);
+            break;
+        }
+        
+        /* Format the timestamp from session_id (YYYYMMDD_HHMMSS) to human-readable */
+        if (!iTidy_FormatTimestamp(session->session_id, formatted_dates[row_index], 32)) {
+            /* If formatting fails, fall back to original date_string */
+            strncpy(formatted_dates[row_index], session->date_string, 31);
+            formatted_dates[row_index][31] = '\0';
+        }
+        
         /* Point to session data */
-        row_data[0] = session->date_string;
+        row_data[0] = formatted_dates[row_index];
         row_data[1] = session->mode;
         row_data[2] = session->scanned_path;
         row_data[3] = changed_strings[row_index];
@@ -323,9 +351,13 @@ static void populate_session_list(iTidy_ToolRestoreData *data)
         if (changed_strings[row_index]) {
             whd_free(changed_strings[row_index]);
         }
+        if (formatted_dates[row_index]) {
+            whd_free(formatted_dates[row_index]);
+        }
     }
     whd_free(data_rows);
     whd_free(changed_strings);
+    whd_free(formatted_dates);
     
     /* Refresh ListView */
     log_debug(LOG_GUI, "populate_session_list: Refreshing ListView gadget\n");

@@ -6,6 +6,29 @@
  * Pass 2: Format and create display nodes with proper alignment
  * 
  * ============================================================================
+ * FEATURE: Intelligent Path Abbreviation (Added 2025-11-18)
+ * ============================================================================
+ * 
+ * Columns can be marked with is_path=TRUE to enable Amiga-style path abbreviation
+ * using "/../" notation instead of simple "..." truncation. This dramatically
+ * improves readability for file paths in ListViews.
+ * 
+ * Example - Before (standard truncation):
+ *   "PC:Workbench/Tools/Programs/Copy_Of_m8.ww..."
+ * 
+ * Example - After (path abbreviation):
+ *   "PC:Workbench/../Copy_Of_m8.ww.info"
+ * 
+ * The user can now see:
+ *   ✓ Device name (PC:)
+ *   ✓ First directory (Workbench)
+ *   ✓ Full filename (Copy_Of_m8.ww.info)
+ * 
+ * Usage:
+ *   columns[2].is_path = TRUE;  // Enable for path column
+ *   columns[2].is_path = FALSE; // Standard truncation for other columns
+ * 
+ * ============================================================================
  * IMPORTANT USAGE NOTES FOR AI AGENTS:
  * ============================================================================
  * 
@@ -68,6 +91,7 @@
 #include "platform/platform.h"
 #include "listview_formatter.h"
 #include "../writeLog.h"
+#include "../path_utilities.h"
 
 #include <exec/memory.h>
 #include <exec/lists.h>
@@ -186,13 +210,38 @@ BOOL iTidy_CalculateColumnWidths(
 /*---------------------------------------------------------------------------*/
 /* Helper: Format a single cell with alignment                               */
 /*---------------------------------------------------------------------------*/
-
-static void format_cell(char *output, const char *text, int width, iTidy_ColumnAlign align)
+/**
+ * @brief Format a cell with alignment and optional path abbreviation
+ * 
+ * Formats cell data to fit within the specified width. If the data is too long,
+ * it will be truncated. For path columns (is_path=TRUE), uses intelligent Amiga-style
+ * path abbreviation with "/../" notation before falling back to standard truncation.
+ * 
+ * Path Abbreviation Strategy:
+ * - Preserves device name (e.g., "Work:")
+ * - Preserves first directory for context
+ * - Preserves filename (last component)
+ * - Collapses middle directories with "/../"
+ * - Example: "Work:Projects/Programming/Amiga/iTidy/src/tool.c" 
+ *            becomes "Work:Projects/../tool.c"
+ * 
+ * @param output Buffer to receive formatted text (must be pre-allocated)
+ * @param text Input text to format (can be NULL - treated as empty string)
+ * @param width Target width in characters
+ * @param align Alignment style (left, right, or center)
+ * @param is_path TRUE to enable intelligent path abbreviation, FALSE for standard truncation
+ * 
+ * @note Output is always null-terminated and padded/truncated to exactly 'width' characters
+ * @note Requires path_utilities module when is_path=TRUE
+ * @note For non-path data or when path abbreviation doesn't help, falls back to "..." truncation
+ */
+static void format_cell(char *output, const char *text, int width, iTidy_ColumnAlign align, BOOL is_path)
 {
     int len;
     int padding;
     int i;
     char truncated[256];
+    char path_abbreviated[256];
     const char *display_text;
     
     if (!output) return;
@@ -204,22 +253,35 @@ static void format_cell(char *output, const char *text, int width, iTidy_ColumnA
     
     len = strlen(text);
     
-    /* Truncate if needed */
+    /* Handle path formatting first if needed */
+    if (is_path && len > width) {
+        /* Try intelligent path abbreviation with /../ notation */
+        if (iTidy_ShortenPathWithParentDir(text, path_abbreviated, width)) {
+            /* Path was successfully abbreviated */
+            display_text = path_abbreviated;
+            len = strlen(path_abbreviated);
+        } else {
+            /* Path couldn't be abbreviated or already fits, use original */
+            display_text = text;
+        }
+    } else {
+        display_text = text;
+    }
+    
+    /* Truncate if still too long */
     if (len > width) {
         if (width >= 3) {
             /* Truncate with "..." */
-            strncpy(truncated, text, width - 3);
+            strncpy(truncated, display_text, width - 3);
             truncated[width - 3] = '\0';
             strcat(truncated, "...");
         } else {
             /* Too narrow for "...", just truncate */
-            strncpy(truncated, text, width);
+            strncpy(truncated, display_text, width);
             truncated[width] = '\0';
         }
         display_text = truncated;
         len = width;
-    } else {
-        display_text = text;
     }
     
     /* Calculate padding */
@@ -372,7 +434,7 @@ struct List *iTidy_FormatListViewColumns(
     /* ===== CREATE HEADER ROW ===== */
     pos = 0;
     for (col = 0; col < num_columns; col++) {
-        format_cell(cell_buffer, columns[col].title, col_widths[col], ITIDY_ALIGN_LEFT);
+        format_cell(cell_buffer, columns[col].title, col_widths[col], ITIDY_ALIGN_LEFT, FALSE);
         strcpy(row_buffer + pos, cell_buffer);
         pos += col_widths[col];
         
@@ -408,7 +470,7 @@ struct List *iTidy_FormatListViewColumns(
                 const char *cell_data = (data_rows[row] && data_rows[row][col]) ? 
                                         data_rows[row][col] : "";
                 
-                format_cell(cell_buffer, cell_data, col_widths[col], columns[col].align);
+                format_cell(cell_buffer, cell_data, col_widths[col], columns[col].align, columns[col].is_path);
                 strcpy(row_buffer + pos, cell_buffer);
                 pos += col_widths[col];
                 
