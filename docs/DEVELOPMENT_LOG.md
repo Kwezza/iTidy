@@ -7,7 +7,119 @@ iTidy is an Amiga icon management utility that allows users to sort and arrange 
 
 ## Development Timeline
 
-### Latest: Path Utilities Module (November 13, 2025)
+### Latest: Centralized Font System & ListView Formatter (November 18, 2025)
+
+#### Complete Font System with ListView Column Formatting
+* **Status**: Complete - Build successful
+* **Impact**: Optimized font handling + professional ListView column alignment
+* **Features**: Three-font system (System/Icon/Screen) + auto-width column formatter
+* **Date**: November 18, 2025
+
+**Font System Implementation:**
+- Centralized font reading from `font.prefs` at startup
+- Three font types cached in global `prefsIControl`:
+  - System Font (FP_SYSFONT) - Used for ListViews
+  - Icon Text Font (FP_WBFONT) - Workbench icons (future)
+  - Screen Text Font (FP_SCREENFONT) - Screen titles (future)
+- Font metrics include `tf_XSize` (character width) for accurate layout
+- Eliminates redundant font opening per-window
+- Fallback chain: font.prefs → fontPrefs → Topaz 8
+
+**ListView Formatter Module:**
+- `src/GUI/listview_formatter.h/.c` (578 lines)
+- Two-pass algorithm: measure → allocate → format
+- Features: flexible columns, min/max widths, LEFT/RIGHT/CENTER alignment
+- Smart truncation with ellipsis for overflow
+- Separator rows with extended dashes
+- Character-width aware (converts pixels to characters)
+
+**IControlPrefs Changes:**
+- Added 9 font fields to `IControlPrefsDetails` structure
+- New `read_font_prefs()` function parses IFF font.prefs
+- Enhanced debug logging shows all three fonts
+- Host stub defaults for testing
+
+**Bugs Fixed:**
+1. **Guru 8100 0005 crash** - Accessing gadget->Width before window creation
+2. **Blank ListView** - Using pixel width (584) instead of character width (73)
+3. **Buffer overflow crash** - Insufficient allocation for extended separator rows
+4. **Font detection** - Proper OpenDiskFont() with tf_XSize reading
+
+**Files Modified:**
+- `src/Settings/IControlPrefs.h/.c` - Font system infrastructure
+- `src/GUI/default_tool_restore_window.c` - Uses cached fonts, formatter
+- Documentation: `FONT_SYSTEM_COMPLETE.md`, `CENTRALIZED_FONT_SYSTEM.md`
+
+---
+
+### Default Tool Backup & Restore System (November 18-24, 2025)
+
+#### Complete CSV-Based Backup/Restore for Default Tool Changes
+* **Status**: Complete and fully tested
+* **Impact**: Users can now undo batch default tool updates by restoring from timestamped backup sessions
+* **Files Created**: 3 new modules (837+ lines of code)
+* **Date**: November 18-24, 2025
+
+**New Modules Created:**
+- `src/GUI/default_tool_backup.h` - List-based API declarations (282 lines)
+- `src/GUI/default_tool_backup.c` - Backup/restore implementation (934 lines)
+- `src/GUI/default_tool_restore_window.c` - Restore UI with dual ListViews (679 lines)
+
+**Phase 1 - Backup System:**
+- Automatic session creation when batch updating default tools
+- CSV format: `PROGDIR:Backups/tools/YYYYMMDD_HHMMSS/`
+  - `session.txt` - Metadata (date, mode, scanned path, icon counts)
+  - `changes.csv` - Per-icon changes (icon_path, old_tool, new_tool)
+- Proper CSV escaping for paths containing commas/quotes
+- Integrated into Default Tool Update window workflow
+
+**Phase 2 - Restore System:**
+- "Restore Default Tools..." button added to main window
+- Dual ListView window (vertical stacked layout, 600×320):
+  - Top: Backup sessions list with date/mode/path
+  - Bottom: Tool changes grouped by old→new tool with icon counts
+- "Restore All" button with confirmation dialog
+- Uses `SetIconDefaultTool()` to restore each icon
+- Success/failure reporting
+
+**Technical Implementation:**
+- List-based API using AmigaOS Exec lists (`struct List`, `NewList()`)
+- Session scanning: Reads directories, parses metadata files
+- Change grouping: Groups individual changes by old→new tool pairs
+- Memory management: `whd_malloc`/`whd_free` for memory tracking compatibility
+- Display nodes: Wrapper nodes pointing to allocated display text buffers
+
+**Bugs Fixed During Development:**
+1. **HALT3 crash on window open** - Fixed UserPort->mp_SigTask corruption by using global window data pointer instead of UserData hack
+2. **Display corruption in ListView** - Fixed buffer overflow (128→256 byte buffers for display text)
+3. **WinUAE crash on close** - Fixed cleanup order (window must close before gadgets freed, detach lists first)
+4. **Memory allocation mismatch** - Changed `FreeVec()` to `whd_free()` for consistency with `whd_malloc()`
+5. **Character encoding corruption** - Replaced Unicode arrow `→` with ASCII `->` (AmigaOS uses ISO-8859-1, not UTF-8)
+
+**Key Functions:**
+- `iTidy_StartBackupSession()` / `iTidy_EndBackupSession()` - Session lifecycle
+- `iTidy_RecordToolChange()` - Records individual icon changes to CSV
+- `iTidy_ScanBackupSessions()` - Scans backup folders, populates session list
+- `iTidy_LoadToolChanges()` - Loads and groups changes for display
+- `iTidy_RestoreAllIcons()` - Restores icons from a backup session
+- `iTidy_CreateToolRestoreWindow()` - Creates restore UI with event loop
+
+**Files Modified:**
+- `src/GUI/main_window.c` - Added restore button (GID_RESTORE_DEFAULT_TOOLS)
+- `src/GUI/default_tool_update_window.c` - Integrated backup calls
+- `Makefile` - Added new source files and dependencies
+
+**Testing Results:**
+- ✅ Backup files created correctly during batch updates
+- ✅ Session list displays all available backups
+- ✅ Tool changes displayed correctly with ASCII arrow
+- ✅ Restore functionality verified (changes applied successfully)
+- ✅ Window opens/closes without crashes
+- ✅ Memory management verified with debug logging
+
+---
+
+### Path Utilities Module (November 13, 2025)
 
 #### Created Reusable Global Path Truncation/Abbreviation Functions
 * **Status**: Complete and tested

@@ -6,10 +6,12 @@
 
 #include "platform/platform.h"
 #include "default_tool_update_window.h"
+#include "default_tool_backup.h"
 #include "../icon_types.h"
 #include "../itidy_types.h"
 #include "../path_utilities.h"
 #include "../Settings/IControlPrefs.h"
+#include "../layout_preferences.h"
 #include "../writeLog.h"
 #include "easy_request_helper.h"
 
@@ -250,9 +252,17 @@ static BOOL perform_tool_update(struct iTidy_DefaultToolUpdateWindow *data)
     BPTR lock;
     struct FileInfoBlock *fib = NULL;
     char *info_path;
+    const LayoutPreferences *prefs;
+    BOOL backup_enabled;
+    IconDetailsFromDisk icon_details;
+    char *old_tool = NULL;
     
     if (data == NULL || data->update_in_progress)
         return FALSE;
+    
+    /* Get global preferences for backup setting */
+    prefs = GetGlobalPreferences();
+    backup_enabled = prefs->enable_default_tool_backup;
     
     /* Check if new tool path is empty */
     if (data->new_tool_path[0] == '\0')
@@ -273,6 +283,11 @@ static BOOL perform_tool_update(struct iTidy_DefaultToolUpdateWindow *data)
     /* Mark update as in progress */
     data->update_in_progress = TRUE;
     
+    /* Set busy pointer */
+    SetWindowPointer(data->window,
+        WA_BusyPointer, TRUE,
+        TAG_END);
+    
     /* Disable update button during operation */
     GT_SetGadgetAttrs(data->update_btn, data->window, NULL,
         GA_Disabled, TRUE,
@@ -280,6 +295,25 @@ static BOOL perform_tool_update(struct iTidy_DefaultToolUpdateWindow *data)
     
     /* Clear previous status entries */
     iTidy_FreeStatusEntries(data);
+    
+    /* Initialize backup manager and start session if enabled */
+    if (backup_enabled)
+    {
+        iTidy_InitToolBackupManager(&data->backup_manager, TRUE);
+        
+        if (data->context.mode == UPDATE_MODE_BATCH)
+        {
+            /* Start batch backup session */
+            iTidy_StartBackupSession(&data->backup_manager, "Batch",
+                                    data->context.icon_paths[0]);  /* Use first path as reference */
+        }
+        else
+        {
+            /* Start single backup session */
+            iTidy_StartBackupSession(&data->backup_manager, "Single",
+                                    data->context.single_info_path);
+        }
+    }
     
     /* Perform update based on mode */
     if (data->context.mode == UPDATE_MODE_BATCH)
@@ -305,11 +339,23 @@ static BOOL perform_tool_update(struct iTidy_DefaultToolUpdateWindow *data)
                         append_to_log("  %s: READ-ONLY (skipped)\n", info_path);
                         UnLock(lock);
                         if (fib) FreeDosObject(DOS_FIB, fib);
+                        
+                        /* Track skipped icon in backup */
+                        if (backup_enabled && data->backup_manager.session_active)
+                            data->backup_manager.icons_skipped++;
+                        
                         continue;
                     }
                 }
                 if (fib) FreeDosObject(DOS_FIB, fib);
                 UnLock(lock);
+            }
+            
+            /* Get old default tool before changing (for backup) */
+            memset(&icon_details, 0, sizeof(IconDetailsFromDisk));
+            if (GetIconDetailsFromDisk(info_path, &icon_details))
+            {
+                old_tool = icon_details.defaultTool;  /* Will be freed later */
             }
             
             /* Attempt to update icon */
@@ -318,6 +364,14 @@ static BOOL perform_tool_update(struct iTidy_DefaultToolUpdateWindow *data)
             
             if (result)
             {
+                /* Record change to backup before showing success */
+                if (backup_enabled && data->backup_manager.session_active)
+                {
+                    iTidy_RecordToolChange(&data->backup_manager, info_path,
+                                          old_tool ? old_tool : "",
+                                          data->new_tool_path[0] ? data->new_tool_path : "");
+                }
+                
                 add_status_entry(data, info_path, "SUCCESS");
                 append_to_log("  %s: SUCCESS\n", info_path);
                 success_count++;
@@ -327,6 +381,17 @@ static BOOL perform_tool_update(struct iTidy_DefaultToolUpdateWindow *data)
                 add_status_entry(data, info_path, "FAILED");
                 append_to_log("  %s: FAILED\n", info_path);
                 failed_count++;
+                
+                /* Track failed icon in backup */
+                if (backup_enabled && data->backup_manager.session_active)
+                    data->backup_manager.icons_skipped++;
+            }
+            
+            /* Free old tool string (allocated by GetIconDetailsFromDisk) */
+            if (old_tool)
+            {
+                FreeVec(old_tool);
+                old_tool = NULL;
             }
             
             /* Update display periodically */
@@ -358,6 +423,18 @@ static BOOL perform_tool_update(struct iTidy_DefaultToolUpdateWindow *data)
                     /* Update display */
                     populate_status_list(data);
                     
+                    /* End backup session if active */
+                    if (backup_enabled && data->backup_manager.session_active)
+                    {
+                        data->backup_manager.icons_skipped++;
+                        iTidy_EndBackupSession(&data->backup_manager);
+                    }
+                    
+                    /* Restore normal pointer */
+                    SetWindowPointer(data->window,
+                        WA_BusyPointer, FALSE,
+                        TAG_END);
+                    
                     /* Re-enable update button */
                     GT_SetGadgetAttrs(data->update_btn, data->window, NULL,
                         GA_Disabled, FALSE,
@@ -371,12 +448,27 @@ static BOOL perform_tool_update(struct iTidy_DefaultToolUpdateWindow *data)
             UnLock(lock);
         }
         
+        /* Get old default tool before changing (for backup) */
+        memset(&icon_details, 0, sizeof(IconDetailsFromDisk));
+        if (GetIconDetailsFromDisk(info_path, &icon_details))
+        {
+            old_tool = icon_details.defaultTool;  /* Will be freed later */
+        }
+        
         /* Attempt to update icon */
         result = SetIconDefaultTool(info_path,
                                    data->new_tool_path[0] ? data->new_tool_path : NULL);
         
         if (result)
         {
+            /* Record change to backup before showing success */
+            if (backup_enabled && data->backup_manager.session_active)
+            {
+                iTidy_RecordToolChange(&data->backup_manager, info_path,
+                                      old_tool ? old_tool : "",
+                                      data->new_tool_path[0] ? data->new_tool_path : "");
+            }
+            
             add_status_entry(data, info_path, "SUCCESS");
             append_to_log("  SUCCESS\n");
             success_count = 1;
@@ -386,11 +478,33 @@ static BOOL perform_tool_update(struct iTidy_DefaultToolUpdateWindow *data)
             add_status_entry(data, info_path, "FAILED");
             append_to_log("  FAILED\n");
             failed_count = 1;
+            
+            /* Track failed icon in backup */
+            if (backup_enabled && data->backup_manager.session_active)
+                data->backup_manager.icons_skipped++;
+        }
+        
+        /* Free old tool string (allocated by GetIconDetailsFromDisk) */
+        if (old_tool)
+        {
+            FreeVec(old_tool);
+            old_tool = NULL;
         }
     }
     
     /* Final display update */
     populate_status_list(data);
+    
+    /* End backup session if active */
+    if (backup_enabled && data->backup_manager.session_active)
+    {
+        iTidy_EndBackupSession(&data->backup_manager);
+    }
+    
+    /* Restore normal pointer */
+    SetWindowPointer(data->window,
+        WA_BusyPointer, FALSE,
+        TAG_END);
     
     /* Re-enable update button */
     GT_SetGadgetAttrs(data->update_btn, data->window, NULL,
@@ -937,6 +1051,9 @@ void iTidy_CloseDefaultToolUpdateWindow(struct iTidy_DefaultToolUpdateWindow *da
     
     /* Free status entries */
     iTidy_FreeStatusEntries(data);
+    
+    /* Cleanup backup manager (will end session if still active) */
+    iTidy_CleanupToolBackupManager(&data->backup_manager);
     
     /* Close window */
     if (data->window != NULL)

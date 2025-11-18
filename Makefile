@@ -58,7 +58,8 @@ CORE_SRCS = \
 	$(SRC_DIR)/layout_preferences.c \
 	$(SRC_DIR)/layout_processor.c \
 	$(SRC_DIR)/aspect_ratio_layout.c \
-	$(SRC_DIR)/folder_scanner.c
+	$(SRC_DIR)/folder_scanner.c \
+	$(SRC_DIR)/string_functions.c
 
 # Backup system source files
 BACKUP_SRCS = \
@@ -79,6 +80,9 @@ GUI_SRCS = \
 	$(SRC_DIR)/GUI/folder_view_window.c \
 	$(SRC_DIR)/GUI/tool_cache_window.c \
 	$(SRC_DIR)/GUI/default_tool_update_window.c \
+	$(SRC_DIR)/GUI/default_tool_backup.c \
+	$(SRC_DIR)/GUI/default_tool_restore_window.c \
+	$(SRC_DIR)/GUI/listview_formatter.c \
 	$(SRC_DIR)/GUI/easy_request_helper.c \
 	$(SRC_DIR)/GUI/window_enumerator.c \
 	$(SRC_DIR)/GUI/wb_classify.c \
@@ -233,6 +237,7 @@ $(OUT_DIR)/cli_utilities.o: $(SRC_DIR)/cli_utilities.c $(SRC_DIR)/cli_utilities.
 $(OUT_DIR)/layout_preferences.o: $(SRC_DIR)/layout_preferences.c $(SRC_DIR)/layout_preferences.h
 $(OUT_DIR)/layout_processor.o: $(SRC_DIR)/layout_processor.c $(SRC_DIR)/layout_processor.h
 $(OUT_DIR)/aspect_ratio_layout.o: $(SRC_DIR)/aspect_ratio_layout.c $(SRC_DIR)/aspect_ratio_layout.h
+$(OUT_DIR)/string_functions.o: $(SRC_DIR)/string_functions.c $(SRC_DIR)/string_functions.h
 
 # DOS subdirectory
 $(OUT_DIR)/DOS/getDiskDetails.o: $(SRC_DIR)/DOS/getDiskDetails.c $(SRC_DIR)/DOS/getDiskDetails.h
