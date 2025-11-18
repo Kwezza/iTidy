@@ -55,6 +55,7 @@
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <exec/lists.h>
+#include <dos/dos.h>
 #include <utility/tagitem.h>
 #include <intuition/intuition.h>
 #include <intuition/gadgetclass.h>
@@ -728,25 +729,24 @@ BOOL create_template_window(struct TemplateWindowData *data)
     data->menu = NULL;  /* Replace with actual menu creation */
 
     /* Open the window with calculated dimensions */
+    /* Set min/max to same values to prevent resizing */
     data->window = OpenWindowTags(NULL,
                                   WA_Left, 50,
                                   WA_Top, 50,
                                   WA_Width, window_width,
                                   WA_Height, window_height,
-                                  WA_MinWidth, window_width - 50,
-                                  WA_MinHeight, window_height - 50,
-                                  WA_MaxWidth, window_width + 200,
-                                  WA_MaxHeight, window_height + 200,
+                                  WA_MinWidth, window_width,
+                                  WA_MinHeight, window_height,
+                                  WA_MaxWidth, window_width,
+                                  WA_MaxHeight, window_height,
                                   WA_Title, data->window_title ? data->window_title : TEMPLATE_WINDOW_TITLE,
                                   WA_DragBar, TRUE,
                                   WA_DepthGadget, TRUE,
                                   WA_CloseGadget, TRUE,
-                                  WA_SizeGadget, TRUE,
-                                  WA_SizeBBottom, TRUE,
-                                  WA_SizeBRight, TRUE,
+                                  WA_SizeGadget, FALSE,
                                   WA_Activate, TRUE,
                                   WA_PubScreen, data->screen,
-                                  WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_GADGETDOWN | IDCMP_MENUPICK | IDCMP_NEWSIZE,
+                                  WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_GADGETDOWN | IDCMP_MENUPICK,
                                   TAG_END);
 
     if (data->window == NULL)
@@ -990,5 +990,94 @@ BOOL handle_template_window_resize(struct TemplateWindowData *data)
 
     return TRUE;
 } /* handle_template_window_resize */
+
+/*------------------------------------------------------------------------*/
+/* MAIN - Simple test program to demonstrate template usage              */
+/*------------------------------------------------------------------------*/
+int main(int argc, char **argv)
+{
+    struct TemplateWindowData window_data;
+    struct IntuiMessage *imsg;
+    ULONG signals;
+    BOOL running = TRUE;
+
+    /* Initialize window data structure */
+    memset(&window_data, 0, sizeof(struct TemplateWindowData));
+
+    /* Lock the Workbench screen */
+    window_data.screen = LockPubScreen("Workbench");
+    if (window_data.screen == NULL)
+    {
+        printf("ERROR: Cannot lock Workbench screen\n");
+        return 20;
+    }
+
+    /* Create the template window */
+    if (!create_template_window(&window_data))
+    {
+        printf("Failed to create template window\n");
+        UnlockPubScreen(NULL, window_data.screen);
+        return 20;
+    }
+
+    printf("Template window created successfully. Close window to exit.\n");
+
+    /* Main event loop */
+    while (running)
+    {
+        signals = Wait((1L << window_data.window->UserPort->mp_SigBit) | SIGBREAKF_CTRL_C);
+
+        if (signals & SIGBREAKF_CTRL_C)
+        {
+            running = FALSE;
+            continue;
+        }
+
+        while ((imsg = GT_GetIMsg(window_data.window->UserPort)))
+        {
+            ULONG class = imsg->Class;
+            UWORD code = imsg->Code;
+            struct Gadget *gad = (struct Gadget *)imsg->IAddress;
+
+            GT_ReplyIMsg(imsg);
+
+            switch (class)
+            {
+                case IDCMP_CLOSEWINDOW:
+                    running = FALSE;
+                    break;
+
+                case IDCMP_GADGETUP:
+                    if (gad)
+                    {
+                        handle_template_gadget_event(&window_data, gad->GadgetID);
+                    }
+                    break;
+
+                case IDCMP_NEWSIZE:
+                    handle_template_window_resize(&window_data);
+                    break;
+
+                case IDCMP_REFRESHWINDOW:
+                    GT_BeginRefresh(window_data.window);
+                    GT_EndRefresh(window_data.window, TRUE);
+                    break;
+            }
+        }
+    }
+
+    /* Cleanup */
+    close_template_window(&window_data);
+    
+    /* Unlock the screen */
+    if (window_data.screen)
+    {
+        UnlockPubScreen(NULL, window_data.screen);
+    }
+    
+    printf("Template window closed.\n");
+
+    return 0;
+} /* main */
 
 /* End of Text */
