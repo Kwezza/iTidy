@@ -100,6 +100,11 @@ struct iTidy_ToolRestoreData {
     struct List *session_display_list;  /* Formatted session list (from formatter) */
     struct List changes_display_list;   /* Formatted strings for changes ListView */
     
+    /* Sorting support for session ListView */
+    struct List session_entry_list;     /* List of iTidy_ListViewEntry for sorting */
+    iTidy_ListViewState *session_lv_state; /* State for column sorting */
+    int last_sort_column;               /* Track which column was last sorted (-1 = none) */
+    
     /* Layout dimensions */
     UWORD listview_width;               /* Width of ListViews for formatter */
     
@@ -111,7 +116,7 @@ struct iTidy_ToolRestoreData {
 
 static void populate_session_list(iTidy_ToolRestoreData *data);
 static void populate_changes_list(iTidy_ToolRestoreData *data);
-static void handle_session_selection(iTidy_ToolRestoreData *data, LONG selected_index);
+static void handle_session_selection(iTidy_ToolRestoreData *data, LONG selected_index, struct IntuiMessage *msg);
 static void handle_restore_all(iTidy_ToolRestoreData *data);
 static void cleanup_display_lists(iTidy_ToolRestoreData *data);
 
@@ -144,6 +149,34 @@ static void cleanup_display_lists(iTidy_ToolRestoreData *data)
         data->session_display_list = NULL;
     }
     
+    /* Free session ListView state */
+    if (data->session_lv_state) {
+        iTidy_FreeListViewState(data->session_lv_state);
+        data->session_lv_state = NULL;
+    }
+    
+    /* Free session entry list (display_data and sort_keys) */
+    {
+        struct Node *node;
+        while ((node = RemHead(&data->session_entry_list)) != NULL) {
+            iTidy_ListViewEntry *entry = (iTidy_ListViewEntry *)node;
+            int i;
+            
+            for (i = 0; i < entry->num_columns; i++) {
+                if (entry->display_data && entry->display_data[i]) {
+                    whd_free((void *)entry->display_data[i]);
+                }
+                if (entry->sort_keys && entry->sort_keys[i]) {
+                    whd_free((void *)entry->sort_keys[i]);
+                }
+            }
+            
+            if (entry->display_data) whd_free((void *)entry->display_data);
+            if (entry->sort_keys) whd_free((void *)entry->sort_keys);
+            whd_free(entry);
+        }
+    }
+    
     /* Free changes display list (ln_Name belongs to change) */
     node = data->changes_display_list.lh_Head;
     while (node->ln_Succ) {
@@ -159,19 +192,15 @@ static void cleanup_display_lists(iTidy_ToolRestoreData *data)
  * ============================================ */
 
 /**
- * @brief Populate the session ListView with backup sessions using formatter
+ * @brief Populate the session ListView with sortable backup sessions
  */
 static void populate_session_list(iTidy_ToolRestoreData *data)
 {
     iTidy_ToolBackupSession *session;
     struct Node *session_node;
+    iTidy_ListViewEntry *entry;
     UWORD count;
     iTidy_ColumnConfig columns[4];
-    const char ***data_rows = NULL;
-    const char **row_data = NULL;
-    char **changed_strings = NULL;
-    char **formatted_dates = NULL;
-    int row_index;
     
     log_debug(LOG_GUI, "populate_session_list: Starting...\n");
     
@@ -182,6 +211,35 @@ static void populate_session_list(iTidy_ToolRestoreData *data)
         data->session_display_list = NULL;
     }
     
+    /* Free old state */
+    if (data->session_lv_state) {
+        iTidy_FreeListViewState(data->session_lv_state);
+        data->session_lv_state = NULL;
+    }
+    
+    /* Free old entry list */
+    {
+        struct Node *node;
+        while ((node = RemHead(&data->session_entry_list)) != NULL) {
+            iTidy_ListViewEntry *old_entry = (iTidy_ListViewEntry *)node;
+            int i;
+            
+            for (i = 0; i < old_entry->num_columns; i++) {
+                if (old_entry->display_data && old_entry->display_data[i]) {
+                    whd_free((void *)old_entry->display_data[i]);
+                }
+                if (old_entry->sort_keys && old_entry->sort_keys[i]) {
+                    whd_free((void *)old_entry->sort_keys[i]);
+                }
+            }
+            
+            if (old_entry->display_data) whd_free((void *)old_entry->display_data);
+            if (old_entry->sort_keys) whd_free((void *)old_entry->sort_keys);
+            whd_free(old_entry);
+        }
+    }
+    NewList(&data->session_entry_list);
+    
     /* Free old session data */
     iTidy_FreeSessionList(&data->session_list);
     NewList(&data->session_list);
@@ -191,38 +249,50 @@ static void populate_session_list(iTidy_ToolRestoreData *data)
     count = iTidy_ScanBackupSessions(&data->session_list);
     log_info(LOG_GUI, "populate_session_list: Found %u backup sessions\n", count);
     
+    /* Define columns with sorting enabled */
+    columns[0].title = "Date/Time";
+    columns[0].min_width = 0;
+    columns[0].max_width = 20;
+    columns[0].align = ITIDY_ALIGN_LEFT;
+    columns[0].flexible = FALSE;
+    columns[0].is_path = FALSE;
+    columns[0].default_sort = ITIDY_SORT_DESCENDING;  /* Most recent first */
+    columns[0].sort_type = ITIDY_COLTYPE_DATE;
+    
+    columns[1].title = "Mode";
+    columns[1].min_width = 0;
+    columns[1].max_width = 8;
+    columns[1].align = ITIDY_ALIGN_LEFT;
+    columns[1].flexible = FALSE;
+    columns[1].is_path = FALSE;
+    columns[1].default_sort = ITIDY_SORT_NONE;
+    columns[1].sort_type = ITIDY_COLTYPE_TEXT;
+    
+    columns[2].title = "Path";
+    columns[2].min_width = 30;
+    columns[2].max_width = 0;  /* Unlimited */
+    columns[2].align = ITIDY_ALIGN_LEFT;
+    columns[2].flexible = TRUE;  /* This column absorbs extra space */
+    columns[2].is_path = TRUE;   /* Enable path abbreviation with /../ notation */
+    columns[2].default_sort = ITIDY_SORT_NONE;
+    columns[2].sort_type = ITIDY_COLTYPE_TEXT;
+    
+    columns[3].title = "Changed";
+    columns[3].min_width = 0;
+    columns[3].max_width = 12;
+    columns[3].align = ITIDY_ALIGN_RIGHT;
+    columns[3].flexible = FALSE;
+    columns[3].is_path = FALSE;
+    columns[3].default_sort = ITIDY_SORT_NONE;
+    columns[3].sort_type = ITIDY_COLTYPE_NUMBER;
+    
     if (count == 0) {
-        log_warning(LOG_GUI, "populate_session_list: No sessions found - creating empty list\n");
-        /* No sessions - create empty formatted list with just headers */
-        columns[0].title = "Date/Time";
-        columns[0].min_width = 10;
-        columns[0].max_width = 20;
-        columns[0].align = ITIDY_ALIGN_LEFT;
-        columns[0].flexible = FALSE;
-        columns[0].is_path = FALSE;
+        log_info(LOG_GUI, "populate_session_list: No backups found, showing empty list\n");
         
-        columns[1].title = "Mode";
-        columns[1].min_width = 6;
-        columns[1].max_width = 8;
-        columns[1].align = ITIDY_ALIGN_LEFT;
-        columns[1].flexible = FALSE;
-        columns[1].is_path = FALSE;
-        
-        columns[2].title = "Path";
-        columns[2].min_width = 30;
-        columns[2].max_width = 0;
-        columns[2].align = ITIDY_ALIGN_LEFT;
-        columns[2].flexible = TRUE;
-        columns[2].is_path = TRUE;
-        
-        columns[3].title = "Changed";
-        columns[3].min_width = 7;
-        columns[3].max_width = 12;
-        columns[3].align = ITIDY_ALIGN_RIGHT;
-        columns[3].flexible = FALSE;
-        columns[3].is_path = FALSE;
-        
-        data->session_display_list = iTidy_FormatListViewColumns(columns, 4, NULL, 0, 0);
+        /* Format empty list with headers only */
+        data->session_display_list = iTidy_FormatListViewColumns(
+            columns, 4, &data->session_entry_list, data->listview_width, 
+            &data->session_lv_state);
         
         if (data->session_listview && data->window) {
             GT_SetGadgetAttrs(data->session_listview, data->window, NULL,
@@ -232,109 +302,155 @@ static void populate_session_list(iTidy_ToolRestoreData *data)
         return;
     }
     
-    /* Define columns */
-    columns[0].title = "Date/Time";
-    columns[0].min_width = 0;
-    columns[0].max_width = 20;
-    columns[0].align = ITIDY_ALIGN_LEFT;
-    columns[0].flexible = FALSE;
-    columns[0].is_path = FALSE;
-    
-    columns[1].title = "Mode";
-    columns[1].min_width = 0;
-    columns[1].max_width = 8;
-    columns[1].align = ITIDY_ALIGN_LEFT;
-    columns[1].flexible = FALSE;
-    columns[1].is_path = FALSE;
-    
-    columns[2].title = "Path";
-    columns[2].min_width = 30;
-    columns[2].max_width = 0;  /* Unlimited */
-    columns[2].align = ITIDY_ALIGN_LEFT;
-    columns[2].flexible = TRUE;  /* This column absorbs extra space */
-    columns[2].is_path = TRUE;   /* Enable path abbreviation with /../ notation */
-    
-    columns[3].title = "Changed";
-    columns[3].min_width = 0;
-    columns[3].max_width = 12;
-    columns[3].align = ITIDY_ALIGN_RIGHT;
-    columns[3].flexible = FALSE;
-    columns[3].is_path = FALSE;
-    
-    /* Allocate data rows array */
-    log_debug(LOG_GUI, "populate_session_list: Allocating arrays for %u rows\n", count);
-    data_rows = (const char ***)whd_malloc(sizeof(const char **) * count);
-    changed_strings = (char **)whd_malloc(sizeof(char *) * count);
-    formatted_dates = (char **)whd_malloc(sizeof(char *) * count);
-    
-    if (!data_rows || !changed_strings || !formatted_dates) {
-        log_error(LOG_GUI, "Failed to allocate data arrays\n");
-        if (data_rows) whd_free(data_rows);
-        if (changed_strings) whd_free(changed_strings);
-        if (formatted_dates) whd_free(formatted_dates);
-        return;
-    }
-    
-    /* Build data rows from session list */
-    log_debug(LOG_GUI, "populate_session_list: Building data rows from session list\n");
-    row_index = 0;
+    /* Build entry list from session data */
+    log_debug(LOG_GUI, "populate_session_list: Building %u entry nodes\n", count);
     for (session_node = data->session_list.lh_Head; 
          session_node->ln_Succ != NULL; 
          session_node = session_node->ln_Succ)
     {
+        char *changed_str, *formatted_date;
+        int i;
+        
         session = (iTidy_ToolBackupSession *)session_node;
         
-        log_debug(LOG_GUI, "populate_session_list: Processing session %d: %s | %s | %s | %d\n",
-                  row_index, session->date_string, session->mode, 
+        log_debug(LOG_GUI, "populate_session_list: Processing session: %s | %s | %s | %d\n",
+                  session->date_string, session->mode, 
                   session->scanned_path, session->icons_changed);
         
-        /* Allocate row */
-        row_data = (const char **)whd_malloc(sizeof(const char *) * 4);
-        if (!row_data) {
-            log_error(LOG_GUI, "Failed to allocate row data\n");
+        /* Allocate entry node */
+        entry = (iTidy_ListViewEntry *)whd_malloc(sizeof(iTidy_ListViewEntry));
+        if (!entry) {
+            log_error(LOG_GUI, "Failed to allocate entry node\n");
             break;
         }
         
-        /* Allocate buffer for "changed" string */
-        changed_strings[row_index] = (char *)whd_malloc(16);
-        if (!changed_strings[row_index]) {
+        entry->num_columns = 4;
+        entry->node.ln_Name = NULL;  /* Formatter will set this */
+        entry->display_data = NULL;
+        entry->sort_keys = NULL;
+        
+        /* Allocate column arrays */
+        entry->display_data = (const char **)whd_malloc(sizeof(const char *) * 4);
+        entry->sort_keys = (const char **)whd_malloc(sizeof(const char *) * 4);
+        
+        if (!entry->display_data || !entry->sort_keys) {
+            log_error(LOG_GUI, "Failed to allocate entry arrays\n");
+            if (entry->display_data) whd_free((void *)entry->display_data);
+            if (entry->sort_keys) whd_free((void *)entry->sort_keys);
+            whd_free(entry);
+            break;
+        }
+        
+        /* Initialize arrays to NULL for safe cleanup */
+        for (i = 0; i < 4; i++) {
+            entry->display_data[i] = NULL;
+            entry->sort_keys[i] = NULL;
+        }
+        
+        /* Column 0: Date/Time - display formatted, sort by session_id */
+        formatted_date = (char *)whd_malloc(32);
+        if (!formatted_date) {
+            log_error(LOG_GUI, "Failed to allocate formatted date\n");
+            goto cleanup_entry;
+        }
+        
+        if (!iTidy_FormatTimestamp(session->session_id, formatted_date, 32)) {
+            strncpy(formatted_date, session->date_string, 31);
+            formatted_date[31] = '\0';
+        }
+        
+        entry->display_data[0] = formatted_date;
+        
+        /* Sort key: duplicate session_id string */
+        entry->sort_keys[0] = (char *)whd_malloc(strlen(session->session_id) + 1);
+        if (!entry->sort_keys[0]) {
+            log_error(LOG_GUI, "Failed to allocate session_id sort key\n");
+            goto cleanup_entry;
+        }
+        strcpy((char *)entry->sort_keys[0], session->session_id);
+        
+        /* Column 1: Mode - same for display and sort */
+        entry->display_data[1] = (char *)whd_malloc(strlen(session->mode) + 1);
+        if (!entry->display_data[1]) {
+            log_error(LOG_GUI, "Failed to allocate mode display string\n");
+            goto cleanup_entry;
+        }
+        strcpy((char *)entry->display_data[1], session->mode);
+        
+        entry->sort_keys[1] = (char *)whd_malloc(strlen(session->mode) + 1);
+        if (!entry->sort_keys[1]) {
+            log_error(LOG_GUI, "Failed to allocate mode sort key\n");
+            goto cleanup_entry;
+        }
+        strcpy((char *)entry->sort_keys[1], session->mode);
+        
+        /* Column 2: Path - same for display and sort */
+        entry->display_data[2] = (char *)whd_malloc(strlen(session->scanned_path) + 1);
+        if (!entry->display_data[2]) {
+            log_error(LOG_GUI, "Failed to allocate path display string\n");
+            goto cleanup_entry;
+        }
+        strcpy((char *)entry->display_data[2], session->scanned_path);
+        
+        entry->sort_keys[2] = (char *)whd_malloc(strlen(session->scanned_path) + 1);
+        if (!entry->sort_keys[2]) {
+            log_error(LOG_GUI, "Failed to allocate path sort key\n");
+            goto cleanup_entry;
+        }
+        strcpy((char *)entry->sort_keys[2], session->scanned_path);
+        
+        /* Column 3: Changed count - display as string, sort as padded number */
+        changed_str = (char *)whd_malloc(16);
+        if (!changed_str) {
             log_error(LOG_GUI, "Failed to allocate changed string\n");
-            whd_free((void *)row_data);
-            break;
+            goto cleanup_entry;
         }
-        sprintf(changed_strings[row_index], "%d", session->icons_changed);
+        sprintf(changed_str, "%d", session->icons_changed);
+        entry->display_data[3] = changed_str;
         
-        /* Allocate and format date string */
-        formatted_dates[row_index] = (char *)whd_malloc(32);
-        if (!formatted_dates[row_index]) {
-            log_error(LOG_GUI, "Failed to allocate formatted date string\n");
-            whd_free(changed_strings[row_index]);
-            whd_free((void *)row_data);
-            break;
+        /* Sort key: zero-padded for numeric sorting */
+        entry->sort_keys[3] = (char *)whd_malloc(16);
+        if (!entry->sort_keys[3]) {
+            log_error(LOG_GUI, "Failed to allocate sort key\n");
+            goto cleanup_entry;
+        }
+        sprintf((char *)entry->sort_keys[3], "%08d", session->icons_changed);
+        
+        /* Verify all allocations succeeded */
+        if (!entry->display_data[0] || !entry->display_data[1] || 
+            !entry->display_data[2] || !entry->display_data[3] ||
+            !entry->sort_keys[0] || !entry->sort_keys[1] || 
+            !entry->sort_keys[2] || !entry->sort_keys[3]) {
+            log_error(LOG_GUI, "Failed to allocate entry strings\n");
+            goto cleanup_entry;
         }
         
-        /* Format the timestamp from session_id (YYYYMMDD_HHMMSS) to human-readable */
-        if (!iTidy_FormatTimestamp(session->session_id, formatted_dates[row_index], 32)) {
-            /* If formatting fails, fall back to original date_string */
-            strncpy(formatted_dates[row_index], session->date_string, 31);
-            formatted_dates[row_index][31] = '\0';
+        /* Add to entry list */
+        AddTail(&data->session_entry_list, (struct Node *)entry);
+        continue;
+        
+cleanup_entry:
+        /* Clean up on allocation failure */
+        for (i = 0; i < 4; i++) {
+            if (entry->display_data && entry->display_data[i]) {
+                whd_free((void *)entry->display_data[i]);
+            }
+            if (entry->sort_keys && entry->sort_keys[i]) {
+                whd_free((void *)entry->sort_keys[i]);
+            }
         }
-        
-        /* Point to session data */
-        row_data[0] = formatted_dates[row_index];
-        row_data[1] = session->mode;
-        row_data[2] = session->scanned_path;
-        row_data[3] = changed_strings[row_index];
-        
-        data_rows[row_index] = row_data;
-        row_index++;
+        if (entry->display_data) whd_free((void *)entry->display_data);
+        if (entry->sort_keys) whd_free((void *)entry->sort_keys);
+        whd_free(entry);
+        break;
     }
     
-    /* Format the list - use stored ListView width for flexible column expansion */
-    log_debug(LOG_GUI, "populate_session_list: Calling formatter with %u rows, width=%u\n", 
+    /* Format the list with sorting enabled */
+    log_debug(LOG_GUI, "populate_session_list: Calling formatter with %u entries, width=%u\n", 
               count, data->listview_width);
-    data->session_display_list = iTidy_FormatListViewColumns(columns, 4, data_rows, count, 
-                                                              data->listview_width);
+    data->session_display_list = iTidy_FormatListViewColumns(
+        columns, 4, &data->session_entry_list, data->listview_width,
+        &data->session_lv_state);
     
     if (!data->session_display_list) {
         log_error(LOG_GUI, "populate_session_list: Formatter returned NULL!\n");
@@ -342,33 +458,15 @@ static void populate_session_list(iTidy_ToolRestoreData *data)
         log_debug(LOG_GUI, "populate_session_list: Formatter succeeded\n");
     }
     
-    /* Free temporary data */
-    log_debug(LOG_GUI, "populate_session_list: Freeing temporary data\n");
-    for (row_index = 0; row_index < (int)count; row_index++) {
-        if (data_rows[row_index]) {
-            whd_free((void *)data_rows[row_index]);
-        }
-        if (changed_strings[row_index]) {
-            whd_free(changed_strings[row_index]);
-        }
-        if (formatted_dates[row_index]) {
-            whd_free(formatted_dates[row_index]);
-        }
-    }
-    whd_free(data_rows);
-    whd_free(changed_strings);
-    whd_free(formatted_dates);
-    
-    /* Refresh ListView */
-    log_debug(LOG_GUI, "populate_session_list: Refreshing ListView gadget\n");
+    /* Update the ListView gadget */
+    log_debug(LOG_GUI, "populate_session_list: Updating ListView gadget\n");
     if (data->session_listview && data->window) {
         GT_SetGadgetAttrs(data->session_listview, data->window, NULL,
                           GTLV_Labels, data->session_display_list,
                           TAG_DONE);
-        log_info(LOG_GUI, "populate_session_list: ListView updated with %u sessions\n", count);
-    } else {
-        log_warning(LOG_GUI, "populate_session_list: ListView gadget or window not available!\n");
+        log_debug(LOG_GUI, "populate_session_list: ListView updated\n");
     }
+    
     log_debug(LOG_GUI, "populate_session_list: Complete\n");
 }
 
@@ -463,16 +561,154 @@ static void populate_changes_list(iTidy_ToolRestoreData *data)
 /**
  * @brief Handle session ListView selection
  */
-static void handle_session_selection(iTidy_ToolRestoreData *data, LONG selected_index)
+static void handle_session_selection(iTidy_ToolRestoreData *data, LONG selected_index, struct IntuiMessage *msg)
 {
     iTidy_ToolBackupSession *session;
     struct Node *node;
     LONG index;
     LONG session_index;
     
-    /* Skip header rows (indices 0 and 1) */
+    /* Check if header row clicked (indices 0 or 1) */
     if (selected_index < 2) {
-        log_info(LOG_GUI, "[RESTORE] Header row selected, ignoring\n");
+        log_info(LOG_GUI, "[RESTORE] Header row selected (index=%ld), attempting column sort\n", selected_index);
+        
+        /* Header row 0 contains the column headers - this is where we want to sort */
+        if (selected_index == 0 && data->session_lv_state && data->session_display_list && msg) {
+            int col_to_sort = -1;
+            iTidy_SortOrder new_order;
+            
+            /* Calculate which column was clicked based on mouse X position */
+            WORD mouse_x = msg->MouseX;
+            WORD gadget_left = data->session_listview->LeftEdge;
+            WORD relative_x = mouse_x - gadget_left;
+            
+            /* Convert pixel position to character position */
+            int char_pos = relative_x / prefsIControl.systemFontCharWidth;
+            
+            /* Find which column contains this character position */
+            for (int i = 0; i < data->session_lv_state->num_columns; i++) {
+                if (char_pos >= data->session_lv_state->columns[i].char_start &&
+                    char_pos < data->session_lv_state->columns[i].char_end) {
+                    col_to_sort = i;
+                    break;
+                }
+            }
+            
+            /* If no column found (shouldn't happen), default to column 0 */
+            if (col_to_sort < 0) {
+                log_warning(LOG_GUI, "Could not determine column from mouse position, defaulting to 0\n");
+                col_to_sort = 0;
+            }
+            
+            /* Find the currently sorted column */
+            int current_sorted = -1;
+            iTidy_SortOrder current_order = ITIDY_SORT_NONE;
+            
+            for (int i = 0; i < data->session_lv_state->num_columns; i++) {
+                if (data->session_lv_state->columns[i].sort_state != ITIDY_SORT_NONE) {
+                    current_sorted = i;
+                    current_order = data->session_lv_state->columns[i].sort_state;
+                    break;
+                }
+            }
+            
+            /* Decide sort order: toggle if same column, else use default for column */
+            if (current_sorted == col_to_sort) {
+                /* Clicking same column - toggle direction */
+                new_order = (current_order == ITIDY_SORT_ASCENDING) ? ITIDY_SORT_DESCENDING : ITIDY_SORT_ASCENDING;
+            } else {
+                /* Different column clicked - use default sort for that column */
+                if (col_to_sort == 0) {
+                    /* Date column - default descending (newest first) */
+                    new_order = ITIDY_SORT_DESCENDING;
+                } else {
+                    /* Other columns - default ascending */
+                    new_order = ITIDY_SORT_ASCENDING;
+                }
+            }
+            
+            /* Re-sort and rebuild display */
+            iTidy_ColumnConfig columns[4];
+            
+            /* Set all default_sort to NONE since we're manually sorting */
+            columns[0].title = "Date/Time";
+            columns[0].min_width = 0;
+            columns[0].max_width = 20;
+            columns[0].align = ITIDY_ALIGN_LEFT;
+            columns[0].flexible = FALSE;
+            columns[0].is_path = FALSE;
+            columns[0].default_sort = ITIDY_SORT_NONE;  /* Don't auto-sort - we already did it */
+            columns[0].sort_type = ITIDY_COLTYPE_DATE;
+            
+            columns[1].title = "Mode";
+            columns[1].min_width = 0;
+            columns[1].max_width = 8;
+            columns[1].align = ITIDY_ALIGN_LEFT;
+            columns[1].flexible = FALSE;
+            columns[1].is_path = FALSE;
+            columns[1].default_sort = ITIDY_SORT_NONE;
+            columns[1].sort_type = ITIDY_COLTYPE_TEXT;
+            
+            columns[2].title = "Path";
+            columns[2].min_width = 30;
+            columns[2].max_width = 0;
+            columns[2].align = ITIDY_ALIGN_LEFT;
+            columns[2].flexible = TRUE;
+            columns[2].is_path = TRUE;
+            columns[2].default_sort = ITIDY_SORT_NONE;
+            columns[2].sort_type = ITIDY_COLTYPE_TEXT;
+            
+            columns[3].title = "Changed";
+            columns[3].min_width = 0;
+            columns[3].max_width = 12;
+            columns[3].align = ITIDY_ALIGN_RIGHT;
+            columns[3].flexible = FALSE;
+            columns[3].is_path = FALSE;
+            columns[3].default_sort = ITIDY_SORT_NONE;
+            columns[3].sort_type = ITIDY_COLTYPE_NUMBER;
+            
+            /* Sort the entry list using the public sort function */
+            {
+                iTidy_ColumnType col_type = columns[col_to_sort].sort_type;
+                BOOL ascending = (new_order == ITIDY_SORT_ASCENDING);
+                
+                iTidy_SortListViewEntries(&data->session_entry_list, col_to_sort, col_type, ascending);
+            }
+            
+            /* Rebuild the formatted display list */
+            if (data->session_display_list) {
+                iTidy_FreeFormattedList(data->session_display_list);
+            }
+            
+            /* Free old state before creating new one */
+            if (data->session_lv_state) {
+                iTidy_FreeListViewState(data->session_lv_state);
+                data->session_lv_state = NULL;
+            }
+            
+            /* Clear all column sort indicators, then set the sorted column */
+            for (int i = 0; i < 4; i++) {
+                columns[i].default_sort = ITIDY_SORT_NONE;
+            }
+            columns[col_to_sort].default_sort = new_order;
+            
+            data->session_display_list = iTidy_FormatListViewColumns(
+                columns, 4, &data->session_entry_list, data->listview_width,
+                &data->session_lv_state);
+            
+            /* Refresh ListView */
+            if (data->session_listview && data->window) {
+                GT_SetGadgetAttrs(data->session_listview, data->window, NULL,
+                                  GTLV_Labels, ~0,
+                                  TAG_DONE);
+                GT_SetGadgetAttrs(data->session_listview, data->window, NULL,
+                                  GTLV_Labels, data->session_display_list,
+                                  GTLV_Top, 0,  /* Reset scroll to top */
+                                  GTLV_MakeVisible, 0,  /* Force recalculation */
+                                  TAG_DONE);
+            }
+        }
+        
         data->selected_session_index = -1;
         data->selected_session_id[0] = '\0';
         
@@ -619,7 +855,9 @@ struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_
     
     data->selected_session_index = -1;
     data->session_display_list = NULL;  /* Will be created by formatter */
+    data->session_lv_state = NULL;  /* Will be created by formatter */
     NewList(&data->session_list);
+    NewList(&data->session_entry_list);  /* Initialize entry list for sorting */
     NewList(&data->changes_list);
     NewList(&data->changes_display_list);
     
@@ -663,7 +901,7 @@ struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_
     ng.ng_VisualInfo = data->visual_info;
     
     gad = CreateGadget(LISTVIEW_KIND, gad, &ng,
-                       GTLV_Labels, &data->session_display_list,
+                       GTLV_Labels, data->session_display_list,  /* Pass list pointer, NOT &pointer! */
                        GTLV_ShowSelected, NULL,
                        TAG_DONE);
     data->session_listview = gad;
@@ -674,7 +912,7 @@ struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_
     ng.ng_GadgetID = GID_CHANGES_LIST;
     
     gad = CreateGadget(LISTVIEW_KIND, gad, &ng,
-                       GTLV_Labels, &data->changes_display_list,
+                       GTLV_Labels, data->changes_display_list,  /* Pass list pointer, NOT &pointer! */
                        GTLV_ReadOnly, TRUE,
                        TAG_DONE);
     data->changes_listview = gad;
@@ -709,7 +947,7 @@ struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_
         WA_Height, WINDOW_HEIGHT,
         WA_Title, (ULONG)WINDOW_TITLE,
         WA_Flags, WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_CLOSEGADGET | WFLG_ACTIVATE,
-        WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_REFRESHWINDOW | IDCMP_GADGETUP | LISTVIEWIDCMP | BUTTONIDCMP,
+        WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_REFRESHWINDOW | IDCMP_GADGETUP | IDCMP_MOUSEBUTTONS | LISTVIEWIDCMP | BUTTONIDCMP,
         WA_Gadgets, data->gadget_list,
         WA_PubScreen, screen,
         TAG_DONE);
@@ -778,10 +1016,94 @@ BOOL iTidy_HandleToolRestoreWindowEvent(struct Window *window, struct IntuiMessa
             GT_EndRefresh(window, TRUE);
             break;
             
+        case IDCMP_MOUSEBUTTONS:
+            /* Handle column header clicks for sorting */
+            if (code == SELECTDOWN && data->session_listview && data->session_lv_state && data->session_display_list) {
+                WORD mouse_x = msg->MouseX;
+                WORD mouse_y = msg->MouseY;
+                iTidy_ColumnConfig columns[4];
+                BOOL did_sort;
+                int header_top, header_height, gadget_left;
+                
+                /* Calculate ListView header position using system font metrics */
+                header_top = data->session_listview->TopEdge;
+                header_height = prefsIControl.systemFontSize;
+                gadget_left = data->session_listview->LeftEdge;
+                
+                log_debug(LOG_GUI, "MOUSEBUTTONS: code=%d, mouse_x=%d, mouse_y=%d\n", code, mouse_x, mouse_y);
+                log_debug(LOG_GUI, "ListView position: TopEdge=%d, LeftEdge=%d\n", header_top, gadget_left);
+                log_debug(LOG_GUI, "Header dimensions: height=%d, font_width=%d\n", header_height, prefsIControl.systemFontCharWidth);
+                log_debug(LOG_GUI, "Mouse in header range? y=%d, header_top=%d, header_bottom=%d\n", 
+                          mouse_y, header_top, header_top + header_height);
+                
+                /* Define columns (same as in populate_session_list) */
+                columns[0].title = "Date/Time";
+                columns[0].min_width = 0;
+                columns[0].max_width = 20;
+                columns[0].align = ITIDY_ALIGN_LEFT;
+                columns[0].flexible = FALSE;
+                columns[0].is_path = FALSE;
+                columns[0].default_sort = ITIDY_SORT_DESCENDING;
+                columns[0].sort_type = ITIDY_COLTYPE_DATE;
+                
+                columns[1].title = "Mode";
+                columns[1].min_width = 0;
+                columns[1].max_width = 8;
+                columns[1].align = ITIDY_ALIGN_LEFT;
+                columns[1].flexible = FALSE;
+                columns[1].is_path = FALSE;
+                columns[1].default_sort = ITIDY_SORT_NONE;
+                columns[1].sort_type = ITIDY_COLTYPE_TEXT;
+                
+                columns[2].title = "Path";
+                columns[2].min_width = 30;
+                columns[2].max_width = 0;
+                columns[2].align = ITIDY_ALIGN_LEFT;
+                columns[2].flexible = TRUE;
+                columns[2].is_path = TRUE;
+                columns[2].default_sort = ITIDY_SORT_NONE;
+                columns[2].sort_type = ITIDY_COLTYPE_TEXT;
+                
+                columns[3].title = "Changed";
+                columns[3].min_width = 0;
+                columns[3].max_width = 12;
+                columns[3].align = ITIDY_ALIGN_RIGHT;
+                columns[3].flexible = FALSE;
+                columns[3].is_path = FALSE;
+                columns[3].default_sort = ITIDY_SORT_NONE;
+                columns[3].sort_type = ITIDY_COLTYPE_NUMBER;
+                
+                /* Attempt to resort based on click position */
+                did_sort = iTidy_ResortListViewByClick(
+                    data->session_display_list,
+                    &data->session_entry_list,
+                    data->session_lv_state,
+                    mouse_x, mouse_y,
+                    header_top, header_height,
+                    gadget_left,
+                    prefsIControl.systemFontCharWidth,  /* Character width in pixels */
+                    columns
+                );
+                
+                /* Update display if sorting occurred */
+                if (did_sort) {
+                    log_debug(LOG_GUI, "Column clicked - list resorted\n");
+                    
+                    /* Refresh gadget with re-sorted list */
+                    GT_SetGadgetAttrs(data->session_listview, window, NULL,
+                                      GTLV_Labels, ~0,  /* Detach */
+                                      TAG_DONE);
+                    GT_SetGadgetAttrs(data->session_listview, window, NULL,
+                                      GTLV_Labels, data->session_display_list,
+                                      TAG_DONE);
+                }
+            }
+            break;
+            
         case IDCMP_GADGETUP:
             switch (gad->GadgetID) {
                 case GID_SESSION_LIST:
-                    handle_session_selection(data, code);
+                    handle_session_selection(data, code, msg);
                     break;
                     
                 case GID_RESTORE_ALL:
@@ -852,6 +1174,39 @@ void iTidy_CloseToolRestoreWindow(struct Window *window)
         if (data->session_display_list) {
             iTidy_FreeFormattedList(data->session_display_list);
             data->session_display_list = NULL;
+        }
+        
+        /* Free session ListView state */
+        if (data->session_lv_state) {
+            iTidy_FreeListViewState(data->session_lv_state);
+            data->session_lv_state = NULL;
+        }
+        
+        /* Free session entry list (display_data and sort_keys) */
+        {
+            struct Node *node;
+            while ((node = RemHead(&data->session_entry_list)) != NULL) {
+                iTidy_ListViewEntry *entry = (iTidy_ListViewEntry *)node;
+                int i;
+                
+                /* Free the formatted display string in ln_Name */
+                if (entry->node.ln_Name) {
+                    whd_free(entry->node.ln_Name);
+                }
+                
+                for (i = 0; i < entry->num_columns; i++) {
+                    if (entry->display_data && entry->display_data[i]) {
+                        whd_free((void *)entry->display_data[i]);
+                    }
+                    if (entry->sort_keys && entry->sort_keys[i]) {
+                        whd_free((void *)entry->sort_keys[i]);
+                    }
+                }
+                
+                if (entry->display_data) whd_free((void *)entry->display_data);
+                if (entry->sort_keys) whd_free((void *)entry->sort_keys);
+                whd_free(entry);
+            }
         }
         
         /* Free changes display list (just the wrapper nodes) */

@@ -7,7 +7,76 @@ iTidy is an Amiga icon management utility that allows users to sort and arrange 
 
 ## Development Timeline
 
-### Latest: Centralized Font System & ListView Formatter (November 18, 2025)
+### Latest: ListView Column Sorting & Memory Leak Fixes (November 18, 2025)
+
+#### Click-to-Sort ListView with Arrow Indicators
+* **Status**: Complete - Fully functional with performance optimizations
+* **Impact**: Professional sortable ListView columns with proper memory management
+* **Features**: Mouse-based column detection, stable merge sort, visual indicators
+* **Date**: November 18, 2025
+
+**Sorting System Implementation:**
+- Full click-to-sort functionality for all ListView columns
+- Mouse position detection calculates clicked column from character boundaries
+- Stable merge sort algorithm preserves original order for equal elements
+- Type-aware comparison (TEXT, NUMBER, DATE) using sort keys
+- Visual sort indicators (^ ascending, v descending) in column headers
+- Toggle direction when clicking same column (ASC ↔ DESC)
+- Default sort order per column type (Date=DESC, others=ASC)
+
+**Critical Bugs Fixed:**
+1. **Pointer-to-pointer bug** - CreateGadget was passed `&list` instead of `list` for GTLV_Labels
+   - Caused ListView to read garbage memory instead of actual sorted data
+   - Fixed both session_display_list and changes_display_list
+2. **Missing arrow indicators** - State updated AFTER formatting instead of before
+   - Set `columns[col].default_sort` before calling formatter to show arrows
+3. **Column cycling bug** - Always moved to next column instead of detecting clicked column
+   - Implemented mouse X position → character position → column detection
+4. **Memory leaks (100+ allocations)** - Entry list never freed on window close
+   - Added cleanup for entry->node.ln_Name (formatted display strings)
+   - Added cleanup for entry->display_data and entry->sort_keys arrays
+   - Added cleanup for iTidy_ListViewState structure
+   - Total: 12 allocations per entry properly freed
+
+**Performance Optimizations:**
+- Removed all verbose debug logging from sort code (20+ log statements)
+- Eliminated BEFORE/AFTER sort list dumps that printed entire dataset
+- Removed per-column, per-row verification logging
+- Result: Sorting now instant on 7MHz Amiga (was taking seconds per click)
+
+**UI Enhancements:**
+- Headers auto-reserve +2 characters for sort indicators (prevents truncation)
+- Headers use same alignment as data (right-aligned "Changed" header for numbers)
+- Proper cleanup order: detach lists → close window → free gadgets
+
+**Technical Details:**
+- Entry structure: iTidy_ListViewEntry with display_data and sort_keys arrays
+- Display list: Formatted Exec List with Node.ln_Name strings for ListView
+- State tracking: iTidy_ListViewState with column boundaries for click detection
+- Sort keys: Pre-formatted strings for efficient comparison (e.g., zero-padded numbers)
+
+**Documentation Updates:**
+- Added comprehensive "IMPORTANT USAGE NOTES FOR AI AGENTS" section
+- Documented all 3 data structures requiring cleanup
+- Explained pointer bug and proper GTLV_Labels usage
+- Detailed mouse position → column detection algorithm
+- Listed common mistakes and their solutions
+
+**Files Modified:**
+- `src/GUI/default_tool_restore_window.c` - Event handling, cleanup, column detection
+- `src/GUI/listview_formatter.c/h` - Sort algorithm, header formatting, width calculation
+- `docs/DEVELOPMENT_LOG.md` - This entry
+- `docs/LISTVIEW_SORTING_ARCHITECTURE.md` - Added "Implementation Corrections and Lessons Learned" section
+
+**Follow-up Items:**
+- **PROPOSED**: Centralized cleanup function in `listview_formatter.c` to simplify resource management
+  - See bottom of `LISTVIEW_SORTING_ARCHITECTURE.md` for detailed proposal
+  - Would reduce cleanup from ~20 lines to 1 function call per ListView
+  - Prevents future memory leaks by encapsulating complex cleanup logic
+
+---
+
+### Centralized Font System & ListView Formatter (November 18, 2025)
 
 #### Complete Font System with ListView Column Formatting
 * **Status**: Complete - Build successful

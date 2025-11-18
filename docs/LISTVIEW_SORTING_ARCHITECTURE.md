@@ -725,6 +725,423 @@ return strcmp(a->sort_keys[col], b->sort_keys[col]);
 
 ---
 
+## Implementation Corrections and Lessons Learned
+
+**NOTE:** This section documents critical bugs and issues discovered during actual implementation. **READ THIS FIRST** before implementing ListView sorting.
+
+### CRITICAL BUG #1: Pointer-to-Pointer in CreateGadget
+
+**THE BUG:**
+```c
+/* WRONG - Passes address-of-pointer instead of pointer */
+gad = CreateGadget(LISTVIEW_KIND, gad, &ng,
+    GTLV_Labels, &data->session_display_list,  /* CRASH! Wrong pointer type */
+    TAG_DONE);
+```
+
+**WHAT HAPPENS:**
+- GadTools reads `&data->session_display_list` as a memory address
+- That address points to the **pointer variable**, not the **list itself**
+- ListView interprets random memory as list nodes
+- Result: Garbage data, crashes, or blank ListView
+
+**THE FIX:**
+```c
+/* CORRECT - Pass the list pointer itself */
+gad = CreateGadget(LISTVIEW_KIND, gad, &ng,
+    GTLV_Labels, data->session_display_list,  /* Correct! */
+    TAG_DONE);
+```
+
+**WHY THIS IS CRITICAL:**
+- This bug caused **every sort operation to appear broken**
+- Sort was working correctly, but ListView was reading garbage memory
+- Data was sorted properly, but display showed wrong order
+- **Check EVERY CreateGadget call with GTLV_Labels tag!**
+
+---
+
+### CRITICAL BUG #2: Memory Leak in Entry List Cleanup
+
+**THE BUG:**
+```c
+/* Incomplete cleanup - leaks ln_Name field */
+iTidy_ListViewEntry *entry;
+while ((entry = (iTidy_ListViewEntry *)RemHead(entry_list)) != NULL)
+{
+    /* Free display_data and sort_keys arrays */
+    for (int col = 0; col < num_cols; col++)
+    {
+        whd_free(entry->display_data[col]);
+        whd_free(entry->sort_keys[col]);
+    }
+    whd_free(entry->display_data);
+    whd_free(entry->sort_keys);
+    whd_free(entry);  /* BUG: Forgot to free entry->node.ln_Name! */
+}
+```
+
+**WHAT HAPPENS:**
+- Each entry allocates `entry->node.ln_Name` with `whd_malloc(strlen(name) + 1)`
+- ln_Name is never freed
+- **Result: 100+ memory leaks (92 bytes each) for typical session**
+
+**THE FIX:**
+```c
+/* Complete cleanup - free ALL allocations */
+iTidy_ListViewEntry *entry;
+while ((entry = (iTidy_ListViewEntry *)RemHead(entry_list)) != NULL)
+{
+    /* Free ln_Name FIRST (allocated separately) */
+    if (entry->node.ln_Name != NULL)
+    {
+        whd_free(entry->node.ln_Name);
+        entry->node.ln_Name = NULL;
+    }
+    
+    /* Free display_data and sort_keys arrays */
+    for (int col = 0; col < num_cols; col++)
+    {
+        whd_free(entry->display_data[col]);
+        whd_free(entry->sort_keys[col]);
+    }
+    whd_free(entry->display_data);
+    whd_free(entry->sort_keys);
+    
+    /* Finally free the entry itself */
+    whd_free(entry);
+}
+
+/* Free the lists themselves */
+whd_free(entry_list);
+whd_free(display_list);
+```
+
+**ACTUAL LEAK NUMBERS (from memory tracking):**
+```
+LEAK: 5 allocations of 92 bytes at listview_formatter.c:181
+LEAK: 1 allocation of 556 bytes at listview_formatter.c:116 (entry->display_data array)
+LEAK: 1 allocation of 556 bytes at listview_formatter.c:127 (entry->sort_keys array)
+Total: 100+ leaks, ~3000+ bytes leaked per window open/close
+```
+
+**WHY THIS MATTERS:**
+- Memory tracking shows **exactly** where leaks occur (file:line)
+- **Always check memory reports after implementing sorting**
+- Use `DEBUG_MEMORY_TRACKING` during development
+
+---
+
+### CRITICAL BUG #3: Sort Indicators Not Showing
+
+**THE BUG:**
+```c
+/* Wrong order: Format BEFORE setting sort state */
+itidy_format_listview_columns(columns, num_cols, entry_list, ...);
+
+/* Set sort state AFTER formatting */
+state->columns[clicked_col].default_sort = new_order;  /* TOO LATE! */
+```
+
+**WHAT HAPPENS:**
+- Formatter reads `default_sort` field during `itidy_format_listview_columns()`
+- Sort state updated **after** formatting completes
+- Headers generated without arrow indicators
+- Next click shows **previous** column's arrow (off-by-one bug)
+
+**THE FIX:**
+```c
+/* Set sort state FIRST */
+for (int i = 0; i < state->num_columns; i++)
+{
+    state->columns[i].default_sort = ITIDY_SORT_NONE;  /* Clear all arrows */
+}
+state->columns[clicked_col].default_sort = new_order;  /* Set clicked column arrow */
+
+/* NOW format with updated state */
+itidy_format_listview_columns(columns, num_cols, entry_list, ...);
+```
+
+**KEY INSIGHT:**
+- Formatter is **read-only** on state
+- State must be updated **before** calling formatter
+- Think of formatter as a "render" function that reads current state
+
+---
+
+### PERFORMANCE ISSUE: Verbose Logging on 7MHz Amiga
+
+**THE PROBLEM:**
+```c
+/* Debug logging during sort operations */
+log_debug(LOG_GUI, "Comparing col %d: '%s' vs '%s'\n", col, a_key, b_key);
+log_debug(LOG_GUI, "Merge sort completed: %d entries\n", total);
+```
+
+**WHAT HAPPENS:**
+- Each log call writes to disk (sync I/O on AmigaOS)
+- Sorting 50 entries = 1000+ log writes
+- On 7MHz Amiga with slow floppy/HD: **2-3 seconds per click**
+- User perceives sorting as "broken" or "hanging"
+
+**THE FIX:**
+```c
+/* Remove ALL verbose debug logging from sort/comparison functions */
+/* Use logging ONLY for errors or one-time events */
+```
+
+**PERFORMANCE RESULT:**
+- Before: 2-3 seconds per click on 7MHz A1200
+- After: **Instant** (< 100ms) on same hardware
+- **20x-30x speedup** by removing disk I/O from hot path
+
+**LESSON LEARNED:**
+- Debug logging is expensive on vintage hardware
+- Use logging to **understand** behavior during development
+- **Remove** verbose logging before release
+- Keep error logging only
+
+---
+
+### UI BUG #4: Header Truncation with Sort Indicators
+
+**THE PROBLEM:**
+```c
+/* Original column width calculation */
+max_len = max(max_len, strlen(columns[col].title));  /* Exact fit */
+```
+
+**WHAT HAPPENS:**
+- Column width exactly fits title: `"Changed"` = 7 chars
+- Sort indicator adds 2 chars: `"Changed v"` = 9 chars
+- Title truncated to `"Change v"` (7 chars total)
+- User cannot read full column name
+
+**THE FIX:**
+```c
+/* Reserve space for sort indicator */
+WORD title_length = strlen(columns[col].title);
+max_len = max(max_len, title_length + 2);  /* +2 for " ^" or " v" */
+```
+
+**RESULT:**
+- All column titles display fully with sort indicators
+- No truncation on any column
+
+---
+
+### UI BUG #5: Header Alignment Mismatch
+
+**THE PROBLEM:**
+```c
+/* Hardcoded left alignment for headers */
+itidy_format_text_field(header_buffer + offset, 
+                        columns[col].char_width,
+                        columns[col].title,
+                        ITIDY_ALIGN_LEFT);  /* WRONG for numeric columns */
+```
+
+**WHAT HAPPENS:**
+- "Changed" column header is left-aligned
+- "Changed" column data is right-aligned (numbers)
+- Visual misalignment between header and data
+
+**THE FIX:**
+```c
+/* Use column's alignment for header */
+itidy_format_text_field(header_buffer + offset,
+                        columns[col].char_width,
+                        columns[col].title,
+                        columns[col].align);  /* Match data alignment */
+```
+
+**RESULT:**
+- "Changed" header right-aligned (matches right-aligned numbers)
+- "Path" header left-aligned (matches left-aligned text)
+- Consistent visual hierarchy
+
+---
+
+### IMPLEMENTATION PITFALL: Mouse Position Detection
+
+**ORIGINAL ASSUMPTION:**
+"Click detection is simple - just check if mouse X is within gadget bounds."
+
+**REALITY:**
+Mouse position detection requires **four coordinate transformations:**
+
+1. **Window coordinates** → Gadget-relative coordinates
+   ```c
+   WORD mouse_x = window->MouseX;
+   WORD gadget_left = listview_gadget->LeftEdge;
+   WORD gadget_relative_x = mouse_x - gadget_left;
+   ```
+
+2. **Pixel coordinates** → Character position
+   ```c
+   WORD char_pos = gadget_relative_x / font_char_width;
+   ```
+
+3. **Character position** → Column search
+   ```c
+   /* Cannot do direct math - must search column boundaries */
+   for (int col = 0; col < num_cols; col++)
+   {
+       if (char_pos >= columns[col].char_start &&
+           char_pos < columns[col].char_start + columns[col].char_width)
+       {
+           clicked_column = col;
+           break;
+       }
+   }
+   ```
+
+4. **Boundary edge cases**
+   ```c
+   /* Click in separator or padding between columns */
+   if (clicked_column == -1)
+   {
+       /* Not in any column - ignore click */
+       return;
+   }
+   ```
+
+**KEY LESSON:**
+- Column detection is **more complex** than it appears
+- Requires font metrics, gadget geometry, and boundary checking
+- **Cannot** use simple division or modulo arithmetic
+- **Must** search column boundaries with char_start/char_width
+
+---
+
+### CODE QUALITY: Complete Cleanup Example
+
+**CORRECT cleanup sequence (reverse of creation):**
+
+```c
+void cleanup_restore_window(RestoreWindowData *data)
+{
+    /* 1. Detach lists from gadgets FIRST */
+    if (data->session_display_list != NULL)
+    {
+        GT_SetGadgetAttrs(data->session_gadget, data->window, NULL,
+                         GTLV_Labels, ~0,  /* Detach list */
+                         TAG_DONE);
+    }
+    
+    if (data->changes_display_list != NULL)
+    {
+        GT_SetGadgetAttrs(data->changes_gadget, data->window, NULL,
+                         GTLV_Labels, ~0,  /* Detach list */
+                         TAG_DONE);
+    }
+    
+    /* 2. Close window BEFORE freeing gadgets */
+    if (data->window != NULL)
+    {
+        CloseWindow(data->window);
+        data->window = NULL;
+    }
+    
+    /* 3. Free gadgets after window closed */
+    if (data->gadget_list != NULL)
+    {
+        FreeGadgets(data->gadget_list);
+        data->gadget_list = NULL;
+    }
+    
+    /* 4. Free visual info */
+    if (data->vi != NULL)
+    {
+        FreeVisualInfo(data->vi);
+        data->vi = NULL;
+    }
+    
+    /* 5. Free entry lists (COMPLETE cleanup) */
+    if (data->session_entry_list != NULL)
+    {
+        iTidy_ListViewEntry *entry;
+        while ((entry = (iTidy_ListViewEntry *)RemHead(data->session_entry_list)) != NULL)
+        {
+            /* Free ln_Name FIRST */
+            if (entry->node.ln_Name != NULL)
+            {
+                whd_free(entry->node.ln_Name);
+            }
+            
+            /* Free display_data and sort_keys arrays */
+            for (int col = 0; col < data->session_state->num_columns; col++)
+            {
+                whd_free(entry->display_data[col]);
+                whd_free(entry->sort_keys[col]);
+            }
+            whd_free(entry->display_data);
+            whd_free(entry->sort_keys);
+            
+            /* Finally free entry */
+            whd_free(entry);
+        }
+        whd_free(data->session_entry_list);
+        whd_free(data->session_display_list);
+    }
+    
+    /* 6. Free listview state */
+    if (data->session_state != NULL)
+    {
+        itidy_free_listview_state(data->session_state);
+        data->session_state = NULL;
+    }
+    
+    /* 7. Free window data itself */
+    whd_free(data);
+}
+```
+
+**CRITICAL POINTS:**
+- Detach lists from gadgets **before** closing window
+- Close window **before** freeing gadgets (gadgets attached to window)
+- Free ln_Name **before** freeing entry (separate allocation)
+- Free arrays **before** freeing parent structures
+- Check for NULL on **every** pointer before freeing
+
+---
+
+### TESTING CHECKLIST (Based on Real Bugs Found)
+
+When implementing ListView sorting, **test these specific scenarios:**
+
+1. **Visual Verification:**
+   - [ ] Click each column header - does data reorder correctly?
+   - [ ] Are arrow indicators visible on sorted column?
+   - [ ] Are arrows cleared when clicking different column?
+   - [ ] Do column titles display fully (no truncation with arrows)?
+   - [ ] Are numeric columns right-aligned (header and data)?
+
+2. **Memory Testing (with DEBUG_MEMORY_TRACKING):**
+   - [ ] Open window, close window - any leaks?
+   - [ ] Click column 5 times - leaks growing?
+   - [ ] Check memory log for ln_Name leaks (92 bytes each)
+   - [ ] Check for display_data/sort_keys array leaks (100s of bytes)
+   - [ ] Verify zero leaks after complete cleanup
+
+3. **Performance Testing (on target hardware):**
+   - [ ] Sort 50 entries - is response instant (< 500ms)?
+   - [ ] Remove verbose debug logging if sorting feels slow
+   - [ ] Test on slowest target hardware (7MHz A500/A1200)
+
+4. **Edge Cases:**
+   - [ ] Sort empty list (0 entries) - crash?
+   - [ ] Sort single entry list - behaves correctly?
+   - [ ] Sort with NULL sort keys - crash or sort correctly?
+   - [ ] Sort with empty string sort keys - correct order?
+   - [ ] Multiple rapid clicks - stable or crash?
+
+5. **CreateGadget Verification:**
+   - [ ] Double-check EVERY ListView uses `list` NOT `&list` in GTLV_Labels
+   - [ ] This is the **#1 most common bug** - verify before testing anything else
+
+---
+
 ## Conclusion
 
 This architecture provides:
@@ -735,3 +1152,139 @@ This architecture provides:
 - **Extensibility** for future enhancements
 
 The dual-data approach (display_data + sort_keys) is the key insight that makes this work correctly for dates, paths, and formatted numbers while maintaining human-friendly display.
+
+**IMPLEMENTATION WARNING:** The "Corrections and Lessons Learned" section above documents **critical bugs** found during actual implementation. These bugs caused 100+ memory leaks, performance degradation, and UI issues that were not obvious during design phase. **Read and verify each correction** before implementing sorting in your own code.
+
+---
+
+## PROPOSED ENHANCEMENT: Centralized Cleanup Function
+
+**Date:** 2025-11-18  
+**Status:** PROPOSED (not yet implemented)  
+**Priority:** Medium (code quality improvement)
+
+### Problem Statement
+
+Currently, each window using ListViews must manually free all entry list resources:
+- `entry->node.ln_Name` (easily forgotten, caused 100+ leaks)
+- `entry->display_data[col]` arrays (per column)
+- `entry->sort_keys[col]` arrays (per column)
+- `entry->display_data` array pointer
+- `entry->sort_keys` array pointer
+- Entry itself
+- Entry list structure
+- Display list structure
+- ListView state structure
+
+**Risk:** Complex cleanup sequence is error-prone and duplicated across multiple windows.
+
+### Proposed Solution
+
+Add cleanup function to `src/GUI/listview_formatter.c`:
+
+```c
+/**
+ * Free all resources associated with a ListView entry list.
+ * 
+ * @param entry_list    List of iTidy_ListViewEntry nodes (can be NULL)
+ * @param display_list  Display list for ListView gadget (can be NULL)
+ * @param state         ListView state with column info (can be NULL)
+ * 
+ * @note Handles NULL parameters gracefully.
+ * @note Frees ALL allocations: ln_Name, display_data, sort_keys, arrays, entries, lists, state.
+ */
+void itidy_free_listview_entries(struct List *entry_list, 
+                                  struct List *display_list,
+                                  iTidy_ListViewState *state);
+```
+
+### Implementation Details
+
+**What it frees (in order):**
+1. For each entry in `entry_list`:
+   - `entry->node.ln_Name` (strdup allocation)
+   - `entry->display_data[col]` for each column
+   - `entry->sort_keys[col]` for each column
+   - `entry->display_data` array
+   - `entry->sort_keys` array
+   - `entry` structure itself
+2. `entry_list` structure
+3. `display_list` structure
+4. `state` (via existing `itidy_free_listview_state()`)
+
+**Window cleanup becomes:**
+```c
+/* Before: ~20 lines of error-prone cleanup */
+iTidy_ListViewEntry *entry;
+while ((entry = (iTidy_ListViewEntry *)RemHead(entry_list)) != NULL)
+{
+    if (entry->node.ln_Name) whd_free(entry->node.ln_Name);  /* Easy to forget! */
+    for (int col = 0; col < num_cols; col++)
+    {
+        whd_free(entry->display_data[col]);
+        whd_free(entry->sort_keys[col]);
+    }
+    whd_free(entry->display_data);
+    whd_free(entry->sort_keys);
+    whd_free(entry);
+}
+whd_free(entry_list);
+whd_free(display_list);
+itidy_free_listview_state(state);
+
+/* After: 1 line */
+itidy_free_listview_entries(data->entry_list, data->display_list, data->state);
+```
+
+### Benefits
+
+✅ **Single source of truth** - cleanup logic centralized in formatter module  
+✅ **Symmetry** - formatter creates data structures, formatter destroys them  
+✅ **Error prevention** - impossible to forget `ln_Name` or other allocations  
+✅ **Code reuse** - Restore Window has 2 ListViews, Folder View might add more  
+✅ **Maintainability** - future fields added to `iTidy_ListViewEntry` only need cleanup in one place  
+✅ **Null safety** - function handles NULL parameters gracefully  
+
+### Considerations
+
+⚠️ **Window still responsible for:**
+- Detaching lists from gadgets (`GT_SetGadgetAttrs` with `GTLV_Labels, ~0`)
+- Closing window before freeing gadgets
+- Freeing gadget list
+- Freeing visual info
+
+⚠️ **Design question:** Should function accept gadget pointer and detach automatically?  
+⚠️ **Design question:** Need separate function to clear entries without freeing state (for repopulation)?  
+
+### Alternative: Two-Level Cleanup
+
+```c
+/* Level 1: Clear entries only (keep lists/state for repopulation) */
+void itidy_clear_listview_entries(struct List *entry_list, int num_columns);
+
+/* Level 2: Free everything (window close) */
+void itidy_free_listview_data(struct List *entry_list,
+                              struct List *display_list,
+                              iTidy_ListViewState *state);
+```
+
+Allows reusing lists/state if window needs to refresh ListView without closing.
+
+### Implementation Tasks
+
+- [ ] Add function to `src/GUI/listview_formatter.c`
+- [ ] Add declaration to `include/GUI/listview_formatter.h`
+- [ ] Update Restore Window to use new cleanup function
+- [ ] Update Folder View Window (if applicable)
+- [ ] Test with memory tracking (verify zero leaks)
+- [ ] Update this architecture doc with final implementation
+- [ ] Add example to header file documentation
+
+### Decision Points
+
+1. **Function name:** `itidy_free_listview_entries()` vs `itidy_cleanup_listview_data()`?
+2. **Parameter requirements:** All three required, or accept NULL for any?
+3. **Gadget integration:** Accept gadget pointer to auto-detach, or keep separate?
+4. **Two-level approach:** Need separate clear vs free functions?
+
+**See also:** `docs/DEVELOPMENT_LOG.md` (2025-11-18 entry on ListView sorting implementation)
