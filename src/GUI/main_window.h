@@ -34,6 +34,7 @@
 #define GID_RESTORE          17
 #define GID_VIEW_TOOL_CACHE  18
 #define GID_COUNT_FOLDERS    19
+#define GID_RESTORE_DEFAULT_TOOLS 20
 
 /*------------------------------------------------------------------------*/
 /* Main Window Data Structure                                            */
@@ -66,6 +67,7 @@ struct iTidyMainWindow
     struct Gadget *cancel_btn;
     struct Gadget *view_tool_cache_btn;
     struct Gadget *count_folders_btn;
+    struct Gadget *restore_default_tools_btn;
     
     /* Temporary GUI state (for gadget selections only) */
     WORD preset_selected;

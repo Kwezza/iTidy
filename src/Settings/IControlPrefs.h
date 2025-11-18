@@ -50,10 +50,28 @@ struct IControlPrefsDetails {
     UWORD currentCGaugeWidth;
     UWORD currentTitleBarHeight;
     UWORD currentWindowBarHeight;
+    
+    /* System font information (for ListViews, etc.) */
+    char systemFontName[256];           /* Font name from fontPrefs (icon font) */
+    UWORD systemFontSize;               /* Font size (ta_YSize) */
+    UWORD systemFontCharWidth;          /* Character width (tf_XSize) from opened font */
+    
+    /* Workbench icon text font (from workbench.prefs) */
+    char iconTextFontName[256];         /* Icon text font name */
+    UWORD iconTextFontSize;             /* Icon text font size (ta_YSize) */
+    UWORD iconTextFontCharWidth;        /* Icon text character width (tf_XSize) */
+    
+    /* Screen text font (from workbench.prefs) */
+    char screenTextFontName[256];       /* Screen text font name */
+    UWORD screenTextFontSize;           /* Screen text font size (ta_YSize) */
+    UWORD screenTextFontCharWidth;      /* Screen text character width (tf_XSize) */
 };
 
 // Declare the fetchIControlSettings function
 int fetchIControlSettings(struct IControlPrefsDetails *details);
 void dumpIControlPrefs(const struct IControlPrefsDetails *prefs);
+
+/* Global IControlPrefs instance (populated at startup) */
+extern struct IControlPrefsDetails prefsIControl;
 
 #endif // ICONTROLPREFS_H

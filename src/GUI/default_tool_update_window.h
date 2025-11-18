@@ -10,6 +10,7 @@
 #include <exec/types.h>
 #include <intuition/intuition.h>
 #include <libraries/gadtools.h>
+#include "default_tool_backup.h"
 
 /*------------------------------------------------------------------------*/
 /* Gadget IDs                                                             */
@@ -107,6 +108,9 @@ struct iTidy_DefaultToolUpdateWindow {
     char current_tool_label[256];    /* Formatted "Current tool: xxx" label */
     char mode_label[256];            /* Formatted mode text label */
     BOOL update_in_progress;         /* Flag to prevent concurrent updates */
+    
+    /* Backup System */
+    struct iTidy_ToolBackupManager backup_manager;  /* Backup session manager */
 };
 
 /*------------------------------------------------------------------------*/

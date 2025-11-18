@@ -162,6 +162,9 @@ typedef struct {
     /* Default Tool Validation Settings */
     BOOL validate_default_tools;               /* Enable default tool validation using system PATH */
     
+    /* Default Tool Backup Settings */
+    BOOL enable_default_tool_backup;           /* Create CSV backup before default tool changes */
+    
     /* Backup Settings */
     BackupPreferences backupPrefs;   /* Embedded backup configuration */
 } LayoutPreferences;
@@ -212,6 +215,9 @@ typedef struct {
 
 /* Default Tool Validation Defaults */
 #define DEFAULT_VALIDATE_DEFAULT_TOOLS                     TRUE    /* Default: Enabled (validate default tools using system PATH) */
+
+/* Default Tool Backup Defaults */
+#define DEFAULT_ENABLE_DEFAULT_TOOL_BACKUP                 TRUE    /* Default: Enabled (auto-backup before default tool changes) */
 
 /* Icon Spacing Limits */
 #define MIN_ICON_SPACING            4    /* Minimum 4px (icons too close) */

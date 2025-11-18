@@ -89,6 +89,9 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     /* Default Tool Validation Settings */
     prefs->validate_default_tools = DEFAULT_VALIDATE_DEFAULT_TOOLS;
     
+    /* Default Tool Backup Settings */
+    prefs->enable_default_tool_backup = DEFAULT_ENABLE_DEFAULT_TOOL_BACKUP;
+    
     /* Backup Settings */
     prefs->backupPrefs.enableUndoBackup = FALSE;
     prefs->backupPrefs.useLha = TRUE;

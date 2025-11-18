@@ -79,6 +79,9 @@ GUI_SRCS = \
 	$(SRC_DIR)/GUI/folder_view_window.c \
 	$(SRC_DIR)/GUI/tool_cache_window.c \
 	$(SRC_DIR)/GUI/default_tool_update_window.c \
+	$(SRC_DIR)/GUI/default_tool_backup.c \
+	$(SRC_DIR)/GUI/default_tool_restore_window.c \
+	$(SRC_DIR)/GUI/listview_formatter.c \
 	$(SRC_DIR)/GUI/easy_request_helper.c \
 	$(SRC_DIR)/GUI/window_enumerator.c \
 	$(SRC_DIR)/GUI/wb_classify.c \

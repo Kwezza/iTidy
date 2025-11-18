@@ -22,6 +22,7 @@
 #include "advanced_window.h"
 #include "restore_window.h"
 #include "tool_cache_window.h"
+#include "default_tool_backup.h"
 #include "easy_request_helper.h"
 #include "layout_preferences.h"
 #include "layout_processor.h"
@@ -35,6 +36,13 @@
 /*------------------------------------------------------------------------*/
 extern ToolCacheEntry *g_ToolCache;
 extern int g_ToolCacheCount;
+
+/*------------------------------------------------------------------------*/
+/* External Default Tool Restore Functions                               */
+/*------------------------------------------------------------------------*/
+extern struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_manager);
+extern BOOL iTidy_HandleToolRestoreWindowEvent(struct Window *window, struct IntuiMessage *msg);
+extern void iTidy_CloseToolRestoreWindow(struct Window *window);
 
 /*------------------------------------------------------------------------*/
 /* Window Constants                                                       */
@@ -688,6 +696,26 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     if (!gad)
     {
         printf("ERROR: Failed to create count folders button\n");
+        return FALSE;
+    }
+    
+    current_y += font_height + 16;
+    
+    /*====================================================================*/
+    /* RESTORE DEFAULT TOOLS BUTTON                                      */
+    /*====================================================================*/
+    ng.ng_LeftEdge = 30;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = 180;
+    ng.ng_Height = font_height + 8;
+    ng.ng_GadgetText = "Restore Default Tools...";
+    ng.ng_GadgetID = GID_RESTORE_DEFAULT_TOOLS;
+    ng.ng_Flags = PLACETEXT_IN;
+    
+    win_data->restore_default_tools_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+    if (!gad)
+    {
+        printf("ERROR: Failed to create restore default tools button\n");
         return FALSE;
     }
     
@@ -1424,6 +1452,89 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                     "Check that the path is valid.",
                                     "OK");
                             }
+                        }
+                        break;
+
+                    case GID_RESTORE_DEFAULT_TOOLS:
+                        {
+                            struct Window *restore_window;
+                            struct IntuiMessage *restore_msg;
+                            BOOL keep_running;
+                            iTidy_ToolBackupManager temp_manager;
+                            
+                            log_info(LOG_GUI, "Restore Default Tools button clicked\n");
+                            
+                            /* Initialize temporary backup manager for restore operations */
+                            if (!iTidy_InitToolBackupManager(&temp_manager, FALSE))
+                            {
+                                log_error(LOG_GUI, "Failed to initialize backup manager\n");
+                                (void)ShowEasyRequest(
+                                    win_data->window,
+                                    "Error",
+                                    "Failed to initialize backup system.",
+                                    "OK");
+                                break;
+                            }
+                            
+                            /* Set busy pointer */
+                            SetWindowPointer(win_data->window, WA_BusyPointer, TRUE, TAG_END);
+                            
+                            /* Create restore window */
+                            restore_window = iTidy_CreateToolRestoreWindow(
+                                win_data->window->WScreen,
+                                &temp_manager);
+                            
+                            if (!restore_window)
+                            {
+                                /* Clear busy pointer */
+                                SetWindowPointer(win_data->window, WA_Pointer, NULL, TAG_END);
+                                
+                                iTidy_CleanupToolBackupManager(&temp_manager);
+                                
+                                log_error(LOG_GUI, "Failed to create restore window\n");
+                                (void)ShowEasyRequest(
+                                    win_data->window,
+                                    "Window Error",
+                                    "Failed to create restore window.",
+                                    "OK");
+                                break;
+                            }
+                            
+                            /* Clear busy pointer - window is now open */
+                            SetWindowPointer(win_data->window, WA_Pointer, NULL, TAG_END);
+                            
+                            /* Disable main window input while restore window is open */
+                            ModifyIDCMP(win_data->window, 0);
+                            
+                            /* Run restore window event loop */
+                            keep_running = TRUE;
+                            while (keep_running)
+                            {
+                                WaitPort(restore_window->UserPort);
+                                
+                                while ((restore_msg = GT_GetIMsg(restore_window->UserPort)))
+                                {
+                                    keep_running = iTidy_HandleToolRestoreWindowEvent(
+                                        restore_window, restore_msg);
+                                    
+                                    GT_ReplyIMsg(restore_msg);
+                                    
+                                    if (!keep_running)
+                                        break;
+                                }
+                            }
+                            
+                            /* Close restore window */
+                            iTidy_CloseToolRestoreWindow(restore_window);
+                            
+                            /* Cleanup backup manager */
+                            iTidy_CleanupToolBackupManager(&temp_manager);
+                            
+                            /* Re-enable main window input */
+                            ModifyIDCMP(win_data->window, 
+                                IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW);
+                            
+                            log_info(LOG_GUI, "Restore Default Tools window closed\n");
                         }
                         break;
 
