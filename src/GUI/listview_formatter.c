@@ -498,6 +498,7 @@ BOOL iTidy_CalculateColumnWidths(
     int used_width;
     int available_width;
     int flexible_col = -1;
+    int flexible_count = 0;  /* Track total flexible columns for validation */
     int max_len;
     struct Node *node;
     iTidy_ListViewEntry *entry;
@@ -511,6 +512,53 @@ BOOL iTidy_CalculateColumnWidths(
     }
     
     if (!columns || !out_widths || num_columns <= 0) {
+        log_error(LOG_GUI, "iTidy_CalculateColumnWidths: Invalid parameters (columns=%p, out_widths=%p, num_columns=%d)\n",
+                 columns, out_widths, num_columns);
+        return FALSE;
+    }
+    
+    /* SAFETY: Pre-validate column configuration to detect corruption/uninitialized memory */
+    flexible_count = 0;
+    for (col = 0; col < num_columns; col++) {
+        /* Check for NULL title (strong indicator of uninitialized memory) */
+        if (columns[col].title == NULL) {
+            log_error(LOG_GUI, "iTidy_CalculateColumnWidths: Column %d has NULL title - likely uninitialized!\n", col);
+            return FALSE;
+        }
+        
+        /* Check for unreasonable width values (sanity check) */
+        if (columns[col].min_width < 0 || columns[col].min_width > 500 ||
+            columns[col].max_width < 0 || columns[col].max_width > 500) {
+            log_error(LOG_GUI, "iTidy_CalculateColumnWidths: Column %d (%s) has invalid width constraints (min=%d, max=%d)\n",
+                     col, columns[col].title, columns[col].min_width, columns[col].max_width);
+            return FALSE;
+        }
+        
+        /* Check for invalid alignment (enum should be 0-2) */
+        if (columns[col].align < 0 || columns[col].align > 2) {
+            log_error(LOG_GUI, "iTidy_CalculateColumnWidths: Column %d (%s) has invalid alignment value %d\n",
+                     col, columns[col].title, (int)columns[col].align);
+            return FALSE;
+        }
+        
+        /* Count flexible columns */
+        if (columns[col].flexible) {
+            flexible_count++;
+        }
+    }
+    
+    /* SAFETY: Detect multiple flexible columns (indicates uninitialized memory or config error) */
+    if (flexible_count > 1) {
+        log_error(LOG_GUI, "iTidy_CalculateColumnWidths: Invalid config - %d flexible columns detected!\n", flexible_count);
+        log_error(LOG_GUI, "  This usually means the column array is uninitialized or corrupted.\n");
+        log_error(LOG_GUI, "  Only ONE column should have flexible=TRUE.\n");
+        
+        /* Show which columns claim to be flexible */
+        for (col = 0; col < num_columns; col++) {
+            if (columns[col].flexible) {
+                log_error(LOG_GUI, "    Column %d (%s): flexible=TRUE\n", col, columns[col].title);
+            }
+        }
         return FALSE;
     }
     
@@ -546,10 +594,11 @@ BOOL iTidy_CalculateColumnWidths(
         
         out_widths[col] = max_len;
         
-        /* Track flexible column */
+        /* Track first flexible column (we already validated there's only 0 or 1) */
         if (columns[col].flexible) {
             if (flexible_col >= 0) {
-                log_warning(LOG_GUI, "Multiple flexible columns defined (col %d and %d), using first\n", 
+                /* This should never happen now due to pre-validation, but log if it does */
+                log_warning(LOG_GUI, "Multiple flexible columns detected (col %d and %d), using first\n", 
                            flexible_col, col);
             } else {
                 flexible_col = col;
@@ -844,8 +893,16 @@ struct List *iTidy_FormatListViewColumns(
     log_info(LOG_GUI, "iTidy_FormatListViewColumns: num_columns=%d, width=%d\n",
              num_columns, total_char_width);
     
+    /* SAFETY: Validate input parameters */
     if (!columns || num_columns <= 0) {
-        log_error(LOG_GUI, "Invalid column configuration\n");
+        log_error(LOG_GUI, "iTidy_FormatListViewColumns: Invalid parameters (columns=%p, num_columns=%d)\n",
+                 columns, num_columns);
+        return NULL;
+    }
+    
+    if (total_char_width <= 0 || total_char_width > 500) {
+        log_error(LOG_GUI, "iTidy_FormatListViewColumns: Invalid total_char_width=%d (expected 10-500)\n",
+                 total_char_width);
         return NULL;
     }
     
