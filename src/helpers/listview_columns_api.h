@@ -1,8 +1,8 @@
 /**
- * listview_formatter.h - Automatic ListView Column Formatter
+ * listview_columns_api.h - ListView Column Layout & Sorting API
  * 
  * Provides utilities for creating properly aligned, multi-column ListView displays
- * with automatic width calculation and professional formatting.
+ * with automatic width calculation, professional formatting, and sortable columns.
  * 
  * Features:
  * - Auto-calculates optimal column widths from data
@@ -10,11 +10,12 @@
  * - Supports left/right/center alignment per column
  * - Flexible columns that expand to fill available space
  * - Smart truncation with "..." for overflow
+ * - Column-based sorting with visual indicators
  * - Returns ready-to-use struct List for GadTools GTLV_Labels
  */
 
-#ifndef LISTVIEW_FORMATTER_H
-#define LISTVIEW_FORMATTER_H
+#ifndef LISTVIEW_COLUMNS_API_H
+#define LISTVIEW_COLUMNS_API_H
 
 #include <exec/types.h>
 #include <exec/lists.h>
@@ -723,4 +724,4 @@ BOOL iTidy_CalculateColumnWidths(
     int *out_widths
 );
 
-#endif /* LISTVIEW_FORMATTER_H */
+#endif /* LISTVIEW_COLUMNS_API_H */

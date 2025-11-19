@@ -51,7 +51,7 @@
 
 #include "restore_window.h"
 #include "GUI/StatusWindows/progress_window.h"
-#include "GUI/listview_formatter.h"
+#include "helpers/listview_columns_api.h"
 #include "../backup_restore.h"
 #include "../writeLog.h"
 #include "folder_view_window.h"

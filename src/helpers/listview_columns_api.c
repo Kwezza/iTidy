@@ -1,5 +1,5 @@
 /**
- * listview_formatter.c - Automatic ListView Column Formatter Implementation
+ * listview_columns_api.c - ListView Column Layout & Sorting API Implementation
  * 
  * Two-pass algorithm:
  * Pass 1: Scan all data to determine optimal column widths
@@ -210,7 +210,7 @@
  */
 
 #include "platform/platform.h"
-#include "listview_formatter.h"
+#include "listview_columns_api.h"
 #include "../writeLog.h"
 #include "../path_utilities.h"
 

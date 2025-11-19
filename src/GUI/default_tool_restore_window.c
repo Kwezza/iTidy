@@ -28,7 +28,7 @@
 
 #include "platform/platform.h"
 #include "default_tool_backup.h"
-#include "listview_formatter.h"
+#include "helpers/listview_columns_api.h"
 #include "easy_request_helper.h"
 #include "../writeLog.h"
 #include "../Settings/IControlPrefs.h"  /* For prefsIControl global */

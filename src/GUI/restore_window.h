@@ -14,7 +14,7 @@
 #include <libraries/gadtools.h>
 
 /* Include listview formatter for iTidy_ListViewState */
-#include "GUI/listview_formatter.h"
+#include "helpers/listview_columns_api.h"
 
 /*------------------------------------------------------------------------*/
 /* Gadget IDs                                                             */
