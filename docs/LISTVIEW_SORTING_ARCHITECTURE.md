@@ -1240,7 +1240,7 @@ To use the smart helper in your window:
 
 - [ ] **Include header:**
   ```c
-  #include "GUI/listview_formatter.h"
+  #include "helpers/listview_columns_api.h"
   ```
 
 - [ ] **Store state in window data:**
@@ -1850,9 +1850,9 @@ whd_free(display_list);
 
 **ACTUAL LEAK NUMBERS (from memory tracking):**
 ```
-LEAK: 5 allocations of 92 bytes at listview_formatter.c:181
-LEAK: 1 allocation of 556 bytes at listview_formatter.c:116 (entry->display_data array)
-LEAK: 1 allocation of 556 bytes at listview_formatter.c:127 (entry->sort_keys array)
+LEAK: 5 allocations of 92 bytes at listview_columns_api.c:181
+LEAK: 1 allocation of 556 bytes at listview_columns_api.c:116 (entry->display_data array)
+LEAK: 1 allocation of 556 bytes at listview_columns_api.c:127 (entry->sort_keys array)
 Total: 100+ leaks, ~3000+ bytes leaked per window open/close
 ```
 
@@ -2216,7 +2216,7 @@ Currently, each window using ListViews must manually free all entry list resourc
 
 ### Implemented Solution
 
-Added cleanup function to `src/GUI/listview_formatter.c`:
+Added cleanup function to `src/helpers/listview_columns_api.c`:
 
 ```c
 /**
@@ -2299,8 +2299,8 @@ data->state = NULL;
 
 ### Implementation Completed
 
-✅ **Function added** to `src/GUI/listview_formatter.c` (117 lines with documentation)  
-✅ **Declaration added** to `src/GUI/listview_formatter.h` (56 lines with full API docs)  
+✅ **Function added** to `src/helpers/listview_columns_api.c` (117 lines with documentation)  
+✅ **Declaration added** to `src/helpers/listview_columns_api.h` (56 lines with full API docs)  
 ✅ **Restore Window updated** - Replaced 3 manual cleanup sections with function calls  
 ✅ **Memory tracking verified** - Zero leaks with DEBUG_MEMORY_TRACKING enabled  
 ✅ **Compilation verified** - Clean build with no new warnings  
@@ -2679,7 +2679,7 @@ if (window) {
 - If profiling frequently: Reduce checkpoint calls to minimize overhead
 
 **Files Instrumented:**
-- `src/GUI/listview_formatter.c` (all timing code)
+- `src/helpers/listview_columns_api.c` (all timing code)
 - `src/writeLog.c/h` (performance logging API)
 - `docs/PERFORMANCE_TIMING_INVESTIGATION.md` (detailed analysis)
 
@@ -2768,7 +2768,7 @@ iTidy_ListViewEntry *iTidy_GetSelectedEntry(struct List *entry_list, LONG listvi
 
 **Include in your code:**
 ```c
-#include "GUI/listview_formatter.h"  /* For iTidy_GetSelectedEntry() */
+#include "helpers/listview_columns_api.h"  /* For iTidy_GetSelectedEntry() */
 ```
 
 ### Why Use the Helper?
