@@ -143,39 +143,12 @@ static void cleanup_display_lists(iTidy_ToolRestoreData *data)
                           TAG_DONE);
     }
     
-    /* Free session display list (managed by formatter) */
-    if (data->session_display_list) {
-        iTidy_FreeFormattedList(data->session_display_list);
-        data->session_display_list = NULL;
-    }
-    
-    /* Free session ListView state */
-    if (data->session_lv_state) {
-        iTidy_FreeListViewState(data->session_lv_state);
-        data->session_lv_state = NULL;
-    }
-    
-    /* Free session entry list (display_data and sort_keys) */
-    {
-        struct Node *node;
-        while ((node = RemHead(&data->session_entry_list)) != NULL) {
-            iTidy_ListViewEntry *entry = (iTidy_ListViewEntry *)node;
-            int i;
-            
-            for (i = 0; i < entry->num_columns; i++) {
-                if (entry->display_data && entry->display_data[i]) {
-                    whd_free((void *)entry->display_data[i]);
-                }
-                if (entry->sort_keys && entry->sort_keys[i]) {
-                    whd_free((void *)entry->sort_keys[i]);
-                }
-            }
-            
-            if (entry->display_data) whd_free((void *)entry->display_data);
-            if (entry->sort_keys) whd_free((void *)entry->sort_keys);
-            whd_free(entry);
-        }
-    }
+    /* Free session ListView resources (entry list, display list, and state) */
+    itidy_free_listview_entries(&data->session_entry_list,
+                                data->session_display_list,
+                                data->session_lv_state);
+    data->session_display_list = NULL;
+    data->session_lv_state = NULL;
     
     /* Free changes display list (ln_Name belongs to change) */
     node = data->changes_display_list.lh_Head;
@@ -204,40 +177,18 @@ static void populate_session_list(iTidy_ToolRestoreData *data)
     
     log_debug(LOG_GUI, "populate_session_list: Starting...\n");
     
-    /* Free old formatted list */
-    if (data->session_display_list) {
-        log_debug(LOG_GUI, "populate_session_list: Freeing old display list\n");
-        iTidy_FreeFormattedList(data->session_display_list);
-        data->session_display_list = NULL;
+    /* Set busy pointer during loading */
+    if (data->window) {
+        SetWindowPointer(data->window, WA_BusyPointer, TRUE, TAG_DONE);
     }
     
-    /* Free old state */
-    if (data->session_lv_state) {
-        iTidy_FreeListViewState(data->session_lv_state);
-        data->session_lv_state = NULL;
-    }
-    
-    /* Free old entry list */
-    {
-        struct Node *node;
-        while ((node = RemHead(&data->session_entry_list)) != NULL) {
-            iTidy_ListViewEntry *old_entry = (iTidy_ListViewEntry *)node;
-            int i;
-            
-            for (i = 0; i < old_entry->num_columns; i++) {
-                if (old_entry->display_data && old_entry->display_data[i]) {
-                    whd_free((void *)old_entry->display_data[i]);
-                }
-                if (old_entry->sort_keys && old_entry->sort_keys[i]) {
-                    whd_free((void *)old_entry->sort_keys[i]);
-                }
-            }
-            
-            if (old_entry->display_data) whd_free((void *)old_entry->display_data);
-            if (old_entry->sort_keys) whd_free((void *)old_entry->sort_keys);
-            whd_free(old_entry);
-        }
-    }
+    /* Free old ListView resources */
+    log_debug(LOG_GUI, "populate_session_list: Freeing old ListView data\n");
+    itidy_free_listview_entries(&data->session_entry_list,
+                                data->session_display_list,
+                                data->session_lv_state);
+    data->session_display_list = NULL;
+    data->session_lv_state = NULL;
     NewList(&data->session_entry_list);
     
     /* Free old session data */
@@ -465,6 +416,11 @@ cleanup_entry:
                           GTLV_Labels, data->session_display_list,
                           TAG_DONE);
         log_debug(LOG_GUI, "populate_session_list: ListView updated\n");
+    }
+    
+    /* Clear busy pointer */
+    if (data->window) {
+        SetWindowPointer(data->window, WA_BusyPointer, FALSE, TAG_DONE);
     }
     
     log_debug(LOG_GUI, "populate_session_list: Complete\n");
@@ -1019,24 +975,9 @@ BOOL iTidy_HandleToolRestoreWindowEvent(struct Window *window, struct IntuiMessa
         case IDCMP_MOUSEBUTTONS:
             /* Handle column header clicks for sorting */
             if (code == SELECTDOWN && data->session_listview && data->session_lv_state && data->session_display_list) {
-                WORD mouse_x = msg->MouseX;
-                WORD mouse_y = msg->MouseY;
+                /* Define columns (must match those in populate_session_list) */
                 iTidy_ColumnConfig columns[4];
-                BOOL did_sort;
-                int header_top, header_height, gadget_left;
                 
-                /* Calculate ListView header position using system font metrics */
-                header_top = data->session_listview->TopEdge;
-                header_height = prefsIControl.systemFontSize;
-                gadget_left = data->session_listview->LeftEdge;
-                
-                log_debug(LOG_GUI, "MOUSEBUTTONS: code=%d, mouse_x=%d, mouse_y=%d\n", code, mouse_x, mouse_y);
-                log_debug(LOG_GUI, "ListView position: TopEdge=%d, LeftEdge=%d\n", header_top, gadget_left);
-                log_debug(LOG_GUI, "Header dimensions: height=%d, font_width=%d\n", header_height, prefsIControl.systemFontCharWidth);
-                log_debug(LOG_GUI, "Mouse in header range? y=%d, header_top=%d, header_bottom=%d\n", 
-                          mouse_y, header_top, header_top + header_height);
-                
-                /* Define columns (same as in populate_session_list) */
                 columns[0].title = "Date/Time";
                 columns[0].min_width = 0;
                 columns[0].max_width = 20;
@@ -1073,30 +1014,18 @@ BOOL iTidy_HandleToolRestoreWindowEvent(struct Window *window, struct IntuiMessa
                 columns[3].default_sort = ITIDY_SORT_NONE;
                 columns[3].sort_type = ITIDY_COLTYPE_NUMBER;
                 
-                /* Attempt to resort based on click position */
-                did_sort = iTidy_ResortListViewByClick(
+                /* High-level sort handler - does everything! */
+                iTidy_HandleListViewSort(
+                    window,
+                    data->session_listview,
                     data->session_display_list,
                     &data->session_entry_list,
                     data->session_lv_state,
-                    mouse_x, mouse_y,
-                    header_top, header_height,
-                    gadget_left,
-                    prefsIControl.systemFontCharWidth,  /* Character width in pixels */
-                    columns
+                    msg->MouseX, msg->MouseY,
+                    prefsIControl.systemFontSize,
+                    prefsIControl.systemFontCharWidth,
+                    columns, 4
                 );
-                
-                /* Update display if sorting occurred */
-                if (did_sort) {
-                    log_debug(LOG_GUI, "Column clicked - list resorted\n");
-                    
-                    /* Refresh gadget with re-sorted list */
-                    GT_SetGadgetAttrs(data->session_listview, window, NULL,
-                                      GTLV_Labels, ~0,  /* Detach */
-                                      TAG_DONE);
-                    GT_SetGadgetAttrs(data->session_listview, window, NULL,
-                                      GTLV_Labels, data->session_display_list,
-                                      TAG_DONE);
-                }
             }
             break;
             
@@ -1170,44 +1099,12 @@ void iTidy_CloseToolRestoreWindow(struct Window *window)
             data->visual_info = NULL;
         }
         
-        /* Free session display list (managed by formatter) */
-        if (data->session_display_list) {
-            iTidy_FreeFormattedList(data->session_display_list);
-            data->session_display_list = NULL;
-        }
-        
-        /* Free session ListView state */
-        if (data->session_lv_state) {
-            iTidy_FreeListViewState(data->session_lv_state);
-            data->session_lv_state = NULL;
-        }
-        
-        /* Free session entry list (display_data and sort_keys) */
-        {
-            struct Node *node;
-            while ((node = RemHead(&data->session_entry_list)) != NULL) {
-                iTidy_ListViewEntry *entry = (iTidy_ListViewEntry *)node;
-                int i;
-                
-                /* Free the formatted display string in ln_Name */
-                if (entry->node.ln_Name) {
-                    whd_free(entry->node.ln_Name);
-                }
-                
-                for (i = 0; i < entry->num_columns; i++) {
-                    if (entry->display_data && entry->display_data[i]) {
-                        whd_free((void *)entry->display_data[i]);
-                    }
-                    if (entry->sort_keys && entry->sort_keys[i]) {
-                        whd_free((void *)entry->sort_keys[i]);
-                    }
-                }
-                
-                if (entry->display_data) whd_free((void *)entry->display_data);
-                if (entry->sort_keys) whd_free((void *)entry->sort_keys);
-                whd_free(entry);
-            }
-        }
+        /* Free session ListView resources (entry list, display list, and state) */
+        itidy_free_listview_entries(&data->session_entry_list,
+                                    data->session_display_list,
+                                    data->session_lv_state);
+        data->session_display_list = NULL;
+        data->session_lv_state = NULL;
         
         /* Free changes display list (just the wrapper nodes) */
         {

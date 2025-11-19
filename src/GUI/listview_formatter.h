@@ -114,6 +114,7 @@ typedef struct {
     int pixel_start;            /* Pixel position (char_start × font_width) */
     int pixel_end;              /* Pixel position (char_end × font_width) */
     iTidy_SortOrder sort_state; /* Current sort state */
+    iTidy_ColumnType column_type; /* Column type (for smart helpers) */
 } iTidy_ColumnState;
 
 /**
@@ -273,6 +274,331 @@ BOOL iTidy_ResortListViewByClick(
 );
 
 /**
+ * @brief High-level handler for ListView column sorting on mouse click
+ * 
+ * This is a convenience wrapper that handles ALL aspects of column-click sorting:
+ * 1. Checks if click is within ListView header
+ * 2. Sets busy pointer during operation
+ * 3. Calls iTidy_ResortListViewByClick()
+ * 4. Refreshes the ListView gadget
+ * 5. Clears busy pointer
+ * 
+ * Call this from your IDCMP_MOUSEBUTTONS handler with SELECTDOWN.
+ * 
+ * @param window Intuition window containing the ListView
+ * @param listview_gadget The ListView gadget to check/sort
+ * @param formatted_list The formatted List returned by iTidy_FormatListViewColumns
+ * @param entry_list The original entry list (will be sorted in-place)
+ * @param state The state returned by iTidy_FormatListViewColumns
+ * @param mouse_x Window-relative X coordinate (from IntuiMessage)
+ * @param mouse_y Window-relative Y coordinate (from IntuiMessage)
+ * @param font_height Font height for header (from prefsIControl.systemFontSize)
+ * @param font_width Character width in pixels (from prefsIControl.systemFontCharWidth)
+ * @param columns Original column config (for sort_type)
+ * @param num_columns Number of columns
+ * @return TRUE if list was re-sorted and gadget refreshed, FALSE if click was outside header
+ * 
+ * Example usage (replaces ~100 lines of boilerplate):
+ * @code
+ * case IDCMP_MOUSEBUTTONS:
+ *     if (code == SELECTDOWN) {
+ *         if (iTidy_HandleListViewSort(
+ *                 window,
+ *                 data->session_listview,
+ *                 data->session_display_list,
+ *                 &data->session_entry_list,
+ *                 data->session_lv_state,
+ *                 msg->MouseX, msg->MouseY,
+ *                 prefsIControl.systemFontSize,
+ *                 prefsIControl.systemFontCharWidth,
+ *                 session_columns, 4)) {
+ *             // List was sorted - that's it!
+ *         }
+ *     }
+ *     break;
+ * @endcode
+ * 
+ * @note Column definitions must match those used in iTidy_FormatListViewColumns()
+ * @note This function handles busy pointer automatically - no need to set it manually
+ * @note Gadget is refreshed automatically if sorting occurred
+ */
+BOOL iTidy_HandleListViewSort(
+    struct Window *window,
+    struct Gadget *listview_gadget,
+    struct List *formatted_list,
+    struct List *entry_list,
+    iTidy_ListViewState *state,
+    int mouse_x,
+    int mouse_y,
+    int font_height,
+    int font_width,
+    iTidy_ColumnConfig *columns,
+    int num_columns
+);
+
+/**
+ * @brief Map a ListView row selection to the corresponding entry in the sorted list
+ * 
+ * When a user clicks on a ListView row, GadTools returns a row index that includes
+ * header rows (row 0 = column titles, row 1 = separator). This function:
+ * 1. Subtracts header offset (2 rows)
+ * 2. Walks the sorted entry list to find the Nth data entry
+ * 3. Returns a pointer to that entry
+ * 
+ * This eliminates the need for callers to manually handle header offset and
+ * traverse sorted lists.
+ * 
+ * @param entry_list The sorted entry list (as passed to iTidy_FormatListViewColumns)
+ * @param listview_row The row index from GT_GetGadgetAttrs(GTLV_Selected)
+ * @return Pointer to the selected entry, or NULL if row is invalid or in header
+ * 
+ * @note Returns NULL if listview_row < 2 (clicked on header/separator)
+ * @note Returns NULL if listview_row exceeds the number of data entries
+ * @note The returned pointer is valid as long as the entry_list remains intact
+ * 
+ * Example:
+ * @code
+ * LONG selected = -1;
+ * GT_GetGadgetAttrs(listview, window, NULL, GTLV_Selected, &selected, TAG_END);
+ * 
+ * if (selected >= 0) {
+ *     iTidy_ListViewEntry *entry = iTidy_GetSelectedEntry(&entry_list, selected);
+ *     if (entry) {
+ *         // Use entry->display_data or custom fields
+ *         printf("Selected: %s\n", entry->display_data[0]);
+ *     }
+ * }
+ * @endcode
+ */
+iTidy_ListViewEntry *iTidy_GetSelectedEntry(struct List *entry_list, LONG listview_row);
+
+/*---------------------------------------------------------------------------*/
+/* Smart Click Detection Helpers                                             */
+/*---------------------------------------------------------------------------*/
+
+/**
+ * @brief Complete click information for a ListView row/column
+ * 
+ * This structure contains all relevant data about a ListView click,
+ * eliminating the need for callers to manually extract values or
+ * maintain column type mappings.
+ */
+typedef struct {
+    iTidy_ListViewEntry *entry;       /* Selected entry (NULL if header row) */
+    int column;                        /* Clicked column index (0-based, -1 if invalid) */
+    const char *display_value;         /* Human-readable value: "2.8 MB", "24-Nov-2025" */
+    const char *sort_key;              /* Machine-readable value: "0002949120", "20251124_151900" */
+    iTidy_ColumnType column_type;      /* Column type: DATE/NUMBER/TEXT */
+} iTidy_ListViewClick;
+
+/*---------------------------------------------------------------------------*/
+/* High-Level IDCMP Event Handler                                           */
+/*---------------------------------------------------------------------------*/
+
+/**
+ * @brief Event types returned by iTidy_HandleListViewGadgetUp
+ */
+typedef enum {
+    ITIDY_LV_EVENT_NONE,           /* No valid event (click outside, error, etc.) */
+    ITIDY_LV_EVENT_HEADER_SORTED,  /* Header clicked, list was sorted */
+    ITIDY_LV_EVENT_ROW_CLICK       /* Data row clicked */
+} iTidy_ListViewEventType;
+
+/**
+ * @brief Complete event information from a ListView GADGETUP event
+ * 
+ * This structure contains all information about what happened when the user
+ * clicked on a ListView gadget. The caller can switch on 'type' to determine
+ * what action to take.
+ */
+typedef struct {
+    iTidy_ListViewEventType type;  /* What kind of event occurred */
+    
+    /* Common fields */
+    BOOL did_sort;                  /* TRUE if list was re-sorted (header click only) */
+    
+    /* Header event fields (valid when type == ITIDY_LV_EVENT_HEADER_SORTED) */
+    int sorted_column;              /* Which column was clicked for sorting (0-based) */
+    iTidy_SortOrder sort_order;     /* New sort order (ASCENDING/DESCENDING) */
+    
+    /* Row click fields (valid when type == ITIDY_LV_EVENT_ROW_CLICK) */
+    iTidy_ListViewEntry *entry;     /* The clicked entry */
+    int column;                      /* Which column was clicked (0-based, -1 if outside) */
+    const char *display_value;       /* Human-readable value */
+    const char *sort_key;            /* Machine-readable value */
+    iTidy_ColumnType column_type;    /* Column type (DATE/NUMBER/TEXT) */
+} iTidy_ListViewEvent;
+
+/**
+ * @brief High-level handler for ListView GADGETUP events
+ * 
+ * This function handles ALL ListView interaction in one call:
+ * - Detects header vs data row clicks
+ * - Performs sorting on header clicks
+ * - Extracts clicked cell information on row clicks
+ * - Returns a unified event structure
+ * 
+ * This eliminates ~100 lines of boilerplate from client code.
+ * 
+ * @param window Window containing the ListView
+ * @param gadget The ListView gadget that was clicked
+ * @param mouse_x Mouse X coordinate (from IntuiMessage->MouseX, BEFORE GT_ReplyIMsg)
+ * @param mouse_y Mouse Y coordinate (from IntuiMessage->MouseY, BEFORE GT_ReplyIMsg)
+ * @param entry_list List of iTidy_ListViewEntry nodes
+ * @param display_list Formatted display list (from iTidy_FormatListViewColumns)
+ * @param state ListView state (from iTidy_FormatListViewColumns)
+ * @param font_height Height of font in pixels (e.g., font->tf_YSize)
+ * @param font_width Width of font in pixels (e.g., font->tf_XSize)
+ * @param columns Column configuration array
+ * @param num_columns Number of columns
+ * @param out_event Output event structure (filled by this function)
+ * @return TRUE if event was processed, FALSE if error or no valid event
+ * 
+ * @note Caller must extract mouse_x/mouse_y BEFORE replying to IntuiMessage
+ * @note If did_sort==TRUE, caller must refresh gadget with GT_SetGadgetAttrs
+ * @note out_event is always filled with valid data (check 'type' field)
+ * 
+ * Usage example:
+ * @code
+ * case IDCMP_GADGETUP:
+ *     if (gadget->GadgetID == GID_MY_LISTVIEW) {
+ *         iTidy_ListViewEvent event;
+ *         
+ *         if (iTidy_HandleListViewGadgetUp(
+ *                 window, gadget, mouseX, mouseY,
+ *                 &entry_list, display_list, state,
+ *                 font->tf_YSize, font->tf_XSize,
+ *                 columns, num_columns, &event)) {
+ *             
+ *             // Refresh if sorted
+ *             if (event.did_sort) {
+ *                 GT_SetGadgetAttrs(gadget, window, NULL,
+ *                                  GTLV_Labels, ~0, TAG_DONE);
+ *                 GT_SetGadgetAttrs(gadget, window, NULL,
+ *                                  GTLV_Labels, display_list, TAG_DONE);
+ *             }
+ *             
+ *             // Handle event
+ *             switch (event.type) {
+ *                 case ITIDY_LV_EVENT_HEADER_SORTED:
+ *                     log("Sorted by column %d, order %d\n",
+ *                         event.sorted_column, event.sort_order);
+ *                     break;
+ *                     
+ *                 case ITIDY_LV_EVENT_ROW_CLICK:
+ *                     if (event.entry && event.column >= 0) {
+ *                         process_cell_click(&event);
+ *                     }
+ *                     break;
+ *                     
+ *                 case ITIDY_LV_EVENT_NONE:
+ *                     // Ignore
+ *                     break;
+ *             }
+ *         }
+ *     }
+ *     break;
+ * @endcode
+ */
+BOOL iTidy_HandleListViewGadgetUp(
+    struct Window *window,
+    struct Gadget *gadget,
+    WORD mouse_x,
+    WORD mouse_y,
+    struct List *entry_list,
+    struct List *display_list,
+    iTidy_ListViewState *state,
+    int font_height,
+    int font_width,
+    iTidy_ColumnConfig *columns,
+    int num_columns,
+    iTidy_ListViewEvent *out_event
+);
+
+/**
+ * @brief Detect which column was clicked based on mouse X position
+ * 
+ * Uses pixel-based hit-testing against column boundaries stored in the
+ * ListView state. Works for any row (header or data).
+ * 
+ * @param state ListView state with column boundary info (from iTidy_FormatListViewColumns)
+ * @param mouse_x Window-relative X coordinate (from IntuiMessage->MouseX)
+ * @param gadget_left Gadget's LeftEdge position (for coordinate adjustment)
+ * @return Column index (0-based), or -1 if click is outside all column bounds
+ * 
+ * @note Automatically adjusts window coordinates to gadget-relative
+ * @note Uses pixel_start/pixel_end for accurate hit-testing
+ * @note Returns -1 if state is NULL or click is outside columns
+ * 
+ * Example:
+ * @code
+ * int column = iTidy_GetClickedColumn(lv_state, msg->MouseX, listview_gad->LeftEdge);
+ * if (column >= 0) {
+ *     printf("Clicked column %d\n", column);
+ * }
+ * @endcode
+ */
+int iTidy_GetClickedColumn(iTidy_ListViewState *state, WORD mouse_x, WORD gadget_left);
+
+/**
+ * @brief Get complete click information for a ListView selection (SMART HELPER)
+ * 
+ * This is the recommended high-level function for handling ListView clicks.
+ * It combines entry lookup, column detection, and data extraction into a
+ * single call, returning all relevant information in one structure.
+ * 
+ * What it provides:
+ * - Entry pointer (NULL if header row clicked)
+ * - Column index (0-based, -1 if outside bounds)
+ * - Display value (formatted string for UI)
+ * - Sort key (machine-readable value for parsing)
+ * - Column type (DATE/NUMBER/TEXT for type-aware processing)
+ * 
+ * @param entry_list List of iTidy_ListViewEntry nodes (sorted order)
+ * @param state ListView state with column info (from iTidy_FormatListViewColumns)
+ * @param listview_row Row index from GT_GetGadgetAttrs(GTLV_Selected)
+ * @param mouse_x Window-relative X coordinate (from IntuiMessage->MouseX)
+ * @param gadget_left Gadget's LeftEdge position (for coordinate adjustment)
+ * @return Structure with entry, column, values, and type (safe to use even if NULLs)
+ * 
+ * @note Returns entry=NULL if row < 2 (header/separator clicked)
+ * @note Returns column=-1 if click is outside column bounds
+ * @note Returns value=NULL and sort_key=NULL if entry or column is invalid
+ * @note Column type is always set (defaults to TEXT if invalid)
+ * 
+ * Example (type-aware processing):
+ * @code
+ * iTidy_ListViewClick click = iTidy_GetListViewClick(
+ *     &entry_list, lv_state, selected, msg->MouseX, listview_gad->LeftEdge
+ * );
+ * 
+ * if (click.entry && click.column >= 0) {
+ *     switch (click.column_type) {
+ *         case ITIDY_COLTYPE_DATE:
+ *             // Use sort_key for machine-readable date
+ *             timestamp = parse_date(click.sort_key);  // "20251124_151900"
+ *             break;
+ *         case ITIDY_COLTYPE_NUMBER:
+ *             // Use sort_key for accurate number
+ *             int value = atoi(click.sort_key);  // "0000000013" -> 13
+ *             break;
+ *         case ITIDY_COLTYPE_TEXT:
+ *             // Use display_value for text
+ *             copy_to_clipboard(click.display_value);
+ *             break;
+ *     }
+ * }
+ * @endcode
+ */
+iTidy_ListViewClick iTidy_GetListViewClick(
+    struct List *entry_list,
+    iTidy_ListViewState *state,
+    LONG listview_row,
+    WORD mouse_x,
+    WORD gadget_left
+);
+
+/**
  * @brief Free a formatted ListView list
  * 
  * Frees all nodes and their allocated ln_Name strings in the list.
@@ -296,6 +622,53 @@ void iTidy_FreeFormattedList(struct List *list);
  * @param state State to free (can be NULL)
  */
 void iTidy_FreeListViewState(iTidy_ListViewState *state);
+
+/**
+ * @brief Free all resources associated with a ListView entry list
+ * 
+ * Performs complete cleanup of ListView resources in the correct order.
+ * This is the recommended cleanup function - use it instead of manually
+ * freeing each component separately.
+ * 
+ * Frees (in order):
+ * 1. All entries in entry_list:
+ *    - entry->node.ln_Name (formatted display string)
+ *    - entry->display_data[col] for each column
+ *    - entry->sort_keys[col] for each column  
+ *    - entry->display_data array
+ *    - entry->sort_keys array
+ *    - entry structure itself
+ * 2. display_list (via iTidy_FreeFormattedList)
+ * 3. state (via iTidy_FreeListViewState)
+ * 
+ * @param entry_list    List of iTidy_ListViewEntry nodes (can be NULL)
+ * @param display_list  Display list for ListView gadget (can be NULL)
+ * @param state         ListView state with column info (can be NULL)
+ * 
+ * @note CRITICAL: Detach lists from gadgets BEFORE calling:
+ *       GT_SetGadgetAttrs(gadget, window, NULL, GTLV_Labels, ~0, TAG_DONE);
+ * @note Safe to call with NULL parameters - handles them gracefully
+ * @note Does NOT close windows or free gadgets - caller must do that first
+ * 
+ * Example:
+ * @code
+ * // 1. Detach from gadget FIRST
+ * GT_SetGadgetAttrs(data->listview, data->window, NULL,
+ *                   GTLV_Labels, ~0, TAG_DONE);
+ * 
+ * // 2. Free all ListView resources
+ * itidy_free_listview_entries(&data->entry_list,
+ *                             data->display_list,
+ *                             data->lv_state);
+ * 
+ * // 3. NULL out pointers
+ * data->display_list = NULL;
+ * data->lv_state = NULL;
+ * @endcode
+ */
+void itidy_free_listview_entries(struct List *entry_list,
+                                 struct List *display_list,
+                                 iTidy_ListViewState *state);
 
 /*---------------------------------------------------------------------------*/
 /* Backward Compatibility (Old API - No Sorting)                            */

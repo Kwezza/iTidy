@@ -8,9 +8,13 @@
 #define ITIDY_RESTORE_WINDOW_H
 
 #include <exec/types.h>
+#include <exec/lists.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
 #include <libraries/gadtools.h>
+
+/* Include listview formatter for iTidy_ListViewState */
+#include "GUI/listview_formatter.h"
 
 /*------------------------------------------------------------------------*/
 /* Gadget IDs                                                             */
@@ -89,7 +93,9 @@ struct iTidyRestoreWindow
     /* Current state */
     char backup_root_path[256];         /* Current backup location */
     struct RestoreRunEntry *run_entries; /* Array of runs */
-    struct List *run_list_strings;      /* List for run ListView */
+    struct List *run_list_strings;      /* Formatted display list for run ListView */
+    struct List run_entry_list;         /* Entry list for sortable run ListView */
+    iTidy_ListViewState *run_list_state; /* State tracking for sortable columns */
     struct List *details_list_strings;  /* List for details ListView */
     ULONG run_count;                    /* Number of runs found */
     LONG selected_run_index;            /* Currently selected (-1 if none) */

@@ -217,8 +217,16 @@
 #include <exec/memory.h>
 #include <exec/lists.h>
 #include <proto/exec.h>
+#include <proto/intuition.h>
+#include <proto/gadtools.h>
+#include <intuition/intuition.h>
+#include <libraries/gadtools.h>
+#include <devices/timer.h>
 #include <string.h>
 #include <stdio.h>
+
+/* External timer device for performance measurements */
+extern struct Device* TimerBase;
 
 /* Separator between columns */
 #define COLUMN_SEPARATOR " | "
@@ -370,8 +378,22 @@ void iTidy_SortListViewEntries(struct List *list, int col, iTidy_ColumnType type
     struct List *left, *right, *sorted;
     struct Node *node, *mid;
     int count, i;
+    struct timeval startTime, endTime;
+    ULONG elapsedMicros, elapsedMillis;
+    static int sort_depth = 0;  /* Track recursion depth */
+    BOOL is_top_level = (sort_depth == 0);
     
-    if (!list) return;
+    /* Start performance timing (top level only) */
+    if (is_top_level && TimerBase) {
+        GetSysTime(&startTime);
+    }
+    
+    sort_depth++;
+    
+    if (!list) {
+        sort_depth--;
+        return;
+    }
     
     /* Count nodes */
     count = 0;
@@ -428,6 +450,36 @@ void iTidy_SortListViewEntries(struct List *list, int col, iTidy_ColumnType type
     /* Cleanup temporary lists */
     whd_free(left);
     whd_free(right);
+    
+    sort_depth--;
+    
+    /* End performance timing (top level only) */
+    if (is_top_level && TimerBase) {
+        GetSysTime(&endTime);
+        
+        /* Calculate elapsed time in microseconds */
+        elapsedMicros = ((endTime.tv_secs - startTime.tv_secs) * 1000000) +
+                        (endTime.tv_micro - startTime.tv_micro);
+        elapsedMillis = elapsedMicros / 1000;
+        
+        /* Log performance metrics only if enabled */
+        if (is_performance_logging_enabled()) {
+            const char *type_str = (type == ITIDY_COLTYPE_NUMBER) ? "NUMBER" :
+                                   (type == ITIDY_COLTYPE_DATE) ? "DATE" : "TEXT";
+            const char *dir_str = ascending ? "ASC" : "DESC";
+            
+            log_info(LOG_GUI, "[PERF] ListView sort (col %d, %s, %s): %lu.%03lu ms\n",
+                     col, type_str, dir_str, elapsedMillis, elapsedMicros % 1000);
+            log_info(LOG_GUI, "       Entries: %d\n", count);
+            if (count > 0) {
+                log_info(LOG_GUI, "       Time per entry: %lu microseconds\n",
+                         elapsedMicros / count);
+            }
+            
+            printf("  [TIMING] Sort (%s/%s): %lu.%03lu ms (%d entries)\n",
+                   type_str, dir_str, elapsedMillis, elapsedMicros % 1000, count);
+        }
+    }
 }
 
 /*---------------------------------------------------------------------------*/
@@ -449,6 +501,14 @@ BOOL iTidy_CalculateColumnWidths(
     int max_len;
     struct Node *node;
     iTidy_ListViewEntry *entry;
+    struct timeval startTime, endTime;
+    ULONG elapsedMicros, elapsedMillis;
+    int entry_count = 0;
+    
+    /* Start performance timing */
+    if (TimerBase) {
+        GetSysTime(&startTime);
+    }
     
     if (!columns || !out_widths || num_columns <= 0) {
         return FALSE;
@@ -530,6 +590,37 @@ BOOL iTidy_CalculateColumnWidths(
         }
         
         out_widths[flexible_col] = flex_width;
+    }
+    
+    /* End performance timing */
+    if (TimerBase) {
+        GetSysTime(&endTime);
+        
+        /* Count entries for per-entry timing */
+        if (entries) {
+            for (node = entries->lh_Head; node->ln_Succ; node = node->ln_Succ) {
+                entry_count++;
+            }
+        }
+        
+        /* Calculate elapsed time in microseconds */
+        elapsedMicros = ((endTime.tv_secs - startTime.tv_secs) * 1000000) +
+                        (endTime.tv_micro - startTime.tv_micro);
+        elapsedMillis = elapsedMicros / 1000;
+        
+        /* Log performance metrics only if enabled */
+        if (is_performance_logging_enabled()) {
+            log_info(LOG_GUI, "[PERF] Column width calculation: %lu.%03lu ms\n",
+                     elapsedMillis, elapsedMicros % 1000);
+            log_info(LOG_GUI, "       Entries: %d, Columns: %d\n", entry_count, num_columns);
+            if (entry_count > 0) {
+                log_info(LOG_GUI, "       Time per entry: %lu microseconds\n",
+                         elapsedMicros / entry_count);
+            }
+            
+            printf("  [TIMING] Column width calc: %lu.%03lu ms (%d entries x %d cols)\n",
+                   elapsedMillis, elapsedMicros % 1000, entry_count, num_columns);
+        }
     }
     
     return TRUE;
@@ -740,6 +831,15 @@ struct List *iTidy_FormatListViewColumns(
     int buffer_size;
     int pos, char_pos;
     int default_sort_col = -1;
+    struct timeval startTime, endTime, cp1Time, cp2Time, cp3Time;
+    ULONG elapsedMicros, elapsedMillis;
+    ULONG sortMicros = 0, widthMicros = 0, formatMicros = 0;
+    int entry_count = 0;
+    
+    /* Start performance timing */
+    if (TimerBase) {
+        GetSysTime(&startTime);
+    }
     
     log_info(LOG_GUI, "iTidy_FormatListViewColumns: num_columns=%d, width=%d\n",
              num_columns, total_char_width);
@@ -761,6 +861,13 @@ struct List *iTidy_FormatListViewColumns(
     if (default_sort_col >= 0 && entries) {
         BOOL ascending = (columns[default_sort_col].default_sort == ITIDY_SORT_ASCENDING);
         iTidy_SortListViewEntries(entries, default_sort_col, columns[default_sort_col].sort_type, ascending);
+    }
+    
+    /* Checkpoint 1: After initial sort */
+    if (TimerBase) {
+        GetSysTime(&cp1Time);
+        sortMicros = ((cp1Time.tv_secs - startTime.tv_secs) * 1000000) +
+                     (cp1Time.tv_micro - startTime.tv_micro);
     }
     
     /* Allocate list for formatted output */
@@ -786,6 +893,13 @@ struct List *iTidy_FormatListViewColumns(
         whd_free(col_widths);
         whd_free(list);
         return NULL;
+    }
+    
+    /* Checkpoint 2: After column width calculation */
+    if (TimerBase) {
+        GetSysTime(&cp2Time);
+        widthMicros = ((cp2Time.tv_secs - cp1Time.tv_secs) * 1000000) +
+                      (cp2Time.tv_micro - cp1Time.tv_micro);
     }
     
     /* Create state tracking if requested */
@@ -816,6 +930,9 @@ struct List *iTidy_FormatListViewColumns(
                     } else {
                         state->columns[col].sort_state = ITIDY_SORT_NONE;
                     }
+                    
+                    /* Store column type for smart helpers */
+                    state->columns[col].column_type = columns[col].sort_type;
                     
                     char_pos += SEPARATOR_WIDTH;  /* Add separator */
                 }
@@ -916,7 +1033,430 @@ struct List *iTidy_FormatListViewColumns(
     whd_free(cell_buffer);
     whd_free(col_widths);
     
+    /* Checkpoint 3: After entry formatting */
+    if (TimerBase) {
+        GetSysTime(&cp3Time);
+        formatMicros = ((cp3Time.tv_secs - cp2Time.tv_secs) * 1000000) +
+                       (cp3Time.tv_micro - cp2Time.tv_micro);
+    }
+    
+    /* Count entries */
+    if (entries) {
+        for (entry_node = entries->lh_Head; entry_node->ln_Succ; entry_node = entry_node->ln_Succ) {
+            entry_count++;
+        }
+    }
+    
+    /* End performance timing */
+    if (TimerBase) {
+        GetSysTime(&endTime);
+        
+        /* Calculate total elapsed time */
+        elapsedMicros = ((endTime.tv_secs - startTime.tv_secs) * 1000000) +
+                        (endTime.tv_micro - startTime.tv_micro);
+        elapsedMillis = elapsedMicros / 1000;
+        
+        /* Log performance metrics only if enabled */
+        if (is_performance_logging_enabled()) {
+            log_info(LOG_GUI, "==== LISTVIEW FORMAT PERFORMANCE ====\n");
+            log_info(LOG_GUI, "iTidy_FormatListViewColumns() total time: %lu.%03lu ms\n",
+                     elapsedMillis, elapsedMicros % 1000);
+            log_info(LOG_GUI, "  Entries: %d, Columns: %d, Rows created: %d\n",
+                     entry_count, num_columns, row_count);
+            log_info(LOG_GUI, "  Breakdown:\n");
+            log_info(LOG_GUI, "    Initial sort:    %lu.%03lu ms (%lu%%)\n",
+                     sortMicros / 1000, sortMicros % 1000,
+                     elapsedMicros > 0 ? (sortMicros * 100 / elapsedMicros) : 0);
+            log_info(LOG_GUI, "    Width calc:      %lu.%03lu ms (%lu%%)\n",
+                     widthMicros / 1000, widthMicros % 1000,
+                     elapsedMicros > 0 ? (widthMicros * 100 / elapsedMicros) : 0);
+            log_info(LOG_GUI, "    Entry format:    %lu.%03lu ms (%lu%%)\n",
+                     formatMicros / 1000, formatMicros % 1000,
+                     elapsedMicros > 0 ? (formatMicros * 100 / elapsedMicros) : 0);
+            if (entry_count > 0) {
+                log_info(LOG_GUI, "  Time per entry: %lu microseconds\n",
+                         elapsedMicros / entry_count);
+            }
+            log_info(LOG_GUI, "====================================\n");
+            
+            printf("  [TIMING] ListView format: %lu.%03lu ms total (%d entries)\n",
+                   elapsedMillis, elapsedMicros % 1000, entry_count);
+            printf("           Sort: %lu.%03lu ms | Width: %lu.%03lu ms | Format: %lu.%03lu ms\n",
+                   sortMicros / 1000, sortMicros % 1000,
+                   widthMicros / 1000, widthMicros % 1000,
+                   formatMicros / 1000, formatMicros % 1000);
+        }
+    }
+    
     return list;
+}
+
+/*---------------------------------------------------------------------------*/
+/* Map ListView Row to Entry                                                 */
+/*---------------------------------------------------------------------------*/
+
+/**
+ * @brief Map a ListView row selection to the corresponding entry
+ * 
+ * Handles header offset and sorted list traversal automatically.
+ * ListView structure: Row 0 = header, Row 1 = separator, Row 2+ = data
+ */
+iTidy_ListViewEntry *iTidy_GetSelectedEntry(struct List *entry_list, LONG listview_row)
+{
+    struct Node *node;
+    LONG data_index;
+    LONG current_index;
+    
+    if (!entry_list) {
+        return NULL;
+    }
+    
+    /* Check if row is in header area (0 = header, 1 = separator) */
+    if (listview_row < 2) {
+        return NULL;
+    }
+    
+    /* Convert ListView row to data index (subtract header rows) */
+    data_index = listview_row - 2;
+    
+    /* Walk the sorted entry list to find the Nth data entry */
+    node = entry_list->lh_Head;
+    current_index = 0;
+    
+    while (node->ln_Succ) {
+        if (current_index == data_index) {
+            /* Found the entry at the requested position */
+            return (iTidy_ListViewEntry *)node;
+        }
+        node = node->ln_Succ;
+        current_index++;
+    }
+    
+    /* Row index was beyond the end of the list */
+    return NULL;
+}
+
+/*---------------------------------------------------------------------------*/
+/* Smart Click Detection Helpers                                             */
+/*---------------------------------------------------------------------------*/
+
+/**
+ * @brief Detect which column was clicked based on mouse X position
+ * 
+ * Uses pixel-based hit-testing against column boundaries. Reuses the same
+ * logic as header click detection for consistency.
+ */
+int iTidy_GetClickedColumn(iTidy_ListViewState *state, WORD mouse_x, WORD gadget_left)
+{
+    WORD local_x;
+    int col;
+    
+    if (state == NULL) {
+        return -1;
+    }
+    
+    /* Adjust to gadget-relative coordinates */
+    local_x = mouse_x - gadget_left;
+    
+    /* Search column boundaries using pixel positions */
+    for (col = 0; col < state->num_columns; col++) {
+        if (local_x >= state->columns[col].pixel_start && 
+            local_x < state->columns[col].pixel_end) {
+            return col;  /* Found the clicked column */
+        }
+    }
+    
+    return -1;  /* Click outside all columns */
+}
+
+/**
+ * @brief Get complete click information for a ListView selection
+ * 
+ * This is the recommended high-level helper that combines entry lookup,
+ * column detection, and value extraction in a single call.
+ */
+iTidy_ListViewClick iTidy_GetListViewClick(
+    struct List *entry_list,
+    iTidy_ListViewState *state,
+    LONG listview_row,
+    WORD mouse_x,
+    WORD gadget_left)
+{
+    iTidy_ListViewClick result;
+    
+    /* Initialize with safe defaults */
+    result.entry = NULL;
+    result.column = -1;
+    result.display_value = NULL;
+    result.sort_key = NULL;
+    result.column_type = ITIDY_COLTYPE_TEXT;  /* Safe default */
+    
+    /* Get the selected entry (handles header offset automatically) */
+    result.entry = iTidy_GetSelectedEntry(entry_list, listview_row);
+    
+    /* Detect which column was clicked */
+    result.column = iTidy_GetClickedColumn(state, mouse_x, gadget_left);
+    
+    /* Populate values if we have a valid entry and column */
+    if (result.entry != NULL && 
+        result.column >= 0 && 
+        result.column < result.entry->num_columns) {
+        
+        /* Get display value (formatted for UI) */
+        result.display_value = result.entry->display_data[result.column];
+        
+        /* Get sort key (machine-readable value) */
+        result.sort_key = result.entry->sort_keys[result.column];
+        
+        /* Get column type from state (if available) */
+        if (state != NULL && result.column < state->num_columns) {
+            result.column_type = state->columns[result.column].column_type;
+        }
+    }
+    
+    return result;
+}
+
+/*---------------------------------------------------------------------------*/
+/* High-Level IDCMP Event Handler                                           */
+/*---------------------------------------------------------------------------*/
+
+/**
+ * @brief High-level handler for ListView GADGETUP events
+ * 
+ * Combines header click detection, sorting, and row click detection into
+ * a single unified handler that returns a complete event structure.
+ */
+BOOL iTidy_HandleListViewGadgetUp(
+    struct Window *window,
+    struct Gadget *gadget,
+    WORD mouse_x,
+    WORD mouse_y,
+    struct List *entry_list,
+    struct List *display_list,
+    iTidy_ListViewState *state,
+    int font_height,
+    int font_width,
+    iTidy_ColumnConfig *columns,
+    int num_columns,
+    iTidy_ListViewEvent *out_event)
+{
+    int header_top, header_height;
+    LONG selected;
+    
+    /* Validate parameters */
+    if (!window || !gadget || !entry_list || !display_list || !state || !columns || !out_event) {
+        if (out_event) {
+            out_event->type = ITIDY_LV_EVENT_NONE;
+            out_event->did_sort = FALSE;
+        }
+        return FALSE;
+    }
+    
+    /* Initialize event with safe defaults */
+    out_event->type = ITIDY_LV_EVENT_NONE;
+    out_event->did_sort = FALSE;
+    out_event->sorted_column = -1;
+    out_event->sort_order = ITIDY_SORT_NONE;
+    out_event->entry = NULL;
+    out_event->column = -1;
+    out_event->display_value = NULL;
+    out_event->sort_key = NULL;
+    out_event->column_type = ITIDY_COLTYPE_TEXT;
+    
+    /* Calculate header bounds */
+    header_top = gadget->TopEdge;
+    header_height = font_height;
+    
+    /* Calculate pixel positions from character positions (needed for column detection) */
+    {
+        int col;
+        for (col = 0; col < num_columns; col++) {
+            state->columns[col].pixel_start = state->columns[col].char_start * font_width;
+            state->columns[col].pixel_end = state->columns[col].char_end * font_width;
+        }
+    }
+    
+    /* Check if click is in header region */
+    if (mouse_y >= header_top && mouse_y < header_top + header_height) {
+        /* HEADER CLICK - Handle sorting */
+        int clicked_col;
+        BOOL sorted;
+        
+        /* Detect which column was clicked */
+        clicked_col = iTidy_GetClickedColumn(state, mouse_x, gadget->LeftEdge);
+        
+        if (clicked_col >= 0 && clicked_col < num_columns) {
+            /* Valid column - perform sort */
+            sorted = iTidy_ResortListViewByClick(
+                display_list,
+                entry_list,
+                state,
+                mouse_x,
+                mouse_y,
+                header_top,
+                header_height,
+                gadget->LeftEdge,
+                font_width,
+                columns
+            );
+            
+            if (sorted) {
+                /* Fill in header event details */
+                out_event->type = ITIDY_LV_EVENT_HEADER_SORTED;
+                out_event->did_sort = TRUE;
+                out_event->sorted_column = clicked_col;
+                out_event->sort_order = state->columns[clicked_col].sort_state;
+                return TRUE;
+            }
+        }
+        
+        /* Header clicked but no valid sort */
+        return FALSE;
+    }
+    
+    /* NOT HEADER - Must be data row click */
+    /* Get selected row from gadget */
+    selected = -1;
+    GT_GetGadgetAttrs(gadget, window, NULL, GTLV_Selected, &selected, TAG_END);
+    
+    if (selected < 0) {
+        /* No selection */
+        return FALSE;
+    }
+    
+    /* Use smart helper to get complete click information */
+    iTidy_ListViewClick click = iTidy_GetListViewClick(
+        entry_list,
+        state,
+        selected,
+        mouse_x,
+        gadget->LeftEdge
+    );
+    
+    /* Check if we got a valid entry (not header row) */
+    if (click.entry != NULL) {
+        /* Fill in row click event details */
+        out_event->type = ITIDY_LV_EVENT_ROW_CLICK;
+        out_event->entry = click.entry;
+        out_event->column = click.column;
+        out_event->display_value = click.display_value;
+        out_event->sort_key = click.sort_key;
+        out_event->column_type = click.column_type;
+        return TRUE;
+    }
+    
+    /* Click was on header/separator row or invalid */
+    return FALSE;
+}
+
+/*---------------------------------------------------------------------------*/
+/* Free ListView Entries (Complete Cleanup)                                  */
+/*---------------------------------------------------------------------------*/
+
+/**
+ * @brief Free all resources associated with a ListView entry list
+ * 
+ * This function performs complete cleanup of all ListView resources in the
+ * correct order. It handles NULL parameters gracefully.
+ * 
+ * Cleanup order (CRITICAL):
+ * 1. Entry list entries:
+ *    - ln_Name (formatted display string allocated by formatter)
+ *    - display_data[col] strings for each column
+ *    - sort_keys[col] strings for each column
+ *    - display_data array
+ *    - sort_keys array
+ *    - Entry structure itself
+ * 2. Entry list structure
+ * 3. Display list structure (formatted ListView nodes)
+ * 4. ListView state structure
+ * 
+ * @param entry_list    List of iTidy_ListViewEntry nodes (can be NULL)
+ * @param display_list  Display list for ListView gadget (can be NULL)
+ * @param state         ListView state with column info (can be NULL)
+ * 
+ * @note MUST detach lists from gadgets BEFORE calling this function:
+ *       GT_SetGadgetAttrs(gadget, window, NULL, GTLV_Labels, ~0, TAG_DONE);
+ * @note This function does NOT close windows or free gadgets - caller's responsibility
+ * @note Handles NULL parameters gracefully - safe to call with any combination
+ * 
+ * Example:
+ * @code
+ * // Detach from gadget first (REQUIRED!)
+ * GT_SetGadgetAttrs(data->session_listview, data->window, NULL,
+ *                   GTLV_Labels, ~0, TAG_DONE);
+ * 
+ * // Free everything in one call
+ * itidy_free_listview_entries(&data->session_entry_list,
+ *                             data->session_display_list,
+ *                             data->session_lv_state);
+ * 
+ * // NULL out pointers
+ * data->session_display_list = NULL;
+ * data->session_lv_state = NULL;
+ * @endcode
+ */
+void itidy_free_listview_entries(struct List *entry_list,
+                                 struct List *display_list,
+                                 iTidy_ListViewState *state)
+{
+    struct Node *node;
+    iTidy_ListViewEntry *entry;
+    int num_columns;
+    int i;
+    
+    /* Determine number of columns from state (needed for cleanup) */
+    num_columns = (state && state->num_columns > 0) ? state->num_columns : 0;
+    
+    /* Free entry list (display_data and sort_keys) */
+    if (entry_list) {
+        while ((node = RemHead(entry_list)) != NULL) {
+            entry = (iTidy_ListViewEntry *)node;
+            
+            /* Free ln_Name (formatted display string allocated by formatter) */
+            if (entry->node.ln_Name) {
+                whd_free(entry->node.ln_Name);
+                entry->node.ln_Name = NULL;
+            }
+            
+            /* Use entry's num_columns if state not available */
+            if (num_columns == 0 && entry->num_columns > 0) {
+                num_columns = entry->num_columns;
+            }
+            
+            /* Free display_data and sort_keys arrays */
+            for (i = 0; i < entry->num_columns; i++) {
+                if (entry->display_data && entry->display_data[i]) {
+                    whd_free((void *)entry->display_data[i]);
+                }
+                if (entry->sort_keys && entry->sort_keys[i]) {
+                    whd_free((void *)entry->sort_keys[i]);
+                }
+            }
+            
+            /* Free array pointers */
+            if (entry->display_data) {
+                whd_free((void *)entry->display_data);
+            }
+            if (entry->sort_keys) {
+                whd_free((void *)entry->sort_keys);
+            }
+            
+            /* Free entry structure itself */
+            whd_free(entry);
+        }
+    }
+    
+    /* Free display list (formatted ListView nodes) */
+    if (display_list) {
+        iTidy_FreeFormattedList(display_list);
+    }
+    
+    /* Free ListView state */
+    if (state) {
+        iTidy_FreeListViewState(state);
+    }
 }
 
 /*---------------------------------------------------------------------------*/
@@ -1168,6 +1708,9 @@ BOOL iTidy_ResortListViewByClick(
     int *col_widths;
     int buffer_size;
     BOOL ascending;
+    struct timeval startTime, endTime, sortEndTime;
+    ULONG elapsedMicros, elapsedMillis, sortMicros = 0, rebuildMicros = 0;
+    int entry_count = 0;
     
     log_debug(LOG_GUI, "iTidy_ResortListViewByClick: mouse_x=%d, mouse_y=%d, header_top=%d, header_height=%d, gadget_left=%d, font_width=%d\n",
               mouse_x, mouse_y, header_top, header_height, gadget_left, font_width);
@@ -1176,6 +1719,11 @@ BOOL iTidy_ResortListViewByClick(
         log_error(LOG_GUI, "iTidy_ResortListViewByClick: NULL parameter! formatted_list=%p, entry_list=%p, state=%p, columns=%p\n",
                   formatted_list, entry_list, state, columns);
         return FALSE;
+    }
+    
+    /* Start performance timing */
+    if (TimerBase) {
+        GetSysTime(&startTime);
     }
     
     log_debug(LOG_GUI, "iTidy_ResortListViewByClick: num_columns=%d\n", state->num_columns);
@@ -1236,6 +1784,13 @@ BOOL iTidy_ResortListViewByClick(
     
     /* Sort the entry list in-place */
     iTidy_SortListViewEntries(entry_list, clicked_col, columns[clicked_col].sort_type, ascending);
+    
+    /* Checkpoint: After sort */
+    if (TimerBase) {
+        GetSysTime(&sortEndTime);
+        sortMicros = ((sortEndTime.tv_secs - startTime.tv_secs) * 1000000) +
+                     (sortEndTime.tv_micro - startTime.tv_micro);
+    }
     
     /* Get column widths from state */
     col_widths = (int *)whd_malloc(sizeof(int) * state->num_columns);
@@ -1326,7 +1881,125 @@ BOOL iTidy_ResortListViewByClick(
     whd_free(cell_buffer);
     whd_free(col_widths);
     
+    /* Count entries */
+    for (entry_node = entry_list->lh_Head; entry_node->ln_Succ; entry_node = entry_node->ln_Succ) {
+        entry_count++;
+    }
+    
+    /* End performance timing */
+    if (TimerBase) {
+        GetSysTime(&endTime);
+        
+        /* Calculate total elapsed time */
+        elapsedMicros = ((endTime.tv_secs - startTime.tv_secs) * 1000000) +
+                        (endTime.tv_micro - startTime.tv_micro);
+        elapsedMillis = elapsedMicros / 1000;
+        rebuildMicros = elapsedMicros - sortMicros;
+        
+        /* Log performance metrics only if enabled */
+        if (is_performance_logging_enabled()) {
+            const char *type_str = (columns[clicked_col].sort_type == ITIDY_COLTYPE_NUMBER) ? "NUMBER" :
+                                   (columns[clicked_col].sort_type == ITIDY_COLTYPE_DATE) ? "DATE" : "TEXT";
+            const char *dir_str = ascending ? "ASC" : "DESC";
+            
+            log_info(LOG_GUI, "==== LISTVIEW RESORT PERFORMANCE ====\n");
+            log_info(LOG_GUI, "iTidy_ResortListViewByClick() total time: %lu.%03lu ms\n",
+                     elapsedMillis, elapsedMicros % 1000);
+            log_info(LOG_GUI, "  Column: %d (%s, %s)\n", clicked_col, type_str, dir_str);
+            log_info(LOG_GUI, "  Entries: %d, Columns: %d\n", entry_count, state->num_columns);
+            log_info(LOG_GUI, "  Breakdown:\n");
+            log_info(LOG_GUI, "    Sort:      %lu.%03lu ms (%lu%%)\n",
+                     sortMicros / 1000, sortMicros % 1000,
+                     elapsedMicros > 0 ? (sortMicros * 100 / elapsedMicros) : 0);
+            log_info(LOG_GUI, "    Rebuild:   %lu.%03lu ms (%lu%%)\n",
+                     rebuildMicros / 1000, rebuildMicros % 1000,
+                     elapsedMicros > 0 ? (rebuildMicros * 100 / elapsedMicros) : 0);
+            if (entry_count > 0) {
+                log_info(LOG_GUI, "  Time per entry: %lu microseconds\n",
+                         elapsedMicros / entry_count);
+            }
+            log_info(LOG_GUI, "====================================\n");
+            
+            printf("  [TIMING] ListView resort: %lu.%03lu ms total (col %d, %s/%s, %d entries)\n",
+                   elapsedMillis, elapsedMicros % 1000, clicked_col, type_str, dir_str, entry_count);
+            printf("           Sort: %lu.%03lu ms | Rebuild: %lu.%03lu ms\n",
+                   sortMicros / 1000, sortMicros % 1000,
+                   rebuildMicros / 1000, rebuildMicros % 1000);
+        }
+    }
+    
     log_info(LOG_GUI, "Resorted by column %d (%s)\n", clicked_col, ascending ? "ASC" : "DESC");
     
     return TRUE;
 }
+
+/*---------------------------------------------------------------------------*/
+/* High-Level Sort Handler (Convenience Wrapper)                            */
+/*---------------------------------------------------------------------------*/
+
+BOOL iTidy_HandleListViewSort(
+    struct Window *window,
+    struct Gadget *listview_gadget,
+    struct List *formatted_list,
+    struct List *entry_list,
+    iTidy_ListViewState *state,
+    int mouse_x,
+    int mouse_y,
+    int font_height,
+    int font_width,
+    iTidy_ColumnConfig *columns,
+    int num_columns)
+{
+    BOOL did_sort;
+    int header_top, header_height, gadget_left;
+    
+    /* Validate parameters */
+    if (!window || !listview_gadget || !formatted_list || !entry_list || !state || !columns) {
+        log_debug(LOG_GUI, "iTidy_HandleListViewSort: NULL parameter\n");
+        return FALSE;
+    }
+    
+    /* Calculate ListView header position */
+    header_top = listview_gadget->TopEdge;
+    header_height = font_height;
+    gadget_left = listview_gadget->LeftEdge;
+    
+    /* Quick check: is click even in header Y-range? */
+    if (mouse_y < header_top || mouse_y >= header_top + header_height) {
+        return FALSE;  /* Not in header - don't waste time */
+    }
+    
+    /* Set busy pointer during sort operation */
+    SetWindowPointer(window, WA_BusyPointer, TRUE, TAG_DONE);
+    
+    /* Attempt to resort based on click position */
+    did_sort = iTidy_ResortListViewByClick(
+        formatted_list,
+        entry_list,
+        state,
+        mouse_x, mouse_y,
+        header_top, header_height,
+        gadget_left,
+        font_width,
+        columns
+    );
+    
+    /* Update display if sorting occurred */
+    if (did_sort) {
+        log_debug(LOG_GUI, "iTidy_HandleListViewSort: List resorted, refreshing gadget\n");
+        
+        /* Refresh gadget with re-sorted list */
+        GT_SetGadgetAttrs(listview_gadget, window, NULL,
+                          GTLV_Labels, ~0,  /* Detach */
+                          TAG_DONE);
+        GT_SetGadgetAttrs(listview_gadget, window, NULL,
+                          GTLV_Labels, formatted_list,
+                          TAG_DONE);
+    }
+    
+    /* Clear busy pointer */
+    SetWindowPointer(window, WA_BusyPointer, FALSE, TAG_DONE);
+    
+    return did_sort;
+}
+

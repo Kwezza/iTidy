@@ -497,6 +497,154 @@ iTidy/
 └── Makefile                # VBCC build configuration
 ```
 
+## Global Structures and Settings
+
+### System Preferences (Loaded at Startup)
+
+iTidy loads two critical system preference structures at startup that are used throughout the application:
+
+#### 1. **IControlPrefs** - Interface Control Settings
+- **Header**: `src/Settings/IControlPrefs.h`
+- **Global Variable**: `prefsIControl` (type: `struct IControlPrefsDetails`)
+- **Loaded By**: `fetchIControlSettings(&prefsIControl)` in `main_gui.c`
+- **Purpose**: Contains system-wide UI settings from Workbench preferences
+- **Key Fields**:
+  - Font information: `systemFontName`, `systemFontSize`, `systemFontCharWidth`
+  - Icon text font: `iconTextFontName`, `iconTextFontSize`, `iconTextFontCharWidth`
+  - Screen metrics: `currentTitleBarHeight`, `currentWindowBarHeight`, `currentBarWidth`
+  - UI flags: `coerceColors`, `menuSnap`, `correctRatio`, `offScrnWin`
+- **Usage**: Access anywhere via `extern struct IControlPrefsDetails prefsIControl;`
+
+#### 2. **WorkbenchPrefs** - Workbench Settings
+- **Header**: `src/Settings/WorkbenchPrefs.h`
+- **Global Variable**: `prefsWorkbench` (type: `struct WorkbenchSettings`)
+- **Loaded By**: `fetchWorkbenchSettings(&prefsWorkbench)` in `main_gui.c`
+- **Purpose**: Contains Workbench-specific settings and icon support flags
+- **Key Fields**:
+  - `borderless` - Borderless icon support
+  - `newIconsSupport` - NewIcons format support
+  - `colorIconSupport` - Color icon support (OS 3.5+)
+  - `maxNameLength` - Maximum icon text length
+  - `embossRectangleSize` - Icon emboss size
+- **Usage**: Access anywhere via `extern struct WorkbenchSettings prefsWorkbench;`
+
+**Important**: These structures are populated once at startup and remain read-only during execution. They provide system-level defaults that iTidy respects when processing icons.
+
+### Application Preferences (User Settings)
+
+#### **LayoutPreferences** - Main Configuration Structure
+- **Header**: `src/layout_preferences.h`
+- **Global Accessor**: `GetGlobalPreferences()` (returns const pointer)
+- **Updater**: `UpdateGlobalPreferences(const LayoutPreferences *newPrefs)`
+- **Purpose**: Master configuration for all iTidy operations (layout, sorting, backup, etc.)
+- **Key Field Categories**:
+  - **Folder Settings**: `folder_path`, `recursive_subdirs`, `skipHiddenFolders`
+  - **Layout Settings**: `layoutMode`, `sortOrder`, `sortPriority`, `sortBy`, `reverseSort`
+  - **Visual Settings**: `centerIconsInColumn`, `useColumnWidthOptimization`, `textAlignment`
+  - **Window Settings**: `resizeWindows`, `aspectRatio`, `maxWindowWidthPct`, `overflowMode`
+  - **Spacing**: `iconSpacingX`, `iconSpacingY`
+  - **Features**: `enable_backup`, `enable_icon_upgrade`, `validate_default_tools`
+  - **Beta Features**: `beta_openFoldersAfterProcessing`, `beta_FindWindowOnWorkbenchAndUpdate`
+  - **Logging**: `logLevel`, `memoryLoggingEnabled`, `enable_performance_logging`
+  - **Backup Settings**: `backupPrefs` (embedded `BackupPreferences` struct)
+
+**Important**: This is the single source of truth for all user-configurable settings. Always use the global accessors rather than creating local copies.
+
+## Main Code Paths
+
+### Primary Execution Flow: User Clicks "Apply" Button
+
+When the user clicks the **Apply** button in the main iTidy window, the following code path executes:
+
+#### 1. **Event Handler** (`src/GUI/main_window.c`)
+```
+handle_itidy_window_events()
+  └─ Case: IDCMP_GADGETUP, Gadget ID: win_data->apply_btn
+      ├─ Get global preferences: prefs = GetGlobalPreferences()
+      ├─ Apply selected preset: ApplyPreset(prefs, win_data->preset_selected)
+      ├─ Map GUI values to prefs: MapGuiToPreferences(...)
+      ├─ Copy folder path: strcpy(prefs->folder_path, win_data->folder_path_buffer)
+      ├─ Set recursive mode: prefs->recursive_subdirs = win_data->recursive_subdirs
+      ├─ Set backup/upgrade flags: prefs->enable_backup, prefs->enable_icon_upgrade
+      ├─ Update global: UpdateGlobalPreferences(prefs)
+      └─ Execute processing: ProcessDirectoryWithPreferences()
+```
+
+**File**: `src/GUI/main_window.c`, lines ~970-1030
+**Key Function**: `handle_itidy_window_events()` - Main event loop for iTidy window
+
+#### 2. **Processing Entry Point** (`src/layout_processor.c`)
+```
+ProcessDirectoryWithPreferences()
+  ├─ Get global prefs: prefs = GetGlobalPreferences()
+  ├─ Validate folder path: SanitizeFolderPath()
+  ├─ Initialize backup context (if enabled): CreateBackupSession()
+  ├─ Build window tracker: BuildFolderWindowList()
+  ├─ Set global validation flag: g_ValidateDefaultTools = prefs->validate_default_tools
+  ├─ Choose processing mode:
+  │   ├─ If recursive: ProcessDirectoryRecursive(path, prefs, 0, &windowTracker)
+  │   └─ Else: ProcessSingleDirectory(path, prefs, &windowTracker)
+  ├─ Finalize backup (if enabled): FinalizeBackupSession()
+  └─ Return success/failure
+```
+
+**File**: `src/layout_processor.c`, lines ~150-250
+**Key Function**: `ProcessDirectoryWithPreferences()` - Main processing orchestrator
+
+#### 3. **Single Directory Processing** (`src/layout_processor.c`)
+```
+ProcessSingleDirectory(path, prefs, windowTracker)
+  ├─ Create backup (if enabled): BackupFolder(path, g_backupContext)
+  ├─ Scan directory: ScanDirectoryForIcons(path) → returns IconArray
+  ├─ Sort icons: SortIconArrayWithPreferences(iconArray, prefs)
+  ├─ Calculate layout:
+  │   ├─ If centerIconsInColumn: CalculateLayoutPositionsWithColumnCentering()
+  │   └─ Else: CalculateLayoutPositions()
+  ├─ Apply positions: SaveIconPositions(iconArray)
+  ├─ Resize window (if enabled): ResizeDrawerWindow()
+  ├─ Update Workbench window (if beta feature enabled): UpdateWorkbenchWindow()
+  ├─ Free icon array: FreeIconArray(iconArray)
+  └─ Filesystem delay (if enabled): Delay(FILESYSTEM_LOCK_DELAY_TICKS)
+```
+
+**File**: `src/layout_processor.c`, lines ~600-800
+**Key Function**: `ProcessSingleDirectory()` - Processes one folder
+
+#### 4. **Recursive Processing** (`src/layout_processor.c`)
+```
+ProcessDirectoryRecursive(path, prefs, level, windowTracker)
+  ├─ Process current directory: ProcessSingleDirectory(path, prefs, windowTracker)
+  ├─ Scan for subdirectories: Lock() → ExNext() loop
+  ├─ For each subdirectory:
+  │   ├─ Check if hidden (no .info): Skip if prefs->skipHiddenFolders
+  │   ├─ Build subdir path: CombinePaths()
+  │   └─ Recurse: ProcessDirectoryRecursive(subdir_path, prefs, level+1, windowTracker)
+  └─ Unlock directory
+```
+
+**File**: `src/layout_processor.c`, lines ~900-1100
+**Key Function**: `ProcessDirectoryRecursive()` - Handles recursive subdirectory processing
+
+### Summary of Key Files in Apply Flow
+
+1. **GUI Layer**: `src/GUI/main_window.c` - Captures user input, validates, calls processor
+2. **Processing Layer**: `src/layout_processor.c` - Orchestrates backup, scanning, sorting, layout
+3. **Icon Operations**: `src/icon_management.c` - Low-level icon loading/saving via icon.library
+4. **Layout Engine**: `src/aspect_ratio_layout.c` - Calculates optimal icon positions and window size
+5. **Backup System**: `src/backup_session.c`, `src/backup_catalog.c` - Creates LHA backups (if enabled)
+6. **Window Tracking**: `src/window_enumerator.c` - Finds open Workbench windows (for beta features)
+
+### Quick Reference: Where to Look
+
+- **User clicks Apply button**: `src/GUI/main_window.c:974` (IDCMP_GADGETUP handler)
+- **Main processing entry**: `src/layout_processor.c:ProcessDirectoryWithPreferences()`
+- **Icon scanning**: `src/folder_scanner.c:ScanDirectoryForIcons()`
+- **Icon sorting**: `src/layout_processor.c:SortIconArrayWithPreferences()`
+- **Layout calculation**: `src/aspect_ratio_layout.c:CalculateOptimalLayout()`
+- **Icon saving**: `src/icon_management.c:SaveIconPositions()`
+- **Window resizing**: `src/window_management.c:ResizeDrawerWindow()`
+- **Backup creation**: `src/backup_session.c:BackupFolder()`
+
 ## Common Patterns
 
 ### Error Handling Pattern (Avoid goto unless absolutely necessary):
