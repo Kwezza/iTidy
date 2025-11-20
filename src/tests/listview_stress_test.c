@@ -269,6 +269,9 @@ static void add_50_rows(TestWindowData *data)
     printf("\n=== ADDING 50 ROWS ===\n");
     printf("Current row count: %d\n", data->total_rows);
     
+    /* Set busy pointer */
+    SetWindowPointer(data->window, WA_BusyPointer, TRUE, TAG_DONE);
+    
     GetSysTime(&start_time);
     
     /* Detach list from gadget */
@@ -359,6 +362,9 @@ static void add_50_rows(TestWindowData *data)
     elapsed_millis = elapsed_micros / 1000;
     elapsed_seconds = (float)elapsed_micros / 1000000.0f;
     
+    /* Clear busy pointer */
+    SetWindowPointer(data->window, WA_BusyPointer, FALSE, TAG_DONE);
+    
     printf("Added 50 rows in %.6f seconds\n", elapsed_seconds);
     printf("New total: %d rows\n", data->total_rows);
     printf("Time per row: %.6f seconds\n", (float)elapsed_micros / 50.0f / 1000000.0f);
@@ -383,6 +389,9 @@ static void remove_50_rows(TestWindowData *data)
     
     printf("\n=== REMOVING 50 ROWS ===\n");
     printf("Current row count: %d\n", data->total_rows);
+    
+    /* Set busy pointer */
+    SetWindowPointer(data->window, WA_BusyPointer, TRUE, TAG_DONE);
     
     GetSysTime(&start_time);
     
@@ -474,6 +483,9 @@ static void remove_50_rows(TestWindowData *data)
                      (end_time.tv_micro - start_time.tv_micro);
     elapsed_millis = elapsed_micros / 1000;
     elapsed_seconds = (float)elapsed_micros / 1000000.0f;
+    
+    /* Clear busy pointer */
+    SetWindowPointer(data->window, WA_BusyPointer, FALSE, TAG_DONE);
     
     printf("Removed 50 rows in %.6f seconds\n", elapsed_seconds);
     printf("New total: %d rows\n", data->total_rows);
