@@ -1321,10 +1321,6 @@ BOOL iTidy_HandleListViewGadgetUp(
     out_event->sort_key = NULL;
     out_event->column_type = ITIDY_COLTYPE_TEXT;
     
-    /* Calculate header bounds */
-    header_top = gadget->TopEdge;
-    header_height = font_height;
-    
     /* Calculate pixel positions from character positions (needed for column detection) */
     {
         int col;
@@ -1334,13 +1330,27 @@ BOOL iTidy_HandleListViewGadgetUp(
         }
     }
     
-    /* Check if click is in header region */
-    if (mouse_y >= header_top && mouse_y < header_top + header_height) {
+    /* Get selected row from gadget FIRST - this accounts for scroll position */
+    selected = -1;
+    GT_GetGadgetAttrs(gadget, window, NULL, GTLV_Selected, &selected, TAG_END);
+    
+    if (selected < 0) {
+        /* No selection */
+        return FALSE;
+    }
+    
+    /* Check if selected row is the header (row 0 only - NOT the separator at row 1) */
+    /* This correctly handles scrolling - GTLV_Selected returns logical row index */
+    if (selected == 0) {
         /* HEADER CLICK - Handle sorting */
         int clicked_col;
         BOOL sorted;
         
-        /* Detect which column was clicked */
+        /* Calculate header bounds for mouse position check */
+        header_top = gadget->TopEdge;
+        header_height = font_height;
+        
+        /* Detect which column was clicked using mouse X position */
         clicked_col = iTidy_GetClickedColumn(state, mouse_x, gadget->LeftEdge);
         
         if (clicked_col >= 0 && clicked_col < num_columns) {
@@ -1372,16 +1382,18 @@ BOOL iTidy_HandleListViewGadgetUp(
         return FALSE;
     }
     
-    /* NOT HEADER - Must be data row click */
-    /* Get selected row from gadget */
-    selected = -1;
-    GT_GetGadgetAttrs(gadget, window, NULL, GTLV_Selected, &selected, TAG_END);
-    
-    if (selected < 0) {
-        /* No selection */
+    /* Check if selected row is the separator (row 1) - ignore these clicks */
+    if (selected == 1) {
+        /* Separator row clicked - do nothing */
+        return FALSE;
+    }
+    /* Check if selected row is the separator (row 1) - ignore these clicks */
+    if (selected == 1) {
+        /* Separator row clicked - do nothing */
         return FALSE;
     }
     
+    /* NOT HEADER/SEPARATOR - Must be data row click (selected >= 2) */
     /* Use smart helper to get complete click information */
     iTidy_ListViewClick click = iTidy_GetListViewClick(
         entry_list,

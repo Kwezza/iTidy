@@ -7,7 +7,42 @@ iTidy is an Amiga icon management utility that allows users to sort and arrange 
 
 ## Development Timeline
 
-### Latest: ListView Formatter Safety Validation (November 19, 2025)
+### Latest: ListView Column Header Click Detection Bug Fix (November 20, 2025)
+
+#### Fixed Scrolled ListView Treating First Visible Row as Header
+* **Status**: Complete - Built and tested
+* **Impact**: Clicking on data rows after scrolling no longer incorrectly triggers column sorting
+* **Date**: November 20, 2025
+* **File Modified**: `src/helpers/listview_columns_api.c` (function `iTidy_HandleListViewGadgetUp`)
+
+**Problem:**
+When a ListView with sortable column headers was scrolled so that the header row scrolled off-screen, clicking on the first visible data row would incorrectly trigger column sorting instead of the expected row-selection behavior. Additionally, clicking on the separator line (dashes between header and data) would also trigger sorting when it should do nothing.
+
+**Root Cause:**
+The header detection logic was using mouse Y-coordinate comparison against the gadget's TopEdge to determine if a click was on the header. This approach failed when scrolling because:
+- The gadget's TopEdge remains constant (fixed position in window)
+- When scrolled, the header row (index 0) is no longer visible at that position
+- The first visible row appeared at the same visual position where the header used to be
+- The code incorrectly treated this first visible row as a header click
+
+**Solution:**
+Changed header detection to use logical row index instead of visual mouse coordinates:
+- Query the ListView gadget for the selected row index using GTLV_Selected
+- Check the logical row index to determine row type (0 = header, 1 = separator, 2+ = data)
+- Row index correctly reflects the actual list position regardless of scroll state
+
+**Behavior After Fix:**
+- Row 0 (column title header): Clicking sorts by that column
+- Row 1 (separator dashes): Clicking does nothing (ignored)
+- Row 2+ (data rows): Clicking triggers row-selection behavior
+- Works correctly whether the ListView is scrolled or not
+
+**Technical Details:**
+The GTLV_Selected tag returns the logical index in the list (0-based from list start), not the visual position on screen. This makes it perfect for determining which type of row was clicked, independent of scroll position. The fix properly distinguishes between the three row types in the formatted ListView structure.
+
+---
+
+### ListView Formatter Safety Validation (November 19, 2025)
 
 #### Defensive Validation Against Uninitialized Memory Crashes
 * **Status**: Complete - Built and ready for testing
