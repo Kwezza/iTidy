@@ -289,6 +289,124 @@ data->your_listview = gad = CreateGadget(LISTVIEW_KIND, gad, &ng,
                                         TAG_END);
 ```
 
+### ListView with Justified Text Helper (Details Panels)
+
+**When to use:** Displaying **key-value pairs** in a ListView where you want the colons (or other delimiter) to align vertically for a professional appearance.
+
+**What it does:** Automatically calculates padding to align text by a delimiter character (typically `:`), creating nicely formatted details panels without manual spacing calculations.
+
+**Example use case:** Displaying file details, backup run information, system properties, configuration summaries - any read-only information panel showing labeled values.
+
+**Visual result:**
+```
+Input strings:                Output (aligned by ':'):
+"Run Number: 15"              "      Run Number: 15"
+"Date Created: 2025-10-30"    "    Date Created: 2025-10-30"
+"Source Directory: Work:"     "Source Directory: Work:"      <- Longest prefix
+"Total Size: 621 B"           "      Total Size: 621 B"
+```
+
+**Basic usage pattern:**
+```c
+#include "../helpers/list_formatter.h"
+
+void update_details_panel(YourWindowData *data, YourDataEntry *entry)
+{
+    const char *detail_lines[5];
+    char line_buffer[5][256];
+    struct List *formatted_list;
+    
+    /* Detach old list from gadget */
+    GT_SetGadgetAttrs(data->details_listview, data->window, NULL,
+        GTLV_Labels, ~0,
+        TAG_END);
+    
+    /* Free previous list */
+    if (data->details_list != NULL) {
+        itidy_free_justified_list(data->details_list);
+        data->details_list = NULL;
+    }
+    
+    /* Format your strings (normal sprintf) */
+    sprintf(line_buffer[0], "Name: %s", entry->name);
+    sprintf(line_buffer[1], "Size: %lu bytes", entry->size);
+    sprintf(line_buffer[2], "Date: %s", entry->date);
+    sprintf(line_buffer[3], "Type: %s", entry->type);
+    sprintf(line_buffer[4], "Location: %s", entry->path);
+    
+    /* Build pointer array */
+    detail_lines[0] = line_buffer[0];
+    detail_lines[1] = line_buffer[1];
+    detail_lines[2] = line_buffer[2];
+    detail_lines[3] = line_buffer[3];
+    detail_lines[4] = line_buffer[4];
+    
+    /* Create justified list (automatically aligns colons) */
+    formatted_list = itidy_create_justified_list(
+        detail_lines,    /* Array of string pointers */
+        5,               /* Number of strings */
+        ':',             /* Character to align by */
+        0                /* Max width (0 = unlimited) */
+    );
+    
+    if (formatted_list == NULL)
+        return;  /* Allocation failed */
+    
+    /* Store for cleanup */
+    data->details_list = formatted_list;
+    
+    /* Attach to ListView */
+    GT_SetGadgetAttrs(data->details_listview, data->window, NULL,
+        GTLV_Labels, formatted_list,
+        TAG_END);
+}
+```
+
+**API reference:**
+```c
+/* Create justified list */
+struct List *itidy_create_justified_list(
+    const char **input_strings,  /* Array of string pointers */
+    UWORD num_strings,           /* Count (max 1000) */
+    char justify_char,           /* Delimiter to align by (typically ':') */
+    UWORD max_width              /* Max line width (0 = no limit) */
+);
+
+/* Free list when done */
+void itidy_free_justified_list(struct List *list);
+```
+
+**How it works:**
+1. Scans all input strings to find the first occurrence of the justify character
+2. Calculates the maximum distance to the delimiter across all strings
+3. Adds padding spaces to shorter prefixes to align all delimiters vertically
+4. Returns a ready-to-use `struct List` with formatted `struct Node` entries
+5. Strings without the delimiter are copied as-is (no padding added)
+
+**Safety limits:**
+- Max 1000 strings per list
+- Max 2048 characters per string
+- Max 512 character prefix length (auto-clamped)
+- NULL strings handled as empty lines
+- Returns NULL on invalid input or allocation failure
+
+**Memory management:**
+- Uses iTidy's `whd_malloc/whd_free` for memory tracking
+- **CRITICAL**: Always free with `itidy_free_justified_list()` when done
+- Safe to pass NULL to free function (no-op)
+
+**When NOT to use:**
+- Editable ListViews (this is for read-only display)
+- Lists that don't have a consistent delimiter character
+- Simple lists without key-value pairs (use plain ListView)
+- Multi-column sortable data (use `listview_columns_api.h` instead)
+
+**Full implementation details and usage guide:**
+See `src/helpers/list_formatter.c` (comprehensive documentation in header comment block)
+
+**Real-world example:**
+See `src/GUI/restore_window.c` → `update_details_panel()` function for complete working integration
+
 ## 📐 Layout System
 
 ### Positioning Variables

@@ -114,6 +114,10 @@ warning 123 in line 1300 of "src\helpers\listview_columns_api.c": formal paramet
 warning 68 in line 2009 of "src\helpers\listview_columns_api.c": redeclaration of var <iTidy_HandleListViewSort> with new type
 >{
 warning 123 in line 2009 of "src\helpers\listview_columns_api.c": formal parameters conflict with parameter-type-list
+Compiling [build/amiga/helpers/list_formatter.o] from src/helpers/list_formatter.c
+vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/helpers/list_formatter.c -o build/amiga/helpers/list_formatter.o
+>    NewList(list);
+warning 161 in line 75 of "src\helpers\list_formatter.c": implicit declaration of function <NewList>
 Compiling [build/amiga/GUI/main_window.o] from src/GUI/main_window.c
 vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/GUI/main_window.c -o build/amiga/GUI/main_window.o
 Compiling [build/amiga/GUI/advanced_window.o] from src/GUI/advanced_window.c
@@ -137,17 +141,17 @@ vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DD
 >    UBYTE ic_HoverSlugishness : 
 warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
 	included from file "src\GUI\..\Settings\IControlPrefs.h":15
-	included from file "src\GUI\restore_window.c":63
+	included from file "src\GUI\restore_window.c":64
 >    UBYTE ic_HoverFlags : 
 warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
 	included from file "src\GUI\..\Settings\IControlPrefs.h":15
-	included from file "src\GUI\restore_window.c":63
+	included from file "src\GUI\restore_window.c":64
 >    struct TagItem ie_Tags[0]
 warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
 	included from file "src\GUI\..\Settings\IControlPrefs.h":15
-	included from file "src\GUI\restore_window.c":63
+	included from file "src\GUI\restore_window.c":64
 >    NewList(&restore_data->run_entry_list);
-warning 161 in line 721 of "src\GUI\restore_window.c": implicit declaration of function <NewList>
+warning 161 in line 722 of "src\GUI\restore_window.c": implicit declaration of function <NewList>
 Compiling [build/amiga/GUI/folder_view_window.o] from src/GUI/folder_view_window.c
 vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/GUI/folder_view_window.c -o build/amiga/GUI/folder_view_window.o
 >    NewList(&folder_data->folder_entries);
@@ -297,6 +301,6 @@ vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DD
 Compiling memory tracking: build/amiga/platform_memory.o
 vc +aos68k -c99 -cpu=68020 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c include/platform/platform.c -o build/amiga/platform_memory.o
 Linking amiga executable: Bin/Amiga/iTidy
-vc +aos68k -cpu=68020 -g -hunkdebug -lamiga -lauto -lmieee -o Bin/Amiga/iTidy build/amiga/main_gui.o build/amiga/icon_types.o build/amiga/icon_misc.o build/amiga/icon_management.o build/amiga/file_directory_handling.o build/amiga/window_management.o build/amiga/utilities.o build/amiga/path_utilities.o build/amiga/spinner.o build/amiga/writeLog.o build/amiga/cli_utilities.o build/amiga/layout_preferences.o build/amiga/layout_processor.o build/amiga/aspect_ratio_layout.o build/amiga/folder_scanner.o build/amiga/string_functions.o build/amiga/backup_catalog.o build/amiga/backup_lha.o build/amiga/backup_marker.o build/amiga/backup_paths.o build/amiga/backup_runs.o build/amiga/backup_session.o build/amiga/backup_restore.o build/amiga/helpers/listview_columns_api.o build/amiga/GUI/main_window.o build/amiga/GUI/advanced_window.o build/amiga/GUI/beta_options_window.o build/amiga/GUI/restore_window.o build/amiga/GUI/folder_view_window.o build/amiga/GUI/tool_cache_window.o build/amiga/GUI/default_tool_update_window.o build/amiga/GUI/default_tool_backup.o build/amiga/GUI/default_tool_restore_window.o build/amiga/GUI/easy_request_helper.o build/amiga/GUI/window_enumerator.o build/amiga/GUI/wb_classify.o build/amiga/GUI/StatusWindows/progress_common.o build/amiga/GUI/StatusWindows/progress_window.o build/amiga/GUI/StatusWindows/recursive_progress.o build/amiga/GUI/test_simple_window.o build/amiga/DOS/getDiskDetails.o build/amiga/Settings/IControlPrefs.o build/amiga/Settings/WorkbenchPrefs.o build/amiga/Settings/get_fonts.o build/amiga/platform/amiga_platform.o build/amiga/platform_memory.o 
+vc +aos68k -cpu=68020 -g -hunkdebug -lamiga -lauto -lmieee -o Bin/Amiga/iTidy build/amiga/main_gui.o build/amiga/icon_types.o build/amiga/icon_misc.o build/amiga/icon_management.o build/amiga/file_directory_handling.o build/amiga/window_management.o build/amiga/utilities.o build/amiga/path_utilities.o build/amiga/spinner.o build/amiga/writeLog.o build/amiga/cli_utilities.o build/amiga/layout_preferences.o build/amiga/layout_processor.o build/amiga/aspect_ratio_layout.o build/amiga/folder_scanner.o build/amiga/string_functions.o build/amiga/backup_catalog.o build/amiga/backup_lha.o build/amiga/backup_marker.o build/amiga/backup_paths.o build/amiga/backup_runs.o build/amiga/backup_session.o build/amiga/backup_restore.o build/amiga/helpers/listview_columns_api.o build/amiga/helpers/list_formatter.o build/amiga/GUI/main_window.o build/amiga/GUI/advanced_window.o build/amiga/GUI/beta_options_window.o build/amiga/GUI/restore_window.o build/amiga/GUI/folder_view_window.o build/amiga/GUI/tool_cache_window.o build/amiga/GUI/default_tool_update_window.o build/amiga/GUI/default_tool_backup.o build/amiga/GUI/default_tool_restore_window.o build/amiga/GUI/easy_request_helper.o build/amiga/GUI/window_enumerator.o build/amiga/GUI/wb_classify.o build/amiga/GUI/StatusWindows/progress_common.o build/amiga/GUI/StatusWindows/progress_window.o build/amiga/GUI/StatusWindows/recursive_progress.o build/amiga/GUI/test_simple_window.o build/amiga/DOS/getDiskDetails.o build/amiga/Settings/IControlPrefs.o build/amiga/Settings/WorkbenchPrefs.o build/amiga/Settings/get_fonts.o build/amiga/platform/amiga_platform.o build/amiga/platform_memory.o 
 Build complete: Bin/Amiga/iTidy
 Debug symbols embedded in executable (use WinUAE debugger or MonAm)

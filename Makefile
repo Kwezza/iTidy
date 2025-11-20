@@ -73,7 +73,8 @@ BACKUP_SRCS = \
 
 # Helper utilities source files
 HELPERS_SRCS = \
-	$(SRC_DIR)/helpers/listview_columns_api.c
+	$(SRC_DIR)/helpers/listview_columns_api.c \
+	$(SRC_DIR)/helpers/list_formatter.c
 
 # GUI source files
 GUI_SRCS = \

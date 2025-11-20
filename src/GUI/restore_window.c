@@ -52,6 +52,7 @@
 #include "restore_window.h"
 #include "GUI/StatusWindows/progress_window.h"
 #include "helpers/listview_columns_api.h"
+#include "../helpers/list_formatter.h"  /* Justified list formatter */
 #include "../backup_restore.h"
 #include "../writeLog.h"
 #include "folder_view_window.h"
@@ -811,11 +812,9 @@ void populate_run_list(struct iTidyRestoreWindow *restore_data,
 void update_details_panel(struct iTidyRestoreWindow *restore_data,
                           struct RestoreRunEntry *selected_entry)
 {
-    struct Node *node;
-    struct List *list;
-    int i;
-    char *detail_lines[7];
+    const char *detail_lines[7];
     char line_buffer[7][256];
+    struct List *formatted_list;
     
     if (restore_data == NULL || restore_data->details_listview == NULL)
         return;
@@ -825,27 +824,12 @@ void update_details_panel(struct iTidyRestoreWindow *restore_data,
         GTLV_Labels, ~0,
         TAG_END);
     
-    /* Free existing list */
+    /* Free existing list if any */
     if (restore_data->details_list_strings != NULL)
     {
-        while ((node = RemHead(restore_data->details_list_strings)) != NULL)
-        {
-            if (node->ln_Name != NULL)
-                FreeVec(node->ln_Name);
-            FreeVec(node);
-        }
+        itidy_free_justified_list(restore_data->details_list_strings);
+        restore_data->details_list_strings = NULL;
     }
-    else
-    {
-        /* Allocate list for first time */
-        restore_data->details_list_strings = (struct List *)whd_malloc(sizeof(struct List));
-        if (restore_data->details_list_strings == NULL)
-            return;
-        memset(restore_data->details_list_strings, 0, sizeof(struct List));
-        NewList(restore_data->details_list_strings);
-    }
-    
-    list = restore_data->details_list_strings;
     
     if (selected_entry == NULL)
     {
@@ -883,47 +867,45 @@ void update_details_panel(struct iTidyRestoreWindow *restore_data,
         }
         
         /* Format each detail line */
-
-        sprintf(line_buffer[0], "       Run Number: %04u", 
+        sprintf(line_buffer[0], "Run Number: %04u", 
                 selected_entry->runNumber);
-        sprintf(line_buffer[1], "     Date Created: %s", 
+        sprintf(line_buffer[1], "Date Created: %s", 
                 selected_entry->dateStr); 
-        sprintf(line_buffer[2], " Source Directory: %s", 
+        sprintf(line_buffer[2], "Source Directory: %s", 
                 selected_entry->sourceDirectory);
-        sprintf(line_buffer[3], "   Total Archives: %lu", 
+        sprintf(line_buffer[3], "Total Archives: %lu", 
                 selected_entry->folderCount);
-        sprintf(line_buffer[4], "       Total Size: %s", 
+        sprintf(line_buffer[4], "Total Size: %s", 
                 selected_entry->sizeStr);
-        sprintf(line_buffer[5], "           Status: %s", 
+        sprintf(line_buffer[5], "Status: %s", 
                 status_desc);
-        sprintf(line_buffer[6], "         Location: %s", 
+        sprintf(line_buffer[6], "Location: %s", 
                 selected_entry->fullPath);
     }
     
-    /* Create list nodes */
-    for (i = 0; i < 7; i++)
+    /* Build pointer array for helper function */
+    detail_lines[0] = line_buffer[0];
+    detail_lines[1] = line_buffer[1];
+    detail_lines[2] = line_buffer[2];
+    detail_lines[3] = line_buffer[3];
+    detail_lines[4] = line_buffer[4];
+    detail_lines[5] = line_buffer[5];
+    detail_lines[6] = line_buffer[6];
+    
+    /* Create justified list using helper (no max_width = 0) */
+    formatted_list = itidy_create_justified_list(detail_lines, 7, ':', 0);
+    if (formatted_list == NULL)
     {
-        node = (struct Node *)whd_malloc(sizeof(struct Node));
-        if (node != NULL)
-        {
-            memset(node, 0, sizeof(struct Node));
-            node->ln_Name = (STRPTR)whd_malloc(strlen(line_buffer[i]) + 1);
-            if (node->ln_Name != NULL)
-            {
-                memset(node->ln_Name, 0, strlen(line_buffer[i]) + 1);
-                strcpy(node->ln_Name, line_buffer[i]);
-                AddTail(list, node);
-            }
-            else
-            {
-                FreeVec(node);
-            }
-        }
+        append_to_log("ERROR: Failed to create justified list\n");
+        return;
     }
+    
+    /* Store for later cleanup */
+    restore_data->details_list_strings = formatted_list;
     
     /* Reattach list to gadget */
     GT_SetGadgetAttrs(restore_data->details_listview, restore_data->window, NULL,
-        GTLV_Labels, list,
+        GTLV_Labels, formatted_list,
         TAG_END);
 }
 
