@@ -1582,7 +1582,7 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
         WA_Activate, TRUE,
         WA_PubScreen, screen,
         WA_Gadgets, restore_data->glist,
-        WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_REFRESHWINDOW | IDCMP_GADGETUP | IDCMP_MOUSEBUTTONS,
+        WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_REFRESHWINDOW | IDCMP_GADGETUP | IDCMP_GADGETDOWN | IDCMP_MOUSEBUTTONS,
         TAG_END);
     
     append_to_log("OpenWindowTags returned: %p\n", restore_data->window);
@@ -2106,6 +2106,32 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                         append_to_log("Cancel button clicked\n");
                         continue_running = FALSE;
                         break;
+                }
+                break;
+            
+            case IDCMP_GADGETDOWN:
+                /* Handle ListView scroll arrow buttons */
+                /* ListView scroll arrows generate GADGETDOWN, not GADGETUP */
+                /* GadTools handles the actual scrolling - we just need to handle the event */
+                if (gadget != NULL)
+                {
+                    UWORD gadget_id = gadget->GadgetID;
+                    
+                    if (gadget_id == GID_RESTORE_RUN_LIST || gadget_id == GID_RESTORE_DETAILS)
+                    {
+                        /* Get current top position for debug logging */
+                        LONG current_top = 0;
+                        GT_GetGadgetAttrs(gadget, restore_data->window, NULL,
+                                         GTLV_Top, &current_top,
+                                         TAG_END);
+                        
+                        append_to_log("ListView scroll button pressed (gadget=%d, top=%ld)\n", 
+                                     gadget_id, current_top);
+                        
+                        /* GadTools handles the scrolling automatically */
+                        /* Just refresh the window to ensure proper display */
+                        GT_RefreshWindow(restore_data->window, NULL);
+                    }
                 }
                 break;
             

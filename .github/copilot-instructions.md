@@ -4,6 +4,33 @@
 
 iTidy is an **AmigaOS Workbench 3.0 GUI application** that tidies up icons and resizes folder windows. This is a **complete rewrite as a GUI-only application** (no CLI version). Written in **C89/C99** and targets **Workbench 3.0/3.1** on **AmigaOS 3.x** systems (68k architecture).
 
+---
+
+## ⚠️ CRITICAL: Before Writing ANY Window/GUI Code
+
+**STOP AND READ THESE FIRST:**
+
+1. **`src/templates/AI_AGENT_GETTING_STARTED.md`** - Entry point (10 min read)
+2. **`src/templates/AI_AGENT_LAYOUT_GUIDE.md`** - Section 0 has CRITICAL patterns
+
+**These documents contain hard-learned lessons from actual bugs.**  
+Any section marked **CRITICAL** or **⚠️** is a **show-stopper issue** that:
+- Has caused system crashes in production
+- Is easy to overlook
+- Must be implemented exactly as documented
+
+**Do NOT skip sections marked CRITICAL.** They prevent Guru meditations, memory corruption, and non-functional UI elements.
+
+**Examples of CRITICAL issues documented:**
+- `IDCMP_GADGETDOWN` required for ListView scroll buttons (forgot this = buttons don't work)
+- BorderTop calculation formula (wrong = gadgets overlap title bar)
+- ListView cleanup order (wrong = system crash on window close)
+- Checkbox data type for `GT_GetGadgetAttrs()` (wrong = features don't activate)
+
+**If you encounter a bug, check if it's already documented in the CRITICAL sections before debugging.**
+
+---
+
 ## Development Environment
 
 ### Host System (PC)
@@ -793,9 +820,12 @@ ng.ng_Width = 584;  // This is pixels - ListView will show nothing!
 ## Critical Checklist When Suggesting Code Changes
 
 **Before writing any window/GUI code:**
-- [ ] Have you read `src/templates/AI_AGENT_GETTING_STARTED.md`?
-- [ ] Are you calculating BorderTop with the correct formula?
-- [ ] Are gadgets positioned with `border_top + margin`, not just `margin`?
+- [ ] ⚠️ **MANDATORY**: Have you read `src/templates/AI_AGENT_GETTING_STARTED.md` completely?
+- [ ] ⚠️ **MANDATORY**: Have you read ALL sections marked CRITICAL in `src/templates/AI_AGENT_LAYOUT_GUIDE.md`?
+- [ ] ⚠️ **CRITICAL**: Are you calculating BorderTop with the correct formula (`screen->WBorTop + screen->Font->ta_YSize + 1`)?
+- [ ] ⚠️ **CRITICAL**: Are gadgets positioned with `border_top + margin`, not just `margin`?
+- [ ] ⚠️ **CRITICAL**: If using ListView, have you added `IDCMP_GADGETDOWN` to IDCMP flags?
+- [ ] ⚠️ **CRITICAL**: If using ListView, have you added `case IDCMP_GADGETDOWN:` event handler?
 - [ ] Are you using snake_case for all identifiers?
 - [ ] Are you avoiding goto unless absolutely necessary?
 - [ ] Have you checked all allocations for NULL?

@@ -29,9 +29,10 @@ else
     # DEBUG BUILD: Added -g for debug symbols, -hunkdebug for symbol table
     # Note: VBCC warnings from system headers (51: bitfield, 61: array size) cannot be suppressed
     # EASY_REQUEST_HELPER: -DBUILD_WITH_MOVEWINDOW disabled (causes flicker on slow Amigas)
+    # CPU TARGET: 68000 for maximum compatibility (A500/A600/A1200)
     CC = vc
-    CFLAGS = +aos68k -c99 -cpu=68020 -g -I$(INC_DIR) -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG
-    LDFLAGS = +aos68k -cpu=68020 -g -hunkdebug -lamiga -lauto -lmieee
+    CFLAGS = +aos68k -c99 -cpu=68000 -g -I$(INC_DIR) -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG
+    LDFLAGS = +aos68k -cpu=68000 -g -hunkdebug -lamiga -lauto -lmieee
     OUT_DIR = $(BUILD_DIR)/amiga
     BIN_DIR = Bin/Amiga
     BIN = $(BIN_DIR)/$(PROJECT)
@@ -133,10 +134,38 @@ MEMORY_TRACKING_OBJS = $(OUT_DIR)/platform_memory.o
 OBJS = $(CORE_OBJS) $(BACKUP_OBJS) $(HELPERS_OBJS) $(GUI_OBJS) $(DOS_OBJS) $(SETTINGS_OBJS) $(PLATFORM_OBJS) $(MEMORY_TRACKING_OBJS)
 
 ################################################################################
+# Test Programs
+################################################################################
+
+# Test program binaries
+ifeq ($(TARGET),amiga)
+    TEST_BIN_DIR = $(BIN_DIR)
+    TEST_LISTVIEW_STRESS = $(TEST_BIN_DIR)/listview_stress_test
+else
+    TEST_BIN_DIR = $(OUT_DIR)
+    TEST_LISTVIEW_STRESS = $(TEST_BIN_DIR)/listview_stress_test.exe
+endif
+
+# Test program sources
+TEST_LISTVIEW_STRESS_SRCS = $(SRC_DIR)/tests/listview_stress_test.c
+
+# Test program objects (minimal - only needs ListView API + dependencies)
+TEST_LISTVIEW_STRESS_OBJS = \
+	$(OUT_DIR)/tests/listview_stress_test.o \
+	$(OUT_DIR)/helpers/listview_columns_api.o \
+	$(OUT_DIR)/path_utilities.o \
+	$(OUT_DIR)/writeLog.o \
+	$(OUT_DIR)/utilities.o \
+	$(OUT_DIR)/Settings/IControlPrefs.o \
+	$(OUT_DIR)/Settings/get_fonts.o \
+	$(OUT_DIR)/platform/amiga_platform.o \
+	$(OUT_DIR)/platform_memory.o
+
+################################################################################
 # Build Rules
 ################################################################################
 
-.PHONY: all clean help host amiga directories
+.PHONY: all clean help host amiga directories test-listview
 
 # Default target
 all: directories $(BIN)
@@ -160,6 +189,7 @@ directories:
 	@if not exist "$(OUT_DIR)\helpers" mkdir "$(OUT_DIR)\helpers"
 	@if not exist "$(OUT_DIR)\GUI" mkdir "$(OUT_DIR)\GUI"
 	@if not exist "$(OUT_DIR)\GUI\StatusWindows" mkdir "$(OUT_DIR)\GUI\StatusWindows"
+	@if not exist "$(OUT_DIR)\tests" mkdir "$(OUT_DIR)\tests"
 ifeq ($(TARGET),amiga)
 	@if not exist "$(BIN_DIR)" mkdir "$(BIN_DIR)"
 endif
@@ -186,6 +216,26 @@ $(OUT_DIR)/platform_memory.o: $(INC_DIR)/platform/platform.c
 	@echo Compiling memory tracking: $@
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# Compile test programs
+$(OUT_DIR)/tests/%.o: $(SRC_DIR)/tests/%.c
+	@echo Compiling test [$@] from $<
+	$(CC) $(CFLAGS) -c $< -o $@
+
+################################################################################
+# Test Program Targets
+################################################################################
+
+# ListView stress test
+test-listview: directories $(TEST_LISTVIEW_STRESS)
+	@echo Test program ready: $(TEST_LISTVIEW_STRESS)
+
+$(TEST_LISTVIEW_STRESS): $(TEST_LISTVIEW_STRESS_OBJS)
+	@echo Linking test program: $(TEST_LISTVIEW_STRESS)
+	$(CC) $(LDFLAGS) -o $@ $^
+ifeq ($(TARGET),amiga)
+	@echo Test build complete: $(TEST_LISTVIEW_STRESS)
+endif
+
 # Clean build artifacts
 clean:
 	@echo Cleaning $(TARGET) build...
@@ -209,6 +259,7 @@ help:
 	@echo   make TARGET=amiga       - Build for Amiga (vbcc)
 	@echo   make host               - Shortcut for host build
 	@echo   make amiga              - Shortcut for Amiga build
+	@echo   make test-listview      - Build ListView stress test
 	@echo   make clean              - Clean current target build
 	@echo   make clean-all          - Clean all builds
 	@echo   make help               - Show this help
@@ -216,6 +267,7 @@ help:
 	@echo Build Outputs:
 	@echo   Host:   $(BUILD_DIR)/host/$(PROJECT).exe
 	@echo   Amiga:  $(BUILD_DIR)/amiga/$(PROJECT)
+	@echo   Test:   $(TEST_LISTVIEW_STRESS)
 	@echo.
 	@echo Current Configuration:
 	@echo   TARGET:  $(TARGET)

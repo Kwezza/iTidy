@@ -15,6 +15,13 @@
 #include <string.h>
 #include <stdio.h>
 
+/* Amiga-specific memory allocation (use Fast RAM when available) */
+#if defined(__AMIGA__)
+    #include <exec/types.h>
+    #include <exec/memory.h>
+    #include <proto/exec.h>
+#endif
+
 /*---------------------------------------------------------------------------*/
 /* Memory Tracking Data Structures                                           */
 /*---------------------------------------------------------------------------*/
@@ -34,6 +41,7 @@ static size_t g_currentAllocated = 0;
 static size_t g_peakAllocated = 0;
 static size_t g_allocationCount = 0;
 static size_t g_freeCount = 0;
+static int g_loggingSuspended = 0;  /* Flag to temporarily disable logging */
 
 /*---------------------------------------------------------------------------*/
 /* Memory Tracking Implementation                                            */
@@ -47,24 +55,44 @@ void whd_memory_init(void) {
     g_peakAllocated = 0;
     g_allocationCount = 0;
     g_freeCount = 0;
+    g_loggingSuspended = 0;
     
     log_info(LOG_MEMORY, "Memory tracking initialized\n");
+}
+
+void whd_memory_suspend_logging(void) {
+    g_loggingSuspended = 1;
+}
+
+void whd_memory_resume_logging(void) {
+    g_loggingSuspended = 0;
 }
 
 void* whd_malloc_debug(size_t size, const char *file, int line) {
     void *ptr;
     MemoryBlock *block;
     
-    /* Allocate the actual memory */
+    /* Allocate the actual memory - prefer Fast RAM on Amiga */
+#if defined(__AMIGA__)
+    /* MEMF_ANY allows allocator to use Fast RAM if available, falls back to Chip */
+    ptr = AllocVec(size, MEMF_ANY | MEMF_CLEAR);
+#else
     ptr = malloc(size);
+#endif
+    
     if (!ptr) {
         log_error(LOG_MEMORY, "malloc(%lu) FAILED at %s:%d\n", 
                  (unsigned long)size, file, line);
         return NULL;
     }
     
-    /* Create tracking block */
+    /* Create tracking block - also use Fast RAM if available */
+#if defined(__AMIGA__)
+    block = (MemoryBlock *)AllocVec(sizeof(MemoryBlock), MEMF_ANY | MEMF_CLEAR);
+#else
     block = (MemoryBlock *)malloc(sizeof(MemoryBlock));
+#endif
+    
     if (!block) {
         /* If we can't track it, still return the memory but log warning */
         log_warning(LOG_MEMORY, "Failed to allocate tracking block for %lu bytes at %s:%d\n",
@@ -89,9 +117,12 @@ void* whd_malloc_debug(size_t size, const char *file, int line) {
         g_peakAllocated = g_currentAllocated;
     }
     
-    log_debug(LOG_MEMORY, "ALLOC: %lu bytes at 0x%08lx (%s:%d) [Current: %lu, Peak: %lu]\n",
-             (unsigned long)size, (unsigned long)ptr, file, line,
-             (unsigned long)g_currentAllocated, (unsigned long)g_peakAllocated);
+    /* Only log if not suspended */
+    if (!g_loggingSuspended) {
+        log_debug(LOG_MEMORY, "ALLOC: %lu bytes at 0x%08lx (%s:%d) [Current: %lu, Peak: %lu]\n",
+                 (unsigned long)size, (unsigned long)ptr, file, line,
+                 (unsigned long)g_currentAllocated, (unsigned long)g_peakAllocated);
+    }
     
     return ptr;
 }
@@ -101,7 +132,9 @@ void whd_free_debug(void *ptr, const char *file, int line) {
     
     if (!ptr) {
         /* Freeing NULL is legal but worth noting */
-        log_debug(LOG_MEMORY, "FREE: NULL pointer at %s:%d (ignored)\n", file, line);
+        if (!g_loggingSuspended) {
+            log_debug(LOG_MEMORY, "FREE: NULL pointer at %s:%d (ignored)\n", file, line);
+        }
         return;
     }
     
@@ -122,14 +155,22 @@ void whd_free_debug(void *ptr, const char *file, int line) {
             g_currentAllocated -= block->size;
             g_freeCount++;
             
-            log_debug(LOG_MEMORY, "FREE: %lu bytes at 0x%08lx (allocated %s:%d, freed %s:%d) [Current: %lu]\n",
-                     (unsigned long)block->size, (unsigned long)ptr, 
-                     block->file, block->line, file, line,
-                     (unsigned long)g_currentAllocated);
+            /* Only log if not suspended */
+            if (!g_loggingSuspended) {
+                log_debug(LOG_MEMORY, "FREE: %lu bytes at 0x%08lx (allocated %s:%d, freed %s:%d) [Current: %lu]\n",
+                         (unsigned long)block->size, (unsigned long)ptr, 
+                         block->file, block->line, file, line,
+                         (unsigned long)g_currentAllocated);
+            }
             
-            /* Free the tracking block and actual memory */
+            /* Free the tracking block and actual memory - use FreeVec on Amiga */
+#if defined(__AMIGA__)
+            FreeVec(block);
+            FreeVec(ptr);
+#else
             free(block);
             free(ptr);
+#endif
             return;
         }
         prev = block;
@@ -137,11 +178,31 @@ void whd_free_debug(void *ptr, const char *file, int line) {
     }
     
     /* If we get here, we're freeing memory we never tracked */
-    log_error(LOG_MEMORY, "Attempting to free UNTRACKED pointer 0x%08lx at %s:%d\n",
-             (unsigned long)ptr, file, line);
+    if (!g_loggingSuspended) {
+        log_error(LOG_MEMORY, "Attempting to free UNTRACKED pointer 0x%08lx at %s:%d\n",
+                 (unsigned long)ptr, file, line);
+    }
     
     /* Still free it to avoid leaks, but this is suspicious */
     free(ptr);
+}
+
+char* whd_strdup_debug(const char *str, const char *file, int line) {
+    char *copy;
+    size_t len;
+    
+    if (!str) {
+        log_debug(LOG_MEMORY, "STRDUP: NULL string at %s:%d (returning NULL)\n", file, line);
+        return NULL;
+    }
+    
+    len = strlen(str) + 1;
+    copy = (char *)whd_malloc_debug(len, file, line);
+    if (copy) {
+        strcpy(copy, str);
+    }
+    
+    return copy;
 }
 
 void whd_memory_report(void) {

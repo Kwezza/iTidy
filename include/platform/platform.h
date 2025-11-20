@@ -30,15 +30,28 @@
     /* Memory tracking functions - implemented in platform.c */
     void* whd_malloc_debug(size_t size, const char *file, int line);
     void whd_free_debug(void *ptr, const char *file, int line);
+    char* whd_strdup_debug(const char *str, const char *file, int line);
     void whd_memory_report(void);
     void whd_memory_init(void);
+    void whd_memory_suspend_logging(void);  /* Temporarily disable logging for bulk operations */
+    void whd_memory_resume_logging(void);   /* Re-enable logging */
     
     #define whd_malloc(sz)  whd_malloc_debug(sz, __FILE__, __LINE__)
     #define whd_free(p)     whd_free_debug(p, __FILE__, __LINE__)
+    #define whd_strdup(s)   whd_strdup_debug(s, __FILE__, __LINE__)
 #else
     /* Standard allocation without tracking */
     #define whd_malloc(sz)  malloc(sz)
     #define whd_free(p)     free(p)
+    
+    /* strdup wrapper */
+    static inline char* whd_strdup(const char *str) {
+        char *copy;
+        if (!str) return NULL;
+        copy = (char *)malloc(strlen(str) + 1);
+        if (copy) strcpy(copy, str);
+        return copy;
+    }
     
     /* No-op functions when debugging disabled */
     #define whd_memory_report() ((void)0)
