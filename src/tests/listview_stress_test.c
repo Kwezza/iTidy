@@ -42,6 +42,7 @@
 #define GID_LISTVIEW    1
 #define GID_ADD_BTN     2
 #define GID_REMOVE_BTN  3
+#define GID_AUTORUN_BTN 4
 
 /* Global structures needed by the API and utilities */
 struct IControlPrefsDetails prefsIControl;  /* Define it here */
@@ -61,6 +62,7 @@ typedef struct {
     struct Gadget *listview_gad;
     struct Gadget *add_btn;
     struct Gadget *remove_btn;
+    struct Gadget *autorun_btn;
     
     struct List entry_list;
     struct List *display_list;
@@ -536,8 +538,8 @@ static TestWindowData *create_test_window(void)
     
     UnlockPubScreen(NULL, screen);
     
-    /* Window dimensions - reduced for PAL Workbench (256 lines) */
-    win_width = 650;
+    /* Window dimensions - increased width for 3 buttons, reduced height for PAL Workbench (256 lines) */
+    win_width = 750;
     win_height = 200;
     
     /* Create visual info */
@@ -585,8 +587,8 @@ static TestWindowData *create_test_window(void)
     button_width = 120;
     button_spacing = 10;
     
-    /* Center buttons */
-    current_x = (win_width - (button_width * 2 + button_spacing)) / 2;
+    /* Center 3 buttons */
+    current_x = (win_width - (button_width * 3 + button_spacing * 2)) / 2;
     
     /* Add button */
     ng.ng_LeftEdge = current_x;
@@ -607,6 +609,14 @@ static TestWindowData *create_test_window(void)
     
     gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_DONE);
     data->remove_btn = gad;
+    
+    /* Auto Run button */
+    ng.ng_LeftEdge = current_x + (button_width + button_spacing) * 2;
+    ng.ng_GadgetText = "Auto Run";
+    ng.ng_GadgetID = GID_AUTORUN_BTN;
+    
+    gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_DONE);
+    data->autorun_btn = gad;
     
     /* Open window with Topaz 8 font */
     data->window = OpenWindowTags(NULL,
@@ -825,6 +835,144 @@ static void handle_listview_click(TestWindowData *data, WORD mouse_x, WORD mouse
 }
 
 /**
+ * @brief Run automated benchmark sequence
+ * Adds rows in 50-row increments up to 1000, sorting column 0 after each addition
+ */
+static void run_automated_benchmark(TestWindowData *data)
+{
+    int target_rows;
+    int current_count;
+    struct timeval start_time, end_time;
+    ULONG elapsed_micros;
+    float elapsed_seconds;
+    iTidy_ColumnConfig columns[5];
+    
+    printf("\n");
+    printf("================================================\n");
+    printf("  AUTOMATED BENCHMARK SEQUENCE STARTED\n");
+    printf("  Target: 1000 rows in 50-row increments\n");
+    printf("  Sorting column 0 (Date) after each addition\n");
+    printf("================================================\n\n");
+    
+    /* Set busy pointer for entire sequence */
+    SetWindowPointer(data->window, WA_BusyPointer, TRUE, TAG_DONE);
+    
+    /* Configure columns for sorting (same as manual click handler) */
+    columns[0].title = "Date/Time";
+    columns[0].min_width = 17;
+    columns[0].max_width = 17;
+    columns[0].align = ITIDY_ALIGN_LEFT;
+    columns[0].flexible = FALSE;
+    columns[0].is_path = FALSE;
+    columns[0].default_sort = ITIDY_SORT_DESCENDING;
+    columns[0].sort_type = ITIDY_COLTYPE_DATE;
+    
+    columns[1].title = "#";
+    columns[1].min_width = 4;
+    columns[1].max_width = 6;
+    columns[1].align = ITIDY_ALIGN_RIGHT;
+    columns[1].flexible = FALSE;
+    columns[1].is_path = FALSE;
+    columns[1].default_sort = ITIDY_SORT_ASCENDING;
+    columns[1].sort_type = ITIDY_COLTYPE_NUMBER;
+    
+    columns[2].title = "Type";
+    columns[2].min_width = 8;
+    columns[2].max_width = 8;
+    columns[2].align = ITIDY_ALIGN_LEFT;
+    columns[2].flexible = FALSE;
+    columns[2].is_path = FALSE;
+    columns[2].default_sort = ITIDY_SORT_ASCENDING;
+    columns[2].sort_type = ITIDY_COLTYPE_TEXT;
+    
+    columns[3].title = "Name";
+    columns[3].min_width = 15;
+    columns[3].max_width = 200;
+    columns[3].align = ITIDY_ALIGN_LEFT;
+    columns[3].flexible = TRUE;
+    columns[3].is_path = FALSE;
+    columns[3].default_sort = ITIDY_SORT_NONE;
+    columns[3].sort_type = ITIDY_COLTYPE_TEXT;
+    
+    columns[4].title = "Rating";
+    columns[4].min_width = 6;
+    columns[4].max_width = 6;
+    columns[4].align = ITIDY_ALIGN_CENTER;
+    columns[4].flexible = FALSE;
+    columns[4].is_path = FALSE;
+    columns[4].default_sort = ITIDY_SORT_NONE;
+    columns[4].sort_type = ITIDY_COLTYPE_NUMBER;
+    
+    /* Run benchmark from current count to 1000 rows */
+    for (target_rows = 100; target_rows <= 1000; target_rows += 50) {
+        current_count = data->total_rows;
+        
+        /* Skip if already at or past this milestone */
+        if (current_count >= target_rows) {
+            continue;
+        }
+        
+        printf("--- Milestone: %d rows ---\n", target_rows);
+        
+        /* Add 50 rows */
+        printf("Adding 50 rows (current: %d)...\n", current_count);
+        GetSysTime(&start_time);
+        
+        add_50_rows(data);  /* This already has timing and updates display */
+        
+        /* Sort by column 0 (Date) */
+        printf("Sorting %d rows by Date/Time (column 0)...\n", data->total_rows);
+        GetSysTime(&start_time);
+        
+        /* Sort using the API function - column 0, DATE type, descending */
+        iTidy_SortListViewEntries(&data->entry_list, 0, ITIDY_COLTYPE_DATE, FALSE);
+        
+        GetSysTime(&end_time);
+        elapsed_micros = ((end_time.tv_secs - start_time.tv_secs) * 1000000) +
+                         (end_time.tv_micro - start_time.tv_micro);
+        elapsed_seconds = (float)elapsed_micros / 1000000.0f;
+        
+        /* Rebuild formatted list after sorting */
+        if (data->display_list) {
+            iTidy_FreeFormattedList(data->display_list);
+            data->display_list = NULL;
+        }
+        if (data->lv_state) {
+            iTidy_FreeListViewState(data->lv_state);
+            data->lv_state = NULL;
+        }
+        
+        data->display_list = iTidy_FormatListViewColumns(
+            columns, 5,
+            &data->entry_list,
+            data->listview_width_chars,
+            &data->lv_state);
+        
+        /* Refresh ListView to show sorted data */
+        GT_SetGadgetAttrs(data->listview_gad, data->window, NULL,
+                         GTLV_Labels, ~0,
+                         TAG_DONE);
+        GT_SetGadgetAttrs(data->listview_gad, data->window, NULL,
+                         GTLV_Labels, data->display_list,
+                         GTLV_Top, 0,
+                         TAG_DONE);
+        
+        printf("  [TIMING] Sort completed in %.6f seconds (%d rows)\n", 
+               elapsed_seconds, data->total_rows);
+        printf("\n");
+    }
+    
+    /* Clear busy pointer */
+    SetWindowPointer(data->window, WA_BusyPointer, FALSE, TAG_DONE);
+    
+    printf("================================================\n");
+    printf("  AUTOMATED BENCHMARK COMPLETED\n");
+    printf("  Final row count: %d\n", data->total_rows);
+    printf("  Check logs for detailed timing breakdown\n");
+    printf("================================================\n\n");
+}
+
+/**
  * @brief Main event loop
  */
 static void run_event_loop(TestWindowData *data)
@@ -840,6 +988,7 @@ static void run_event_loop(TestWindowData *data)
     printf("Instructions:\n");
     printf("- Click 'Add 50 Rows' to add more data\n");
     printf("- Click 'Remove 50 Rows' to remove data\n");
+    printf("- Click 'Auto Run' to run full benchmark (up to 1000 rows)\n");
     printf("- Click column headers to sort\n");
     printf("- Watch console for timing statistics\n");
     printf("- Close window to exit\n\n");
@@ -866,6 +1015,8 @@ static void run_event_loop(TestWindowData *data)
                         add_50_rows(data);
                     } else if (gadget->GadgetID == GID_REMOVE_BTN) {
                         remove_50_rows(data);
+                    } else if (gadget->GadgetID == GID_AUTORUN_BTN) {
+                        run_automated_benchmark(data);
                     } else if (gadget->GadgetID == GID_LISTVIEW) {
                         handle_listview_click(data, mouse_x, mouse_y);
                     }
