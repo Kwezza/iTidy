@@ -1,0 +1,510 @@
+[12:43:54][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:43:54][INFO] [PERF] ListView sort (col 0, DATE, DESC): 236.063 ms 
+[12:43:54][INFO]        Entries: 50 
+[12:43:54][INFO]        Time per entry: 4721 microseconds 
+[12:43:54][INFO] [PERF] Column width calculation: 17.823 ms 
+[12:43:54][INFO]        Entries: 50, Columns: 5 
+[12:43:54][INFO]        Time per entry: 356 microseconds 
+[12:43:55][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:43:55][INFO] iTidy_FormatListViewColumns() total time: 788.023 ms 
+[12:43:55][INFO]   Entries: 50, Columns: 5, Rows created: 50 
+[12:43:55][INFO]   Breakdown: 
+[12:43:55][INFO]     Initial sort:    393.038 ms (49%) 
+[12:43:55][INFO]     Width calc:      137.485 ms (17%) 
+[12:43:55][INFO]     Entry format:    255.638 ms (32%) 
+[12:43:55][INFO]   Time per entry: 15760 microseconds 
+[12:43:55][INFO] ==================================== 
+[12:44:05][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:44:05][INFO] [PERF] Column width calculation: 43.728 ms 
+[12:44:05][INFO]        Entries: 100, Columns: 5 
+[12:44:05][INFO]        Time per entry: 437 microseconds 
+[12:44:06][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:44:06][INFO] iTidy_FormatListViewColumns() total time: 1325.300 ms 
+[12:44:06][INFO]   Entries: 100, Columns: 5, Rows created: 100 
+[12:44:06][INFO]   Breakdown: 
+[12:44:06][INFO]     Initial sort:    43.782 ms (3%) 
+[12:44:06][INFO]     Width calc:      212.396 ms (16%) 
+[12:44:06][INFO]     Entry format:    1067.374 ms (80%) 
+[12:44:06][INFO]   Time per entry: 13253 microseconds 
+[12:44:07][INFO] ==================================== 
+[12:44:08][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:44:10][INFO] [PERF] Column width calculation: 32.343 ms 
+[12:44:10][INFO]        Entries: 100, Columns: 5 
+[12:44:10][INFO]        Time per entry: 323 microseconds 
+[12:44:11][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:44:11][INFO] iTidy_FormatListViewColumns() total time: 2318.947 ms 
+[12:44:11][INFO]   Entries: 100, Columns: 5, Rows created: 100 
+[12:44:11][INFO]   Breakdown: 
+[12:44:11][INFO]     Initial sort:    1314.578 ms (56%) 
+[12:44:11][INFO]     Width calc:      167.469 ms (7%) 
+[12:44:11][INFO]     Entry format:    835.151 ms (36%) 
+[12:44:11][INFO]   Time per entry: 23189 microseconds 
+[12:44:11][INFO] ==================================== 
+[12:44:15][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:44:15][INFO] [PERF] Column width calculation: 49.095 ms 
+[12:44:15][INFO]        Entries: 150, Columns: 5 
+[12:44:15][INFO]        Time per entry: 327 microseconds 
+[12:44:17][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:44:17][INFO] iTidy_FormatListViewColumns() total time: 1809.493 ms 
+[12:44:17][INFO]   Entries: 150, Columns: 5, Rows created: 150 
+[12:44:17][INFO]   Breakdown: 
+[12:44:17][INFO]     Initial sort:    30.857 ms (1%) 
+[12:44:17][INFO]     Width calc:      184.780 ms (10%) 
+[12:44:17][INFO]     Entry format:    1591.387 ms (87%) 
+[12:44:17][INFO]   Time per entry: 12063 microseconds 
+[12:44:17][INFO] ==================================== 
+[12:44:19][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:44:20][INFO] [PERF] Column width calculation: 46.360 ms 
+[12:44:20][INFO]        Entries: 150, Columns: 5 
+[12:44:20][INFO]        Time per entry: 309 microseconds 
+[12:44:21][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:44:22][INFO] iTidy_FormatListViewColumns() total time: 2214.245 ms 
+[12:44:22][INFO]   Entries: 150, Columns: 5, Rows created: 150 
+[12:44:22][INFO]   Breakdown: 
+[12:44:22][INFO]     Initial sort:    799.512 ms (36%) 
+[12:44:22][INFO]     Width calc:      183.638 ms (8%) 
+[12:44:22][INFO]     Entry format:    1228.624 ms (55%) 
+[12:44:22][INFO]   Time per entry: 14761 microseconds 
+[12:44:22][INFO] ==================================== 
+[12:44:27][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:44:27][INFO] [PERF] Column width calculation: 61.426 ms 
+[12:44:27][INFO]        Entries: 200, Columns: 5 
+[12:44:27][INFO]        Time per entry: 307 microseconds 
+[12:44:29][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:44:29][INFO] iTidy_FormatListViewColumns() total time: 2695.101 ms 
+[12:44:29][INFO]   Entries: 200, Columns: 5, Rows created: 200 
+[12:44:30][INFO]   Breakdown: 
+[12:44:30][INFO]     Initial sort:    33.739 ms (1%) 
+[12:44:30][INFO]     Width calc:      201.141 ms (7%) 
+[12:44:30][INFO]     Entry format:    2456.204 ms (91%) 
+[12:44:30][INFO]   Time per entry: 13475 microseconds 
+[12:44:30][INFO] ==================================== 
+[12:44:33][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:44:34][INFO] [PERF] Column width calculation: 64.225 ms 
+[12:44:34][INFO]        Entries: 200, Columns: 5 
+[12:44:34][INFO]        Time per entry: 321 microseconds 
+[12:44:36][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:44:36][INFO] iTidy_FormatListViewColumns() total time: 3157.127 ms 
+[12:44:36][INFO]   Entries: 200, Columns: 5, Rows created: 200 
+[12:44:36][INFO]   Breakdown: 
+[12:44:36][INFO]     Initial sort:    1132.164 ms (35%) 
+[12:44:36][INFO]     Width calc:      201.642 ms (6%) 
+[12:44:36][INFO]     Entry format:    1820.132 ms (57%) 
+[12:44:37][INFO]   Time per entry: 15785 microseconds 
+[12:44:37][INFO] ==================================== 
+[12:44:43][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:44:43][INFO] [PERF] Column width calculation: 80.164 ms 
+[12:44:43][INFO]        Entries: 250, Columns: 5 
+[12:44:43][INFO]        Time per entry: 320 microseconds 
+[12:44:47][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:44:47][INFO] iTidy_FormatListViewColumns() total time: 3595.588 ms 
+[12:44:47][INFO]   Entries: 250, Columns: 5, Rows created: 250 
+[12:44:47][INFO]   Breakdown: 
+[12:44:47][INFO]     Initial sort:    29.989 ms (0%) 
+[12:44:47][INFO]     Width calc:      217.064 ms (6%) 
+[12:44:47][INFO]     Entry format:    3344.624 ms (93%) 
+[12:44:47][INFO]   Time per entry: 14382 microseconds 
+[12:44:47][INFO] ==================================== 
+[12:44:52][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:44:53][INFO] [PERF] Column width calculation: 79.067 ms 
+[12:44:53][INFO]        Entries: 250, Columns: 5 
+[12:44:53][INFO]        Time per entry: 316 microseconds 
+[12:44:56][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:44:56][INFO] iTidy_FormatListViewColumns() total time: 4147.190 ms 
+[12:44:56][INFO]   Entries: 250, Columns: 5, Rows created: 250 
+[12:44:56][INFO]   Breakdown: 
+[12:44:56][INFO]     Initial sort:    1371.561 ms (33%) 
+[12:44:56][INFO]     Width calc:      215.012 ms (5%) 
+[12:44:56][INFO]     Entry format:    2555.857 ms (61%) 
+[12:44:56][INFO]   Time per entry: 16588 microseconds 
+[12:44:56][INFO] ==================================== 
+[12:45:04][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:45:04][INFO] [PERF] Column width calculation: 90.331 ms 
+[12:45:04][INFO]        Entries: 300, Columns: 5 
+[12:45:04][INFO]        Time per entry: 301 microseconds 
+[12:45:09][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:45:09][INFO] iTidy_FormatListViewColumns() total time: 4555.411 ms 
+[12:45:09][INFO]   Entries: 300, Columns: 5, Rows created: 300 
+[12:45:09][INFO]   Breakdown: 
+[12:45:09][INFO]     Initial sort:    34.491 ms (0%) 
+[12:45:09][INFO]     Width calc:      228.040 ms (5%) 
+[12:45:09][INFO]     Entry format:    4288.250 ms (94%) 
+[12:45:09][INFO]   Time per entry: 15184 microseconds 
+[12:45:09][INFO] ==================================== 
+[12:45:15][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:45:17][INFO] [PERF] Column width calculation: 93.915 ms 
+[12:45:17][INFO]        Entries: 300, Columns: 5 
+[12:45:17][INFO]        Time per entry: 313 microseconds 
+[12:45:20][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:45:20][INFO] iTidy_FormatListViewColumns() total time: 5241.584 ms 
+[12:45:20][INFO]   Entries: 300, Columns: 5, Rows created: 300 
+[12:45:20][INFO]   Breakdown: 
+[12:45:20][INFO]     Initial sort:    1686.654 ms (32%) 
+[12:45:20][INFO]     Width calc:      226.955 ms (4%) 
+[12:45:21][INFO]     Entry format:    3323.350 ms (63%) 
+[12:45:21][INFO]   Time per entry: 17471 microseconds 
+[12:45:21][INFO] ==================================== 
+[12:45:30][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:45:31][INFO] [PERF] Column width calculation: 109.032 ms 
+[12:45:31][INFO]        Entries: 350, Columns: 5 
+[12:45:31][INFO]        Time per entry: 311 microseconds 
+[12:45:36][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:45:36][INFO] iTidy_FormatListViewColumns() total time: 5714.191 ms 
+[12:45:36][INFO]   Entries: 350, Columns: 5, Rows created: 350 
+[12:45:36][INFO]   Breakdown: 
+[12:45:36][INFO]     Initial sort:    30.011 ms (0%) 
+[12:45:36][INFO]     Width calc:      252.129 ms (4%) 
+[12:45:36][INFO]     Entry format:    5426.704 ms (94%) 
+[12:45:36][INFO]   Time per entry: 16326 microseconds 
+[12:45:36][INFO] ==================================== 
+[12:45:44][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:45:46][INFO] [PERF] Column width calculation: 109.656 ms 
+[12:45:46][INFO]        Entries: 350, Columns: 5 
+[12:45:46][INFO]        Time per entry: 313 microseconds 
+[12:45:51][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:45:51][INFO] iTidy_FormatListViewColumns() total time: 6470.624 ms 
+[12:45:51][INFO]   Entries: 350, Columns: 5, Rows created: 350 
+[12:45:51][INFO]   Breakdown: 
+[12:45:51][INFO]     Initial sort:    2001.402 ms (30%) 
+[12:45:51][INFO]     Width calc:      255.249 ms (3%) 
+[12:45:51][INFO]     Entry format:    4208.630 ms (65%) 
+[12:45:51][INFO]   Time per entry: 18487 microseconds 
+[12:45:51][INFO] ==================================== 
+[12:46:03][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:46:03][INFO] [PERF] Column width calculation: 122.815 ms 
+[12:46:03][INFO]        Entries: 400, Columns: 5 
+[12:46:03][INFO]        Time per entry: 307 microseconds 
+[12:46:10][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:46:10][INFO] iTidy_FormatListViewColumns() total time: 6956.479 ms 
+[12:46:10][INFO]   Entries: 400, Columns: 5, Rows created: 400 
+[12:46:10][INFO]   Breakdown: 
+[12:46:10][INFO]     Initial sort:    33.637 ms (0%) 
+[12:46:10][INFO]     Width calc:      262.489 ms (3%) 
+[12:46:10][INFO]     Entry format:    6654.051 ms (95%) 
+[12:46:10][INFO]   Time per entry: 17391 microseconds 
+[12:46:10][INFO] ==================================== 
+[12:46:20][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:46:22][INFO] [PERF] Column width calculation: 123.624 ms 
+[12:46:22][INFO]        Entries: 400, Columns: 5 
+[12:46:22][INFO]        Time per entry: 309 microseconds 
+[12:46:27][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:46:27][INFO] iTidy_FormatListViewColumns() total time: 7637.862 ms 
+[12:46:27][INFO]   Entries: 400, Columns: 5, Rows created: 400 
+[12:46:27][INFO]   Breakdown: 
+[12:46:27][INFO]     Initial sort:    2213.353 ms (28%) 
+[12:46:28][INFO]     Width calc:      266.175 ms (3%) 
+[12:46:28][INFO]     Entry format:    5152.030 ms (67%) 
+[12:46:28][INFO]   Time per entry: 19094 microseconds 
+[12:46:28][INFO] ==================================== 
+[12:46:42][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:46:42][INFO] [PERF] Column width calculation: 137.891 ms 
+[12:46:42][INFO]        Entries: 450, Columns: 5 
+[12:46:42][INFO]        Time per entry: 306 microseconds 
+[12:46:50][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:46:50][INFO] iTidy_FormatListViewColumns() total time: 8201.737 ms 
+[12:46:50][INFO]   Entries: 450, Columns: 5, Rows created: 450 
+[12:46:50][INFO]   Breakdown: 
+[12:46:50][INFO]     Initial sort:    29.985 ms (0%) 
+[12:46:50][INFO]     Width calc:      277.384 ms (3%) 
+[12:46:50][INFO]     Entry format:    7887.586 ms (96%) 
+[12:46:50][INFO]   Time per entry: 18226 microseconds 
+[12:46:50][INFO] ==================================== 
+[12:47:02][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:47:05][INFO] [PERF] Column width calculation: 139.119 ms 
+[12:47:05][INFO]        Entries: 450, Columns: 5 
+[12:47:05][INFO]        Time per entry: 309 microseconds 
+[12:47:11][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:47:11][INFO] iTidy_FormatListViewColumns() total time: 9050.942 ms 
+[12:47:11][INFO]   Entries: 450, Columns: 5, Rows created: 450 
+[12:47:11][INFO]   Breakdown: 
+[12:47:11][INFO]     Initial sort:    2502.126 ms (27%) 
+[12:47:11][INFO]     Width calc:      284.353 ms (3%) 
+[12:47:11][INFO]     Entry format:    6257.682 ms (69%) 
+[12:47:11][INFO]   Time per entry: 20113 microseconds 
+[12:47:11][INFO] ==================================== 
+[12:47:28][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:47:28][INFO] [PERF] Column width calculation: 151.906 ms 
+[12:47:28][INFO]        Entries: 500, Columns: 5 
+[12:47:28][INFO]        Time per entry: 303 microseconds 
+[12:47:37][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:47:37][INFO] iTidy_FormatListViewColumns() total time: 9637.028 ms 
+[12:47:37][INFO]   Entries: 500, Columns: 5, Rows created: 500 
+[12:47:37][INFO]   Breakdown: 
+[12:47:37][INFO]     Initial sort:    33.656 ms (0%) 
+[12:47:37][INFO]     Width calc:      292.837 ms (3%) 
+[12:47:37][INFO]     Entry format:    9299.411 ms (96%) 
+[12:47:37][INFO]   Time per entry: 19274 microseconds 
+[12:47:37][INFO] ==================================== 
+[12:47:52][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:47:55][INFO] [PERF] Column width calculation: 153.389 ms 
+[12:47:55][INFO]        Entries: 500, Columns: 5 
+[12:47:55][INFO]        Time per entry: 306 microseconds 
+[12:48:02][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:48:02][INFO] iTidy_FormatListViewColumns() total time: 10511.227 ms 
+[12:48:02][INFO]   Entries: 500, Columns: 5, Rows created: 500 
+[12:48:02][INFO]   Breakdown: 
+[12:48:02][INFO]     Initial sort:    2798.915 ms (26%) 
+[12:48:02][INFO]     Width calc:      293.181 ms (2%) 
+[12:48:02][INFO]     Entry format:    7410.773 ms (70%) 
+[12:48:02][INFO]   Time per entry: 21022 microseconds 
+[12:48:02][INFO] ==================================== 
+[12:48:21][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:48:22][INFO] [PERF] Column width calculation: 169.543 ms 
+[12:48:22][INFO]        Entries: 550, Columns: 5 
+[12:48:22][INFO]        Time per entry: 308 microseconds 
+[12:48:32][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:48:32][INFO] iTidy_FormatListViewColumns() total time: 11147.403 ms 
+[12:48:33][INFO]   Entries: 550, Columns: 5, Rows created: 550 
+[12:48:33][INFO]   Breakdown: 
+[12:48:33][INFO]     Initial sort:    30.920 ms (0%) 
+[12:48:33][INFO]     Width calc:      316.537 ms (2%) 
+[12:48:33][INFO]     Entry format:    10791.727 ms (96%) 
+[12:48:33][INFO]   Time per entry: 20268 microseconds 
+[12:48:33][INFO] ==================================== 
+[12:48:49][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:48:53][INFO] [PERF] Column width calculation: 166.774 ms 
+[12:48:53][INFO]        Entries: 550, Columns: 5 
+[12:48:53][INFO]        Time per entry: 303 microseconds 
+[12:49:01][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:49:01][INFO] iTidy_FormatListViewColumns() total time: 12131.055 ms 
+[12:49:01][INFO]   Entries: 550, Columns: 5, Rows created: 550 
+[12:49:01][INFO]   Breakdown: 
+[12:49:01][INFO]     Initial sort:    3145.038 ms (25%) 
+[12:49:02][INFO]     Width calc:      306.598 ms (2%) 
+[12:49:02][INFO]     Entry format:    8670.958 ms (71%) 
+[12:49:02][INFO]   Time per entry: 22056 microseconds 
+[12:49:02][INFO] ==================================== 
+[12:49:23][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:49:24][INFO] [PERF] Column width calculation: 183.092 ms 
+[12:49:24][INFO]        Entries: 600, Columns: 5 
+[12:49:24][INFO]        Time per entry: 305 microseconds 
+[12:49:36][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:49:36][INFO] iTidy_FormatListViewColumns() total time: 12693.056 ms 
+[12:49:36][INFO]   Entries: 600, Columns: 5, Rows created: 600 
+[12:49:36][INFO]   Breakdown: 
+[12:49:36][INFO]     Initial sort:    32.993 ms (0%) 
+[12:49:36][INFO]     Width calc:      326.119 ms (2%) 
+[12:49:36][INFO]     Entry format:    12324.999 ms (97%) 
+[12:49:36][INFO]   Time per entry: 21155 microseconds 
+[12:49:36][INFO] ==================================== 
+[12:49:56][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:49:59][INFO] [PERF] Column width calculation: 184.398 ms 
+[12:49:59][INFO]        Entries: 600, Columns: 5 
+[12:49:59][INFO]        Time per entry: 307 microseconds 
+[12:50:09][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:50:09][INFO] iTidy_FormatListViewColumns() total time: 13780.514 ms 
+[12:50:10][INFO]   Entries: 600, Columns: 5, Rows created: 600 
+[12:50:10][INFO]   Breakdown: 
+[12:50:10][INFO]     Initial sort:    3450.290 ms (25%) 
+[12:50:10][INFO]     Width calc:      325.541 ms (2%) 
+[12:50:10][INFO]     Entry format:    9995.505 ms (72%) 
+[12:50:10][INFO]   Time per entry: 22967 microseconds 
+[12:50:10][INFO] ==================================== 
+[12:50:35][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:50:35][INFO] [PERF] Column width calculation: 195.655 ms 
+[12:50:35][INFO]        Entries: 650, Columns: 5 
+[12:50:35][INFO]        Time per entry: 301 microseconds 
+[12:50:49][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:50:49][INFO] iTidy_FormatListViewColumns() total time: 14441.882 ms 
+[12:50:49][INFO]   Entries: 650, Columns: 5, Rows created: 650 
+[12:50:49][INFO]   Breakdown: 
+[12:50:49][INFO]     Initial sort:    32.367 ms (0%) 
+[12:50:49][INFO]     Width calc:      347.730 ms (2%) 
+[12:50:49][INFO]     Entry format:    14049.838 ms (97%) 
+[12:50:49][INFO]   Time per entry: 22218 microseconds 
+[12:50:49][INFO] ==================================== 
+[12:51:11][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:51:15][INFO] [PERF] Column width calculation: 199.490 ms 
+[12:51:15][INFO]        Entries: 650, Columns: 5 
+[12:51:15][INFO]        Time per entry: 306 microseconds 
+[12:51:27][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:51:27][INFO] iTidy_FormatListViewColumns() total time: 15570.763 ms 
+[12:51:27][INFO]   Entries: 650, Columns: 5, Rows created: 650 
+[12:51:27][INFO]   Breakdown: 
+[12:51:27][INFO]     Initial sort:    3763.158 ms (24%) 
+[12:51:27][INFO]     Width calc:      343.712 ms (2%) 
+[12:51:27][INFO]     Entry format:    11453.402 ms (73%) 
+[12:51:27][INFO]   Time per entry: 23955 microseconds 
+[12:51:27][INFO] ==================================== 
+[12:51:55][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:51:56][INFO] [PERF] Column width calculation: 215.624 ms 
+[12:51:56][INFO]        Entries: 700, Columns: 5 
+[12:51:56][INFO]        Time per entry: 308 microseconds 
+[12:52:12][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:52:12][INFO] iTidy_FormatListViewColumns() total time: 16176.138 ms 
+[12:52:12][INFO]   Entries: 700, Columns: 5, Rows created: 700 
+[12:52:12][INFO]   Breakdown: 
+[12:52:12][INFO]     Initial sort:    34.099 ms (0%) 
+[12:52:12][INFO]     Width calc:      359.236 ms (2%) 
+[12:52:12][INFO]     Entry format:    15771.586 ms (97%) 
+[12:52:12][INFO]   Time per entry: 23108 microseconds 
+[12:52:12][INFO] ==================================== 
+[12:52:37][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:52:41][INFO] [PERF] Column width calculation: 210.518 ms 
+[12:52:41][INFO]        Entries: 700, Columns: 5 
+[12:52:41][INFO]        Time per entry: 300 microseconds 
+[12:52:55][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:52:55][INFO] iTidy_FormatListViewColumns() total time: 17471.379 ms 
+[12:52:55][INFO]   Entries: 700, Columns: 5, Rows created: 700 
+[12:52:55][INFO]   Breakdown: 
+[12:52:55][INFO]     Initial sort:    4074.957 ms (23%) 
+[12:52:55][INFO]     Width calc:      355.653 ms (2%) 
+[12:52:55][INFO]     Entry format:    13030.392 ms (74%) 
+[12:52:55][INFO]   Time per entry: 24959 microseconds 
+[12:52:55][INFO] ==================================== 
+[12:53:26][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:53:27][INFO] [PERF] Column width calculation: 228.380 ms 
+[12:53:27][INFO]        Entries: 750, Columns: 5 
+[12:53:27][INFO]        Time per entry: 304 microseconds 
+[12:53:44][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:53:44][INFO] iTidy_FormatListViewColumns() total time: 18074.341 ms 
+[12:53:44][INFO]   Entries: 750, Columns: 5, Rows created: 750 
+[12:53:45][INFO]   Breakdown: 
+[12:53:45][INFO]     Initial sort:    30.995 ms (0%) 
+[12:53:45][INFO]     Width calc:      370.430 ms (2%) 
+[12:53:45][INFO]     Entry format:    17661.819 ms (97%) 
+[12:53:45][INFO]   Time per entry: 24099 microseconds 
+[12:53:45][INFO] ==================================== 
+[12:54:13][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:54:18][INFO] [PERF] Column width calculation: 228.380 ms 
+[12:54:18][INFO]        Entries: 750, Columns: 5 
+[12:54:18][INFO]        Time per entry: 304 microseconds 
+[12:54:33][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:54:33][INFO] iTidy_FormatListViewColumns() total time: 19367.226 ms 
+[12:54:33][INFO]   Entries: 750, Columns: 5, Rows created: 750 
+[12:54:33][INFO]   Breakdown: 
+[12:54:33][INFO]     Initial sort:    4355.037 ms (22%) 
+[12:54:33][INFO]     Width calc:      371.396 ms (1%) 
+[12:54:33][INFO]     Entry format:    14628.842 ms (75%) 
+[12:54:33][INFO]   Time per entry: 25822 microseconds 
+[12:54:33][INFO] ==================================== 
+[12:55:08][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:55:08][INFO] [PERF] Column width calculation: 242.979 ms 
+[12:55:08][INFO]        Entries: 800, Columns: 5 
+[12:55:08][INFO]        Time per entry: 303 microseconds 
+[12:55:28][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:55:28][INFO] iTidy_FormatListViewColumns() total time: 20029.014 ms 
+[12:55:28][INFO]   Entries: 800, Columns: 5, Rows created: 800 
+[12:55:28][INFO]   Breakdown: 
+[12:55:28][INFO]     Initial sort:    30.143 ms (0%) 
+[12:55:28][INFO]     Width calc:      393.014 ms (1%) 
+[12:55:28][INFO]     Entry format:    19593.210 ms (97%) 
+[12:55:28][INFO]   Time per entry: 25036 microseconds 
+[12:55:28][INFO] ==================================== 
+[12:56:00][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:56:05][INFO] [PERF] Column width calculation: 245.738 ms 
+[12:56:05][INFO]        Entries: 800, Columns: 5 
+[12:56:05][INFO]        Time per entry: 307 microseconds 
+[12:56:22][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:56:22][INFO] iTidy_FormatListViewColumns() total time: 21488.962 ms 
+[12:56:22][INFO]   Entries: 800, Columns: 5, Rows created: 800 
+[12:56:22][INFO]   Breakdown: 
+[12:56:22][INFO]     Initial sort:    4651.815 ms (21%) 
+[12:56:22][INFO]     Width calc:      403.646 ms (1%) 
+[12:56:22][INFO]     Entry format:    16418.091 ms (76%) 
+[12:56:22][INFO]   Time per entry: 26861 microseconds 
+[12:56:22][INFO] ==================================== 
+[12:57:01][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:57:01][INFO] [PERF] Column width calculation: 305.031 ms 
+[12:57:01][INFO]        Entries: 850, Columns: 5 
+[12:57:01][INFO]        Time per entry: 358 microseconds 
+[12:57:23][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:57:23][INFO] iTidy_FormatListViewColumns() total time: 22119.672 ms 
+[12:57:23][INFO]   Entries: 850, Columns: 5, Rows created: 850 
+[12:57:23][INFO]   Breakdown: 
+[12:57:23][INFO]     Initial sort:    33.669 ms (0%) 
+[12:57:23][INFO]     Width calc:      447.682 ms (2%) 
+[12:57:23][INFO]     Entry format:    21625.788 ms (97%) 
+[12:57:23][INFO]   Time per entry: 26023 microseconds 
+[12:57:23][INFO] ==================================== 
+[12:57:59][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:58:04][INFO] [PERF] Column width calculation: 259.379 ms 
+[12:58:04][INFO]        Entries: 850, Columns: 5 
+[12:58:05][INFO]        Time per entry: 305 microseconds 
+[12:58:23][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:58:23][INFO] iTidy_FormatListViewColumns() total time: 23584.871 ms 
+[12:58:23][INFO]   Entries: 850, Columns: 5, Rows created: 850 
+[12:58:23][INFO]   Breakdown: 
+[12:58:23][INFO]     Initial sort:    4960.265 ms (21%) 
+[12:58:23][INFO]     Width calc:      401.631 ms (1%) 
+[12:58:23][INFO]     Entry format:    18206.589 ms (77%) 
+[12:58:23][INFO]   Time per entry: 27746 microseconds 
+[12:58:23][INFO] ==================================== 
+[12:59:06][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[12:59:06][INFO] [PERF] Column width calculation: 272.972 ms 
+[12:59:06][INFO]        Entries: 900, Columns: 5 
+[12:59:06][INFO]        Time per entry: 303 microseconds 
+[12:59:30][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[12:59:30][INFO] iTidy_FormatListViewColumns() total time: 24261.414 ms 
+[12:59:30][INFO]   Entries: 900, Columns: 5, Rows created: 900 
+[12:59:30][INFO]   Breakdown: 
+[12:59:30][INFO]     Initial sort:    30.130 ms (0%) 
+[12:59:30][INFO]     Width calc:      417.942 ms (1%) 
+[12:59:30][INFO]     Entry format:    23799.016 ms (98%) 
+[12:59:30][INFO]   Time per entry: 26957 microseconds 
+[12:59:30][INFO] ==================================== 
+[13:00:10][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[13:00:16][INFO] [PERF] Column width calculation: 273.408 ms 
+[13:00:16][INFO]        Entries: 900, Columns: 5 
+[13:00:16][INFO]        Time per entry: 303 microseconds 
+[13:00:36][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[13:00:36][INFO] iTidy_FormatListViewColumns() total time: 25865.746 ms 
+[13:00:36][INFO]   Entries: 900, Columns: 5, Rows created: 900 
+[13:00:36][INFO]   Breakdown: 
+[13:00:36][INFO]     Initial sort:    5276.443 ms (20%) 
+[13:00:36][INFO]     Width calc:      427.690 ms (1%) 
+[13:00:36][INFO]     Entry format:    20148.118 ms (77%) 
+[13:00:36][INFO]   Time per entry: 28739 microseconds 
+[13:00:36][INFO] ==================================== 
+[13:01:23][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[13:01:24][INFO] [PERF] Column width calculation: 288.338 ms 
+[13:01:24][INFO]        Entries: 950, Columns: 5 
+[13:01:24][INFO]        Time per entry: 303 microseconds 
+[13:01:50][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[13:01:50][INFO] iTidy_FormatListViewColumns() total time: 26546.059 ms 
+[13:01:50][INFO]   Entries: 950, Columns: 5, Rows created: 950 
+[13:01:50][INFO]   Breakdown: 
+[13:01:50][INFO]     Initial sort:    30.063 ms (0%) 
+[13:01:50][INFO]     Width calc:      485.766 ms (1%) 
+[13:01:50][INFO]     Entry format:    26015.427 ms (98%) 
+[13:01:50][INFO]   Time per entry: 27943 microseconds 
+[13:01:50][INFO] ==================================== 
+[13:02:34][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[13:02:40][INFO] [PERF] Column width calculation: 336.250 ms 
+[13:02:40][INFO]        Entries: 950, Columns: 5 
+[13:02:40][INFO]        Time per entry: 353 microseconds 
+[13:03:02][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[13:03:02][INFO] iTidy_FormatListViewColumns() total time: 28185.455 ms 
+[13:03:02][INFO]   Entries: 950, Columns: 5, Rows created: 950 
+[13:03:02][INFO]   Breakdown: 
+[13:03:02][INFO]     Initial sort:    5573.381 ms (19%) 
+[13:03:02][INFO]     Width calc:      484.373 ms (1%) 
+[13:03:02][INFO]     Entry format:    22112.896 ms (78%) 
+[13:03:02][INFO]   Time per entry: 29668 microseconds 
+[13:03:02][INFO] ==================================== 
+[13:03:54][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[13:03:54][INFO] [PERF] Column width calculation: 303.344 ms 
+[13:03:55][INFO]        Entries: 1000, Columns: 5 
+[13:03:55][INFO]        Time per entry: 303 microseconds 
+[13:04:23][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[13:04:23][INFO] iTidy_FormatListViewColumns() total time: 28929.627 ms 
+[13:04:23][INFO]   Entries: 1000, Columns: 5, Rows created: 1000 
+[13:04:23][INFO]   Breakdown: 
+[13:04:23][INFO]     Initial sort:    40.459 ms (0%) 
+[13:04:23][INFO]     Width calc:      451.541 ms (1%) 
+[13:04:23][INFO]     Entry format:    28420.645 ms (98%) 
+[13:04:23][INFO]   Time per entry: 28929 microseconds 
+[13:04:23][INFO] ==================================== 
+[13:05:12][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[13:05:18][INFO] [PERF] Column width calculation: 306.061 ms 
+[13:05:18][INFO]        Entries: 1000, Columns: 5 
+[13:05:18][INFO]        Time per entry: 306 microseconds 
+[13:05:42][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[13:05:42][INFO] iTidy_FormatListViewColumns() total time: 30623.891 ms 
+[13:05:42][INFO]   Entries: 1000, Columns: 5, Rows created: 1000 
+[13:05:42][INFO]   Breakdown: 
+[13:05:42][INFO]     Initial sort:    5872.066 ms (19%) 
+[13:05:42][INFO]     Width calc:      449.816 ms (1%) 
+[13:05:42][INFO]     Entry format:    24286.487 ms (79%) 
+[13:05:42][INFO]   Time per entry: 30623 microseconds 
+[13:05:43][INFO] ==================================== 

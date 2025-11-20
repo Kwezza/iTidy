@@ -1,0 +1,16 @@
+[15:49:30][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85 
+[15:49:31][INFO] [PERF] ListView sort (col 0, DATE, DESC): 242.194 ms 
+[15:49:31][INFO]        Entries: 50 
+[15:49:31][INFO]        Time per entry: 4843 microseconds 
+[15:49:31][INFO] [PERF] Column width calculation: 18.226 ms 
+[15:49:31][INFO]        Entries: 50, Columns: 5 
+[15:49:31][INFO]        Time per entry: 364 microseconds 
+[15:49:31][INFO] ==== LISTVIEW FORMAT PERFORMANCE ==== 
+[15:49:31][INFO] iTidy_FormatListViewColumns() total time: 836.161 ms 
+[15:49:31][INFO]   Entries: 50, Columns: 5, Rows created: 50 
+[15:49:31][INFO]   Breakdown: 
+[15:49:31][INFO]     Initial sort:    414.207 ms (49%) 
+[15:49:31][INFO]     Width calc:      149.830 ms (17%) 
+[15:49:31][INFO]     Entry format:    271.069 ms (32%) 
+[15:49:31][INFO]   Time per entry: 16723 microseconds 
+[15:49:31][INFO] ==================================== 
