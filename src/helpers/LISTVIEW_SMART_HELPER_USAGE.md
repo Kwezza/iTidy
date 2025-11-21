@@ -97,7 +97,10 @@ if (state) iTidy_FreeListViewState(state);
 
 ### How It Works
 
-The API automatically decides whether to enable pagination based on the entry count:
+The API uses **two parameters** to control behavior:
+
+1. **`mode`** - Selects feature set (sorting, state, pagination support)
+2. **`page_size`** - Controls pagination threshold (only used with paginated modes)
 
 ```c
 struct List *display_list = iTidy_FormatListViewColumns(
@@ -105,39 +108,85 @@ struct List *display_list = iTidy_FormatListViewColumns(
     &entry_list,
     width,
     &state,
-    10,        /* page_size: Threshold for auto-pagination */
-    1,         /* current_page */
+    ITIDY_MODE_FULL,  /* Mode: FULL/FULL_NO_SORT/SIMPLE/SIMPLE_PAGINATED */
+    10,               /* page_size: Entries per page (0 = auto-calculate) */
+    1,                /* current_page */
     &total_pages,
-    0          /* nav_direction */
+    0                 /* nav_direction */
 );
 ```
 
-**Behavior:**
-- **page_size = -2**: **SIMPLE MODE** - Display-only, no sorting/state/pagination (fastest, minimal cleanup)
-- **page_size = -1**: Sorting **disabled**, full list shown (max performance)
-- **page_size = 0**: No pagination, sorting **enabled** (normal mode)
-- **Entry count ≤ page_size**: Shows full list, **sorting ENABLED**, no pagination rows
-- **Entry count > page_size**: **Pagination ACTIVE**, sorting disabled, navigation rows shown
+**Behavior by Mode:**
 
-### Why Auto-Pagination?
+| Mode | Sorting | State | Pagination | page_size Effect |
+|------|---------|-------|------------|------------------|
+| `ITIDY_MODE_FULL` | ✅ Yes | ✅ Yes | Optional | `page_size=0`: No pagination<br>`page_size>0`: Paginate if entries > page_size |
+| `ITIDY_MODE_FULL_NO_SORT` | ❌ No | ✅ Yes | Optional | Same as FULL but sorting disabled |
+| `ITIDY_MODE_SIMPLE` | ❌ No | ❌ No | ❌ No | Ignored - full list always shown |
+| `ITIDY_MODE_SIMPLE_PAGINATED` | ❌ No | ❌ No | ✅ Yes | Required - sets entries per page |
+
+### Why Use Pagination?
 
 **Problem:** Formatting 300 ListView rows takes 4.7 seconds on 68000 @ 7MHz (O(n²) complexity)
 
 **Solution:** 
-- Small lists (≤10 entries): Show all, allow interactive sorting
-- Large lists (>10 entries): Show page slices (10 at a time), disable sorting to prevent full-list rebuild
+- Small lists: Use `ITIDY_MODE_FULL` with `page_size=0` (sorting enabled, no pagination)
+- Large lists needing sort: Use `ITIDY_MODE_FULL` with `page_size=10` (paginate when > 10 entries)
+- Large lists no sort: Use `ITIDY_MODE_SIMPLE_PAGINATED` (fastest, minimal memory)
+
+### Configuration Example
+
+```c
+/* In window initialization */
+typedef struct {
+    struct List entry_list;
+    struct List *display_list;
+    iTidy_ListViewState *state;
+    int current_page;      /* Tracks page between rebuilds */
+    int page_size;         /* Entries per page */
+} WindowData;
+
+/* For small lists with sorting */
+data->display_list = iTidy_FormatListViewColumns(
+    columns, num_columns, &data->entry_list, width, &data->state,
+    ITIDY_MODE_FULL,  /* Enable sorting */
+    0,                /* No pagination */
+    1, &total_pages, 0
+);
+
+/* For large lists with sorting */
+data->display_list = iTidy_FormatListViewColumns(
+    columns, num_columns, &data->entry_list, width, &data->state,
+    ITIDY_MODE_FULL,  /* Enable sorting */
+    10,               /* Paginate when > 10 entries */
+    1, &total_pages, 0
+);
+
+/* For large lists without sorting (fastest) */
+data->display_list = iTidy_FormatListViewColumns(
+    columns, num_columns, &data->entry_list, width, NULL,
+    ITIDY_MODE_SIMPLE_PAGINATED,  /* No sorting, minimal memory */
+    10,                           /* 10 entries per page */
+    1, &total_pages, 0
+);
+```
 
 ---
 
-## Simple Mode (page_size = -2)
+## Simple Mode
+
+Simple mode trades features for performance and memory efficiency. Use it when you don't need interactive sorting and want the fastest possible window close times on stock Amigas.
 
 ### When to Use Simple Mode
 
 Use **Simple Mode** for display-only ListViews where you:
 - ✅ **Never need to sort** - Data shown in original order only
-- ✅ **Never need pagination** - Full list always visible
 - ✅ **Want fastest performance** - Minimal overhead on 68000
 - ✅ **Need fast window close** - Critical for stock Amigas!
+
+**Two Simple Mode Variants:**
+1. **Simple Non-Paginated** (mode=1, `ITIDY_MODE_SIMPLE_FULL`) - Full list always visible
+2. **Simple Paginated** (mode=3, `ITIDY_MODE_SIMPLE_PAGINATED`) - Pages shown with navigation rows
 
 **Performance Benefits on Stock 68000 @ 7MHz:**
 - **No sorting overhead** - Skips O(n²) merge sort entirely
@@ -150,7 +199,6 @@ Use **Simple Mode** for display-only ListViews where you:
 /* SIMPLE MODE (page_size = -2) does NOT create: */
 ❌ iTidy_ListViewState structure (no state tracking)
 ❌ Sorting machinery (no iTidy_SortListViewEntries calls)
-❌ Pagination navigation rows (no Previous/Next)
 ❌ Header click sorting (headers display-only, not interactive)
 ❌ Column metadata tracking (no column detection for clicks)
 ❌ Background data retention (entry->display_data not copied to display list)
@@ -162,11 +210,75 @@ Use **Simple Mode** for display-only ListViews where you:
 ✅ Header and separator rows (visual structure)
 ✅ Professional formatting (same output quality)
 ✅ Row click events (ITIDY_LV_EVENT_ROW_CLICK with entry data)
+✅ Pagination support (Simple Paginated mode only, mode=3)
+✅ Navigation rows (Simple Paginated mode, "<- Previous / Next ->")
 ```
+
+### Simple Mode Variants
+
+#### Mode Parameter Contract
+
+The API uses an **explicit `mode` parameter** (not page_size flags):
+
+```c
+typedef enum {
+    ITIDY_MODE_FULL,              /* Full mode: sorting + state + optional pagination */
+    ITIDY_MODE_FULL_NO_SORT,      /* Full mode but disable sorting (performance) */
+    ITIDY_MODE_SIMPLE,            /* Simple mode: display-only, no sorting/state (fast) */
+    ITIDY_MODE_SIMPLE_PAGINATED   /* Simple mode + pagination (best for large lists) */
+} iTidy_ListViewMode;
+
+/* Function signature */
+struct List *iTidy_FormatListViewColumns(
+    iTidy_ColumnConfig *columns,
+    int num_columns,
+    struct List *entries,
+    int total_char_width,
+    iTidy_ListViewState **out_state,
+    iTidy_ListViewMode mode,     /* ← Explicit mode parameter */
+    int page_size,               /* Entries per page (used with paginated modes) */
+    int current_page,
+    int *out_total_pages,
+    int nav_direction
+);
+```
+
+**Mode Selection Guide:**
+- **`ITIDY_MODE_SIMPLE`**: Non-paginated, full list display (no state, no sorting)
+- **`ITIDY_MODE_SIMPLE_PAGINATED`**: Paginated, no state, page parsed from nav row text
+- **`ITIDY_MODE_FULL`**: Full features (state, sorting, optional pagination based on page_size)
+- **`ITIDY_MODE_FULL_NO_SORT`**: State allocated but sorting disabled (rare use case)
+
+**Parameter Interaction:**
+- **`mode = ITIDY_MODE_SIMPLE`**: `page_size` is ignored, full list shown, `out_state` = NULL
+- **`mode = ITIDY_MODE_SIMPLE_PAGINATED`**: `page_size` sets entries per page, `out_state` = NULL
+- **`mode = ITIDY_MODE_FULL`**: `page_size` determines pagination:
+  - `page_size = 0`: No pagination, sorting enabled
+  - `page_size > 0`: Pagination active if entry count > page_size
+- **`mode = ITIDY_MODE_FULL_NO_SORT`**: Like FULL but header clicks ignored
+
+#### Simple Non-Paginated (ITIDY_MODE_SIMPLE)
+- **Use case**: Small lists that fit in viewport (≤20 entries)
+- **Features**: No state, no pagination, full list always visible
+- **Navigation rows**: None
+- **Memory**: Minimal (1 allocation per row)
+- **Entry selection**: Direct index lookup from entry_list
+
+#### Simple Paginated (ITIDY_MODE_SIMPLE_PAGINATED)
+- **Use case**: Large lists requiring pagination without sorting
+- **Features**: No state, pagination enabled, navigation rows shown
+- **Navigation rows**: "<- Previous (Page X of Y)" and "Next -> (Page X of Y)"
+- **Memory**: Minimal (1 allocation per row, no state object)
+- **Entry selection**: Page number parsed from navigation row text, index calculated
+- **Trade-off**: Saves ~100 bytes (no state) vs. small CPU cost (text parsing)
+
+**Key Difference from Full Paginated Mode:**
+- Full paginated mode (`ITIDY_MODE_FULL` with `page_size > 0`): Has `state->current_page` tracking
+- Simple paginated mode (`ITIDY_MODE_SIMPLE_PAGINATED`): state=NULL, page extracted from nav row text
 
 ### Memory Footprint Comparison
 
-**Full Mode (page_size ≥ 0):**
+**Full Mode (ITIDY_MODE_FULL or ITIDY_MODE_FULL_NO_SORT):**
 ```
 Per Entry Allocations:
 1. entry->node.ln_Name (formatted display string)
@@ -179,22 +291,35 @@ Per Entry Allocations:
 Cleanup time: ~51 seconds (0.16s per entry)
 ```
 
-**Simple Mode (page_size = -2):**
+**Simple Non-Paginated (ITIDY_MODE_SIMPLE):**
 ```
 Per Row Allocations:
 1. display_node->ln_Name (formatted string only)
 = 1 allocation × 300 rows = 300 allocations
+State object: None
+Cleanup time: <1 second (0.003s per row)
+```
+
+**Simple Paginated (ITIDY_MODE_SIMPLE_PAGINATED):**
+```
+Per Row Allocations:
+1. display_node->ln_Name (formatted string only)
+= 1 allocation × (page_size + 2 nav rows) per page
+Example: 1 allocation × 6 rows (4 data + 2 nav) = 6 allocations per page
+State object: None (page number parsed from nav row text)
 Cleanup time: <1 second (0.003s per row)
 ```
 
 ### Usage Example
 
+#### Simple Non-Paginated Mode (ITIDY_MODE_SIMPLE)
+
 ```c
-/* Initialize ListView in simple mode */
+/* Initialize ListView in simple non-paginated mode */
 WindowData *data;
 iTidy_ColumnConfig cols[] = {
     {"Date/Time", 20, 20, ITIDY_ALIGN_LEFT, FALSE, FALSE, 
-     ITIDY_SORT_NONE, ITIDY_COLTYPE_DATE},  /* default_sort ignored */
+     ITIDY_SORT_NONE, ITIDY_COLTYPE_DATE},  /* default_sort ignored in simple mode */
     {"Changes", 4, 6, ITIDY_ALIGN_RIGHT, FALSE, FALSE,
      ITIDY_SORT_NONE, ITIDY_COLTYPE_NUMBER},
     {"Path", 30, 0, ITIDY_ALIGN_LEFT, TRUE, TRUE,
@@ -206,16 +331,17 @@ struct List entry_list;
 NewList(&entry_list);
 /* ... populate entries ... */
 
-/* Format in SIMPLE MODE (page_size = -2) */
+/* Format in SIMPLE MODE (no pagination) */
 data->display_list = iTidy_FormatListViewColumns(
     cols, 3,
     &entry_list,
-    65,                 /* Width in characters */
-    NULL,               /* out_state = NULL (no state in simple mode) */
-    -2,                 /* page_size: SIMPLE MODE flag */
-    0,                  /* current_page: ignored */
-    NULL,               /* out_total_pages: not needed */
-    0                   /* nav_direction: ignored */
+    65,                      /* Width in characters */
+    NULL,                    /* out_state = NULL (no state in simple mode) */
+    ITIDY_MODE_SIMPLE,       /* ← Explicit mode parameter */
+    0,                       /* page_size: ignored in SIMPLE mode */
+    0,                       /* current_page: ignored */
+    NULL,                    /* out_total_pages: not needed */
+    0                        /* nav_direction: ignored */
 );
 
 /* Set ListView gadget */
@@ -243,10 +369,11 @@ case IDCMP_GADGETUP:
         iTidy_ListViewEvent event;
         
         if (iTidy_HandleListViewGadgetUp(
-                window, gadget, mouseX, mouseY,
-                &entry_list,           /* Your data entries */
                 data->display_list,    /* Display list from format call */
+                &entry_list,           /* Your data entries */
                 NULL,                  /* state is NULL in simple mode */
+                selected,              /* Row from GTLV_Selected */
+                mouseX, gadget->LeftEdge,
                 font_height, font_width,
                 cols, 3, &event))
         {
@@ -260,18 +387,173 @@ case IDCMP_GADGETUP:
     break;
 ```
 
+#### Simple Paginated Mode (ITIDY_MODE_SIMPLE_PAGINATED)
+
+```c
+/* Initialize ListView in simple paginated mode */
+RestoreWindowData *restore_data;
+
+/* Set mode and page size */
+restore_data->page_size = 4;                       /* 4 rows per page */
+restore_data->current_page = 1;                    /* Start on page 1 */
+
+/* Format with pagination (state=NULL, navigation rows added) */
+restore_data->display_list = iTidy_FormatListViewColumns(
+    cols, 3,
+    &restore_data->run_entries_list,  /* Your entry list */
+    65,                               /* Width in characters */
+    NULL,                             /* out_state = NULL (no state in simple paginated) */
+    ITIDY_MODE_SIMPLE_PAGINATED,      /* ← Explicit mode parameter */
+    restore_data->page_size,          /* 4 rows per page */
+    restore_data->current_page,       /* Current page number */
+    &restore_data->total_pages,       /* Returns total pages */
+    0                                 /* nav_direction: 0 on first load */
+);
+
+/* Set ListView with formatted list */
+GT_SetGadgetAttrs(restore_data->listview, window, NULL,
+                  GTLV_Labels, restore_data->display_list,
+                  TAG_DONE);
+
+/* Handle events with pagination support */
+case IDCMP_GADGETUP:
+    if (gadget->GadgetID == GID_SESSION_LISTVIEW) {
+        LONG selected = -1;
+        GT_GetGadgetAttrs(gadget, window, NULL, GTLV_Selected, &selected, TAG_END);
+        
+        iTidy_ListViewEvent event;
+        if (iTidy_HandleListViewGadgetUp(
+                restore_data->display_list,
+                &restore_data->run_entries_list,
+                NULL,              /* state is NULL in SIMPLE_PAGINATED mode */
+                selected,
+                msg->MouseX, gadget->LeftEdge,
+                font_height, font_width,
+                cols, 3, &event))
+        {
+            switch (event.type) {
+                case ITIDY_LV_EVENT_NAV_HANDLED:
+                    /* Navigation clicked - API parsed page from nav row text */
+                    /* Update page tracking */
+                    if (event.nav_direction == 1) {
+                        restore_data->current_page++;
+                    } else if (event.nav_direction == -1) {
+                        restore_data->current_page--;
+                    }
+                    
+                    /* Rebuild list for new page */
+                    rebuild_paginated_list(restore_data);
+                    break;
+                    
+                case ITIDY_LV_EVENT_ROW_CLICK:
+                    /* Data row clicked - API calculated correct entry_index */
+                    /* using page number parsed from nav row: */
+                    /* entry_index = ((page - 1) × page_size) + clicked_row */
+                    process_entry_selection(event.entry);
+                    break;
+            }
+        }
+    }
+    break;
+
+void rebuild_paginated_list(RestoreWindowData *restore_data) {
+    /* Detach old list */
+    GT_SetGadgetAttrs(restore_data->listview, window, NULL, 
+                     GTLV_Labels, ~0, TAG_DONE);
+    
+    /* Free old display list */
+    if (restore_data->display_list) {
+        iTidy_FreeFormattedList(restore_data->display_list);
+        restore_data->display_list = NULL;
+    }
+    
+    /* Rebuild for new page (no state to free in mode=3) */
+    restore_data->display_list = iTidy_FormatListViewColumns(
+        cols, 3,
+        &restore_data->run_entries_list,
+        65,
+        NULL,                          /* out_state still NULL */
+        restore_data->page_size,
+        restore_data->current_page,    /* Use updated page number */
+        &restore_data->total_pages,
+        0
+    );
+    
+    /* Reattach new list */
+    GT_SetGadgetAttrs(restore_data->listview, window, NULL,
+                     GTLV_Labels, restore_data->display_list,
+                     TAG_DONE);
+}
+```
+
+**Key Differences:**
+- **ITIDY_MODE_SIMPLE**: No navigation rows, full list shown, direct entry lookup
+- **ITIDY_MODE_SIMPLE_PAGINATED**: Navigation rows shown, page offset calculated via text parsing
+
 ### When NOT to Use Simple Mode
 
 ❌ **Don't use simple mode if you need:**
-- Click-to-sort headers (use page_size=0 or page_size>0)
-- Pagination for large lists (use page_size>0)
-- Column-specific click metadata (use full mode with state for event.column)
+- Click-to-sort headers (use `ITIDY_MODE_FULL` with `page_size=0`)
+- Column-specific click metadata with state tracking (use `ITIDY_MODE_FULL`)
 - Dynamic re-sorting (simple mode is display-once only)
 
 ✅ **Simple mode IS sufficient if you need:**
 - Row selection (clicking rows to get entry data works fine)
 - Display-only headers (non-interactive column titles)
 - Static display of pre-sorted data
+- Pagination without sorting (use `ITIDY_MODE_SIMPLE_PAGINATED`)
+
+**Choose the right mode:**
+- **ITIDY_MODE_SIMPLE**: Small lists (≤20 entries), no pagination needed
+- **ITIDY_MODE_SIMPLE_PAGINATED**: Large lists requiring pagination without sorting overhead
+
+### How Simple Paginated Mode Works (ITIDY_MODE_SIMPLE_PAGINATED)
+
+**The Challenge:** Pagination normally requires a state object to track `current_page`, but simple mode deliberately avoids allocating state to save memory (~100 bytes).
+
+**The Solution:** Embed page information in the navigation row text itself, then parse it back when needed.
+
+**Navigation Row Format:**
+```
+"<- Previous (Page 2 of 5)"
+"Next -> (Page 2 of 5)"
+```
+
+**When User Clicks Entry (Not Nav Row):**
+1. API detects this is a data row (not header/separator/nav)
+2. API scans `display_list` for navigation rows
+3. Uses `strstr()` to find "Page" keyword in nav row text
+4. Uses `sscanf(page_str, "Page %d of %d", &current_page, &total_pages)` to extract page number
+5. Calculates actual entry index: `entry_index = ((current_page - 1) × page_size) + clicked_display_row`
+6. Looks up entry from `entry_list` at calculated index
+7. Returns `ITIDY_LV_EVENT_ROW_CLICK` with correct `event.entry` pointer
+
+**When User Clicks Navigation Row:**
+1. API detects nav row via `strstr(node_text, "Previous")` or `strstr(node_text, "Next")`
+2. Returns `ITIDY_LV_EVENT_NAV_HANDLED` with `event.nav_direction` (-1 or +1)
+3. Caller updates `restore_data->current_page` manually
+4. Caller rebuilds list by calling `iTidy_FormatListViewColumns()` with new page number
+
+**Trade-off Analysis:**
+- **Memory saved**: ~100 bytes (no iTidy_ListViewState structure)
+- **CPU cost**: 2-3 string scans per click (~0.5ms on 68000 @ 7MHz)
+- **Complexity**: Slightly more logic in API, but transparent to caller
+- **Benefit**: Same memory efficiency as simple mode, with pagination support
+
+**Log Messages (ITIDY_MODE_SIMPLE_PAGINATED):**
+```
+Detected pagination from nav row: page 2 of 3
+Paginated: clicked row 1 on page 2 (page_size=4) -> entry_index=5
+```
+
+**Example Entry Index Calculation:**
+```
+User on page 2, clicks row 3 (4 rows per page):
+  entry_index = ((2 - 1) × 4) + 1 = 4 + 1 = 5
+  Returns entry #6 (0-based index 5) from entry_list
+```
+
+This approach maintains simple mode's memory efficiency while enabling pagination for large lists.
 
 ### Simple Mode Performance Table (68000 @ 7MHz, Chip RAM)
 
@@ -959,14 +1241,15 @@ void cleanup_window(MyWindowData *data) {
 ### Core Functions
 
 ```c
-/* Format ListView with auto-pagination */
+/* Format ListView with mode control and optional pagination */
 struct List *iTidy_FormatListViewColumns(
     iTidy_ColumnConfig *columns,    /* Column definitions */
     int num_columns,                 /* Number of columns */
     struct List *entries,            /* Your entry list */
     int total_char_width,            /* ListView width in characters */
-    iTidy_ListViewState **out_state, /* Returns state (for cleanup and events) */
-    int page_size,                   /* -1=disable sorting, 0=no pagination, >0=auto-pagination threshold */
+    iTidy_ListViewState **out_state, /* Returns state (NULL for simple modes) */
+    iTidy_ListViewMode mode,         /* FULL/FULL_NO_SORT/SIMPLE/SIMPLE_PAGINATED */
+    int page_size,                   /* Entries per page (used with paginated modes) */
     int current_page,                /* 1-based page number */
     int *out_total_pages,            /* Returns total pages (can be NULL) */
     int nav_direction                /* -1=Previous, 0=None, +1=Next */
@@ -1035,38 +1318,46 @@ typedef struct {
 
 ## Best Practices
 
-### Page Size Selection
+### Mode and Page Size Selection
 
-**Recommended values:**
-- **10-20 entries**: Good balance for 68000 @ 7MHz hardware
-- **Smaller (5-10)**: Better for very limited RAM
-- **Larger (20-50)**: Acceptable on faster Amigas (68020+)
-- **0**: No pagination, sorting enabled (for small lists or fast machines)
-- **-1**: Disable sorting entirely, show full list (speed over features)
-
-**Performance guide:**
+**Mode Selection Guide:**
 ```c
-/* Conservative (68000 @ 7MHz, 2MB RAM) */
-data->page_size = 10;
+/* Small lists (≤20 entries), no pagination */
+mode = ITIDY_MODE_SIMPLE;       /* Fastest, minimal memory */
+page_size = 0;                  /* Ignored */
 
-/* Moderate (68020 @ 14MHz, 4MB RAM) */
-data->page_size = 20;
+/* Small lists (≤20 entries), need sorting */
+mode = ITIDY_MODE_FULL;         /* Full features */
+page_size = 0;                  /* No pagination */
 
-/* Aggressive (68030+, 8MB+ RAM) */
-data->page_size = 50;
+/* Large lists (>20 entries), need sorting */
+mode = ITIDY_MODE_FULL;         /* Full features */
+page_size = 10;                 /* Paginate when > 10 */
 
-/* No pagination (fast machine or always small lists) */
-data->page_size = 0;
+/* Large lists (>20 entries), no sorting needed */
+mode = ITIDY_MODE_SIMPLE_PAGINATED;  /* Fastest paginated mode */
+page_size = 10;                      /* 10 entries per page */
 
-/* Disable sorting - maximum speed (user preference) */
-data->page_size = -1;
+/* Disable sorting for performance (rare) */
+mode = ITIDY_MODE_FULL_NO_SORT;  /* State allocated, sorting disabled */
+page_size = 0;                   /* Optional pagination */
 ```
 
-**Use case for `page_size = -1`:**
-- User preference setting to disable sorting
-- Maximizes performance (no sort overhead)
-- Still shows full list (no pagination)
-- Useful for users who never use sorting feature
+**Page Size Recommendations by Hardware:**
+
+```c
+/* Conservative (68000 @ 7MHz, 2MB RAM) */
+page_size = 10;
+
+/* Moderate (68020 @ 14MHz, 4MB RAM) */
+page_size = 20;
+
+/* Aggressive (68030+, 8MB+ RAM) */
+page_size = 50;
+
+/* Simple modes with pagination */
+page_size = 4-10;  /* Small pages for responsiveness */
+```
 
 ### 2. Column Configuration
 
