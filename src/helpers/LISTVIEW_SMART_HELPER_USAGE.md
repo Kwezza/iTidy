@@ -41,6 +41,7 @@ struct List *display_list = iTidy_FormatListViewColumns(
     &entry_list,             /* Your data */
     65,                      /* Width in characters */
     &state,                  /* Returns state (for events and cleanup) */
+    ITIDY_MODE_FULL,         /* Mode: enable sorting + optional pagination */
     10,                      /* page_size: Auto-pagination threshold */
     1,                       /* current_page: Start on page 1 */
     &total_pages,            /* Returns total pages */
@@ -52,14 +53,12 @@ GT_SetGadgetAttrs(listview, window, NULL, GTLV_Labels, display_list, TAG_DONE);
 /* STEP 4: Handle events with single function */
 case IDCMP_GADGETUP:
     if (gadget->GadgetID == GID_MY_LISTVIEW) {
-        LONG selected = -1;
-        GT_GetGadgetAttrs(gadget, window, NULL, GTLV_Selected, &selected, TAG_END);
-        
         /* Process click - returns structured event */
         iTidy_ListViewEvent event;
         if (iTidy_HandleListViewGadgetUp(
-                display_list, &entry_list, state, selected,
-                msg->MouseX, gadget->LeftEdge,
+                window, gadget,
+                msg->MouseX, msg->MouseY,
+                &entry_list, display_list, state,
                 prefsIControl.systemFontSize, prefsIControl.systemFontCharWidth,
                 columns, 3, &event)) {
             
@@ -185,8 +184,8 @@ Use **Simple Mode** for display-only ListViews where you:
 - ✅ **Need fast window close** - Critical for stock Amigas!
 
 **Two Simple Mode Variants:**
-1. **Simple Non-Paginated** (mode=1, `ITIDY_MODE_SIMPLE_FULL`) - Full list always visible
-2. **Simple Paginated** (mode=3, `ITIDY_MODE_SIMPLE_PAGINATED`) - Pages shown with navigation rows
+1. **Simple Non-Paginated** (`ITIDY_MODE_SIMPLE`) - Full list always visible
+2. **Simple Paginated** (`ITIDY_MODE_SIMPLE_PAGINATED`) - Pages shown with navigation rows
 
 **Performance Benefits on Stock 68000 @ 7MHz:**
 - **No sorting overhead** - Skips O(n²) merge sort entirely
@@ -196,7 +195,7 @@ Use **Simple Mode** for display-only ListViews where you:
 ### What Simple Mode Skips
 
 ```c
-/* SIMPLE MODE (page_size = -2) does NOT create: */
+/* SIMPLE MODES (ITIDY_MODE_SIMPLE / ITIDY_MODE_SIMPLE_PAGINATED) do NOT create: */
 ❌ iTidy_ListViewState structure (no state tracking)
 ❌ Sorting machinery (no iTidy_SortListViewEntries calls)
 ❌ Header click sorting (headers display-only, not interactive)
@@ -245,13 +244,13 @@ struct List *iTidy_FormatListViewColumns(
 
 **Mode Selection Guide:**
 - **`ITIDY_MODE_SIMPLE`**: Non-paginated, full list display (no state, no sorting)
-- **`ITIDY_MODE_SIMPLE_PAGINATED`**: Paginated, no state, page parsed from nav row text
+- **`ITIDY_MODE_SIMPLE_PAGINATED`**: Paginated, minimal state for auto-select, no sorting
 - **`ITIDY_MODE_FULL`**: Full features (state, sorting, optional pagination based on page_size)
 - **`ITIDY_MODE_FULL_NO_SORT`**: State allocated but sorting disabled (rare use case)
 
 **Parameter Interaction:**
 - **`mode = ITIDY_MODE_SIMPLE`**: `page_size` is ignored, full list shown, `out_state` = NULL
-- **`mode = ITIDY_MODE_SIMPLE_PAGINATED`**: `page_size` sets entries per page, `out_state` = NULL
+- **`mode = ITIDY_MODE_SIMPLE_PAGINATED`**: `page_size` sets entries per page, `out_state` = minimal state (~40 bytes)
 - **`mode = ITIDY_MODE_FULL`**: `page_size` determines pagination:
   - `page_size = 0`: No pagination, sorting enabled
   - `page_size > 0`: Pagination active if entry count > page_size
@@ -266,15 +265,15 @@ struct List *iTidy_FormatListViewColumns(
 
 #### Simple Paginated (ITIDY_MODE_SIMPLE_PAGINATED)
 - **Use case**: Large lists requiring pagination without sorting
-- **Features**: No state, pagination enabled, navigation rows shown
+- **Features**: Minimal state (~40 bytes) for auto-select, pagination enabled, navigation rows shown
 - **Navigation rows**: "<- Previous (Page X of Y)" and "Next -> (Page X of Y)"
-- **Memory**: Minimal (1 allocation per row, no state object)
-- **Entry selection**: Page number parsed from navigation row text, index calculated
-- **Trade-off**: Saves ~100 bytes (no state) vs. small CPU cost (text parsing)
+- **Memory**: Lightweight (1 allocation per row, minimal state for tracking)
+- **Entry selection**: Auto-select calculated by API, consistent navigation UX
+- **Trade-off**: Small state object (~40 bytes) vs. fully stateless SIMPLE mode
 
 **Key Difference from Full Paginated Mode:**
-- Full paginated mode (`ITIDY_MODE_FULL` with `page_size > 0`): Has `state->current_page` tracking
-- Simple paginated mode (`ITIDY_MODE_SIMPLE_PAGINATED`): state=NULL, page extracted from nav row text
+- Full paginated mode (`ITIDY_MODE_FULL` with `page_size > 0`): Has full `state` with column tracking
+- Simple paginated mode (`ITIDY_MODE_SIMPLE_PAGINATED`): Minimal state for auto-select only
 
 ### Memory Footprint Comparison
 
@@ -336,7 +335,7 @@ data->display_list = iTidy_FormatListViewColumns(
     cols, 3,
     &entry_list,
     65,                      /* Width in characters */
-    NULL,                    /* out_state = NULL (no state in simple mode) */
+    NULL,                    /* out_state = NULL (SIMPLE mode - no state) */
     ITIDY_MODE_SIMPLE,       /* ← Explicit mode parameter */
     0,                       /* page_size: ignored in SIMPLE mode */
     0,                       /* current_page: ignored */
@@ -369,11 +368,11 @@ case IDCMP_GADGETUP:
         iTidy_ListViewEvent event;
         
         if (iTidy_HandleListViewGadgetUp(
-                data->display_list,    /* Display list from format call */
+                window, gadget,
+                mouseX, mouseY,
                 &entry_list,           /* Your data entries */
+                data->display_list,    /* Display list from format call */
                 NULL,                  /* state is NULL in simple mode */
-                selected,              /* Row from GTLV_Selected */
-                mouseX, gadget->LeftEdge,
                 font_height, font_width,
                 cols, 3, &event))
         {
@@ -418,16 +417,13 @@ GT_SetGadgetAttrs(restore_data->listview, window, NULL,
 /* Handle events with pagination support */
 case IDCMP_GADGETUP:
     if (gadget->GadgetID == GID_SESSION_LISTVIEW) {
-        LONG selected = -1;
-        GT_GetGadgetAttrs(gadget, window, NULL, GTLV_Selected, &selected, TAG_END);
-        
         iTidy_ListViewEvent event;
         if (iTidy_HandleListViewGadgetUp(
-                restore_data->display_list,
+                window, gadget,
+                msg->MouseX, msg->MouseY,
                 &restore_data->run_entries_list,
+                restore_data->display_list,
                 NULL,              /* state is NULL in SIMPLE_PAGINATED mode */
-                selected,
-                msg->MouseX, gadget->LeftEdge,
                 font_height, font_width,
                 cols, 3, &event))
         {
@@ -473,6 +469,7 @@ void rebuild_paginated_list(RestoreWindowData *restore_data) {
         &restore_data->run_entries_list,
         65,
         NULL,                          /* out_state still NULL */
+        ITIDY_MODE_SIMPLE_PAGINATED,
         restore_data->page_size,
         restore_data->current_page,    /* Use updated page number */
         &restore_data->total_pages,
@@ -614,6 +611,7 @@ void rebuild_listview(WindowData *data) {
         &data->entry_list,
         width,
         &data->state,
+        ITIDY_MODE_FULL,
         data->page_size,
         current_page,        /* Use saved page */
         &total_pages,
@@ -706,8 +704,10 @@ typedef struct {
 ```c
 iTidy_ListViewEvent event;
 if (iTidy_HandleListViewGadgetUp(
-        display_list, &entry_list, state, selected,
-        mouse_x, gadget_left, font_height, font_width,
+    window, gadget,
+    mouse_x, mouse_y,
+    &entry_list, display_list, state,
+    font_height, font_width,
         columns, num_columns, &event)) {
     
     switch (event.type) {
@@ -906,9 +906,11 @@ GT_SetGadgetAttrs(listview, window, NULL,
 ```
 
 **Values:**
-- `nav_direction = 1` (Next): `auto_select_row = last_data_row`
+- `nav_direction = 1` (Next): `auto_select_row = last_row` (Next button for easy repeat clicks)
 - `nav_direction = -1` (Previous): `auto_select_row = 2` (first data row)
-- `nav_direction = 0` (no navigation): `auto_select_row = -1` (no selection)
+- `nav_direction = 0` (initial/refresh): `auto_select_row = 2` (first data row)
+
+**Applies to both FULL and SIMPLE_PAGINATED modes** - both create state for consistent auto-select.
 
 ### Navigation Row Format
 
@@ -1009,6 +1011,7 @@ BOOL init_window(MyWindowData *data) {
         &data->entry_list,
         65,  /* Character width */
         &data->state,
+        ITIDY_MODE_FULL,
         data->page_size,
         data->current_page,
         &total_pages,
@@ -1064,11 +1067,6 @@ void handle_events(MyWindowData *data) {
 }
 
 void handle_listview_click(MyWindowData *data, struct Gadget *gadget, WORD mouse_x, WORD mouse_y) {
-    LONG selected = -1;
-    GT_GetGadgetAttrs(gadget, data->window, NULL, GTLV_Selected, &selected, TAG_END);
-    
-    if (selected < 0) return;  /* No selection */
-    
     /* Define columns (must match initialization) */
     iTidy_ColumnConfig columns[] = {
         {"Date", 20, 20, ITIDY_ALIGN_LEFT, FALSE, FALSE, 
@@ -1082,12 +1080,13 @@ void handle_listview_click(MyWindowData *data, struct Gadget *gadget, WORD mouse
     /* Process click with API */
     iTidy_ListViewEvent event;
     if (iTidy_HandleListViewGadgetUp(
-            data->display_list,
-            &data->entry_list,
-            data->state,
-            selected,
+            data->window,
+            gadget,
             mouse_x,
-            gadget->LeftEdge,
+            mouse_y,
+            &data->entry_list,
+            data->display_list,
+            data->state,
             prefsIControl.systemFontSize,
             prefsIControl.systemFontCharWidth,
             columns,
@@ -1142,6 +1141,7 @@ void rebuild_listview(MyWindowData *data, iTidy_ColumnConfig *columns, int num_c
         &data->entry_list,
         65,
         &data->state,
+        ITIDY_MODE_FULL,
         data->page_size,
         current_page,        /* Use saved page */
         &total_pages,

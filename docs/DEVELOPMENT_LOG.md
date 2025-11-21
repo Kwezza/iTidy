@@ -7,7 +7,40 @@ iTidy is an Amiga icon management utility that allows users to sort and arrange 
 
 ## Development Timeline
 
-### Latest: ListView API - Simple Mode for Display-Only Performance (November 21, 2025)
+### Latest: ListView API - Navigation Auto-Select Bug Fixes (November 21, 2025)
+
+#### Fixed Auto-Select Row Highlighting for Pagination Navigation
+* **Status**: Complete - All pagination modes working correctly
+* **Impact**: Improved UX for paginated ListViews with consistent navigation highlighting
+* **Date**: November 21, 2025
+* **Files Modified**: `src/helpers/listview_columns_api.c`, `src/GUI/restore_window.c`, `src/GUI/restore_window.h`
+
+**Problems Identified:**
+
+1. **Navigation Direction Not Preserved**: When clicking Previous/Next buttons, the navigation direction was lost between the event handler and list rebuild, causing incorrect row selection.
+
+2. **Pagination Check Too Broad**: Auto-select logic checked `page_size > 0` instead of verifying actual navigation rows exist, causing SIMPLE_PAGINATED mode to behave differently than FULL mode.
+
+3. **SIMPLE_PAGINATED Mode Missing State**: SIMPLE_PAGINATED deliberately avoided creating state objects to save memory, but this prevented auto-select calculation from running.
+
+**Solutions Implemented:**
+
+1. **Navigation Direction Parameter**: Changed `populate_run_list()` to accept `nav_direction` as a direct parameter instead of reading from old state. Event handler now passes +1 (Next), -1 (Previous), or 0 (Initial/Refresh) explicitly.
+
+2. **Navigation Row Detection**: Auto-select logic now checks `(has_prev_page || has_next_page)` to verify navigation rows actually exist before calculating selection.
+
+3. **Minimal State for SIMPLE_PAGINATED**: Modified `iTidy_FormatListViewColumns_SimplePaginated()` to create a lightweight state object (~40 bytes) containing only auto-select tracking fields, preserving memory efficiency while enabling consistent navigation.
+
+**Expected Behavior (All Modes):**
+- Click Next → Highlights last row (Next button) for easy repeat clicking
+- Click Previous → Highlights row 2 (first data row) for visual consistency
+- Initial load → Highlights row 2 (first data row)
+
+**Result**: Both FULL and SIMPLE_PAGINATED modes now exhibit identical auto-select behavior, providing a smooth and predictable navigation experience.
+
+---
+
+### ListView API - Simple Mode for Display-Only Performance (November 21, 2025)
 
 #### Added Simple Mode (page_size = -2) for Maximum Performance
 * **Status**: Complete - Implemented, tested, and documented

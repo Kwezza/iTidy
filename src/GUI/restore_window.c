@@ -692,7 +692,8 @@ ULONG scan_backup_runs(const char *backup_root,
 /*------------------------------------------------------------------------*/
 void populate_run_list(struct iTidyRestoreWindow *restore_data,
                        struct RestoreRunEntry *entries,
-                       ULONG count)
+                       ULONG count,
+                       int nav_direction)  /* -1=Previous, 0=None/Initial, +1=Next */
 {
     ULONG i;
     iTidy_ListViewEntry *lv_entry;
@@ -710,13 +711,15 @@ void populate_run_list(struct iTidyRestoreWindow *restore_data,
     
     /* Use current_page from restore_data (no state in simple mode) */
     int current_page_to_use = restore_data->current_page;
-    int last_nav_direction = 0;  /* No auto-select in simple mode */
     
     if (current_page_to_use < 1) {
         current_page_to_use = 1;
     }
     
-    log_debug(LOG_GUI, "populate_run_list: Building page %d\n", current_page_to_use);
+    /* Use nav_direction from parameter (passed from event or default 0) */
+    append_to_log("[NAV] populate_run_list called with nav_direction=%d\n", nav_direction);
+    append_to_log("[NAV] Building page %d with nav_direction=%d\n", 
+                  current_page_to_use, nav_direction);
     
     /* Free existing lists if any */
     if (restore_data->run_list_strings != NULL || 
@@ -743,8 +746,8 @@ void populate_run_list(struct iTidyRestoreWindow *restore_data,
     }
     
     /* Format ListView with sortable columns (default sort by date descending) */
-    /* AUTO-PAGINATION: Sorting enabled when entries <= 4, pagination when > 4 */
-    restore_data->page_size = 4;
+    /* AUTO-PAGINATION: Sorting enabled when entries <= page_size, pagination when > page_size */
+    /* page_size is set from page size cycle gadget (or 0 for "All") */
     
     /* Local variable for total_pages output (API state also tracks this) */
     int total_pages = 0;
@@ -755,11 +758,11 @@ void populate_run_list(struct iTidyRestoreWindow *restore_data,
         &restore_data->run_entry_list,
         65,  /* Total width in characters */
         &restore_data->run_list_state,
-        ITIDY_MODE_SIMPLE_PAGINATED,     /* Use simple paginated mode */
-        restore_data->page_size,         /* Page size (4 for testing) */
+        restore_data->current_mode,      /* Use current mode from cycle gadget */
+        restore_data->page_size,         /* Page size (adjusted per mode) */
         current_page_to_use,             /* Current page (from state if navigation occurred) */
         &total_pages,                    /* Returns total pages (also in state->total_pages) */
-        last_nav_direction               /* Navigation direction for auto-select (-1=Prev, 0=None, +1=Next) */
+        nav_direction                    /* Navigation direction from event or 0 for initial */
     );
     
     if (restore_data->run_list_strings == NULL)
@@ -776,13 +779,15 @@ void populate_run_list(struct iTidyRestoreWindow *restore_data,
         /* Use state's auto_select_row if available (API manages this for navigation) */
         if (restore_data->run_list_state != NULL && restore_data->run_list_state->auto_select_row >= 0) {
             select_row = restore_data->run_list_state->auto_select_row;
-            append_to_log("populate_run_list: Using API-calculated auto_select_row = %d (page %d of %d)\n",
+            append_to_log("[NAV] *** API calculated auto_select_row = %d (page %d of %d, nav_dir=%d) ***\n",
                          select_row, 
                          restore_data->run_list_state->current_page,
-                         restore_data->run_list_state->total_pages);
+                         restore_data->run_list_state->total_pages,
+                         restore_data->run_list_state->last_nav_direction);
         }
         else {
             /* No pagination or first load - select first data row if available */
+            append_to_log("[NAV] No auto_select_row from API, using default select_row=%d\n", select_row);
             select_row = (count > 0) ? 2 : ~0;  /* Row 2 = first data row (after header + separator) */
             append_to_log("populate_run_list: No pagination state, defaulting to row %d\n", select_row);
         }
@@ -1208,6 +1213,7 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     restore_data->restore_window_geometry = TRUE;  /* Default to enabled */
     restore_data->current_page = 1;                 /* Start on page 1 (for first format call) */
     restore_data->page_size = 4;                    /* AUTO-PAGINATION: Sorting if ≤4, pagination if >4 */
+    restore_data->current_mode = ITIDY_MODE_FULL;   /* Default to FULL mode (sorting + pagination) */
     strcpy(restore_data->backup_root_path, "PROGDIR:Backups");
     
     /* Get Workbench screen */
@@ -1434,10 +1440,87 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
                   available_width, equal_button_width);
     
     /*--------------------------------------------------------------------*/
+    /* ListView Mode Testing Row: Cycle Gadget + Apply Button            */
+    /*--------------------------------------------------------------------*/
+    /* Add spacing between details listview and mode testing row */
+    current_y = ng.ng_TopEdge + ng.ng_Height + RESTORE_SPACE_Y;
+    
+    /* Mode labels for cycle gadget */
+    static STRPTR mode_labels[] = {
+        "FULL (auto: sort OR pages)",
+        "FULL_NO_SORT (state only)",
+        "SIMPLE (fast, no state)",
+        "SIMPLE_PAGINATED (pages)",
+        NULL
+    };
+    
+    /* Page size labels */
+    static STRPTR page_size_labels[] = {
+        "2",
+        "4",
+        "8",
+        "10",
+        "20",
+        "All",
+        NULL
+    };
+    
+    /* Mode Cycle Gadget */
+    ng.ng_LeftEdge = current_x;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = TextLength(&temp_rp, "FULL (auto: sort OR pages)", 26) + 40;
+    ng.ng_Height = temp_rp.TxHeight + 6;
+    ng.ng_GadgetText = "ListView Mode:";
+    ng.ng_GadgetID = GID_RESTORE_MODE_CYCLE;
+    ng.ng_Flags = PLACETEXT_LEFT;
+    
+    restore_data->mode_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
+        GTCY_Labels, mode_labels,
+        GTCY_Active, 0,  /* Default to ITIDY_MODE_FULL */
+        TAG_END);
+    
+    if (gad == NULL)
+        goto cleanup_error;
+    
+    /* Page Size Cycle Gadget - below mode cycle */
+    current_y += ng.ng_Height + RESTORE_SPACE_Y;
+    ng.ng_LeftEdge = current_x;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = TextLength(&temp_rp, "20", 2) + 40;
+    ng.ng_Height = temp_rp.TxHeight + 6;
+    ng.ng_GadgetText = "Page Size:";
+    ng.ng_GadgetID = GID_RESTORE_PAGE_SIZE_CYCLE;
+    ng.ng_Flags = PLACETEXT_LEFT;
+    
+    restore_data->page_size_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
+        GTCY_Labels, page_size_labels,
+        GTCY_Active, 1,  /* Default to "4" (index 1) */
+        TAG_END);
+    
+    if (gad == NULL)
+        goto cleanup_error;
+    
+    /* Apply Mode Button - to the right of page size cycle gadget */
+    ng.ng_LeftEdge = current_x + ng.ng_Width + RESTORE_SPACE_X + 
+                     TextLength(&temp_rp, "Page Size:", 10) + 8;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = equal_button_width;
+    ng.ng_Height = button_height;
+    ng.ng_GadgetText = "Apply Mode";
+    ng.ng_GadgetID = GID_RESTORE_APPLY_MODE;
+    ng.ng_Flags = PLACETEXT_IN;
+    
+    restore_data->apply_mode_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
+        TAG_END);
+    
+    if (gad == NULL)
+        goto cleanup_error;
+    
+    /*--------------------------------------------------------------------*/
     /* Top Row: Restore Run Button + Checkbox                            */
     /*--------------------------------------------------------------------*/
-    /* Add spacing between details listview and top button row */
-    current_y = ng.ng_TopEdge + ng.ng_Height + RESTORE_SPACE_Y;
+    /* Add spacing between mode testing row and top button row */
+    current_y += button_height + RESTORE_SPACE_Y;
     
     /* Restore Run Button - left-aligned, no centering */
     ng.ng_LeftEdge = current_x;
@@ -1567,6 +1650,16 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
         append_to_log("ERROR: details_listview is NULL!\n");
         goto cleanup_error;
     }
+    if (restore_data->mode_cycle == NULL)
+    {
+        append_to_log("ERROR: mode_cycle is NULL!\n");
+        goto cleanup_error;
+    }
+    if (restore_data->apply_mode_btn == NULL)
+    {
+        append_to_log("ERROR: apply_mode_btn is NULL!\n");
+        goto cleanup_error;
+    }
     if (restore_data->restore_run_btn == NULL)
     {
         append_to_log("ERROR: restore_run_btn is NULL!\n");
@@ -1647,7 +1740,8 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     {
         populate_run_list(restore_data,
                          restore_data->run_entries,
-                         restore_data->run_count);
+                         restore_data->run_count,
+                         0);  /* Initial load */
     }
     
     /* Clear busy pointer - scanning complete */
@@ -1915,23 +2009,32 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                                         if (event.nav_direction == 1) {
                                             /* Next page */
                                             restore_data->current_page++;
-                                            log_debug(LOG_GUI, "NAV_HANDLED: Next -> page %d\n", restore_data->current_page);
+                                            append_to_log("[NAV] ========================================\n");
+                                            append_to_log("[NAV] NEXT BUTTON CLICKED\n");
+                                            append_to_log("[NAV] Page changed to: %d\n", restore_data->current_page);
+                                            append_to_log("[NAV] Navigation direction: +1\n");
+                                            append_to_log("[NAV] ========================================\n");
                                         }
                                         else if (event.nav_direction == -1) {
                                             /* Previous page */
                                             if (restore_data->current_page > 1) {
                                                 restore_data->current_page--;
                                             }
-                                            log_debug(LOG_GUI, "NAV_HANDLED: Previous -> page %d\n", restore_data->current_page);
+                                            append_to_log("[NAV] ========================================\n");
+                                            append_to_log("[NAV] PREVIOUS BUTTON CLICKED\n");
+                                            append_to_log("[NAV] Page changed to: %d\n", restore_data->current_page);
+                                            append_to_log("[NAV] Navigation direction: -1\n");
+                                            append_to_log("[NAV] ========================================\n");
                                         }
                                         
                                         append_to_log("Page navigation: direction=%d, new page=%d\n",
                                                      event.nav_direction, restore_data->current_page);
                                         
-                                        /* Rebuild ListView with new page */
+                                        /* Rebuild ListView with new page and nav_direction from event */
                                         populate_run_list(restore_data,
                                                          restore_data->run_entries,
-                                                         restore_data->run_count);
+                                                         restore_data->run_count,
+                                                         event.nav_direction);  /* Pass direction from event */
                                         break;
                                     
                                     case ITIDY_LV_EVENT_ROW_CLICK:
@@ -2008,6 +2111,57 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                                      restore_data->restore_window_geometry ? "ENABLED" : "DISABLED");
                         break;
                     
+                    case GID_RESTORE_APPLY_MODE:
+                        /* Apply Mode button clicked - get selected mode and page size */
+                        {
+                            ULONG selected_mode = 0;
+                            ULONG selected_page_size = 0;
+                            
+                            GT_GetGadgetAttrs(restore_data->mode_cycle, restore_data->window, NULL,
+                                            GTCY_Active, &selected_mode,
+                                            TAG_END);
+                            
+                            GT_GetGadgetAttrs(restore_data->page_size_cycle, restore_data->window, NULL,
+                                            GTCY_Active, &selected_page_size,
+                                            TAG_END);
+                            
+                            restore_data->current_mode = (int)selected_mode;
+                            
+                            /* Convert page size index to actual value */
+                            /* 0="2", 1="4", 2="8", 3="10", 4="20", 5="All"(0) */
+                            switch (selected_page_size) {
+                                case 0: restore_data->page_size = 2; break;
+                                case 1: restore_data->page_size = 4; break;
+                                case 2: restore_data->page_size = 8; break;
+                                case 3: restore_data->page_size = 10; break;
+                                case 4: restore_data->page_size = 20; break;
+                                case 5: restore_data->page_size = 0; break;  /* All = no pagination */
+                                default: restore_data->page_size = 4; break;
+                            }
+                            
+                            const char *mode_names[] = {
+                                "ITIDY_MODE_FULL",
+                                "ITIDY_MODE_FULL_NO_SORT",
+                                "ITIDY_MODE_SIMPLE",
+                                "ITIDY_MODE_SIMPLE_PAGINATED"
+                            };
+                            
+                            append_to_log("Apply Mode: mode=%d (%s), page_size=%d\n",
+                                         restore_data->current_mode,
+                                         mode_names[restore_data->current_mode],
+                                         restore_data->page_size);
+                            
+                            /* Reset to page 1 when changing modes/page size */
+                            restore_data->current_page = 1;
+                            
+                            /* Rebuild the ListView with new mode and page size */
+                            populate_run_list(restore_data,
+                                            restore_data->run_entries,
+                                            restore_data->run_count,
+                                            0);  /* Initial load, no navigation */
+                        }
+                        break;
+                    
                     case GID_RESTORE_RUN_BTN:
                         if (restore_data->selected_run_index >= 0 &&
                             restore_data->selected_run_index < (LONG)restore_data->run_count)
@@ -2062,7 +2216,8 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                                     {
                                         populate_run_list(restore_data,
                                                          restore_data->run_entries,
-                                                         restore_data->run_count);
+                                                         restore_data->run_count,
+                                                         0);  /* Refresh after delete */
                                     }
                                     else
                                     {

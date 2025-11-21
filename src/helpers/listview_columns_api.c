@@ -244,6 +244,7 @@ static struct List *iTidy_FormatListViewColumns_SimplePaginated(
     int num_columns,
     struct List *entries,
     int total_char_width,
+    iTidy_ListViewState **out_state,
     int page_size,
     int current_page,
     int total_pages,
@@ -863,6 +864,7 @@ static struct List *iTidy_FormatListViewColumns_SimplePaginated(
     int num_columns,
     struct List *entries,
     int total_char_width,
+    iTidy_ListViewState **out_state,
     int page_size,
     int current_page,
     int total_pages,
@@ -998,6 +1000,55 @@ static struct List *iTidy_FormatListViewColumns_SimplePaginated(
     whd_free(col_widths);
     
     log_info(LOG_GUI, "Simple paginated mode: formatted %d data rows\n", row_count);
+    
+    /* Create minimal state for auto-select tracking (if requested) */
+    if (out_state && (has_prev_page || has_next_page)) {
+        iTidy_ListViewState *state;
+        struct Node *node;
+        int display_row_count = 0;
+        
+        /* Count rows in display list */
+        for (node = list->lh_Head; node->ln_Succ; node = node->ln_Succ) {
+            display_row_count++;
+        }
+        
+        /* Allocate minimal state (only for auto-select) */
+        state = (iTidy_ListViewState *)whd_malloc(sizeof(iTidy_ListViewState));
+        if (state) {
+            memset(state, 0, sizeof(iTidy_ListViewState));
+            state->current_page = current_page;
+            state->total_pages = total_pages;
+            state->last_nav_direction = nav_direction;
+            state->sorting_disabled = TRUE;  /* No sorting in simple mode */
+            state->num_columns = 0;  /* No column tracking */
+            state->columns = NULL;   /* No column state */
+            
+            /* Calculate auto-select row based on navigation direction */
+            if (display_row_count > 2) {
+                if (nav_direction < 0) {
+                    /* Previous - select row 2 (first data row) */
+                    state->auto_select_row = 2;
+                } else if (nav_direction > 0) {
+                    /* Next - select last row (Next button) */
+                    state->auto_select_row = display_row_count - 1;
+                } else {
+                    /* Initial - select row 2 (first data row) */
+                    state->auto_select_row = 2;
+                }
+                
+                log_debug(LOG_GUI, "[SIMPLE_PAGINATED] Auto-select row %d of %d (nav_dir=%d)\n",
+                         state->auto_select_row, display_row_count, nav_direction);
+            } else {
+                state->auto_select_row = -1;
+            }
+            
+            *out_state = state;
+        } else {
+            *out_state = NULL;
+        }
+    } else if (out_state) {
+        *out_state = NULL;  /* No navigation rows or state not requested */
+    }
     
     return list;
 }
@@ -1219,22 +1270,19 @@ struct List *iTidy_FormatListViewColumns(
     }
     NewList(list);
     
-    /* Simple mode routing: Skip state creation and use fast formatter */
+    /* Simple mode routing: Skip full state creation and use fast formatter */
     if (simple_mode) {
         log_info(LOG_GUI, "Using simple mode formatter (pagination=%s)\n", 
                  pagination_enabled ? "YES" : "NO");
         
-        /* For simple mode, we don't create state (display-only) */
-        if (out_state) {
-            *out_state = NULL;  /* No state in simple mode */
-        }
-        
         /* Route to simple paginated mode if pagination enabled */
+        /* (SimplePaginated function creates minimal state for auto-select) */
         if (pagination_enabled) {
             /* Call simple paginated formatter */
             struct List *result;
             result = iTidy_FormatListViewColumns_SimplePaginated(
                 columns, num_columns, entries, total_char_width,
+                out_state,  /* Pass state pointer for auto-select tracking */
                 page_size, current_page, total_pages, 
                 has_prev_page, has_next_page, nav_direction
             );
@@ -1280,8 +1328,8 @@ struct List *iTidy_FormatListViewColumns(
             state->columns = (iTidy_ColumnState *)whd_malloc(sizeof(iTidy_ColumnState) * num_columns);
             state->sorting_disabled = sorting_disabled;  /* Store the flag */
             
-            /* Initialize pagination state */
-            if (page_size > 0) {
+            /* Initialize pagination state (only if pagination is actually enabled) */
+            if (pagination_enabled) {
                 state->current_page = current_page;
                 state->total_pages = total_pages;
                 state->last_nav_direction = nav_direction;  /* From caller (saved before state freed) */
@@ -1412,8 +1460,8 @@ struct List *iTidy_FormatListViewColumns(
         for (entry_node = entries->lh_Head; entry_node->ln_Succ; entry_node = entry_node->ln_Succ) {
             entry = (iTidy_ListViewEntry *)entry_node;
             
-            /* Skip entries outside current page slice */
-            if (page_size > 0) {
+            /* Skip entries outside current page slice (only if pagination is active) */
+            if (pagination_enabled) {
                 if (current_index < start_index || current_index >= end_index) {
                     current_index++;
                     continue;
@@ -1566,8 +1614,8 @@ struct List *iTidy_FormatListViewColumns(
         }
     }
     
-    /* Calculate auto-select row if pagination is active */
-    if (state != NULL && page_size > 0) {
+    /* Calculate auto-select row if pagination navigation rows are present */
+    if (state != NULL && (has_prev_page || has_next_page)) {
         struct Node *node;
         int display_row_count = 0;
         
@@ -1579,15 +1627,19 @@ struct List *iTidy_FormatListViewColumns(
         /* Select row based on last navigation direction */
         if (display_row_count > 2) {
             if (state->last_nav_direction < 0) {
-                /* Going backward (Previous) - select row 2 (first visible) */
+                /* Going backward (Previous) - select row 2 (first data row) */
                 state->auto_select_row = 2;
-            } else {
-                /* Going forward (Next) or initial load - select last row */
+            } else if (state->last_nav_direction > 0) {
+                /* Going forward (Next) - select last row (Next button for easy repeat clicks) */
                 state->auto_select_row = display_row_count - 1;
+            } else {
+                /* Initial load (no navigation yet) - select row 2 (first data row) */
+                state->auto_select_row = 2;
             }
             
-            log_debug(LOG_GUI, "Auto-select row %d of %d (nav_dir=%d)\n",
-                     state->auto_select_row, display_row_count, state->last_nav_direction);
+            log_debug(LOG_GUI, "Auto-select row %d of %d (nav_dir=%d, has_prev=%d, has_next=%d)\n",
+                     state->auto_select_row, display_row_count, state->last_nav_direction,
+                     has_prev_page, has_next_page);
         } else {
             state->auto_select_row = -1;  /* No auto-select for small lists */
         }
