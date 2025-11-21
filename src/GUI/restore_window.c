@@ -708,26 +708,15 @@ void populate_run_list(struct iTidyRestoreWindow *restore_data,
             TAG_END);
     }
     
-    /* CRITICAL: Save pagination state BEFORE freeing (API may have updated it) */
+    /* Use current_page from restore_data (no state in simple mode) */
     int current_page_to_use = restore_data->current_page;
-    int last_nav_direction = 0;  /* Default: no navigation */
-    
-    if (restore_data->run_list_state != NULL) {
-        if (restore_data->run_list_state->current_page > 0) {
-            current_page_to_use = restore_data->run_list_state->current_page;
-        }
-        /* Preserve navigation direction for auto-select calculation */
-        last_nav_direction = restore_data->run_list_state->last_nav_direction;
-        
-        if (last_nav_direction != 0) {
-            append_to_log("populate_run_list: Using page %d, nav_dir=%d (from state)\n", 
-                         current_page_to_use, last_nav_direction);
-        }
-    }
+    int last_nav_direction = 0;  /* No auto-select in simple mode */
     
     if (current_page_to_use < 1) {
         current_page_to_use = 1;
     }
+    
+    log_debug(LOG_GUI, "populate_run_list: Building page %d\n", current_page_to_use);
     
     /* Free existing lists if any */
     if (restore_data->run_list_strings != NULL || 
@@ -766,10 +755,11 @@ void populate_run_list(struct iTidyRestoreWindow *restore_data,
         &restore_data->run_entry_list,
         65,  /* Total width in characters */
         &restore_data->run_list_state,
-        restore_data->page_size,         /* NEW: Page size (4 for testing) */
-        current_page_to_use,             /* NEW: Current page (from state if navigation occurred) */
-        &total_pages,                    /* NEW: Returns total pages (also in state->total_pages) */
-        last_nav_direction               /* NEW: Navigation direction for auto-select (-1=Prev, 0=None, +1=Next) */
+        ITIDY_MODE_SIMPLE_PAGINATED,     /* Use simple paginated mode */
+        restore_data->page_size,         /* Page size (4 for testing) */
+        current_page_to_use,             /* Current page (from state if navigation occurred) */
+        &total_pages,                    /* Returns total pages (also in state->total_pages) */
+        last_nav_direction               /* Navigation direction for auto-select (-1=Prev, 0=None, +1=Next) */
     );
     
     if (restore_data->run_list_strings == NULL)
@@ -1871,12 +1861,17 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                 break;
             
             case IDCMP_GADGETUP:
+                log_debug(LOG_GUI, "IDCMP_GADGETUP: gadget=%p, ID=%d\n", gadget, gadget ? gadget->GadgetID : -1);
                 switch (gadget->GadgetID)
                 {
                     case GID_RESTORE_RUN_LIST:
                         {
+                            log_debug(LOG_GUI, "Run list clicked: mouseX=%d, mouseY=%d\n", mouseX, mouseY);
+                            
                             /* Use high-level handler for ALL ListView events */
                             iTidy_ListViewEvent event;
+                            
+                            log_debug(LOG_GUI, "Calling iTidy_HandleListViewGadgetUp...\n");
                             
                             if (iTidy_HandleListViewGadgetUp(
                                     restore_data->window,
@@ -1891,6 +1886,7 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                                     NUM_RUN_LIST_COLUMNS,
                                     &event))
                             {
+                                log_debug(LOG_GUI, "Handler returned TRUE: type=%d, did_sort=%d\n", event.type, event.did_sort);
                                 /* Refresh gadget if list was sorted */
                                 if (event.did_sort)
                                 {
@@ -1914,12 +1910,25 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                                         break;
                                     
                                     case ITIDY_LV_EVENT_NAV_HANDLED:
-                                        /* Navigation was handled internally by API - just rebuild list */
-                                        append_to_log("Page navigation handled: now on page %d of %d\n",
-                                                     restore_data->run_list_state->current_page,
-                                                     restore_data->run_list_state->total_pages);
+                                        /* Navigation was handled - update page counter */
+                                        /* In simple mode, state is NULL so we track page manually */
+                                        if (event.nav_direction == 1) {
+                                            /* Next page */
+                                            restore_data->current_page++;
+                                            log_debug(LOG_GUI, "NAV_HANDLED: Next -> page %d\n", restore_data->current_page);
+                                        }
+                                        else if (event.nav_direction == -1) {
+                                            /* Previous page */
+                                            if (restore_data->current_page > 1) {
+                                                restore_data->current_page--;
+                                            }
+                                            log_debug(LOG_GUI, "NAV_HANDLED: Previous -> page %d\n", restore_data->current_page);
+                                        }
                                         
-                                        /* Rebuild ListView with new page (state already updated) */
+                                        append_to_log("Page navigation: direction=%d, new page=%d\n",
+                                                     event.nav_direction, restore_data->current_page);
+                                        
+                                        /* Rebuild ListView with new page */
                                         populate_run_list(restore_data,
                                                          restore_data->run_entries,
                                                          restore_data->run_count);

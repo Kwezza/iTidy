@@ -21,6 +21,17 @@
 #include <exec/lists.h>
 
 /*---------------------------------------------------------------------------*/
+/* ListView Display Mode                                                     */
+/*---------------------------------------------------------------------------*/
+
+typedef enum {
+    ITIDY_MODE_FULL,              /* Full mode: sorting + state + optional pagination */
+    ITIDY_MODE_FULL_NO_SORT,      /* Full mode but disable sorting (was page_size=-1) */
+    ITIDY_MODE_SIMPLE,            /* Simple mode: display-only, no sorting/state (fast) */
+    ITIDY_MODE_SIMPLE_PAGINATED   /* Simple mode + pagination (best for large lists) */
+} iTidy_ListViewMode;
+
+/*---------------------------------------------------------------------------*/
 /* Column Alignment                                                          */
 /*---------------------------------------------------------------------------*/
 
@@ -228,10 +239,11 @@ struct List *iTidy_FormatListViewColumns(
     struct List *entries,
     int total_char_width,
     iTidy_ListViewState **out_state,
-    int page_size,              /* NEW: Entries per page (0=no pagination, -1=disable sorting, >0=auto-pagination) */
-    int current_page,           /* NEW: 1-based page number (ignored if page_size<=0) */
-    int *out_total_pages,       /* NEW: Returns total pages (can be NULL) */
-    int nav_direction           /* NEW: Navigation direction for auto-select (-1=Prev, 0=None, +1=Next) */
+    iTidy_ListViewMode mode,    /* Display mode (FULL/FULL_NO_SORT/SIMPLE/SIMPLE_PAGINATED) */
+    int page_size,              /* Entries per page (used with paginated modes, 0=auto-calculate) */
+    int current_page,           /* 1-based page number (ignored if no pagination) */
+    int *out_total_pages,       /* Returns total pages (can be NULL) */
+    int nav_direction           /* Navigation direction for auto-select (-1=Prev, 0=None, +1=Next) */
 );
 
 /**
@@ -460,6 +472,9 @@ typedef struct {
     const char *display_value;       /* Human-readable value */
     const char *sort_key;            /* Machine-readable value */
     iTidy_ColumnType column_type;    /* Column type (DATE/NUMBER/TEXT) */
+    
+    /* Navigation fields (valid when type == ITIDY_LV_EVENT_NAV_HANDLED) */
+    int nav_direction;               /* -1 = Previous, +1 = Next */
 } iTidy_ListViewEvent;
 
 /**

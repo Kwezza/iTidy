@@ -228,7 +228,7 @@ static void populate_session_list(iTidy_ToolRestoreData *data)
         data->session_display_list = iTidy_FormatListViewColumns(
             session_list_columns, NUM_SESSION_LIST_COLUMNS, &data->session_entry_list, data->listview_width, 
             &data->session_lv_state,
-            0, 1, NULL, 0);  /* No pagination, no navigation */
+            ITIDY_MODE_FULL, 0, 1, NULL, 0);  /* Full mode, no pagination */
         
         if (data->session_listview && data->window) {
             GT_SetGadgetAttrs(data->session_listview, data->window, NULL,
@@ -388,7 +388,7 @@ cleanup_entry:
     data->session_display_list = iTidy_FormatListViewColumns(
         session_list_columns, NUM_SESSION_LIST_COLUMNS, &data->session_entry_list, data->listview_width,
         &data->session_lv_state,
-        0, 1, NULL, 0);  /* No pagination, no navigation */
+        ITIDY_MODE_FULL, 0, 1, NULL, 0);  /* Full mode, no pagination */
     
     if (!data->session_display_list) {
         log_error(LOG_GUI, "populate_session_list: Formatter returned NULL!\n");
