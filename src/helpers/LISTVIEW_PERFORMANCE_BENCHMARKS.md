@@ -797,6 +797,45 @@ LDFLAGS = +aos68k -cpu=68000 -g -hunkdebug -lamiga -lauto -lmieee
 
 ## Known Issues
 
+### 🚨 CRITICAL: Kickstart 2.04 Incompatibility
+
+**Symptom**: Test program crashes on launch with Kickstart 2.04 (37.175) on real Amiga 500+
+
+**Affected Systems**:
+- Amiga 500+ with original Kickstart 2.04 (version 37.175)
+- Workbench 2.04 floppy boot
+
+**Workaround**:
+- Upgrade to Kickstart 3.1 (40.63) - **works perfectly**
+- Test program runs flawlessly with Kickstart 3.1 + Workbench 3.x
+
+**Status**: ⚠️ **UNDER INVESTIGATION**
+- Code uses APIs that may not be available or have bugs in Kickstart 2.04
+- Likely culprits: GadTools, Intuition, or DOS library function compatibility
+- Target compatibility is Workbench 3.0+ (Kickstart 39.x+)
+- Need to identify and fix Kickstart 2.04 incompatibility for full classic Amiga support
+
+**User Impact**:
+- Stock A500+ with original Kickstart 2.04 cannot run test program
+- Kickstart 3.1 upgrade is required for testing on classic hardware
+- This affects all 2.04-based systems (A500+, early A600)
+
+**Future Work**:
+- Investigate which API calls are incompatible with Kickstart 2.04
+- Add version checks and alternative code paths if possible
+- Consider minimum OS requirement documentation
+
+**⚠️ Note on Kickstart 1.3 Support**:
+- **Not planned** - Kickstart 1.3 (V34) and earlier will NOT be supported
+- **Reason**: iTidy relies heavily on **GadTools** (introduced in Workbench 2.0/Kickstart 2.04)
+- Kickstart 1.3 has no pre-built gadgets - requires manual Intuition boopsi implementation
+- Supporting 1.3 would require maintaining **two completely different codebases**
+- **Minimum target**: Kickstart 2.04 (V37) - if 2.04 compatibility can be fixed
+- **Recommended**: Kickstart 3.0+ (V39+) for full feature support
+- Community requests for 1.3 support would require substantial architectural redesign, but could be interesting to see how the original workbench works from a coding level?
+
+---
+
 ### Chip RAM Exhaustion
 - Test program requires ~1-1.2MB available chip RAM
 - Logging system uses additional file buffers

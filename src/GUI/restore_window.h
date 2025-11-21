@@ -101,6 +101,10 @@ struct iTidyRestoreWindow
     LONG selected_run_index;            /* Currently selected (-1 if none) */
     BOOL restore_window_geometry;       /* TRUE to restore window positions (default TRUE) */
     
+    /* Pagination state (API-managed via run_list_state) */
+    int current_page;                   /* Initial page for first load (1-based) - API manages after that */
+    int page_size;                      /* Entries per page (0 = no pagination) */
+    
     /* Double-click tracking */
     ULONG last_click_secs;              /* Last click timestamp seconds */
     ULONG last_click_micros;            /* Last click timestamp microseconds */

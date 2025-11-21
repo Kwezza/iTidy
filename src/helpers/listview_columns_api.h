@@ -69,6 +69,22 @@ typedef struct {
 } iTidy_ColumnConfig;
 
 /*---------------------------------------------------------------------------*/
+/* ListView Row Type                                                         */
+/*---------------------------------------------------------------------------*/
+
+/**
+ * @brief Type of row in ListView (data vs navigation)
+ * 
+ * Used to distinguish between actual data rows and pagination navigation rows.
+ * Navigation rows don't get formatted into columns - they span the full width.
+ */
+typedef enum {
+    ITIDY_ROW_DATA = 0,           /* Normal data row (default) */
+    ITIDY_ROW_NAV_PREV = 1,       /* "Previous Page" navigation row */
+    ITIDY_ROW_NAV_NEXT = 2        /* "Next Page" navigation row */
+} iTidy_RowType;
+
+/*---------------------------------------------------------------------------*/
 /* ListView Entry Structure                                                  */
 /*---------------------------------------------------------------------------*/
 
@@ -95,6 +111,7 @@ typedef struct {
     const char **display_data;     /* Pretty formatted: "24-Nov-2025 15:19" */
     const char **sort_keys;        /* Machine-sortable: "20251124_151900" */
     int num_columns;               /* Number of columns */
+    iTidy_RowType row_type;        /* Row type (DATA, NAV_PREV, NAV_NEXT) */
 } iTidy_ListViewEntry;
 
 /*---------------------------------------------------------------------------*/
@@ -119,15 +136,25 @@ typedef struct {
 } iTidy_ColumnState;
 
 /**
- * @brief Overall ListView state for sorting
+ * @brief Overall ListView state for sorting and pagination
  * 
- * Returned by iTidy_FormatListViewColumns and used by iTidy_ResortListViewByClick.
- * Tracks all columns and their current sort states.
+ * Returned by iTidy_FormatListViewColumns and used by iTidy_HandleListViewGadgetUp.
+ * Tracks all columns and their current sort states, plus pagination state.
+ * 
+ * IMPORTANT: The API owns pagination state and handles navigation automatically.
+ * Callers don't need to track page numbers or navigation direction.
  */
 typedef struct {
     iTidy_ColumnState *columns; /* Array of column states */
     int num_columns;            /* Number of columns */
     int separator_width;        /* Width of " | " separator (3 chars) */
+    
+    /* Pagination state (managed by API) */
+    int current_page;           /* Current page (1-based, 0 = no pagination) */
+    int total_pages;            /* Total number of pages */
+    int last_nav_direction;     /* -1 = Previous, +1 = Next, 0 = None/Sort */
+    int auto_select_row;        /* Row to auto-select after format (-1 = none) */
+    BOOL sorting_disabled;      /* TRUE if sorting explicitly disabled (page_size=-1) */
 } iTidy_ListViewState;
 
 /*---------------------------------------------------------------------------*/
@@ -200,7 +227,11 @@ struct List *iTidy_FormatListViewColumns(
     int num_columns,
     struct List *entries,
     int total_char_width,
-    iTidy_ListViewState **out_state
+    iTidy_ListViewState **out_state,
+    int page_size,              /* NEW: Entries per page (0=no pagination, -1=disable sorting, >0=auto-pagination) */
+    int current_page,           /* NEW: 1-based page number (ignored if page_size<=0) */
+    int *out_total_pages,       /* NEW: Returns total pages (can be NULL) */
+    int nav_direction           /* NEW: Navigation direction for auto-select (-1=Prev, 0=None, +1=Next) */
 );
 
 /**
@@ -402,7 +433,8 @@ typedef struct {
 typedef enum {
     ITIDY_LV_EVENT_NONE,           /* No valid event (click outside, error, etc.) */
     ITIDY_LV_EVENT_HEADER_SORTED,  /* Header clicked, list was sorted */
-    ITIDY_LV_EVENT_ROW_CLICK       /* Data row clicked */
+    ITIDY_LV_EVENT_ROW_CLICK,      /* Data row clicked */
+    ITIDY_LV_EVENT_NAV_HANDLED     /* Navigation row clicked, page changed internally (caller should rebuild list) */
 } iTidy_ListViewEventType;
 
 /**

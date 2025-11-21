@@ -375,6 +375,7 @@ static iTidy_ListViewEntry *create_listview_entry_from_run(struct RestoreRunEntr
     
     memset(lv_entry, 0, sizeof(iTidy_ListViewEntry));
     lv_entry->num_columns = NUM_RUN_LIST_COLUMNS;
+    lv_entry->row_type = ITIDY_ROW_DATA;  /* Normal data row */
     
     /* Allocate display_data and sort_keys arrays */
     lv_entry->display_data = (const char **)whd_malloc(sizeof(char *) * NUM_RUN_LIST_COLUMNS);
@@ -707,6 +708,27 @@ void populate_run_list(struct iTidyRestoreWindow *restore_data,
             TAG_END);
     }
     
+    /* CRITICAL: Save pagination state BEFORE freeing (API may have updated it) */
+    int current_page_to_use = restore_data->current_page;
+    int last_nav_direction = 0;  /* Default: no navigation */
+    
+    if (restore_data->run_list_state != NULL) {
+        if (restore_data->run_list_state->current_page > 0) {
+            current_page_to_use = restore_data->run_list_state->current_page;
+        }
+        /* Preserve navigation direction for auto-select calculation */
+        last_nav_direction = restore_data->run_list_state->last_nav_direction;
+        
+        if (last_nav_direction != 0) {
+            append_to_log("populate_run_list: Using page %d, nav_dir=%d (from state)\n", 
+                         current_page_to_use, last_nav_direction);
+        }
+    }
+    
+    if (current_page_to_use < 1) {
+        current_page_to_use = 1;
+    }
+    
     /* Free existing lists if any */
     if (restore_data->run_list_strings != NULL || 
         restore_data->run_list_state != NULL)
@@ -732,12 +754,22 @@ void populate_run_list(struct iTidyRestoreWindow *restore_data,
     }
     
     /* Format ListView with sortable columns (default sort by date descending) */
+    /* AUTO-PAGINATION: Sorting enabled when entries <= 4, pagination when > 4 */
+    restore_data->page_size = 4;
+    
+    /* Local variable for total_pages output (API state also tracks this) */
+    int total_pages = 0;
+    
     restore_data->run_list_strings = iTidy_FormatListViewColumns(
         run_list_columns,
         NUM_RUN_LIST_COLUMNS,
         &restore_data->run_entry_list,
         65,  /* Total width in characters */
-        &restore_data->run_list_state
+        &restore_data->run_list_state,
+        restore_data->page_size,         /* NEW: Page size (4 for testing) */
+        current_page_to_use,             /* NEW: Current page (from state if navigation occurred) */
+        &total_pages,                    /* NEW: Returns total pages (also in state->total_pages) */
+        last_nav_direction               /* NEW: Navigation direction for auto-select (-1=Prev, 0=None, +1=Next) */
     );
     
     if (restore_data->run_list_strings == NULL)
@@ -746,31 +778,38 @@ void populate_run_list(struct iTidyRestoreWindow *restore_data,
         return;
     }
     
-    /* Attach formatted list to gadget */
-    GT_SetGadgetAttrs(restore_data->run_list, restore_data->window, NULL,
-        GTLV_Labels, restore_data->run_list_strings,
-        GTLV_Selected, (count > 0) ? 0 : ~0,
-        TAG_END);
+    /* Attach formatted list to gadget with auto-selected row */
+    /* The API calculates the correct row to select based on navigation direction */
+    {
+        LONG select_row = 0;
+        
+        /* Use state's auto_select_row if available (API manages this for navigation) */
+        if (restore_data->run_list_state != NULL && restore_data->run_list_state->auto_select_row >= 0) {
+            select_row = restore_data->run_list_state->auto_select_row;
+            append_to_log("populate_run_list: Using API-calculated auto_select_row = %d (page %d of %d)\n",
+                         select_row, 
+                         restore_data->run_list_state->current_page,
+                         restore_data->run_list_state->total_pages);
+        }
+        else {
+            /* No pagination or first load - select first data row if available */
+            select_row = (count > 0) ? 2 : ~0;  /* Row 2 = first data row (after header + separator) */
+            append_to_log("populate_run_list: No pagination state, defaulting to row %d\n", select_row);
+        }
+        
+        GT_SetGadgetAttrs(restore_data->run_list, restore_data->window, NULL,
+            GTLV_Labels, restore_data->run_list_strings,
+            GTLV_Selected, select_row,
+            GTLV_Top, (select_row > 2) ? (select_row - 2) : 0,  /* Scroll to show selected row */
+            TAG_END);
+    }
     
-    /* Select first entry if any and enable buttons */
+    /* Enable buttons if we have data entries (not just navigation rows) */
     if (count > 0)
     {
-        restore_data->selected_run_index = 0;
-        
-        /* Find which entry is now first after sorting (newest by default) */
-        iTidy_ListViewEntry *first_entry = (iTidy_ListViewEntry *)restore_data->run_entry_list.lh_Head;
-        if (first_entry != NULL && first_entry->display_data != NULL)
-        {
-            /* Find matching RestoreRunEntry by run name */
-            for (i = 0; i < count; i++)
-            {
-                if (strcmp(entries[i].runName, first_entry->display_data[0]) == 0)
-                {
-                    update_details_panel(restore_data, &entries[i]);
-                    break;
-                }
-            }
-        }
+        /* Clear details panel since we're auto-selecting last row (likely navigation) */
+        /* Details will be populated when user clicks on an actual data row */
+        update_details_panel(restore_data, NULL);
         
         /* Enable restore and delete buttons */
         if (restore_data->window != NULL)
@@ -785,21 +824,10 @@ void populate_run_list(struct iTidyRestoreWindow *restore_data,
                             GA_Disabled, FALSE,
                             TAG_END);
             
-            /* Enable view folders if first entry has catalog */
-            if (first_entry != NULL && first_entry->display_data != NULL)
-            {
-                for (i = 0; i < count; i++)
-                {
-                    if (strcmp(entries[i].runName, first_entry->display_data[0]) == 0)
-                    {
-                        GT_SetGadgetAttrs(restore_data->view_folders_btn,
-                                        restore_data->window, NULL,
-                                        GA_Disabled, !entries[i].hasCatalog,
-                                        TAG_END);
-                        break;
-                    }
-                }
-            }
+            GT_SetGadgetAttrs(restore_data->view_folders_btn,
+                            restore_data->window, NULL,
+                            GA_Disabled, TRUE,  /* Disable until user selects a data row */
+                            TAG_END);
         }
     }
 }
@@ -1188,6 +1216,8 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     memset(restore_data, 0, sizeof(struct iTidyRestoreWindow));
     restore_data->selected_run_index = -1;
     restore_data->restore_window_geometry = TRUE;  /* Default to enabled */
+    restore_data->current_page = 1;                 /* Start on page 1 (for first format call) */
+    restore_data->page_size = 4;                    /* AUTO-PAGINATION: Sorting if ≤4, pagination if >4 */
     strcpy(restore_data->backup_root_path, "PROGDIR:Backups");
     
     /* Get Workbench screen */
@@ -1881,6 +1911,18 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                                         /* Log sort event */
                                         append_to_log("Run list sorted by column %d, order %d\n",
                                                      event.sorted_column, event.sort_order);
+                                        break;
+                                    
+                                    case ITIDY_LV_EVENT_NAV_HANDLED:
+                                        /* Navigation was handled internally by API - just rebuild list */
+                                        append_to_log("Page navigation handled: now on page %d of %d\n",
+                                                     restore_data->run_list_state->current_page,
+                                                     restore_data->run_list_state->total_pages);
+                                        
+                                        /* Rebuild ListView with new page (state already updated) */
+                                        populate_run_list(restore_data,
+                                                         restore_data->run_entries,
+                                                         restore_data->run_count);
                                         break;
                                     
                                     case ITIDY_LV_EVENT_ROW_CLICK:
