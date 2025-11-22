@@ -102,7 +102,8 @@ struct iTidyRestoreWindow
     struct List *run_list_strings;      /* Formatted display list for run ListView */
     struct List run_entry_list;         /* Entry list for sortable run ListView */
     iTidy_ListViewState *run_list_state; /* State tracking for sortable columns */
-    struct List *details_list_strings;  /* List for details ListView */
+        struct List *details_list_strings;  /* List for details ListView */
+        iTidy_ListViewSession *run_list_session; /* Session wrapper for run list */
     ULONG run_count;                    /* Number of runs found */
     LONG selected_run_index;            /* Currently selected (-1 if none) */
     BOOL restore_window_geometry;       /* TRUE to restore window positions (default TRUE) */

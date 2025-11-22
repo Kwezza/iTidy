@@ -65,6 +65,10 @@
 #include "../string_functions.h"    /* For iTidy_FormatTimestamp() */
 #include "easy_request_helper.h"  /* Global EasyRequest helper */
 
+#ifndef NewList
+VOID NewList(struct List *list);
+#endif
+
 /*------------------------------------------------------------------------*/
 /* External Global Variables                                             */
 /*------------------------------------------------------------------------*/
@@ -374,6 +378,8 @@ static iTidy_ListViewEntry *create_listview_entry_from_run(struct RestoreRunEntr
         return NULL;
     
     memset(lv_entry, 0, sizeof(iTidy_ListViewEntry));
+    lv_entry->node.ln_Type = NT_USER;
+    lv_entry->source_entry = lv_entry;
     lv_entry->num_columns = NUM_RUN_LIST_COLUMNS;
     lv_entry->row_type = ITIDY_ROW_DATA;  /* Normal data row */
     
@@ -700,6 +706,10 @@ void populate_run_list(struct iTidyRestoreWindow *restore_data,
     
     if (restore_data == NULL || restore_data->run_list == NULL)
         return;
+
+    BOOL can_reuse_entries = (nav_direction != 0) &&
+                              (restore_data->run_list_session != NULL) &&
+                              (restore_data->run_entry_list.lh_TailPred != NULL);
     
     /* Detach old list from gadget */
     if (restore_data->run_list_strings != NULL)
@@ -721,28 +731,41 @@ void populate_run_list(struct iTidyRestoreWindow *restore_data,
     append_to_log("[NAV] Building page %d with nav_direction=%d\n", 
                   current_page_to_use, nav_direction);
     
-    /* Free existing lists if any */
-    if (restore_data->run_list_strings != NULL || 
-        restore_data->run_list_state != NULL)
-    {
-        itidy_free_listview_entries(&restore_data->run_entry_list,
-                                    restore_data->run_list_strings,
-                                    restore_data->run_list_state);
-        restore_data->run_list_strings = NULL;
-        restore_data->run_list_state = NULL;
-    }
-    
-    /* Initialize entry list */
-    NewList(&restore_data->run_entry_list);
-    
-    /* Build entry list - entries are already in chronological order from scan */
-    for (i = 0; i < count; i++)
-    {
-        lv_entry = create_listview_entry_from_run(&entries[i]);
-        if (lv_entry != NULL)
-        {
-            AddTail(&restore_data->run_entry_list, (struct Node *)lv_entry);
+    if (!can_reuse_entries) {
+        /* Free existing formatted data while preserving entry cleanup */
+        if (restore_data->run_list_session != NULL) {
+            iTidy_ListViewSessionDestroy(restore_data->run_list_session);
+            restore_data->run_list_session = NULL;
+            restore_data->run_list_strings = NULL;
+            restore_data->run_list_state = NULL;
         }
+        else if (restore_data->run_list_strings != NULL || 
+                 restore_data->run_list_state != NULL)
+        {
+            itidy_free_listview_entries(&restore_data->run_entry_list,
+                                        restore_data->run_list_strings,
+                                        restore_data->run_list_state);
+            restore_data->run_list_strings = NULL;
+            restore_data->run_list_state = NULL;
+        }
+
+        /* Always free existing entry nodes before rebuilding */
+        if (restore_data->run_entry_list.lh_TailPred != NULL) {
+            itidy_free_listview_entries(&restore_data->run_entry_list, NULL, NULL);
+        }
+        NewList(&restore_data->run_entry_list);
+        
+        /* Build entry list - entries are already in chronological order from scan */
+        for (i = 0; i < count; i++)
+        {
+            lv_entry = create_listview_entry_from_run(&entries[i]);
+            if (lv_entry != NULL)
+            {
+                AddTail(&restore_data->run_entry_list, (struct Node *)lv_entry);
+            }
+        }
+    } else {
+        append_to_log("[NAV] Reusing existing run entry list for pagination\n");
     }
     
     /* Format ListView with sortable columns (default sort by date descending) */
@@ -752,22 +775,53 @@ void populate_run_list(struct iTidyRestoreWindow *restore_data,
     /* Local variable for total_pages output (API state also tracks this) */
     int total_pages = 0;
     
-    restore_data->run_list_strings = iTidy_FormatListViewColumns(
-        run_list_columns,
-        NUM_RUN_LIST_COLUMNS,
-        &restore_data->run_entry_list,
-        65,  /* Total width in characters */
-        &restore_data->run_list_state,
-        restore_data->current_mode,      /* Use current mode from cycle gadget */
-        restore_data->page_size,         /* Page size (adjusted per mode) */
-        current_page_to_use,             /* Current page (from state if navigation occurred) */
-        &total_pages,                    /* Returns total pages (also in state->total_pages) */
-        nav_direction                    /* Navigation direction from event or 0 for initial */
-    );
+    {
+        if (!can_reuse_entries) {
+            iTidy_ListViewOptions options;
+            iTidy_InitListViewOptions(&options);
+            options.columns = run_list_columns;
+            options.num_columns = NUM_RUN_LIST_COLUMNS;
+            options.entries = &restore_data->run_entry_list;
+            options.total_char_width = 65;          /* Total width in characters */
+            options.out_state = &restore_data->run_list_state;
+            options.mode = restore_data->current_mode;     /* Use current mode from cycle gadget */
+            options.page_size = restore_data->page_size;   /* Page size (adjusted per mode) */
+            options.current_page = current_page_to_use;    /* Current page (from state if navigation occurred) */
+            options.out_total_pages = &total_pages;        /* Returns total pages (also in state->total_pages) */
+            options.nav_direction = nav_direction;         /* Navigation direction from event or 0 for initial */
+
+            restore_data->run_list_session = iTidy_ListViewSessionCreate(&options);
+            if (restore_data->run_list_session) {
+                restore_data->run_list_strings = iTidy_ListViewSessionFormat(restore_data->run_list_session);
+            } else {
+                restore_data->run_list_strings = NULL;
+            }
+        } else {
+            iTidy_ListViewSession *session = restore_data->run_list_session;
+            if (session) {
+                session->options.entries = &restore_data->run_entry_list;
+                session->entry_list = &restore_data->run_entry_list;
+                session->options.total_char_width = 65;
+                session->options.out_state = &restore_data->run_list_state;
+                session->options.mode = restore_data->current_mode;
+                session->options.page_size = restore_data->page_size;
+                session->options.current_page = current_page_to_use;
+                session->options.out_total_pages = &total_pages;
+                session->options.nav_direction = nav_direction;
+                restore_data->run_list_strings = iTidy_ListViewSessionFormat(session);
+            } else {
+                restore_data->run_list_strings = NULL;
+            }
+        }
+    }
     
     if (restore_data->run_list_strings == NULL)
     {
         append_to_log("ERROR: Failed to format run list\n");
+        if (restore_data->run_entry_list.lh_TailPred != NULL) {
+            itidy_free_listview_entries(&restore_data->run_entry_list, NULL, NULL);
+            NewList(&restore_data->run_entry_list);
+        }
         return;
     }
     
@@ -1826,7 +1880,14 @@ void close_restore_window(struct iTidyRestoreWindow *restore_data)
     }
     
     /* Free run list using centralized cleanup */
-    if (restore_data->run_list_strings != NULL || restore_data->run_list_state != NULL)
+    if (restore_data->run_list_session != NULL) {
+        append_to_log("Destroying run list session\n");
+        iTidy_ListViewSessionDestroy(restore_data->run_list_session);
+        restore_data->run_list_session = NULL;
+        restore_data->run_list_strings = NULL;
+        restore_data->run_list_state = NULL;
+    }
+    else if (restore_data->run_list_strings != NULL || restore_data->run_list_state != NULL)
     {
         append_to_log("Freeing run list entries and state\n");
         itidy_free_listview_entries(&restore_data->run_entry_list,
@@ -1834,6 +1895,12 @@ void close_restore_window(struct iTidyRestoreWindow *restore_data)
                                     restore_data->run_list_state);
         restore_data->run_list_strings = NULL;
         restore_data->run_list_state = NULL;
+    }
+
+    /* Free remaining entry nodes regardless of session state */
+    if (restore_data->run_entry_list.lh_TailPred != NULL) {
+        itidy_free_listview_entries(&restore_data->run_entry_list, NULL, NULL);
+        NewList(&restore_data->run_entry_list);
     }
     
     /* Free details list strings */
@@ -2004,37 +2071,34 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                                         break;
                                     
                                     case ITIDY_LV_EVENT_NAV_HANDLED:
-                                        /* Navigation was handled - update page counter */
-                                        /* In simple mode, state is NULL so we track page manually */
-                                        if (event.nav_direction == 1) {
-                                            /* Next page */
-                                            restore_data->current_page++;
-                                            append_to_log("[NAV] ========================================\n");
-                                            append_to_log("[NAV] NEXT BUTTON CLICKED\n");
-                                            append_to_log("[NAV] Page changed to: %d\n", restore_data->current_page);
-                                            append_to_log("[NAV] Navigation direction: +1\n");
-                                            append_to_log("[NAV] ========================================\n");
-                                        }
-                                        else if (event.nav_direction == -1) {
-                                            /* Previous page */
-                                            if (restore_data->current_page > 1) {
-                                                restore_data->current_page--;
+                                        {
+                                            int new_page = restore_data->current_page;
+                                            int total_pages = 0;
+
+                                            if (restore_data->run_list_state) {
+                                                if (restore_data->run_list_state->current_page > 0) {
+                                                    new_page = restore_data->run_list_state->current_page;
+                                                }
+                                                if (restore_data->run_list_state->total_pages > 0) {
+                                                    total_pages = restore_data->run_list_state->total_pages;
+                                                }
                                             }
+
+                                            restore_data->current_page = new_page;
+
                                             append_to_log("[NAV] ========================================\n");
-                                            append_to_log("[NAV] PREVIOUS BUTTON CLICKED\n");
-                                            append_to_log("[NAV] Page changed to: %d\n", restore_data->current_page);
-                                            append_to_log("[NAV] Navigation direction: -1\n");
+                                            append_to_log("[NAV] direction=%d | page=%d of %d\n",
+                                                         event.nav_direction,
+                                                         new_page,
+                                                         total_pages > 0 ? total_pages : -1);
                                             append_to_log("[NAV] ========================================\n");
-                                        }
-                                        
-                                        append_to_log("Page navigation: direction=%d, new page=%d\n",
-                                                     event.nav_direction, restore_data->current_page);
-                                        
+
                                         /* Rebuild ListView with new page and nav_direction from event */
                                         populate_run_list(restore_data,
                                                          restore_data->run_entries,
                                                          restore_data->run_count,
                                                          event.nav_direction);  /* Pass direction from event */
+                                        }
                                         break;
                                     
                                     case ITIDY_LV_EVENT_ROW_CLICK:
@@ -2342,61 +2406,7 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                 break;
             
             case IDCMP_MOUSEBUTTONS:
-                append_to_log("MOUSEBUTTONS event: msgCode=%d, SELECTDOWN=%d, mouseX=%d, mouseY=%d\n",
-                             msgCode, SELECTDOWN, mouseX, mouseY);
-                
-                /* Handle column header clicks for sorting */
-                if (msgCode == SELECTDOWN && restore_data->run_list_state != NULL)
-                {
-                    append_to_log("Processing MOUSEBUTTONS for sorting...\n");
-                    
-                    /* Use high-level sort handler - handles everything automatically */
-                    if (iTidy_HandleListViewSort(
-                            restore_data->window,
-                            restore_data->run_list,
-                            restore_data->run_list_strings,
-                            &restore_data->run_entry_list,
-                            restore_data->run_list_state,
-                            mouseX, mouseY,
-                            prefsIControl.systemFontSize,
-                            prefsIControl.systemFontCharWidth,
-                            run_list_columns,
-                            NUM_RUN_LIST_COLUMNS))
-                    {
-                        append_to_log("Run list sorted by column click\n");
-                        
-                        /* After sorting, update selection to first item if nothing selected */
-                        if (restore_data->selected_run_index < 0 && restore_data->run_count > 0)
-                        {
-                            /* Find first entry after sort */
-                            iTidy_ListViewEntry *first_entry = 
-                                (iTidy_ListViewEntry *)restore_data->run_entry_list.lh_Head;
-                            
-                            if (first_entry != NULL && first_entry->display_data != NULL)
-                            {
-                                /* Find matching RestoreRunEntry */
-                                ULONG i;
-                                for (i = 0; i < restore_data->run_count; i++)
-                                {
-                                    if (strcmp(restore_data->run_entries[i].runName, 
-                                             first_entry->display_data[0]) == 0)
-                                    {
-                                        restore_data->selected_run_index = i;
-                                        update_details_panel(restore_data, 
-                                                           &restore_data->run_entries[i]);
-                                        
-                                        /* Select first item in ListView */
-                                        GT_SetGadgetAttrs(restore_data->run_list,
-                                                        restore_data->window, NULL,
-                                                        GTLV_Selected, 0,
-                                                        TAG_END);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                /* Clicks are fully handled by iTidy_HandleListViewGadgetUp() */
                 break;
         }
     }

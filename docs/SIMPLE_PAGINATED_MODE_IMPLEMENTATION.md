@@ -7,6 +7,12 @@
 
 Enhanced the ListView Column API to support **Simple Paginated Mode** - combining simple mode's minimal allocations with pagination for responsive UI with large lists.
 
+> **2025-11-22 Update**: The simple paginated formatter now flows through the main
+> `iTidy_FormatListViewColumns()` helpers. The legacy stand-alone formatter is kept
+> behind the `ITIDY_SIMPLE_PAGINATED_ROLLBACK_GUARD` compile-time switch for emergency rollback.
+> Simple paginated mode also returns a minimal `iTidy_ListViewState` when navigation
+> rows are present so callers can rely on unified state semantics.
+
 ## Problem Statement
 
 **Previous Limitation:**
@@ -78,31 +84,20 @@ typedef struct {
 
 ## Implementation Details
 
-### New Functions
+### Implementation Notes
 
-#### 1. Simple Paginated Formatter
+#### 1. Legacy Simple Paginated Formatter (Rollback Guard)
 
-**File**: `src/helpers/listview_columns_api.c` (lines ~850-1000)
+**File**: `src/helpers/listview_columns_api.c`
 
 ```c
-static struct List *iTidy_FormatListViewColumns_SimplePaginated(
-    iTidy_ColumnConfig *columns,
-    int num_columns,
-    struct List *entries,
-    int total_char_width,
-    int page_size,
-    int current_page,
-    int total_pages,
-    BOOL has_prev_page,
-    BOOL has_next_page,
-    int nav_direction)
+#if ITIDY_SIMPLE_PAGINATED_ROLLBACK_GUARD
+static struct List *iTidy_FormatListViewColumns_SimplePaginated(...)
+#endif
 ```
 
-**Features:**
-- Minimal allocations: Only formats visible page entries
-- Navigation rows: Previous/Next with page info
-- No state tracking: Pure display mode
-- Fast: No sorting, no state management
+**Usage:** Enabled only when `ITIDY_SIMPLE_PAGINATED_ROLLBACK_GUARD` is set to `1`. The
+unified formatter path is the default and should be exercised for all testing.
 
 #### 2. Helper: Format Data Row
 
@@ -245,14 +240,14 @@ data->session_display_list = iTidy_FormatListViewColumns(
 
 ## Notes
 
-### Why Not Use State in Simple Mode?
+### Minimal State Strategy
 
-Simple paginated mode deliberately avoids creating state structures to minimize memory overhead. Navigation detection uses text pattern matching instead of state tracking.
+Simple paginated mode now allocates a **minimal `iTidy_ListViewState`** whenever navigation rows are emitted. The structure only tracks pagination metadata (current page, total page count, last navigation direction, auto-select row) and does **not** include column geometry.
 
 **Tradeoffs:**
-- **Pro**: Minimal allocations, fast display
-- **Con**: No column click sorting, no state persistence
-- **Acceptable**: Restore window is read-only, sorting not needed
+- **Pro**: Keeps allocation count low while unifying state handling for all modes
+- **Con**: Column clicks remain disabled (no column metadata)
+- **Acceptable**: Restore window is read-only, so column-level interactions are unnecessary
 
 ### Default Page Size
 

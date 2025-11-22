@@ -125,7 +125,8 @@ struct iTidy_ToolRestoreData {
     
     /* Sorting support for session ListView */
     struct List session_entry_list;     /* List of iTidy_ListViewEntry for sorting */
-    iTidy_ListViewState *session_lv_state; /* State for column sorting */
+    iTidy_ListViewState *session_lv_state; /* State for column sorting (legacy, now via session) */
+    iTidy_ListViewSession *session_lv_session; /* Session wrapper for ListView */
     int last_sort_column;               /* Track which column was last sorted (-1 = none) */
     
     /* Layout dimensions */
@@ -166,11 +167,22 @@ static void cleanup_display_lists(iTidy_ToolRestoreData *data)
     }
     
     /* Free session ListView resources (entry list, display list, and state) */
-    itidy_free_listview_entries(&data->session_entry_list,
-                                data->session_display_list,
-                                data->session_lv_state);
-    data->session_display_list = NULL;
-    data->session_lv_state = NULL;
+    if (data->session_lv_session) {
+        iTidy_ListViewSessionDestroy(data->session_lv_session);
+        data->session_lv_session = NULL;
+        data->session_display_list = NULL;
+        data->session_lv_state = NULL;
+    } else {
+        itidy_free_listview_entries(&data->session_entry_list,
+                                    data->session_display_list,
+                                    data->session_lv_state);
+        data->session_display_list = NULL;
+        data->session_lv_state = NULL;
+    }
+    if (data->session_entry_list.lh_TailPred != NULL) {
+        itidy_free_listview_entries(&data->session_entry_list, NULL, NULL);
+        NewList(&data->session_entry_list);
+    }
     
     /* Free changes display list (ln_Name belongs to change) */
     node = data->changes_display_list.lh_Head;
@@ -205,11 +217,21 @@ static void populate_session_list(iTidy_ToolRestoreData *data)
     
     /* Free old ListView resources */
     log_debug(LOG_GUI, "populate_session_list: Freeing old ListView data\n");
-    itidy_free_listview_entries(&data->session_entry_list,
-                                data->session_display_list,
-                                data->session_lv_state);
-    data->session_display_list = NULL;
-    data->session_lv_state = NULL;
+    if (data->session_lv_session) {
+        iTidy_ListViewSessionDestroy(data->session_lv_session);
+        data->session_lv_session = NULL;
+        data->session_display_list = NULL;
+        data->session_lv_state = NULL;
+    } else {
+        itidy_free_listview_entries(&data->session_entry_list,
+                                    data->session_display_list,
+                                    data->session_lv_state);
+        data->session_display_list = NULL;
+        data->session_lv_state = NULL;
+    }
+    if (data->session_entry_list.lh_TailPred != NULL) {
+        itidy_free_listview_entries(&data->session_entry_list, NULL, NULL);
+    }
     NewList(&data->session_entry_list);
     
     /* Free old session data */
@@ -223,13 +245,24 @@ static void populate_session_list(iTidy_ToolRestoreData *data)
     
     if (count == 0) {
         log_info(LOG_GUI, "populate_session_list: No backups found, showing empty list\n");
-        
-        /* Format empty list with headers only */
-        data->session_display_list = iTidy_FormatListViewColumns(
-            session_list_columns, NUM_SESSION_LIST_COLUMNS, &data->session_entry_list, data->listview_width, 
-            &data->session_lv_state,
-            ITIDY_MODE_FULL, 0, 1, NULL, 0);  /* Full mode, no pagination */
-        
+        iTidy_ListViewOptions options;
+        iTidy_InitListViewOptions(&options);
+        options.columns = session_list_columns;
+        options.num_columns = NUM_SESSION_LIST_COLUMNS;
+        options.entries = &data->session_entry_list;
+        options.total_char_width = data->listview_width;
+        options.out_state = &data->session_lv_state;
+        options.mode = ITIDY_MODE_FULL;
+        options.page_size = 0;
+        options.current_page = 1;
+        options.out_total_pages = NULL;
+        options.nav_direction = 0;
+        data->session_lv_session = iTidy_ListViewSessionCreate(&options);
+        if (data->session_lv_session) {
+            data->session_display_list = iTidy_ListViewSessionFormat(data->session_lv_session);
+        } else {
+            data->session_display_list = NULL;
+        }
         if (data->session_listview && data->window) {
             GT_SetGadgetAttrs(data->session_listview, data->window, NULL,
                               GTLV_Labels, data->session_display_list,
@@ -259,12 +292,12 @@ static void populate_session_list(iTidy_ToolRestoreData *data)
             log_error(LOG_GUI, "Failed to allocate entry node\n");
             break;
         }
-        
+
+        memset(entry, 0, sizeof(iTidy_ListViewEntry));
+        entry->node.ln_Type = NT_USER;
+        entry->source_entry = entry;
         entry->num_columns = 4;
         entry->row_type = ITIDY_ROW_DATA;  /* Normal data row */
-        entry->node.ln_Name = NULL;  /* Formatter will set this */
-        entry->display_data = NULL;
-        entry->sort_keys = NULL;
         
         /* Allocate column arrays */
         entry->display_data = (const char **)whd_malloc(sizeof(const char *) * 4);
@@ -385,15 +418,30 @@ cleanup_entry:
     /* Format the list with sorting enabled */
     log_debug(LOG_GUI, "populate_session_list: Calling formatter with %u entries, width=%u\n", 
               count, data->listview_width);
-    data->session_display_list = iTidy_FormatListViewColumns(
-        session_list_columns, NUM_SESSION_LIST_COLUMNS, &data->session_entry_list, data->listview_width,
-        &data->session_lv_state,
-        ITIDY_MODE_FULL, 0, 1, NULL, 0);  /* Full mode, no pagination */
-    
-    if (!data->session_display_list) {
-        log_error(LOG_GUI, "populate_session_list: Formatter returned NULL!\n");
-    } else {
-        log_debug(LOG_GUI, "populate_session_list: Formatter succeeded\n");
+    {
+        iTidy_ListViewOptions options;
+        iTidy_InitListViewOptions(&options);
+        options.columns = session_list_columns;
+        options.num_columns = NUM_SESSION_LIST_COLUMNS;
+        options.entries = &data->session_entry_list;
+        options.total_char_width = data->listview_width;
+        options.out_state = &data->session_lv_state;
+        options.mode = ITIDY_MODE_FULL;
+        options.page_size = 0;
+        options.current_page = 1;
+        options.out_total_pages = NULL;
+        options.nav_direction = 0;
+        data->session_lv_session = iTidy_ListViewSessionCreate(&options);
+        if (data->session_lv_session) {
+            data->session_display_list = iTidy_ListViewSessionFormat(data->session_lv_session);
+        } else {
+            data->session_display_list = NULL;
+        }
+        if (!data->session_display_list) {
+            log_error(LOG_GUI, "populate_session_list: Formatter returned NULL!\n");
+        } else {
+            log_debug(LOG_GUI, "populate_session_list: Formatter succeeded\n");
+        }
     }
     
     /* Update the ListView gadget */
@@ -766,23 +814,6 @@ BOOL iTidy_HandleToolRestoreWindowEvent(struct Window *window, struct IntuiMessa
             GT_EndRefresh(window, TRUE);
             break;
             
-        case IDCMP_MOUSEBUTTONS:
-            /* Handle column header clicks for sorting (high-level API) */
-            if (code == SELECTDOWN && data->session_listview && data->session_lv_state && data->session_display_list) {
-                iTidy_HandleListViewSort(
-                    window,
-                    data->session_listview,
-                    data->session_display_list,
-                    &data->session_entry_list,
-                    data->session_lv_state,
-                    msg->MouseX, msg->MouseY,
-                    prefsIControl.systemFontSize,
-                    prefsIControl.systemFontCharWidth,
-                    session_list_columns, NUM_SESSION_LIST_COLUMNS
-                );
-            }
-            break;
-            
         case IDCMP_GADGETUP:
             switch (gad->GadgetID) {
                 case GID_SESSION_LIST:
@@ -941,11 +972,22 @@ void iTidy_CloseToolRestoreWindow(struct Window *window)
         }
         
         /* Free session ListView resources (entry list, display list, and state) */
-        itidy_free_listview_entries(&data->session_entry_list,
-                                    data->session_display_list,
-                                    data->session_lv_state);
-        data->session_display_list = NULL;
-        data->session_lv_state = NULL;
+        if (data->session_lv_session) {
+            iTidy_ListViewSessionDestroy(data->session_lv_session);
+            data->session_lv_session = NULL;
+            data->session_display_list = NULL;
+            data->session_lv_state = NULL;
+        } else {
+            itidy_free_listview_entries(&data->session_entry_list,
+                                        data->session_display_list,
+                                        data->session_lv_state);
+            data->session_display_list = NULL;
+            data->session_lv_state = NULL;
+        }
+        if (data->session_entry_list.lh_TailPred != NULL) {
+            itidy_free_listview_entries(&data->session_entry_list, NULL, NULL);
+            NewList(&data->session_entry_list);
+        }
         
         /* Free changes display list (just the wrapper nodes) */
         {

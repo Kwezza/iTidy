@@ -117,12 +117,13 @@ typedef enum {
  * - Formatter reads these to create ln_Name formatted strings
  * - Formatter owns ln_Name strings (freed by iTidy_FreeFormattedList)
  */
-typedef struct {
-    struct Node node;              /* Embedded Node (ln_Name = formatted display) */
-    const char **display_data;     /* Pretty formatted: "24-Nov-2025 15:19" */
-    const char **sort_keys;        /* Machine-sortable: "20251124_151900" */
-    int num_columns;               /* Number of columns */
-    iTidy_RowType row_type;        /* Row type (DATA, NAV_PREV, NAV_NEXT) */
+typedef struct iTidy_ListViewEntry {
+    struct Node node;                  /* Embedded Node (ln_Name = formatted display) */
+    const char **display_data;         /* Pretty formatted: "24-Nov-2025 15:19" */
+    const char **sort_keys;            /* Machine-sortable: "20251124_151900" */
+    struct iTidy_ListViewEntry *source_entry; /* Original data entry when used in display list */
+    int num_columns;                   /* Number of columns */
+    iTidy_RowType row_type;            /* Row type (DATA, NAV_PREV, NAV_NEXT) */
 } iTidy_ListViewEntry;
 
 /*---------------------------------------------------------------------------*/
@@ -166,7 +167,44 @@ typedef struct {
     int last_nav_direction;     /* -1 = Previous, +1 = Next, 0 = None/Sort */
     int auto_select_row;        /* Row to auto-select after format (-1 = none) */
     BOOL sorting_disabled;      /* TRUE if sorting explicitly disabled (page_size=-1) */
+
+    /* Column width cache metadata */
+    void *entry_list_ptr;       /* Pointer to entry list used for cached widths */
+    ULONG entry_count;          /* Entry count used when widths were calculated */
+    int cached_total_char_width;/* Total char width used for cached widths */
+    BOOL column_widths_cached;  /* TRUE when char widths are valid for reuse */
 } iTidy_ListViewState;
+
+/*---------------------------------------------------------------------------*/
+/* High-Level Formatting Options                                             */
+/*---------------------------------------------------------------------------*/
+
+typedef struct {
+    iTidy_ColumnConfig *columns;      /* Column configuration array */
+    int num_columns;                  /* Number of columns in array */
+    struct List *entries;             /* Entry list to format */
+    int total_char_width;             /* Total width in characters */
+    iTidy_ListViewState **out_state;  /* Optional output state */
+    iTidy_ListViewMode mode;          /* Display mode */
+    int page_size;                    /* Page size for pagination */
+    int current_page;                 /* 1-based page number */
+    int *out_total_pages;             /* Optional total pages output */
+    int nav_direction;                /* Navigation direction hint */
+} iTidy_ListViewOptions;
+
+/*---------------------------------------------------------------------------*/
+/* Session Wrapper                                                           */
+/*---------------------------------------------------------------------------*/
+
+typedef struct iTidy_ListViewSession {
+    iTidy_ListViewOptions options;        /* Snapshot of formatting options */
+    struct List *display_list;           /* Last formatted display list */
+    struct List *entry_list;             /* Source entries (non-owning by default) */
+    iTidy_ListViewState *state;          /* Cached state pointer */
+    iTidy_ListViewState **state_target;  /* Pointer to caller's state pointer (or internal) */
+    BOOL owns_entry_list;                /* Reserved for future ownership semantics */
+    BOOL formatted_once;                 /* TRUE after first successful format */
+} iTidy_ListViewSession;
 
 /*---------------------------------------------------------------------------*/
 /* Main Formatting Function                                                  */
@@ -233,6 +271,13 @@ typedef struct {
  * // Now free entry structures and their strings
  * @endcode
  */
+void iTidy_InitListViewOptions(iTidy_ListViewOptions *options);
+BOOL iTidy_ValidateListViewOptions(const iTidy_ListViewOptions *options, const char **out_error_text);
+struct List *iTidy_FormatListViewColumnsEx(const iTidy_ListViewOptions *options);
+iTidy_ListViewSession *iTidy_ListViewSessionCreate(const iTidy_ListViewOptions *options);
+struct List *iTidy_ListViewSessionFormat(iTidy_ListViewSession *session);
+void iTidy_ListViewSessionDestroy(iTidy_ListViewSession *session);
+
 struct List *iTidy_FormatListViewColumns(
     iTidy_ColumnConfig *columns,
     int num_columns,
@@ -366,6 +411,9 @@ BOOL iTidy_ResortListViewByClick(
  * @note This function handles busy pointer automatically - no need to set it manually
  * @note Gadget is refreshed automatically if sorting occurred
  */
+#if defined(__VBCC__)
+BOOL iTidy_HandleListViewSort();
+#else
 BOOL iTidy_HandleListViewSort(
     struct Window *window,
     struct Gadget *listview_gadget,
@@ -379,6 +427,7 @@ BOOL iTidy_HandleListViewSort(
     iTidy_ColumnConfig *columns,
     int num_columns
 );
+#endif
 
 /**
  * @brief Map a ListView row selection to the corresponding entry in the sorted list
@@ -548,6 +597,9 @@ typedef struct {
  *     break;
  * @endcode
  */
+#if defined(__VBCC__)
+BOOL iTidy_HandleListViewGadgetUp();
+#else
 BOOL iTidy_HandleListViewGadgetUp(
     struct Window *window,
     struct Gadget *gadget,
@@ -562,6 +614,7 @@ BOOL iTidy_HandleListViewGadgetUp(
     int num_columns,
     iTidy_ListViewEvent *out_event
 );
+#endif
 
 /**
  * @brief Detect which column was clicked based on mouse X position

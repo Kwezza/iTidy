@@ -95,56 +95,6 @@
  *       struct Node *node;
  *       while ((node = RemHead(&data->session_entry_list)) != NULL) {
  *           iTidy_ListViewEntry *entry = (iTidy_ListViewEntry *)node;
- *           int i;
- *           
- *           // 1. Free formatted display string (ln_Name)
- *           if (entry->node.ln_Name) {
- *               whd_free(entry->node.ln_Name);  // ~92 bytes - set by formatter
- *           }
- *           
- *           // 2-5. Free display_data strings (4 columns)
- *           for (i = 0; i < entry->num_columns; i++) {
- *               if (entry->display_data && entry->display_data[i]) {
- *                   whd_free((void *)entry->display_data[i]);
- *               }
- *               // 6-9. Free sort_keys strings (4 columns)
- *               if (entry->sort_keys && entry->sort_keys[i]) {
- *                   whd_free((void *)entry->sort_keys[i]);
- *               }
- *           }
- *           
- *           // 10. Free display_data array
- *           if (entry->display_data) whd_free((void *)entry->display_data);
- *           // 11. Free sort_keys array
- *           if (entry->sort_keys) whd_free((void *)entry->sort_keys);
- *           
- *           // 12. Free entry node itself
- *           whd_free(entry);
- *       }
- *       ```
- *    
- *    Memory Leak Warning:
- *    - Failing to free entry->node.ln_Name causes 5 leaks of ~92 bytes each (460 bytes total)
- *    - Failing to free entire entry list causes 100+ leaks (3000+ bytes)
- *    - Always use memory tracking (#define DEBUG_MEMORY_TRACKING) during development
- * 
- * 5. SORTING - Click-to-Sort Implementation:
- *    
- *    To enable column header sorting, you must:
- *    
- *    a) Detect header clicks in IDCMP_GADGETUP event:
- *       ```c
- *       if (selected_index < 2) {  // Indices 0-1 are header rows
- *           // Calculate which column was clicked using mouse X position
- *           WORD mouse_x = msg->MouseX;
- *           WORD relative_x = mouse_x - gadget->LeftEdge;
- *           int char_pos = relative_x / font_char_width;
- *           
- *           // Find column containing char_pos
- *           for (int i = 0; i < num_columns; i++) {
- *               if (char_pos >= state->columns[i].char_start &&
- *                   char_pos < state->columns[i].char_end) {
- *                   clicked_column = i;
  *                   break;
  *               }
  *           }
@@ -208,29 +158,321 @@
  * 
  * ============================================================================
  */
-
-#include "platform/platform.h"
 #include "listview_columns_api.h"
 #include "../writeLog.h"
 #include "../path_utilities.h"
+#include "platform/platform.h"
 
 #include <exec/memory.h>
-#include <exec/lists.h>
 #include <proto/exec.h>
+#include <clib/exec_protos.h>
 #include <proto/intuition.h>
 #include <proto/gadtools.h>
-#include <intuition/intuition.h>
-#include <libraries/gadtools.h>
-#include <devices/timer.h>
-#include <string.h>
+#include <proto/timer.h>
 #include <stdio.h>
+#include <string.h>
 
-/* External timer device for performance measurements */
-extern struct Device* TimerBase;
+/*---------------------------------------------------------------------------*/
+/* Feature Guards                                                            */
+/*---------------------------------------------------------------------------*/
+
+#ifndef ITIDY_SIMPLE_PAGINATED_ROLLBACK_GUARD
+#define ITIDY_SIMPLE_PAGINATED_ROLLBACK_GUARD 0
+#endif
+
+typedef struct {
+    BOOL sorting_disabled;
+    int default_sort_column;
+} iTidy_SortPreparation;
+
+typedef struct {
+    BOOL pagination_enabled;
+    BOOL has_prev_page;
+    BOOL has_next_page;
+    int page_size;
+    int current_page;
+    int total_pages;
+    int total_entries;
+    int start_index;
+    int end_index;
+} iTidy_PaginationInfo;
+
+typedef struct {
+    iTidy_ColumnConfig *columns;
+    int num_columns;
+    struct List *entries;
+    int total_char_width;
+    iTidy_ListViewState **out_state;
+    iTidy_ListViewMode mode;
+    int page_size;
+    int current_page;
+    int *out_total_pages;
+    int nav_direction;
+    BOOL perf_logging;
+    ULONG entry_count;
+    struct List *list;
+    int *col_widths;
+    char *row_buffer;
+    char *cell_buffer;
+    iTidy_ListViewState *state;
+    BOOL simple_mode;
+    BOOL pagination_enabled;
+    BOOL state_reused;
+    BOOL free_state_on_failure;
+    iTidy_SortPreparation sort_info;
+    iTidy_PaginationInfo pagination_info;
+} iTidy_FormatContext;
+static void itidy_init_format_context(iTidy_FormatContext *ctx)
+{
+    if (ctx) {
+        memset(ctx, 0, sizeof(iTidy_FormatContext));
+    }
+}
+
+static void itidy_cleanup_format_context(iTidy_FormatContext *ctx, BOOL free_display_list)
+{
+    struct Node *cleanup_node;
+
+    if (!ctx) {
+        return;
+    }
+
+    if (ctx->row_buffer) {
+        whd_free(ctx->row_buffer);
+        ctx->row_buffer = NULL;
+    }
+
+    if (ctx->cell_buffer) {
+        whd_free(ctx->cell_buffer);
+        ctx->cell_buffer = NULL;
+    }
+
+    if (ctx->col_widths) {
+        whd_free(ctx->col_widths);
+        ctx->col_widths = NULL;
+    }
+
+    if (ctx->state) {
+        if (ctx->free_state_on_failure) {
+            if (ctx->state->columns) {
+                whd_free(ctx->state->columns);
+                ctx->state->columns = NULL;
+            }
+            whd_free(ctx->state);
+            ctx->state = NULL;
+            if (ctx->out_state) {
+                *(ctx->out_state) = NULL;
+            }
+        } else {
+            ctx->state->column_widths_cached = FALSE;
+        }
+    }
+
+    if (free_display_list && ctx->list) {
+        while ((cleanup_node = RemHead(ctx->list)) != NULL) {
+            if (cleanup_node->ln_Name) {
+                whd_free(cleanup_node->ln_Name);
+            }
+            whd_free(cleanup_node);
+        }
+        whd_free(ctx->list);
+        ctx->list = NULL;
+    }
+}
+
+/* Provide fallback NewList macro for toolchains lacking the exec definition */
+#ifndef NewList
+#define NewList(l) \
+    do { \
+        struct List *_list = (l); \
+        _list->lh_Head = (struct Node *)&_list->lh_Tail; \
+        _list->lh_Tail = NULL; \
+        _list->lh_TailPred = (struct Node *)&_list->lh_Head; \
+    } while(0)
+#endif
+
+/*---------------------------------------------------------------------------*/
+/* Options Helper Utilities                                                  */
+/*---------------------------------------------------------------------------*/
+
+void iTidy_InitListViewOptions(iTidy_ListViewOptions *options)
+{
+    if (!options) {
+        return;
+    }
+    memset(options, 0, sizeof(iTidy_ListViewOptions));
+    options->mode = ITIDY_MODE_FULL;
+}
+
+static BOOL itidy_is_valid_mode(iTidy_ListViewMode mode)
+{
+    switch (mode) {
+        case ITIDY_MODE_FULL:
+        case ITIDY_MODE_FULL_NO_SORT:
+        case ITIDY_MODE_SIMPLE:
+        case ITIDY_MODE_SIMPLE_PAGINATED:
+            return TRUE;
+        default:
+            return FALSE;
+    }
+}
+
+BOOL iTidy_ValidateListViewOptions(const iTidy_ListViewOptions *options, const char **out_error_text)
+{
+    const char *error_text = NULL;
+    if (!options) {
+        error_text = "options pointer is NULL";
+    } else if (!options->columns) {
+        error_text = "columns array is NULL";
+    } else if (options->num_columns <= 0) {
+        error_text = "num_columns must be > 0";
+    } else if (options->total_char_width <= 0 || options->total_char_width > 500) {
+        error_text = "total_char_width must be between 1 and 500 characters";
+    } else if (!itidy_is_valid_mode(options->mode)) {
+        error_text = "mode value is invalid";
+    }
+
+    if (out_error_text) {
+        *out_error_text = error_text;
+    }
+
+    return (error_text == NULL);
+}
+
+struct List *iTidy_FormatListViewColumnsEx(const iTidy_ListViewOptions *options)
+{
+    const char *error_text = NULL;
+    if (!iTidy_ValidateListViewOptions(options, &error_text)) {
+        log_error(LOG_GUI, "iTidy_FormatListViewColumnsEx: %s\n",
+                 error_text ? error_text : "Invalid options");
+        return NULL;
+    }
+
+    return iTidy_FormatListViewColumns(
+        options->columns,
+        options->num_columns,
+        options->entries,
+        options->total_char_width,
+        options->out_state,
+        options->mode,
+        options->page_size,
+        options->current_page,
+        options->out_total_pages,
+        options->nav_direction
+    );
+}
+
+iTidy_ListViewSession *iTidy_ListViewSessionCreate(const iTidy_ListViewOptions *options)
+{
+    iTidy_ListViewSession *session;
+    const char *error_text = NULL;
+    if (!iTidy_ValidateListViewOptions(options, &error_text)) {
+        log_error(LOG_GUI, "iTidy_ListViewSessionCreate: %s\n",
+                 error_text ? error_text : "Invalid options");
+        return NULL;
+    }
+
+    session = (iTidy_ListViewSession *)whd_malloc(sizeof(iTidy_ListViewSession));
+    if (!session) {
+        log_error(LOG_GUI, "iTidy_ListViewSessionCreate: out of memory\n");
+        return NULL;
+    }
+
+    memset(session, 0, sizeof(iTidy_ListViewSession));
+    session->options = *options;  /* Struct copy (contains pointers) */
+    session->entry_list = options->entries;
+
+    if (options->out_state != NULL) {
+        session->state_target = options->out_state;
+        session->state = *(options->out_state);
+    } else {
+        session->state_target = &session->state;
+        session->options.out_state = &session->state;  /* Internal storage */
+    }
+
+    return session;
+}
+
+static void itidy_session_release_display(iTidy_ListViewSession *session)
+{
+    if (session->display_list) {
+        iTidy_FreeFormattedList(session->display_list);
+        session->display_list = NULL;
+    }
+}
+
+static void itidy_session_release_state(iTidy_ListViewSession *session)
+{
+    if (session->state_target && *(session->state_target)) {
+        iTidy_FreeListViewState(*(session->state_target));
+        *(session->state_target) = NULL;
+    }
+    session->state = NULL;
+}
+
+struct List *iTidy_ListViewSessionFormat(iTidy_ListViewSession *session)
+{
+    if (!session) {
+        return NULL;
+    }
+
+    /* Clear previous results before formatting again */
+    itidy_session_release_display(session);
+
+    session->options.entries = session->entry_list;
+    session->options.out_state = session->state_target;
+
+    session->display_list = iTidy_FormatListViewColumnsEx(&session->options);
+    if (!session->display_list) {
+        return NULL;
+    }
+
+    if (session->state_target) {
+        session->state = *(session->state_target);
+    }
+
+    session->formatted_once = TRUE;
+    return session->display_list;
+}
+
+void iTidy_ListViewSessionDestroy(iTidy_ListViewSession *session)
+{
+    if (!session) {
+        return;
+    }
+
+    itidy_session_release_display(session);
+    itidy_session_release_state(session);
+
+    /* Future: free entry list when owns_entry_list == TRUE */
+    whd_free(session);
+}
 
 /* Separator between columns */
 #define COLUMN_SEPARATOR " | "
 #define SEPARATOR_WIDTH 3
+
+typedef struct {
+    struct Window *window;
+    struct Gadget *gadget;
+    WORD mouse_x;
+    WORD mouse_y;
+    struct List *entry_list;
+    struct List *display_list;
+    iTidy_ListViewState *state;
+    int font_height;
+    int font_width;
+    iTidy_ColumnConfig *columns;
+    int num_columns;
+    iTidy_ListViewEvent *out_event;
+    LONG selected_row;
+} iTidy_ListViewEventContext;
+
+typedef struct {
+    struct Node node;                   /* Node handed to GadTools */
+    iTidy_ListViewEntry *entry;         /* Pointer back to source entry (NULL for nav rows) */
+    iTidy_RowType row_type;             /* Data vs nav row classification */
+} iTidy_DisplayNode;
 
 /*---------------------------------------------------------------------------*/
 /* Forward Declarations                                                      */
@@ -239,6 +481,15 @@ extern struct Device* TimerBase;
 static void format_cell(char *output, const char *text, int width, 
                        iTidy_ColumnAlign align, BOOL is_path);
 
+static void format_header_row(char *row_buffer, char *cell_buffer, 
+                              iTidy_ColumnConfig *columns, int num_columns, 
+                              int *col_widths, iTidy_ListViewState *state);
+
+static void format_data_row(char *row_buffer, char *cell_buffer,
+                            iTidy_ListViewEntry *entry, iTidy_ColumnConfig *columns,
+                            int num_columns, int *col_widths);
+
+#if ITIDY_SIMPLE_PAGINATED_ROLLBACK_GUARD
 static struct List *iTidy_FormatListViewColumns_SimplePaginated(
     iTidy_ColumnConfig *columns,
     int num_columns,
@@ -251,16 +502,56 @@ static struct List *iTidy_FormatListViewColumns_SimplePaginated(
     BOOL has_prev_page,
     BOOL has_next_page,
     int nav_direction);
+#endif
 
-static void format_header_row(char *row_buffer, char *cell_buffer, 
-                              iTidy_ColumnConfig *columns, int num_columns, 
-                              int *col_widths, iTidy_ListViewState *state);
+static int itidy_add_data_rows(struct List *list,
+                               struct List *entries,
+                               iTidy_ColumnConfig *columns,
+                               int num_columns,
+                               int *col_widths,
+                               char *row_buffer,
+                               char *cell_buffer,
+                               BOOL pagination_enabled,
+                               int start_index,
+                               int end_index,
+                               BOOL simple_mode);
 
-static void format_data_row(char *row_buffer, char *cell_buffer,
-                            iTidy_ListViewEntry *entry, iTidy_ColumnConfig *columns,
-                            int num_columns, int *col_widths);
+static BOOL itidy_add_header_and_separator(struct List *list,
+                                           iTidy_ColumnConfig *columns,
+                                           int num_columns,
+                                           int *col_widths,
+                                           iTidy_ListViewState *state,
+                                           char *row_buffer,
+                                           char *cell_buffer);
+
+static void itidy_add_navigation_row(struct List *list,
+                                     int total_char_width,
+                                     iTidy_RowType row_type,
+                                     int current_page,
+                                     int total_pages);
+static BOOL itidy_prepare_column_widths(iTidy_FormatContext *ctx);
+static BOOL itidy_prepare_row_buffers(iTidy_FormatContext *ctx);
+static BOOL itidy_build_header(iTidy_FormatContext *ctx);
+static void itidy_emit_nav_rows(iTidy_FormatContext *ctx, BOOL emit_before_data);
+static void itidy_prepare_simple_nav_state(iTidy_FormatContext *ctx,
+                                           BOOL has_prev_page,
+                                           BOOL has_next_page);
+static void itidy_init_event_defaults(iTidy_ListViewEvent *out_event);
+static iTidy_DisplayNode *itidy_get_display_entry(struct Node *node);
+static BOOL itidy_handle_header_click(iTidy_ListViewEventContext *ctx);
+static BOOL itidy_handle_navigation_click(iTidy_ListViewEventContext *ctx,
+                                          struct Node *clicked_node);
+static BOOL itidy_handle_data_row_click(iTidy_ListViewEventContext *ctx,
+                                        struct Node *clicked_node);
+static void itidy_record_row_click(iTidy_ListViewEvent *out_event,
+                                   iTidy_ListViewEntry *entry,
+                                   int column,
+                                   iTidy_ListViewState *state);
 
 static struct Node *create_display_node(const char *text);
+static BOOL itidy_append_display_entry(struct List *list,
+                                       iTidy_ListViewEntry *source_entry,
+                                       const char *row_text);
 
 /*---------------------------------------------------------------------------*/
 /* Sorting Support - Stable Merge Sort                                       */
@@ -412,9 +703,10 @@ void iTidy_SortListViewEntries(struct List *list, int col, iTidy_ColumnType type
     ULONG elapsedMicros, elapsedMillis;
     static int sort_depth = 0;  /* Track recursion depth */
     BOOL is_top_level = (sort_depth == 0);
+    BOOL perf_logging = is_performance_logging_enabled();
     
     /* Start performance timing (top level only) */
-    if (is_top_level && TimerBase) {
+    if (is_top_level && perf_logging && TimerBase) {
         GetSysTime(&startTime);
     }
     
@@ -484,7 +776,7 @@ void iTidy_SortListViewEntries(struct List *list, int col, iTidy_ColumnType type
     sort_depth--;
     
     /* End performance timing (top level only) */
-    if (is_top_level && TimerBase) {
+    if (is_top_level && perf_logging && TimerBase) {
         GetSysTime(&endTime);
         
         /* Calculate elapsed time in microseconds */
@@ -493,7 +785,7 @@ void iTidy_SortListViewEntries(struct List *list, int col, iTidy_ColumnType type
         elapsedMillis = elapsedMicros / 1000;
         
         /* Log performance metrics only if enabled */
-        if (is_performance_logging_enabled()) {
+        if (perf_logging) {
             const char *type_str = (type == ITIDY_COLTYPE_NUMBER) ? "NUMBER" :
                                    (type == ITIDY_COLTYPE_DATE) ? "DATE" : "TEXT";
             const char *dir_str = ascending ? "ASC" : "DESC";
@@ -534,10 +826,11 @@ BOOL iTidy_CalculateColumnWidths(
     iTidy_ListViewEntry *entry;
     struct timeval startTime, endTime;
     ULONG elapsedMicros, elapsedMillis;
-    int entry_count = 0;
+    ULONG entry_count = 0;
+    BOOL perf_logging = is_performance_logging_enabled();
     
     /* Start performance timing */
-    if (TimerBase) {
+    if (perf_logging && TimerBase) {
         GetSysTime(&startTime);
     }
     
@@ -672,7 +965,7 @@ BOOL iTidy_CalculateColumnWidths(
     }
     
     /* End performance timing */
-    if (TimerBase) {
+    if (perf_logging && TimerBase) {
         GetSysTime(&endTime);
         
         /* Count entries for per-entry timing */
@@ -688,7 +981,7 @@ BOOL iTidy_CalculateColumnWidths(
         elapsedMillis = elapsedMicros / 1000;
         
         /* Log performance metrics only if enabled */
-        if (is_performance_logging_enabled()) {
+        if (perf_logging) {
             log_info(LOG_GUI, "[PERF] Column width calculation: %lu.%03lu ms\n",
                      elapsedMillis, elapsedMicros % 1000);
             log_info(LOG_GUI, "       Entries: %d, Columns: %d\n", entry_count, num_columns);
@@ -697,8 +990,6 @@ BOOL iTidy_CalculateColumnWidths(
                          elapsedMicros / entry_count);
             }
             
-            printf("  [TIMING] Column width calc: %lu.%03lu ms (%d entries x %d cols)\n",
-                   elapsedMillis, elapsedMicros % 1000, entry_count, num_columns);
         }
     }
     
@@ -855,202 +1146,35 @@ static struct Node *create_display_node(const char *text)
     return node;
 }
 
-/*---------------------------------------------------------------------------*/
-/* Simple Paginated Mode Formatter (minimal allocations)                     */
-/*---------------------------------------------------------------------------*/
-
-static struct List *iTidy_FormatListViewColumns_SimplePaginated(
-    iTidy_ColumnConfig *columns,
-    int num_columns,
-    struct List *entries,
-    int total_char_width,
-    iTidy_ListViewState **out_state,
-    int page_size,
-    int current_page,
-    int total_pages,
-    BOOL has_prev_page,
-    BOOL has_next_page,
-    int nav_direction)
+static BOOL itidy_append_display_entry(struct List *list,
+                                       iTidy_ListViewEntry *source_entry,
+                                       const char *row_text)
 {
-    struct List *list;
-    struct Node *node, *entry_node;
-    iTidy_ListViewEntry *entry;
-    char *row_buffer;
-    char *cell_buffer;
-    int *col_widths;
-    int buffer_size;
-    int col, pos;
-    int row_count;
-    int start_index, end_index;
-    int current_index;
-    char nav_row_text[256];
-    
-    log_info(LOG_GUI, "iTidy_FormatListViewColumns_SimplePaginated: page %d of %d, page_size=%d\n",
-             current_page, total_pages, page_size);
-    
-    /* Allocate output list */
-    list = (struct List *)whd_malloc(sizeof(struct List));
-    if (!list) {
-        log_error(LOG_GUI, "Failed to allocate list\n");
-        return NULL;
+    iTidy_DisplayNode *display_entry;
+
+    if (!list || !source_entry || !row_text) {
+        return FALSE;
     }
-    NewList(list);
-    
-    /* Allocate column widths */
-    col_widths = (int *)whd_malloc(sizeof(int) * num_columns);
-    if (!col_widths) {
-        log_error(LOG_GUI, "Failed to allocate column widths\n");
-        whd_free(list);
-        return NULL;
+
+    display_entry = (iTidy_DisplayNode *)whd_malloc(sizeof(iTidy_DisplayNode));
+    if (!display_entry) {
+        return FALSE;
     }
-    
-    /* Calculate column widths */
-    if (!iTidy_CalculateColumnWidths(columns, num_columns, entries, 
-                                     total_char_width, col_widths)) {
-        log_error(LOG_GUI, "Failed to calculate column widths\n");
-        whd_free(col_widths);
-        whd_free(list);
-        return NULL;
+
+    memset(display_entry, 0, sizeof(iTidy_DisplayNode));
+    display_entry->node.ln_Type = NT_USER;
+    display_entry->node.ln_Name = (char *)whd_malloc(strlen(row_text) + 1);
+    if (!display_entry->node.ln_Name) {
+        whd_free(display_entry);
+        return FALSE;
     }
-    
-    /* Calculate buffer size */
-    buffer_size = 0;
-    for (col = 0; col < num_columns; col++) {
-        buffer_size += col_widths[col];
-    }
-    buffer_size += (num_columns - 1) * SEPARATOR_WIDTH;
-    buffer_size += 10;
-    
-    /* Allocate buffers */
-    row_buffer = (char *)whd_malloc(buffer_size);
-    cell_buffer = (char *)whd_malloc(256);
-    
-    if (!row_buffer || !cell_buffer) {
-        log_error(LOG_GUI, "Failed to allocate buffers\n");
-        if (row_buffer) whd_free(row_buffer);
-        if (cell_buffer) whd_free(cell_buffer);
-        whd_free(col_widths);
-        whd_free(list);
-        return NULL;
-    }
-    
-    /* ===== CREATE HEADER ROW ===== */
-    format_header_row(row_buffer, cell_buffer, columns, num_columns, col_widths, NULL);
-    node = create_display_node(row_buffer);
-    if (node) AddTail(list, node);
-    
-    /* ===== CREATE SEPARATOR ROW ===== */
-    pos = strlen(row_buffer);
-    memset(row_buffer, '-', pos + 4);
-    row_buffer[pos + 4] = '\0';
-    node = create_display_node(row_buffer);
-    if (node) AddTail(list, node);
-    
-    /* ===== ADD PREVIOUS PAGE NAVIGATION ===== */
-    if (has_prev_page) {
-        snprintf(nav_row_text, sizeof(nav_row_text), "<- Previous (Page %d of %d)", 
-                 current_page, total_pages);
-        format_cell(row_buffer, nav_row_text, total_char_width, ITIDY_ALIGN_LEFT, FALSE);
-        node = create_display_node(row_buffer);
-        if (node) AddTail(list, node);
-    }
-    
-    /* ===== CREATE DATA ROWS (PAGE SLICE) ===== */
-    start_index = (current_page - 1) * page_size;
-    end_index = start_index + page_size;
-    current_index = 0;
-    row_count = 0;
-    
-    if (entries) {
-        for (entry_node = entries->lh_Head; entry_node->ln_Succ; entry_node = entry_node->ln_Succ) {
-            /* Skip entries before page start */
-            if (current_index < start_index) {
-                current_index++;
-                continue;
-            }
-            
-            /* Stop at page end */
-            if (current_index >= end_index) {
-                break;
-            }
-            
-            /* Format row */
-            entry = (iTidy_ListViewEntry *)entry_node;
-            format_data_row(row_buffer, cell_buffer, entry, columns, num_columns, col_widths);
-            node = create_display_node(row_buffer);
-            if (node) AddTail(list, node);
-            
-            current_index++;
-            row_count++;
-        }
-    }
-    
-    /* ===== ADD NEXT PAGE NAVIGATION ===== */
-    if (has_next_page) {
-        snprintf(nav_row_text, sizeof(nav_row_text), "-> Next (Page %d of %d)", 
-                 current_page, total_pages);
-        format_cell(row_buffer, nav_row_text, total_char_width, ITIDY_ALIGN_LEFT, FALSE);
-        node = create_display_node(row_buffer);
-        if (node) AddTail(list, node);
-    }
-    
-    /* Cleanup */
-    whd_free(cell_buffer);
-    whd_free(row_buffer);
-    whd_free(col_widths);
-    
-    log_info(LOG_GUI, "Simple paginated mode: formatted %d data rows\n", row_count);
-    
-    /* Create minimal state for auto-select tracking (if requested) */
-    if (out_state && (has_prev_page || has_next_page)) {
-        iTidy_ListViewState *state;
-        struct Node *node;
-        int display_row_count = 0;
-        
-        /* Count rows in display list */
-        for (node = list->lh_Head; node->ln_Succ; node = node->ln_Succ) {
-            display_row_count++;
-        }
-        
-        /* Allocate minimal state (only for auto-select) */
-        state = (iTidy_ListViewState *)whd_malloc(sizeof(iTidy_ListViewState));
-        if (state) {
-            memset(state, 0, sizeof(iTidy_ListViewState));
-            state->current_page = current_page;
-            state->total_pages = total_pages;
-            state->last_nav_direction = nav_direction;
-            state->sorting_disabled = TRUE;  /* No sorting in simple mode */
-            state->num_columns = 0;  /* No column tracking */
-            state->columns = NULL;   /* No column state */
-            
-            /* Calculate auto-select row based on navigation direction */
-            if (display_row_count > 2) {
-                if (nav_direction < 0) {
-                    /* Previous - select row 2 (first data row) */
-                    state->auto_select_row = 2;
-                } else if (nav_direction > 0) {
-                    /* Next - select last row (Next button) */
-                    state->auto_select_row = display_row_count - 1;
-                } else {
-                    /* Initial - select row 2 (first data row) */
-                    state->auto_select_row = 2;
-                }
-                
-                log_debug(LOG_GUI, "[SIMPLE_PAGINATED] Auto-select row %d of %d (nav_dir=%d)\n",
-                         state->auto_select_row, display_row_count, nav_direction);
-            } else {
-                state->auto_select_row = -1;
-            }
-            
-            *out_state = state;
-        } else {
-            *out_state = NULL;
-        }
-    } else if (out_state) {
-        *out_state = NULL;  /* No navigation rows or state not requested */
-    }
-    
-    return list;
+
+    strcpy(display_entry->node.ln_Name, row_text);
+    display_entry->entry = source_entry;
+    display_entry->row_type = ITIDY_ROW_DATA;
+
+    AddTail(list, (struct Node *)display_entry);
+    return TRUE;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -1113,6 +1237,843 @@ static void format_data_row(char *row_buffer, char *cell_buffer,
     row_buffer[pos] = '\0';
 }
 
+#if ITIDY_SIMPLE_PAGINATED_ROLLBACK_GUARD
+static struct List *iTidy_FormatListViewColumns_SimplePaginated(
+    iTidy_ColumnConfig *columns,
+    int num_columns,
+    struct List *entries,
+    int total_char_width,
+    iTidy_ListViewState **out_state,
+    int page_size,
+    int current_page,
+    int total_pages,
+    BOOL has_prev_page,
+    BOOL has_next_page,
+    int nav_direction)
+{
+    struct List *list;
+    struct Node *node, *entry_node;
+    iTidy_ListViewEntry *entry;
+    char *row_buffer;
+    char *cell_buffer;
+    int *col_widths;
+    int col, pos;
+    int row_count;
+    int buffer_size;
+    int start_index, end_index;
+    int current_index;
+
+    log_info(LOG_GUI, "[ROLLBACK] iTidy_FormatListViewColumns_SimplePaginated: page %d of %d, page_size=%d\n",
+             current_page, total_pages, page_size);
+
+    list = (struct List *)whd_malloc(sizeof(struct List));
+    if (!list) {
+        log_error(LOG_GUI, "Failed to allocate list\n");
+        return NULL;
+    }
+    NewList(list);
+
+    col_widths = (int *)whd_malloc(sizeof(int) * num_columns);
+    if (!col_widths) {
+        log_error(LOG_GUI, "Failed to allocate column widths\n");
+        whd_free(list);
+        return NULL;
+    }
+
+    if (!iTidy_CalculateColumnWidths(columns, num_columns, entries,
+                                     total_char_width, col_widths)) {
+        log_error(LOG_GUI, "Failed to calculate column widths\n");
+        whd_free(col_widths);
+        whd_free(list);
+        return NULL;
+    }
+
+    buffer_size = 0;
+    for (col = 0; col < num_columns; col++) {
+        buffer_size += col_widths[col];
+    }
+    buffer_size += (num_columns - 1) * SEPARATOR_WIDTH;
+    buffer_size += 10;
+
+    row_buffer = (char *)whd_malloc(buffer_size);
+    cell_buffer = (char *)whd_malloc(256);
+
+    if (!row_buffer || !cell_buffer) {
+        log_error(LOG_GUI, "Failed to allocate buffers\n");
+        if (row_buffer) whd_free(row_buffer);
+        if (cell_buffer) whd_free(cell_buffer);
+        whd_free(col_widths);
+        whd_free(list);
+        return NULL;
+    }
+
+    format_header_row(row_buffer, cell_buffer, columns, num_columns, col_widths, NULL);
+    node = create_display_node(row_buffer);
+    if (node) AddTail(list, node);
+
+    pos = strlen(row_buffer);
+    memset(row_buffer, '-', pos + 4);
+    row_buffer[pos + 4] = '\0';
+    node = create_display_node(row_buffer);
+    if (node) AddTail(list, node);
+
+    if (has_prev_page) {
+        itidy_add_navigation_row(list,
+                                 total_char_width,
+                                 ITIDY_ROW_NAV_PREV,
+                                 current_page,
+                                 total_pages);
+    }
+
+    start_index = (current_page - 1) * page_size;
+    end_index = start_index + page_size;
+    current_index = 0;
+    row_count = 0;
+
+    if (entries) {
+        for (entry_node = entries->lh_Head; entry_node->ln_Succ; entry_node = entry_node->ln_Succ) {
+            if (current_index < start_index) {
+                current_index++;
+                continue;
+            }
+
+            if (current_index >= end_index) {
+                break;
+            }
+
+            entry = (iTidy_ListViewEntry *)entry_node;
+            entry->node.ln_Type = NT_USER;
+            if (entry->source_entry == NULL) {
+                entry->source_entry = entry;
+            }
+            format_data_row(row_buffer, cell_buffer, entry, columns, num_columns, col_widths);
+            if (!itidy_append_display_entry(list, entry, row_buffer)) {
+                log_warning(LOG_GUI, "[ROLLBACK] Failed to append simple paginated entry at index %d\n", current_index);
+            }
+
+            current_index++;
+            row_count++;
+        }
+    }
+
+    if (has_next_page) {
+        itidy_add_navigation_row(list,
+                                 total_char_width,
+                                 ITIDY_ROW_NAV_NEXT,
+                                 current_page,
+                                 total_pages);
+    }
+
+    whd_free(cell_buffer);
+    whd_free(row_buffer);
+    whd_free(col_widths);
+
+    if (out_state && (has_prev_page || has_next_page)) {
+        iTidy_ListViewState *state;
+        int display_row_count = 0;
+
+        for (node = list->lh_Head; node->ln_Succ; node = node->ln_Succ) {
+            display_row_count++;
+        }
+
+        state = (iTidy_ListViewState *)whd_malloc(sizeof(iTidy_ListViewState));
+        if (state) {
+            memset(state, 0, sizeof(iTidy_ListViewState));
+            state->current_page = current_page;
+            state->total_pages = total_pages;
+            state->last_nav_direction = nav_direction;
+            state->sorting_disabled = TRUE;
+            state->num_columns = 0;
+            state->columns = NULL;
+
+            if (display_row_count > 2) {
+                if (nav_direction < 0) {
+                    state->auto_select_row = 2;
+                } else if (nav_direction > 0) {
+                    state->auto_select_row = display_row_count - 1;
+                } else {
+                    state->auto_select_row = 2;
+                }
+
+                log_debug(LOG_GUI, "[ROLLBACK][SIMPLE_PAGINATED] Auto-select row %d of %d (nav_dir=%d)\n",
+                         state->auto_select_row, display_row_count, nav_direction);
+            } else {
+                state->auto_select_row = -1;
+            }
+
+            *out_state = state;
+        } else {
+            *out_state = NULL;
+        }
+    } else if (out_state) {
+        *out_state = NULL;
+    }
+
+    log_info(LOG_GUI, "[ROLLBACK] Simple paginated mode: formatted %d data rows\n", row_count);
+    return list;
+}
+#endif /* ITIDY_SIMPLE_PAGINATED_ROLLBACK_GUARD */
+
+static int itidy_add_data_rows(struct List *list,
+                               struct List *entries,
+                               iTidy_ColumnConfig *columns,
+                               int num_columns,
+                               int *col_widths,
+                               char *row_buffer,
+                               char *cell_buffer,
+                               BOOL pagination_enabled,
+                               int start_index,
+                               int end_index,
+                               BOOL simple_mode)
+{
+    struct Node *entry_node;
+    iTidy_ListViewEntry *entry;
+    int row_count = 0;
+    int current_index = 0;
+
+    if (!list || !entries || !columns || num_columns <= 0 || !col_widths || !row_buffer || !cell_buffer) {
+        return 0;
+    }
+
+    for (entry_node = entries->lh_Head; entry_node->ln_Succ; entry_node = entry_node->ln_Succ) {
+        entry = (iTidy_ListViewEntry *)entry_node;
+
+        entry->node.ln_Type = NT_USER;
+        if (entry->source_entry == NULL) {
+            entry->source_entry = entry;
+        }
+
+        if (pagination_enabled) {
+            if (current_index < start_index || current_index >= end_index) {
+                current_index++;
+                continue;
+            }
+        }
+        current_index++;
+
+        format_data_row(row_buffer, cell_buffer, entry, columns, num_columns, col_widths);
+
+        if (entry->node.ln_Name) {
+            whd_free(entry->node.ln_Name);
+            entry->node.ln_Name = NULL;
+        }
+
+        if (!simple_mode) {
+            entry->node.ln_Name = (char *)whd_malloc(strlen(row_buffer) + 1);
+            if (entry->node.ln_Name) {
+                strcpy(entry->node.ln_Name, row_buffer);
+            }
+        }
+
+        if (!itidy_append_display_entry(list, entry, row_buffer)) {
+            log_warning(LOG_GUI, "Failed to append display entry for row %d\n", row_count);
+        }
+
+        row_count++;
+    }
+
+    return row_count;
+}
+
+static void itidy_add_navigation_row(struct List *list,
+                                     int total_char_width,
+                                     iTidy_RowType row_type,
+                                     int current_page,
+                                     int total_pages)
+{
+    iTidy_DisplayNode *nav_entry;
+    char *full_text;
+    char nav_row_text[256];
+    const char *template_text;
+
+    if (!list || total_char_width <= 0) {
+        return;
+    }
+
+    template_text = (row_type == ITIDY_ROW_NAV_PREV) ?
+        "<- Previous (Page %d of %d)" : "Next -> (Page %d of %d)";
+
+    snprintf(nav_row_text, sizeof(nav_row_text), template_text,
+             current_page, total_pages);
+
+    full_text = (char *)whd_malloc(total_char_width + 1);
+    if (!full_text) {
+        return;
+    }
+
+    format_cell(full_text, nav_row_text, total_char_width, ITIDY_ALIGN_LEFT, FALSE);
+
+    nav_entry = (iTidy_DisplayNode *)whd_malloc(sizeof(iTidy_DisplayNode));
+    if (!nav_entry) {
+        whd_free(full_text);
+        return;
+    }
+
+    memset(nav_entry, 0, sizeof(iTidy_DisplayNode));
+    nav_entry->node.ln_Type = NT_USER;
+
+    nav_entry->node.ln_Name = full_text;
+    nav_entry->entry = NULL;
+    nav_entry->row_type = row_type;
+
+    AddTail(list, (struct Node *)&nav_entry->node);
+}
+
+static BOOL itidy_prepare_column_widths(iTidy_FormatContext *ctx)
+{
+    BOOL reuse_widths = FALSE;
+    int col;
+
+    if (!ctx || ctx->num_columns <= 0) {
+        return FALSE;
+    }
+
+    if (ctx->state && ctx->state->column_widths_cached &&
+        ctx->state->entry_list_ptr == ctx->entries &&
+        ctx->state->entry_count == ctx->entry_count &&
+        ctx->state->cached_total_char_width == ctx->total_char_width &&
+        ctx->state->num_columns == ctx->num_columns) {
+        reuse_widths = TRUE;
+    }
+
+    ctx->col_widths = (int *)whd_malloc(sizeof(int) * ctx->num_columns);
+    if (!ctx->col_widths) {
+        log_error(LOG_GUI, "Failed to allocate column widths (columns=%d)\n",
+                  ctx->num_columns);
+        return FALSE;
+    }
+
+    if (reuse_widths) {
+        for (col = 0; col < ctx->num_columns; col++) {
+            ctx->col_widths[col] = ctx->state->columns[col].char_width;
+        }
+    } else {
+        if (!iTidy_CalculateColumnWidths(ctx->columns,
+                                         ctx->num_columns,
+                                         ctx->entries,
+                                         ctx->total_char_width,
+                                         ctx->col_widths)) {
+            log_error(LOG_GUI, "Failed to calculate column widths\n");
+            whd_free(ctx->col_widths);
+            ctx->col_widths = NULL;
+            return FALSE;
+        }
+    }
+
+    if (ctx->state) {
+        ctx->state->entry_list_ptr = ctx->entries;
+        ctx->state->entry_count = ctx->entry_count;
+        ctx->state->cached_total_char_width = ctx->total_char_width;
+        ctx->state->column_widths_cached = TRUE;
+    }
+
+    log_debug(LOG_GUI, "[FORMAT] Column widths %s (columns=%d)\n",
+              reuse_widths ? "reused" : "calculated",
+              ctx->num_columns);
+    return TRUE;
+}
+
+static BOOL itidy_prepare_row_buffers(iTidy_FormatContext *ctx)
+{
+    int col;
+    int buffer_size = 0;
+
+    if (!ctx || !ctx->col_widths || ctx->num_columns <= 0) {
+        return FALSE;
+    }
+
+    for (col = 0; col < ctx->num_columns; col++) {
+        buffer_size += ctx->col_widths[col];
+    }
+    buffer_size += (ctx->num_columns - 1) * SEPARATOR_WIDTH;
+    buffer_size += 10;  /* Extra space for indicators and separator row */
+
+    ctx->row_buffer = (char *)whd_malloc(buffer_size);
+    if (!ctx->row_buffer) {
+        log_error(LOG_GUI, "Failed to allocate row buffer (%d chars)\n", buffer_size);
+        return FALSE;
+    }
+
+    ctx->cell_buffer = (char *)whd_malloc(256);
+    if (!ctx->cell_buffer) {
+        log_error(LOG_GUI, "Failed to allocate cell buffer\n");
+        whd_free(ctx->row_buffer);
+        ctx->row_buffer = NULL;
+        return FALSE;
+    }
+
+    log_debug(LOG_GUI, "[FORMAT] Row buffer=%d chars, cell buffer=256 chars\n",
+              buffer_size);
+    return TRUE;
+}
+
+static BOOL itidy_build_header(iTidy_FormatContext *ctx)
+{
+    if (!ctx) {
+        return FALSE;
+    }
+
+    log_debug(LOG_GUI, "[FORMAT] Building header (simple=%s)\n",
+              ctx->simple_mode ? "YES" : "NO");
+
+    if (!itidy_add_header_and_separator(ctx->list,
+                                        ctx->columns,
+                                        ctx->num_columns,
+                                        ctx->col_widths,
+                                        ctx->state,
+                                        ctx->row_buffer,
+                                        ctx->cell_buffer)) {
+        log_error(LOG_GUI, "Failed to build header/separator rows\n");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+static void itidy_emit_nav_rows(iTidy_FormatContext *ctx, BOOL emit_before_data)
+{
+    const iTidy_PaginationInfo *info;
+
+    if (!ctx || !ctx->pagination_enabled || ctx->total_char_width <= 0) {
+        return;
+    }
+
+    info = &ctx->pagination_info;
+    if (info->page_size <= 0) {
+        return;
+    }
+
+    log_debug(LOG_GUI, "[FORMAT] Emitting %s-data nav rows (prev=%d, next=%d, page=%d/%d)\n",
+              emit_before_data ? "before" : "after",
+              info->has_prev_page,
+              info->has_next_page,
+              info->current_page,
+              info->total_pages);
+
+    if (emit_before_data && info->has_prev_page) {
+        itidy_add_navigation_row(ctx->list,
+                                 ctx->total_char_width,
+                                 ITIDY_ROW_NAV_PREV,
+                                 info->current_page,
+                                 info->total_pages);
+    }
+
+    if (!emit_before_data && info->has_next_page) {
+        itidy_add_navigation_row(ctx->list,
+                                 ctx->total_char_width,
+                                 ITIDY_ROW_NAV_NEXT,
+                                 info->current_page,
+                                 info->total_pages);
+    }
+}
+
+static void itidy_prepare_simple_nav_state(iTidy_FormatContext *ctx,
+                                           BOOL has_prev_page,
+                                           BOOL has_next_page)
+{
+    iTidy_ListViewState *state;
+    struct Node *node;
+    int display_row_count = 0;
+
+    if (!ctx || !ctx->out_state) {
+        return;
+    }
+
+    if (!has_prev_page && !has_next_page) {
+        if (*(ctx->out_state)) {
+            iTidy_FreeListViewState(*(ctx->out_state));
+        }
+        *(ctx->out_state) = NULL;
+        return;
+    }
+
+    state = *(ctx->out_state);
+    if (!state) {
+        state = (iTidy_ListViewState *)whd_malloc(sizeof(iTidy_ListViewState));
+        if (!state) {
+            log_warning(LOG_GUI, "Failed to allocate simple pagination state\n");
+            *(ctx->out_state) = NULL;
+            return;
+        }
+    } else if (state->columns) {
+        whd_free(state->columns);
+        state->columns = NULL;
+    }
+
+    memset(state, 0, sizeof(iTidy_ListViewState));
+    state->separator_width = SEPARATOR_WIDTH;
+    state->sorting_disabled = TRUE;
+    state->current_page = ctx->pagination_info.current_page;
+    state->total_pages = ctx->pagination_info.total_pages;
+    state->last_nav_direction = ctx->nav_direction;
+
+    for (node = ctx->list->lh_Head; node->ln_Succ; node = node->ln_Succ) {
+        display_row_count++;
+    }
+
+    if (display_row_count > 2) {
+        if (ctx->nav_direction < 0) {
+            state->auto_select_row = 2;
+        } else if (ctx->nav_direction > 0) {
+            state->auto_select_row = display_row_count - 1;
+        } else {
+            state->auto_select_row = 2;
+        }
+
+        log_debug(LOG_GUI,
+                  "[SIMPLE_PAGINATED] Auto-select row %d of %d (nav_dir=%d)\n",
+                  state->auto_select_row,
+                  display_row_count,
+                  ctx->nav_direction);
+    } else {
+        state->auto_select_row = -1;
+    }
+
+    *(ctx->out_state) = state;
+}
+
+static void itidy_init_event_defaults(iTidy_ListViewEvent *out_event)
+{
+    if (!out_event) {
+        return;
+    }
+
+    out_event->type = ITIDY_LV_EVENT_NONE;
+    out_event->did_sort = FALSE;
+    out_event->sorted_column = -1;
+    out_event->sort_order = ITIDY_SORT_NONE;
+    out_event->entry = NULL;
+    out_event->column = -1;
+    out_event->display_value = NULL;
+    out_event->sort_key = NULL;
+    out_event->column_type = ITIDY_COLTYPE_TEXT;
+    out_event->nav_direction = 0;
+}
+
+static iTidy_DisplayNode *itidy_get_display_entry(struct Node *node)
+{
+    if (!node) {
+        return NULL;
+    }
+
+    if (node->ln_Type != NT_USER) {
+        return NULL;
+    }
+
+    return (iTidy_DisplayNode *)node;
+}
+
+static BOOL itidy_handle_header_click(iTidy_ListViewEventContext *ctx)
+{
+    int header_top;
+    int header_height;
+    int clicked_col;
+    BOOL sorted;
+
+    if (!ctx || !ctx->state || !ctx->out_event) {
+        return FALSE;
+    }
+
+    if (ctx->state->current_page > 0) {
+        log_info(LOG_GUI, "Header click ignored - sorting disabled during pagination\n");
+        return FALSE;
+    }
+
+    if (ctx->state->sorting_disabled) {
+        log_info(LOG_GUI, "Header click ignored - sorting disabled by user preference\n");
+        return FALSE;
+    }
+
+    header_top = ctx->gadget->TopEdge;
+    header_height = ctx->font_height;
+    clicked_col = iTidy_GetClickedColumn(ctx->state, ctx->mouse_x, ctx->gadget->LeftEdge);
+
+    if (clicked_col < 0 || clicked_col >= ctx->num_columns) {
+        return FALSE;
+    }
+
+    sorted = iTidy_ResortListViewByClick(
+        ctx->display_list,
+        ctx->entry_list,
+        ctx->state,
+        ctx->mouse_x,
+        ctx->mouse_y,
+        header_top,
+        header_height,
+        ctx->gadget->LeftEdge,
+        ctx->font_width,
+        ctx->columns
+    );
+
+    if (!sorted) {
+        return FALSE;
+    }
+
+    ctx->out_event->type = ITIDY_LV_EVENT_HEADER_SORTED;
+    ctx->out_event->did_sort = TRUE;
+    ctx->out_event->sorted_column = clicked_col;
+    ctx->out_event->sort_order = ctx->state->columns[clicked_col].sort_state;
+    return TRUE;
+}
+
+static BOOL itidy_handle_navigation_click(iTidy_ListViewEventContext *ctx,
+                                          struct Node *clicked_node)
+{
+    iTidy_DisplayNode *display_entry;
+    int direction = 0;
+
+    if (!ctx || !ctx->out_event) {
+        return FALSE;
+    }
+
+    display_entry = itidy_get_display_entry(clicked_node);
+    if (!display_entry) {
+        return FALSE;
+    }
+
+    if (display_entry->row_type == ITIDY_ROW_NAV_PREV) {
+        direction = -1;
+    } else if (display_entry->row_type == ITIDY_ROW_NAV_NEXT) {
+        direction = 1;
+    } else {
+        return FALSE;
+    }
+
+    if (ctx->state) {
+        if (direction < 0) {
+            if (ctx->state->current_page <= 1) {
+                return FALSE;
+            }
+            ctx->state->current_page--;
+        } else {
+            if (ctx->state->current_page >= ctx->state->total_pages) {
+                return FALSE;
+            }
+            ctx->state->current_page++;
+        }
+        ctx->state->last_nav_direction = direction;
+    }
+
+    ctx->out_event->type = ITIDY_LV_EVENT_NAV_HANDLED;
+    ctx->out_event->nav_direction = direction;
+    ctx->out_event->entry = NULL;
+    ctx->out_event->column = -1;
+    ctx->out_event->display_value = NULL;
+    ctx->out_event->sort_key = NULL;
+    ctx->out_event->column_type = ITIDY_COLTYPE_TEXT;
+    return TRUE;
+}
+
+static BOOL itidy_handle_data_row_click(iTidy_ListViewEventContext *ctx,
+                                        struct Node *clicked_node)
+{
+    iTidy_DisplayNode *display_entry;
+    iTidy_ListViewEntry *actual_entry;
+
+    if (!ctx || !ctx->out_event) {
+        return FALSE;
+    }
+
+    display_entry = itidy_get_display_entry(clicked_node);
+    if (!display_entry || display_entry->row_type != ITIDY_ROW_DATA) {
+        return FALSE;
+    }
+
+    actual_entry = display_entry->entry;
+    if (!actual_entry) {
+        return FALSE;
+    }
+
+    itidy_record_row_click(ctx->out_event,
+                           actual_entry,
+                           iTidy_GetClickedColumn(ctx->state, ctx->mouse_x, ctx->gadget->LeftEdge),
+                           ctx->state);
+
+    log_debug(LOG_GUI, "Data row clicked: row %ld, entry=%p (source=%p)\n",
+             ctx->selected_row, display_entry, actual_entry);
+    return TRUE;
+}
+
+static void itidy_record_row_click(iTidy_ListViewEvent *out_event,
+                                   iTidy_ListViewEntry *entry,
+                                   int column,
+                                   iTidy_ListViewState *state)
+{
+    out_event->type = ITIDY_LV_EVENT_ROW_CLICK;
+    out_event->entry = entry;
+    out_event->column = column;
+
+    if (entry && column >= 0 && column < entry->num_columns) {
+        out_event->display_value = entry->display_data ? entry->display_data[column] : NULL;
+        out_event->sort_key = entry->sort_keys ? entry->sort_keys[column] : NULL;
+        if (state && column < state->num_columns) {
+            out_event->column_type = state->columns[column].column_type;
+        } else {
+            out_event->column_type = ITIDY_COLTYPE_TEXT;
+        }
+    } else {
+        out_event->display_value = NULL;
+        out_event->sort_key = NULL;
+        out_event->column_type = ITIDY_COLTYPE_TEXT;
+    }
+}
+
+static BOOL itidy_add_header_and_separator(struct List *list,
+                                           iTidy_ColumnConfig *columns,
+                                           int num_columns,
+                                           int *col_widths,
+                                           iTidy_ListViewState *state,
+                                           char *row_buffer,
+                                           char *cell_buffer)
+{
+    struct Node *node;
+    int pos;
+
+    if (!list || !columns || num_columns <= 0 || !col_widths || !row_buffer || !cell_buffer) {
+        return FALSE;
+    }
+
+    format_header_row(row_buffer, cell_buffer, columns, num_columns, col_widths, state);
+
+    node = create_display_node(row_buffer);
+    if (!node) {
+        return FALSE;
+    }
+    AddTail(list, node);
+
+    pos = strlen(row_buffer);
+    memset(row_buffer, '-', pos + 4);
+    row_buffer[pos + 4] = '\0';
+
+    node = create_display_node(row_buffer);
+    if (!node) {
+        return FALSE;
+    }
+    AddTail(list, node);
+
+    return TRUE;
+}
+
+static void itidy_prepare_sort(iTidy_ColumnConfig *columns,
+                               int num_columns,
+                               struct List *entries,
+                               iTidy_ListViewMode mode,
+                               iTidy_SortPreparation *result)
+{
+    BOOL sorting_disabled = (mode == ITIDY_MODE_FULL_NO_SORT ||
+                             mode == ITIDY_MODE_SIMPLE ||
+                             mode == ITIDY_MODE_SIMPLE_PAGINATED);
+    int default_sort_col = -1;
+
+    if (sorting_disabled) {
+        log_info(LOG_GUI, "Sorting disabled for mode=%d\n", mode);
+    }
+
+    for (int col = 0; col < num_columns; col++) {
+        if (columns[col].default_sort != ITIDY_SORT_NONE) {
+            default_sort_col = col;
+            break;
+        }
+    }
+
+    if (!sorting_disabled && default_sort_col >= 0 && entries) {
+        BOOL ascending = (columns[default_sort_col].default_sort == ITIDY_SORT_ASCENDING);
+        iTidy_SortListViewEntries(entries,
+                                  default_sort_col,
+                                  columns[default_sort_col].sort_type,
+                                  ascending);
+    }
+
+    if (result) {
+        result->sorting_disabled = sorting_disabled;
+        result->default_sort_column = default_sort_col;
+    }
+}
+
+static void itidy_compute_pagination(struct List *entries,
+                                     iTidy_ListViewMode mode,
+                                     int requested_page_size,
+                                     int requested_current_page,
+                                     int *out_total_pages,
+                                     iTidy_PaginationInfo *result)
+{
+    iTidy_PaginationInfo info;
+    struct Node *entry_node;
+    BOOL pagination_requested;
+    BOOL has_entries = (entries != NULL);
+
+    memset(&info, 0, sizeof(info));
+    info.page_size = requested_page_size;
+    info.current_page = (requested_current_page > 0) ? requested_current_page : 1;
+    info.total_pages = 1;
+    info.start_index = 0;
+    info.end_index = 0;
+
+    if (has_entries) {
+        for (entry_node = entries->lh_Head; entry_node->ln_Succ; entry_node = entry_node->ln_Succ) {
+            info.total_entries++;
+        }
+        info.end_index = info.total_entries;
+    }
+
+    pagination_requested = (mode == ITIDY_MODE_SIMPLE_PAGINATED) ||
+                           (mode == ITIDY_MODE_FULL && requested_page_size > 0);
+
+    if (pagination_requested && has_entries) {
+        if (info.page_size <= 0) {
+            info.page_size = 50;  /* Default page size */
+        }
+
+        if (info.total_entries > info.page_size) {
+            info.pagination_enabled = TRUE;
+            info.total_pages = (info.total_entries + info.page_size - 1) / info.page_size;
+            if (info.total_pages < 1) {
+                info.total_pages = 1;
+            }
+
+            if (info.current_page < 1) info.current_page = 1;
+            if (info.current_page > info.total_pages) info.current_page = info.total_pages;
+
+            info.start_index = (info.current_page - 1) * info.page_size;
+            info.end_index = info.start_index + info.page_size;
+            if (info.end_index > info.total_entries) {
+                info.end_index = info.total_entries;
+            }
+
+            info.has_prev_page = (info.current_page > 1);
+            info.has_next_page = (info.current_page < info.total_pages);
+
+            log_info(LOG_GUI, "Pagination ACTIVE (mode=%d): %d entries, showing page %d of %d (entries %d-%d)\n",
+                     mode, info.total_entries, info.current_page, info.total_pages,
+                     info.start_index, (info.end_index > 0) ? (info.end_index - 1) : 0);
+        } else {
+            info.pagination_enabled = FALSE;
+            info.has_prev_page = FALSE;
+            info.has_next_page = FALSE;
+            info.start_index = 0;
+            info.end_index = info.total_entries;
+            log_info(LOG_GUI, "Pagination DISABLED: %d entries <= page_size %d\n",
+                     info.total_entries, info.page_size);
+        }
+    } else {
+        info.pagination_enabled = FALSE;
+        info.has_prev_page = FALSE;
+        info.has_next_page = FALSE;
+        if (!has_entries) {
+            info.start_index = 0;
+            info.end_index = 0;
+        }
+    }
+
+    if (out_total_pages) {
+        *out_total_pages = info.total_pages;
+    }
+
+    if (result) {
+        *result = info;
+    }
+}
+
 /*---------------------------------------------------------------------------*/
 /* Main Formatting Function                                                  */
 /*---------------------------------------------------------------------------*/
@@ -1129,13 +2090,8 @@ struct List *iTidy_FormatListViewColumns(
     int *out_total_pages,
     int nav_direction)
 {
-    struct List *list;
     struct Node *node, *entry_node;
     iTidy_ListViewEntry *entry;
-    iTidy_ListViewState *state = NULL;
-    int *col_widths;
-    char *row_buffer;
-    char *cell_buffer;
     int col, row_count;
     int buffer_size;
     int pos, char_pos;
@@ -1144,16 +2100,29 @@ struct List *iTidy_FormatListViewColumns(
     ULONG elapsedMicros, elapsedMillis;
     ULONG sortMicros = 0, widthMicros = 0, formatMicros = 0;
     int entry_count = 0;
-    int total_entries = 0;
     int total_pages = 1;
     int start_index = 0;
     int end_index = 0;
     BOOL has_prev_page = FALSE;
     BOOL has_next_page = FALSE;
-    char nav_row_text[256];
+    BOOL perf_logging = is_performance_logging_enabled();
+    iTidy_FormatContext ctx;
+
+    itidy_init_format_context(&ctx);
+    ctx.columns = columns;
+    ctx.num_columns = num_columns;
+    ctx.entries = entries;
+    ctx.total_char_width = total_char_width;
+    ctx.out_state = out_state;
+    ctx.mode = mode;
+    ctx.page_size = page_size;
+    ctx.current_page = current_page;
+    ctx.out_total_pages = out_total_pages;
+    ctx.nav_direction = nav_direction;
+    ctx.perf_logging = perf_logging;
     
     /* Start performance timing */
-    if (TimerBase) {
+    if (perf_logging && TimerBase) {
         GetSysTime(&startTime);
     }
     
@@ -1173,408 +2142,207 @@ struct List *iTidy_FormatListViewColumns(
         return NULL;
     }
     
-    /* Mode-specific behavior */
-    BOOL sorting_disabled = (mode == ITIDY_MODE_FULL_NO_SORT || 
-                             mode == ITIDY_MODE_SIMPLE || 
-                             mode == ITIDY_MODE_SIMPLE_PAGINATED);
-    BOOL pagination_enabled = (mode == ITIDY_MODE_SIMPLE_PAGINATED || 
-                              (mode == ITIDY_MODE_FULL && page_size > 0));
-    BOOL simple_mode = (mode == ITIDY_MODE_SIMPLE || mode == ITIDY_MODE_SIMPLE_PAGINATED);
-    
-    if (sorting_disabled) {
-        log_info(LOG_GUI, "Sorting disabled for mode=%d\n", mode);
-    }
-    
-    /* Find default sort column */
-    for (col = 0; col < num_columns; col++) {
-        if (columns[col].default_sort != ITIDY_SORT_NONE) {
-            default_sort_col = col;
-            break;
-        }
-    }
-    
-    /* Sort entries if sorting enabled and default sort is specified */
-    if (!sorting_disabled && default_sort_col >= 0 && entries) {
-        BOOL ascending = (columns[default_sort_col].default_sort == ITIDY_SORT_ASCENDING);
-        iTidy_SortListViewEntries(entries, default_sort_col, columns[default_sort_col].sort_type, ascending);
-    }
-    
-    /* Checkpoint 1: After initial sort */
-    if (TimerBase) {
-        GetSysTime(&cp1Time);
-        sortMicros = ((cp1Time.tv_secs - startTime.tv_secs) * 1000000) +
-                     (cp1Time.tv_micro - startTime.tv_micro);
-    }
-    
-    /* Calculate pagination if enabled */
-    if (pagination_enabled && entries) {
-        /* Count total entries */
-        for (entry_node = entries->lh_Head; entry_node->ln_Succ; entry_node = entry_node->ln_Succ) {
-            total_entries++;
-        }
-        
-        /* Default page_size if not specified */
-        if (page_size <= 0) {
-            page_size = 50;  /* Default to 50 entries per page */
-        }
-        
-        /* AUTO-PAGINATION: Only enable pagination if entry count exceeds page_size */
-        /* This allows sorting to work when list is small enough to fit on one page */
-        if (total_entries > page_size) {
-            /* PAGINATION ACTIVE - calculate page boundaries */
-            
-            /* Calculate total pages */
-            total_pages = (total_entries + page_size - 1) / page_size;
-            if (total_pages < 1) total_pages = 1;
-            
-            /* Validate current page */
-            if (current_page < 1) current_page = 1;
-            if (current_page > total_pages) current_page = total_pages;
-            
-            /* Calculate slice bounds */
-            start_index = (current_page - 1) * page_size;
-            end_index = start_index + page_size;
-            if (end_index > total_entries) end_index = total_entries;
-            
-            /* Determine if navigation rows needed */
-            has_prev_page = (current_page > 1);
-            has_next_page = (current_page < total_pages);
-            
-            /* Return total pages if requested */
-            if (out_total_pages) {
-                *out_total_pages = total_pages;
-            }
-            
-            log_info(LOG_GUI, "Pagination ACTIVE (mode=%d): %d entries, showing page %d of %d (entries %d-%d)\n",
-                     mode, total_entries, current_page, total_pages, start_index, end_index - 1);
-        } else {
-            /* PAGINATION DISABLED - list fits on one page */
-            pagination_enabled = FALSE;
-            if (out_total_pages) {
-                *out_total_pages = 1;
-            }
-            log_info(LOG_GUI, "Pagination DISABLED: %d entries <= page_size %d\n", total_entries, page_size);
-        }
-    } else {
-        /* No pagination */
-        if (out_total_pages) {
-            *out_total_pages = 1;
-        }
-    }
-    
-    /* Allocate list for formatted output */
-    list = (struct List *)whd_malloc(sizeof(struct List));
-    if (!list) {
-        log_error(LOG_GUI, "Failed to allocate list\n");
-        return NULL;
-    }
-    NewList(list);
-    
-    /* Simple mode routing: Skip full state creation and use fast formatter */
-    if (simple_mode) {
-        log_info(LOG_GUI, "Using simple mode formatter (pagination=%s)\n", 
-                 pagination_enabled ? "YES" : "NO");
-        
-        /* Route to simple paginated mode if pagination enabled */
-        /* (SimplePaginated function creates minimal state for auto-select) */
-        if (pagination_enabled) {
-            /* Call simple paginated formatter */
-            struct List *result;
-            result = iTidy_FormatListViewColumns_SimplePaginated(
-                columns, num_columns, entries, total_char_width,
-                out_state,  /* Pass state pointer for auto-select tracking */
-                page_size, current_page, total_pages, 
-                has_prev_page, has_next_page, nav_direction
-            );
-            
-            /* Free the empty list we allocated */
-            whd_free(list);
-            
-            return result;  /* Return paginated simple list */
-        }
-        /* Otherwise fall through to use existing simple formatting below */
-    }
-    
-    /* Allocate column widths array */
-    col_widths = (int *)whd_malloc(sizeof(int) * num_columns);
-    if (!col_widths) {
-        log_error(LOG_GUI, "Failed to allocate column widths\n");
-        whd_free(list);
-        return NULL;
-    }
-    
-    /* Calculate column widths */
-    if (!iTidy_CalculateColumnWidths(columns, num_columns, entries, 
-                                     total_char_width, col_widths)) {
-        log_error(LOG_GUI, "Failed to calculate column widths\n");
-        whd_free(col_widths);
-        whd_free(list);
-        return NULL;
-    }
-    
-    /* Checkpoint 2: After column width calculation */
-    if (TimerBase) {
-        GetSysTime(&cp2Time);
-        widthMicros = ((cp2Time.tv_secs - cp1Time.tv_secs) * 1000000) +
-                      (cp2Time.tv_micro - cp1Time.tv_micro);
-    }
-    
-    /* Create state tracking if requested */
-    if (out_state) {
-        state = (iTidy_ListViewState *)whd_malloc(sizeof(iTidy_ListViewState));
-        if (state) {
-            state->num_columns = num_columns;
-            state->separator_width = SEPARATOR_WIDTH;
-            state->columns = (iTidy_ColumnState *)whd_malloc(sizeof(iTidy_ColumnState) * num_columns);
-            state->sorting_disabled = sorting_disabled;  /* Store the flag */
-            
-            /* Initialize pagination state (only if pagination is actually enabled) */
-            if (pagination_enabled) {
-                state->current_page = current_page;
-                state->total_pages = total_pages;
-                state->last_nav_direction = nav_direction;  /* From caller (saved before state freed) */
-                state->auto_select_row = -1;     /* Will be calculated after formatting */
-            } else {
-                state->current_page = 0;         /* No pagination */
-                state->total_pages = 0;
-                state->last_nav_direction = 0;
-                state->auto_select_row = -1;
-            }
-            
-            if (state->columns) {
-                /* Calculate column positions */
-                char_pos = 0;
-                for (col = 0; col < num_columns; col++) {
-                    state->columns[col].column_index = col;
-                    state->columns[col].char_start = char_pos;
-                    state->columns[col].char_width = col_widths[col];
-                    char_pos += col_widths[col];
-                    state->columns[col].char_end = char_pos;
-                    
-                    /* Pixel positions will be calculated by caller using font width */
-                    state->columns[col].pixel_start = 0;
-                    state->columns[col].pixel_end = 0;
-                    
-                    /* Set initial sort state */
-                    if (col == default_sort_col) {
-                        state->columns[col].sort_state = columns[col].default_sort;
-                    } else {
-                        state->columns[col].sort_state = ITIDY_SORT_NONE;
-                    }
-                    
-                    /* Store column type for smart helpers */
-                    state->columns[col].column_type = columns[col].sort_type;
-                    
-                    char_pos += SEPARATOR_WIDTH;  /* Add separator */
-                }
-                *out_state = state;
-            } else {
-                whd_free(state);
-                state = NULL;
-            }
-        }
-    }
-    
-    /* Calculate buffer size needed */
-    buffer_size = 0;
-    for (col = 0; col < num_columns; col++) {
-        buffer_size += col_widths[col];
-    }
-    buffer_size += (num_columns - 1) * SEPARATOR_WIDTH;
-    buffer_size += 10;  /* Extra space for indicators and separator row */
-    
-    /* Allocate buffers */
-    row_buffer = (char *)whd_malloc(buffer_size);
-    cell_buffer = (char *)whd_malloc(256);  /* Temp buffer for cell formatting */
-    
-    if (!row_buffer || !cell_buffer) {
-        log_error(LOG_GUI, "Failed to allocate formatting buffers\n");
-        if (row_buffer) whd_free(row_buffer);
-        if (cell_buffer) whd_free(cell_buffer);
-        whd_free(col_widths);
-        whd_free(list);
-        if (state) {
-            if (state->columns) whd_free(state->columns);
-            whd_free(state);
-        }
-        return NULL;
-    }
-    
-    /* ===== CREATE HEADER ROW ===== */
-    format_header_row(row_buffer, cell_buffer, columns, num_columns, col_widths, state);
-    
-    node = create_display_node(row_buffer);
-    if (node) {
-        AddTail(list, node);
-    }
-    
-    /* ===== CREATE SEPARATOR ROW ===== */
-    pos = strlen(row_buffer);
-    memset(row_buffer, '-', pos + 4);
-    row_buffer[pos + 4] = '\0';
-    
-    node = create_display_node(row_buffer);
-    if (node) {
-        AddTail(list, node);
-    }
-    
-    /* ===== ADD PREVIOUS PAGE NAVIGATION ROW ===== */
-    if (page_size > 0 && has_prev_page) {
-        iTidy_ListViewEntry *nav_entry;
-        char *full_text;
-        int nav_width;
-        
-        /* Calculate available width for navigation text (full ListView width) */
-        nav_width = total_char_width;
-        
-        snprintf(nav_row_text, sizeof(nav_row_text), "<- Previous (Page %d of %d)", 
-                 current_page, total_pages);
-        
-        /* Create full-width navigation string (no column formatting) */
-        full_text = (char *)whd_malloc(nav_width + 1);
-        if (full_text) {
-            /* Left-align the navigation text in the full width */
-            format_cell(full_text, nav_row_text, nav_width, ITIDY_ALIGN_LEFT, FALSE);
-            
-            /* Create a temporary navigation entry that will be added to entry_list */
-            nav_entry = (iTidy_ListViewEntry *)whd_malloc(sizeof(iTidy_ListViewEntry));
-            if (nav_entry) {
-                nav_entry->node.ln_Name = full_text;  /* Take ownership of string */
-                nav_entry->display_data = NULL;
-                nav_entry->sort_keys = NULL;
-                nav_entry->num_columns = 0;
-                nav_entry->row_type = ITIDY_ROW_NAV_PREV;
-                
-                /* Add to formatted display list */
-                AddTail(list, (struct Node *)&nav_entry->node);
-            } else {
-                whd_free(full_text);
-            }
-        }
-    }
-    
-    /* ===== CREATE DATA ROWS FROM ENTRIES ===== */
-    row_count = 0;
-    if (entries) {
-        int current_index = 0;
-        for (entry_node = entries->lh_Head; entry_node->ln_Succ; entry_node = entry_node->ln_Succ) {
-            entry = (iTidy_ListViewEntry *)entry_node;
-            
-            /* Skip entries outside current page slice (only if pagination is active) */
-            if (pagination_enabled) {
-                if (current_index < start_index || current_index >= end_index) {
-                    current_index++;
-                    continue;
-                }
-            }
-            current_index++;
-            
-            pos = 0;
-            
-            for (col = 0; col < num_columns; col++) {
-                const char *cell_data = (entry->display_data && col < entry->num_columns && entry->display_data[col]) ? 
-                                        entry->display_data[col] : "";
-                
-                format_cell(cell_buffer, cell_data, col_widths[col], columns[col].align, columns[col].is_path);
-                strcpy(row_buffer + pos, cell_buffer);
-                pos += col_widths[col];
-                
-                if (col < num_columns - 1) {
-                    strcpy(row_buffer + pos, COLUMN_SEPARATOR);
-                    pos += SEPARATOR_WIDTH;
-                }
-            }
-            row_buffer[pos] = '\0';
-            
-            /* Store formatted string in entry's ln_Name for future sorting */
-            if (entry->node.ln_Name) {
-                whd_free(entry->node.ln_Name);
-            }
-            entry->node.ln_Name = (char *)whd_malloc(strlen(row_buffer) + 1);
-            if (entry->node.ln_Name) {
-                strcpy(entry->node.ln_Name, row_buffer);
-            }
-            
-            /* Create a display list entry that links back to the original entry */
-            /* This allows pagination - clicking finds the correct entry via the link */
-            iTidy_ListViewEntry *display_entry = (iTidy_ListViewEntry *)whd_malloc(sizeof(iTidy_ListViewEntry));
-            if (display_entry) {
-                /* Copy the formatted string */
-                display_entry->node.ln_Name = (char *)whd_malloc(strlen(row_buffer) + 1);
-                if (display_entry->node.ln_Name) {
-                    strcpy(display_entry->node.ln_Name, row_buffer);
-                }
-                
-                /* Copy data from original entry */
-                display_entry->display_data = entry->display_data;
-                display_entry->sort_keys = entry->sort_keys;
-                display_entry->num_columns = entry->num_columns;
-                display_entry->row_type = ITIDY_ROW_DATA;
-                
-                /* Add to display list */
-                AddTail(list, (struct Node *)display_entry);
-            }
-            
-            row_count++;
-        }
-    }
-    
-    /* ===== ADD NEXT PAGE NAVIGATION ROW ===== */
-    if (page_size > 0 && has_next_page) {
-        iTidy_ListViewEntry *nav_entry;
-        char *full_text;
-        int nav_width;
-        
-        /* Calculate available width for navigation text (full ListView width) */
-        nav_width = total_char_width;
-        
-        snprintf(nav_row_text, sizeof(nav_row_text), "Next -> (Page %d of %d)", 
-                 current_page, total_pages);
-        
-        /* Create full-width navigation string (no column formatting) */
-        full_text = (char *)whd_malloc(nav_width + 1);
-        if (full_text) {
-            /* Left-align the navigation text in the full width */
-            format_cell(full_text, nav_row_text, nav_width, ITIDY_ALIGN_LEFT, FALSE);
-            
-            /* Create a temporary navigation entry that will be added to entry_list */
-            nav_entry = (iTidy_ListViewEntry *)whd_malloc(sizeof(iTidy_ListViewEntry));
-            if (nav_entry) {
-                nav_entry->node.ln_Name = full_text;  /* Take ownership of string */
-                nav_entry->display_data = NULL;
-                nav_entry->sort_keys = NULL;
-                nav_entry->num_columns = 0;
-                nav_entry->row_type = ITIDY_ROW_NAV_NEXT;
-                
-                /* Add to formatted display list */
-                AddTail(list, (struct Node *)&nav_entry->node);
-            } else {
-                whd_free(full_text);
-            }
-        }
-    }
-    
-    /* Cleanup */
-    whd_free(row_buffer);
-    whd_free(cell_buffer);
-    whd_free(col_widths);
-    
-    /* Checkpoint 3: After entry formatting */
-    if (TimerBase) {
-        GetSysTime(&cp3Time);
-        formatMicros = ((cp3Time.tv_secs - cp2Time.tv_secs) * 1000000) +
-                       (cp3Time.tv_micro - cp2Time.tv_micro);
-    }
-    
-    /* Count entries */
+    /* Pre-count entries for caching heuristics */
     if (entries) {
         for (entry_node = entries->lh_Head; entry_node->ln_Succ; entry_node = entry_node->ln_Succ) {
             entry_count++;
         }
     }
+
+    /* Mode-specific behavior */
+    BOOL simple_mode = (mode == ITIDY_MODE_SIMPLE || mode == ITIDY_MODE_SIMPLE_PAGINATED);
+    BOOL simple_paginated_mode = (mode == ITIDY_MODE_SIMPLE_PAGINATED);
+    iTidy_SortPreparation sort_info;
+    iTidy_PaginationInfo pagination_info;
+    itidy_prepare_sort(columns, num_columns, entries, mode, &sort_info);
+    BOOL sorting_disabled = sort_info.sorting_disabled;
+    default_sort_col = sort_info.default_sort_column;
+    itidy_compute_pagination(entries, mode, page_size, current_page, out_total_pages, &pagination_info);
+    BOOL pagination_enabled = pagination_info.pagination_enabled;
+    page_size = pagination_info.page_size;
+    current_page = pagination_info.current_page;
+    total_pages = pagination_info.total_pages;
+    start_index = pagination_info.start_index;
+    end_index = pagination_info.end_index;
+    has_prev_page = pagination_info.has_prev_page;
+    has_next_page = pagination_info.has_next_page;
+    ctx.simple_mode = simple_mode;
+    ctx.pagination_enabled = pagination_enabled;
+    ctx.entry_count = entry_count;
+    ctx.sort_info = sort_info;
+    ctx.pagination_info = pagination_info;
+    
+    /* Checkpoint 1: After initial sort */
+    if (perf_logging && TimerBase) {
+        GetSysTime(&cp1Time);
+        sortMicros = ((cp1Time.tv_secs - startTime.tv_secs) * 1000000) +
+                     (cp1Time.tv_micro - startTime.tv_micro);
+    }
+    
+    /* No additional pagination calculation needed here (handled by helper) */
+    
+    /* Allocate list for formatted output */
+    ctx.list = (struct List *)whd_malloc(sizeof(struct List));
+    if (!ctx.list) {
+        log_error(LOG_GUI, "Failed to allocate list\n");
+        return NULL;
+    }
+    NewList(ctx.list);
+    
+    if (simple_mode) {
+        log_info(LOG_GUI, "Using simple mode formatter (pagination=%s)\n", 
+                 pagination_enabled ? "YES" : "NO");
+#if ITIDY_SIMPLE_PAGINATED_ROLLBACK_GUARD
+        if (simple_paginated_mode && pagination_enabled) {
+            struct List *result;
+            result = iTidy_FormatListViewColumns_SimplePaginated(
+                columns,
+                num_columns,
+                entries,
+                total_char_width,
+                out_state,
+                page_size,
+                current_page,
+                total_pages,
+                has_prev_page,
+                has_next_page,
+                nav_direction);
+
+            whd_free(ctx.list);
+            ctx.list = NULL;
+            return result;
+        }
+#endif
+    }
+    
+    if (!itidy_prepare_column_widths(&ctx)) {
+        itidy_cleanup_format_context(&ctx, TRUE);
+        return NULL;
+    }
+    
+    /* Checkpoint 2: After column width calculation */
+    if (perf_logging && TimerBase) {
+        GetSysTime(&cp2Time);
+        widthMicros = ((cp2Time.tv_secs - cp1Time.tv_secs) * 1000000) +
+                      (cp2Time.tv_micro - cp1Time.tv_micro);
+    }
+    
+    BOOL state_reused = FALSE;
+    BOOL free_state_on_failure = FALSE;
+    if (!simple_paginated_mode && out_state) {
+        if (*out_state) {
+            ctx.state = *out_state;
+            state_reused = TRUE;
+        } else {
+            ctx.state = (iTidy_ListViewState *)whd_malloc(sizeof(iTidy_ListViewState));
+            if (ctx.state) {
+                memset(ctx.state, 0, sizeof(iTidy_ListViewState));
+                *out_state = ctx.state;
+                free_state_on_failure = TRUE;
+            }
+        }
+
+        if (ctx.state) {
+            if (ctx.state->columns == NULL || ctx.state->num_columns != num_columns) {
+                if (ctx.state->columns) {
+                    whd_free(ctx.state->columns);
+                }
+                ctx.state->columns = (iTidy_ColumnState *)whd_malloc(sizeof(iTidy_ColumnState) * num_columns);
+                if (!ctx.state->columns) {
+                    if (free_state_on_failure) {
+                        whd_free(ctx.state);
+                        *out_state = NULL;
+                    }
+                    ctx.state = NULL;
+                }
+            }
+
+            if (ctx.state) {
+                ctx.state->num_columns = num_columns;
+                ctx.state->separator_width = SEPARATOR_WIDTH;
+                ctx.state->sorting_disabled = sorting_disabled;
+                if (!state_reused) {
+                    ctx.state->column_widths_cached = FALSE;
+                    ctx.state->entry_list_ptr = NULL;
+                    ctx.state->entry_count = 0;
+                    ctx.state->cached_total_char_width = 0;
+                }
+                
+                if (pagination_enabled) {
+                    ctx.state->current_page = current_page;
+                    ctx.state->total_pages = total_pages;
+                    ctx.state->last_nav_direction = nav_direction;
+                    ctx.state->auto_select_row = -1;
+                } else {
+                    ctx.state->current_page = 0;
+                    ctx.state->total_pages = 0;
+                    ctx.state->last_nav_direction = 0;
+                    ctx.state->auto_select_row = -1;
+                }
+            }
+        }
+    }
+    ctx.state_reused = state_reused;
+    ctx.free_state_on_failure = free_state_on_failure;
+
+    if (ctx.state) {
+        char_pos = 0;
+        for (col = 0; col < num_columns; col++) {
+            ctx.state->columns[col].column_index = col;
+            ctx.state->columns[col].char_start = char_pos;
+            ctx.state->columns[col].char_width = ctx.col_widths[col];
+            char_pos += ctx.col_widths[col];
+            ctx.state->columns[col].char_end = char_pos;
+            ctx.state->columns[col].pixel_start = 0;
+            ctx.state->columns[col].pixel_end = 0;
+            if (col == default_sort_col) {
+                ctx.state->columns[col].sort_state = columns[col].default_sort;
+            } else {
+                ctx.state->columns[col].sort_state = ITIDY_SORT_NONE;
+            }
+            ctx.state->columns[col].column_type = columns[col].sort_type;
+            char_pos += SEPARATOR_WIDTH;
+        }
+    }
+
+    if (!itidy_prepare_row_buffers(&ctx)) {
+        itidy_cleanup_format_context(&ctx, TRUE);
+        return NULL;
+    }
+    
+    /* ===== CREATE HEADER + SEPARATOR ===== */
+    if (!itidy_build_header(&ctx)) {
+        goto cleanup_buffers;
+    }
+    
+    /* ===== ADD PREVIOUS PAGE NAVIGATION ROW ===== */
+    itidy_emit_nav_rows(&ctx, TRUE);
+    
+    /* ===== CREATE DATA ROWS FROM ENTRIES ===== */
+    row_count = itidy_add_data_rows(ctx.list,
+                                    entries,
+                                    columns,
+                                    num_columns,
+                                    ctx.col_widths,
+                                    ctx.row_buffer,
+                                    ctx.cell_buffer,
+                                    pagination_enabled,
+                                    start_index,
+                                    end_index,
+                                    simple_paginated_mode);
+    
+    /* ===== ADD NEXT PAGE NAVIGATION ROW ===== */
+    itidy_emit_nav_rows(&ctx, FALSE);
+
+    /* Checkpoint 3: After entry formatting */
+    if (perf_logging && TimerBase) {
+        GetSysTime(&cp3Time);
+        formatMicros = ((cp3Time.tv_secs - cp2Time.tv_secs) * 1000000) +
+                       (cp3Time.tv_micro - cp2Time.tv_micro);
+    }
     
     /* End performance timing */
-    if (TimerBase) {
+    if (perf_logging && TimerBase) {
         GetSysTime(&endTime);
         
         /* Calculate total elapsed time */
@@ -1583,7 +2351,7 @@ struct List *iTidy_FormatListViewColumns(
         elapsedMillis = elapsedMicros / 1000;
         
         /* Log performance metrics only if enabled */
-        if (is_performance_logging_enabled()) {
+        if (perf_logging) {
             log_info(LOG_GUI, "==== LISTVIEW FORMAT PERFORMANCE ====\n");
             log_info(LOG_GUI, "iTidy_FormatListViewColumns() total time: %lu.%03lu ms\n",
                      elapsedMillis, elapsedMicros % 1000);
@@ -1605,50 +2373,56 @@ struct List *iTidy_FormatListViewColumns(
             }
             log_info(LOG_GUI, "====================================\n");
             
-            printf("  [TIMING] ListView format: %lu.%03lu ms total (%d entries)\n",
-                   elapsedMillis, elapsedMicros % 1000, entry_count);
-            printf("           Sort: %lu.%03lu ms | Width: %lu.%03lu ms | Format: %lu.%03lu ms\n",
-                   sortMicros / 1000, sortMicros % 1000,
-                   widthMicros / 1000, widthMicros % 1000,
-                   formatMicros / 1000, formatMicros % 1000);
+                 printf("  [TIMING] ListView format: %lu.%03lu ms total (%d entries)\n",
+                     elapsedMillis, elapsedMicros % 1000, entry_count);
+                 printf("           Sort: %lu.%03lu ms | Width: %lu.%03lu ms | Format: %lu.%03lu ms\n",
+                     sortMicros / 1000, sortMicros % 1000,
+                     widthMicros / 1000, widthMicros % 1000,
+                     formatMicros / 1000, formatMicros % 1000);
         }
     }
     
     /* Calculate auto-select row if pagination navigation rows are present */
-    if (state != NULL && (has_prev_page || has_next_page)) {
+    if (ctx.state != NULL && (has_prev_page || has_next_page)) {
         struct Node *node;
         int display_row_count = 0;
         
         /* Count rows in display list (header + separator + data + navigation) */
-        for (node = list->lh_Head; node->ln_Succ; node = node->ln_Succ) {
+        for (node = ctx.list->lh_Head; node->ln_Succ; node = node->ln_Succ) {
             display_row_count++;
         }
         
         /* Select row based on last navigation direction */
         if (display_row_count > 2) {
-            if (state->last_nav_direction < 0) {
+            if (ctx.state->last_nav_direction < 0) {
                 /* Going backward (Previous) - select row 2 (first data row) */
-                state->auto_select_row = 2;
-            } else if (state->last_nav_direction > 0) {
+                ctx.state->auto_select_row = 2;
+            } else if (ctx.state->last_nav_direction > 0) {
                 /* Going forward (Next) - select last row (Next button for easy repeat clicks) */
-                state->auto_select_row = display_row_count - 1;
+                ctx.state->auto_select_row = display_row_count - 1;
             } else {
                 /* Initial load (no navigation yet) - select row 2 (first data row) */
-                state->auto_select_row = 2;
+                ctx.state->auto_select_row = 2;
             }
             
             log_debug(LOG_GUI, "Auto-select row %d of %d (nav_dir=%d, has_prev=%d, has_next=%d)\n",
-                     state->auto_select_row, display_row_count, state->last_nav_direction,
+                     ctx.state->auto_select_row, display_row_count, ctx.state->last_nav_direction,
                      has_prev_page, has_next_page);
         } else {
-            state->auto_select_row = -1;  /* No auto-select for small lists */
+            ctx.state->auto_select_row = -1;  /* No auto-select for small lists */
         }
     }
+    else if (simple_paginated_mode && ctx.pagination_enabled && ctx.out_state) {
+        itidy_prepare_simple_nav_state(&ctx, has_prev_page, has_next_page);
+    }
     
-    return list;
+    return ctx.list;
+
+cleanup_buffers:
+    itidy_cleanup_format_context(&ctx, TRUE);
+    return NULL;
 }
 
-/*---------------------------------------------------------------------------*/
 /* Map ListView Row to Entry                                                 */
 /*---------------------------------------------------------------------------*/
 
@@ -1798,8 +2572,10 @@ BOOL iTidy_HandleListViewGadgetUp(
     int num_columns,
     iTidy_ListViewEvent *out_event)
 {
-    int header_top, header_height;
     LONG selected;
+    iTidy_ListViewEventContext ctx;
+    struct Node *node;
+    LONG current_row;
     
     log_debug(LOG_GUI, "iTidy_HandleListViewGadgetUp: state=%p, display_list=%p\n", state, display_list);
     
@@ -1808,23 +2584,27 @@ BOOL iTidy_HandleListViewGadgetUp(
         log_error(LOG_GUI, "iTidy_HandleListViewGadgetUp: Invalid params (window=%p, gadget=%p, entry_list=%p, display_list=%p, columns=%p, out_event=%p)\n",
                  window, gadget, entry_list, display_list, columns, out_event);
         if (out_event) {
-            out_event->type = ITIDY_LV_EVENT_NONE;
-            out_event->did_sort = FALSE;
+            itidy_init_event_defaults(out_event);
         }
         return FALSE;
     }
     
-    /* Initialize event with safe defaults */
-    out_event->type = ITIDY_LV_EVENT_NONE;
-    out_event->did_sort = FALSE;
-    out_event->sorted_column = -1;
-    out_event->sort_order = ITIDY_SORT_NONE;
-    out_event->entry = NULL;
-    out_event->column = -1;
-    out_event->display_value = NULL;
-    out_event->sort_key = NULL;
-    out_event->column_type = ITIDY_COLTYPE_TEXT;
-    out_event->nav_direction = 0;
+    itidy_init_event_defaults(out_event);
+
+    memset(&ctx, 0, sizeof(ctx));
+    ctx.window = window;
+    ctx.gadget = gadget;
+    ctx.mouse_x = mouse_x;
+    ctx.mouse_y = mouse_y;
+    ctx.entry_list = entry_list;
+    ctx.display_list = display_list;
+    ctx.state = state;
+    ctx.font_height = font_height;
+    ctx.font_width = font_width;
+    ctx.columns = columns;
+    ctx.num_columns = num_columns;
+    ctx.out_event = out_event;
+    ctx.selected_row = -1;
     
     /* Calculate pixel positions from character positions (needed for column detection) */
     /* Only if state is available (not available in simple mode) */
@@ -1844,309 +2624,39 @@ BOOL iTidy_HandleListViewGadgetUp(
         /* No selection */
         return FALSE;
     }
+    ctx.selected_row = selected;
     
     /* Check if selected row is the header (row 0 only - NOT the separator at row 1) */
     /* This correctly handles scrolling - GTLV_Selected returns logical row index */
-    if (selected == 0) {
-        /* HEADER CLICK - Handle sorting */
-        int clicked_col;
-        BOOL sorted;
-        
-        /* CRITICAL: Disable sorting when pagination is active */
-        /* Sorting would create a full list without pagination navigation rows */
-        if (state && state->current_page > 0) {
-            log_info(LOG_GUI, "Header click ignored - sorting disabled during pagination\n");
-            return FALSE;
-        }
-        
-        /* CRITICAL: Disable sorting if explicitly disabled via page_size=-1 */
-        if (state && state->sorting_disabled) {
-            log_info(LOG_GUI, "Header click ignored - sorting disabled by user preference\n");
-            return FALSE;
-        }
-        
-        /* Calculate header bounds for mouse position check */
-        header_top = gadget->TopEdge;
-        header_height = font_height;
-        
-        /* Detect which column was clicked using mouse X position */
-        clicked_col = iTidy_GetClickedColumn(state, mouse_x, gadget->LeftEdge);
-        
-        if (clicked_col >= 0 && clicked_col < num_columns) {
-            /* Valid column - perform sort */
-            sorted = iTidy_ResortListViewByClick(
-                display_list,
-                entry_list,
-                state,
-                mouse_x,
-                mouse_y,
-                header_top,
-                header_height,
-                gadget->LeftEdge,
-                font_width,
-                columns
-            );
-            
-            if (sorted) {
-                /* Fill in header event details */
-                out_event->type = ITIDY_LV_EVENT_HEADER_SORTED;
-                out_event->did_sort = TRUE;
-                out_event->sorted_column = clicked_col;
-                out_event->sort_order = state->columns[clicked_col].sort_state;
-                return TRUE;
-            }
-        }
-        
-        /* Header clicked but no valid sort */
-        return FALSE;
+    if (ctx.selected_row == 0) {
+        return itidy_handle_header_click(&ctx);
     }
     
     /* Check if selected row is the separator (row 1) - ignore these clicks */
-    if (selected == 1) {
+    if (ctx.selected_row == 1) {
         /* Separator row clicked - do nothing */
         return FALSE;
     }
     
     /* NOT HEADER/SEPARATOR - Check display_list to get the ACTUAL clicked row */
     /* This handles both navigation rows and data rows correctly */
-    if (display_list != NULL && selected >= 2) {
-        struct Node *node;
-        LONG current_row = 0;
-        iTidy_ListViewEntry *clicked_entry;
-        
-        log_debug(LOG_GUI, "Row clicked: selected=%d, walking display_list...\n", selected);
-        
-        /* Walk display_list to find the clicked row (includes navigation rows) */
+    if (display_list != NULL && ctx.selected_row >= 2) {
+        log_debug(LOG_GUI, "Row clicked: selected=%ld, walking display_list...\n", ctx.selected_row);
+
+        current_row = 0;
         for (node = display_list->lh_Head; node->ln_Succ; node = node->ln_Succ) {
-            if (current_row == selected) {
-                /* Found the clicked row in display list */
-                clicked_entry = (iTidy_ListViewEntry *)node;
-                
-                log_debug(LOG_GUI, "Found row %d: text='%s'\n", selected, 
-                         node->ln_Name ? node->ln_Name : "(null)");
-                
-                /* SIMPLE MODE: Check for navigation by text pattern FIRST */
-                /* This works for both simple mode (plain Node) and full mode (iTidy_ListViewEntry) */
-                if (node->ln_Name) {
-                    const char *text = node->ln_Name;
-                    int direction = 0;
-                    
-                    if (strstr(text, "<- Previous") || strstr(text, "Previous")) {
-                        direction = -1;
-                        log_debug(LOG_GUI, "Navigation detected by text: Previous (direction=%d)\n", direction);
-                    }
-                    else if (strstr(text, "-> Next") || strstr(text, "Next")) {
-                        direction = +1;
-                        log_debug(LOG_GUI, "Navigation detected by text: Next (direction=%d)\n", direction);
-                    }
-                    
-                    if (direction != 0) {
-                        /* Navigation row detected - return event to caller */
-                        out_event->type = ITIDY_LV_EVENT_NAV_HANDLED;
-                        out_event->entry = NULL;
-                        out_event->column = -1;
-                        out_event->display_value = NULL;
-                        out_event->sort_key = NULL;
-                        out_event->column_type = ITIDY_COLTYPE_TEXT;
-                        out_event->nav_direction = direction;
-                        log_debug(LOG_GUI, "Returning NAV_HANDLED with direction=%d\n", direction);
-                        return TRUE;
-                    }
+            if (current_row == ctx.selected_row) {
+                if (itidy_handle_navigation_click(&ctx, node)) {
+                    return TRUE;
                 }
-                
-                /* Check if it's a navigation row (by row_type - only works for full mode) */
-                if (clicked_entry->row_type == ITIDY_ROW_NAV_PREV || 
-                    clicked_entry->row_type == ITIDY_ROW_NAV_NEXT) {
-                    /* Navigation row clicked - handle internally if state is available */
-                    if (state != NULL && state->total_pages > 1) {
-                        log_debug(LOG_GUI, "Navigation row (by row_type): %s (page %d of %d)\n",
-                                 clicked_entry->row_type == ITIDY_ROW_NAV_PREV ? "Previous" : "Next",
-                                 state->current_page, state->total_pages);
-                        
-                        /* Update page based on navigation direction */
-                        if (clicked_entry->row_type == ITIDY_ROW_NAV_PREV && state->current_page > 1) {
-                            state->current_page--;
-                            state->last_nav_direction = -1;  /* Previous = select top */
-                            log_debug(LOG_GUI, "  -> Navigate to page %d (Previous)\n", state->current_page);
-                        }
-                        else if (clicked_entry->row_type == ITIDY_ROW_NAV_NEXT && state->current_page < state->total_pages) {
-                            state->current_page++;
-                            state->last_nav_direction = +1;  /* Next = select bottom */
-                            log_debug(LOG_GUI, "  -> Navigate to page %d (Next)\n", state->current_page);
-                        }
-                        else {
-                            log_debug(LOG_GUI, "  -> Already at edge of page range, ignoring\n");
-                            return FALSE;  /* At edge of page range, do nothing */
-                        }
-                        
-                        /* Return special event to trigger re-format */
-                        out_event->type = ITIDY_LV_EVENT_NAV_HANDLED;
-                        out_event->entry = NULL;
-                        out_event->column = -1;
-                        out_event->display_value = NULL;
-                        out_event->sort_key = NULL;
-                        out_event->column_type = ITIDY_COLTYPE_TEXT;
-                        out_event->nav_direction = state->last_nav_direction;
-                        return TRUE;
-                    }
-                    
-                    /* No state available - navigation already handled by text pattern above */
-                    log_debug(LOG_GUI, "Navigation row_type detected but already handled by text pattern\n");
-                }
-                
-                /* Data row found in display_list */
-                /* In simple mode, display_list contains plain Nodes, so we must look up the actual entry */
-                
-                /* Count actual data rows in display_list (skip nav rows) */
-                /* Also detect current page by parsing navigation row text */
-                /* 
-                 * WHY PARSE TEXT INSTEAD OF KEEPING STATE IN MEMORY?
-                 * Mode 3 (simple pagination) deliberately sets state=NULL to save RAM.
-                 * This is a space-time tradeoff optimized for low-memory Amiga systems:
-                 * - Saves 5-10KB by avoiding state object + full entry structures in display_list
-                 * - Text parsing cost (~50-100 CPU cycles) is negligible vs human click latency
-                 * - For stateful pagination, use Mode 4 which tracks current_page in memory
-                 */
-                struct Node *count_node;
-                LONG count_row = 0;
-                int data_row_count = 0;
-                int current_page = 1;  /* Default to page 1 */
-                int total_pages = 1;
-                BOOL has_previous_nav = FALSE;  /* Track if "Previous" nav row exists */
-                
-                for (count_node = display_list->lh_Head; count_node->ln_Succ; count_node = count_node->ln_Succ) {
-                    if (count_row >= 2) {  /* Skip header and separator */
-                        const char *text = count_node->ln_Name;
-                        if (text) {
-                            /* Check for navigation rows to extract page info */
-                            if (strstr(text, "Previous") && strstr(text, "Page")) {
-                                /* Example: "<- Previous (Page 2 of 3)" */
-                                has_previous_nav = TRUE;  /* Mark that Previous nav exists */
-                                const char *page_str = strstr(text, "Page");
-                                if (page_str) {
-                                    sscanf(page_str, "Page %d of %d", &current_page, &total_pages);
-                                    log_debug(LOG_GUI, "Detected pagination from nav row: page %d of %d\n",
-                                             current_page, total_pages);
-                                }
-                            }
-                            else if (strstr(text, "Next") && strstr(text, "Page")) {
-                                /* Example: "-> Next (Page 1 of 3)" */
-                                const char *page_str = strstr(text, "Page");
-                                if (page_str) {
-                                    sscanf(page_str, "Page %d of %d", &current_page, &total_pages);
-                                    log_debug(LOG_GUI, "Detected pagination from nav row: page %d of %d\n",
-                                             current_page, total_pages);
-                                }
-                            }
-                            else if (!strstr(text, "Previous") && !strstr(text, "Next")) {
-                                /* It's a data row */
-                                data_row_count++;
-                            }
-                        }
-                    }
-                    count_row++;
-                }
-                
-                /* Calculate which data row was clicked */
-                /* Page 1: Header(0), Separator(1), Data(2+) -> offset = 2 */
-                /* Page 2+: Header(0), Separator(1), Previous(2), Data(3+) -> offset = 3 */
-                int row_offset = has_previous_nav ? 3 : 2;
-                int clicked_display_row = selected - row_offset;
-                
-                log_debug(LOG_GUI, "Row calculation: selected=%d, has_previous_nav=%d, row_offset=%d, clicked_display_row=%d\n",
-                         selected, has_previous_nav, row_offset, clicked_display_row);
-                
-                /* This is the page size (number of data rows per page) */
-                int page_size = data_row_count;
-                
-                /* Calculate entry index in the full entry_list */
-                int entry_index = clicked_display_row;  /* Default: no pagination */
-                
-                if (current_page > 1 && page_size > 0) {
-                    /* Add offset for previous pages */
-                    entry_index = ((current_page - 1) * page_size) + clicked_display_row;
-                    log_debug(LOG_GUI, "Paginated: clicked row %d on page %d (page_size=%d) -> entry_index=%d\n",
-                             clicked_display_row, current_page, page_size, entry_index);
-                }
-                else {
-                    log_debug(LOG_GUI, "Simple mode: clicked row %d -> entry_index=%d\n",
-                             clicked_display_row, entry_index);
-                }
-                
-                /* Look up the actual entry from entry_list */
-                iTidy_ListViewEntry *actual_entry = NULL;
-                if (entry_list != NULL && entry_index >= 0) {
-                    struct Node *entry_node;
-                    int entry_idx = 0;
-                    
-                    for (entry_node = entry_list->lh_Head; entry_node->ln_Succ; entry_node = entry_node->ln_Succ) {
-                        if (entry_idx == entry_index) {
-                            actual_entry = (iTidy_ListViewEntry *)entry_node;
-                            log_debug(LOG_GUI, "Found actual entry at index %d in entry_list\n", entry_index);
-                            break;
-                        }
-                        entry_idx++;
-                    }
-                }
-                
-                if (actual_entry == NULL) {
-                    log_debug(LOG_GUI, "ERROR: Could not find entry at entry_index=%d in entry_list\n", entry_index);
-                    return FALSE;
-                }
-                
-                /* Detect which column was clicked */
-                int clicked_col = iTidy_GetClickedColumn(state, mouse_x, gadget->LeftEdge);
-                
-                out_event->type = ITIDY_LV_EVENT_ROW_CLICK;
-                out_event->entry = actual_entry;  /* Return pointer to original entry */
-                out_event->column = clicked_col;
-                
-                /* Populate column values if valid */
-                if (clicked_col >= 0 && clicked_col < actual_entry->num_columns) {
-                    out_event->display_value = actual_entry->display_data[clicked_col];
-                    out_event->sort_key = actual_entry->sort_keys[clicked_col];
-                    if (state && clicked_col < state->num_columns) {
-                        out_event->column_type = state->columns[clicked_col].column_type;
-                    } else {
-                        out_event->column_type = ITIDY_COLTYPE_TEXT;
-                    }
-                } else {
-                    out_event->display_value = NULL;
-                    out_event->sort_key = NULL;
-                    out_event->column_type = ITIDY_COLTYPE_TEXT;
-                }
-                
-                log_debug(LOG_GUI, "Data row clicked: row %d, column %d, entry has %d columns\n", 
-                         selected, clicked_col, actual_entry->num_columns);
-                return TRUE;
+                return itidy_handle_data_row_click(&ctx, node);
             }
+
             current_row++;
         }
     }
     
-    /* If we get here, the row wasn't found in display_list (shouldn't happen with pagination) */
-    /* Fall back to old entry_list lookup for compatibility with non-paginated lists */
-    iTidy_ListViewClick click = iTidy_GetListViewClick(
-        entry_list,
-        state,
-        selected,
-        mouse_x,
-        gadget->LeftEdge
-    );
-    
-    /* Check if we got a valid entry (not header row) */
-    if (click.entry != NULL) {
-        /* Fill in row click event details */
-        out_event->type = ITIDY_LV_EVENT_ROW_CLICK;
-        out_event->entry = click.entry;
-        out_event->column = click.column;
-        out_event->display_value = click.display_value;
-        out_event->sort_key = click.sort_key;
-        out_event->column_type = click.column_type;
-        return TRUE;
-    }
-    
-    /* Click was on header/separator row or invalid */
+    /* Click was not resolved */
     return FALSE;
 }
 
@@ -2511,6 +3021,7 @@ BOOL iTidy_ResortListViewByClick(
     struct timeval startTime, endTime, sortEndTime;
     ULONG elapsedMicros, elapsedMillis, sortMicros = 0, rebuildMicros = 0;
     int entry_count = 0;
+    BOOL perf_logging = is_performance_logging_enabled();
     
     log_debug(LOG_GUI, "iTidy_ResortListViewByClick: mouse_x=%d, mouse_y=%d, header_top=%d, header_height=%d, gadget_left=%d, font_width=%d\n",
               mouse_x, mouse_y, header_top, header_height, gadget_left, font_width);
@@ -2522,7 +3033,7 @@ BOOL iTidy_ResortListViewByClick(
     }
     
     /* Start performance timing */
-    if (TimerBase) {
+    if (perf_logging && TimerBase) {
         GetSysTime(&startTime);
     }
     
@@ -2549,16 +3060,8 @@ BOOL iTidy_ResortListViewByClick(
                   state->columns[col].pixel_start, state->columns[col].pixel_end);
     }
     
-    /* Detect which column was clicked */
-    for (col = 0; col < state->num_columns; col++) {
-        if (local_x >= state->columns[col].pixel_start && local_x < state->columns[col].pixel_end) {
-            clicked_col = col;
-            log_debug(LOG_GUI, "iTidy_ResortListViewByClick: Matched column %d (local_x=%d in range %d-%d)\n",
-                      col, local_x, state->columns[col].pixel_start, state->columns[col].pixel_end);
-            break;
-        }
-    }
-    
+    clicked_col = iTidy_GetClickedColumn(state, mouse_x, gadget_left);
+
     if (clicked_col < 0) {
         log_debug(LOG_GUI, "iTidy_ResortListViewByClick: Click outside all columns (local_x=%d)\n", local_x);
         return FALSE;  /* Click was outside all columns */
@@ -2586,7 +3089,7 @@ BOOL iTidy_ResortListViewByClick(
     iTidy_SortListViewEntries(entry_list, clicked_col, columns[clicked_col].sort_type, ascending);
     
     /* Checkpoint: After sort */
-    if (TimerBase) {
+    if (perf_logging && TimerBase) {
         GetSysTime(&sortEndTime);
         sortMicros = ((sortEndTime.tv_secs - startTime.tv_secs) * 1000000) +
                      (sortEndTime.tv_micro - startTime.tv_micro);
@@ -2687,7 +3190,7 @@ BOOL iTidy_ResortListViewByClick(
     }
     
     /* End performance timing */
-    if (TimerBase) {
+    if (perf_logging && TimerBase) {
         GetSysTime(&endTime);
         
         /* Calculate total elapsed time */
@@ -2697,7 +3200,7 @@ BOOL iTidy_ResortListViewByClick(
         rebuildMicros = elapsedMicros - sortMicros;
         
         /* Log performance metrics only if enabled */
-        if (is_performance_logging_enabled()) {
+        if (perf_logging) {
             const char *type_str = (columns[clicked_col].sort_type == ITIDY_COLTYPE_NUMBER) ? "NUMBER" :
                                    (columns[clicked_col].sort_type == ITIDY_COLTYPE_DATE) ? "DATE" : "TEXT";
             const char *dir_str = ascending ? "ASC" : "DESC";

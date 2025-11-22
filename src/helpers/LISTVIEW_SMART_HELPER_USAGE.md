@@ -13,7 +13,8 @@ This eliminates the need for callers to manually handle pagination logic, header
 
 ---
 
-## Quick Start Example
+
+## Quick Start Example (Session API - Recommended)
 
 ```c
 #include "helpers/listview_columns_api.h"
@@ -21,7 +22,7 @@ This eliminates the need for callers to manually handle pagination logic, header
 /* STEP 1: Define columns */
 iTidy_ColumnConfig columns[] = {
     {"Date/Time", 20, 20, ITIDY_ALIGN_LEFT, FALSE, FALSE, 
-     ITIDY_SORT_DESCENDING, ITIDY_COLTYPE_DATE},  /* Default sort: newest first */
+     ITIDY_SORT_DESCENDING, ITIDY_COLTYPE_DATE},
     {"Changes", 4, 6, ITIDY_ALIGN_RIGHT, FALSE, FALSE,
      ITIDY_SORT_NONE, ITIDY_COLTYPE_NUMBER},
     {"Path", 30, 0, ITIDY_ALIGN_LEFT, TRUE, TRUE,
@@ -33,48 +34,47 @@ struct List entry_list;
 NewList(&entry_list);
 /* ... populate entries ... */
 
-/* STEP 3: Format with auto-pagination (sorting when ≤10 entries, pagination when >10) */
-iTidy_ListViewState *state = NULL;
-int total_pages = 0;
-struct List *display_list = iTidy_FormatListViewColumns(
-    columns, 3,              /* Column config */
-    &entry_list,             /* Your data */
-    65,                      /* Width in characters */
-    &state,                  /* Returns state (for events and cleanup) */
-    ITIDY_MODE_FULL,         /* Mode: enable sorting + optional pagination */
-    10,                      /* page_size: Auto-pagination threshold */
-    1,                       /* current_page: Start on page 1 */
-    &total_pages,            /* Returns total pages */
-    0                        /* nav_direction: 0=none, -1=Previous, +1=Next */
-);
+/* STEP 3: Prepare options struct */
+iTidy_ListViewOptions options;
+iTidy_InitListViewOptions(&options);
+options.columns = columns;
+options.num_columns = 3;
+options.entries = &entry_list;
+options.total_char_width = 65;
+options.out_state = &state; /* Optional: receive state pointer */
+options.mode = ITIDY_MODE_FULL;
+options.page_size = 10;
+options.current_page = 1;
+options.out_total_pages = &total_pages;
+options.nav_direction = 0;
+
+/* STEP 4: Create session and format */
+iTidy_ListViewSession *session = iTidy_ListViewSessionCreate(&options);
+struct List *display_list = NULL;
+if (session) {
+    display_list = iTidy_ListViewSessionFormat(session);
+}
 
 GT_SetGadgetAttrs(listview, window, NULL, GTLV_Labels, display_list, TAG_DONE);
 
-/* STEP 4: Handle events with single function */
+/* STEP 5: Handle events with single function */
 case IDCMP_GADGETUP:
     if (gadget->GadgetID == GID_MY_LISTVIEW) {
-        /* Process click - returns structured event */
         iTidy_ListViewEvent event;
         if (iTidy_HandleListViewGadgetUp(
                 window, gadget,
                 msg->MouseX, msg->MouseY,
-                &entry_list, display_list, state,
+                &entry_list, display_list, session->state,
                 prefsIControl.systemFontSize, prefsIControl.systemFontCharWidth,
                 columns, 3, &event)) {
-            
             switch (event.type) {
                 case ITIDY_LV_EVENT_HEADER_SORTED:
-                    /* Sorting happened automatically - just rebuild display */
-                    rebuild_listview();  /* Re-format and refresh */
-                    break;
-                    
                 case ITIDY_LV_EVENT_NAV_HANDLED:
-                    /* Page navigation happened - rebuild on new page */
-                    rebuild_listview();  /* Uses state->current_page */
+                    /* Sorting or navigation happened - just re-format and refresh */
+                    display_list = iTidy_ListViewSessionFormat(session);
+                    GT_SetGadgetAttrs(listview, window, NULL, GTLV_Labels, display_list, TAG_DONE);
                     break;
-                    
                 case ITIDY_LV_EVENT_ROW_CLICK:
-                    /* User clicked a data row */
                     printf("Clicked: %s in column %d\n", 
                            event.entry->display_data[event.column],
                            event.column);
@@ -84,9 +84,12 @@ case IDCMP_GADGETUP:
     }
     break;
 
-/* STEP 5: Cleanup on window close */
-if (display_list) iTidy_FreeFormattedList(display_list);
-if (state) iTidy_FreeListViewState(state);
+/* STEP 6: Cleanup on window close */
+if (session) {
+    iTidy_ListViewSessionDestroy(session);
+    session = NULL;
+    display_list = NULL;
+}
 /* Free entry_list and your data */
 ```
 
@@ -196,7 +199,8 @@ Use **Simple Mode** for display-only ListViews where you:
 
 ```c
 /* SIMPLE MODES (ITIDY_MODE_SIMPLE / ITIDY_MODE_SIMPLE_PAGINATED) do NOT create: */
-❌ iTidy_ListViewState structure (no state tracking)
+❌ iTidy_ListViewState structure (simple non-paginated only)
+⚠️ Simple paginated mode allocates a **minimal** state (auto-select only, no columns)
 ❌ Sorting machinery (no iTidy_SortListViewEntries calls)
 ❌ Header click sorting (headers display-only, not interactive)
 ❌ Column metadata tracking (no column detection for clicks)
@@ -274,6 +278,17 @@ struct List *iTidy_FormatListViewColumns(
 **Key Difference from Full Paginated Mode:**
 - Full paginated mode (`ITIDY_MODE_FULL` with `page_size > 0`): Has full `state` with column tracking
 - Simple paginated mode (`ITIDY_MODE_SIMPLE_PAGINATED`): Minimal state for auto-select only
+
+### Rollback Guard (Legacy Formatter)
+
+If a regression is discovered after enabling the merged formatter, you can temporarily fall back to the legacy implementation by defining `ITIDY_SIMPLE_PAGINATED_ROLLBACK_GUARD` before compiling `listview_columns_api.c`:
+
+```c
+#define ITIDY_SIMPLE_PAGINATED_ROLLBACK_GUARD 1
+#include "helpers/listview_columns_api.c"
+```
+
+With the guard set to `1`, the formatter routes `ITIDY_MODE_SIMPLE_PAGINATED` requests through the previous minimal-allocation implementation. The default value (`0`) keeps the unified path enabled. Use this only as a short-term safety switch; new work should target the unified formatter.
 
 ### Memory Footprint Comparison
 
@@ -396,12 +411,13 @@ RestoreWindowData *restore_data;
 restore_data->page_size = 4;                       /* 4 rows per page */
 restore_data->current_page = 1;                    /* Start on page 1 */
 
-/* Format with pagination (state=NULL, navigation rows added) */
+/* Format with pagination (minimal state returned for auto-select) */
+iTidy_ListViewState *restore_state = NULL;
 restore_data->display_list = iTidy_FormatListViewColumns(
     cols, 3,
     &restore_data->run_entries_list,  /* Your entry list */
     65,                               /* Width in characters */
-    NULL,                             /* out_state = NULL (no state in simple paginated) */
+    &restore_state,                   /* Minimal state populated when nav rows exist */
     ITIDY_MODE_SIMPLE_PAGINATED,      /* ← Explicit mode parameter */
     restore_data->page_size,          /* 4 rows per page */
     restore_data->current_page,       /* Current page number */
@@ -423,7 +439,7 @@ case IDCMP_GADGETUP:
                 msg->MouseX, msg->MouseY,
                 &restore_data->run_entries_list,
                 restore_data->display_list,
-                NULL,              /* state is NULL in SIMPLE_PAGINATED mode */
+                restore_state,     /* Minimal state for auto-select + nav tracking */
                 font_height, font_width,
                 cols, 3, &event))
         {

@@ -179,6 +179,8 @@ static iTidy_ListViewEntry *create_test_entry(int index)
     }
     
     memset(entry, 0, sizeof(iTidy_ListViewEntry));
+    entry->node.ln_Type = NT_USER;
+    entry->source_entry = entry;
     entry->num_columns = 5;
     entry->row_type = ITIDY_ROW_DATA;  /* Normal data row */
     
