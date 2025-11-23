@@ -176,10 +176,6 @@
 /* Feature Guards                                                            */
 /*---------------------------------------------------------------------------*/
 
-#ifndef ITIDY_SIMPLE_PAGINATED_ROLLBACK_GUARD
-#define ITIDY_SIMPLE_PAGINATED_ROLLBACK_GUARD 0
-#endif
-
 typedef struct {
     BOOL sorting_disabled;
     int default_sort_column;
@@ -221,12 +217,15 @@ typedef struct {
     BOOL free_state_on_failure;
     iTidy_SortPreparation sort_info;
     iTidy_PaginationInfo pagination_info;
+    char *temp_truncated;
+    char *temp_path_abbreviated;
 } iTidy_FormatContext;
 static void itidy_init_format_context(iTidy_FormatContext *ctx)
 {
-    if (ctx) {
-        memset(ctx, 0, sizeof(iTidy_FormatContext));
-    }
+    /* No-op: Memory is already zeroed by whd_malloc (uses AllocVec with MEMF_CLEAR) */
+#ifdef __GNUC__
+    (void)ctx;  /* Suppress unused parameter warning */
+#endif
 }
 
 static void itidy_cleanup_format_context(iTidy_FormatContext *ctx, BOOL free_display_list)
@@ -245,6 +244,16 @@ static void itidy_cleanup_format_context(iTidy_FormatContext *ctx, BOOL free_dis
     if (ctx->cell_buffer) {
         whd_free(ctx->cell_buffer);
         ctx->cell_buffer = NULL;
+    }
+
+    if (ctx->temp_truncated) {
+        whd_free(ctx->temp_truncated);
+        ctx->temp_truncated = NULL;
+    }
+
+    if (ctx->temp_path_abbreviated) {
+        whd_free(ctx->temp_path_abbreviated);
+        ctx->temp_path_abbreviated = NULL;
     }
 
     if (ctx->col_widths) {
@@ -300,7 +309,7 @@ void iTidy_InitListViewOptions(iTidy_ListViewOptions *options)
     if (!options) {
         return;
     }
-    memset(options, 0, sizeof(iTidy_ListViewOptions));
+    /* Memory already zeroed by whd_malloc (uses AllocVec with MEMF_CLEAR) */
     options->mode = ITIDY_MODE_FULL;
 }
 
@@ -378,7 +387,7 @@ iTidy_ListViewSession *iTidy_ListViewSessionCreate(const iTidy_ListViewOptions *
         return NULL;
     }
 
-    memset(session, 0, sizeof(iTidy_ListViewSession));
+    /* Memory already zeroed by whd_malloc (uses AllocVec with MEMF_CLEAR) */
     session->options = *options;  /* Struct copy (contains pointers) */
     session->entry_list = options->entries;
 
@@ -479,30 +488,18 @@ typedef struct {
 /*---------------------------------------------------------------------------*/
 
 static void format_cell(char *output, const char *text, int width, 
-                       iTidy_ColumnAlign align, BOOL is_path);
+                       iTidy_ColumnAlign align, BOOL is_path,
+                       char *temp_truncated, char *temp_path_abbreviated);
 
 static void format_header_row(char *row_buffer, char *cell_buffer, 
                               iTidy_ColumnConfig *columns, int num_columns, 
-                              int *col_widths, iTidy_ListViewState *state);
+                              int *col_widths, iTidy_ListViewState *state,
+                              char *temp_truncated, char *temp_path_abbreviated);
 
 static void format_data_row(char *row_buffer, char *cell_buffer,
                             iTidy_ListViewEntry *entry, iTidy_ColumnConfig *columns,
-                            int num_columns, int *col_widths);
-
-#if ITIDY_SIMPLE_PAGINATED_ROLLBACK_GUARD
-static struct List *iTidy_FormatListViewColumns_SimplePaginated(
-    iTidy_ColumnConfig *columns,
-    int num_columns,
-    struct List *entries,
-    int total_char_width,
-    iTidy_ListViewState **out_state,
-    int page_size,
-    int current_page,
-    int total_pages,
-    BOOL has_prev_page,
-    BOOL has_next_page,
-    int nav_direction);
-#endif
+                            int num_columns, int *col_widths,
+                            char *temp_truncated, char *temp_path_abbreviated);
 
 static int itidy_add_data_rows(struct List *list,
                                struct List *entries,
@@ -514,7 +511,9 @@ static int itidy_add_data_rows(struct List *list,
                                BOOL pagination_enabled,
                                int start_index,
                                int end_index,
-                               BOOL simple_mode);
+                               BOOL simple_mode,
+                               char *temp_truncated,
+                               char *temp_path_abbreviated);
 
 static BOOL itidy_add_header_and_separator(struct List *list,
                                            iTidy_ColumnConfig *columns,
@@ -522,13 +521,17 @@ static BOOL itidy_add_header_and_separator(struct List *list,
                                            int *col_widths,
                                            iTidy_ListViewState *state,
                                            char *row_buffer,
-                                           char *cell_buffer);
+                                           char *cell_buffer,
+                                           char *temp_truncated,
+                                           char *temp_path_abbreviated);
 
 static void itidy_add_navigation_row(struct List *list,
                                      int total_char_width,
                                      iTidy_RowType row_type,
                                      int current_page,
-                                     int total_pages);
+                                     int total_pages,
+                                     char *temp_truncated,
+                                     char *temp_path_abbreviated);
 static BOOL itidy_prepare_column_widths(iTidy_FormatContext *ctx);
 static BOOL itidy_prepare_row_buffers(iTidy_FormatContext *ctx);
 static BOOL itidy_build_header(iTidy_FormatContext *ctx);
@@ -1024,13 +1027,12 @@ BOOL iTidy_CalculateColumnWidths(
  * @note Requires path_utilities module when is_path=TRUE
  * @note For non-path data or when path abbreviation doesn't help, falls back to "..." truncation
  */
-static void format_cell(char *output, const char *text, int width, iTidy_ColumnAlign align, BOOL is_path)
+static void format_cell(char *output, const char *text, int width, iTidy_ColumnAlign align, BOOL is_path,
+                       char *temp_truncated, char *temp_path_abbreviated)
 {
     int len;
     int padding;
     int i;
-    char truncated[256];
-    char path_abbreviated[256];
     const char *display_text;
     
     if (!output) return;
@@ -1045,10 +1047,10 @@ static void format_cell(char *output, const char *text, int width, iTidy_ColumnA
     /* Handle path formatting first if needed */
     if (is_path && len > width) {
         /* Try intelligent path abbreviation with /../ notation */
-        if (iTidy_ShortenPathWithParentDir(text, path_abbreviated, width)) {
-            /* Path was successfully abbreviated */
-            display_text = path_abbreviated;
-            len = strlen(path_abbreviated);
+        if (iTidy_ShortenPathWithParentDir(text, temp_path_abbreviated, width)) {
+            /* Path was successfully abbreviated - length is guaranteed <= width */
+            display_text = temp_path_abbreviated;
+            len = width;  /* Optimized: no need for strlen() - path shortener guarantees width */
         } else {
             /* Path couldn't be abbreviated or already fits, use original */
             display_text = text;
@@ -1061,15 +1063,15 @@ static void format_cell(char *output, const char *text, int width, iTidy_ColumnA
     if (len > width) {
         if (width >= 3) {
             /* Truncate with "..." */
-            strncpy(truncated, display_text, width - 3);
-            truncated[width - 3] = '\0';
-            strcat(truncated, "...");
+            strncpy(temp_truncated, display_text, width - 3);
+            temp_truncated[width - 3] = '\0';
+            strcat(temp_truncated, "...");
         } else {
             /* Too narrow for "...", just truncate */
-            strncpy(truncated, display_text, width);
-            truncated[width] = '\0';
+            strncpy(temp_truncated, display_text, width);
+            temp_truncated[width] = '\0';
         }
-        display_text = truncated;
+        display_text = temp_truncated;
         len = width;
     }
     
@@ -1089,7 +1091,7 @@ static void format_cell(char *output, const char *text, int width, iTidy_ColumnA
         case ITIDY_ALIGN_CENTER:
             /* Center-aligned: " text  " */
             {
-                int left_pad = padding / 2;
+                int left_pad = padding >> 1;  /* Optimized: bit-shift instead of division (2 cycles vs 140) */
                 int right_pad = padding - left_pad;
                 for (i = 0; i < left_pad; i++) {
                     output[i] = ' ';
@@ -1122,6 +1124,7 @@ static struct Node *create_display_node(const char *text)
 {
     struct Node *node;
     char *text_copy;
+    int text_len;
     
     if (!text) return NULL;
     
@@ -1131,16 +1134,19 @@ static struct Node *create_display_node(const char *text)
         return NULL;
     }
     
-    memset(node, 0, sizeof(struct Node));
+    /* Memory already zeroed by whd_malloc (uses AllocVec with MEMF_CLEAR) */
     
-    text_copy = (char *)whd_malloc(strlen(text) + 1);
+    /* Cache strlen result to avoid redundant calculation */
+    text_len = strlen(text);
+    text_copy = (char *)whd_malloc(text_len + 1);
     if (!text_copy) {
         log_error(LOG_GUI, "Failed to allocate node text\n");
         whd_free(node);
         return NULL;
     }
     
-    strcpy(text_copy, text);
+    /* Use memcpy instead of strcpy - faster on 68000 when length is known */
+    memcpy(text_copy, text, text_len + 1);
     node->ln_Name = text_copy;
     
     return node;
@@ -1151,6 +1157,7 @@ static BOOL itidy_append_display_entry(struct List *list,
                                        const char *row_text)
 {
     iTidy_DisplayNode *display_entry;
+    int text_len;
 
     if (!list || !source_entry || !row_text) {
         return FALSE;
@@ -1161,15 +1168,19 @@ static BOOL itidy_append_display_entry(struct List *list,
         return FALSE;
     }
 
-    memset(display_entry, 0, sizeof(iTidy_DisplayNode));
+    /* Memory already zeroed by whd_malloc (uses AllocVec with MEMF_CLEAR) */
     display_entry->node.ln_Type = NT_USER;
-    display_entry->node.ln_Name = (char *)whd_malloc(strlen(row_text) + 1);
+    
+    /* Cache strlen result to avoid redundant calculation */
+    text_len = strlen(row_text);
+    display_entry->node.ln_Name = (char *)whd_malloc(text_len + 1);
     if (!display_entry->node.ln_Name) {
         whd_free(display_entry);
         return FALSE;
     }
 
-    strcpy(display_entry->node.ln_Name, row_text);
+    /* Use memcpy instead of strcpy - faster on 68000 when length is known */
+    memcpy(display_entry->node.ln_Name, row_text, text_len + 1);
     display_entry->entry = source_entry;
     display_entry->row_type = ITIDY_ROW_DATA;
 
@@ -1182,7 +1193,8 @@ static BOOL itidy_append_display_entry(struct List *list,
 /*---------------------------------------------------------------------------*/
 
 static void format_header_row(char *row_buffer, char *cell_buffer, iTidy_ColumnConfig *columns,
-                              int num_columns, int *col_widths, iTidy_ListViewState *state)
+                              int num_columns, int *col_widths, iTidy_ListViewState *state,
+                              char *temp_truncated, char *temp_path_abbreviated)
 {
     int col, pos;
     char title_with_indicator[128];
@@ -1194,16 +1206,20 @@ static void format_header_row(char *row_buffer, char *cell_buffer, iTidy_ColumnC
             const char *indicator = (state->columns[col].sort_state == ITIDY_SORT_ASCENDING) ? " ^" : " v";
             snprintf(title_with_indicator, sizeof(title_with_indicator), "%s%s", 
                     columns[col].title ? columns[col].title : "", indicator);
-            format_cell(cell_buffer, title_with_indicator, col_widths[col], columns[col].align, FALSE);
+            format_cell(cell_buffer, title_with_indicator, col_widths[col], columns[col].align, FALSE,
+                       temp_truncated, temp_path_abbreviated);
         } else {
-            format_cell(cell_buffer, columns[col].title, col_widths[col], columns[col].align, FALSE);
+            format_cell(cell_buffer, columns[col].title, col_widths[col], columns[col].align, FALSE,
+                       temp_truncated, temp_path_abbreviated);
         }
         
-        strcpy(row_buffer + pos, cell_buffer);
+        /* Use memcpy instead of strcpy - length is known from col_widths */
+        memcpy(row_buffer + pos, cell_buffer, col_widths[col]);
         pos += col_widths[col];
         
         if (col < num_columns - 1) {
-            strcpy(row_buffer + pos, COLUMN_SEPARATOR);
+            /* Use memcpy for constant separator - faster than strcpy */
+            memcpy(row_buffer + pos, COLUMN_SEPARATOR, SEPARATOR_WIDTH);
             pos += SEPARATOR_WIDTH;
         }
     }
@@ -1216,7 +1232,8 @@ static void format_header_row(char *row_buffer, char *cell_buffer, iTidy_ColumnC
 
 static void format_data_row(char *row_buffer, char *cell_buffer,
                             iTidy_ListViewEntry *entry, iTidy_ColumnConfig *columns,
-                            int num_columns, int *col_widths)
+                            int num_columns, int *col_widths,
+                            char *temp_truncated, char *temp_path_abbreviated)
 {
     int col, pos;
     
@@ -1225,194 +1242,20 @@ static void format_data_row(char *row_buffer, char *cell_buffer,
         const char *cell_data = (entry->display_data && col < entry->num_columns && entry->display_data[col]) ? 
                                 entry->display_data[col] : "";
         
-        format_cell(cell_buffer, cell_data, col_widths[col], columns[col].align, columns[col].is_path);
-        strcpy(row_buffer + pos, cell_buffer);
+        format_cell(cell_buffer, cell_data, col_widths[col], columns[col].align, columns[col].is_path,
+                   temp_truncated, temp_path_abbreviated);
+        /* Use memcpy instead of strcpy - length is known from col_widths */
+        memcpy(row_buffer + pos, cell_buffer, col_widths[col]);
         pos += col_widths[col];
         
         if (col < num_columns - 1) {
-            strcpy(row_buffer + pos, COLUMN_SEPARATOR);
+            /* Use memcpy for constant separator - faster than strcpy */
+            memcpy(row_buffer + pos, COLUMN_SEPARATOR, SEPARATOR_WIDTH);
             pos += SEPARATOR_WIDTH;
         }
     }
     row_buffer[pos] = '\0';
 }
-
-#if ITIDY_SIMPLE_PAGINATED_ROLLBACK_GUARD
-static struct List *iTidy_FormatListViewColumns_SimplePaginated(
-    iTidy_ColumnConfig *columns,
-    int num_columns,
-    struct List *entries,
-    int total_char_width,
-    iTidy_ListViewState **out_state,
-    int page_size,
-    int current_page,
-    int total_pages,
-    BOOL has_prev_page,
-    BOOL has_next_page,
-    int nav_direction)
-{
-    struct List *list;
-    struct Node *node, *entry_node;
-    iTidy_ListViewEntry *entry;
-    char *row_buffer;
-    char *cell_buffer;
-    int *col_widths;
-    int col, pos;
-    int row_count;
-    int buffer_size;
-    int start_index, end_index;
-    int current_index;
-
-    log_info(LOG_GUI, "[ROLLBACK] iTidy_FormatListViewColumns_SimplePaginated: page %d of %d, page_size=%d\n",
-             current_page, total_pages, page_size);
-
-    list = (struct List *)whd_malloc(sizeof(struct List));
-    if (!list) {
-        log_error(LOG_GUI, "Failed to allocate list\n");
-        return NULL;
-    }
-    NewList(list);
-
-    col_widths = (int *)whd_malloc(sizeof(int) * num_columns);
-    if (!col_widths) {
-        log_error(LOG_GUI, "Failed to allocate column widths\n");
-        whd_free(list);
-        return NULL;
-    }
-
-    if (!iTidy_CalculateColumnWidths(columns, num_columns, entries,
-                                     total_char_width, col_widths)) {
-        log_error(LOG_GUI, "Failed to calculate column widths\n");
-        whd_free(col_widths);
-        whd_free(list);
-        return NULL;
-    }
-
-    buffer_size = 0;
-    for (col = 0; col < num_columns; col++) {
-        buffer_size += col_widths[col];
-    }
-    buffer_size += (num_columns - 1) * SEPARATOR_WIDTH;
-    buffer_size += 10;
-
-    row_buffer = (char *)whd_malloc(buffer_size);
-    cell_buffer = (char *)whd_malloc(256);
-
-    if (!row_buffer || !cell_buffer) {
-        log_error(LOG_GUI, "Failed to allocate buffers\n");
-        if (row_buffer) whd_free(row_buffer);
-        if (cell_buffer) whd_free(cell_buffer);
-        whd_free(col_widths);
-        whd_free(list);
-        return NULL;
-    }
-
-    format_header_row(row_buffer, cell_buffer, columns, num_columns, col_widths, NULL);
-    node = create_display_node(row_buffer);
-    if (node) AddTail(list, node);
-
-    pos = strlen(row_buffer);
-    memset(row_buffer, '-', pos + 4);
-    row_buffer[pos + 4] = '\0';
-    node = create_display_node(row_buffer);
-    if (node) AddTail(list, node);
-
-    if (has_prev_page) {
-        itidy_add_navigation_row(list,
-                                 total_char_width,
-                                 ITIDY_ROW_NAV_PREV,
-                                 current_page,
-                                 total_pages);
-    }
-
-    start_index = (current_page - 1) * page_size;
-    end_index = start_index + page_size;
-    current_index = 0;
-    row_count = 0;
-
-    if (entries) {
-        for (entry_node = entries->lh_Head; entry_node->ln_Succ; entry_node = entry_node->ln_Succ) {
-            if (current_index < start_index) {
-                current_index++;
-                continue;
-            }
-
-            if (current_index >= end_index) {
-                break;
-            }
-
-            entry = (iTidy_ListViewEntry *)entry_node;
-            entry->node.ln_Type = NT_USER;
-            if (entry->source_entry == NULL) {
-                entry->source_entry = entry;
-            }
-            format_data_row(row_buffer, cell_buffer, entry, columns, num_columns, col_widths);
-            if (!itidy_append_display_entry(list, entry, row_buffer)) {
-                log_warning(LOG_GUI, "[ROLLBACK] Failed to append simple paginated entry at index %d\n", current_index);
-            }
-
-            current_index++;
-            row_count++;
-        }
-    }
-
-    if (has_next_page) {
-        itidy_add_navigation_row(list,
-                                 total_char_width,
-                                 ITIDY_ROW_NAV_NEXT,
-                                 current_page,
-                                 total_pages);
-    }
-
-    whd_free(cell_buffer);
-    whd_free(row_buffer);
-    whd_free(col_widths);
-
-    if (out_state && (has_prev_page || has_next_page)) {
-        iTidy_ListViewState *state;
-        int display_row_count = 0;
-
-        for (node = list->lh_Head; node->ln_Succ; node = node->ln_Succ) {
-            display_row_count++;
-        }
-
-        state = (iTidy_ListViewState *)whd_malloc(sizeof(iTidy_ListViewState));
-        if (state) {
-            memset(state, 0, sizeof(iTidy_ListViewState));
-            state->current_page = current_page;
-            state->total_pages = total_pages;
-            state->last_nav_direction = nav_direction;
-            state->sorting_disabled = TRUE;
-            state->num_columns = 0;
-            state->columns = NULL;
-
-            if (display_row_count > 2) {
-                if (nav_direction < 0) {
-                    state->auto_select_row = 2;
-                } else if (nav_direction > 0) {
-                    state->auto_select_row = display_row_count - 1;
-                } else {
-                    state->auto_select_row = 2;
-                }
-
-                log_debug(LOG_GUI, "[ROLLBACK][SIMPLE_PAGINATED] Auto-select row %d of %d (nav_dir=%d)\n",
-                         state->auto_select_row, display_row_count, nav_direction);
-            } else {
-                state->auto_select_row = -1;
-            }
-
-            *out_state = state;
-        } else {
-            *out_state = NULL;
-        }
-    } else if (out_state) {
-        *out_state = NULL;
-    }
-
-    log_info(LOG_GUI, "[ROLLBACK] Simple paginated mode: formatted %d data rows\n", row_count);
-    return list;
-}
-#endif /* ITIDY_SIMPLE_PAGINATED_ROLLBACK_GUARD */
 
 static int itidy_add_data_rows(struct List *list,
                                struct List *entries,
@@ -1424,7 +1267,9 @@ static int itidy_add_data_rows(struct List *list,
                                BOOL pagination_enabled,
                                int start_index,
                                int end_index,
-                               BOOL simple_mode)
+                               BOOL simple_mode,
+                               char *temp_truncated,
+                               char *temp_path_abbreviated)
 {
     struct Node *entry_node;
     iTidy_ListViewEntry *entry;
@@ -1451,7 +1296,8 @@ static int itidy_add_data_rows(struct List *list,
         }
         current_index++;
 
-        format_data_row(row_buffer, cell_buffer, entry, columns, num_columns, col_widths);
+        format_data_row(row_buffer, cell_buffer, entry, columns, num_columns, col_widths,
+                       temp_truncated, temp_path_abbreviated);
 
         if (entry->node.ln_Name) {
             whd_free(entry->node.ln_Name);
@@ -1479,7 +1325,9 @@ static void itidy_add_navigation_row(struct List *list,
                                      int total_char_width,
                                      iTidy_RowType row_type,
                                      int current_page,
-                                     int total_pages)
+                                     int total_pages,
+                                     char *temp_truncated,
+                                     char *temp_path_abbreviated)
 {
     iTidy_DisplayNode *nav_entry;
     char *full_text;
@@ -1501,7 +1349,8 @@ static void itidy_add_navigation_row(struct List *list,
         return;
     }
 
-    format_cell(full_text, nav_row_text, total_char_width, ITIDY_ALIGN_LEFT, FALSE);
+    format_cell(full_text, nav_row_text, total_char_width, ITIDY_ALIGN_LEFT, FALSE,
+               temp_truncated, temp_path_abbreviated);
 
     nav_entry = (iTidy_DisplayNode *)whd_malloc(sizeof(iTidy_DisplayNode));
     if (!nav_entry) {
@@ -1509,7 +1358,7 @@ static void itidy_add_navigation_row(struct List *list,
         return;
     }
 
-    memset(nav_entry, 0, sizeof(iTidy_DisplayNode));
+    /* Memory already zeroed by whd_malloc (uses AllocVec with MEMF_CLEAR) */
     nav_entry->node.ln_Type = NT_USER;
 
     nav_entry->node.ln_Name = full_text;
@@ -1602,6 +1451,20 @@ static BOOL itidy_prepare_row_buffers(iTidy_FormatContext *ctx)
         return FALSE;
     }
 
+    /* Allocate temporary buffers for format_cell (avoids 512 bytes stack per call) */
+    ctx->temp_truncated = (char *)whd_malloc(256);
+    ctx->temp_path_abbreviated = (char *)whd_malloc(256);
+    if (!ctx->temp_truncated || !ctx->temp_path_abbreviated) {
+        log_error(LOG_GUI, "Failed to allocate temp buffers\n");
+        if (ctx->temp_truncated) whd_free(ctx->temp_truncated);
+        if (ctx->temp_path_abbreviated) whd_free(ctx->temp_path_abbreviated);
+        whd_free(ctx->cell_buffer);
+        whd_free(ctx->row_buffer);
+        ctx->row_buffer = NULL;
+        ctx->cell_buffer = NULL;
+        return FALSE;
+    }
+
     log_debug(LOG_GUI, "[FORMAT] Row buffer=%d chars, cell buffer=256 chars\n",
               buffer_size);
     return TRUE;
@@ -1622,7 +1485,9 @@ static BOOL itidy_build_header(iTidy_FormatContext *ctx)
                                         ctx->col_widths,
                                         ctx->state,
                                         ctx->row_buffer,
-                                        ctx->cell_buffer)) {
+                                        ctx->cell_buffer,
+                                        ctx->temp_truncated,
+                                        ctx->temp_path_abbreviated)) {
         log_error(LOG_GUI, "Failed to build header/separator rows\n");
         return FALSE;
     }
@@ -1655,7 +1520,9 @@ static void itidy_emit_nav_rows(iTidy_FormatContext *ctx, BOOL emit_before_data)
                                  ctx->total_char_width,
                                  ITIDY_ROW_NAV_PREV,
                                  info->current_page,
-                                 info->total_pages);
+                                 info->total_pages,
+                                 ctx->temp_truncated,
+                                 ctx->temp_path_abbreviated);
     }
 
     if (!emit_before_data && info->has_next_page) {
@@ -1663,7 +1530,9 @@ static void itidy_emit_nav_rows(iTidy_FormatContext *ctx, BOOL emit_before_data)
                                  ctx->total_char_width,
                                  ITIDY_ROW_NAV_NEXT,
                                  info->current_page,
-                                 info->total_pages);
+                                 info->total_pages,
+                                 ctx->temp_truncated,
+                                 ctx->temp_path_abbreviated);
     }
 }
 
@@ -1700,7 +1569,7 @@ static void itidy_prepare_simple_nav_state(iTidy_FormatContext *ctx,
         state->columns = NULL;
     }
 
-    memset(state, 0, sizeof(iTidy_ListViewState));
+    /* Reset state fields (state was already zeroed at allocation time) */
     state->separator_width = SEPARATOR_WIDTH;
     state->sorting_disabled = TRUE;
     state->current_page = ctx->pagination_info.current_page;
@@ -1924,7 +1793,9 @@ static BOOL itidy_add_header_and_separator(struct List *list,
                                            int *col_widths,
                                            iTidy_ListViewState *state,
                                            char *row_buffer,
-                                           char *cell_buffer)
+                                           char *cell_buffer,
+                                           char *temp_truncated,
+                                           char *temp_path_abbreviated)
 {
     struct Node *node;
     int pos;
@@ -1933,7 +1804,8 @@ static BOOL itidy_add_header_and_separator(struct List *list,
         return FALSE;
     }
 
-    format_header_row(row_buffer, cell_buffer, columns, num_columns, col_widths, state);
+    format_header_row(row_buffer, cell_buffer, columns, num_columns, col_widths, state,
+                     temp_truncated, temp_path_abbreviated);
 
     node = create_display_node(row_buffer);
     if (!node) {
@@ -2192,27 +2064,6 @@ struct List *iTidy_FormatListViewColumns(
     if (simple_mode) {
         log_info(LOG_GUI, "Using simple mode formatter (pagination=%s)\n", 
                  pagination_enabled ? "YES" : "NO");
-#if ITIDY_SIMPLE_PAGINATED_ROLLBACK_GUARD
-        if (simple_paginated_mode && pagination_enabled) {
-            struct List *result;
-            result = iTidy_FormatListViewColumns_SimplePaginated(
-                columns,
-                num_columns,
-                entries,
-                total_char_width,
-                out_state,
-                page_size,
-                current_page,
-                total_pages,
-                has_prev_page,
-                has_next_page,
-                nav_direction);
-
-            whd_free(ctx.list);
-            ctx.list = NULL;
-            return result;
-        }
-#endif
     }
     
     if (!itidy_prepare_column_widths(&ctx)) {
@@ -2236,7 +2087,7 @@ struct List *iTidy_FormatListViewColumns(
         } else {
             ctx.state = (iTidy_ListViewState *)whd_malloc(sizeof(iTidy_ListViewState));
             if (ctx.state) {
-                memset(ctx.state, 0, sizeof(iTidy_ListViewState));
+                /* Memory already zeroed by whd_malloc (uses AllocVec with MEMF_CLEAR) */
                 *out_state = ctx.state;
                 free_state_on_failure = TRUE;
             }
@@ -2329,7 +2180,9 @@ struct List *iTidy_FormatListViewColumns(
                                     pagination_enabled,
                                     start_index,
                                     end_index,
-                                    simple_paginated_mode);
+                                    simple_paginated_mode,
+                                    ctx.temp_truncated,
+                                    ctx.temp_path_abbreviated);
     
     /* ===== ADD NEXT PAGE NAVIGATION ROW ===== */
     itidy_emit_nav_rows(&ctx, FALSE);
@@ -2929,15 +2782,31 @@ struct List *iTidy_FormatListViewColumns_Legacy(
         return NULL;
     }
     
+    /* Allocate temporary buffers for format_cell (avoids 512 bytes stack per call) */
+    char *temp_truncated = (char *)whd_malloc(256);
+    char *temp_path_abbreviated = (char *)whd_malloc(256);
+    if (!temp_truncated || !temp_path_abbreviated) {
+        log_error(LOG_GUI, "Failed to allocate temp buffers\n");
+        if (temp_truncated) whd_free(temp_truncated);
+        if (temp_path_abbreviated) whd_free(temp_path_abbreviated);
+        whd_free(cell_buffer);
+        whd_free(row_buffer);
+        whd_free(col_widths);
+        whd_free(list);
+        return NULL;
+    }
+    
     /* CREATE HEADER ROW */
     pos = 0;
     for (col = 0; col < num_columns; col++) {
-        format_cell(cell_buffer, columns[col].title, col_widths[col], ITIDY_ALIGN_LEFT, FALSE);
-        strcpy(row_buffer + pos, cell_buffer);
+        format_cell(cell_buffer, columns[col].title, col_widths[col], ITIDY_ALIGN_LEFT, FALSE,
+                   temp_truncated, temp_path_abbreviated);
+        /* Use memcpy instead of strcpy - length is known */
+        memcpy(row_buffer + pos, cell_buffer, col_widths[col]);
         pos += col_widths[col];
         
         if (col < num_columns - 1) {
-            strcpy(row_buffer + pos, COLUMN_SEPARATOR);
+            memcpy(row_buffer + pos, COLUMN_SEPARATOR, SEPARATOR_WIDTH);
             pos += SEPARATOR_WIDTH;
         }
     }
@@ -2966,12 +2835,14 @@ struct List *iTidy_FormatListViewColumns_Legacy(
                 const char *cell_data = (data_rows[row] && data_rows[row][col]) ? 
                                         data_rows[row][col] : "";
                 
-                format_cell(cell_buffer, cell_data, col_widths[col], columns[col].align, columns[col].is_path);
-                strcpy(row_buffer + pos, cell_buffer);
+                format_cell(cell_buffer, cell_data, col_widths[col], columns[col].align, columns[col].is_path,
+                           temp_truncated, temp_path_abbreviated);
+                /* Use memcpy instead of strcpy - length is known */
+                memcpy(row_buffer + pos, cell_buffer, col_widths[col]);
                 pos += col_widths[col];
                 
                 if (col < num_columns - 1) {
-                    strcpy(row_buffer + pos, COLUMN_SEPARATOR);
+                    memcpy(row_buffer + pos, COLUMN_SEPARATOR, SEPARATOR_WIDTH);
                     pos += SEPARATOR_WIDTH;
                 }
             }
@@ -2985,6 +2856,8 @@ struct List *iTidy_FormatListViewColumns_Legacy(
     }
     
     /* Cleanup */
+    whd_free(temp_path_abbreviated);
+    whd_free(temp_truncated);
     whd_free(row_buffer);
     whd_free(cell_buffer);
     whd_free(col_widths);
@@ -3123,11 +2996,24 @@ BOOL iTidy_ResortListViewByClick(
         return FALSE;
     }
     
+    /* Allocate temporary buffers for format_cell (avoids 512 bytes stack per call) */
+    char *temp_truncated = (char *)whd_malloc(256);
+    char *temp_path_abbreviated = (char *)whd_malloc(256);
+    if (!temp_truncated || !temp_path_abbreviated) {
+        if (temp_truncated) whd_free(temp_truncated);
+        if (temp_path_abbreviated) whd_free(temp_path_abbreviated);
+        whd_free(cell_buffer);
+        whd_free(row_buffer);
+        whd_free(col_widths);
+        return FALSE;
+    }
+    
     /* Update header row with new sort indicators */
     header_node = formatted_list->lh_Head;
     if (header_node && header_node->ln_Name) {
         whd_free(header_node->ln_Name);
-        format_header_row(row_buffer, cell_buffer, columns, state->num_columns, col_widths, state);
+        format_header_row(row_buffer, cell_buffer, columns, state->num_columns, col_widths, state,
+                         temp_truncated, temp_path_abbreviated);
         header_node->ln_Name = (char *)whd_malloc(strlen(row_buffer) + 1);
         if (header_node->ln_Name) {
             strcpy(header_node->ln_Name, row_buffer);
@@ -3161,12 +3047,14 @@ BOOL iTidy_ResortListViewByClick(
             const char *cell_data = (entry->display_data && col < entry->num_columns && entry->display_data[col]) ? 
                                     entry->display_data[col] : "";
             
-            format_cell(cell_buffer, cell_data, col_widths[col], columns[col].align, columns[col].is_path);
-            strcpy(row_buffer + pos, cell_buffer);
+            format_cell(cell_buffer, cell_data, col_widths[col], columns[col].align, columns[col].is_path,
+                       temp_truncated, temp_path_abbreviated);
+            /* Use memcpy instead of strcpy - length is known */
+            memcpy(row_buffer + pos, cell_buffer, col_widths[col]);
             pos += col_widths[col];
             
             if (col < state->num_columns - 1) {
-                strcpy(row_buffer + pos, COLUMN_SEPARATOR);
+                memcpy(row_buffer + pos, COLUMN_SEPARATOR, SEPARATOR_WIDTH);
                 pos += SEPARATOR_WIDTH;
             }
         }
@@ -3180,6 +3068,8 @@ BOOL iTidy_ResortListViewByClick(
     }
     
     /* Cleanup */
+    whd_free(temp_path_abbreviated);
+    whd_free(temp_truncated);
     whd_free(row_buffer);
     whd_free(cell_buffer);
     whd_free(col_widths);

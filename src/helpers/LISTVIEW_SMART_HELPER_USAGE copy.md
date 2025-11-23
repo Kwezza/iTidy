@@ -3,26 +3,18 @@
 ## Overview
 
 The ListView API provides a complete solution for sortable, paginated ListViews with:
-- **Session-based API** - Clean lifecycle management with create/format/destroy pattern
-- **Options struct** - Single validated configuration instead of many parameters
 - **Automatic pagination** - Sorts enabled for small lists, pagination for large lists
 - **Smart column sorting** - Click headers to sort, automatic arrow indicators
 - **Type-aware click handling** - DATE/NUMBER/TEXT detection for context-aware actions
-- **Performance optimization** - 54% speedup on 68000 through aggressive optimizations
+- **Performance optimization** - Page-based slicing for 100+ entry lists on 7MHz hardware
 - **Event-driven API** - Single handler function returns structured events (HEADER_SORTED, ROW_CLICK, NAV_HANDLED)
-- **Simple mode** - Display-only mode with 51x faster cleanup for read-only lists
 
 This eliminates the need for callers to manually handle pagination logic, header offsets, list traversal, or column type mappings.
 
 ---
 
-## Quick Start Example (Session API - Recommended)
 
-**The session API is the recommended approach for new code.** It provides:
-- Centralized memory management with single cleanup function
-- Automatic display list lifecycle tracking
-- Simpler API surface with fewer parameters
-- Safe resource disposal in all code paths
+## Quick Start Example (Session API - Recommended)
 
 ```c
 #include "helpers/listview_columns_api.h"
@@ -33,25 +25,14 @@ iTidy_ColumnConfig columns[] = {
      ITIDY_SORT_DESCENDING, ITIDY_COLTYPE_DATE},
     {"Changes", 4, 6, ITIDY_ALIGN_RIGHT, FALSE, FALSE,
      ITIDY_SORT_NONE, ITIDY_COLTYPE_NUMBER},
-    {"Path", 30, 0, ITIDY_ALIGN_LEFT, TRUE, FALSE,
-     ITIDY_SORT_NONE, ITIDY_COLTYPE_TEXT}  /* flexible column */
+    {"Path", 30, 0, ITIDY_ALIGN_LEFT, TRUE, TRUE,
+     ITIDY_SORT_NONE, ITIDY_COLTYPE_TEXT}
 };
 
 /* STEP 2: Build entry list */
 struct List entry_list;
 NewList(&entry_list);
-
-/* Populate entries - example entry */
-iTidy_ListViewEntry *entry = whd_malloc(sizeof(iTidy_ListViewEntry));
-entry->num_columns = 3;
-entry->display_data = whd_malloc(sizeof(char*) * 3);
-entry->sort_keys = whd_malloc(sizeof(char*) * 3);
-entry->display_data[0] = whd_malloc(strlen("24-Nov-2025 15:19") + 1);
-strcpy((char*)entry->display_data[0], "24-Nov-2025 15:19");
-entry->sort_keys[0] = whd_malloc(strlen("20251124_151900") + 1);
-strcpy((char*)entry->sort_keys[0], "20251124_151900");
-/* ... populate other columns ... */
-AddTail(&entry_list, (struct Node*)entry);
+/* ... populate entries ... */
 
 /* STEP 3: Prepare options struct */
 iTidy_ListViewOptions options;
@@ -60,146 +41,57 @@ options.columns = columns;
 options.num_columns = 3;
 options.entries = &entry_list;
 options.total_char_width = 65;
-options.mode = ITIDY_MODE_FULL;  /* Full mode with sorting */
-options.page_size = 10;           /* Auto-paginate if > 10 entries */
+options.out_state = &state; /* Optional: receive state pointer */
+options.mode = ITIDY_MODE_FULL;
+options.page_size = 10;
+options.current_page = 1;
+options.out_total_pages = &total_pages;
+options.nav_direction = 0;
 
 /* STEP 4: Create session and format */
 iTidy_ListViewSession *session = iTidy_ListViewSessionCreate(&options);
-if (session == NULL) {
-    /* Handle error */
-    return FALSE;
+struct List *display_list = NULL;
+if (session) {
+    display_list = iTidy_ListViewSessionFormat(session);
 }
 
-/* Initial format creates display list */
-struct List *display_list = iTidy_ListViewSessionFormat(session);
-if (display_list == NULL) {
-    iTidy_ListViewSessionDestroy(session);
-    return FALSE;
-}
+GT_SetGadgetAttrs(listview, window, NULL, GTLV_Labels, display_list, TAG_DONE);
 
-/* Attach to ListView gadget */
-GT_SetGadgetAttrs(listview, window, NULL, 
-                  GTLV_Labels, display_list, 
-                  TAG_DONE);
-
-/* STEP 5: Handle events with unified handler */
+/* STEP 5: Handle events with single function */
 case IDCMP_GADGETUP:
     if (gadget->GadgetID == GID_MY_LISTVIEW) {
         iTidy_ListViewEvent event;
-        
         if (iTidy_HandleListViewGadgetUp(
                 window, gadget,
                 msg->MouseX, msg->MouseY,
-                &entry_list, 
-                session->display_list,  /* Use display list from session */
-                session->state,          /* Use state from session */
-                prefsIControl.systemFontSize, 
-                prefsIControl.systemFontCharWidth,
+                &entry_list, display_list, session->state,
+                prefsIControl.systemFontSize, prefsIControl.systemFontCharWidth,
                 columns, 3, &event)) {
-            
             switch (event.type) {
                 case ITIDY_LV_EVENT_HEADER_SORTED:
                 case ITIDY_LV_EVENT_NAV_HANDLED:
-                    /* List changed - re-format */
-                    GT_SetGadgetAttrs(listview, window, NULL,
-                                     GTLV_Labels, ~0, TAG_DONE);
-                    
+                    /* Sorting or navigation happened - just re-format and refresh */
                     display_list = iTidy_ListViewSessionFormat(session);
-                    
-                    GT_SetGadgetAttrs(listview, window, NULL,
-                                     GTLV_Labels, display_list,
-                                     GTLV_Selected, session->state->auto_select_row,
-                                     TAG_DONE);
+                    GT_SetGadgetAttrs(listview, window, NULL, GTLV_Labels, display_list, TAG_DONE);
                     break;
-                    
                 case ITIDY_LV_EVENT_ROW_CLICK:
-                    /* User clicked a data row */
-                    if (event.entry && event.column >= 0) {
-                        printf("Clicked: %s in column %d\n", 
-                               event.entry->display_data[event.column],
-                               event.column);
-                    }
+                    printf("Clicked: %s in column %d\n", 
+                           event.entry->display_data[event.column],
+                           event.column);
                     break;
             }
         }
     }
     break;
 
-/* STEP 6: Cleanup on window close - Single call! */
-GT_SetGadgetAttrs(listview, window, NULL, GTLV_Labels, ~0, TAG_DONE);
-
+/* STEP 6: Cleanup on window close */
 if (session) {
-    iTidy_ListViewSessionDestroy(session);  /* Frees display_list and state */
+    iTidy_ListViewSessionDestroy(session);
     session = NULL;
-}
-
-/* Free entry list (you own this) */
-while ((node = RemHead(&entry_list)) != NULL) {
-    iTidy_ListViewEntry *entry = (iTidy_ListViewEntry *)node;
-    
-    /* Free column data */
-    for (int i = 0; i < entry->num_columns; i++) {
-        if (entry->display_data && entry->display_data[i]) {
-            whd_free((void*)entry->display_data[i]);
-        }
-        if (entry->sort_keys && entry->sort_keys[i]) {
-            whd_free((void*)entry->sort_keys[i]);
-        }
-    }
-    
-    /* Free arrays */
-    if (entry->display_data) whd_free((void*)entry->display_data);
-    if (entry->sort_keys) whd_free((void*)entry->sort_keys);
-    
-    /* Free entry */
-    whd_free(entry);
-}
-```
-
-**Key Benefits of Session API:**
-- ✅ **Simpler cleanup** - One function call instead of three
-- ✅ **Automatic tracking** - Session owns display_list and state
-- ✅ **Safer** - Prevents use-after-free bugs
-- ✅ **Clearer** - Intent is obvious from function names
-
----
-
-## Alternative: Direct API (No Session Wrapper)
-
-If you need more control, you can use the direct formatting function:
-
-```c
-/* Direct formatting without session wrapper */
-iTidy_ListViewState *state = NULL;
-int total_pages = 0;
-
-struct List *display_list = iTidy_FormatListViewColumns(
-    columns, 3,
-    &entry_list,
-    65,              /* total_char_width */
-    &state,          /* Returns state pointer */
-    ITIDY_MODE_FULL, /* Mode */
-    10,              /* page_size */
-    1,               /* current_page */
-    &total_pages,    /* Returns total pages */
-    0                /* nav_direction */
-);
-
-/* ... use display_list and state ... */
-
-/* Manual cleanup (must be in correct order!) */
-GT_SetGadgetAttrs(listview, window, NULL, GTLV_Labels, ~0, TAG_DONE);
-if (display_list) {
-    iTidy_FreeFormattedList(display_list);
     display_list = NULL;
 }
-if (state) {
-    iTidy_FreeListViewState(state);
-    state = NULL;
-}
+/* Free entry_list and your data */
 ```
-
-**Use the session API unless you have a specific reason not to.**
 
 ---
 
@@ -207,18 +99,23 @@ if (state) {
 
 ### How It Works
 
-The API uses the **`iTidy_ListViewOptions`** struct to control behavior:
+The API uses **two parameters** to control behavior:
+
+1. **`mode`** - Selects feature set (sorting, state, pagination support)
+2. **`page_size`** - Controls pagination threshold (only used with paginated modes)
 
 ```c
-iTidy_ListViewOptions options;
-iTidy_InitListViewOptions(&options);
-options.mode = ITIDY_MODE_FULL;          /* Mode: FULL/FULL_NO_SORT/SIMPLE/SIMPLE_PAGINATED */
-options.page_size = 10;                  /* Entries per page (0 = no pagination) */
-options.current_page = 1;                /* Starting page (1-based) */
-options.nav_direction = 0;               /* -1=Prev, 0=None, +1=Next */
-
-iTidy_ListViewSession *session = iTidy_ListViewSessionCreate(&options);
-struct List *display_list = iTidy_ListViewSessionFormat(session);
+struct List *display_list = iTidy_FormatListViewColumns(
+    columns, num_columns,
+    &entry_list,
+    width,
+    &state,
+    ITIDY_MODE_FULL,  /* Mode: FULL/FULL_NO_SORT/SIMPLE/SIMPLE_PAGINATED */
+    10,               /* page_size: Entries per page (0 = auto-calculate) */
+    1,                /* current_page */
+    &total_pages,
+    0                 /* nav_direction */
+);
 ```
 
 **Behavior by Mode:**
@@ -244,34 +141,36 @@ struct List *display_list = iTidy_ListViewSessionFormat(session);
 ```c
 /* In window initialization */
 typedef struct {
-    iTidy_ListViewSession *session;  /* Session manages display_list and state */
-    struct List entry_list;           /* Your data (you own this) */
+    struct List entry_list;
+    struct List *display_list;
+    iTidy_ListViewState *state;
+    int current_page;      /* Tracks page between rebuilds */
+    int page_size;         /* Entries per page */
 } WindowData;
 
-/* Initialize options */
-iTidy_ListViewOptions options;
-iTidy_InitListViewOptions(&options);
-options.columns = columns;
-options.num_columns = 3;
-options.entries = &data->entry_list;
-options.total_char_width = 65;
-
 /* For small lists with sorting */
-options.mode = ITIDY_MODE_FULL;
-options.page_size = 0;  /* No pagination */
+data->display_list = iTidy_FormatListViewColumns(
+    columns, num_columns, &data->entry_list, width, &data->state,
+    ITIDY_MODE_FULL,  /* Enable sorting */
+    0,                /* No pagination */
+    1, &total_pages, 0
+);
 
 /* For large lists with sorting */
-options.mode = ITIDY_MODE_FULL;
-options.page_size = 10;  /* Paginate when > 10 entries */
+data->display_list = iTidy_FormatListViewColumns(
+    columns, num_columns, &data->entry_list, width, &data->state,
+    ITIDY_MODE_FULL,  /* Enable sorting */
+    10,               /* Paginate when > 10 entries */
+    1, &total_pages, 0
+);
 
 /* For large lists without sorting (fastest) */
-options.mode = ITIDY_MODE_SIMPLE_PAGINATED;
-options.page_size = 10;  /* 10 entries per page */
-
-/* Create session and format */
-data->session = iTidy_ListViewSessionCreate(&options);
-struct List *display_list = iTidy_ListViewSessionFormat(data->session);
-GT_SetGadgetAttrs(listview, window, NULL, GTLV_Labels, display_list, TAG_DONE);
+data->display_list = iTidy_FormatListViewColumns(
+    columns, num_columns, &data->entry_list, width, NULL,
+    ITIDY_MODE_SIMPLE_PAGINATED,  /* No sorting, minimal memory */
+    10,                           /* 10 entries per page */
+    1, &total_pages, 0
+);
 ```
 
 ---
@@ -702,55 +601,45 @@ data->page_size = 10;  /* Show full list up to 10 entries, paginate beyond that 
 
 ### Rebuilding After Navigation
 
-When pagination is active, clicking Previous/Next returns `ITIDY_LV_EVENT_NAV_HANDLED`. With the session API, rebuilding is simple:
+When pagination is active, clicking Previous/Next returns `ITIDY_LV_EVENT_NAV_HANDLED`:
 
 ```c
 case ITIDY_LV_EVENT_NAV_HANDLED:
-    /* Session updated current_page automatically - just re-format */
-    GT_SetGadgetAttrs(listview, window, NULL, GTLV_Labels, ~0, TAG_DONE);
-    
-    display_list = iTidy_ListViewSessionFormat(session);
-    
-    GT_SetGadgetAttrs(listview, window, NULL,
-                     GTLV_Labels, display_list,
-                     GTLV_Selected, session->state->auto_select_row,
-                     TAG_DONE);
+    /* API updated state->current_page and state->last_nav_direction */
+    /* Just rebuild the list - formatter handles everything */
+    rebuild_listview(data);
     break;
-```
 
-**Without session API (manual control):**
-
-```c
-case ITIDY_LV_EVENT_NAV_HANDLED:
-    /* Save state before freeing */
-    int current_page = state->current_page;
-    int nav_direction = state->last_nav_direction;
+void rebuild_listview(WindowData *data) {
+    /* Save navigation state BEFORE freeing */
+    int current_page = data->state ? data->state->current_page : 1;
+    int nav_direction = data->state ? data->state->last_nav_direction : 0;
     
-    /* Detach and free */
-    GT_SetGadgetAttrs(listview, window, NULL, GTLV_Labels, ~0, TAG_DONE);
-    if (display_list) iTidy_FreeFormattedList(display_list);
-    if (state) iTidy_FreeListViewState(state);
+    /* Detach and free old list */
+    GT_SetGadgetAttrs(data->listview, window, NULL, GTLV_Labels, ~0, TAG_DONE);
+    if (data->display_list) iTidy_FreeFormattedList(data->display_list);
+    if (data->state) iTidy_FreeListViewState(data->state);
     
-    /* Rebuild with saved state */
+    /* Rebuild with saved navigation state */
     int total_pages;
-    display_list = iTidy_FormatListViewColumns(
+    data->display_list = iTidy_FormatListViewColumns(
         columns, num_columns,
-        &entry_list,
+        &data->entry_list,
         width,
-        &state,
+        &data->state,
         ITIDY_MODE_FULL,
-        page_size,
-        current_page,
+        data->page_size,
+        current_page,        /* Use saved page */
         &total_pages,
-        nav_direction
+        nav_direction        /* Use saved direction for auto-selection */
     );
     
-    /* Reattach */
-    GT_SetGadgetAttrs(listview, window, NULL,
-                     GTLV_Labels, display_list,
-                     GTLV_Selected, state->auto_select_row,
+    /* Reattach and select appropriate row */
+    GT_SetGadgetAttrs(data->listview, window, NULL,
+                     GTLV_Labels, data->display_list,
+                     GTLV_Selected, data->state->auto_select_row,
                      TAG_DONE);
-    break;
+}
 ```
 
 ### Visual Behavior

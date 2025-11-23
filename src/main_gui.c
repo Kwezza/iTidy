@@ -23,6 +23,7 @@
 #ifdef __AMIGA__
 #include <exec/types.h>
 #include <exec/memory.h>
+#include <exec/execbase.h>
 #include <libraries/dos.h>
 #include <dos/dos.h>
 #include <workbench/workbench.h>
@@ -100,6 +101,77 @@ BOOL user_forceStandardIcons;
 
 #define VERSION_STRING "$VER: iTidy 2.0 (20.10.2025)"
 const char version[] = VERSION_STRING;
+
+/* External reference to SysBase (provided by VBCC runtime) */
+#ifdef __AMIGA__
+extern struct ExecBase *SysBase;
+#endif
+
+/**
+ * @brief Get CPU name from ExecBase AttnFlags
+ * @return String describing the detected CPU
+ */
+static const char *get_cpu_name(void)
+{
+#ifdef __AMIGA__
+    ULONG flags = SysBase->AttnFlags;
+
+    if (flags & AFF_68060) return "MC68060";
+    if (flags & AFF_68040) return "MC68040";
+    if (flags & AFF_68030) return "MC68030";
+    if (flags & AFF_68020) return "MC68020";
+    if (flags & AFF_68010) return "MC68010";
+#endif
+    
+    return "MC68000";
+}
+
+/**
+ * @brief Log system information (CPU and memory) to general log
+ */
+static void log_system_info(void)
+{
+#ifdef __AMIGA__
+    ULONG chip_free_total, chip_free_largest;
+    ULONG fast_free_total, fast_free_largest;
+    ULONG chip_kb, fast_kb;
+    const char *cpu_name;
+
+    printf("DEBUG: log_system_info() called\n");
+    
+    cpu_name = get_cpu_name();
+    printf("DEBUG: CPU name: %s\n", cpu_name);
+    
+    /* Get memory info using AvailMem() */
+    chip_free_total = AvailMem(MEMF_CHIP);
+    chip_free_largest = AvailMem(MEMF_CHIP | MEMF_LARGEST);
+    fast_free_total = AvailMem(MEMF_FAST);
+    fast_free_largest = AvailMem(MEMF_FAST | MEMF_LARGEST);
+    
+    printf("DEBUG: Chip=%lu, Fast=%lu\n", chip_free_total, fast_free_total);
+    
+    /* Convert to KB (round up) */
+    chip_kb = (chip_free_total + 1023UL) / 1024UL;
+    fast_kb = (fast_free_total + 1023UL) / 1024UL;
+    
+    printf("DEBUG: About to log system info...\n");
+    log_info(LOG_GENERAL, "=== SYSTEM INFORMATION ===\n");
+    log_info(LOG_GENERAL, "CPU: %s\n", cpu_name);
+    log_info(LOG_GENERAL, "Chip RAM: %lu KB free (%lu bytes total, %lu bytes largest block)\n", 
+             chip_kb, chip_free_total, chip_free_largest);
+    
+    if (fast_free_total == 0) {
+        log_info(LOG_GENERAL, "Fast RAM: None detected\n");
+    } else {
+        log_info(LOG_GENERAL, "Fast RAM: %lu KB free (%lu bytes total, %lu bytes largest block)\n",
+                 fast_kb, fast_free_total, fast_free_largest);
+    }
+    log_info(LOG_GENERAL, "==========================\n");
+    printf("DEBUG: System info logging complete\n");
+#else
+    printf("DEBUG: Not __AMIGA__, skipping system info\n");
+#endif
+}
 
 /* Function to add an icon file path to the error list */
 void AddIconError(IconErrorTrackerStruct *tracker, STRPTR filePath)
@@ -311,6 +383,11 @@ int main(int argc, char **argv)
 
     printf("GUI window opened successfully.\n");
     printf("Click the close gadget to exit.\n\n");
+    
+    /* Log CPU and memory information now that logging is fully initialized */
+    printf("DEBUG: About to call log_system_info()...\n");
+    log_system_info();
+    printf("DEBUG: log_system_info() completed\n");
 
     /* GUI MIGRATION: Main GUI event loop */
     keep_running = TRUE;

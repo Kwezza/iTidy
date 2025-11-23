@@ -23,6 +23,7 @@
 
 #include <exec/types.h>
 #include <exec/memory.h>
+#include <exec/execbase.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
 #include <libraries/gadtools.h>
@@ -48,6 +49,9 @@
 struct IControlPrefsDetails prefsIControl;  /* Define it here */
 struct RastPort *rastPort = NULL;  /* Needed by utilities.c */
 struct Device* TimerBase = NULL;
+
+/* External reference to SysBase (provided by VBCC runtime) */
+extern struct ExecBase *SysBase;
 
 /* Timer device for performance measurements */
 static struct MsgPort *timer_port = NULL;
@@ -180,20 +184,31 @@ static iTidy_ListViewEntry *create_test_entry(int index)
     
     memset(entry, 0, sizeof(iTidy_ListViewEntry));
     entry->node.ln_Type = NT_USER;
+    entry->node.ln_Name = NULL;  /* CRITICAL: Initialize to NULL (never used but freed in cleanup) */
     entry->source_entry = entry;
     entry->num_columns = 5;
     entry->row_type = ITIDY_ROW_DATA;  /* Normal data row */
+    
+    printf("[DEBUG] Creating entry %d at address 0x%08lx\n", index, (ULONG)entry);
     
     /* Allocate arrays */
     entry->display_data = (const char **)whd_malloc(sizeof(char *) * 5);
     entry->sort_keys = (const char **)whd_malloc(sizeof(char *) * 5);
     
+    printf("[DEBUG] Entry %d: display_data=0x%08lx, sort_keys=0x%08lx\n",
+           index, (ULONG)entry->display_data, (ULONG)entry->sort_keys);
+    
     if (!entry->display_data || !entry->sort_keys) {
+        printf("[ERROR] Failed to allocate arrays for entry %d\n", index);
         if (entry->display_data) whd_free((void *)entry->display_data);
         if (entry->sort_keys) whd_free((void *)entry->sort_keys);
         whd_free(entry);
         return NULL;
     }
+    
+    /* Initialize arrays to NULL for safety */
+    memset((void *)entry->display_data, 0, sizeof(char *) * 5);
+    memset((void *)entry->sort_keys, 0, sizeof(char *) * 5);
     
     /* Column 0: Date/Time (DATE type) */
     generate_random_date(display_buf, sortkey_buf, index);
@@ -239,23 +254,47 @@ static void free_entry(iTidy_ListViewEntry *entry)
 {
     int i;
     
-    if (!entry) return;
+    if (!entry) {
+        printf("[DEBUG] free_entry: NULL entry pointer\n");
+        return;
+    }
     
+    printf("[DEBUG] Freeing entry at 0x%08lx (num_columns=%d)\n", 
+           (ULONG)entry, entry->num_columns);
+    
+    /* ln_Name should always be NULL (never used in test), but check anyway */
     if (entry->node.ln_Name) {
+        printf("[WARNING] entry->node.ln_Name is not NULL! Freeing...\n");
         whd_free(entry->node.ln_Name);
+        entry->node.ln_Name = NULL;
+    }
+    
+    /* Validate num_columns before loop */
+    if (entry->num_columns > 10) {
+        printf("[ERROR] Invalid num_columns=%d (corrupted entry?)\n", entry->num_columns);
+        entry->num_columns = 5;  /* Assume 5 columns for safety */
     }
     
     for (i = 0; i < entry->num_columns; i++) {
         if (entry->display_data && entry->display_data[i]) {
             whd_free((void *)entry->display_data[i]);
+            entry->display_data[i] = NULL;
         }
         if (entry->sort_keys && entry->sort_keys[i]) {
             whd_free((void *)entry->sort_keys[i]);
+            entry->sort_keys[i] = NULL;
         }
     }
     
-    if (entry->display_data) whd_free((void *)entry->display_data);
-    if (entry->sort_keys) whd_free((void *)entry->sort_keys);
+    if (entry->display_data) {
+        whd_free((void *)entry->display_data);
+        entry->display_data = NULL;
+    }
+    if (entry->sort_keys) {
+        whd_free((void *)entry->sort_keys);
+        entry->sort_keys = NULL;
+    }
+    
     whd_free(entry);
 }
 
@@ -273,6 +312,8 @@ static void add_50_rows(TestWindowData *data)
     
     printf("\n=== ADDING 50 ROWS ===\n");
     printf("Current row count: %d\n", data->total_rows);
+    printf("[DEBUG] entry_list head=0x%08lx\n", (ULONG)data->entry_list.lh_Head);
+    printf("[DEBUG] add_50_rows: listview_width_chars=%d\n", data->listview_width_chars);
     
     /* Set busy pointer */
     SetWindowPointer(data->window, WA_BusyPointer, TRUE, TAG_DONE);
@@ -284,18 +325,27 @@ static void add_50_rows(TestWindowData *data)
                      GTLV_Labels, ~0,
                      TAG_DONE);
     
+    printf("[DEBUG] Creating 50 new entries starting at index %d\n", data->total_rows);
+    
     /* Add 50 new entries */
     for (i = 0; i < 50; i++) {
         entry = create_test_entry(data->total_rows + i);
         if (entry) {
+            printf("[DEBUG] Adding entry %d to list\n", data->total_rows + i);
             AddTail(&data->entry_list, (struct Node *)entry);
+        } else {
+            printf("[ERROR] Failed to create entry %d!\n", data->total_rows + i);
+            break;  /* Stop on allocation failure */
         }
     }
     
-    data->total_rows += 50;
+    data->total_rows += i;  /* Use actual count (might be less than 50 if allocation failed) */
+    
+    printf("[DEBUG] Successfully added %d entries, total now %d\n", i, data->total_rows);
     
     /* Free old display list and state */
     if (data->display_list) {
+        printf("[DEBUG] Freeing old display list at 0x%08lx\n", (ULONG)data->display_list);
         iTidy_FreeFormattedList(data->display_list);
         data->display_list = NULL;
     }
@@ -350,16 +400,28 @@ static void add_50_rows(TestWindowData *data)
     columns[4].default_sort = ITIDY_SORT_NONE;
     columns[4].sort_type = ITIDY_COLTYPE_NUMBER;
     
+    printf("[DEBUG] add_50_rows: About to format %d total entries\n", data->total_rows);
+    
     data->display_list = iTidy_FormatListViewColumns(
         columns, 5, &data->entry_list,
-        data->listview_width_chars, &data->lv_state
+        data->listview_width_chars, &data->lv_state,
+        ITIDY_MODE_FULL, 0, 1, NULL, 0
     );
+    
+    if (!data->display_list) {
+        printf("[ERROR] add_50_rows: iTidy_FormatListViewColumns returned NULL!\n");
+        SetWindowPointer(data->window, WA_BusyPointer, FALSE, TAG_DONE);
+        return;
+    }
+    printf("[DEBUG] add_50_rows: Format complete, list at 0x%08lx\n", (ULONG)data->display_list);
     
     /* Reattach to gadget */
     GT_SetGadgetAttrs(data->listview_gad, data->window, NULL,
                      GTLV_Labels, data->display_list,
                      GTLV_Top, 0,
                      TAG_DONE);
+    
+    printf("[DEBUG] add_50_rows: Reattached to gadget\n");
     
     GetSysTime(&end_time);
     elapsed_micros = ((end_time.tv_secs - start_time.tv_secs) * 1000000) +
@@ -472,16 +534,28 @@ static void remove_50_rows(TestWindowData *data)
     columns[4].default_sort = ITIDY_SORT_NONE;
     columns[4].sort_type = ITIDY_COLTYPE_NUMBER;
     
+    printf("[DEBUG] remove_50_rows: About to format %d total entries\n", data->total_rows);
+    
     data->display_list = iTidy_FormatListViewColumns(
         columns, 5, &data->entry_list,
-        data->listview_width_chars, &data->lv_state
+        data->listview_width_chars, &data->lv_state,
+        ITIDY_MODE_FULL, 0, 1, NULL, 0
     );
+    
+    if (!data->display_list) {
+        printf("[ERROR] remove_50_rows: iTidy_FormatListViewColumns returned NULL!\n");
+        SetWindowPointer(data->window, WA_BusyPointer, FALSE, TAG_DONE);
+        return;
+    }
+    printf("[DEBUG] remove_50_rows: Format complete, list at 0x%08lx\n", (ULONG)data->display_list);
     
     /* Reattach to gadget */
     GT_SetGadgetAttrs(data->listview_gad, data->window, NULL,
                      GTLV_Labels, data->display_list,
                      GTLV_Top, 0,
                      TAG_DONE);
+    
+    printf("[DEBUG] remove_50_rows: Reattached to gadget\n");
     
     GetSysTime(&end_time);
     elapsed_micros = ((end_time.tv_secs - start_time.tv_secs) * 1000000) +
@@ -712,16 +786,28 @@ static TestWindowData *create_test_window(void)
     
     /* Format and display */
     printf("Formatting ListView with %d character width...\n", data->listview_width_chars);
+    printf("[DEBUG] create_test_window: About to format %d total entries\n", data->total_rows);
     
     data->display_list = iTidy_FormatListViewColumns(
         columns, 5, &data->entry_list,
-        data->listview_width_chars, &data->lv_state
+        data->listview_width_chars, &data->lv_state,
+        ITIDY_MODE_FULL, 0, 1, NULL, 0
     );
+    
+    if (!data->display_list) {
+        printf("[ERROR] create_test_window: iTidy_FormatListViewColumns returned NULL!\n");
+        FreeGadgets(data->gadget_list);
+        FreeVisualInfo(data->vi);
+        whd_free(data);
+        return NULL;
+    }
+    printf("[DEBUG] create_test_window: Format complete, list at 0x%08lx\n", (ULONG)data->display_list);
     
     if (data->display_list) {
         GT_SetGadgetAttrs(data->listview_gad, data->window, NULL,
                          GTLV_Labels, data->display_list,
                          TAG_DONE);
+        printf("[DEBUG] create_test_window: Reattached to gadget\n");
         printf("ListView initialized with %d rows\n", data->total_rows);
         printf("Click column headers to sort!\n");
     }
@@ -945,11 +1031,21 @@ static void run_automated_benchmark(TestWindowData *data)
             data->lv_state = NULL;
         }
         
+        printf("[DEBUG] run_automated_benchmark: About to format %d total entries\n", data->total_rows);
+        
         data->display_list = iTidy_FormatListViewColumns(
             columns, 5,
             &data->entry_list,
             data->listview_width_chars,
-            &data->lv_state);
+            &data->lv_state,
+            ITIDY_MODE_FULL, 0, 1, NULL, 0);
+        
+        if (!data->display_list) {
+            printf("[ERROR] run_automated_benchmark: iTidy_FormatListViewColumns returned NULL!\n");
+            SetWindowPointer(data->window, WA_BusyPointer, FALSE, TAG_DONE);
+            return;
+        }
+        printf("[DEBUG] run_automated_benchmark: Format complete, list at 0x%08lx\n", (ULONG)data->display_list);
         
         /* Refresh ListView to show sorted data */
         GT_SetGadgetAttrs(data->listview_gad, data->window, NULL,
@@ -959,6 +1055,8 @@ static void run_automated_benchmark(TestWindowData *data)
                          GTLV_Labels, data->display_list,
                          GTLV_Top, 0,
                          TAG_DONE);
+        
+        printf("[DEBUG] run_automated_benchmark: Reattached to gadget\n");
         
         printf("  [TIMING] Sort completed in %.6f seconds (%d rows)\n", 
                elapsed_seconds, data->total_rows);
@@ -1151,6 +1249,59 @@ static void cleanup_test_window(TestWindowData *data)
 }
 
 /**
+ * @brief Get CPU name from SysBase->AttnFlags
+ * @return Constant string with CPU name
+ */
+static const char *get_cpu_name(void)
+{
+    UWORD flags = SysBase->AttnFlags;
+    
+    if (flags & AFF_68060) return "MC68060";
+    if (flags & AFF_68040) return "MC68040";
+    if (flags & AFF_68030) return "MC68030";
+    if (flags & AFF_68020) return "MC68020";
+    if (flags & AFF_68010) return "MC68010";
+    return "MC68000";
+}
+
+/**
+ * @brief Log CPU and memory information at startup
+ */
+static void log_system_info(void)
+{
+    ULONG chip_total, chip_largest;
+    ULONG fast_total, fast_largest;
+    const char *cpu_name;
+    
+    /* Get CPU type */
+    cpu_name = get_cpu_name();
+    
+    /* Get memory info */
+    chip_total = AvailMem(MEMF_CHIP);
+    chip_largest = AvailMem(MEMF_CHIP | MEMF_LARGEST);
+    fast_total = AvailMem(MEMF_FAST);
+    fast_largest = AvailMem(MEMF_FAST | MEMF_LARGEST);
+    
+    /* Log system information */
+    log_info(LOG_GUI, "=== System Information (Stress Test) ===");
+    log_info(LOG_GUI, "CPU: %s", cpu_name);
+    log_info(LOG_GUI, "Chip RAM: %lu KB free (%lu bytes total, %lu bytes largest block)",
+             chip_total / 1024, chip_total, chip_largest);
+    
+    if (fast_total > 0)
+    {
+        log_info(LOG_GUI, "Fast RAM: %lu KB free (%lu bytes total, %lu bytes largest block)",
+                 fast_total / 1024, fast_total, fast_largest);
+    }
+    else
+    {
+        log_info(LOG_GUI, "Fast RAM: None detected");
+    }
+    
+    log_info(LOG_GUI, "========================================");
+}
+
+/**
  * @brief Initialize font metrics with safe defaults
  */
 static void init_font_defaults(void)
@@ -1239,6 +1390,10 @@ int main(void)
     /* Enable performance logging for ListView API timing */
     set_performance_logging_enabled(TRUE);
     printf("Performance logging: ENABLED (check PROGDIR:logs/gui_*.log)\n");
+    
+    /* Log system information (CPU and memory) */
+    log_system_info();
+    printf("\n");
     
     /* Initialize font metrics with safe defaults from Workbench screen */
     init_font_defaults();
