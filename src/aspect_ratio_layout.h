@@ -47,12 +47,13 @@ int CalculateAverageHeight(const IconArray *iconArray);
  * 
  * @param width Custom ratio numerator (e.g., 16)
  * @param height Custom ratio denominator (e.g., 10)
- * @param outRatio Output parameter: calculated ratio (width/height)
+ * @param outRatio Output parameter: calculated ratio (width*1000/height), e.g., 1777 for 16:9
  * @return TRUE if valid, FALSE if invalid (zero or negative)
  * 
- * @note Extreme ratios (>5.0 or <0.2) generate warnings but are allowed
+ * @note Extreme ratios (>5000 or <200) generate warnings but are allowed
+ * @note Ratio is scaled by 1000 (fixed-point): 1.777 → 1777
  */
-BOOL ValidateCustomAspectRatio(int width, int height, float *outRatio);
+BOOL ValidateCustomAspectRatio(int width, int height, int *outRatio);
 
 /*========================================================================*/
 /* Optimal Column Calculation                                           */
@@ -73,7 +74,7 @@ BOOL ValidateCustomAspectRatio(int width, int height, float *outRatio);
  * @param totalIcons Total number of icons to arrange
  * @param averageIconWidth Average width of icons (including text)
  * @param averageIconHeight Average height of icons (including text)
- * @param targetAspectRatio Desired width/height ratio (e.g., 1.6)
+ * @param targetAspectRatio Desired width/height ratio scaled by 1000 (e.g., 1600 for 1.6)
  * @param minAllowedIconsPerRow Lower limit on columns (prevent 1×N layouts)
  * @param maxAllowedIconsPerRow Upper limit on columns (from maxIconsPerRow pref)
  * @return Optimal number of icons per row
@@ -83,16 +84,16 @@ BOOL ValidateCustomAspectRatio(int width, int height, float *outRatio);
  * int optimalCols = CalculateOptimalIconsPerRow(
  *     20,      // total icons
  *     80, 80,  // average icon size
- *     1.6f,    // target ratio (Classic Workbench)
+ *     1600,    // target ratio (Classic Workbench: 1.6 * 1000)
  *     2,       // minimum 2 columns
  *     10       // maximum 10 columns
  * );
- * // Returns: 6 (produces ~1.5 ratio, close to 1.6)
+ * // Returns: 6 (produces ~1500 ratio, close to 1600)
  */
 int CalculateOptimalIconsPerRow(int totalIcons, 
                                  int averageIconWidth,
                                  int averageIconHeight, 
-                                 float targetAspectRatio,
+                                 int targetAspectRatio,
                                  int minAllowedIconsPerRow,
                                  int maxAllowedIconsPerRow);
 

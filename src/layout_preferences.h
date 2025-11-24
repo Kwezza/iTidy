@@ -131,7 +131,7 @@ typedef struct {
     UWORD minIconsPerRow;            /* Minimum columns (prevent 1×N layouts) */
     UWORD maxIconsPerRow;            /* Maximum columns (0 = no limit) */
     UWORD maxWindowWidthPct;         /* Max window width as % of screen */
-    float aspectRatio;               /* Target window aspect ratio */
+    int aspectRatio;                 /* Target window aspect ratio (scaled by 1000, e.g., 1600 = 1.6) */
     WindowOverflowMode overflowMode; /* Overflow behavior for large folders */
     
     /* Spacing Settings */
@@ -198,7 +198,7 @@ typedef struct {
 #define DEFAULT_MIN_ICONS_PER_ROW   2   /* Prevent 1×N layouts */
 #define DEFAULT_MAX_ICONS_PER_ROW   0   /* Auto: Calculate from screen width */
 #define DEFAULT_MAX_WIDTH_PCT       55
-#define DEFAULT_ASPECT_RATIO        1.6f
+#define DEFAULT_ASPECT_RATIO        1600  /* 1.6 * 1000 (fixed-point) */
 #define DEFAULT_OVERFLOW_MODE       OVERFLOW_HORIZONTAL  /* Classic behavior */
 #define DEFAULT_ICON_SPACING_X      8    /* 8px horizontal spacing */
 #define DEFAULT_ICON_SPACING_Y      8    /* 8px vertical spacing */

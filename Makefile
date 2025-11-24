@@ -25,14 +25,13 @@ else
     # Amiga build configuration (vbcc cross-compiler)
     # VBCC MIGRATION NOTE: Changed to use VBCC v0.9x with Workbench 3.2 SDK
     # Output now goes to Bin/Amiga/ for clean separation
-    # VBCC MIGRATION NOTE (Stage 4): Added -DDEBUG for debug logging
-    # DEBUG BUILD: Added -g for debug symbols, -hunkdebug for symbol table
+    # RELEASE BUILD: Optimized for size (-O2 -size), no debug symbols, no math library (uses fixed-point)
     # Note: VBCC warnings from system headers (51: bitfield, 61: array size) cannot be suppressed
     # EASY_REQUEST_HELPER: -DBUILD_WITH_MOVEWINDOW disabled (causes flicker on slow Amigas)
     # CPU TARGET: 68000 for maximum compatibility (A500/A600/A1200)
     CC = vc
-    CFLAGS = +aos68k -c99 -cpu=68000 -g -I$(INC_DIR) -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG
-    LDFLAGS = +aos68k -cpu=68000 -g -hunkdebug -lamiga -lauto -lmieee
+    CFLAGS = +aos68k -c99 -cpu=68000 -O2 -size -I$(INC_DIR) -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__
+    LDFLAGS = +aos68k -cpu=68000 -O2 -size -final -lamiga -lauto
     OUT_DIR = $(BUILD_DIR)/amiga
     BIN_DIR = Bin/Amiga
     BIN = $(BIN_DIR)/$(PROJECT)
@@ -197,13 +196,13 @@ endif
 # Link executable
 # VBCC MIGRATION NOTE: For Amiga builds, copy to Bin/Amiga/ after linking
 # GUI MIGRATION NOTE: Executable now named iTidy (GUI version)
-# DEBUG BUILD: Executable contains embedded debug symbols via -hunkdebug
+# RELEASE BUILD: Optimized executable with dead code elimination (-final)
 $(BIN): $(OBJS)
 	@echo Linking $(TARGET) executable: $(BIN)
 	$(CC) $(LDFLAGS) -o $@ $^ 
 ifeq ($(TARGET),amiga)
 	@echo Build complete: $(BIN)
-	@echo Debug symbols embedded in executable (use WinUAE debugger or MonAm)
+	@echo Release build optimized for size (-O2 -size -final)
 endif
 
 # Compile core source files

@@ -9,9 +9,12 @@
 #include <platform/amiga_headers.h>
 
 #include <stdio.h>
-#include <math.h>
+#include <stdlib.h>  /* For abs() */
 #include <devices/timer.h>
 #include <clib/timer_protos.h>
+
+/* Fixed-point scale factor for aspect ratios */
+#define ASPECT_SCALE 1000
 
 #include "aspect_ratio_layout.h"
 #include "layout_preferences.h"
@@ -69,9 +72,9 @@ int CalculateAverageHeight(const IconArray *iconArray)
 /* Custom Aspect Ratio Validation                                       */
 /*========================================================================*/
 
-BOOL ValidateCustomAspectRatio(int width, int height, float *outRatio)
+BOOL ValidateCustomAspectRatio(int width, int height, int *outRatio)
 {
-    float ratio;
+    int ratio;
     
     if (!outRatio)
     {
@@ -90,23 +93,26 @@ BOOL ValidateCustomAspectRatio(int width, int height, float *outRatio)
         return FALSE;
     }
     
-    /* Calculate ratio */
-    ratio = (float)width / (float)height;
+    /* Calculate ratio using fixed-point math (scaled by 1000) */
+    /* Example: 16:9 = (16 * 1000) / 9 = 1777 (represents 1.777) */
+    ratio = (width * ASPECT_SCALE) / height;
     *outRatio = ratio;
     
     /* Warn about extreme ratios but allow them */
-    if (ratio > 5.0f || ratio < 0.2f)
+    /* 5.0 = 5000, 0.2 = 200 in fixed-point */
+    if (ratio > 5000 || ratio < 200)
     {
-        printf("WARNING: Very extreme aspect ratio (%.2f).\n", ratio);
+        printf("WARNING: Very extreme aspect ratio (%d.%02d).\n", 
+               ratio / ASPECT_SCALE, (ratio % ASPECT_SCALE) / 10);
         printf("         Window may have unusual proportions.\n");
 #ifdef DEBUG
-        append_to_log("ValidateCustomAspectRatio: Extreme ratio %.2f from %d:%d\n",
+        append_to_log("ValidateCustomAspectRatio: Extreme ratio %d from %d:%d\n",
                       ratio, width, height);
 #endif
     }
     
 #ifdef DEBUG
-    append_to_log("ValidateCustomAspectRatio: %d:%d = %.2f (valid)\n",
+    append_to_log("ValidateCustomAspectRatio: %d:%d = %d (valid)\n",
                   width, height, ratio);
 #endif
     
@@ -120,20 +126,20 @@ BOOL ValidateCustomAspectRatio(int width, int height, float *outRatio)
 int CalculateOptimalIconsPerRow(int totalIcons, 
                                  int averageIconWidth,
                                  int averageIconHeight, 
-                                 float targetAspectRatio,
+                                 int targetAspectRatio,
                                  int minAllowedIconsPerRow,
                                  int maxAllowedIconsPerRow)
 {
     int bestColumns = minAllowedIconsPerRow;
-    float bestRatioDiff = 999.0f;
+    int bestRatioDiff = 999000;  /* Large initial value (999.0 * 1000) */
     int cols, rows;
-    float estimatedWidth, estimatedHeight, actualRatio, ratioDiff;
+    int estimatedWidth, estimatedHeight, actualRatio, ratioDiff;
     
 #ifdef DEBUG
     append_to_log("CalculateOptimalIconsPerRow:\n");
     append_to_log("  totalIcons=%d, avgWidth=%d, avgHeight=%d\n",
                   totalIcons, averageIconWidth, averageIconHeight);
-    append_to_log("  targetRatio=%.2f, minCols=%d, maxCols=%d\n",
+    append_to_log("  targetRatio=%d, minCols=%d, maxCols=%d\n",
                   targetAspectRatio, minAllowedIconsPerRow, maxAllowedIconsPerRow);
 #endif
     
@@ -164,20 +170,21 @@ int CalculateOptimalIconsPerRow(int totalIcons,
             continue;
         
         /* Estimate dimensions */
-        estimatedWidth = (float)(cols * averageIconWidth);
-        estimatedHeight = (float)(rows * averageIconHeight);
+        estimatedWidth = cols * averageIconWidth;
+        estimatedHeight = rows * averageIconHeight;
         
-        /* Calculate actual ratio */
-        actualRatio = estimatedWidth / estimatedHeight;
+        /* Calculate actual ratio using fixed-point math (scaled by 1000) */
+        /* actualRatio = (width * 1000) / height */
+        actualRatio = (estimatedWidth * ASPECT_SCALE) / estimatedHeight;
         
-        /* Calculate difference from target */
-        ratioDiff = fabs(actualRatio - targetAspectRatio);
+        /* Calculate difference from target (absolute value) */
+        ratioDiff = abs(actualRatio - targetAspectRatio);
         
 #ifdef DEBUG
-        append_to_log("  Try %d cols: %d rows, %.0f×%.0f = %.2f ratio (diff: %.2f)%s\n",
+        append_to_log("  Try %d cols: %d rows, %d×%d = %d ratio (diff: %d)%s\n",
                       cols, rows, estimatedWidth, estimatedHeight, 
                       actualRatio, ratioDiff,
-                      (ratioDiff < bestRatioDiff) ? " ← NEW BEST" : "");
+                      (ratioDiff < bestRatioDiff) ? " <- NEW BEST" : "");
 #endif
         
         /* Track best match */
@@ -189,7 +196,7 @@ int CalculateOptimalIconsPerRow(int totalIcons,
     }
     
 #ifdef DEBUG
-    append_to_log("  Result: %d columns (ratio diff: %.2f)\n", bestColumns, bestRatioDiff);
+    append_to_log("  Result: %d columns (ratio diff: %d)\n", bestColumns, bestRatioDiff);
 #endif
     
     return bestColumns;
@@ -212,7 +219,7 @@ void CalculateLayoutWithAspectRatio(const IconArray *iconArray,
     BOOL fitsWidth, fitsHeight;
     int chrome = 20; /* Window chrome estimate (borders, scrollbars) */
     int maxCols, minCols;
-    float effectiveAspectRatio;
+    int effectiveAspectRatio;  /* Fixed-point: scaled by 1000 */
     struct timeval startTime, endTime;
     ULONG elapsedMicros, elapsedMillis;
     
@@ -239,7 +246,7 @@ void CalculateLayoutWithAspectRatio(const IconArray *iconArray,
     append_to_log("\n==== CalculateLayoutWithAspectRatio ====\n");
     append_to_log("Icons: %d\n", iconArray->size);
     append_to_log("Preferences:\n");
-    append_to_log("  aspectRatio: %.2f\n", prefs->aspectRatio);
+    append_to_log("  aspectRatio: %d\n", prefs->aspectRatio);
     append_to_log("  overflowMode: %d (0=HORIZ, 1=VERT, 2=BOTH)\n", prefs->overflowMode);
     append_to_log("  minIconsPerRow: %d\n", prefs->minIconsPerRow);
     append_to_log("  maxIconsPerRow: %d\n", prefs->maxIconsPerRow);
@@ -261,7 +268,7 @@ void CalculateLayoutWithAspectRatio(const IconArray *iconArray,
                                   prefs->customAspectHeight,
                                   &effectiveAspectRatio);
 #ifdef DEBUG
-        append_to_log("Using custom aspect ratio: %d:%d = %.2f\n",
+        append_to_log("Using custom aspect ratio: %d:%d = %d\n",
                       prefs->customAspectWidth, prefs->customAspectHeight,
                       effectiveAspectRatio);
 #endif

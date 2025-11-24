@@ -133,7 +133,7 @@ void ApplyPreset(LayoutPreferences *prefs, int preset)
             prefs->minIconsPerRow = 2;
             prefs->maxIconsPerRow = 0;  /* AUTO: Calculate from screen width */
             prefs->maxWindowWidthPct = 55;
-            prefs->aspectRatio = 1.6f;
+            prefs->aspectRatio = 1600;  /* 1.6 * 1000 */
             prefs->overflowMode = OVERFLOW_HORIZONTAL;  /* Wide scrolling */
             prefs->iconSpacingX = 8;   /* Standard spacing */
             prefs->iconSpacingY = 8;
@@ -152,7 +152,7 @@ void ApplyPreset(LayoutPreferences *prefs, int preset)
             prefs->minIconsPerRow = 2;
             prefs->maxIconsPerRow = 0;  /* AUTO: Calculate from screen width */
             prefs->maxWindowWidthPct = 45;
-            prefs->aspectRatio = 1.3f;
+            prefs->aspectRatio = 1300;  /* 1.3 * 1000 */
             prefs->overflowMode = OVERFLOW_VERTICAL;  /* Maximize width usage */
             prefs->iconSpacingX = 6;   /* Tight spacing */
             prefs->iconSpacingY = 6;
@@ -171,7 +171,7 @@ void ApplyPreset(LayoutPreferences *prefs, int preset)
             prefs->minIconsPerRow = 3;  /* Wider minimum */
             prefs->maxIconsPerRow = 0;  /* AUTO: Calculate from screen width */
             prefs->maxWindowWidthPct = 60;
-            prefs->aspectRatio = 1.5f;
+            prefs->aspectRatio = 1500;  /* 1.5 * 1000 */
             prefs->overflowMode = OVERFLOW_BOTH;  /* Maintain proportions */
             prefs->iconSpacingX = 12;  /* Generous spacing */
             prefs->iconSpacingY = 10;
@@ -190,7 +190,7 @@ void ApplyPreset(LayoutPreferences *prefs, int preset)
             prefs->minIconsPerRow = 2;
             prefs->maxIconsPerRow = 0;  /* AUTO: Calculate from screen width */
             prefs->maxWindowWidthPct = 40;
-            prefs->aspectRatio = 1.4f;
+            prefs->aspectRatio = 1400;  /* 1.4 * 1000 */
             prefs->overflowMode = OVERFLOW_HORIZONTAL;  /* Wide game lists */
             prefs->iconSpacingX = 6;   /* Tight horizontal */
             prefs->iconSpacingY = 8;   /* Standard vertical */

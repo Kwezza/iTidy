@@ -105,7 +105,10 @@ void FormatSizeForCatalog(char *outStr, ULONG sizeBytes) {
     } else if (sizeBytes < 1024 * 1024 * 1024) {
         snprintf(outStr, 16, "%lu MB", sizeBytes / (1024 * 1024));
     } else {
-        snprintf(outStr, 16, "%.1f GB", (float)sizeBytes / (1024.0f * 1024.0f * 1024.0f));
+        /* Integer division with one decimal place: GB.tenths */
+        ULONG gb = sizeBytes / (1024UL * 1024 * 1024);
+        ULONG decimal = ((sizeBytes % (1024UL * 1024 * 1024)) * 10) / (1024UL * 1024 * 1024);
+        snprintf(outStr, 16, "%lu.%lu GB", gb, decimal);
     }
 }
 
@@ -380,11 +383,11 @@ BOOL ParseCatalogLine(const char *line, BackupArchiveEntry *outEntry) {
                     char unit[8];
                     if (sscanf(token, "%lu %s", &value, unit) == 2) {
                         if (strcmp(unit, "KB") == 0) {
-                            outEntry->sizeBytes = value * 1024;
+                            outEntry->sizeBytes = value * 1024UL;
                         } else if (strcmp(unit, "MB") == 0) {
-                            outEntry->sizeBytes = value * 1024 * 1024;
+                            outEntry->sizeBytes = value * 1024UL * 1024UL;
                         } else if (strcmp(unit, "GB") == 0) {
-                            outEntry->sizeBytes = (ULONG)(value * 1024.0 * 1024.0 * 1024.0);
+                            outEntry->sizeBytes = value * 1024UL * 1024UL * 1024UL;
                         } else {
                             outEntry->sizeBytes = value; /* Assume bytes */
                         }

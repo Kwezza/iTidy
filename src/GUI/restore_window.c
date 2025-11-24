@@ -115,14 +115,18 @@ static void update_window_max_dimensions(UWORD *current_max_width,
 /*------------------------------------------------------------------------*/
 void format_size_string(ULONG bytes, char *buffer)
 {
-    /* Convert bytes to human-readable format with units */
+    /* Convert bytes to human-readable format with units (integer math only) */
     if (bytes >= 1048576)  /* >= 1 MB */
     {
-        sprintf(buffer, "%.1f MB", bytes / 1048576.0);
+        ULONG mb = bytes / 1048576;
+        ULONG decimal = ((bytes % 1048576) * 10) / 1048576;
+        sprintf(buffer, "%lu.%lu MB", mb, decimal);
     }
     else if (bytes >= 1024)  /* >= 1 KB */
     {
-        sprintf(buffer, "%.1f KB", bytes / 1024.0);
+        ULONG kb = bytes / 1024;
+        ULONG decimal = ((bytes % 1024) * 10) / 1024;
+        sprintf(buffer, "%lu.%lu KB", kb, decimal);
     }
     else
     {

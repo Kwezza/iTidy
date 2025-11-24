@@ -69,16 +69,16 @@ static STRPTR vertical_align_labels[] = {
 };
 
 /*------------------------------------------------------------------------*/
-/* Aspect Ratio Preset Values                                            */
+/* Aspect Ratio Preset Values (Fixed-Point: Scaled by 1000)             */
 /*------------------------------------------------------------------------*/
-static const float aspect_ratio_presets[] = {
-    0.75f,  /* Tall */
-    1.0f,   /* Square */
-    1.3f,   /* Compact */
-    1.6f,   /* Classic */
-    2.0f,   /* Wide */
-    2.4f,   /* Ultrawide */
-    0.0f    /* Custom (calculated from width:height) */
+static const int aspect_ratio_presets[] = {
+    750,   /* Tall (0.75 * 1000) */
+    1000,  /* Square (1.0 * 1000) */
+    1300,  /* Compact (1.3 * 1000) */
+    1600,  /* Classic (1.6 * 1000) */
+    2000,  /* Wide (2.0 * 1000) */
+    2400,  /* Ultrawide (2.4 * 1000) */
+    0      /* Custom (calculated from width:height) */
 };
 
 /*------------------------------------------------------------------------*/
@@ -101,13 +101,13 @@ static WORD get_aspect_ratio_preset_index(const LayoutPreferences *prefs)
         return ASPECT_PRESET_CUSTOM;
     }
     
-    /* Find matching preset (allow small floating point differences) */
+    /* Find matching preset (allow small differences due to rounding) */
     for (i = 0; i < 6; i++)
     {
-        float diff = prefs->aspectRatio - aspect_ratio_presets[i];
-        if (diff < 0.0f) diff = -diff;  /* abs() */
+        int diff = prefs->aspectRatio - aspect_ratio_presets[i];
+        if (diff < 0) diff = -diff;  /* abs() */
         
-        if (diff < 0.01f)  /* Within tolerance */
+        if (diff < 10)  /* Within tolerance (0.01 * 1000) */
         {
             return i;
         }
@@ -590,7 +590,7 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
     log_debug(LOG_GUI, "  adv_data->max_width_pct_selected = %ld\n", (long)adv_data->max_width_pct_selected);
     log_debug(LOG_GUI, "  adv_data->vertical_align_selected = %ld\n", (long)adv_data->vertical_align_selected);
     log_debug(LOG_GUI, "  prefs->overflowMode = %ld\n", (long)prefs->overflowMode);
-    log_debug(LOG_GUI, "  prefs->aspectRatio = %.2f\n", prefs->aspectRatio);
+    log_debug(LOG_GUI, "  prefs->aspectRatio = %d\n", prefs->aspectRatio);
     log_debug(LOG_GUI, "  prefs->reverseSort = %s\n", prefs->reverseSort ? "YES" : "NO");
     
     /* Get Workbench screen */
@@ -775,17 +775,17 @@ void save_advanced_window_to_preferences(struct iTidyAdvancedWindow *adv_data)
         adv_data->prefs->customAspectWidth = adv_data->custom_aspect_width;
         adv_data->prefs->customAspectHeight = adv_data->custom_aspect_height;
         
-        /* Calculate aspect ratio from custom values */
+        /* Calculate aspect ratio from custom values (fixed-point: scaled by 1000) */
         if (adv_data->custom_aspect_height > 0)
         {
             adv_data->prefs->aspectRatio = 
-                (float)adv_data->custom_aspect_width / 
-                (float)adv_data->custom_aspect_height;
+                (adv_data->custom_aspect_width * 1000) / 
+                adv_data->custom_aspect_height;
         }
         else
         {
             /* Invalid height, default to Classic */
-            adv_data->prefs->aspectRatio = 1.6f;
+            adv_data->prefs->aspectRatio = 1600;  /* 1.6 * 1000 */
             printf("WARNING: Invalid custom aspect height, using default 1.6\n");
         }
     }

@@ -598,9 +598,13 @@ void GetRestoreStatistics(const RestoreContext *ctx, char *buffer, int bufferSiz
     ULONG gb = mb / 1024;
     
     if (gb > 0) {
-        sprintf(sizeStr, "%.2f GB", (float)ctx->stats.totalBytesRestored / (1024.0f * 1024.0f * 1024.0f));
+        /* Integer division with decimal: GB.hundredths */
+        ULONG decimal = ((ctx->stats.totalBytesRestored % (1024UL * 1024 * 1024)) * 100) / (1024UL * 1024 * 1024);
+        sprintf(sizeStr, "%lu.%02lu GB", gb, decimal);
     } else if (mb > 0) {
-        sprintf(sizeStr, "%.2f MB", (float)ctx->stats.totalBytesRestored / (1024.0f * 1024.0f));
+        /* Integer division with decimal: MB.hundredths */
+        ULONG decimal = ((ctx->stats.totalBytesRestored % (1024UL * 1024)) * 100) / (1024UL * 1024);
+        sprintf(sizeStr, "%lu.%02lu MB", mb, decimal);
     } else if (kb > 0) {
         sprintf(sizeStr, "%lu KB", kb);
     } else {
