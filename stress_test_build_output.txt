@@ -1,0 +1,37 @@
+"Compiling [../../build/amiga/listview_stress_test.o] from listview_stress_test.c"
+vc +aos68k -c99 -cpu=68000 -O2 -speed -I../../include -I.. -DPLATFORM_AMIGA=1 -D__AMIGA__ -c listview_stress_test.c -o ../../build/amiga/listview_stress_test.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "..\Settings\IControlPrefs.h":15
+	included from file "listview_stress_test.c":39
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "..\Settings\IControlPrefs.h":15
+	included from file "listview_stress_test.c":39
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "..\Settings\IControlPrefs.h":15
+	included from file "listview_stress_test.c":39
+>        free_entry(entry);
+warning 161 in line 221 of "listview_stress_test.c": implicit declaration of function <free_entry>
+>{
+warning 68 in line 285 of "listview_stress_test.c": redeclaration of var <free_entry> with new type
+>{
+error 28 in line 285 of "listview_stress_test.c": redeclaration of var <free_entry> with new storage-class
+>    GetSysTime(&start_time);
+warning 161 in line 352 of "listview_stress_test.c": implicit declaration of function <GetSysTime>
+>    NewList(&data->entry_list);
+warning 161 in line 630 of "listview_stress_test.c": implicit declaration of function <NewList>
+>        log_memory_status(data->total_rows);
+warning 161 in line 1082 of "listview_stress_test.c": implicit declaration of function <log_memory_status>
+>{
+warning 68 in line 1305 of "listview_stress_test.c": redeclaration of var <log_memory_status> with new type
+>{
+error 28 in line 1305 of "listview_stress_test.c": redeclaration of var <log_memory_status> with new storage-class
+>        font = screen->Font;
+warning 85 in line 1386 of "listview_stress_test.c": assignment of different pointers
+>           prefsIControl.systemFontName);
+warning 214 in line 1457 of "listview_stress_test.c": suspicious format string
+2 errors found!
+vbccm68k -quiet "listview_stress_test.c" -o= "C:\Users\kwezz\AppData\Local\Temp\vbcc068c.asm" -c99 -cpu=68000 -speed -I../../include -I.. -DPLATFORM_AMIGA=1 -D__AMIGA__ -hunkdebug -amiga-softfloat  -O=1023 -I"%VBCC%"/targets/m68k-amigaos/include failed
+make: *** [Makefile:74: ../../build/amiga/listview_stress_test.o] Error 1

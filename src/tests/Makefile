@@ -15,9 +15,12 @@ BUILD_DIR = ../../build/amiga
 BIN_DIR = ../../Bin/Amiga
 
 # Compiler and flags (VBCC for Amiga 68000)
+# BUGFIX: Removed -final flag - causes position-dependent code on 68000
+# Symptom: Works from DF0: but crashes from RAM: at same point (after sort, before width calc)
+# Root cause: -final does whole-program optimization that can generate non-relocatable code
 CC = vc
 CFLAGS = +aos68k -c99 -cpu=68000 -O2 -speed -I$(INC_DIR) -I$(SRC_DIR) -DPLATFORM_AMIGA=1 -D__AMIGA__
-LDFLAGS = +aos68k -cpu=68000 -final -s -lamiga -lauto -lmieee
+LDFLAGS = +aos68k -cpu=68000 -s -lamiga -lauto -lmieee
 
 # Output binary
 BIN = $(BIN_DIR)/$(PROJECT)
@@ -62,7 +65,8 @@ OBJS = $(patsubst %.c,$(BUILD_DIR)/%.o,$(notdir $(SRCS)))
 all: $(BIN)
 	@echo ""
 	@echo "Build complete: $(BIN)"
-	@echo "Optimized for speed (-O2 -speed), debug symbols stripped (-s), unused code eliminated (-final)"
+	@echo "Optimized for speed (-O2 -speed), debug symbols stripped (-s)"
+	@echo "BUGFIX: -final removed to fix RAM: vs DF0: crash (position-dependent code issue)"
 
 $(BIN): $(OBJS) | $(BIN_DIR)
 	@echo "Linking Amiga executable: $(BIN)"

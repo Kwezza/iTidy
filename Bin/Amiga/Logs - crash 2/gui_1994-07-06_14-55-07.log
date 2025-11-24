@@ -1,0 +1,9 @@
+[14:55:13][INFO] === System Information (Stress Test) ===
+[14:55:13][INFO] CPU: MC68000
+[14:55:14][INFO] Chip RAM: 1580 KB free (1618592 bytes total, 1617440 bytes largest block)
+[14:55:14][INFO] Fast RAM: None detected
+[14:55:14][INFO] ========================================
+[14:55:17][INFO] iTidy_FormatListViewColumns: num_columns=5, width=85, mode=0, page_size=0, current_page=1 
+[14:55:18][INFO] [PERF] ListView sort (col 0, DATE, DESC): 239.837 ms 
+[14:55:20][INFO]        Entries: 50 
+[14:55:20][INFO]        Time per entry: 4796 microseconds 

@@ -20,6 +20,9 @@
     #include <exec/types.h>
     #include <exec/memory.h>
     #include <proto/exec.h>
+    #include <proto/dos.h>
+    #include <intuition/intuition.h>
+    #include <proto/intuition.h>
 #endif
 
 /*---------------------------------------------------------------------------*/
@@ -43,6 +46,11 @@ static size_t g_allocationCount = 0;
 static size_t g_freeCount = 0;
 static int g_loggingSuspended = 0;  /* Flag to temporarily disable logging */
 
+/* Emergency shutdown resources (pre-allocated, never freed) */
+static char *g_emergencyBuffer = NULL;      /* 1KB emergency buffer for logging */
+static BPTR g_emergencyLogFile = 0;          /* Pre-opened critical failure log */
+static int g_emergencyInitialized = 0;       /* Flag to ensure init only once */
+
 /*---------------------------------------------------------------------------*/
 /* Memory Tracking Implementation                                            */
 /*---------------------------------------------------------------------------*/
@@ -58,6 +66,39 @@ void whd_memory_init(void) {
     g_loggingSuspended = 0;
     
     log_info(LOG_MEMORY, "Memory tracking initialized\n");
+    
+    /* Initialize emergency shutdown resources (only once) */
+    if (!g_emergencyInitialized) {
+#if defined(__AMIGA__)
+        /* Allocate 1KB emergency buffer in Chip RAM (guaranteed available) */
+        /* Don't use MEMF_CLEAR - we'll manually format the message */
+        g_emergencyBuffer = (char *)AllocVec(1024, MEMF_CHIP);
+        
+        /* Open emergency log file on RAM: disk (always available) */
+        g_emergencyLogFile = Open("RAM:CRITICAL_FAILURE.log", MODE_NEWFILE);
+        
+        if (g_emergencyBuffer && g_emergencyLogFile) {
+            g_emergencyInitialized = 1;
+            log_info(LOG_MEMORY, "Emergency shutdown system initialized (1KB buffer + critical log)\n");
+        } else {
+            log_warning(LOG_MEMORY, "Emergency shutdown system FAILED to initialize!\n");
+            if (g_emergencyBuffer) {
+                FreeVec(g_emergencyBuffer);
+                g_emergencyBuffer = NULL;
+            }
+            if (g_emergencyLogFile) {
+                Close(g_emergencyLogFile);
+                g_emergencyLogFile = 0;
+            }
+        }
+#else
+        /* Host platform - use malloc for emergency buffer */
+        g_emergencyBuffer = (char *)malloc(1024);
+        if (g_emergencyBuffer) {
+            g_emergencyInitialized = 1;
+        }
+#endif
+    }
 }
 
 void whd_memory_suspend_logging(void) {
@@ -81,6 +122,16 @@ void* whd_malloc_debug(size_t size, const char *file, int line) {
 #endif
     
     if (!ptr) {
+        /* CRITICAL: Out of memory - trigger emergency shutdown */
+        if (g_emergencyInitialized) {
+            char emergency_msg[256];
+            sprintf(emergency_msg, "OUT OF MEMORY at %s:%d (requested %lu bytes)", 
+                   file, line, (unsigned long)size);
+            whd_memory_emergency_shutdown(emergency_msg);
+            /* Does not return */
+        }
+        
+        /* Fallback if emergency system not initialized */
         log_error(LOG_MEMORY, "malloc(%lu) FAILED at %s:%d\n", 
                  (unsigned long)size, file, line);
         return NULL;
@@ -245,6 +296,81 @@ void whd_memory_report(void) {
     }
     
     log_info(LOG_MEMORY, "============================================\n\n");
+}
+
+/*---------------------------------------------------------------------------*/
+/* Emergency Shutdown Handler                                                */
+/*---------------------------------------------------------------------------*/
+
+void whd_memory_emergency_shutdown(const char *reason) {
+#if defined(__AMIGA__)
+    struct Library *IntuitionBase = NULL;
+    
+    struct EasyStruct criticalRequest = {
+        sizeof(struct EasyStruct),
+        0,
+        "CRITICAL MEMORY FAILURE",
+        "iTidy has run out of memory!\n\n%s\n\nThe program will now exit.\n\nCheck RAM:CRITICAL_FAILURE.log for details.",
+        "Exit"
+    };
+    
+    /* Use pre-allocated emergency buffer to write critical error */
+    if (g_emergencyBuffer && g_emergencyLogFile) {
+        LONG bytes_written;
+        
+        /* Format error message into emergency buffer */
+        sprintf(g_emergencyBuffer, 
+               "========== CRITICAL MEMORY FAILURE ==========\n"
+               "%s\n"
+               "Memory Statistics:\n"
+               "  Total allocated: %lu bytes\n"
+               "  Total freed: %lu bytes\n"
+               "  Current usage: %lu bytes\n"
+               "  Peak usage: %lu bytes\n"
+               "  Allocations: %lu\n"
+               "  Frees: %lu\n"
+               "=============================================\n",
+               reason,
+               (unsigned long)g_totalAllocated,
+               (unsigned long)g_totalFreed,
+               (unsigned long)g_currentAllocated,
+               (unsigned long)g_peakAllocated,
+               (unsigned long)g_allocationCount,
+               (unsigned long)g_freeCount);
+        
+        /* Write to pre-opened emergency log file */
+        bytes_written = Write(g_emergencyLogFile, g_emergencyBuffer, strlen(g_emergencyBuffer));
+        Flush(g_emergencyLogFile);  /* Critical: ensure it's written */
+        
+        /* Close emergency log (we're exiting anyway) */
+        Close(g_emergencyLogFile);
+        g_emergencyLogFile = 0;
+    }
+    
+    /* Try to show EasyRequest dialog to user */
+    /* Open library here (safe even during OOM since it's a ROM-based library) */
+    IntuitionBase = OpenLibrary("intuition.library", 0);
+    if (IntuitionBase) {
+        EasyRequest(NULL, &criticalRequest, NULL, (APTR)reason);
+        CloseLibrary(IntuitionBase);
+    }
+    
+    /* Immediate exit - NO cleanup attempts (memory is corrupt) */
+    exit(20);  /* RETURN_FAIL on Amiga */
+    
+#else
+    /* Host platform emergency shutdown */
+    if (g_emergencyBuffer) {
+        fprintf(stderr, "\n*** CRITICAL MEMORY FAILURE ***\n");
+        fprintf(stderr, "%s\n", reason);
+        fprintf(stderr, "Memory: %lu allocated, %lu freed, %lu current\n",
+               (unsigned long)g_totalAllocated,
+               (unsigned long)g_totalFreed,
+               (unsigned long)g_currentAllocated);
+        fprintf(stderr, "*** EMERGENCY SHUTDOWN ***\n\n");
+    }
+    exit(1);
+#endif
 }
 
 #endif /* DEBUG_MEMORY_TRACKING */

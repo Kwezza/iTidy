@@ -35,6 +35,7 @@
     void whd_memory_init(void);
     void whd_memory_suspend_logging(void);  /* Temporarily disable logging for bulk operations */
     void whd_memory_resume_logging(void);   /* Re-enable logging */
+    void whd_memory_emergency_shutdown(const char *reason);  /* Emergency OOM handler */
     
     #define whd_malloc(sz)  whd_malloc_debug(sz, __FILE__, __LINE__)
     #define whd_free(p)     whd_free_debug(p, __FILE__, __LINE__)

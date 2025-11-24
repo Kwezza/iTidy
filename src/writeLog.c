@@ -470,6 +470,9 @@ void log_message(LogCategory category, LogLevel level, const char *format, ...) 
             g_logCategories[category].bytesWritten += bytesWritten;
         }
         
+        /* CRITICAL: Flush to disk before close (prevents data loss on crash) */
+        Flush(logFile);
+        
         /* Close immediately (especially important for memory tracking) */
         Close(logFile);
         
@@ -496,6 +499,7 @@ void log_message(LogCategory category, LogLevel level, const char *format, ...) 
             Write(logFile, errorPrefix, strlen(errorPrefix));
             Write(logFile, buffer, strlen(buffer));
             Write(logFile, "\n", 1);
+            Flush(logFile);
             Close(logFile);
             
             g_logCategories[LOG_ERRORS].messageCount++;

@@ -1,0 +1,59 @@
+"Compiling [../../build/amiga/listview_stress_test.o] from listview_stress_test.c"
+vc +aos68k -c99 -cpu=68000 -O2 -speed -I../../include -I.. -DPLATFORM_AMIGA=1 -D__AMIGA__ -c listview_stress_test.c -o ../../build/amiga/listview_stress_test.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "..\Settings\IControlPrefs.h":15
+	included from file "listview_stress_test.c":39
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "..\Settings\IControlPrefs.h":15
+	included from file "listview_stress_test.c":39
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "..\Settings\IControlPrefs.h":15
+	included from file "listview_stress_test.c":39
+>    GetSysTime(&start_time);
+warning 161 in line 356 of "listview_stress_test.c": implicit declaration of function <GetSysTime>
+>    NewList(&data->entry_list);
+warning 161 in line 634 of "listview_stress_test.c": implicit declaration of function <NewList>
+>        font = screen->Font;
+warning 85 in line 1390 of "listview_stress_test.c": assignment of different pointers
+>           prefsIControl.systemFontName);
+warning 214 in line 1461 of "listview_stress_test.c": suspicious format string
+"Compiling [../../build/amiga/listview_columns_api.o] from ../helpers/listview_columns_api.c"
+vc +aos68k -c99 -cpu=68000 -O2 -speed -I../../include -I.. -DPLATFORM_AMIGA=1 -D__AMIGA__ -c ../helpers/listview_columns_api.c -o ../../build/amiga/listview_columns_api.o
+"Compiling [../../build/amiga/IControlPrefs.o] from ../Settings/IControlPrefs.c"
+vc +aos68k -c99 -cpu=68000 -O2 -speed -I../../include -I.. -DPLATFORM_AMIGA=1 -D__AMIGA__ -c ../Settings/IControlPrefs.c -o ../../build/amiga/IControlPrefs.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "..\Settings\IControlPrefs.h":15
+	included from file "..\Settings\IControlPrefs.c":3
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "..\Settings\IControlPrefs.h":15
+	included from file "..\Settings\IControlPrefs.c":3
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "..\Settings\IControlPrefs.h":15
+	included from file "..\Settings\IControlPrefs.c":3
+>                        CloseFont(opened_font);
+warning 161 in line 85 of "..\Settings\IControlPrefs.c": implicit declaration of function <CloseFont>
+"Compiling [../../build/amiga/WorkbenchPrefs.o] from ../Settings/WorkbenchPrefs.c"
+vc +aos68k -c99 -cpu=68000 -O2 -speed -I../../include -I.. -DPLATFORM_AMIGA=1 -D__AMIGA__ -c ../Settings/WorkbenchPrefs.c -o ../../build/amiga/WorkbenchPrefs.o
+>	TEXT whdp_Name[0]
+warning 61 in line 59 of "prefs\workbench.h": array of size <=0 (set to 1)
+	included from file "..\Settings\WorkbenchPrefs.c":7
+>	TEXT wtfp_Format[0]
+warning 61 in line 67 of "prefs\workbench.h": array of size <=0 (set to 1)
+	included from file "..\Settings\WorkbenchPrefs.c":7
+"Compiling [../../build/amiga/get_fonts.o] from ../Settings/get_fonts.c"
+vc +aos68k -c99 -cpu=68000 -O2 -speed -I../../include -I.. -DPLATFORM_AMIGA=1 -D__AMIGA__ -c ../Settings/get_fonts.c -o ../../build/amiga/get_fonts.o
+>    if (does_file_or_folder_exist("ENV:sys/font.prefs", 0))
+warning 161 in line 18 of "..\Settings\get_fonts.c": implicit declaration of function <does_file_or_folder_exist>
+"Compiling [../../build/amiga/platform.o] from ../../include/platform/platform.c"
+vc +aos68k -c99 -cpu=68000 -O2 -speed -I../../include -I.. -DPLATFORM_AMIGA=1 -D__AMIGA__ -c ../../include/platform/platform.c -o ../../build/amiga/platform.o
+"Linking Amiga executable: ../../Bin/Amiga/listview_stress_test"
+vc +aos68k -cpu=68000 -final -s -lamiga -lauto -lmieee -o ../../Bin/Amiga/listview_stress_test ../../build/amiga/listview_stress_test.o ../../build/amiga/listview_columns_api.o ../../build/amiga/writeLog.o ../../build/amiga/path_utilities.o ../../build/amiga/string_functions.o ../../build/amiga/utilities.o ../../build/amiga/IControlPrefs.o ../../build/amiga/WorkbenchPrefs.o ../../build/amiga/get_fonts.o ../../build/amiga/platform.o
+""
+"Build complete: ../../Bin/Amiga/listview_stress_test"
+"Optimized for speed (-O2 -speed), debug symbols stripped (-s), unused code eliminated (-final)"

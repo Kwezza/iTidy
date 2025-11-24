@@ -1,1 +1,0 @@
-vlink -bamigahunk -x -Bstatic -Cvbcc -nostdlib -mrel "%VBCC%"/targets/m68k-amigaos/lib/startup.o "C:\Users\kwezz\AppData\Local\Temp\vbcc068c.o"   -s -Rshort -L"%VBCC%"/targets/m68k-amigaos/lib -lvc -o a.out failed

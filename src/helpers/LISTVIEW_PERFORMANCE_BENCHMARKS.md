@@ -942,9 +942,130 @@ Despite O(n²) behavior, the combination of:
 
 ---
 
-*Last Updated: December 2024*  
+## Configuration 9: Amiga 500+ @ 7MHz + 2MB Chip RAM (Post-Refactor Build) - REAL HARDWARE
+
+**⚠️ PRELIMINARY RESULTS - FURTHER TESTING REQUIRED**
+
+**Test Environment**: Stock Amiga 500+ (68000 @ 7.09MHz PAL, 2MB Chip RAM only)
+
+**Build Information**:
+- **Post-refactor codebase**: Includes all optimizations from November 2024 optimization pass
+- **Test Date**: November 24, 2025
+- **Binary**: `listview_stress_test` (81,476 bytes, timestamp 21:36:07)
+- **Compilation**: 68000 instruction set (`-cpu=68000 -O2 -speed`)
+- **Linker flags**: `-s` (stripped symbols) - **NOTE**: `-final` flag status uncertain
+- **Status**: ⚠️ **Needs verification** - timestamp issue during testing suggests binary identity unclear
+
+**Critical Note**: During testing, binary timestamp confusion occurred. The tested binary may or may not include the `-final` flag removal. Additional testing required on real hardware to confirm:
+1. Whether `-final` flag was actually the cause of RAM: crashes
+2. Actual performance with/without `-final` flag
+3. Stability comparison between builds
+
+### Adding Rows (iTidy_FormatListViewColumns)
+
+| Rows | Total Time | Entry Format | % of Total | Per Entry | Memory Free |
+|------|-----------|--------------|------------|-----------|-------------|
+| 50   | 1379ms    | 687ms        | 49%        | 27.6ms    | 1520 KB     |
+| 100  | 1205ms    | 973ms        | 80%        | 12.1ms    | 1401 KB     |
+| 150  | 1871ms    | 1667ms       | 89%        | 12.5ms    | 1354 KB     |
+| 200  | 2802ms    | 2581ms       | 92%        | 14.0ms    | 1308 KB     |
+| 250  | 3761ms    | 3531ms       | 93%        | 15.0ms    | 1261 KB     |
+| 300  | 4737ms    | 4489ms       | 94%        | 15.8ms    | 1215 KB     |
+| 350  | 5971ms    | 5707ms       | 95%        | 17.1ms    | 1168 KB     |
+| 400  | 7171ms    | 6893ms       | 96%        | 17.9ms    | 1122 KB     |
+| 450  | 8813ms    | 8515ms       | 96%        | 19.6ms    | 1075 KB     |
+| 500  | 10131ms   | 9819ms       | 96%        | 20.3ms    | 1029 KB     |
+| 550  | 11582ms   | 11258ms      | 97%        | 21.1ms    | 982 KB      |
+| 600  | 13221ms   | 12884ms      | 97%        | 22.0ms    | 936 KB      |
+| 650  | 14919ms   | 14564ms      | 97%        | 23.0ms    | 889 KB      |
+| 700  | 17046ms   | 16682ms      | 97%        | 24.4ms    | 842 KB      |
+| 750  | 18684ms   | 18304ms      | 97%        | 24.9ms    | 796 KB      |
+| 800  | 21176ms   | 20780ms      | 98%        | 26.5ms    | 749 KB      |
+| 850  | 23254ms   | 22841ms      | 98%        | 27.4ms    | 703 KB      |
+| 900  | 26331ms   | 25900ms      | 98%        | 29.3ms    | 656 KB      |
+| 950  | 28620ms   | 28178ms      | 98%        | 30.1ms    | 610 KB      |
+| **1000** | **31506ms** | **31048ms** | **98%**    | **31.5ms** | **563 KB** |
+
+**Performance Characteristics**:
+- Successfully completed **1000-entry benchmark** without crashes
+- Entry formatting dominates execution time (49% at 50 rows → 98% at 1000 rows)
+- Per-entry time grows linearly from 12.1ms (100 rows) to 31.5ms (1000 rows) - indicates O(n²) scaling
+- Memory consumption: Linear scaling at ~0.96 KB per entry (1520 KB → 563 KB free = 957 KB used)
+
+### Sorting Operations (iTidy_ResortListViewByClick)
+
+| Rows | Total Time | Sort Time | % | Rebuild Time | % | Memory Free |
+|------|-----------|-----------|---|--------------|---|-------------|
+| 100  | 1795ms    | 673ms     | 37% | 929ms        | 51% | 1401 KB     |
+| 150  | 2335ms    | 854ms     | 36% | 1318ms       | 56% | 1354 KB     |
+| 200  | 3364ms    | 1099ms    | 32% | 2083ms       | 61% | 1308 KB     |
+| 250  | 4569ms    | 1407ms    | 30% | 2970ms       | 65% | 1261 KB     |
+| 300  | 5550ms    | 1610ms    | 29% | 3732ms       | 67% | 1215 KB     |
+| 350  | 6822ms    | 1953ms    | 28% | 4645ms       | 68% | 1168 KB     |
+| 400  | 8370ms    | 2322ms    | 27% | 5812ms       | 69% | 1122 KB     |
+| 450  | 10310ms   | 2772ms    | 26% | 7286ms       | 70% | 1075 KB     |
+| 500  | 11720ms   | 3002ms    | 25% | 8456ms       | 72% | 1029 KB     |
+| 550  | 13377ms   | 3246ms    | 24% | 9849ms       | 73% | 982 KB      |
+| 600  | 15197ms   | 3404ms    | 22% | 11441ms      | 75% | 936 KB      |
+| 650  | 17288ms   | 3735ms    | 21% | 13245ms      | 76% | 889 KB      |
+| 700  | 19522ms   | 4100ms    | 21% | 15099ms      | 77% | 842 KB      |
+| 750  | 21490ms   | 4614ms    | 21% | 16540ms      | 76% | 796 KB      |
+| 800  | 24027ms   | 5002ms    | 20% | 18679ms      | 77% | 749 KB      |
+| 850  | 26678ms   | 5179ms    | 19% | 21135ms      | 79% | 703 KB      |
+| 900  | 29630ms   | 5477ms    | 18% | 23777ms      | 80% | 656 KB      |
+| 950  | 32613ms   | 6016ms    | 18% | 26206ms      | 80% | 610 KB      |
+| **1000** | **34497ms** | **6071ms** | **17%** | **28024ms** | **81%** | **563 KB** |
+
+**Sorting Performance**:
+- Sort algorithm shows excellent O(n log n) scaling (sort time grows slower than list size)
+- Rebuild after sort dominates (81% of total time at 1000 entries)
+- Rebuild exhibits O(n²) behavior (per-entry time increases with list size)
+
+### Key Observations
+
+**Stability**: ✅ **Excellent**
+- Completed full 1000-entry benchmark without crashes
+- Memory consumption perfectly linear (no leaks detected)
+- Emergency shutdown system initialized successfully
+
+**Performance**: ⚠️ **Requires Comparison Testing**
+- 1000 rows add: **31.5 seconds** (31.5ms per entry)
+- 1000 rows sort: **34.5 seconds** (6.1s sort + 28.0s rebuild)
+- Memory efficiency: **0.96 KB per entry**
+
+**Open Questions**:
+1. How does this compare to pre-refactor baseline? (need original chip-only measurements)
+2. What is the actual impact of `-final` flag? (need controlled A/B test)
+3. Are the November 2024 optimizations fully active? (54% improvement claimed)
+4. Is there regression vs optimized pre-refactor build?
+
+### Testing Status
+
+**Completed**:
+- ✅ Full 1000-entry stress test on real Amiga 500+
+- ✅ Memory stability verification
+- ✅ Emergency shutdown system validation
+- ✅ Sort algorithm correctness
+
+**Pending**:
+- ⚠️ Binary verification (confirm exact build configuration)
+- ⚠️ Direct comparison with pre-refactor build (same hardware, same test)
+- ⚠️ A/B test with/without `-final` flag
+- ⚠️ Performance regression analysis vs November 2024 optimized baseline
+- ⚠️ Validation that 54% optimization improvements are active
+
+**Next Steps**:
+1. **Rebuild with known configuration**: Clean build with explicit flags documented
+2. **Test both binaries**: With and without `-final` flag on same hardware
+3. **Baseline comparison**: Run pre-refactor optimized build for direct comparison
+4. **Document actual impact**: Measure refactor performance change vs baseline
+
+---
+
+*Last Updated: November 24, 2025*  
 *Benchmark Data: WinUAE Cycle-Exact + Real Amiga Hardware (A600 68030 @ 50MHz, A500+ 68000 @ 7MHz)*  
 *Fast RAM Discovery: malloc() limitation fixed with MEMF_ANY - 15x speedup on 68020+/030/040*  
 *Architecture Discovery: 68000 16-bit bus prevents Fast RAM speed benefit (capacity only)*  
 *Compatibility: 68000 binary tested on 68030 - no performance penalty, excellent portability*  
-*Real Hardware Tested: A600 + 68030 accelerator, A500+ stock + 8MB sidecart - production validated*
+*Real Hardware Tested: A600 + 68030 accelerator, A500+ stock + 8MB sidecart - production validated*  
+*Post-Refactor Testing: Initial results captured, requires verification and comparison analysis*

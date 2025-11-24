@@ -96,6 +96,10 @@ static const char *amiga_facts[] = {
 
 #define NUM_FACTS (sizeof(amiga_facts) / sizeof(amiga_facts[0]))
 
+/* Forward declarations */
+static void free_entry(iTidy_ListViewEntry *entry);
+static void log_memory_status(int entry_count);
+
 /**
  * @brief Open timer.device for performance measurements
  */
@@ -189,14 +193,14 @@ static iTidy_ListViewEntry *create_test_entry(int index)
     entry->num_columns = 5;
     entry->row_type = ITIDY_ROW_DATA;  /* Normal data row */
     
-    printf("[DEBUG] Creating entry %d at address 0x%08lx\n", index, (ULONG)entry);
+    /* printf("[DEBUG] Creating entry %d at address 0x%08lx\n", index, (ULONG)entry); */
     
     /* Allocate arrays */
     entry->display_data = (const char **)whd_malloc(sizeof(char *) * 5);
     entry->sort_keys = (const char **)whd_malloc(sizeof(char *) * 5);
     
-    printf("[DEBUG] Entry %d: display_data=0x%08lx, sort_keys=0x%08lx\n",
-           index, (ULONG)entry->display_data, (ULONG)entry->sort_keys);
+    /* printf("[DEBUG] Entry %d: display_data=0x%08lx, sort_keys=0x%08lx\n",
+           index, (ULONG)entry->display_data, (ULONG)entry->sort_keys); */
     
     if (!entry->display_data || !entry->sort_keys) {
         printf("[ERROR] Failed to allocate arrays for entry %d\n", index);
@@ -215,11 +219,24 @@ static iTidy_ListViewEntry *create_test_entry(int index)
     entry->display_data[0] = whd_strdup(display_buf);
     entry->sort_keys[0] = whd_strdup(sortkey_buf);
     
+    /* CRITICAL: Check for allocation failure (NULL) on low-memory systems */
+    if (!entry->display_data[0] || !entry->sort_keys[0]) {
+        printf("[ERROR] Entry %d: Failed to allocate date strings (out of memory!)\n", index);
+        free_entry(entry);
+        return NULL;
+    }
+    
     /* Column 1: Item number (NUMBER type) */
     sprintf(display_buf, "%d", index + 1);
     sprintf(sortkey_buf, "%010d", index + 1);  /* Zero-padded for sorting */
     entry->display_data[1] = whd_strdup(display_buf);
     entry->sort_keys[1] = whd_strdup(sortkey_buf);
+    
+    if (!entry->display_data[1] || !entry->sort_keys[1]) {
+        printf("[ERROR] Entry %d: Failed to allocate number strings (out of memory!)\n", index);
+        free_entry(entry);
+        return NULL;
+    }
     
     /* Column 2: Category (TEXT type) */
     if (index % 3 == 0) {
@@ -233,16 +250,34 @@ static iTidy_ListViewEntry *create_test_entry(int index)
         entry->sort_keys[2] = whd_strdup("Software");
     }
     
+    if (!entry->display_data[2] || !entry->sort_keys[2]) {
+        printf("[ERROR] Entry %d: Failed to allocate category strings (out of memory!)\n", index);
+        free_entry(entry);
+        return NULL;
+    }
+    
     /* Column 3: Name (TEXT type - random Amiga fact) */
     fact_index = index % NUM_FACTS;
     entry->display_data[3] = whd_strdup(amiga_facts[fact_index]);
     entry->sort_keys[3] = whd_strdup(amiga_facts[fact_index]);
+    
+    if (!entry->display_data[3] || !entry->sort_keys[3]) {
+        printf("[ERROR] Entry %d: Failed to allocate name strings (out of memory!)\n", index);
+        free_entry(entry);
+        return NULL;
+    }
     
     /* Column 4: Rating (NUMBER type) */
     sprintf(display_buf, "%d/10", 5 + (index % 6));
     sprintf(sortkey_buf, "%010d", 5 + (index % 6));
     entry->display_data[4] = whd_strdup(display_buf);
     entry->sort_keys[4] = whd_strdup(sortkey_buf);
+    
+    if (!entry->display_data[4] || !entry->sort_keys[4]) {
+        printf("[ERROR] Entry %d: Failed to allocate rating strings (out of memory!)\n", index);
+        free_entry(entry);
+        return NULL;
+    }
     
     return entry;
 }
@@ -331,7 +366,7 @@ static void add_50_rows(TestWindowData *data)
     for (i = 0; i < 50; i++) {
         entry = create_test_entry(data->total_rows + i);
         if (entry) {
-            printf("[DEBUG] Adding entry %d to list\n", data->total_rows + i);
+            /* printf("[DEBUG] Adding entry %d to list\n", data->total_rows + i); */
             AddTail(&data->entry_list, (struct Node *)entry);
         } else {
             printf("[ERROR] Failed to create entry %d!\n", data->total_rows + i);
@@ -1047,6 +1082,9 @@ static void run_automated_benchmark(TestWindowData *data)
         }
         printf("[DEBUG] run_automated_benchmark: Format complete, list at 0x%08lx\n", (ULONG)data->display_list);
         
+        /* Log memory status after this iteration */
+        log_memory_status(data->total_rows);
+        
         /* Refresh ListView to show sorted data */
         GT_SetGadgetAttrs(data->listview_gad, data->window, NULL,
                          GTLV_Labels, ~0,
@@ -1262,6 +1300,25 @@ static const char *get_cpu_name(void)
     if (flags & AFF_68020) return "MC68020";
     if (flags & AFF_68010) return "MC68010";
     return "MC68000";
+}
+
+/**
+ * @brief Log current memory status (lightweight version for benchmarks)
+ */
+static void log_memory_status(int entry_count)
+{
+    ULONG chip_total, chip_largest;
+    ULONG fast_total;
+    
+    chip_total = AvailMem(MEMF_CHIP);
+    chip_largest = AvailMem(MEMF_CHIP | MEMF_LARGEST);
+    fast_total = AvailMem(MEMF_FAST);
+    
+    log_info(LOG_GUI, "[MEMORY] After %d entries: Chip=%lu KB free (largest=%lu KB), Fast=%lu KB",
+             entry_count,
+             chip_total / 1024,
+             chip_largest / 1024,
+             fast_total / 1024);
 }
 
 /**
