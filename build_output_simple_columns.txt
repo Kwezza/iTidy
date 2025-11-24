@@ -1,0 +1,18 @@
+Compiling [build/amiga/helpers/listview_simple_columns.o] from src/helpers/listview_simple_columns.c
+vc +aos68k -c99 -cpu=68000 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/helpers/listview_simple_columns.c -o build/amiga/helpers/listview_simple_columns.o
+>    memset(buffer, 0, buffer_size);f (!buffer) {
+warning 161 in line 237 of "src\helpers\listview_simple_columns.c": implicit declaration of function <f>
+>    memset(buffer, 0, buffer_size);f (!buffer) {
+warning 54 in line 237 of "src\helpers\listview_simple_columns.c": ; expected
+>{
+error 32 in line 264 of "src\helpers\listview_simple_columns.c": function definition in inner block
+>    memset(buffer, 0, buffer_size);f (!buffer) {
+warning 54 in line 287 of "src\helpers\listview_simple_columns.c": ; expected
+>{
+error 32 in line 318 of "src\helpers\listview_simple_columns.c": function definition in inner block
+>{
+error 32 in line 350 of "src\helpers\listview_simple_columns.c": function definition in inner block
+unexpected end of file
+3 errors found!
+vbccm68k -quiet "src\helpers\listview_simple_columns.c" -o= "C:\Users\kerrytho\AppData\Local\Temp\vbcc068c.asm" -c99 -cpu=68000 -g -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -hunkdebug -amiga-softfloat  -O=1 -I"%VBCC%"/targets/m68k-amigaos/include failed
+make: *** [Makefile:213: build/amiga/helpers/listview_simple_columns.o] Error 1

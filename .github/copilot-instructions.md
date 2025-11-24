@@ -201,7 +201,7 @@ In `include\platform\platform.h`, line 27:
 
 #### Memory Allocation Functions:
 ```c
-/* Use these instead of malloc/free */
+/* ALWAYS use these for iTidy modules (NOT malloc/free!) */
 ptr = whd_malloc(size);      /* Tracked allocation */
 whd_free(ptr);               /* Tracked deallocation */
 
@@ -211,6 +211,8 @@ whd_memory_init();
 /* Generate report (call before exit) */
 whd_memory_report();
 ```
+
+**CRITICAL**: All iTidy production code MUST use `whd_malloc()`/`whd_free()` for general-purpose allocations. Only use standard `malloc()`/`free()` in standalone test programs in `src\tests\`.
 
 #### AmigaOS-Specific Memory:
 ```c
@@ -783,19 +785,20 @@ ng.ng_Width = 584;  // This is pixels - ListView will show nothing!
 2. **snake_case naming** - All functions, variables use snake_case
 3. **Use AmigaOS types** - BOOL, STRPTR, BPTR, LONG, ULONG, etc.
 4. **Prefix project symbols** - iTidy_/ITIDY_ for types/constants
-5. **Check all allocations** - Every allocation must be checked for NULL
-6. **Always cleanup** - Match every Lock with UnLock, every Alloc with Free
-7. **Avoid goto** - Only use if absolutely necessary and document why
-8. **Log appropriately** - Use category-specific logging functions
-9. **Test on target** - Code must run on real Amiga/WinUAE, not just compile
-10. **Workbench 3.0/3.1 compatibility** - Target WB 3.0 and 3.1 only
-11. **Read template docs FIRST** - Before any window work, read `src/templates/AI_AGENT_GETTING_STARTED.md`
-12. **Calculate BorderTop correctly** - Use the formula: `screen->WBorTop + screen->Font->ta_YSize + 1`
-13. **Host testing allowed** - GCC can be used for testing in `src\tests\`, but keep host code separate from production
-14. **Structure alignment matters** - Group fields by size (4-byte, then 2-byte) to avoid padding on 68k
-15. **AnchorPath manual allocation** - Use `AllocVec()` with manual `ap_Strlen`, not `AllocDosObject()` with tags
-16. **Window cleanup order** - Always: detach lists → close window → free gadgets → free visual info
-17. **Fast window opening** - Open window first, populate lists after (deferred loading pattern)
+5. **Use whd_malloc/whd_free** - ALWAYS use memory wrappers in iTidy modules (NOT malloc/free!)
+6. **Check all allocations** - Every allocation must be checked for NULL
+7. **Always cleanup** - Match every Lock with UnLock, every Alloc with Free
+8. **Avoid goto** - Only use if absolutely necessary and document why
+9. **Log appropriately** - Use category-specific logging functions
+10. **Test on target** - Code must run on real Amiga/WinUAE, not just compile
+11. **Workbench 3.0/3.1 compatibility** - Target WB 3.0 and 3.1 only
+12. **Read template docs FIRST** - Before any window work, read `src/templates/AI_AGENT_GETTING_STARTED.md`
+13. **Calculate BorderTop correctly** - Use the formula: `screen->WBorTop + screen->Font->ta_YSize + 1`
+14. **Host testing allowed** - GCC can be used for testing in `src\tests\`, but keep host code separate from production
+15. **Structure alignment matters** - Group fields by size (4-byte, then 2-byte) to avoid padding on 68k
+16. **AnchorPath manual allocation** - Use `AllocVec()` with manual `ap_Strlen`, not `AllocDosObject()` with tags
+17. **Window cleanup order** - Always: detach lists → close window → free gadgets → free visual info
+18. **Fast window opening** - Open window first, populate lists after (deferred loading pattern)
 
 ## Additional Resources (Read in this order)
 

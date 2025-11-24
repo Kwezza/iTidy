@@ -13,8 +13,8 @@
 #include <intuition/screens.h>
 #include <libraries/gadtools.h>
 
-/* Include listview formatter for iTidy_ListViewState */
-#include "helpers/listview_columns_api.h"
+/* Include listview simple columns API */
+#include "helpers/listview_simple_columns.h"
 
 /*------------------------------------------------------------------------*/
 /* Gadget IDs                                                             */
@@ -26,9 +26,6 @@
 #define GID_RESTORE_VIEW_FOLDERS    2007
 #define GID_RESTORE_DELETE_RUN      2008
 #define GID_RESTORE_CANCEL          2009
-#define GID_RESTORE_MODE_CYCLE      2010
-#define GID_RESTORE_APPLY_MODE      2011
-#define GID_RESTORE_PAGE_SIZE_CYCLE 2012
 
 /*------------------------------------------------------------------------*/
 /* Window Spacing Constants                                              */
@@ -92,26 +89,15 @@ struct iTidyRestoreWindow
     struct Gadget *view_folders_btn;
     struct Gadget *delete_run_btn;
     struct Gadget *cancel_btn;
-    struct Gadget *mode_cycle;         /* ListView mode selector */
-    struct Gadget *page_size_cycle;    /* Page size selector */
-    struct Gadget *apply_mode_btn;     /* Apply selected mode to run list */
     
     /* Current state */
     char backup_root_path[256];         /* Current backup location */
     struct RestoreRunEntry *run_entries; /* Array of runs */
     struct List *run_list_strings;      /* Formatted display list for run ListView */
-    struct List run_entry_list;         /* Entry list for sortable run ListView */
-    iTidy_ListViewState *run_list_state; /* State tracking for sortable columns */
-        struct List *details_list_strings;  /* List for details ListView */
-        iTidy_ListViewSession *run_list_session; /* Session wrapper for run list */
+    struct List *details_list_strings;  /* List for details ListView */
     ULONG run_count;                    /* Number of runs found */
     LONG selected_run_index;            /* Currently selected (-1 if none) */
     BOOL restore_window_geometry;       /* TRUE to restore window positions (default TRUE) */
-    
-    /* Pagination state (API-managed via run_list_state) */
-    int current_page;                   /* Initial page for first load (1-based) - API manages after that */
-    int page_size;                      /* Entries per page (0 = no pagination) */
-    int current_mode;                   /* Current ListView mode (0-3: FULL/FULL_NO_SORT/SIMPLE/SIMPLE_PAGINATED) */
     
     /* Double-click tracking */
     ULONG last_click_secs;              /* Last click timestamp seconds */

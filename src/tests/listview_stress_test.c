@@ -40,10 +40,14 @@
 #include "../writeLog.h"
 
 /* Gadget IDs */
-#define GID_LISTVIEW    1
-#define GID_ADD_BTN     2
-#define GID_REMOVE_BTN  3
-#define GID_AUTORUN_BTN 4
+#define GID_LISTVIEW       1
+#define GID_ADD_BTN        2
+#define GID_REMOVE_BTN     3
+#define GID_BASELINE_BTN   4
+#define GID_SIMPLE_BTN     5
+#define GID_PAGINATED_BTN  6
+#define GID_AUTORUN_BTN    7
+#define GID_RUNALL_BTN     8
 
 /* Global structures needed by the API and utilities */
 struct IControlPrefsDetails prefsIControl;  /* Define it here */
@@ -66,9 +70,14 @@ typedef struct {
     struct Gadget *listview_gad;
     struct Gadget *add_btn;
     struct Gadget *remove_btn;
+    struct Gadget *baseline_btn;
+    struct Gadget *simple_btn;
+    struct Gadget *paginated_btn;
     struct Gadget *autorun_btn;
+    struct Gadget *runall_btn;
     
     struct List entry_list;
+    struct List plain_list;          /* For baseline test (raw nodes) */
     struct List *display_list;
     iTidy_ListViewState *lv_state;
     
@@ -98,6 +107,12 @@ static const char *amiga_facts[] = {
 
 /* Forward declarations */
 static void free_entry(iTidy_ListViewEntry *entry);
+static void free_plain_node(struct Node *node);
+static void teardown_and_time(TestWindowData *data, const char *test_name, BOOL has_plain_list);
+static void run_baseline_test(TestWindowData *data);
+static void run_simple_test(TestWindowData *data);
+static void run_paginated_test(TestWindowData *data);
+static void run_all_tests(TestWindowData *data);
 static void log_memory_status(int entry_count);
 
 /**
@@ -283,6 +298,23 @@ static iTidy_ListViewEntry *create_test_entry(int index)
 }
 
 /**
+ * @brief Free a plain node (baseline test)
+ */
+static void free_plain_node(struct Node *node)
+{
+    if (!node) {
+        return;
+    }
+    
+    if (node->ln_Name) {
+        whd_free(node->ln_Name);
+        node->ln_Name = NULL;
+    }
+    
+    whd_free(node);
+}
+
+/**
  * @brief Free a single ListView entry
  */
 static void free_entry(iTidy_ListViewEntry *entry)
@@ -290,23 +322,17 @@ static void free_entry(iTidy_ListViewEntry *entry)
     int i;
     
     if (!entry) {
-        printf("[DEBUG] free_entry: NULL entry pointer\n");
         return;
     }
     
-    printf("[DEBUG] Freeing entry at 0x%08lx (num_columns=%d)\n", 
-           (ULONG)entry, entry->num_columns);
-    
-    /* ln_Name should always be NULL (never used in test), but check anyway */
+    /* ln_Name should always be NULL (formatter owns this memory) */
     if (entry->node.ln_Name) {
-        printf("[WARNING] entry->node.ln_Name is not NULL! Freeing...\n");
         whd_free(entry->node.ln_Name);
         entry->node.ln_Name = NULL;
     }
     
     /* Validate num_columns before loop */
     if (entry->num_columns > 10) {
-        printf("[ERROR] Invalid num_columns=%d (corrupted entry?)\n", entry->num_columns);
         entry->num_columns = 5;  /* Assume 5 columns for safety */
     }
     
@@ -331,6 +357,101 @@ static void free_entry(iTidy_ListViewEntry *entry)
     }
     
     whd_free(entry);
+}
+
+/**
+ * @brief Teardown and time cleanup between tests
+ */
+static void teardown_and_time(TestWindowData *data, const char *test_name, BOOL has_plain_list)
+{
+    struct timeval start_time, end_time, step_start;
+    ULONG elapsed_micros;
+    float elapsed_seconds;
+    struct Node *node;
+    int entry_count = 0;
+    
+    printf("\n=== TEARDOWN TIMING (%s) ===\n", test_name);
+    GetSysTime(&start_time);
+    step_start = start_time;
+    
+    /* Detach from gadget */
+    if (data->listview_gad && data->window) {
+        GT_SetGadgetAttrs(data->listview_gad, data->window, NULL,
+                         GTLV_Labels, ~0,
+                         TAG_DONE);
+    }
+    
+    /* Free display list */
+    if (data->display_list) {
+        GetSysTime(&step_start);
+        iTidy_FreeFormattedList(data->display_list);
+        data->display_list = NULL;
+        GetSysTime(&end_time);
+        elapsed_micros = ((end_time.tv_secs - step_start.tv_secs) * 1000000) +
+                         (end_time.tv_micro - step_start.tv_micro);
+        printf("Free display_list: %.6f seconds\n", (float)elapsed_micros / 1000000.0f);
+        
+        /* CRITICAL: NULL out ln_Name in all entries after display list is freed
+         * The formatter sets ln_Name in FULL mode, but owns that memory.
+         * After freeing display_list, those pointers are invalid. */
+        if (!has_plain_list) {
+            iTidy_ListViewEntry *entry;
+            for (node = data->entry_list.lh_Head; node->ln_Succ; node = node->ln_Succ) {
+                entry = (iTidy_ListViewEntry *)node;
+                entry->node.ln_Name = NULL;
+            }
+        }
+    }
+    
+    /* Free state */
+    if (data->lv_state) {
+        GetSysTime(&step_start);
+        iTidy_FreeListViewState(data->lv_state);
+        data->lv_state = NULL;
+        GetSysTime(&end_time);
+        elapsed_micros = ((end_time.tv_secs - step_start.tv_secs) * 1000000) +
+                         (end_time.tv_micro - step_start.tv_micro);
+        printf("Free state: %.6f seconds\n", (float)elapsed_micros / 1000000.0f);
+    }
+    
+    /* Free entry list or plain list */
+    GetSysTime(&step_start);
+    whd_memory_suspend_logging();
+    
+    if (has_plain_list) {
+        /* Free plain nodes (baseline test) */
+        while ((node = RemHead(&data->plain_list)) != NULL) {
+            free_plain_node(node);
+            entry_count++;
+        }
+        printf("Free %d plain nodes: ", entry_count);
+    } else {
+        /* Free API entries */
+        while ((node = RemHead(&data->entry_list)) != NULL) {
+            free_entry((iTidy_ListViewEntry *)node);
+            entry_count++;
+        }
+        printf("Free %d API entries: ", entry_count);
+    }
+    
+    whd_memory_resume_logging();
+    GetSysTime(&end_time);
+    elapsed_micros = ((end_time.tv_secs - step_start.tv_secs) * 1000000) +
+                     (end_time.tv_micro - step_start.tv_micro);
+    printf("%.6f seconds\n", (float)elapsed_micros / 1000000.0f);
+    if (entry_count > 0) {
+        printf("  Time per entry: %.6f seconds\n", 
+               (float)elapsed_micros / (float)entry_count / 1000000.0f);
+    }
+    
+    /* Total teardown time */
+    elapsed_micros = ((end_time.tv_secs - start_time.tv_secs) * 1000000) +
+                     (end_time.tv_micro - start_time.tv_micro);
+    elapsed_seconds = (float)elapsed_micros / 1000000.0f;
+    printf("TOTAL TEARDOWN TIME: %.6f seconds\n", elapsed_seconds);
+    printf("================================\n\n");
+    
+    data->total_rows = 0;
 }
 
 /**
@@ -632,6 +753,7 @@ static TestWindowData *create_test_window(void)
     memset(data, 0, sizeof(TestWindowData));
     
     NewList(&data->entry_list);
+    NewList(&data->plain_list);
     
     /* Get screen and calculate borders */
     screen = LockPubScreen("Workbench");
@@ -650,9 +772,9 @@ static TestWindowData *create_test_window(void)
     
     UnlockPubScreen(NULL, screen);
     
-    /* Window dimensions - increased width for 3 buttons, reduced height for PAL Workbench (256 lines) */
-    win_width = 750;
-    win_height = 200;
+    /* Window dimensions - fit PAL Hires (640x256) with 10px margins */
+    win_width = 610;
+    win_height = 230;
     
     /* Create visual info */
     screen = LockPubScreen("Workbench");
@@ -671,8 +793,8 @@ static TestWindowData *create_test_window(void)
     current_x = border_left + 10;
     current_y = border_top + 10;
     
-    /* Reduced ListView height to fit buttons in 200px window */
-    listview_height = 120;
+    /* Reduced ListView height to fit PAL Hires screen */
+    listview_height = 110;
     
     ng.ng_LeftEdge = current_x;
     ng.ng_TopEdge = current_y;
@@ -693,21 +815,21 @@ static TestWindowData *create_test_window(void)
                       TAG_DONE);
     data->listview_gad = gad;
     
-    /* Button row - positioned below ListView with minimal spacing */
-    current_y += listview_height + 10;
+    /* Button rows - 2 rows of buttons below ListView */
+    current_y += listview_height + 8;
     
-    button_width = 120;
-    button_spacing = 10;
+    button_width = 90;
+    button_spacing = 6;
     
-    /* Center 3 buttons */
-    current_x = (win_width - (button_width * 3 + button_spacing * 2)) / 2;
+    /* Row 1: Add | Remove | Baseline | Simple */
+    current_x = border_left + 10;
     
     /* Add button */
     ng.ng_LeftEdge = current_x;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = button_width;
     ng.ng_Height = data->font_height + 6;
-    ng.ng_GadgetText = "Add 50 Rows";
+    ng.ng_GadgetText = "Add 50";
     ng.ng_GadgetID = GID_ADD_BTN;
     ng.ng_Flags = PLACETEXT_IN;
     
@@ -716,19 +838,57 @@ static TestWindowData *create_test_window(void)
     
     /* Remove button */
     ng.ng_LeftEdge = current_x + button_width + button_spacing;
-    ng.ng_GadgetText = "Remove 50 Rows";
+    ng.ng_GadgetText = "Remove 50";
     ng.ng_GadgetID = GID_REMOVE_BTN;
     
     gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_DONE);
     data->remove_btn = gad;
     
-    /* Auto Run button */
+    /* Baseline Test button */
     ng.ng_LeftEdge = current_x + (button_width + button_spacing) * 2;
+    ng.ng_GadgetText = "Baseline";
+    ng.ng_GadgetID = GID_BASELINE_BTN;
+    
+    gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_DONE);
+    data->baseline_btn = gad;
+    
+    /* Simple Test button */
+    ng.ng_LeftEdge = current_x + (button_width + button_spacing) * 3;
+    ng.ng_GadgetText = "Simple";
+    ng.ng_GadgetID = GID_SIMPLE_BTN;
+    
+    gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_DONE);
+    data->simple_btn = gad;
+    
+    /* Row 2: Paginated | Auto Run | Run All */
+    current_y += data->font_height + 6 + 4;
+    current_x = border_left + 10;
+    
+    /* Paginated Test button */
+    ng.ng_LeftEdge = current_x;
+    ng.ng_TopEdge = current_y;
+    ng.ng_GadgetText = "Paginated";
+    ng.ng_GadgetID = GID_PAGINATED_BTN;
+    
+    gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_DONE);
+    data->paginated_btn = gad;
+    
+    /* Auto Run button */
+    ng.ng_LeftEdge = current_x + button_width + button_spacing;
     ng.ng_GadgetText = "Auto Run";
     ng.ng_GadgetID = GID_AUTORUN_BTN;
     
     gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_DONE);
     data->autorun_btn = gad;
+    
+    /* Run All Tests button */
+    ng.ng_LeftEdge = current_x + (button_width + button_spacing) * 2;
+    ng.ng_Width = (button_width * 2) + button_spacing;  /* Wider button */
+    ng.ng_GadgetText = "Run All Tests";
+    ng.ng_GadgetID = GID_RUNALL_BTN;
+    
+    gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_DONE);
+    data->runall_btn = gad;
     
     /* Open window with Topaz 8 font */
     data->window = OpenWindowTags(NULL,
@@ -959,6 +1119,514 @@ static void handle_listview_click(TestWindowData *data, WORD mouse_x, WORD mouse
 }
 
 /**
+ * @brief Run baseline test - raw GadTools nodes without API
+ */
+static void run_baseline_test(TestWindowData *data)
+{
+    int target_rows;
+    int i;
+    struct timeval start_time, end_time;
+    ULONG elapsed_micros;
+    float elapsed_seconds;
+    struct Node *node;
+    
+    printf("\n");
+    printf("================================================\n");
+    printf("  TEST 0: BASELINE (Raw GadTools - No API)\n");
+    printf("  Target: 1000 rows in 50-row increments\n");
+    printf("  Mode: Plain struct Node + ln_Name only\n");
+    printf("================================================\n\n");
+    
+    SetWindowPointer(data->window, WA_BusyPointer, TRUE, TAG_DONE);
+    
+    /* Clear any existing plain nodes from previous tests */
+    {
+        struct Node *node;
+        while ((node = RemHead(&data->plain_list)) != NULL) {
+            free_plain_node(node);
+        }
+    }
+    
+    /* Start with 50 plain nodes */
+    data->total_rows = 0;
+    for (i = 0; i < 50; i++) {
+        node = (struct Node *)whd_malloc(sizeof(struct Node));
+        if (node) {
+            memset(node, 0, sizeof(struct Node));
+            node->ln_Name = (char *)whd_malloc(32);
+            if (node->ln_Name) {
+                sprintf(node->ln_Name, "Row %d", i + 1);
+                AddTail(&data->plain_list, node);
+                data->total_rows++;
+            } else {
+                whd_free(node);
+            }
+        }
+    }
+    
+    GT_SetGadgetAttrs(data->listview_gad, data->window, NULL,
+                     GTLV_Labels, &data->plain_list,
+                     TAG_DONE);
+    
+    printf("Initial 50 rows created\n\n");
+    
+    /* Add in 50-row increments up to 1000 */
+    for (target_rows = 100; target_rows <= 1000; target_rows += 50) {
+        printf("--- Milestone: %d rows ---\n", target_rows);
+        printf("Adding 50 plain nodes...\n");
+        
+        GetSysTime(&start_time);
+        
+        /* Detach list */
+        GT_SetGadgetAttrs(data->listview_gad, data->window, NULL,
+                         GTLV_Labels, ~0,
+                         TAG_DONE);
+        
+        /* Add 50 plain nodes */
+        for (i = 0; i < 50; i++) {
+            node = (struct Node *)whd_malloc(sizeof(struct Node));
+            if (node) {
+                memset(node, 0, sizeof(struct Node));
+                node->ln_Name = (char *)whd_malloc(32);
+                if (node->ln_Name) {
+                    sprintf(node->ln_Name, "Row %d", data->total_rows + i + 1);
+                    AddTail(&data->plain_list, node);
+                } else {
+                    whd_free(node);
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+        
+        data->total_rows += 50;
+        
+        /* Reattach list */
+        GT_SetGadgetAttrs(data->listview_gad, data->window, NULL,
+                         GTLV_Labels, &data->plain_list,
+                         GTLV_Top, 0,
+                         TAG_DONE);
+        
+        GetSysTime(&end_time);
+        elapsed_micros = ((end_time.tv_secs - start_time.tv_secs) * 1000000) +
+                         (end_time.tv_micro - start_time.tv_micro);
+        elapsed_seconds = (float)elapsed_micros / 1000000.0f;
+        
+        log_memory_status(data->total_rows);
+        
+        printf("  [TIMING] Add 50 rows: %.6f seconds (%d total)\n", 
+               elapsed_seconds, data->total_rows);
+        printf("\n");
+    }
+    
+    SetWindowPointer(data->window, WA_BusyPointer, FALSE, TAG_DONE);
+    
+    printf("================================================\n");
+    printf("  TEST 0 COMPLETED - BASELINE\n");
+    printf("  Final row count: %d\n", data->total_rows);
+    printf("================================================\n");
+    
+    /* Full teardown with timing */
+    teardown_and_time(data, "Baseline Test", TRUE);
+}
+
+/**
+ * @brief Run simple mode test - no sorting, no pagination
+ */
+static void run_simple_test(TestWindowData *data)
+{
+    int target_rows;
+    int i;
+    struct timeval start_time, end_time;
+    ULONG elapsed_micros;
+    float elapsed_seconds;
+    iTidy_ListViewEntry *entry;
+    iTidy_ColumnConfig columns[5];
+    
+    printf("\n");
+    printf("================================================\n");
+    printf("  TEST 1: SIMPLE MODE (No Sorting/Pagination)\n");
+    printf("  Target: 1000 rows in 50-row increments\n");
+    printf("  Mode: ITIDY_MODE_SIMPLE\n");
+    printf("================================================\n\n");
+    
+    SetWindowPointer(data->window, WA_BusyPointer, TRUE, TAG_DONE);
+    
+    /* Clear any existing entries from previous tests */
+    {
+        struct Node *node;
+        iTidy_ListViewEntry *temp_entry;
+        
+        /* First pass: NULL out all ln_Name pointers to prevent double-free */
+        for (node = data->entry_list.lh_Head; node->ln_Succ; node = node->ln_Succ) {
+            temp_entry = (iTidy_ListViewEntry *)node;
+            temp_entry->node.ln_Name = NULL;  /* Formatter owns this memory */
+        }
+        
+        /* Second pass: Free entries */
+        while ((node = RemHead(&data->entry_list)) != NULL) {
+            free_entry((iTidy_ListViewEntry *)node);
+        }
+    }
+    
+    /* Configure columns */
+    columns[0].title = "Date/Time";
+    columns[0].min_width = 17;
+    columns[0].max_width = 17;
+    columns[0].align = ITIDY_ALIGN_LEFT;
+    columns[0].flexible = FALSE;
+    columns[0].is_path = FALSE;
+    columns[0].default_sort = ITIDY_SORT_NONE;
+    columns[0].sort_type = ITIDY_COLTYPE_DATE;
+    
+    columns[1].title = "#";
+    columns[1].min_width = 4;
+    columns[1].max_width = 6;
+    columns[1].align = ITIDY_ALIGN_RIGHT;
+    columns[1].flexible = FALSE;
+    columns[1].is_path = FALSE;
+    columns[1].default_sort = ITIDY_SORT_NONE;
+    columns[1].sort_type = ITIDY_COLTYPE_NUMBER;
+    
+    columns[2].title = "Type";
+    columns[2].min_width = 8;
+    columns[2].max_width = 8;
+    columns[2].align = ITIDY_ALIGN_LEFT;
+    columns[2].flexible = FALSE;
+    columns[2].is_path = FALSE;
+    columns[2].default_sort = ITIDY_SORT_NONE;
+    columns[2].sort_type = ITIDY_COLTYPE_TEXT;
+    
+    columns[3].title = "Name";
+    columns[3].min_width = 15;
+    columns[3].max_width = 200;
+    columns[3].align = ITIDY_ALIGN_LEFT;
+    columns[3].flexible = TRUE;
+    columns[3].is_path = FALSE;
+    columns[3].default_sort = ITIDY_SORT_NONE;
+    columns[3].sort_type = ITIDY_COLTYPE_TEXT;
+    
+    columns[4].title = "Rating";
+    columns[4].min_width = 6;
+    columns[4].max_width = 6;
+    columns[4].align = ITIDY_ALIGN_CENTER;
+    columns[4].flexible = FALSE;
+    columns[4].is_path = FALSE;
+    columns[4].default_sort = ITIDY_SORT_NONE;
+    columns[4].sort_type = ITIDY_COLTYPE_NUMBER;
+    
+    /* Start with 50 entries */
+    data->total_rows = 0;
+    for (i = 0; i < 50; i++) {
+        entry = create_test_entry(i);
+        if (entry) {
+            AddTail(&data->entry_list, (struct Node *)entry);
+            data->total_rows++;
+        }
+    }
+    
+    data->display_list = iTidy_FormatListViewColumns(
+        columns, 5, &data->entry_list,
+        data->listview_width_chars, NULL,
+        ITIDY_MODE_SIMPLE, 0, 1, NULL, 0
+    );
+    
+    GT_SetGadgetAttrs(data->listview_gad, data->window, NULL,
+                     GTLV_Labels, data->display_list,
+                     TAG_DONE);
+    
+    printf("Initial 50 rows created\n\n");
+    
+    /* Add in 50-row increments up to 1000 */
+    for (target_rows = 100; target_rows <= 1000; target_rows += 50) {
+        printf("--- Milestone: %d rows ---\n", target_rows);
+        printf("Adding 50 API entries...\n");
+        
+        GetSysTime(&start_time);
+        
+        /* Detach list */
+        GT_SetGadgetAttrs(data->listview_gad, data->window, NULL,
+                         GTLV_Labels, ~0,
+                         TAG_DONE);
+        
+        /* Add 50 entries */
+        for (i = 0; i < 50; i++) {
+            entry = create_test_entry(data->total_rows + i);
+            if (entry) {
+                AddTail(&data->entry_list, (struct Node *)entry);
+            } else {
+                break;
+            }
+        }
+        
+        data->total_rows += 50;
+        
+        /* Free old display list */
+        if (data->display_list) {
+            iTidy_FreeFormattedList(data->display_list);
+            data->display_list = NULL;
+        }
+        
+        /* Reformat with SIMPLE mode */
+        data->display_list = iTidy_FormatListViewColumns(
+            columns, 5, &data->entry_list,
+            data->listview_width_chars, NULL,
+            ITIDY_MODE_SIMPLE, 0, 1, NULL, 0
+        );
+        
+        /* Reattach */
+        GT_SetGadgetAttrs(data->listview_gad, data->window, NULL,
+                         GTLV_Labels, data->display_list,
+                         GTLV_Top, 0,
+                         TAG_DONE);
+        
+        GetSysTime(&end_time);
+        elapsed_micros = ((end_time.tv_secs - start_time.tv_secs) * 1000000) +
+                         (end_time.tv_micro - start_time.tv_micro);
+        elapsed_seconds = (float)elapsed_micros / 1000000.0f;
+        
+        log_memory_status(data->total_rows);
+        
+        printf("  [TIMING] Add + Format: %.6f seconds (%d total)\n", 
+               elapsed_seconds, data->total_rows);
+        printf("\n");
+    }
+    
+    SetWindowPointer(data->window, WA_BusyPointer, FALSE, TAG_DONE);
+    
+    printf("================================================\n");
+    printf("  TEST 1 COMPLETED - SIMPLE MODE\n");
+    printf("  Final row count: %d\n", data->total_rows);
+    printf("================================================\n");
+    
+    /* Full teardown with timing */
+    teardown_and_time(data, "Simple Mode Test", FALSE);
+}
+
+/**
+ * @brief Run paginated mode test - with page navigation
+ */
+static void run_paginated_test(TestWindowData *data)
+{
+    int target_rows;
+    int i;
+    struct timeval start_time, end_time, nav_start, nav_end;
+    ULONG elapsed_micros;
+    float elapsed_seconds;
+    iTidy_ListViewEntry *entry;
+    iTidy_ColumnConfig columns[5];
+    int current_page = 1;
+    int total_pages = 1;
+    
+    printf("\n");
+    printf("================================================\n");
+    printf("  TEST 2: PAGINATED MODE\n");
+    printf("  Target: 1000 rows in 50-row increments\n");
+    printf("  Mode: ITIDY_MODE_SIMPLE_PAGINATED (page_size=100)\n");
+    printf("================================================\n\n");
+    
+    SetWindowPointer(data->window, WA_BusyPointer, TRUE, TAG_DONE);
+    
+    /* Clear any existing entries from previous tests */
+    {
+        struct Node *node;
+        iTidy_ListViewEntry *temp_entry;
+        
+        /* First pass: NULL out all ln_Name pointers to prevent double-free */
+        for (node = data->entry_list.lh_Head; node->ln_Succ; node = node->ln_Succ) {
+            temp_entry = (iTidy_ListViewEntry *)node;
+            temp_entry->node.ln_Name = NULL;  /* Formatter owns this memory */
+        }
+        
+        /* Second pass: Free entries */
+        while ((node = RemHead(&data->entry_list)) != NULL) {
+            free_entry((iTidy_ListViewEntry *)node);
+        }
+    }
+    
+    /* Configure columns (same as simple test) */
+    columns[0].title = "Date/Time";
+    columns[0].min_width = 17;
+    columns[0].max_width = 17;
+    columns[0].align = ITIDY_ALIGN_LEFT;
+    columns[0].flexible = FALSE;
+    columns[0].is_path = FALSE;
+    columns[0].default_sort = ITIDY_SORT_NONE;
+    columns[0].sort_type = ITIDY_COLTYPE_DATE;
+    
+    columns[1].title = "#";
+    columns[1].min_width = 4;
+    columns[1].max_width = 6;
+    columns[1].align = ITIDY_ALIGN_RIGHT;
+    columns[1].flexible = FALSE;
+    columns[1].is_path = FALSE;
+    columns[1].default_sort = ITIDY_SORT_NONE;
+    columns[1].sort_type = ITIDY_COLTYPE_NUMBER;
+    
+    columns[2].title = "Type";
+    columns[2].min_width = 8;
+    columns[2].max_width = 8;
+    columns[2].align = ITIDY_ALIGN_LEFT;
+    columns[2].flexible = FALSE;
+    columns[2].is_path = FALSE;
+    columns[2].default_sort = ITIDY_SORT_NONE;
+    columns[2].sort_type = ITIDY_COLTYPE_TEXT;
+    
+    columns[3].title = "Name";
+    columns[3].min_width = 15;
+    columns[3].max_width = 200;
+    columns[3].align = ITIDY_ALIGN_LEFT;
+    columns[3].flexible = TRUE;
+    columns[3].is_path = FALSE;
+    columns[3].default_sort = ITIDY_SORT_NONE;
+    columns[3].sort_type = ITIDY_COLTYPE_TEXT;
+    
+    columns[4].title = "Rating";
+    columns[4].min_width = 6;
+    columns[4].max_width = 6;
+    columns[4].align = ITIDY_ALIGN_CENTER;
+    columns[4].flexible = FALSE;
+    columns[4].is_path = FALSE;
+    columns[4].default_sort = ITIDY_SORT_NONE;
+    columns[4].sort_type = ITIDY_COLTYPE_NUMBER;
+    
+    /* Start with 50 entries */
+    data->total_rows = 0;
+    for (i = 0; i < 50; i++) {
+        entry = create_test_entry(i);
+        if (entry) {
+            AddTail(&data->entry_list, (struct Node *)entry);
+            data->total_rows++;
+        }
+    }
+    
+    data->display_list = iTidy_FormatListViewColumns(
+        columns, 5, &data->entry_list,
+        data->listview_width_chars, &data->lv_state,
+        ITIDY_MODE_SIMPLE_PAGINATED, 100, 1, &total_pages, 0
+    );
+    
+    GT_SetGadgetAttrs(data->listview_gad, data->window, NULL,
+                     GTLV_Labels, data->display_list,
+                     TAG_DONE);
+    
+    printf("Initial 50 rows created (page 1 of %d)\n\n", total_pages);
+    
+    /* Add in 50-row increments up to 1000 */
+    for (target_rows = 100; target_rows <= 1000; target_rows += 50) {
+        printf("--- Milestone: %d rows ---\n", target_rows);
+        printf("Adding 50 API entries...\n");
+        
+        GetSysTime(&start_time);
+        
+        /* Detach list */
+        GT_SetGadgetAttrs(data->listview_gad, data->window, NULL,
+                         GTLV_Labels, ~0,
+                         TAG_DONE);
+        
+        /* Add 50 entries */
+        for (i = 0; i < 50; i++) {
+            entry = create_test_entry(data->total_rows + i);
+            if (entry) {
+                AddTail(&data->entry_list, (struct Node *)entry);
+            } else {
+                break;
+            }
+        }
+        
+        data->total_rows += 50;
+        
+        /* Free old display list and state */
+        if (data->display_list) {
+            iTidy_FreeFormattedList(data->display_list);
+            data->display_list = NULL;
+        }
+        if (data->lv_state) {
+            iTidy_FreeListViewState(data->lv_state);
+            data->lv_state = NULL;
+        }
+        
+        /* Reformat with SIMPLE_PAGINATED mode */
+        data->display_list = iTidy_FormatListViewColumns(
+            columns, 5, &data->entry_list,
+            data->listview_width_chars, &data->lv_state,
+            ITIDY_MODE_SIMPLE_PAGINATED, 100, current_page, &total_pages, 0
+        );
+        
+        /* Reattach */
+        GT_SetGadgetAttrs(data->listview_gad, data->window, NULL,
+                         GTLV_Labels, data->display_list,
+                         GTLV_Top, 0,
+                         TAG_DONE);
+        
+        GetSysTime(&end_time);
+        elapsed_micros = ((end_time.tv_secs - start_time.tv_secs) * 1000000) +
+                         (end_time.tv_micro - start_time.tv_micro);
+        elapsed_seconds = (float)elapsed_micros / 1000000.0f;
+        
+        printf("  [TIMING] Add + Format: %.6f seconds (page %d of %d)\n", 
+               elapsed_seconds, current_page, total_pages);
+        
+        /* Test page navigation if more pages available */
+        if (data->lv_state && current_page < total_pages) {
+            printf("Testing page navigation (page %d -> %d)...\n", current_page, current_page + 1);
+            
+            GetSysTime(&nav_start);
+            
+            /* Detach */
+            GT_SetGadgetAttrs(data->listview_gad, data->window, NULL,
+                             GTLV_Labels, ~0,
+                             TAG_DONE);
+            
+            /* Free old display */
+            if (data->display_list) {
+                iTidy_FreeFormattedList(data->display_list);
+                data->display_list = NULL;
+            }
+            if (data->lv_state) {
+                iTidy_FreeListViewState(data->lv_state);
+                data->lv_state = NULL;
+            }
+            
+            /* Navigate to next page */
+            current_page++;
+            data->display_list = iTidy_FormatListViewColumns(
+                columns, 5, &data->entry_list,
+                data->listview_width_chars, &data->lv_state,
+                ITIDY_MODE_SIMPLE_PAGINATED, 100, current_page, &total_pages, 1
+            );
+            
+            /* Reattach */
+            GT_SetGadgetAttrs(data->listview_gad, data->window, NULL,
+                             GTLV_Labels, data->display_list,
+                             TAG_DONE);
+            
+            GetSysTime(&nav_end);
+            elapsed_micros = ((nav_end.tv_secs - nav_start.tv_secs) * 1000000) +
+                             (nav_end.tv_micro - nav_start.tv_micro);
+            
+            printf("  [TIMING] Page navigation: %.6f seconds\n", 
+                   (float)elapsed_micros / 1000000.0f);
+        }
+        
+        log_memory_status(data->total_rows);
+        printf("\n");
+    }
+    
+    SetWindowPointer(data->window, WA_BusyPointer, FALSE, TAG_DONE);
+    
+    printf("================================================\n");
+    printf("  TEST 2 COMPLETED - PAGINATED MODE\n");
+    printf("  Final row count: %d\n", data->total_rows);
+    printf("  Total pages: %d\n", total_pages);
+    printf("================================================\n");
+    
+    /* Full teardown with timing */
+    teardown_and_time(data, "Paginated Mode Test", FALSE);
+}
+
+/**
  * @brief Run automated benchmark sequence
  * Adds rows in 50-row increments up to 1000, sorting column 0 after each addition
  */
@@ -980,6 +1648,23 @@ static void run_automated_benchmark(TestWindowData *data)
     
     /* Set busy pointer for entire sequence */
     SetWindowPointer(data->window, WA_BusyPointer, TRUE, TAG_DONE);
+    
+    /* Clear any existing entries from previous tests */
+    {
+        struct Node *node;
+        iTidy_ListViewEntry *temp_entry;
+        
+        /* First pass: NULL out all ln_Name pointers to prevent double-free */
+        for (node = data->entry_list.lh_Head; node->ln_Succ; node = node->ln_Succ) {
+            temp_entry = (iTidy_ListViewEntry *)node;
+            temp_entry->node.ln_Name = NULL;  /* Formatter owns this memory */
+        }
+        
+        /* Second pass: Free entries */
+        while ((node = RemHead(&data->entry_list)) != NULL) {
+            free_entry((iTidy_ListViewEntry *)node);
+        }
+    }
     
     /* Configure columns for sorting (same as manual click handler) */
     columns[0].title = "Date/Time";
@@ -1105,10 +1790,37 @@ static void run_automated_benchmark(TestWindowData *data)
     SetWindowPointer(data->window, WA_BusyPointer, FALSE, TAG_DONE);
     
     printf("================================================\n");
-    printf("  AUTOMATED BENCHMARK COMPLETED\n");
+    printf("  TEST 3 COMPLETED - FULL MODE (Auto Run)\n");
     printf("  Final row count: %d\n", data->total_rows);
     printf("  Check logs for detailed timing breakdown\n");
-    printf("================================================\n\n");
+    printf("================================================\n");
+    
+    /* Full teardown with timing */
+    teardown_and_time(data, "Full Mode Test (Auto Run)", FALSE);
+}
+
+/**
+ * @brief Run all tests sequentially
+ */
+static void run_all_tests(TestWindowData *data)
+{
+    printf("\n");
+    printf("====================================================\n");
+    printf("  COMPREHENSIVE BENCHMARK SUITE\n");
+    printf("  Running all 4 tests sequentially\n");
+    printf("  Each test: 50 -> 1000 rows (50-row increments)\n");
+    printf("====================================================\n");
+    
+    run_baseline_test(data);
+    run_simple_test(data);
+    run_paginated_test(data);
+    run_automated_benchmark(data);  /* Existing Auto Run test */
+    
+    printf("\n");
+    printf("====================================================\n");
+    printf("  ALL TESTS COMPLETED\n");
+    printf("  Check logs for detailed performance breakdown\n");
+    printf("====================================================\n\n");
 }
 
 /**
@@ -1125,9 +1837,12 @@ static void run_event_loop(TestWindowData *data)
     
     printf("\n=== EVENT LOOP STARTED ===\n");
     printf("Instructions:\n");
-    printf("- Click 'Add 50 Rows' to add more data\n");
-    printf("- Click 'Remove 50 Rows' to remove data\n");
-    printf("- Click 'Auto Run' to run full benchmark (up to 1000 rows)\n");
+    printf("- Click 'Add 50' / 'Remove 50' to manually add/remove data\n");
+    printf("- Click 'Baseline' to run Test 0 (raw GadTools, no API)\n");
+    printf("- Click 'Simple' to run Test 1 (SIMPLE mode, no sorting)\n");
+    printf("- Click 'Paginated' to run Test 2 (SIMPLE_PAGINATED mode)\n");
+    printf("- Click 'Auto Run' to run Test 3 (FULL mode with sorting)\n");
+    printf("- Click 'Run All Tests' to run all 4 tests sequentially\n");
     printf("- Click column headers to sort\n");
     printf("- Watch console for timing statistics\n");
     printf("- Close window to exit\n\n");
@@ -1154,8 +1869,16 @@ static void run_event_loop(TestWindowData *data)
                         add_50_rows(data);
                     } else if (gadget->GadgetID == GID_REMOVE_BTN) {
                         remove_50_rows(data);
+                    } else if (gadget->GadgetID == GID_BASELINE_BTN) {
+                        run_baseline_test(data);
+                    } else if (gadget->GadgetID == GID_SIMPLE_BTN) {
+                        run_simple_test(data);
+                    } else if (gadget->GadgetID == GID_PAGINATED_BTN) {
+                        run_paginated_test(data);
                     } else if (gadget->GadgetID == GID_AUTORUN_BTN) {
                         run_automated_benchmark(data);
+                    } else if (gadget->GadgetID == GID_RUNALL_BTN) {
+                        run_all_tests(data);
                     } else if (gadget->GadgetID == GID_LISTVIEW) {
                         handle_listview_click(data, mouse_x, mouse_y);
                     }
@@ -1254,15 +1977,22 @@ static void cleanup_test_window(TestWindowData *data)
     }
     
     /* Free entry list */
-    printf("Freeing %d entries (logging suspended for speed)...\n", data->total_rows);
-    whd_memory_suspend_logging();  /* Disable logging during bulk free */
-    
-    while ((node = RemHead(&data->entry_list)) != NULL) {
-        free_entry((iTidy_ListViewEntry *)node);
-        entry_count++;
+    if (data->total_rows > 0) {
+        printf("Freeing %d entries (logging suspended for speed)...\n", data->total_rows);
+        whd_memory_suspend_logging();  /* Disable logging during bulk free */
+        
+        while ((node = RemHead(&data->entry_list)) != NULL) {
+            free_entry((iTidy_ListViewEntry *)node);
+            entry_count++;
+        }
+        
+        whd_memory_resume_logging();  /* Re-enable logging */
     }
     
-    whd_memory_resume_logging();  /* Re-enable logging */
+    /* Free plain list (baseline test) */
+    while ((node = RemHead(&data->plain_list)) != NULL) {
+        free_plain_node(node);
+    }
     
     GetSysTime(&end_time);
     elapsed_micros = ((end_time.tv_secs - step_start.tv_secs) * 1000000) +

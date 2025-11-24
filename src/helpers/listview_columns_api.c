@@ -222,10 +222,9 @@ typedef struct {
 } iTidy_FormatContext;
 static void itidy_init_format_context(iTidy_FormatContext *ctx)
 {
-    /* No-op: Memory is already zeroed by whd_malloc (uses AllocVec with MEMF_CLEAR) */
-#ifdef __GNUC__
-    (void)ctx;  /* Suppress unused parameter warning */
-#endif
+    /* CRITICAL: ctx is a stack variable, NOT heap allocated!
+     * Must zero it manually. */
+    memset(ctx, 0, sizeof(iTidy_FormatContext));
 }
 
 static void itidy_cleanup_format_context(iTidy_FormatContext *ctx, BOOL free_display_list)
