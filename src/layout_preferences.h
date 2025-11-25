@@ -220,7 +220,7 @@ typedef struct {
 #define DEFAULT_ENABLE_DEFAULT_TOOL_BACKUP                 TRUE    /* Default: Enabled (auto-backup before default tool changes) */
 
 /* Icon Spacing Limits */
-#define MIN_ICON_SPACING            4    /* Minimum 4px (icons too close) */
+#define MIN_ICON_SPACING            0    /* Minimum 0px (allow testing exact boundaries) */
 #define MAX_ICON_SPACING           20    /* Maximum 20px (too much wasted space) */
 
 /*========================================================================*/

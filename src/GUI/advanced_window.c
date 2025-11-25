@@ -304,7 +304,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     ng.ng_Flags = PLACETEXT_LEFT;
     
     adv_data->spacing_x_slider = gad = CreateGadget(SLIDER_KIND, gad, &ng,
-        GTSL_Min, 4,
+        GTSL_Min, 0,
         GTSL_Max, 20,
         GTSL_Level, adv_data->spacing_x_value,
         GTSL_MaxLevelLen, 3,
@@ -333,7 +333,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     ng.ng_Flags = PLACETEXT_LEFT;
     
     adv_data->spacing_y_slider = gad = CreateGadget(SLIDER_KIND, gad, &ng,
-        GTSL_Min, 4,
+        GTSL_Min, 0,
         GTSL_Max, 20,
         GTSL_Level, adv_data->spacing_y_value,
         GTSL_MaxLevelLen, 3,

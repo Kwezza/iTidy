@@ -127,7 +127,7 @@ void ApplyPreset(LayoutPreferences *prefs, int preset)
             prefs->sortPriority = SORT_PRIORITY_FOLDERS_FIRST;
             prefs->sortBy = SORT_BY_NAME;
             prefs->reverseSort = FALSE;
-            prefs->centerIconsInColumn = FALSE;
+            prefs->centerIconsInColumn = TRUE;
             prefs->useColumnWidthOptimization = TRUE;
             prefs->textAlignment = TEXT_ALIGN_BOTTOM;
             prefs->minIconsPerRow = 2;
@@ -146,7 +146,7 @@ void ApplyPreset(LayoutPreferences *prefs, int preset)
             prefs->sortPriority = SORT_PRIORITY_FOLDERS_FIRST;
             prefs->sortBy = SORT_BY_NAME;
             prefs->reverseSort = FALSE;
-            prefs->centerIconsInColumn = FALSE;
+            prefs->centerIconsInColumn = TRUE;
             prefs->useColumnWidthOptimization = TRUE;
             prefs->textAlignment = TEXT_ALIGN_BOTTOM;
             prefs->minIconsPerRow = 2;
@@ -165,7 +165,7 @@ void ApplyPreset(LayoutPreferences *prefs, int preset)
             prefs->sortPriority = SORT_PRIORITY_MIXED;
             prefs->sortBy = SORT_BY_DATE;
             prefs->reverseSort = FALSE;
-            prefs->centerIconsInColumn = FALSE;
+            prefs->centerIconsInColumn = TRUE;
             prefs->useColumnWidthOptimization = TRUE;
             prefs->textAlignment = TEXT_ALIGN_BOTTOM;
             prefs->minIconsPerRow = 3;  /* Wider minimum */
@@ -184,7 +184,7 @@ void ApplyPreset(LayoutPreferences *prefs, int preset)
             prefs->sortPriority = SORT_PRIORITY_FOLDERS_FIRST;
             prefs->sortBy = SORT_BY_NAME;
             prefs->reverseSort = FALSE;
-            prefs->centerIconsInColumn = FALSE;
+            prefs->centerIconsInColumn = TRUE;
             prefs->useColumnWidthOptimization = TRUE;
             prefs->textAlignment = TEXT_ALIGN_BOTTOM;
             prefs->minIconsPerRow = 2;

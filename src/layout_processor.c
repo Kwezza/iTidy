@@ -960,14 +960,46 @@ static void CalculateLayoutPositionsWithColumnCentering(IconArray *iconArray,
             columnWidths[col] = 0;
         }
         
-        /* Calculate maximum width for each column */
-        for (i = 0; i < iconArray->size; i++)
+        /* Calculate column widths based on optimization setting */
+        if (prefs->useColumnWidthOptimization)
         {
-            col = i % finalColumns;
-            if (iconArray->array[i].icon_max_width > columnWidths[col])
+            /* OPTIMIZED: Calculate maximum width for each column individually */
+            for (i = 0; i < iconArray->size; i++)
             {
-                columnWidths[col] = iconArray->array[i].icon_max_width;
+                col = i % finalColumns;
+                if (iconArray->array[i].icon_max_width > columnWidths[col])
+                {
+                    columnWidths[col] = iconArray->array[i].icon_max_width;
+                }
             }
+            
+#ifdef DEBUG
+            append_to_log("Using optimized column widths (per-column max)\n");
+#endif
+        }
+        else
+        {
+            /* UNIFORM: Use the same width for all columns (widest icon overall) */
+            int uniformWidth = 0;
+            
+            /* Find widest icon across all icons */
+            for (i = 0; i < iconArray->size; i++)
+            {
+                if (iconArray->array[i].icon_max_width > uniformWidth)
+                {
+                    uniformWidth = iconArray->array[i].icon_max_width;
+                }
+            }
+            
+            /* Apply uniform width to all columns */
+            for (col = 0; col < finalColumns; col++)
+            {
+                columnWidths[col] = uniformWidth;
+            }
+            
+#ifdef DEBUG
+            append_to_log("Using uniform column width: %d pixels (widest icon)\n", uniformWidth);
+#endif
         }
         
         /* Step 5: Validate total width */

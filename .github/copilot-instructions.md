@@ -858,3 +858,10 @@ ng.ng_Width = 584;  // This is pixels - ListView will show nothing!
 - [ ] Have you set `ap_Strlen` manually to the buffer size?
 - [ ] Are you using `FreeVec()` (not `FreeDosObject()`) for cleanup?
 - [ ] Is the buffer at least 512 bytes (preferably 1024) for deep paths?
+
+** When updating the development log (docs\DEVELOPMENT_LOG.md)):**
+- [ ] Have you documented the change with date, author, and description?
+- [ ] Is the update brief but informative?
+- [ ] **CRITICAL**: Do NOT include code snippets in development log entries
+- [ ] Focus on describing WHAT changed, WHY it changed, and the IMPACT
+- [ ] Keep entries concise - link to detailed bug fix docs for technical details

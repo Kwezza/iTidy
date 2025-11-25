@@ -581,8 +581,9 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
 
                         newIcon.text_width = textExtent.te_Width;
                         newIcon.text_height = textExtent.te_Height;
-                        newIcon.icon_max_width = MAX(iconSize.width + (newIcon.border_width * 2), textExtent.te_Width);
-                        newIcon.icon_max_height = iconSize.height + GAP_BETWEEN_ICON_AND_TEXT + textExtent.te_Height;
+                        /* Workbench adds visual border equal to embossRectangleSize (or 0 for frameless icons) */
+                        newIcon.icon_max_width = MAX(newIcon.icon_width + newIcon.border_width, textExtent.te_Width);
+                        newIcon.icon_max_height = newIcon.icon_height + newIcon.border_width + GAP_BETWEEN_ICON_AND_TEXT + textExtent.te_Height;
                         
                         /* Capture file protection, size and date from FileInfoBlock */
 #if PLATFORM_AMIGA

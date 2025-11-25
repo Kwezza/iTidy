@@ -18,7 +18,6 @@
 #define GID_FOLDER_PATH      1
 #define GID_BROWSE           2
 #define GID_PRESET           3
-#define GID_LAYOUT           4
 #define GID_SORT             5
 #define GID_ORDER            6
 #define GID_SORTBY           7
@@ -51,7 +50,6 @@ struct iTidyMainWindow
     struct Gadget *folder_path;
     struct Gadget *browse_btn;
     struct Gadget *preset_cycle;
-    struct Gadget *layout_cycle;
     struct Gadget *sort_cycle;
     struct Gadget *order_cycle;
     struct Gadget *sortby_cycle;
@@ -71,7 +69,6 @@ struct iTidyMainWindow
     
     /* Temporary GUI state (for gadget selections only) */
     WORD preset_selected;
-    WORD layout_selected;
     WORD sort_selected;
     WORD order_selected;
     WORD sortby_selected;
