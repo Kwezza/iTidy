@@ -450,19 +450,13 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                     append_to_log("-------------------------\n");
                     append_to_log("Adding to %s Icon array.\n ", fullPathAndFile);
 #endif
-#ifdef DEBUG_MAX
-                    append_to_log("\nCalculating text extent.\n", fullPathAndFile);
-#endif
-                    CalculateTextExtent(fileNameNoInfo, &textExtent);
-
-                    /* CRITICAL DEBUG */
-                    append_to_log(">>> About to call GetIconDetailsFromDisk for: %s\n", fullPathAndFile);
 
                     /* ========================================================
                      * OPTIMIZED ICON READING - Single disk operation
                      * ========================================================
                      * Read ALL icon details in ONE GetDiskObject() call:
                      * - Position, Size, Type, Frame, Default Tool
+                     * - ALL size calculations (emboss, borders, text, total)
                      * This reduces disk I/O by ~75% (was 3-4 reads per icon!)
                      * Critical for floppy-based systems.
                      * ======================================================== */
@@ -472,7 +466,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                     log_debug(LOG_ICONS, "  fileNameNoInfo='%s'\n", fileNameNoInfo);
                     log_debug(LOG_ICONS, "  Calling GetIconDetailsFromDisk...\n");
 #endif
-                    if (GetIconDetailsFromDisk(fullPathAndFile, &iconDetails))
+                    if (GetIconDetailsFromDisk(fullPathAndFile, &iconDetails, fileNameNoInfo))
                     {
                         append_to_log(">>> GetIconDetailsFromDisk SUCCESS\n");
 #ifdef DEBUG
@@ -486,7 +480,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                         log_debug(LOG_ICONS, "  Position: x=%d, y=%d\n", newIcon.icon_x, newIcon.icon_y);
 #endif
                         
-                        /* Extract size */
+                        /* Extract size (base bitmap size) */
                         iconSize = iconDetails.size;
                         
                         /* Extract and store default tool */
@@ -547,27 +541,14 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                             log_info(LOG_ICONS, "  Icon type: Forced Standard format - %s\n", fileNameNoInfo);
                         }
                         
-                        /* Apply emboss rectangle size adjustments */
-                        if (prefsWorkbench.embossRectangleSize > 0)
-                        {
-                            newIcon.icon_height = iconSize.height + prefsWorkbench.embossRectangleSize;
-                            newIcon.icon_width = iconSize.width + prefsWorkbench.embossRectangleSize;
-                        }
-                        else
-                        {
-                            newIcon.icon_height = iconSize.height;
-                            newIcon.icon_width = iconSize.width;
-                        }
-                        
-                        /* Determine border width based on frame status */
-                        if (iconDetails.hasFrame || newIcon.icon_type == icon_type_standard)
-                        {
-                            newIcon.border_width = prefsWorkbench.embossRectangleSize;
-                        }
-                        else
-                        {
-                            newIcon.border_width = 0;
-                        }
+                        /* Use pre-calculated size fields from GetIconDetailsFromDisk */
+                        newIcon.icon_width = iconDetails.iconWithEmboss.width;
+                        newIcon.icon_height = iconDetails.iconWithEmboss.height;
+                        newIcon.border_width = iconDetails.borderWidth;
+                        newIcon.text_width = iconDetails.textSize.width;
+                        newIcon.text_height = iconDetails.textSize.height;
+                        newIcon.icon_max_width = iconDetails.totalDisplaySize.width;
+                        newIcon.icon_max_height = iconDetails.totalDisplaySize.height;
 
 #ifdef DEBUG_MAX
                         append_to_log("Icons size x: %d, y: %d, current at pos x: %d, y: %d border size:%d\n", 
@@ -578,12 +559,6 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                         {
                             iconArray->hasOnlyBorderlessIcons = true;
                         }
-
-                        newIcon.text_width = textExtent.te_Width;
-                        newIcon.text_height = textExtent.te_Height;
-                        /* Workbench adds visual border equal to embossRectangleSize (or 0 for frameless icons) */
-                        newIcon.icon_max_width = MAX(newIcon.icon_width + newIcon.border_width, textExtent.te_Width);
-                        newIcon.icon_max_height = newIcon.icon_height + newIcon.border_width + GAP_BETWEEN_ICON_AND_TEXT + textExtent.te_Height;
                         
                         /* Capture file protection, size and date from FileInfoBlock */
 #if PLATFORM_AMIGA

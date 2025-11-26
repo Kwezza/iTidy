@@ -27,6 +27,27 @@
 #include "icon_misc.h"
 #include "Settings/get_fonts.h"
 
+/* Forward declaration - defined in backup_paths.c */
+extern BOOL IsRootFolder(const char *path);
+
+/* Default window size for empty folders ("Show All" mode with no .info files)
+ * These dimensions are for the content area only (excluding window chrome).
+ * When iTidy finds a folder with no icons, it resizes the window to these
+ * standard dimensions to maintain UI consistency. */
+#define EMPTY_FOLDER_CONTENT_WIDTH  230
+#define EMPTY_FOLDER_CONTENT_HEIGHT 80
+
+/* Content area margin formulas for non-root drawer windows.
+ * These values were empirically determined through systematic testing (2025-11-26):
+ * - Borderless mode uses fixed margins (1,1) regardless of emboss size
+ * - Normal mode margins scale with emboss size: horizontal = emboss×2, vertical = (emboss-1)×2
+ * - Tested with emboss sizes 1, 2, 3 - formulas confirmed accurate
+ * See docs/WINDOW_POSITIONING_OFFSETS.md for full testing documentation */
+#define DRAWER_CONTENT_LEFT_MARGIN(borderless, embossSize) \
+    ((borderless) ? 1 : ((embossSize) * 2))
+#define DRAWER_CONTENT_TOP_MARGIN(borderless, embossSize) \
+    ((borderless) ? 1 : (((embossSize) - 1) * 2))
+
 struct TextFont *iconFont;
 
 
@@ -192,13 +213,14 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray,
     log_info(LOG_GENERAL, "Calculated maxWidth=%d, maxHeight=%d before calling repoistionWindow", maxWidth, maxHeight);
 
 
-    /* Safety check: Don't call repoistionWindow with 0 dimensions when no icons found */
+    /* Empty folder handling: If no icons found (Show All mode with no .info files),
+     * use standard default dimensions instead of skipping resize */
     if (iconArray->size == 0 && user_folderViewMode == DDVM_BYICON)
     {
-
-        log_info(LOG_GENERAL, "Skipping repoistionWindow - no icons in folder");
-
-        return;
+        maxWidth = EMPTY_FOLDER_CONTENT_WIDTH;
+        maxHeight = EMPTY_FOLDER_CONTENT_HEIGHT;
+        log_info(LOG_GENERAL, "No icons in folder - using default empty folder size: %dx%d\n",
+                 maxWidth, maxHeight);
     }
 
     /* Note: repoistionWindow will clamp to screen size and add chrome */
@@ -723,9 +745,35 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
             else
             {
                 /* Parent geometry found - now get child's icon position in parent */
-                log_info(LOG_GUI, "    Parent window: left=%d, top=%d, width=%d, height=%d\n",
+                BOOL parentIsRoot = IsRootFolder(parentPath);
+                UWORD volumeGaugeOffset = 0;
+                UWORD contentAreaLeftOffset = 0;
+                UWORD contentAreaTopOffset = 0;
+                
+                /* Root directories (e.g., "Work:") have a volume gauge that offsets icon positions */
+                if (parentIsRoot)
+                {
+                    volumeGaugeOffset = prefsIControl.currentCGaugeWidth;
+                    log_info(LOG_GUI, "    Parent is root directory - adding volume gauge offset: %d\n",
+                             volumeGaugeOffset);
+                }
+                else
+                {
+                    /* Non-root drawers have content area margins based on borderless mode and emboss size */
+                    contentAreaLeftOffset = DRAWER_CONTENT_LEFT_MARGIN(prefsWorkbench.borderless, 
+                                                                        prefsWorkbench.embossRectangleSize);
+                    contentAreaTopOffset = DRAWER_CONTENT_TOP_MARGIN(prefsWorkbench.borderless, 
+                                                                      prefsWorkbench.embossRectangleSize);
+                    log_info(LOG_GUI, "    Parent is non-root drawer - adding content margins: left=%d, top=%d (borderless=%s, emboss=%d)\n",
+                             contentAreaLeftOffset, contentAreaTopOffset, 
+                             prefsWorkbench.borderless ? "YES" : "NO",
+                             prefsWorkbench.embossRectangleSize);
+                }
+                
+                log_info(LOG_GUI, "    Parent window: left=%d, top=%d, width=%d, height=%d (isRoot=%s)\n",
                          parentWindowInfo.left, parentWindowInfo.top,
-                         parentWindowInfo.width, parentWindowInfo.height);
+                         parentWindowInfo.width, parentWindowInfo.height,
+                         parentIsRoot ? "YES" : "NO");
                 
                 /* Build path to child's .info file in parent directory */
                 /* Extract just the folder name from dirPath (last component) */
@@ -768,8 +816,8 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
                     log_info(LOG_GUI, "    Child icon path: '%s'\n", childIconPath);
                 }
                 
-                /* Read child icon details (position and size) */
-                hasChildIcon = GetIconDetailsFromDisk(childIconPath, &childIconDetails);
+                /* Read child icon details (position and size) - pass NULL for text (not needed) */
+                hasChildIcon = GetIconDetailsFromDisk(childIconPath, &childIconDetails, NULL);
                 
                 if (!hasChildIcon)
                 {
@@ -806,93 +854,73 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
                 else
                 {
                     /* Calculate window position at bottom-right of icon */
-                    log_info(LOG_GUI, "    Child icon in parent: x=%d, y=%d, width=%d, height=%d\n",
+                    /* Use base icon size (without emboss) for positioning
+                     * Icon position.x/y represents where the icon BITMAP starts (not including emboss)
+                     * Emboss is drawn around the bitmap, so we add just the bitmap size
+                     */
+                    log_info(LOG_GUI, "    Child icon in parent: x=%d, y=%d, base_w=%d, base_h=%d\n",
                              childIconDetails.position.x, childIconDetails.position.y,
                              childIconDetails.size.width, childIconDetails.size.height);
                     
-                    /* Position = parent window left/top + icon x/y + icon width/height */
-                    proposedLeft = parentWindowInfo.left + childIconDetails.position.x + 
-                                   childIconDetails.size.width;
-                    proposedTop = parentWindowInfo.top + childIconDetails.position.y + 
-                                  childIconDetails.size.height;
+                    /* CRITICAL: Icon positions are relative to window's CONTENT AREA, not window edges
+                     * We must add window border offsets to convert to absolute screen coordinates.
+                     * Parent window left/top are the outer window edges (including borders).
+                     * Icon x/y are relative to the inner content area (after borders/title bar).
+                     * Left border = currentLeftBarWidth, Top border = currentTitleBarHeight
+                     * PLUS: For root directories, icon X is after the volume gauge (currentCGaugeWidth)
+                     *       For non-root drawers, icon X/Y are after content area margins (magic numbers)
+                     */
+                    proposedLeft = parentWindowInfo.left + prefsIControl.currentLeftBarWidth + 
+                                   volumeGaugeOffset + contentAreaLeftOffset +
+                                   childIconDetails.position.x + childIconDetails.size.width;
+                    proposedTop = parentWindowInfo.top + prefsIControl.currentTitleBarHeight + 
+                                  contentAreaTopOffset +
+                                  childIconDetails.position.y + childIconDetails.size.height; 
+                                  childIconDetails.position.y + childIconDetails.size.height;
                     
                     log_info(LOG_GUI, "    Proposed position: left=%d, top=%d (bottom-right of icon)\n",
                              proposedLeft, proposedTop);
                     
-                    /* Check if proposed position fits on screen */
+                    /* Start with proposed position and clamp to screen boundaries */
+                    posLeft = proposedLeft;
+                    posTop = proposedTop;
                     fitsOnScreen = TRUE;
-                    if (proposedLeft + finalWidth > screenWidth)
+                    
+                    /* Clamp horizontal position to screen */
+                    if (posLeft + finalWidth > screenWidth)
                     {
-                        log_info(LOG_GUI, "    Window would extend beyond right edge (%d > %d)\n",
-                                 proposedLeft + finalWidth, screenWidth);
+                        posLeft = screenWidth - finalWidth;
+                        log_info(LOG_GUI, "    Clamped to right edge: left=%d (was %d)\n", posLeft, proposedLeft);
                         fitsOnScreen = FALSE;
                     }
-                    if (proposedTop + finalHeight > screenHight)
+                    if (posLeft < 0)
                     {
-                        log_info(LOG_GUI, "    Window would extend beyond bottom edge (%d > %d)\n",
-                                 proposedTop + finalHeight, screenHight);
+                        posLeft = 0;
+                        log_info(LOG_GUI, "    Clamped to left edge: left=0\n");
                         fitsOnScreen = FALSE;
                     }
-                    if (proposedTop < prefsIControl.currentTitleBarHeight)
+                    
+                    /* Clamp vertical position to screen */
+                    if (posTop + finalHeight > screenHight)
                     {
-                        log_info(LOG_GUI, "    Window would be above title bar (%d < %d)\n",
-                                 proposedTop, prefsIControl.currentTitleBarHeight);
+                        posTop = screenHight - finalHeight;
+                        log_info(LOG_GUI, "    Clamped to bottom edge: top=%d (was %d)\n", posTop, proposedTop);
                         fitsOnScreen = FALSE;
                     }
-                    if (proposedLeft < 0)
+                    if (posTop < prefsIControl.currentTitleBarHeight)
                     {
-                        log_info(LOG_GUI, "    Window would be off left edge (%d < 0)\n", proposedLeft);
+                        posTop = prefsIControl.currentTitleBarHeight;
+                        log_info(LOG_GUI, "    Clamped to title bar: top=%d\n", posTop);
                         fitsOnScreen = FALSE;
                     }
                     
                     if (fitsOnScreen)
                     {
-                        /* Use proposed position at icon's bottom-right */
-                        posLeft = proposedLeft;
-                        posTop = proposedTop;
-                        log_info(LOG_GUI, "    Position at icon's bottom-right fits on screen - using it\n");
+                        log_info(LOG_GUI, "    Position at icon's bottom-right fits perfectly\n");
                     }
                     else
                     {
-                        /* Doesn't fit - fall back to Keep Position behavior */
-                        log_info(LOG_GUI, "    Not enough space at icon's bottom-right - falling back to Keep Position\n");
-                        
-                        if (hasCurrentPosition)
-                        {
-                            posLeft = currentWindowInfo.left;
-                            posTop = currentWindowInfo.top;
-                            
-                            /* Check boundaries */
-                            if (posLeft + finalWidth > screenWidth)
-                            {
-                                posLeft = screenWidth - finalWidth;
-                                if (posLeft < 0) posLeft = 0;
-                                log_info(LOG_GUI, "    Pulled back from right edge to left=%d\n", posLeft);
-                            }
-                            if (posLeft < 0)
-                            {
-                                posLeft = 0;
-                                log_info(LOG_GUI, "    Pulled back from left edge to left=%d\n", posLeft);
-                            }
-                            if (posTop + finalHeight > screenHight)
-                            {
-                                posTop = screenHight - finalHeight;
-                                if (posTop < prefsIControl.currentTitleBarHeight)
-                                    posTop = prefsIControl.currentTitleBarHeight;
-                                log_info(LOG_GUI, "    Pulled back from bottom edge to top=%d\n", posTop);
-                            }
-                            if (posTop < prefsIControl.currentTitleBarHeight)
-                            {
-                                posTop = prefsIControl.currentTitleBarHeight;
-                                log_info(LOG_GUI, "    Pulled down from title bar to top=%d\n", posTop);
-                            }
-                        }
-                        else
-                        {
-                            /* No current position - center it */
-                            posLeft = (screenWidth - finalWidth) / 2;
-                            log_info(LOG_GUI, "    No current position - centering at left=%d\n", posLeft);
-                        }
+                        log_info(LOG_GUI, "    Position adjusted to fit on screen (near parent icon)\n");
                     }
                     
                     /* Free default tool string if allocated */

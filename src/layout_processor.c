@@ -1252,18 +1252,33 @@ static BOOL ProcessSingleDirectory(const char *path,
 #endif
     iconArray = CreateIconArrayFromPath(lock, path);
     
-    if (!iconArray || iconArray->size == 0)
+    if (!iconArray)
     {
-        printf("  No icons found or error reading directory\n");
+        printf("  Error reading directory\n");
 #ifdef DEBUG
-        append_to_log("No icons in directory or error: %s\n", path);
+        append_to_log("Error creating icon array: %s\n", path);
 #endif
-        if (iconArray)
-        {
-            FreeIconArray(iconArray);
-        }
         UnLock(lock);
         return FALSE;
+    }
+    
+    if (iconArray->size == 0)
+    {
+        printf("  No icons found in directory\n");
+#ifdef DEBUG
+        append_to_log("No icons in directory: %s\n", path);
+#endif
+        
+        /* Resize window to default empty folder size if requested */
+        if (prefs->resizeWindows)
+        {
+            printf("  Resizing to default empty folder size...\n");
+            resizeFolderToContents((char *)path, iconArray, windowTracker, prefs);
+        }
+        
+        FreeIconArray(iconArray);
+        UnLock(lock);
+        return TRUE;  /* Success - folder processed (even though empty) */
     }
     
     printf("  Found %lu icons\n", (unsigned long)iconArray->size);

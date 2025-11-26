@@ -56,14 +56,6 @@ extern void iTidy_CloseToolRestoreWindow(struct Window *window);
 /*------------------------------------------------------------------------*/
 /* Cycle Gadget Labels                                                   */
 /*------------------------------------------------------------------------*/
-static STRPTR preset_labels[] = {
-    "Classic",
-    "Compact",
-    "Modern",
-    "WHDLoad",
-    NULL
-};
-
 static STRPTR sort_labels[] = {
     "Horizontal",
     "Vertical",
@@ -340,29 +332,6 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     if (!gad)
     {
         printf("ERROR: Failed to create browse button\n");
-        return FALSE;
-    }
-    
-    current_y += font_height + 20;
-    
-    /*====================================================================*/
-    /* PRESET CYCLE GADGET                                               */
-    /*====================================================================*/
-    ng.ng_LeftEdge = 80;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 200;
-    ng.ng_Height = font_height + 6;
-    ng.ng_GadgetText = "Preset:";
-    ng.ng_GadgetID = GID_PRESET;
-    ng.ng_Flags = PLACETEXT_LEFT;
-    
-    win_data->preset_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
-        GTCY_Labels, preset_labels,
-        GTCY_Active, 0,
-        TAG_END);
-    if (!gad)
-    {
-        printf("ERROR: Failed to create preset cycle\n");
         return FALSE;
     }
     
@@ -774,8 +743,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     memset(win_data, 0, sizeof(struct iTidyMainWindow));
     strcpy(win_data->folder_path_buffer, "PC:");
     
-    /* Initialize default settings */
-    win_data->preset_selected = 0;       /* Classic */
+    /* Initialize default settings (Classic preset) */
     win_data->sort_selected = 0;         /* Horizontal */
     win_data->order_selected = 0;        /* Folders First */
     win_data->sortby_selected = 0;       /* Name */
@@ -999,13 +967,13 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         /* Get mutable access to global preferences */
                         prefs = (LayoutPreferences *)GetGlobalPreferences();
                         
-                        /* Only apply preset/GUI defaults if user hasn't customized advanced settings
+                        /* Only apply Classic defaults if user hasn't customized advanced settings
                          * This preserves user's advanced settings when they click Apply */
                         if (!win_data->has_advanced_settings)
                         {
-                            /* Apply preset if one was selected */
-                            append_to_log("Applying preset: %s\n", preset_labels[win_data->preset_selected]);
-                            ApplyPreset(prefs, win_data->preset_selected);
+                            /* Apply Classic preset defaults */
+                            append_to_log("Applying Classic preset defaults\n");
+                            ApplyPreset(prefs, PRESET_CLASSIC);
                             
                             /* Override with user's GUI selections */
                             MapGuiToPreferences(prefs,
@@ -1137,12 +1105,12 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                             /* Get current global preferences (includes any previously saved advanced settings) */
                             memcpy(&temp_prefs, GetGlobalPreferences(), sizeof(LayoutPreferences));
                             
-                            /* Only apply preset/GUI settings if user hasn't customized advanced settings yet
+                            /* Only apply Classic defaults if user hasn't customized advanced settings yet
                              * This preserves user's advanced settings when reopening the window */
                             if (!win_data->has_advanced_settings)
                             {
-                                /* Apply current preset to get baseline settings */
-                                ApplyPreset(&temp_prefs, win_data->preset_selected);
+                                /* Apply Classic preset to get baseline settings */
+                                ApplyPreset(&temp_prefs, PRESET_CLASSIC);
                                 
                                 /* Also apply GUI selections to get current state */
                                 MapGuiToPreferences(&temp_prefs,
@@ -1204,100 +1172,6 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
 
                     case GID_FOLDER_PATH:
                         printf("Folder path changed: %s\n", win_data->folder_path_buffer);
-                        break;
-
-                    case GID_PRESET:
-                        /* Use msg_code which contains the new cycle gadget selection */
-                        win_data->preset_selected = msg_code;
-                        printf("Preset changed to: %s\n", preset_labels[win_data->preset_selected]);
-                        
-                        /* Clear advanced settings when preset is changed */
-                        win_data->has_advanced_settings = FALSE;
-                        printf("  (Advanced settings cleared - will use preset defaults)\n");
-                        
-                        /* Update all cycle gadgets to match preset */
-                        switch (win_data->preset_selected)
-                        {
-                            case 0: /* Classic */
-                                GT_SetGadgetAttrs(win_data->sort_cycle, win_data->window, NULL,
-                                    GTCY_Active, 0, TAG_END);  /* Horizontal */
-                                GT_SetGadgetAttrs(win_data->order_cycle, win_data->window, NULL,
-                                    GTCY_Active, 0, TAG_END);  /* Folders First */
-                                GT_SetGadgetAttrs(win_data->sortby_cycle, win_data->window, NULL,
-                                    GTCY_Active, 0, TAG_END);  /* Name */
-                                win_data->sort_selected = 0;
-                                win_data->order_selected = 0;
-                                win_data->sortby_selected = 0;
-                                
-                                /* Update checkboxes to match Classic preset */
-                                GT_SetGadgetAttrs(win_data->center_check, win_data->window, NULL,
-                                    GTCB_Checked, TRUE, TAG_END);
-                                GT_SetGadgetAttrs(win_data->optimize_check, win_data->window, NULL,
-                                    GTCB_Checked, TRUE, TAG_END);
-                                win_data->center_icons = TRUE;
-                                win_data->optimize_columns = TRUE;
-                                break;
-                                
-                            case 1: /* Compact */
-                                GT_SetGadgetAttrs(win_data->sort_cycle, win_data->window, NULL,
-                                    GTCY_Active, 1, TAG_END);  /* Vertical */
-                                GT_SetGadgetAttrs(win_data->order_cycle, win_data->window, NULL,
-                                    GTCY_Active, 0, TAG_END);  /* Folders First */
-                                GT_SetGadgetAttrs(win_data->sortby_cycle, win_data->window, NULL,
-                                    GTCY_Active, 0, TAG_END);  /* Name */
-                                win_data->sort_selected = 1;
-                                win_data->order_selected = 0;
-                                win_data->sortby_selected = 0;
-                                
-                                /* Update checkboxes to match Compact preset */
-                                GT_SetGadgetAttrs(win_data->center_check, win_data->window, NULL,
-                                    GTCB_Checked, TRUE, TAG_END);
-                                GT_SetGadgetAttrs(win_data->optimize_check, win_data->window, NULL,
-                                    GTCB_Checked, TRUE, TAG_END);
-                                win_data->center_icons = TRUE;
-                                win_data->optimize_columns = TRUE;
-                                break;
-                                
-                            case 2: /* Modern */
-                                GT_SetGadgetAttrs(win_data->sort_cycle, win_data->window, NULL,
-                                    GTCY_Active, 0, TAG_END);  /* Horizontal */
-                                GT_SetGadgetAttrs(win_data->order_cycle, win_data->window, NULL,
-                                    GTCY_Active, 2, TAG_END);  /* Mixed */
-                                GT_SetGadgetAttrs(win_data->sortby_cycle, win_data->window, NULL,
-                                    GTCY_Active, 2, TAG_END);  /* Date */
-                                win_data->sort_selected = 0;
-                                win_data->order_selected = 2;
-                                win_data->sortby_selected = 2;
-                                
-                                /* Update checkboxes to match Modern preset */
-                                GT_SetGadgetAttrs(win_data->center_check, win_data->window, NULL,
-                                    GTCB_Checked, TRUE, TAG_END);
-                                GT_SetGadgetAttrs(win_data->optimize_check, win_data->window, NULL,
-                                    GTCB_Checked, TRUE, TAG_END);
-                                win_data->center_icons = TRUE;
-                                win_data->optimize_columns = TRUE;
-                                break;
-                                
-                            case 3: /* WHDLoad */
-                                GT_SetGadgetAttrs(win_data->sort_cycle, win_data->window, NULL,
-                                    GTCY_Active, 1, TAG_END);  /* Vertical */
-                                GT_SetGadgetAttrs(win_data->order_cycle, win_data->window, NULL,
-                                    GTCY_Active, 0, TAG_END);  /* Folders First */
-                                GT_SetGadgetAttrs(win_data->sortby_cycle, win_data->window, NULL,
-                                    GTCY_Active, 0, TAG_END);  /* Name */
-                                win_data->sort_selected = 1;
-                                win_data->order_selected = 0;
-                                win_data->sortby_selected = 0;
-                                
-                                /* Update checkboxes to match WHDLoad preset */
-                                GT_SetGadgetAttrs(win_data->center_check, win_data->window, NULL,
-                                    GTCB_Checked, TRUE, TAG_END);
-                                GT_SetGadgetAttrs(win_data->optimize_check, win_data->window, NULL,
-                                    GTCB_Checked, TRUE, TAG_END);
-                                win_data->center_icons = TRUE;
-                                win_data->optimize_columns = TRUE;
-                                break;
-                        }
                         break;
 
                     case GID_SORT:

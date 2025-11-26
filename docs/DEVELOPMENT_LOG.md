@@ -7,7 +7,231 @@ iTidy is an Amiga icon management utility that allows users to sort and arrange 
 
 ## Development Timeline
 
-### Latest: Icon Dimension Calculations Fixed for All Border Sizes (November 25, 2025)
+### Latest: Empty Folder Resize Fix (November 26, 2025)
+
+#### Fixed Empty Folders Not Being Resized to Default Size
+* **Status**: Complete - Implemented and compiled successfully
+* **Impact**: Empty folders (Show All mode with no .info files) now resize to default 230×80 size
+* **Severity**: Medium - Feature regression where empty folders were silently skipped
+* **Date**: November 26, 2025
+* **File Modified**: `src/layout_processor.c` (lines 1252-1276)
+
+**Problem:**
+When scanning folders with "Show All" enabled in Workbench preferences, folders containing files but no .info files were not being resized or repositioned. The window_management.c empty folder handling was never reached because ProcessSingleDirectory() returned early.
+
+**Root Cause:**
+In `ProcessSingleDirectory()`, the code checked for NULL or empty iconArray and returned FALSE immediately:
+```c
+if (!iconArray || iconArray->size == 0) {
+    if (iconArray) FreeIconArray(iconArray);
+    UnLock(lock);
+    return FALSE;  // Early return - never calls resizeFolderToContents()
+}
+```
+
+This prevented `resizeFolderToContents()` from ever being called for empty folders, so the default 230×80 size logic was unreachable.
+
+**Solution:**
+Separated the NULL check (actual error) from the empty folder check (valid case):
+```c
+if (!iconArray) {
+    // Actual error - return FALSE
+    UnLock(lock);
+    return FALSE;
+}
+
+if (iconArray->size == 0) {
+    // Valid empty folder - resize if requested
+    if (prefs->resizeWindows) {
+        resizeFolderToContents((char *)path, iconArray, windowTracker, prefs);
+    }
+    FreeIconArray(iconArray);
+    UnLock(lock);
+    return TRUE;  // Success - folder processed
+}
+```
+
+**Result:**
+Empty folders now:
+- Get resized to default 230×80 content area size (defined in window_management.c)
+- Respect window positioning mode (Near Parent, Center Screen, etc.)
+- Return TRUE (success) instead of FALSE (error)
+- Show "Resizing to default empty folder size..." in console output
+
+**User Validation:**
+Tested on Work:OldWB/Libs (folder with files but no .info files) - now resizes and positions correctly.
+
+---
+
+### Near Parent Window Border Offset Fix (November 26, 2025)
+
+#### Fixed Window Positioning to Account for Parent Window Borders
+* **Status**: Complete - Implemented and compiled successfully
+* **Impact**: Near Parent mode now positions child windows correctly at bottom-right of icon
+* **Severity**: High - Child windows overlapped parent icons instead of appearing beside them
+* **Date**: November 26, 2025
+* **File Modified**: `src/window_management.c` (lines 815-824)
+
+**Problem:**
+After implementing the GetIconDetailsFromDisk() refactoring with correct icon visual sizes, Near Parent mode still positioned child windows overlapping the parent icon instead of appearing at the bottom-right corner.
+
+**Root Cause:**
+Icon positions from `do_CurrentX/do_CurrentY` are relative to the window's **content area** (after borders), not the window's outer edge. The positioning calculation added icon coordinates directly to window coordinates without accounting for the window's border offsets (left border and title bar height).
+
+**Incorrect Calculation:**
+```c
+proposedLeft = parentWindowInfo.left + childIconDetails.position.x + iconVisualSize.width;
+proposedTop = parentWindowInfo.top + childIconDetails.position.y + iconVisualSize.height;
+```
+
+This treated icon X/Y as absolute offsets, but they're relative to the content area.
+
+**Correct Calculation:**
+```c
+proposedLeft = parentWindowInfo.left + prefsIControl.currentLeftBarWidth + 
+               childIconDetails.position.x + iconVisualSize.width;
+proposedTop = parentWindowInfo.top + prefsIControl.currentTitleBarHeight + 
+              childIconDetails.position.y + iconVisualSize.height;
+```
+
+**Coordinate System Understanding:**
+- `parentWindowInfo.left/top`: Window's outer edge position (includes borders)
+- `prefsIControl.currentLeftBarWidth`: Left window border width
+- `prefsIControl.currentTitleBarHeight`: Title bar height (top border)
+- `childIconDetails.position.x/y`: Icon position within content area (after borders)
+- `iconVisualSize.width/height`: Complete icon visual size (44×17 for default borders)
+
+**Result:**
+Child windows now correctly appear at the bottom-right of the parent icon without overlapping, regardless of window border size (Small/Medium/Large).
+
+---
+
+### Window Positioning Modes - User Control Over Window Placement (Feature)
+
+#### Four-Mode Cycle Gadget for Window Positioning Behavior
+* **Status**: Complete - Core feature of iTidy v2.0
+* **Impact**: Gives users complete control over how iTidy positions resized folder windows
+* **Location**: Main window, below "Recursive" checkbox
+* **Files**: `src/layout_preferences.h` (WindowPositionMode enum), `src/GUI/main_window.c`, `src/window_management.c`
+
+**Feature Overview:**
+iTidy provides four distinct window positioning modes via a cycle gadget on the main window. This allows users to choose how folder windows are positioned after iTidy resizes them based on icon layout.
+
+**Available Modes:**
+
+1. **Center Screen** (Default)
+   - Windows are centered horizontally and vertically on screen
+   - Classic behavior from iTidy v1.x
+   - Best for: Quick tidying without regard to original positions
+   - Formula: `(screenWidth - windowWidth) / 2, (screenHeight - windowHeight) / 2`
+
+2. **Keep Position**
+   - Preserves the folder's current window position
+   - Only adjusts position if window would extend off-screen
+   - Maintains user's manual window arrangements
+   - Best for: Users who have carefully positioned their windows
+   - Fallback: Centers if no current position available
+
+3. **Near Parent**
+   - Positions child folder window at bottom-right of its icon in parent window
+   - Accounts for icon visual size (including emboss borders)
+   - Accounts for parent window borders and title bar
+   - Falls back to Keep Position if doesn't fit on screen
+   - Best for: Hierarchical folder browsing workflows
+   - Requires: Parent window geometry and child icon position
+
+4. **No Change**
+   - Does not resize or reposition the window at all
+   - iTidy only processes icons, leaves window geometry untouched
+   - Best for: Users who want icon sorting but manual window control
+   - Note: Skips all window size and position calculations
+
+**Implementation Details:**
+
+**WindowPositionMode Enum:**
+```c
+typedef enum {
+    WINDOW_POS_CENTER_SCREEN = 0,
+    WINDOW_POS_KEEP_POSITION = 1,
+    WINDOW_POS_NEAR_PARENT = 2,
+    WINDOW_POS_NO_CHANGE = 3
+} WindowPositionMode;
+```
+
+**GUI Control:**
+- Cycle gadget with labels: "Center Screen", "Keep Position", "Near Parent", "No Change"
+- Help button (`?`) provides inline documentation
+- Setting is saved in global preferences (LayoutPreferences structure)
+- Applies to both single folder and recursive processing modes
+
+**Processing Flow:**
+1. User selects mode via cycle gadget
+2. Mode saved to `prefs->windowPositionMode`
+3. `repoistionWindow()` reads mode and branches to appropriate logic
+4. Window geometry written to folder's .info file (DrawerData structure)
+5. Workbench reads .info file and opens window at specified position/size
+
+**Related Fixes:**
+- Near Parent now correctly uses `iconVisualSize` (44×17) instead of base size (38×11)
+- Near Parent adds window border offsets (`currentLeftBarWidth`, `currentTitleBarHeight`)
+- Keep Position handles missing geometry gracefully (falls back to Center Screen)
+
+**User Benefit:**
+Provides flexibility for different workflows - from quick tidying (Center Screen) to careful spatial organization (Keep Position/Near Parent) to icon-only processing (No Change).
+
+---
+
+### Icon Size Calculation Refactoring - Single Source of Truth (November 26, 2025)
+
+#### Centralized All Icon Dimension Calculations in GetIconDetailsFromDisk()
+* **Status**: Complete - Implemented and compiled successfully
+* **Impact**: Fixes Near Parent window positioning bug, eliminates code duplication across 3 callers
+* **Severity**: High - Near Parent positioned windows incorrectly (covered parent icon)
+* **Date**: November 26, 2025
+* **Files Modified**: `src/icon_types.h`, `src/icon_types.c`, `src/icon_management.c`, `src/window_management.c`, `src/GUI/default_tool_update_window.c`
+
+**Problem:**
+Near Parent window positioning mode used base bitmap size (38×11 pixels) instead of visual icon size including emboss borders (44×17 pixels). This caused folder windows to open covering the parent icon instead of appearing at the bottom-right corner. Additionally, size calculation formulas were duplicated across three callers, creating maintenance burden.
+
+**Root Cause:**
+GetIconDetailsFromDisk() returned only base bitmap dimensions from do_Gadget.Width/Height. Each caller manually calculated emboss adjustments, borders, text extents, and total display sizes. Near Parent positioning used the base size fields directly, missing the emboss borders on all four sides.
+
+**Solution - Architectural Refactoring:**
+Enhanced IconDetailsFromDisk structure with 5 new pre-calculated size fields and moved all battle-tested size calculation formulas (from icon_management.c lines 550-586) into GetIconDetailsFromDisk():
+
+**New Structure Fields:**
+- borderWidth: Actual border (0 for frameless, embossSize for framed/standard)
+- iconWithEmboss: Base bitmap + one-side emboss (41×14)
+- iconVisualSize: Complete visual footprint with borders on all four sides (44×17)
+- textSize: Icon text label dimensions (from CalculateTextExtent)
+- totalDisplaySize: Icon + text + gap (complete display rectangle)
+
+**Enhanced GetIconDetailsFromDisk() Implementation:**
+- Added iconTextForFont parameter (NULL if text measurement not needed)
+- Accesses global prefsWorkbench and rastPort for calculations
+- Implements proven emboss formulas: baseSize + embossRectangleSize (one side), + borderWidth (second side)
+- Calls CalculateTextExtent() when text provided
+- Uses MAX() formula for width (icon vs text, whichever wider)
+- Calculates total height with GAP_BETWEEN_ICON_AND_TEXT
+
+**Caller Updates:**
+- icon_management.c: Now passes fileNameNoInfo as iconTextForFont, uses pre-calculated fields
+- window_management.c: Near Parent now uses iconVisualSize instead of base size (fixes 38×11 → 44×17)
+- default_tool_update_window.c: Passes NULL for iconTextForFont (only needs defaultTool field)
+
+**Benefits:**
+- Single source of truth for icon dimension calculations
+- Near Parent positioning now correctly accounts for emboss borders
+- Eliminates ~40 lines of duplicated calculation code
+- Future changes to size logic only require one location update
+- Battle-tested formulas preserved and reused
+
+**Testing Required:**
+User to verify Near Parent mode positions windows at bottom-right of icon, not covering it. Test with Small/Medium/Large border sizes and per-icon frameless icons.
+
+---
+
+### Icon Dimension Calculations Fixed for All Border Sizes (November 25, 2025)
 
 #### Replaced Hardcoded +3 Border with Dynamic border_width
 * **Status**: Complete - Implemented and compiled

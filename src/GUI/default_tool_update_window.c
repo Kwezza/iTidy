@@ -353,7 +353,7 @@ static BOOL perform_tool_update(struct iTidy_DefaultToolUpdateWindow *data)
             
             /* Get old default tool before changing (for backup) */
             memset(&icon_details, 0, sizeof(IconDetailsFromDisk));
-            if (GetIconDetailsFromDisk(info_path, &icon_details))
+            if (GetIconDetailsFromDisk(info_path, &icon_details, NULL))
             {
                 old_tool = icon_details.defaultTool;  /* Will be freed later */
             }
@@ -450,7 +450,7 @@ static BOOL perform_tool_update(struct iTidy_DefaultToolUpdateWindow *data)
         
         /* Get old default tool before changing (for backup) */
         memset(&icon_details, 0, sizeof(IconDetailsFromDisk));
-        if (GetIconDetailsFromDisk(info_path, &icon_details))
+        if (GetIconDetailsFromDisk(info_path, &icon_details, NULL))
         {
             old_tool = icon_details.defaultTool;  /* Will be freed later */
         }

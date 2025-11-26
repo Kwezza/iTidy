@@ -24,16 +24,23 @@
 /* Structure to hold comprehensive icon details from a single disk read */
 typedef struct {
     IconPosition position;      /* Icon X,Y coordinates */
-    IconSize size;              /* Icon width and height */
+    IconSize size;              /* Icon width and height (base bitmap only) */
     int iconType;               /* Icon format: standard, NewIcon, or OS3.5 */
     BOOL hasFrame;              /* Whether icon has a border/frame */
     char *defaultTool;          /* Default tool path (caller must free) */
     BOOL isNewIcon;             /* TRUE if NewIcon format detected */
     BOOL isOS35Icon;            /* TRUE if OS3.5 format detected */
+    
+    /* Calculated size fields (require emboss settings and optional text) */
+    int borderWidth;            /* Actual border width (0 if frameless, embossSize otherwise) */
+    IconSize iconWithEmboss;    /* Bitmap + one-side emboss (e.g., 38+3=41, 11+3=14) */
+    IconSize iconVisualSize;    /* Full visual footprint with borders both sides (e.g., 44x17) */
+    IconSize textSize;          /* Text label dimensions (0x0 if text not provided) */
+    IconSize totalDisplaySize;  /* Icon + text + gap (complete display rectangle) */
 } IconDetailsFromDisk;
 
 /* Optimized function to read ALL icon details in a single disk operation */
-BOOL GetIconDetailsFromDisk(const char *filePath, IconDetailsFromDisk *details);
+BOOL GetIconDetailsFromDisk(const char *filePath, IconDetailsFromDisk *details, const char *iconTextForFont);
 
 /* Legacy functions - still available but less efficient */
 void GetNewIconSizePath(const char *filePath, IconSize *newIconSize);
