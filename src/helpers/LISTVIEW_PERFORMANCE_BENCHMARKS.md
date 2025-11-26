@@ -27,6 +27,7 @@ This document contains real-world performance benchmarks of the `listview_column
 
 **Fast RAM on 68000 provides**:
 - ✅ **Capacity**: More memory for larger datasets
+
 - ✅ **Reduced contention**: Less Chip RAM competition with graphics/audio DMA
 - ❌ **NO speed increase**: Same 16-bit bandwidth as Chip RAM
 
