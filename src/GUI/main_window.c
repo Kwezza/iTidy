@@ -376,28 +376,6 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     current_y += font_height + 16;
     
     /*====================================================================*/
-    /* CENTER ICONS CHECKBOX                                             */
-    /*====================================================================*/
-    ng.ng_LeftEdge = 30;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 26;
-    ng.ng_Height = font_height + 4;
-    ng.ng_GadgetText = "Center icons in columns";
-    ng.ng_GadgetID = GID_CENTER_ICONS;
-    ng.ng_Flags = PLACETEXT_RIGHT;
-    
-    win_data->center_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
-        GTCB_Checked, FALSE,
-        TAG_END);
-    if (!gad)
-    {
-        printf("ERROR: Failed to create center icons checkbox\n");
-        return FALSE;
-    }
-    
-    current_y += font_height + 20;
-    
-    /*====================================================================*/
     /* RECURSIVE SUBFOLDERS CHECKBOX                                     */
     /*====================================================================*/
     ng.ng_LeftEdge = 30;
@@ -634,7 +612,6 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     /* Initialize default settings (Classic preset) */
     win_data->order_selected = 0;        /* Folders First */
     win_data->sortby_selected = 0;       /* Name */
-    win_data->center_icons = TRUE;
     win_data->recursive_subdirs = FALSE;
     win_data->enable_backup = FALSE;
     win_data->window_position_selected = 0; /* Default: Center Screen */
@@ -865,7 +842,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                 0,  /* Horizontal sort (default) */
                                 win_data->order_selected,
                                 win_data->sortby_selected,
-                                win_data->center_icons,
+                                TRUE,  /* center_icons now in advanced settings */
                                 TRUE);  /* optimize_columns now in advanced settings */
                         }
                         else
@@ -876,7 +853,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                             /* Only update sort-related fields from GUI (these don't conflict with advanced settings) */
                             prefs->sortPriority = win_data->order_selected;
                             prefs->sortBy = win_data->sortby_selected;
-                            prefs->centerIconsInColumn = win_data->center_icons;
+                            /* centerIconsInColumn now in advanced settings */
                             /* useColumnWidthOptimization now in advanced settings */
                             /* sortOrder now uses Classic default (HORIZONTAL) */
                         }
@@ -1001,7 +978,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                     0,  /* Horizontal sort (default) */
                                     win_data->order_selected,
                                     win_data->sortby_selected,
-                                    win_data->center_icons,
+                                    TRUE,  /* center_icons now in advanced settings */
                                     TRUE);  /* optimize_columns now in advanced settings */
                             }
                             
@@ -1101,17 +1078,6 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                 "window. Only the icons are rearranged.",
                                 "OK"
                             );
-                        }
-                        break;
-
-                    case GID_CENTER_ICONS:
-                        {
-                            ULONG checked = 0;
-                            GT_GetGadgetAttrs(gad, win_data->window, NULL,
-                                GTCB_Checked, &checked,
-                                TAG_END);
-                            win_data->center_icons = (BOOL)checked;
-                            printf("Center icons: %s\n", win_data->center_icons ? "ON" : "OFF");
                         }
                         break;
 

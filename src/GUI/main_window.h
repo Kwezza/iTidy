@@ -19,7 +19,6 @@
 #define GID_BROWSE           2
 #define GID_ORDER            6
 #define GID_SORTBY           7
-#define GID_CENTER_ICONS     8
 #define GID_RECURSIVE        10
 #define GID_BACKUP           11
 #define GID_ADVANCED         14
@@ -47,7 +46,6 @@ struct iTidyMainWindow
     struct Gadget *browse_btn;
     struct Gadget *order_cycle;
     struct Gadget *sortby_cycle;
-    struct Gadget *center_check;
     struct Gadget *recursive_check;
     struct Gadget *backup_check;
     struct Gadget *advanced_btn;
@@ -62,7 +60,6 @@ struct iTidyMainWindow
     /* Temporary GUI state (for gadget selections only) */
     WORD order_selected;
     WORD sortby_selected;
-    BOOL center_icons;
     BOOL recursive_subdirs;
     BOOL enable_backup;
     WORD window_position_selected;

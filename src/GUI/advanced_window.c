@@ -538,6 +538,29 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
         return NULL;
     }
     
+    current_y += button_height + 12;
+    
+    /*--------------------------------------------------------------------*/
+    /* Column Layout Checkbox                                            */
+    /*--------------------------------------------------------------------*/
+    ng.ng_LeftEdge = 30;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = 26;
+    ng.ng_Height = button_height - 4;
+    ng.ng_GadgetText = "Column Layout";
+    ng.ng_GadgetID = GID_ADV_COLUMN_LAYOUT;
+    ng.ng_Flags = PLACETEXT_RIGHT;
+    
+    adv_data->column_layout_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
+        GTCB_Checked, adv_data->column_layout_enabled,
+        TAG_END);
+    
+    if (!gad)
+    {
+        printf("ERROR: Failed to create column layout checkbox\n");
+        return NULL;
+    }
+    
     current_y += button_height + 16;
     
     /*--------------------------------------------------------------------*/
@@ -631,6 +654,7 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
     adv_data->reverse_sort_enabled = prefs->reverseSort;        /* Load reverse sort setting */
     adv_data->optimize_cols_enabled = prefs->useColumnWidthOptimization;  /* Load optimize columns setting */
     adv_data->skip_hidden_enabled = prefs->skipHiddenFolders;  /* Load skip hidden folders setting */
+    adv_data->column_layout_enabled = prefs->centerIconsInColumn;  /* Load column layout setting */
     
     log_debug(LOG_GUI, "Loading prefs into adv_data on window open:\n");
     log_debug(LOG_GUI, "  prefs->iconSpacingX = %hu\n", prefs->iconSpacingX);
@@ -886,6 +910,9 @@ void save_advanced_window_to_preferences(struct iTidyAdvancedWindow *adv_data)
     /* Save skip hidden folders setting */
     adv_data->prefs->skipHiddenFolders = adv_data->skip_hidden_enabled;
     
+    /* Save column layout setting */
+    adv_data->prefs->centerIconsInColumn = adv_data->column_layout_enabled;
+    
     log_debug(LOG_GUI, "save_advanced_window_to_preferences() called:\n");
     log_debug(LOG_GUI, "  adv_data->max_width_pct_selected = %ld\n", (long)adv_data->max_width_pct_selected);
     log_debug(LOG_GUI, "  adv_data->vertical_align_selected = %ld\n", (long)adv_data->vertical_align_selected);
@@ -1138,6 +1165,18 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                             adv_data->skip_hidden_enabled = (BOOL)checked;
                             printf("Skip Hidden Folders: %s\n", 
                                    adv_data->skip_hidden_enabled ? "ENABLED" : "DISABLED");
+                        }
+                        break;
+                    
+                    case GID_ADV_COLUMN_LAYOUT:
+                        {
+                            ULONG checked = 0;
+                            GT_GetGadgetAttrs(gad, adv_data->window, NULL,
+                                GTCB_Checked, &checked,
+                                TAG_END);
+                            adv_data->column_layout_enabled = (BOOL)checked;
+                            printf("Column Layout: %s\n", 
+                                   adv_data->column_layout_enabled ? "ENABLED" : "DISABLED");
                         }
                         break;
                     
