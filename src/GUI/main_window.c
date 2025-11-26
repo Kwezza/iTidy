@@ -56,12 +56,6 @@ extern void iTidy_CloseToolRestoreWindow(struct Window *window);
 /*------------------------------------------------------------------------*/
 /* Cycle Gadget Labels                                                   */
 /*------------------------------------------------------------------------*/
-static STRPTR sort_labels[] = {
-    "Horizontal",
-    "Vertical",
-    NULL
-};
-
 static STRPTR order_labels[] = {
     "Folders First",
     "Files First",
@@ -338,29 +332,6 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     current_y += font_height + 20;
     
     /*====================================================================*/
-    /* SORT CYCLE GADGET                                                 */
-    /*====================================================================*/
-    ng.ng_LeftEdge = 80;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 120;
-    ng.ng_Height = font_height + 6;
-    ng.ng_GadgetText = "Sort:";
-    ng.ng_GadgetID = GID_SORT;
-    ng.ng_Flags = PLACETEXT_LEFT;
-    
-    win_data->sort_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
-        GTCY_Labels, sort_labels,
-        GTCY_Active, 0,
-        TAG_END);
-    if (!gad)
-    {
-        printf("ERROR: Failed to create sort cycle\n");
-        return FALSE;
-    }
-    
-    current_y += font_height + 16;
-    
-    /*====================================================================*/
     /* ORDER CYCLE GADGET                                                */
     /*====================================================================*/
     ng.ng_LeftEdge = 80;
@@ -411,7 +382,7 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 26;
     ng.ng_Height = font_height + 4;
-    ng.ng_GadgetText = "Center icons";
+    ng.ng_GadgetText = "Center icons in columns";
     ng.ng_GadgetID = GID_CENTER_ICONS;
     ng.ng_Flags = PLACETEXT_RIGHT;
     
@@ -424,26 +395,6 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
         return FALSE;
     }
     
-    /*====================================================================*/
-    /* OPTIMIZE COLUMNS CHECKBOX                                         */
-    /*====================================================================*/
-    ng.ng_LeftEdge = 250;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 26;
-    ng.ng_Height = font_height + 4;
-    ng.ng_GadgetText = "Optimize columns";
-    ng.ng_GadgetID = GID_OPTIMIZE_COLS;
-    ng.ng_Flags = PLACETEXT_RIGHT;
-    
-    win_data->optimize_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
-        GTCB_Checked, TRUE,
-        TAG_END);
-    if (!gad)
-    {
-        printf("ERROR: Failed to create optimize checkbox\n");
-        return FALSE;
-    }
-    
     current_y += font_height + 20;
     
     /*====================================================================*/
@@ -453,7 +404,7 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 26;
     ng.ng_Height = font_height + 4;
-    ng.ng_GadgetText = "Recursive Subfolders";
+    ng.ng_GadgetText = "Cleanup subfolders";
     ng.ng_GadgetID = GID_RECURSIVE;
     ng.ng_Flags = PLACETEXT_RIGHT;
     
@@ -475,7 +426,7 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 26;
     ng.ng_Height = font_height + 4;
-    ng.ng_GadgetText = "Backup (LHA)";
+    ng.ng_GadgetText = "Backup icons";
     ng.ng_GadgetID = GID_BACKUP;
     ng.ng_Flags = PLACETEXT_RIGHT;
     
@@ -485,51 +436,6 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     if (!gad)
     {
         printf("ERROR: Failed to create backup checkbox\n");
-        return FALSE;
-    }
-    
-    current_y += font_height + 12;
-    
-    /*====================================================================*/
-    /* ICON UPGRADE CHECKBOX (disabled for now)                          */
-    /*====================================================================*/
-    ng.ng_LeftEdge = 30;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 26;
-    ng.ng_Height = font_height + 4;
-    ng.ng_GadgetText = "Icon Upgrade (future)";
-    ng.ng_GadgetID = GID_ICON_UPGRADE;
-    ng.ng_Flags = PLACETEXT_RIGHT;
-    
-    win_data->iconupgrade_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
-        GTCB_Checked, FALSE,
-        GA_Disabled, TRUE,
-        TAG_END);
-    if (!gad)
-    {
-        printf("ERROR: Failed to create icon upgrade checkbox\n");
-        return FALSE;
-    }
-    
-    current_y += font_height + 10;
-    
-    /*====================================================================*/
-    /* SKIP HIDDEN FOLDERS CHECKBOX                                      */
-    /*====================================================================*/
-    ng.ng_LeftEdge = 30;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 26;
-    ng.ng_Height = font_height + 4;
-    ng.ng_GadgetText = "Skip Hidden Folders";
-    ng.ng_GadgetID = GID_SKIP_HIDDEN;
-    ng.ng_Flags = PLACETEXT_RIGHT;
-    
-    win_data->skip_hidden_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
-        GTCB_Checked, TRUE,  /* Default to enabled */
-        TAG_END);
-    if (!gad)
-    {
-        printf("ERROR: Failed to create skip hidden folders checkbox\n");
         return FALSE;
     }
     
@@ -623,7 +529,7 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 100;
     ng.ng_Height = font_height + 8;
-    ng.ng_GadgetText = "Apply";
+    ng.ng_GadgetText = "Go!";
     ng.ng_GadgetID = GID_APPLY;
     ng.ng_Flags = PLACETEXT_IN;
     
@@ -661,7 +567,7 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 180;
     ng.ng_Height = font_height + 8;
-    ng.ng_GadgetText = "View Tool Cache";
+    ng.ng_GadgetText = "Default Tool Manager";
     ng.ng_GadgetID = GID_VIEW_TOOL_CACHE;
     ng.ng_Flags = PLACETEXT_IN;
     
@@ -669,24 +575,6 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     if (!gad)
     {
         printf("ERROR: Failed to create view tool cache button\n");
-        return FALSE;
-    }
-    
-    /*====================================================================*/
-    /* COUNT FOLDERS BUTTON (Debug Tool)                                 */
-    /*====================================================================*/
-    ng.ng_LeftEdge = 230;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 180;
-    ng.ng_Height = font_height + 8;
-    ng.ng_GadgetText = "Count Folders";
-    ng.ng_GadgetID = GID_COUNT_FOLDERS;
-    ng.ng_Flags = PLACETEXT_IN;
-    
-    win_data->count_folders_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
-    if (!gad)
-    {
-        printf("ERROR: Failed to create count folders button\n");
         return FALSE;
     }
     
@@ -744,15 +632,11 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     strcpy(win_data->folder_path_buffer, "PC:");
     
     /* Initialize default settings (Classic preset) */
-    win_data->sort_selected = 0;         /* Horizontal */
     win_data->order_selected = 0;        /* Folders First */
     win_data->sortby_selected = 0;       /* Name */
     win_data->center_icons = TRUE;
-    win_data->optimize_columns = TRUE;
     win_data->recursive_subdirs = FALSE;
     win_data->enable_backup = FALSE;
-    win_data->enable_icon_upgrade = FALSE;
-    win_data->skip_hidden_folders = TRUE;  /* Default: skip hidden folders */
     win_data->window_position_selected = 0; /* Default: Center Screen */
     
     /* Initialize advanced settings flag */
@@ -978,11 +862,11 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                             /* Override with user's GUI selections */
                             MapGuiToPreferences(prefs,
                                 0,  /* Always use row-major layout (column mode not implemented) */
-                                win_data->sort_selected,
+                                0,  /* Horizontal sort (default) */
                                 win_data->order_selected,
                                 win_data->sortby_selected,
                                 win_data->center_icons,
-                                win_data->optimize_columns);
+                                TRUE);  /* optimize_columns now in advanced settings */
                         }
                         else
                         {
@@ -990,11 +874,11 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                             append_to_log("Preserving advanced settings (user customized)\n");
                             
                             /* Only update sort-related fields from GUI (these don't conflict with advanced settings) */
-                            prefs->sortOrder = win_data->sort_selected;
                             prefs->sortPriority = win_data->order_selected;
                             prefs->sortBy = win_data->sortby_selected;
                             prefs->centerIconsInColumn = win_data->center_icons;
-                            prefs->useColumnWidthOptimization = win_data->optimize_columns;
+                            /* useColumnWidthOptimization now in advanced settings */
+                            /* sortOrder now uses Classic default (HORIZONTAL) */
                         }
                         
                         /* Set folder path and recursive mode from GUI (applies to both modes) */
@@ -1002,10 +886,9 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         prefs->folder_path[sizeof(prefs->folder_path) - 1] = '\0';
                         prefs->recursive_subdirs = win_data->recursive_subdirs;
                         
-                        /* Set skip hidden folders and backup preferences from GUI (applies to both modes) */
-                        prefs->skipHiddenFolders = win_data->skip_hidden_folders;
+                        /* Set backup preferences from GUI (applies to both modes) */
                         prefs->enable_backup = win_data->enable_backup;
-                        prefs->enable_icon_upgrade = win_data->enable_icon_upgrade;
+                        /* skipHiddenFolders now in advanced settings */
                         
                         /* Set backup preferences from GUI (applies to both modes) */
                         prefs->backupPrefs.enableUndoBackup = win_data->enable_backup;
@@ -1115,11 +998,11 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                 /* Also apply GUI selections to get current state */
                                 MapGuiToPreferences(&temp_prefs,
                                     0,  /* Always use row-major layout */
-                                    win_data->sort_selected,
+                                    0,  /* Horizontal sort (default) */
                                     win_data->order_selected,
                                     win_data->sortby_selected,
                                     win_data->center_icons,
-                                    win_data->optimize_columns);
+                                    TRUE);  /* optimize_columns now in advanced settings */
                             }
                             
                             /* Open advanced window (modal) */
@@ -1172,12 +1055,6 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
 
                     case GID_FOLDER_PATH:
                         printf("Folder path changed: %s\n", win_data->folder_path_buffer);
-                        break;
-
-                    case GID_SORT:
-                        /* Use msg_code which contains the new cycle gadget selection */
-                        win_data->sort_selected = msg_code;
-                        printf("Sort changed to: %s\n", sort_labels[win_data->sort_selected]);
                         break;
 
                     case GID_ORDER:
@@ -1238,17 +1115,6 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         }
                         break;
 
-                    case GID_OPTIMIZE_COLS:
-                        {
-                            ULONG checked = 0;
-                            GT_GetGadgetAttrs(gad, win_data->window, NULL,
-                                GTCB_Checked, &checked,
-                                TAG_END);
-                            win_data->optimize_columns = (BOOL)checked;
-                            printf("Optimize columns: %s\n", win_data->optimize_columns ? "ON" : "OFF");
-                        }
-                        break;
-
                     case GID_RECURSIVE:
                         {
                             ULONG checked = 0;
@@ -1268,17 +1134,6 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                 TAG_END);
                             win_data->enable_backup = (BOOL)checked;
                             printf("Backup: %s\n", win_data->enable_backup ? "ON" : "OFF");
-                        }
-                        break;
-
-                    case GID_SKIP_HIDDEN:
-                        {
-                            ULONG checked = 0;
-                            GT_GetGadgetAttrs(gad, win_data->window, NULL,
-                                GTCB_Checked, &checked,
-                                TAG_END);
-                            win_data->skip_hidden_folders = (BOOL)checked;
-                            printf("Skip hidden folders: %s\n", win_data->skip_hidden_folders ? "ON" : "OFF");
                         }
                         break;
 
@@ -1324,101 +1179,6 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                     "Error",
                                     "Failed to open tool cache window.\n"
                                     "Check the log for details.",
-                                    "OK");
-                            }
-                        }
-                        break;
-
-                    case GID_COUNT_FOLDERS:
-                        {
-                            ULONG folderCount = 0;
-                            LayoutPreferences scanPrefs;
-                            char message[256];
-                            STRPTR currentPath = NULL;
-                            
-                            log_info(LOG_GUI, "Count Folders button clicked\n");
-                            
-                            /* Get current folder path pointer from string gadget */
-                            GT_GetGadgetAttrs(win_data->folder_path, win_data->window, NULL,
-                                            GTST_String, (ULONG)&currentPath,
-                                            TAG_END);
-                            
-                            /* Check if path is valid */
-                            if (!currentPath || currentPath[0] == '\0')
-                            {
-                                log_warning(LOG_GUI, "No folder path entered\n");
-                                (void)ShowEasyRequest(
-                                    win_data->window,
-                                    "No Path",
-                                    "Please enter a folder path first.",
-                                    "OK");
-                                break;
-                            }
-                            
-                            /* Create preferences structure with current settings */
-                            memset(&scanPrefs, 0, sizeof(LayoutPreferences));
-                            
-                            /* Set path and recursive mode from GUI */
-                            strncpy(scanPrefs.folder_path, currentPath, 
-                                   sizeof(scanPrefs.folder_path) - 1);
-                            scanPrefs.folder_path[sizeof(scanPrefs.folder_path) - 1] = '\0';
-                            scanPrefs.recursive_subdirs = win_data->recursive_subdirs;
-                            scanPrefs.skipHiddenFolders = win_data->skip_hidden_folders;
-                            
-                            log_info(LOG_GUI, "Scanning path: %s (recursive=%s, skipHidden=%s)\n", 
-                                    scanPrefs.folder_path,
-                                    scanPrefs.recursive_subdirs ? "YES" : "NO",
-                                    scanPrefs.skipHiddenFolders ? "YES" : "NO");
-                            
-                            /* Set busy pointer */
-                            SetWindowPointer(win_data->window, WA_BusyPointer, TRUE, TAG_END);
-                            
-                            /* Perform the scan */
-                            if (CountFoldersWithIcons(scanPrefs.folder_path, &scanPrefs, &folderCount))
-                            {
-                                /* Clear busy pointer */
-                                SetWindowPointer(win_data->window, WA_Pointer, NULL, TAG_END);
-                                
-                                /* Format result message */
-                                if (scanPrefs.recursive_subdirs)
-                                {
-                                    snprintf(message, sizeof(message),
-                                            "Found %lu folder%s with icons\n"
-                                            "(recursive scan of %s)",
-                                            folderCount, 
-                                            folderCount == 1 ? "" : "s",
-                                            scanPrefs.folder_path);
-                                }
-                                else
-                                {
-                                    snprintf(message, sizeof(message),
-                                            "Found %lu folder%s with icons\n"
-                                            "(in %s only)",
-                                            folderCount, 
-                                            folderCount == 1 ? "" : "s",
-                                            scanPrefs.folder_path);
-                                }
-                                
-                                log_info(LOG_GUI, "Scan complete: %lu folders\n", folderCount);
-                                
-                                /* Show result */
-                                (void)ShowEasyRequest(
-                                    win_data->window,
-                                    "Folder Count",
-                                    message,
-                                    "OK");
-                            }
-                            else
-                            {
-                                /* Clear busy pointer */
-                                SetWindowPointer(win_data->window, WA_Pointer, NULL, TAG_END);
-                                
-                                log_error(LOG_GUI, "Folder scan failed\n");
-                                (void)ShowEasyRequest(
-                                    win_data->window,
-                                    "Scan Failed",
-                                    "Failed to scan folders.\n"
-                                    "Check that the path is valid.",
                                     "OK");
                             }
                         }

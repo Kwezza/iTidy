@@ -492,6 +492,52 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
         return NULL;
     }
     
+    current_y += button_height + 12;
+    
+    /*--------------------------------------------------------------------*/
+    /* Optimize Column Widths Checkbox                                   */
+    /*--------------------------------------------------------------------*/
+    ng.ng_LeftEdge = 30;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = 26;
+    ng.ng_Height = button_height - 4;
+    ng.ng_GadgetText = "Optimize Column Widths";
+    ng.ng_GadgetID = GID_ADV_OPTIMIZE_COLS;
+    ng.ng_Flags = PLACETEXT_RIGHT;
+    
+    adv_data->optimize_cols_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
+        GTCB_Checked, adv_data->optimize_cols_enabled,
+        TAG_END);
+    
+    if (!gad)
+    {
+        printf("ERROR: Failed to create optimize columns checkbox\n");
+        return NULL;
+    }
+    
+    current_y += button_height + 12;
+    
+    /*--------------------------------------------------------------------*/
+    /* Skip Hidden Folders Checkbox                                      */
+    /*--------------------------------------------------------------------*/
+    ng.ng_LeftEdge = 30;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = 26;
+    ng.ng_Height = button_height - 4;
+    ng.ng_GadgetText = "Skip Hidden Folders";
+    ng.ng_GadgetID = GID_ADV_SKIP_HIDDEN;
+    ng.ng_Flags = PLACETEXT_RIGHT;
+    
+    adv_data->skip_hidden_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
+        GTCB_Checked, adv_data->skip_hidden_enabled,
+        TAG_END);
+    
+    if (!gad)
+    {
+        printf("ERROR: Failed to create skip hidden folders checkbox\n");
+        return NULL;
+    }
+    
     current_y += button_height + 16;
     
     /*--------------------------------------------------------------------*/
@@ -583,6 +629,8 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
     adv_data->max_width_pct_selected = get_max_width_pct_index(prefs->maxWindowWidthPct);
     adv_data->vertical_align_selected = prefs->textAlignment;  /* 0=Top, 1=Middle, 2=Bottom */
     adv_data->reverse_sort_enabled = prefs->reverseSort;        /* Load reverse sort setting */
+    adv_data->optimize_cols_enabled = prefs->useColumnWidthOptimization;  /* Load optimize columns setting */
+    adv_data->skip_hidden_enabled = prefs->skipHiddenFolders;  /* Load skip hidden folders setting */
     
     log_debug(LOG_GUI, "Loading prefs into adv_data on window open:\n");
     log_debug(LOG_GUI, "  prefs->iconSpacingX = %hu\n", prefs->iconSpacingX);
@@ -832,6 +880,12 @@ void save_advanced_window_to_preferences(struct iTidyAdvancedWindow *adv_data)
     /* Save reverse sort setting */
     adv_data->prefs->reverseSort = adv_data->reverse_sort_enabled;
     
+    /* Save optimize columns setting */
+    adv_data->prefs->useColumnWidthOptimization = adv_data->optimize_cols_enabled;
+    
+    /* Save skip hidden folders setting */
+    adv_data->prefs->skipHiddenFolders = adv_data->skip_hidden_enabled;
+    
     log_debug(LOG_GUI, "save_advanced_window_to_preferences() called:\n");
     log_debug(LOG_GUI, "  adv_data->max_width_pct_selected = %ld\n", (long)adv_data->max_width_pct_selected);
     log_debug(LOG_GUI, "  adv_data->vertical_align_selected = %ld\n", (long)adv_data->vertical_align_selected);
@@ -1060,6 +1114,30 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                             adv_data->reverse_sort_enabled = (BOOL)checked;
                             printf("Reverse Sort: %s\n", 
                                    adv_data->reverse_sort_enabled ? "ENABLED" : "DISABLED");
+                        }
+                        break;
+                    
+                    case GID_ADV_OPTIMIZE_COLS:
+                        {
+                            ULONG checked = 0;
+                            GT_GetGadgetAttrs(gad, adv_data->window, NULL,
+                                GTCB_Checked, &checked,
+                                TAG_END);
+                            adv_data->optimize_cols_enabled = (BOOL)checked;
+                            printf("Optimize Column Widths: %s\n", 
+                                   adv_data->optimize_cols_enabled ? "ENABLED" : "DISABLED");
+                        }
+                        break;
+                    
+                    case GID_ADV_SKIP_HIDDEN:
+                        {
+                            ULONG checked = 0;
+                            GT_GetGadgetAttrs(gad, adv_data->window, NULL,
+                                GTCB_Checked, &checked,
+                                TAG_END);
+                            adv_data->skip_hidden_enabled = (BOOL)checked;
+                            printf("Skip Hidden Folders: %s\n", 
+                                   adv_data->skip_hidden_enabled ? "ENABLED" : "DISABLED");
                         }
                         break;
                     

@@ -28,6 +28,8 @@
 #define GID_ADV_MAX_WIDTH_PCT     1012
 #define GID_ADV_VERTICAL_ALIGN    1013
 #define GID_ADV_REVERSE_SORT      1014
+#define GID_ADV_OPTIMIZE_COLS     1016
+#define GID_ADV_SKIP_HIDDEN       1017
 #define GID_ADV_BETA_OPTIONS      1015
 #define GID_ADV_OK                1009
 #define GID_ADV_CANCEL            1010
@@ -77,6 +79,8 @@ struct iTidyAdvancedWindow
     struct Gadget *max_width_pct_cycle;
     struct Gadget *vertical_align_cycle;
     struct Gadget *reverse_sort_check;
+    struct Gadget *optimize_cols_check;
+    struct Gadget *skip_hidden_check;
     struct Gadget *beta_options_btn;
     struct Gadget *ok_btn;
     struct Gadget *cancel_btn;
@@ -94,6 +98,8 @@ struct iTidyAdvancedWindow
     WORD max_width_pct_selected;        /* Index into max width percentage presets */
     WORD vertical_align_selected;       /* Index: 0=Top, 1=Middle, 2=Bottom */
     BOOL reverse_sort_enabled;          /* TRUE if reverse sort enabled */
+    BOOL optimize_cols_enabled;         /* TRUE if column width optimization enabled */
+    BOOL skip_hidden_enabled;           /* TRUE if skip hidden folders enabled */
     
     /* Pointer to preferences to update */
     LayoutPreferences *prefs;
