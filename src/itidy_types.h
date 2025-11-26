@@ -11,7 +11,7 @@
 #define ERROR_LIST_INITIAL_SIZE 10
 #define VERSION "2.0"
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define GAP_BETWEEN_ICON_AND_TEXT 2
+#define GAP_BETWEEN_ICON_AND_TEXT 1
 #define ICON_START_X 10
 #define ICON_START_Y 8
 #define PADDING_WIDTH 0   /* Disabled - resizeFolderToContents adds explicit margins, IControl adds borders */

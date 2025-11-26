@@ -84,8 +84,21 @@ typedef enum {
 } WindowOverflowMode;
 
 /*========================================================================*/
-/* Backup Preferences Structure                                          */
+/* Window Position Mode Enumeration                                      */
 /*========================================================================*/
+/**
+ * @brief Window positioning behavior after resize
+ */
+typedef enum {
+    WINDOW_POS_CENTER_SCREEN = 0,  /* Center window on screen (classic behavior) */
+    WINDOW_POS_KEEP_POSITION = 1,  /* Keep current position, pull back if off-screen */
+    WINDOW_POS_NEAR_PARENT = 2,    /* Position near parent drawer (if space allows) */
+    WINDOW_POS_NO_CHANGE = 3       /* Don't move window at all */
+} WindowPositionMode;
+
+/*========================================================================*/
+/* Backup Preferences Structure                                          */
+/*========================================================================
 /**
  * @brief Settings for LHA backup creation before processing
  */
@@ -133,6 +146,7 @@ typedef struct {
     UWORD maxWindowWidthPct;         /* Max window width as % of screen */
     int aspectRatio;                 /* Target window aspect ratio (scaled by 1000, e.g., 1600 = 1.6) */
     WindowOverflowMode overflowMode; /* Overflow behavior for large folders */
+    WindowPositionMode windowPositionMode; /* Window positioning behavior after resize */
     
     /* Spacing Settings */
     UWORD iconSpacingX;              /* Horizontal spacing between icons (pixels) */
@@ -200,6 +214,7 @@ typedef struct {
 #define DEFAULT_MAX_WIDTH_PCT       55
 #define DEFAULT_ASPECT_RATIO        1600  /* 1.6 * 1000 (fixed-point) */
 #define DEFAULT_OVERFLOW_MODE       OVERFLOW_HORIZONTAL  /* Classic behavior */
+#define DEFAULT_WINDOW_POSITION_MODE WINDOW_POS_CENTER_SCREEN  /* Classic auto-center behavior */
 #define DEFAULT_ICON_SPACING_X      8    /* 8px horizontal spacing */
 #define DEFAULT_ICON_SPACING_Y      8    /* 8px vertical spacing */
 #define DEFAULT_SKIP_HIDDEN_FOLDERS TRUE   /* Default: ignore hidden folders */
@@ -220,7 +235,7 @@ typedef struct {
 #define DEFAULT_ENABLE_DEFAULT_TOOL_BACKUP                 TRUE    /* Default: Enabled (auto-backup before default tool changes) */
 
 /* Icon Spacing Limits */
-#define MIN_ICON_SPACING            4    /* Minimum 4px (icons too close) */
+#define MIN_ICON_SPACING            0    /* Minimum 0px (allow testing exact boundaries) */
 #define MAX_ICON_SPACING           20    /* Maximum 20px (too much wasted space) */
 
 /*========================================================================*/

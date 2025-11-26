@@ -30,7 +30,7 @@ else
     # EASY_REQUEST_HELPER: -DBUILD_WITH_MOVEWINDOW disabled (causes flicker on slow Amigas)
     # CPU TARGET: 68000 for maximum compatibility (A500/A600/A1200)
     CC = vc
-    CFLAGS = +aos68k -c99 -cpu=68000 -O2 -size -I$(INC_DIR) -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__
+    CFLAGS = +aos68k -c99 -cpu=68000 -O2 -size -I$(INC_DIR) -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG
     LDFLAGS = +aos68k -cpu=68000 -O2 -size -final -lamiga -lauto
     OUT_DIR = $(BUILD_DIR)/amiga
     BIN_DIR = Bin/Amiga

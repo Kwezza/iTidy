@@ -18,6 +18,7 @@
 #include "utilities.h"
 #include "writeLog.h"
 #include "icon_misc.h"
+#include "Settings/WorkbenchPrefs.h"
 
 void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
 {
@@ -690,12 +691,17 @@ int getOS35IconSize(const char *filename, IconSize *size)
  * 
  * NOTE: Caller must free details->defaultTool if not NULL
  */
-BOOL GetIconDetailsFromDisk(const char *filePath, IconDetailsFromDisk *details)
+BOOL GetIconDetailsFromDisk(const char *filePath, IconDetailsFromDisk *details, const char *iconTextForFont)
 {
     struct DiskObject *diskObj = NULL;
     char *pathCopy = NULL;
     size_t pathLength;
     BOOL success = FALSE;
+    struct TextExtent textExtent;
+    
+    /* Access global settings and RastPort */
+    extern struct WorkbenchSettings prefsWorkbench;
+    extern struct RastPort *rastPort;
     
     if (filePath == NULL || details == NULL)
     {
@@ -808,6 +814,58 @@ BOOL GetIconDetailsFromDisk(const char *filePath, IconDetailsFromDisk *details)
         }
     }
 #endif
+    
+    /* ===== BATTLE-TESTED SIZE CALCULATIONS ===== */
+    /* From icon_management.c lines 550-586 - proven formulas for all border sizes */
+    
+    /* Step 1: Apply emboss rectangle size to one side */
+    if (prefsWorkbench.embossRectangleSize > 0)
+    {
+        details->iconWithEmboss.width = details->size.width + prefsWorkbench.embossRectangleSize;
+        details->iconWithEmboss.height = details->size.height + prefsWorkbench.embossRectangleSize;
+    }
+    else
+    {
+        details->iconWithEmboss.width = details->size.width;
+        details->iconWithEmboss.height = details->size.height;
+    }
+    
+    /* Step 2: Determine border width based on frame status and icon type */
+    if (details->hasFrame || details->iconType == icon_type_standard)
+    {
+        details->borderWidth = prefsWorkbench.embossRectangleSize;
+    }
+    else
+    {
+        details->borderWidth = 0;  /* Frameless icon */
+    }
+    
+    /* Step 3: Calculate visual size - bitmap + borders on ALL FOUR SIDES */
+    /* This is the critical fix: emboss adds borderWidth on BOTH left+right and top+bottom */
+    details->iconVisualSize.width = details->iconWithEmboss.width + details->borderWidth;
+    details->iconVisualSize.height = details->iconWithEmboss.height + details->borderWidth;
+    
+    /* Step 4: Calculate text size if text provided */
+    if (iconTextForFont != NULL && iconTextForFont[0] != '\0' && rastPort != NULL)
+    {
+        CalculateTextExtent(iconTextForFont, &textExtent);
+        details->textSize.width = textExtent.te_Width;
+        details->textSize.height = textExtent.te_Height;
+        
+        /* Step 5: Calculate total display size using proven MAX formula */
+        /* Icon + second border OR text, whichever is wider */
+        details->totalDisplaySize.width = MAX(details->iconVisualSize.width, details->textSize.width);
+        /* Icon + border + gap + text height */
+        details->totalDisplaySize.height = details->iconVisualSize.height + GAP_BETWEEN_ICON_AND_TEXT + details->textSize.height;
+    }
+    else
+    {
+        /* No text - total display size equals visual icon size */
+        details->textSize.width = 0;
+        details->textSize.height = 0;
+        details->totalDisplaySize.width = details->iconVisualSize.width;
+        details->totalDisplaySize.height = details->iconVisualSize.height;
+    }
     
     success = TRUE;
     

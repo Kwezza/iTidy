@@ -304,7 +304,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     ng.ng_Flags = PLACETEXT_LEFT;
     
     adv_data->spacing_x_slider = gad = CreateGadget(SLIDER_KIND, gad, &ng,
-        GTSL_Min, 4,
+        GTSL_Min, 0,
         GTSL_Max, 20,
         GTSL_Level, adv_data->spacing_x_value,
         GTSL_MaxLevelLen, 3,
@@ -333,7 +333,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     ng.ng_Flags = PLACETEXT_LEFT;
     
     adv_data->spacing_y_slider = gad = CreateGadget(SLIDER_KIND, gad, &ng,
-        GTSL_Min, 4,
+        GTSL_Min, 0,
         GTSL_Max, 20,
         GTSL_Level, adv_data->spacing_y_value,
         GTSL_MaxLevelLen, 3,
@@ -585,6 +585,8 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
     adv_data->reverse_sort_enabled = prefs->reverseSort;        /* Load reverse sort setting */
     
     log_debug(LOG_GUI, "Loading prefs into adv_data on window open:\n");
+    log_debug(LOG_GUI, "  prefs->iconSpacingX = %hu\n", prefs->iconSpacingX);
+    log_debug(LOG_GUI, "  prefs->iconSpacingY = %hu\n", prefs->iconSpacingY);
     log_debug(LOG_GUI, "  prefs->maxWindowWidthPct = %ld\n", (long)prefs->maxWindowWidthPct);
     log_debug(LOG_GUI, "  prefs->textAlignment = %ld\n", (long)prefs->textAlignment);
     log_debug(LOG_GUI, "  adv_data->max_width_pct_selected = %ld\n", (long)adv_data->max_width_pct_selected);
@@ -804,6 +806,9 @@ void save_advanced_window_to_preferences(struct iTidyAdvancedWindow *adv_data)
     adv_data->prefs->iconSpacingX = adv_data->spacing_x_value;
     adv_data->prefs->iconSpacingY = adv_data->spacing_y_value;
     
+    log_debug(LOG_GUI, "  Saved prefs->iconSpacingX = %hu\n", adv_data->prefs->iconSpacingX);
+    log_debug(LOG_GUI, "  Saved prefs->iconSpacingY = %hu\n", adv_data->prefs->iconSpacingY);
+    
     /* Save column limits */
     adv_data->prefs->minIconsPerRow = adv_data->min_icons_per_row;
     
@@ -948,7 +953,10 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                                             GTSL_Level, &temp_number, TAG_END);
                             adv_data->spacing_y_value = (UWORD)temp_number;
                             
-                            /* Max window width percentage cycle gadget */
+                            log_debug(LOG_GUI, "Read gadget values on OK click:\n");
+                            log_debug(LOG_GUI, "  spacing_x_value = %hu\n", adv_data->spacing_x_value);
+                            log_debug(LOG_GUI, "  spacing_y_value = %hu\n", adv_data->spacing_y_value);
+                            log_debug(LOG_GUI, "  max_width_pct_selected = %ld\n", (long)adv_data->max_width_pct_selected);
                             GT_GetGadgetAttrs(adv_data->max_width_pct_cycle,
                                             adv_data->window, NULL,
                                             GTCY_Active, &temp_number, TAG_END);

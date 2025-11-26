@@ -19,7 +19,7 @@ BIN_DIR = ../../Bin/Amiga
 # Symptom: Works from DF0: but crashes from RAM: at same point (after sort, before width calc)
 # Root cause: -final does whole-program optimization that can generate non-relocatable code
 CC = vc
-CFLAGS = +aos68k -c99 -cpu=68000 -O2 -speed -I$(INC_DIR) -I$(SRC_DIR) -DPLATFORM_AMIGA=1 -D__AMIGA__
+CFLAGS = +aos68k -c99 -cpu=68000 -O2 -speed -I$(INC_DIR) -I$(SRC_DIR) -DPLATFORM_AMIGA=1 -D__AMIGA__  -DDEBUG
 LDFLAGS = +aos68k -cpu=68000 -s -lamiga -lauto -lmieee
 
 # Output binary
