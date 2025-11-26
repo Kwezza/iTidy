@@ -60,6 +60,7 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     prefs->maxWindowWidthPct = DEFAULT_MAX_WIDTH_PCT;
     prefs->aspectRatio = DEFAULT_ASPECT_RATIO;
     prefs->overflowMode = DEFAULT_OVERFLOW_MODE;
+    prefs->windowPositionMode = DEFAULT_WINDOW_POSITION_MODE;
     
     /* Spacing Settings */
     prefs->iconSpacingX = DEFAULT_ICON_SPACING_X;

@@ -34,6 +34,8 @@
 #define GID_VIEW_TOOL_CACHE  18
 #define GID_COUNT_FOLDERS    19
 #define GID_RESTORE_DEFAULT_TOOLS 20
+#define GID_WINDOW_POSITION  21
+#define GID_WINDOW_POSITION_HELP 22
 
 /*------------------------------------------------------------------------*/
 /* Main Window Data Structure                                            */
@@ -66,6 +68,8 @@ struct iTidyMainWindow
     struct Gadget *view_tool_cache_btn;
     struct Gadget *count_folders_btn;
     struct Gadget *restore_default_tools_btn;
+    struct Gadget *window_position_cycle;
+    struct Gadget *window_position_help_btn;
     
     /* Temporary GUI state (for gadget selections only) */
     WORD preset_selected;
@@ -78,6 +82,7 @@ struct iTidyMainWindow
     BOOL enable_backup;
     BOOL enable_icon_upgrade;
     BOOL skip_hidden_folders;
+    WORD window_position_selected;
     
     /* Temporary folder path buffer (for string gadget only) */
     char folder_path_buffer[256];

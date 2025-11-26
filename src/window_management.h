@@ -34,7 +34,7 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray,
                            FolderWindowTracker *windowTracker,
                            const LayoutPreferences *prefs);
 int InitializeWindow(void);
-void repoistionWindow(char *dirPath, int winWidth, int winHeight);
+void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPreferences *prefs);
 void SetIconFont(void); 
 
 #endif // WINDOW_MANAGEMENT_H

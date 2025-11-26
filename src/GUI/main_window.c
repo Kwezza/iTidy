@@ -85,6 +85,14 @@ static STRPTR sortby_labels[] = {
     NULL
 };
 
+static STRPTR window_position_labels[] = {
+    "Center Screen",
+    "Keep Position",
+    "Near Parent",
+    "No Change",
+    NULL
+};
+
 /*------------------------------------------------------------------------*/
 /**
  * @brief Print LayoutPreferences structure to console
@@ -559,6 +567,47 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     current_y += font_height + 20;
     
     /*====================================================================*/
+    /* WINDOW POSITION CYCLE GADGET                                      */
+    /*====================================================================*/
+    ng.ng_LeftEdge = 130;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = 150;
+    ng.ng_Height = font_height + 6;
+    ng.ng_GadgetText = "Window Position:";
+    ng.ng_GadgetID = GID_WINDOW_POSITION;
+    ng.ng_Flags = PLACETEXT_LEFT;
+    
+    win_data->window_position_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
+        GTCY_Labels, window_position_labels,
+        GTCY_Active, 0,  /* Default to "Center Screen" */
+        TAG_END);
+    if (!gad)
+    {
+        printf("ERROR: Failed to create window position cycle\n");
+        return FALSE;
+    }
+    
+    /*====================================================================*/
+    /* WINDOW POSITION HELP BUTTON                                       */
+    /*====================================================================*/
+    ng.ng_LeftEdge = 290;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = 30;
+    ng.ng_Height = font_height + 6;
+    ng.ng_GadgetText = "?";
+    ng.ng_GadgetID = GID_WINDOW_POSITION_HELP;
+    ng.ng_Flags = PLACETEXT_IN;
+    
+    win_data->window_position_help_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+    if (!gad)
+    {
+        printf("ERROR: Failed to create window position help button\n");
+        return FALSE;
+    }
+    
+    current_y += font_height + 20;
+    
+    /*====================================================================*/
     /* ADVANCED BUTTON                                                    */
     /*====================================================================*/
     ng.ng_LeftEdge = 30;
@@ -736,6 +785,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     win_data->enable_backup = FALSE;
     win_data->enable_icon_upgrade = FALSE;
     win_data->skip_hidden_folders = TRUE;  /* Default: skip hidden folders */
+    win_data->window_position_selected = 0; /* Default: Center Screen */
     
     /* Initialize advanced settings flag */
     win_data->has_advanced_settings = FALSE;
@@ -991,6 +1041,9 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         
                         /* Set backup preferences from GUI (applies to both modes) */
                         prefs->backupPrefs.enableUndoBackup = win_data->enable_backup;
+                        
+                        /* Set window position mode from GUI (applies to both modes) */
+                        prefs->windowPositionMode = (WindowPositionMode)win_data->window_position_selected;
                         
                         /* Advanced settings are already in global prefs (set by Advanced window) */
                         /* Beta settings are already in global prefs (set by Beta Options window) */
@@ -1266,6 +1319,38 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         /* Use msg_code which contains the new cycle gadget selection */
                         win_data->sortby_selected = msg_code;
                         printf("Sort by changed to: %s\n", sortby_labels[win_data->sortby_selected]);
+                        break;
+
+                    case GID_WINDOW_POSITION:
+                        /* Use msg_code which contains the new cycle gadget selection */
+                        win_data->window_position_selected = msg_code;
+                        printf("Window position changed to: %s\n", window_position_labels[win_data->window_position_selected]);
+                        break;
+
+                    case GID_WINDOW_POSITION_HELP:
+                        {
+                            /* Display help text using EasyRequest */
+                            ShowEasyRequest(
+                                win_data->window,
+                                "Window Placement Options",
+                                "Center Screen - iTidy resizes the drawer window to fit\n"
+                                "the icons and centers it on the Workbench screen.\n"
+                                "\n"
+                                "Keep Position - iTidy resizes the drawer window to fit\n"
+                                "the icons but keeps its current position. If any part\n"
+                                "would go off-screen, the window is pulled fully back\n"
+                                "on-screen.\n"
+                                "\n"
+                                "Near Parent - iTidy resizes the drawer window to fit\n"
+                                "the icons and tries to place it just below and to the\n"
+                                "right of its parent drawer window. If there isn't\n"
+                                "enough room, it behaves like 'Keep Position'.\n"
+                                "\n"
+                                "No Change - iTidy does not move or resize the drawer\n"
+                                "window. Only the icons are rearranged.",
+                                "OK"
+                            );
+                        }
                         break;
 
                     case GID_CENTER_ICONS:
