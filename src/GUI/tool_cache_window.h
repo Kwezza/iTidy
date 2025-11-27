@@ -25,6 +25,7 @@
 #define GID_TOOL_REPLACE_BATCH  4007
 #define GID_TOOL_REPLACE_SINGLE 4008
 #define GID_TOOL_DETAILS_LIST   4009
+#define GID_TOOL_RESTORE_DEFAULT_TOOLS 4010
 
 /*------------------------------------------------------------------------*/
 /* Window Spacing Constants                                              */
@@ -89,6 +90,7 @@ struct iTidyToolCacheWindow
     struct Gadget *close_btn;           /* Close button */
     struct Gadget *replace_batch_btn;   /* Replace Tool (Batch) button */
     struct Gadget *replace_single_btn;  /* Replace Tool (Single) button */
+    struct Gadget *restore_default_tools_btn; /* Restore Default Tools button */
     
     /* Data */
     struct List tool_entries;           /* List of ToolCacheDisplayEntry nodes */

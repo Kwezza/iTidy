@@ -26,7 +26,6 @@
 #define GID_CANCEL           16
 #define GID_RESTORE          17
 #define GID_VIEW_TOOL_CACHE  18
-#define GID_RESTORE_DEFAULT_TOOLS 20
 #define GID_WINDOW_POSITION  21
 #define GID_WINDOW_POSITION_HELP 22
 
@@ -53,7 +52,6 @@ struct iTidyMainWindow
     struct Gadget *apply_btn;
     struct Gadget *cancel_btn;
     struct Gadget *view_tool_cache_btn;
-    struct Gadget *restore_default_tools_btn;
     struct Gadget *window_position_cycle;
     struct Gadget *window_position_help_btn;
     

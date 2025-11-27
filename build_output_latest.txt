@@ -1,61 +1,19 @@
-Compiling [build/amiga/GUI/main_window.o] from src/GUI/main_window.c
-vc +aos68k -c99 -cpu=68000 -O2 -size -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/GUI/main_window.c -o build/amiga/GUI/main_window.o
->                                    printf("  Aspect Ratio: %.2f\n", temp_prefs
-warning 214 in line 1080 of "src\GUI\main_window.c": suspicious format string
-Compiling [build/amiga/GUI/advanced_window.o] from src/GUI/advanced_window.c
-vc +aos68k -c99 -cpu=68000 -O2 -size -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/GUI/advanced_window.c -o build/amiga/GUI/advanced_window.o
->           adv_data->prefs->useCustomAspectRatio ? "YES" : "NO");
-warning 214 in line 903 of "src\GUI\advanced_window.c": suspicious format string
-Compiling [build/amiga/GUI/beta_options_window.o] from src/GUI/beta_options_window.c
-vc +aos68k -c99 -cpu=68000 -O2 -size -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/GUI/beta_options_window.c -o build/amiga/GUI/beta_options_window.o
->    UBYTE ic_HoverSlugishness : 
-warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
-	included from file "src\GUI\..\Settings\IControlPrefs.h":15
-	included from file "src\GUI\beta_options_window.c":23
->    UBYTE ic_HoverFlags : 
-warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
-	included from file "src\GUI\..\Settings\IControlPrefs.h":15
-	included from file "src\GUI\beta_options_window.c":23
->    struct TagItem ie_Tags[0]
-warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
-	included from file "src\GUI\..\Settings\IControlPrefs.h":15
-	included from file "src\GUI\beta_options_window.c":23
-Compiling [build/amiga/GUI/restore_window.o] from src/GUI/restore_window.c
-vc +aos68k -c99 -cpu=68000 -O2 -size -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/GUI/restore_window.c -o build/amiga/GUI/restore_window.o
->    UBYTE ic_HoverSlugishness : 
-warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
-	included from file "src\GUI\..\Settings\IControlPrefs.h":15
-	included from file "src\GUI\restore_window.c":64
->    UBYTE ic_HoverFlags : 
-warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
-	included from file "src\GUI\..\Settings\IControlPrefs.h":15
-	included from file "src\GUI\restore_window.c":64
->    struct TagItem ie_Tags[0]
-warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
-	included from file "src\GUI\..\Settings\IControlPrefs.h":15
-	included from file "src\GUI\restore_window.c":64
-Compiling [build/amiga/GUI/folder_view_window.o] from src/GUI/folder_view_window.c
-vc +aos68k -c99 -cpu=68000 -O2 -size -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/GUI/folder_view_window.c -o build/amiga/GUI/folder_view_window.o
->    NewList(&folder_data->folder_entries);
-warning 161 in line 86 of "src\GUI\folder_view_window.c": implicit declaration of function <NewList>
 Compiling [build/amiga/GUI/tool_cache_window.o] from src/GUI/tool_cache_window.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/GUI/tool_cache_window.c -o build/amiga/GUI/tool_cache_window.o
 >    UBYTE ic_HoverSlugishness : 
 warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
 	included from file "src\GUI\..\Settings\IControlPrefs.h":15
-	included from file "src\GUI\tool_cache_window.c":12
+	included from file "src\GUI\tool_cache_window.c":15
 >    UBYTE ic_HoverFlags : 
 warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
 	included from file "src\GUI\..\Settings\IControlPrefs.h":15
-	included from file "src\GUI\tool_cache_window.c":12
+	included from file "src\GUI\tool_cache_window.c":15
 >    struct TagItem ie_Tags[0]
 warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
 	included from file "src\GUI\..\Settings\IControlPrefs.h":15
-	included from file "src\GUI\tool_cache_window.c":12
+	included from file "src\GUI\tool_cache_window.c":15
 >    NewList(&tool_data->filtered_entries);
-warning 161 in line 229 of "src\GUI\tool_cache_window.c": implicit declaration of function <NewList>
->                                "OK", NULL);
-warning 161 in line 1192 of "src\GUI\tool_cache_window.c": implicit declaration of function <ShowEasyRequest>
+warning 161 in line 239 of "src\GUI\tool_cache_window.c": implicit declaration of function <NewList>
 Compiling [build/amiga/GUI/default_tool_update_window.o] from src/GUI/default_tool_update_window.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Iinclude -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -c src/GUI/default_tool_update_window.c -o build/amiga/GUI/default_tool_update_window.o
 >    UBYTE ic_HoverSlugishness : 

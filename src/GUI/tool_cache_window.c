@@ -7,6 +7,9 @@
 #include "platform/platform.h"
 #include "tool_cache_window.h"
 #include "default_tool_update_window.h"
+#include "restore_window.h"
+#include "default_tool_backup.h"
+#include "easy_request_helper.h"
 #include "../icon_types.h"
 #include "../itidy_types.h"
 #include "../Settings/IControlPrefs.h"
@@ -28,6 +31,13 @@
 
 /* External graphics base for default font */
 extern struct GfxBase *GfxBase;
+
+/*------------------------------------------------------------------------*/
+/* External Default Tool Restore Functions                               */
+/*------------------------------------------------------------------------*/
+extern struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_manager);
+extern BOOL iTidy_HandleToolRestoreWindowEvent(struct Window *window, struct IntuiMessage *msg);
+extern void iTidy_CloseToolRestoreWindow(struct Window *window);
 
 /*------------------------------------------------------------------------*/
 /* Layout Configuration                                                   */
@@ -811,6 +821,24 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
         goto cleanup_error;
     }
     
+    /*--------------------------------------------------------------------*/
+    /* RESTORE DEFAULT TOOLS BUTTON - Next to Replace Tool (Batch)       */
+    /*--------------------------------------------------------------------*/
+    ng.ng_LeftEdge = current_x + (equal_button_width * 2) + TOOL_WINDOW_SPACE_X;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = equal_button_width * 2;  /* Make it wider */
+    ng.ng_Height = button_height;
+    ng.ng_GadgetText = "Restore Default Tools...";
+    ng.ng_GadgetID = GID_TOOL_RESTORE_DEFAULT_TOOLS;
+    ng.ng_Flags = PLACETEXT_IN;
+    
+    tool_data->restore_default_tools_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+    if (gad == NULL)
+    {
+        append_to_log("ERROR: Could not create Restore Default Tools button\n");
+        goto cleanup_error;
+    }
+    
     current_y = gad->TopEdge + gad->Height + TOOL_WINDOW_SPACE_Y;
     
     /*--------------------------------------------------------------------*/
@@ -1186,10 +1214,10 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                         if (tool_data->selected_index < 0)
                         {
                             log_info(LOG_GUI, "[TOOL_CACHE] No tool selected\n");
-                            ShowEasyRequest(tool_data->window, 
+                            ShowEasyRequest(tool_data->window,
                                 "No Tool Selected",
                                 "Please select a tool from the list first.",
-                                "OK", NULL);
+                                "OK");
                             break;
                         }
                         
@@ -1201,7 +1229,7 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                             ShowEasyRequest(tool_data->window,
                                 "Memory Error",
                                 "Could not allocate memory for update window.",
-                                "OK", NULL);
+                                "OK");
                             break;
                         }
                         
@@ -1222,7 +1250,7 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                                     ShowEasyRequest(tool_data->window,
                                         "Invalid Selection",
                                         "Please select a tool entry, not the header.",
-                                        "OK", NULL);
+                                        "OK");
                                     FreeVec(update_window);
                                     break;
                                 }
@@ -1315,7 +1343,7 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                             ShowEasyRequest(tool_data->window,
                                 "No Tool Selected",
                                 "Please select a tool from the upper list first.",
-                                "OK", NULL);
+                                "OK");
                             break;
                         }
                         
@@ -1326,7 +1354,7 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                             ShowEasyRequest(tool_data->window,
                                 "No File Selected",
                                 "Please select a specific icon file from the lower list.",
-                                "OK", NULL);
+                                "OK");
                             break;
                         }
                         
@@ -1338,7 +1366,7 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                             ShowEasyRequest(tool_data->window,
                                 "Memory Error",
                                 "Could not allocate memory for update window.",
-                                "OK", NULL);
+                                "OK");
                             break;
                         }
                         if (tool_data->selected_details_index < 0)
@@ -1347,7 +1375,7 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                             ShowEasyRequest(tool_data->window,
                                 "No File Selected",
                                 "Please select a specific icon file from the lower list.",
-                                "OK", NULL);
+                                "OK");
                             break;
                         }
                         
@@ -1368,7 +1396,7 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                                     ShowEasyRequest(tool_data->window,
                                         "Invalid Selection",
                                         "Please select a tool entry, not the header.",
-                                        "OK", NULL);
+                                        "OK");
                                     FreeVec(update_window);
                                     break;
                                 }
@@ -1386,7 +1414,7 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                                             ShowEasyRequest(tool_data->window,
                                                 "No Files Found",
                                                 "This tool has no associated icon files.",
-                                                "OK", NULL);
+                                                "OK");
                                             FreeVec(update_window);
                                             break;
                                         }
@@ -1402,7 +1430,7 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                                             ShowEasyRequest(tool_data->window,
                                                 "Invalid Selection",
                                                 "Please select a file entry (not the header or separator).",
-                                                "OK", NULL);
+                                                "OK");
                                             FreeVec(update_window);
                                             break;
                                         }
@@ -1450,6 +1478,89 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                         }
                         break;
                     }
+                        
+                    case GID_TOOL_RESTORE_DEFAULT_TOOLS:
+                        {
+                            struct Window *restore_window;
+                            struct IntuiMessage *restore_msg;
+                            BOOL keep_running;
+                            iTidy_ToolBackupManager temp_manager;
+                            
+                            log_info(LOG_GUI, "Restore Default Tools button clicked from Tool Cache window\n");
+                            
+                            /* Initialize temporary backup manager for restore operations */
+                            if (!iTidy_InitToolBackupManager(&temp_manager, FALSE))
+                            {
+                                log_error(LOG_GUI, "Failed to initialize backup manager\n");
+                                ShowEasyRequest(
+                                    tool_data->window,
+                                    "Error",
+                                    "Failed to initialize backup system.",
+                                    "OK");
+                                break;
+                            }
+                            
+                            /* Set busy pointer */
+                            SetWindowPointer(tool_data->window, WA_BusyPointer, TRUE, TAG_END);
+                            
+                            /* Create restore window */
+                            restore_window = iTidy_CreateToolRestoreWindow(
+                                tool_data->window->WScreen,
+                                &temp_manager);
+                            
+                            if (!restore_window)
+                            {
+                                /* Clear busy pointer */
+                                SetWindowPointer(tool_data->window, WA_Pointer, NULL, TAG_END);
+                                
+                                iTidy_CleanupToolBackupManager(&temp_manager);
+                                
+                                log_error(LOG_GUI, "Failed to create restore window\n");
+                                ShowEasyRequest(
+                                    tool_data->window,
+                                    "Window Error",
+                                    "Failed to create restore window.",
+                                    "OK");
+                                break;
+                            }
+                            
+                            /* Clear busy pointer - window is now open */
+                            SetWindowPointer(tool_data->window, WA_Pointer, NULL, TAG_END);
+                            
+                            /* Disable tool cache window input while restore window is open */
+                            ModifyIDCMP(tool_data->window, 0);
+                            
+                            /* Run restore window event loop */
+                            keep_running = TRUE;
+                            while (keep_running)
+                            {
+                                WaitPort(restore_window->UserPort);
+                                
+                                while ((restore_msg = GT_GetIMsg(restore_window->UserPort)))
+                                {
+                                    keep_running = iTidy_HandleToolRestoreWindowEvent(
+                                        restore_window, restore_msg);
+                                    
+                                    GT_ReplyIMsg(restore_msg);
+                                    
+                                    if (!keep_running)
+                                        break;
+                                }
+                            }
+                            
+                            /* Close restore window */
+                            iTidy_CloseToolRestoreWindow(restore_window);
+                            
+                            /* Cleanup backup manager */
+                            iTidy_CleanupToolBackupManager(&temp_manager);
+                            
+                            /* Re-enable tool cache window input */
+                            ModifyIDCMP(tool_data->window, 
+                                IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_GADGETDOWN | IDCMP_REFRESHWINDOW);
+                            
+                            log_info(LOG_GUI, "Restore Default Tools window closed\n");
+                        }
+                        break;
                         
                     case GID_TOOL_CACHE_CLOSE:
                         return FALSE;  /* Close window */
