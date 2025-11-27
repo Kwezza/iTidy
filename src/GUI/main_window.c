@@ -29,6 +29,7 @@
 #include "folder_scanner.h"
 #include "writeLog.h"
 #include "window_enumerator.h"
+#include "gui_groupbox.h"
 #include "../icon_types.h"
 
 /*------------------------------------------------------------------------*/
@@ -47,11 +48,20 @@ extern void iTidy_CloseToolRestoreWindow(struct Window *window);
 /*------------------------------------------------------------------------*/
 /* Window Constants                                                       */
 /*------------------------------------------------------------------------*/
+#define ITIDY_WINDOW_STANDARD_PADDING 15
 #define ITIDY_WINDOW_TITLE "iTidy v1.2 - Icon Cleanup Tool"
 #define ITIDY_WINDOW_WIDTH 500
 #define ITIDY_WINDOW_HEIGHT 350
 #define ITIDY_WINDOW_LEFT 50
 #define ITIDY_WINDOW_TOP 30
+#define ITIDY_WINDOW_GAP_BETWEEN_GROUPS 45
+#define ITIDY_WINDOW_LEFT_GROUP_GADETS 95
+#define ITIDY_WINDOW_LEFT_GROUP_GADETS_LABEL 30
+
+/* Groupbox alignment constants (shared by gadgets and groupboxes) */
+#define ITIDY_GROUPBOX_LEFT_EDGE 15    /* Left edge of all groupboxes */
+#define ITIDY_GROUPBOX_RIGHT_EDGE 485  /* Right edge of all groupboxes (WINDOW_WIDTH - 15) */
+#define ITIDY_GROUPBOX_USABLE_WIDTH 440 /* Inner width for button calculations (470 - 30 margins) */
 
 /*------------------------------------------------------------------------*/
 /* Cycle Gadget Labels                                                   */
@@ -288,18 +298,45 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     ng.ng_VisualInfo = win_data->visual_info;
     ng.ng_Flags = 0;
     
-    current_y = topborder + 10;
+    /* Start below the title bar with moderate spacing */
+    current_y = topborder + 25;  /* 15px extra spacing for groupbox */
+    
+
+    /* *******************************************************/
+    /* Group Box for Folder Selection                        */
+    /*********************************************************/
+
+    /*====================================================================*/
+    /* FOLDER LABEL (TEXT GADGET)                                        */
+    /*====================================================================*/
+    ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS_LABEL;
+    ng.ng_TopEdge = current_y;
+ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABEL-2;
+    ng.ng_Height = font_height + 4;
+    ng.ng_GadgetText = "Folder:";
+    ng.ng_GadgetID = 0;  /* No ID needed for static text */
+    ng.ng_Flags = PLACETEXT_IN;
+    
+    win_data->folder_label = gad = CreateGadget(TEXT_KIND, gad, &ng,
+        GTTX_Text, "",
+        GTTX_Border, FALSE,
+        TAG_END);
+    if (!gad)
+    {
+        printf("ERROR: Failed to create folder label\n");
+        return FALSE;
+    }
     
     /*====================================================================*/
     /* FOLDER PATH STRING GADGET                                          */
     /*====================================================================*/
-    ng.ng_LeftEdge = 80;
+    ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS;
     ng.ng_TopEdge = current_y;
-    ng.ng_Width = 300;
+    ng.ng_Width = 290;
     ng.ng_Height = font_height + 6;
-    ng.ng_GadgetText = "Folder:";
+    ng.ng_GadgetText = NULL;  /* No label - we have separate label gadget */
     ng.ng_GadgetID = GID_FOLDER_PATH;
-    ng.ng_Flags = PLACETEXT_LEFT;
+    ng.ng_Flags = 0;  /* No PLACETEXT flag */
     
     win_data->folder_path = gad = CreateGadget(STRING_KIND, gad, &ng,
         GTST_String, win_data->folder_path_buffer,
@@ -329,18 +366,43 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
         return FALSE;
     }
     
-    current_y += font_height + 20;
+    current_y += font_height + ITIDY_WINDOW_GAP_BETWEEN_GROUPS;
+    
+
+
+
+
+    /*====================================================================*/
+    /* ORDER LABEL (TEXT GADGET) - Top row left                          */
+    /*====================================================================*/
+    ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS_LABEL;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABEL-2;
+    ng.ng_Height = font_height + 4;
+    ng.ng_GadgetText = "Order:";
+    ng.ng_GadgetID = 0;
+    ng.ng_Flags = PLACETEXT_IN;
+    
+    gad = CreateGadget(TEXT_KIND, gad, &ng,
+        GTTX_Text, "",
+        GTTX_Border, FALSE,
+        TAG_END);
+    if (!gad)
+    {
+        printf("ERROR: Failed to create order label\n");
+        return FALSE;
+    }
     
     /*====================================================================*/
-    /* ORDER CYCLE GADGET                                                */
+    /* ORDER CYCLE GADGET - Top row left                                 */
     /*====================================================================*/
-    ng.ng_LeftEdge = 80;
+    ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 140;
     ng.ng_Height = font_height + 6;
-    ng.ng_GadgetText = "Order:";
+    ng.ng_GadgetText = NULL;
     ng.ng_GadgetID = GID_ORDER;
-    ng.ng_Flags = PLACETEXT_LEFT;
+    ng.ng_Flags = 0;
     
     win_data->order_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
         GTCY_Labels, order_labels,
@@ -353,15 +415,36 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     }
     
     /*====================================================================*/
-    /* SORT BY CYCLE GADGET                                              */
+    /* BY LABEL (TEXT GADGET) - Top row right                            */
     /*====================================================================*/
-    ng.ng_LeftEdge = 310;
+    ng.ng_LeftEdge = 260;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = 30;
+    ng.ng_Height = font_height + 4;
+    ng.ng_GadgetText = "By:";
+    ng.ng_GadgetID = 0;
+    ng.ng_Flags = PLACETEXT_IN;
+    
+    gad = CreateGadget(TEXT_KIND, gad, &ng,
+        GTTX_Text, "",
+        GTTX_Border, FALSE,
+        TAG_END);
+    if (!gad)
+    {
+        printf("ERROR: Failed to create by label\n");
+        return FALSE;
+    }
+    
+    /*====================================================================*/
+    /* SORT BY CYCLE GADGET - Top row right                              */
+    /*====================================================================*/
+    ng.ng_LeftEdge = 295;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 90;
     ng.ng_Height = font_height + 6;
-    ng.ng_GadgetText = "By:";
+    ng.ng_GadgetText = NULL;
     ng.ng_GadgetID = GID_SORTBY;
-    ng.ng_Flags = PLACETEXT_LEFT;
+    ng.ng_Flags = 0;
     
     win_data->sortby_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
         GTCY_Labels, sortby_labels,
@@ -376,9 +459,9 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     current_y += font_height + 16;
     
     /*====================================================================*/
-    /* RECURSIVE SUBFOLDERS CHECKBOX                                     */
+    /* RECURSIVE SUBFOLDERS CHECKBOX - Middle row left                   */
     /*====================================================================*/
-    ng.ng_LeftEdge = 30;
+    ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 26;
     ng.ng_Height = font_height + 4;
@@ -395,16 +478,16 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
         return FALSE;
     }
     
-    current_y += font_height + 12;
+    current_y += font_height + 8;
     
     /*====================================================================*/
-    /* BACKUP (LHA) CHECKBOX                                             */
+    /* BACKUP (LHA) CHECKBOX - Middle row left (stacked below recursive) */
     /*====================================================================*/
-    ng.ng_LeftEdge = 30;
+    ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 26;
     ng.ng_Height = font_height + 4;
-    ng.ng_GadgetText = "Backup icons";
+    ng.ng_GadgetText = "Backup icons using LhA";
     ng.ng_GadgetID = GID_BACKUP;
     ng.ng_Flags = PLACETEXT_RIGHT;
     
@@ -417,18 +500,39 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
         return FALSE;
     }
     
-    current_y += font_height + 20;
+    current_y += font_height + 16;
     
     /*====================================================================*/
-    /* WINDOW POSITION CYCLE GADGET                                      */
+    /* WINDOW POSITION LABEL (TEXT GADGET) - Bottom row                  */
     /*====================================================================*/
-    ng.ng_LeftEdge = 130;
+    ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS_LABEL;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABEL-2;  /* Width for "Position:" text */
+    ng.ng_Height = font_height + 4;
+    ng.ng_GadgetText = "Position:";
+    ng.ng_GadgetID = 0;  /* No ID needed for static text */
+    ng.ng_Flags = PLACETEXT_IN;
+    
+    win_data->window_position_label = gad = CreateGadget(TEXT_KIND, gad, &ng,
+        GTTX_Text, "",
+        GTTX_Border, FALSE,
+        TAG_END);
+    if (!gad)
+    {
+        printf("ERROR: Failed to create window position label\n");
+        return FALSE;
+    }
+    
+    /*====================================================================*/
+    /* WINDOW POSITION CYCLE GADGET - Bottom row center                  */
+    /*====================================================================*/
+    ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS;  /* After "Position:" label */
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 150;
     ng.ng_Height = font_height + 6;
-    ng.ng_GadgetText = "Window Position:";
+    ng.ng_GadgetText = NULL;  /* No label - we have separate label gadget */
     ng.ng_GadgetID = GID_WINDOW_POSITION;
-    ng.ng_Flags = PLACETEXT_LEFT;
+    ng.ng_Flags = 0;  /* No PLACETEXT flag */
     
     win_data->window_position_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
         GTCY_Labels, window_position_labels,
@@ -441,9 +545,9 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     }
     
     /*====================================================================*/
-    /* WINDOW POSITION HELP BUTTON                                       */
+    /* WINDOW POSITION HELP BUTTON - Bottom row right                    */
     /*====================================================================*/
-    ng.ng_LeftEdge = 290;
+    ng.ng_LeftEdge = 270;  /* After cycle + gap */
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 30;
     ng.ng_Height = font_height + 6;
@@ -451,110 +555,128 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
     ng.ng_GadgetID = GID_WINDOW_POSITION_HELP;
     ng.ng_Flags = PLACETEXT_IN;
     
-    win_data->window_position_help_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+    win_data->window_position_help_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
+        TAG_END);
     if (!gad)
     {
         printf("ERROR: Failed to create window position help button\n");
         return FALSE;
     }
     
-    current_y += font_height + 20;
+    current_y += font_height + ITIDY_WINDOW_GAP_BETWEEN_GROUPS;
     
     /*====================================================================*/
-    /* ADVANCED BUTTON                                                    */
+    /* ADVANCED BUTTON (Row 1, Position 1) - Equal width buttons         */
+    /* Calculate button width dynamically:                               */
+    /* Total available width = RIGHT_EDGE - LEFT_EDGE - 2*PADDING        */
+    /* Space for 3 buttons with 2 gaps = (available - 2*gap) / 3         */
     /*====================================================================*/
-    ng.ng_LeftEdge = 30;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 100;
-    ng.ng_Height = font_height + 8;
-    ng.ng_GadgetText = "Advanced...";
-    ng.ng_GadgetID = GID_ADVANCED;
-    ng.ng_Flags = PLACETEXT_IN;
-    
-    win_data->advanced_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
-        GA_Disabled, FALSE,  /* Enabled - Phase 5 complete */
-        TAG_END);
-    if (!gad)
     {
-        printf("ERROR: Failed to create advanced button\n");
-        return FALSE;
+        WORD button_width = ((ITIDY_GROUPBOX_RIGHT_EDGE - ITIDY_GROUPBOX_LEFT_EDGE - 2 * ITIDY_WINDOW_STANDARD_PADDING) - (2 * ITIDY_WINDOW_STANDARD_PADDING)) / 3;
+        
+        ng.ng_LeftEdge = ITIDY_GROUPBOX_LEFT_EDGE + ITIDY_WINDOW_STANDARD_PADDING;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = button_width;
+        ng.ng_Height = font_height + 8;
+        ng.ng_GadgetText = "Advanced...";
+        ng.ng_GadgetID = GID_ADVANCED;
+        ng.ng_Flags = PLACETEXT_IN;
+    
+        win_data->advanced_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
+            GA_Disabled, FALSE,  /* Enabled - Phase 5 complete */
+            TAG_END);
+        if (!gad)
+        {
+            printf("ERROR: Failed to create advanced button\n");
+            return FALSE;
+        }
+        
+        /*====================================================================*/
+        /* VIEW TOOL CACHE BUTTON (Row 1, Position 2) - Equal width          */
+        /*====================================================================*/
+        ng.ng_LeftEdge = ITIDY_GROUPBOX_LEFT_EDGE + ITIDY_WINDOW_STANDARD_PADDING + button_width + ITIDY_WINDOW_STANDARD_PADDING;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = button_width;
+        ng.ng_Height = font_height + 8;
+        ng.ng_GadgetText = "Fix Default Tools...";
+        ng.ng_GadgetID = GID_VIEW_TOOL_CACHE;
+        ng.ng_Flags = PLACETEXT_IN;
+    
+        win_data->view_tool_cache_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+        if (!gad)
+        {
+            printf("ERROR: Failed to create view tool cache button\n");
+            return FALSE;
+        }
+        
+        /*====================================================================*/
+        /* RESTORE BUTTON (Row 1, Position 3) - Equal width                  */
+        /*====================================================================*/
+        ng.ng_LeftEdge = ITIDY_GROUPBOX_LEFT_EDGE + ITIDY_WINDOW_STANDARD_PADDING + (button_width + ITIDY_WINDOW_STANDARD_PADDING) * 2;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = button_width;
+        ng.ng_Height = font_height + 8;
+        ng.ng_GadgetText = "Restore Backups...";
+        ng.ng_GadgetID = GID_RESTORE;
+        ng.ng_Flags = PLACETEXT_IN;
+        
+        win_data->restore_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
+            GA_Disabled, FALSE,
+            TAG_END);
+        if (!gad)
+        {
+            printf("ERROR: Failed to create restore button\n");
+            return FALSE;
+        }
     }
     
-    /*====================================================================*/
-    /* RESTORE BUTTON                                                     */
-    /*====================================================================*/
-    ng.ng_LeftEdge = 140;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 130;
-    ng.ng_Height = font_height + 8;
-    ng.ng_GadgetText = "Restore Backups...";
-    ng.ng_GadgetID = GID_RESTORE;
-    ng.ng_Flags = PLACETEXT_IN;
+    current_y += font_height + 35;
     
-    win_data->restore_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
-        GA_Disabled, FALSE,
-        TAG_END);
-    if (!gad)
+    /*====================================================================*/
+    /* APPLY BUTTON (Row 2, Position 1) - Dynamic width calculation      */
+    /* Calculate button width dynamically:                               */
+    /* Total available width = WINDOW_WIDTH - 2*PADDING                  */
+    /* Space for 2 buttons with 1 gap = (available - gap) / 2            */
+    /*====================================================================*/
     {
-        printf("ERROR: Failed to create restore button\n");
-        return FALSE;
+        WORD total_available = ITIDY_WINDOW_WIDTH - (2 * ITIDY_WINDOW_STANDARD_PADDING);
+        WORD button_width = (total_available - ITIDY_WINDOW_STANDARD_PADDING) / 2;
+        
+        ng.ng_LeftEdge = ITIDY_WINDOW_STANDARD_PADDING;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = button_width;
+        ng.ng_Height = font_height + 8;
+        ng.ng_GadgetText = "Start";
+        ng.ng_GadgetID = GID_APPLY;
+        ng.ng_Flags = PLACETEXT_IN;
+        
+        win_data->apply_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+        if (!gad)
+        {
+            printf("ERROR: Failed to create apply button\n");
+            return FALSE;
+        }
+        
+        /*====================================================================*/
+        /* CANCEL BUTTON (Row 2, Position 2) - Dynamic width calculation     */
+        /*====================================================================*/
+        ng.ng_LeftEdge = ITIDY_WINDOW_STANDARD_PADDING + button_width + ITIDY_WINDOW_STANDARD_PADDING;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = button_width;
+        ng.ng_Height = font_height + 8;
+        ng.ng_GadgetText = "Cancel";
+        ng.ng_GadgetID = GID_CANCEL;
+        ng.ng_Flags = PLACETEXT_IN;
+        
+        win_data->cancel_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+        if (!gad)
+        {
+            printf("ERROR: Failed to create cancel button\n");
+            return FALSE;
+        }
     }
-    
-    /*====================================================================*/
-    /* APPLY BUTTON                                                       */
-    /*====================================================================*/
-    ng.ng_LeftEdge = 280;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 100;
-    ng.ng_Height = font_height + 8;
-    ng.ng_GadgetText = "Start";
-    ng.ng_GadgetID = GID_APPLY;
-    ng.ng_Flags = PLACETEXT_IN;
-    
-    win_data->apply_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
-    if (!gad)
-    {
-        printf("ERROR: Failed to create apply button\n");
-        return FALSE;
-    }
-    
-    /*====================================================================*/
-    /* CANCEL BUTTON                                                      */
-    /*====================================================================*/
-    ng.ng_LeftEdge = 390;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 100;
-    ng.ng_Height = font_height + 8;
-    ng.ng_GadgetText = "Cancel";
-    ng.ng_GadgetID = GID_CANCEL;
-    ng.ng_Flags = PLACETEXT_IN;
-    
-    win_data->cancel_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
-    if (!gad)
-    {
-        printf("ERROR: Failed to create cancel button\n");
-        return FALSE;
-    }
-    
-    current_y += font_height + 16;
-    
-    /*====================================================================*/
-    /* VIEW TOOL CACHE BUTTON (Debug Tool)                               */
-    /*====================================================================*/
-    ng.ng_LeftEdge = 30;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 180;
-    ng.ng_Height = font_height + 8;
-    ng.ng_GadgetText = "Fix Default Tools...";
-    ng.ng_GadgetID = GID_VIEW_TOOL_CACHE;
-    ng.ng_Flags = PLACETEXT_IN;
-    
-    win_data->view_tool_cache_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
-    if (!gad)
-    {
-        printf("ERROR: Failed to create view tool cache button\n");
-        return FALSE;
-    }
+
+    current_y += font_height + 1;
     
     printf("All gadgets created successfully\n");
     return TRUE;
@@ -657,6 +779,83 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
 
     /* Refresh gadgets */
     GT_RefreshWindow(win_data->window, NULL);
+    
+    /* Calculate group box rectangles for visual grouping */
+    /* This must be done after window is open and gadgets have final geometry */
+    printf("Calculating folder group box...\n");
+    CalcGadgetGroupBoxRect(win_data->window,
+                          win_data->folder_label,  /* Start from label, not string gadget */
+                          win_data->browse_btn,
+                          &win_data->folder_group_box);
+    
+    /* Override MinX and MaxX to enforce alignment constants */
+    win_data->folder_group_box.MinX = ITIDY_GROUPBOX_LEFT_EDGE;
+    win_data->folder_group_box.MaxX = ITIDY_GROUPBOX_RIGHT_EDGE;
+    
+    printf("Folder group box calculated: (%d,%d) to (%d,%d)\n",
+           win_data->folder_group_box.MinX, win_data->folder_group_box.MinY,
+           win_data->folder_group_box.MaxX, win_data->folder_group_box.MaxY);
+    
+    printf("Calculating tidy options group box...\n");
+    CalcGadgetGroupBoxRect(win_data->window,
+                          win_data->order_cycle,
+                          win_data->backup_check,  /* Use backup check as end - Window Position controls added manually */
+                          &win_data->tidy_options_group_box);
+    
+    /* Check if calculation failed (MinY would be very small or negative) */
+    if (win_data->tidy_options_group_box.MinY < 50) {
+        printf("WARNING: Tidy options groupbox calculation may have failed. MinY=%d\n", 
+               win_data->tidy_options_group_box.MinY);
+    }
+    
+    /* Extend the groupbox to include Window Position controls below */
+    /* Window Position controls are at current_y which is about 16px below backup checkbox */
+    /* Add approximately 30px to MaxY to encompass the Window Position row */
+    win_data->tidy_options_group_box.MaxY += 30;
+    
+    /* Override MinX and MaxX to enforce alignment constants */
+    win_data->tidy_options_group_box.MinX = ITIDY_GROUPBOX_LEFT_EDGE;
+    win_data->tidy_options_group_box.MaxX = ITIDY_GROUPBOX_RIGHT_EDGE;
+    
+    printf("Tidy options group box calculated: (%d,%d) to (%d,%d)\n",
+           win_data->tidy_options_group_box.MinX, win_data->tidy_options_group_box.MinY,
+           win_data->tidy_options_group_box.MaxX, win_data->tidy_options_group_box.MaxY);
+    
+    printf("Calculating tools group box...\n");
+    CalcGadgetGroupBoxRect(win_data->window,
+                          win_data->advanced_btn,
+                          win_data->restore_btn,
+                          &win_data->tools_group_box);
+    
+    /* Override MinX and MaxX to enforce alignment constants */
+    win_data->tools_group_box.MinX = ITIDY_GROUPBOX_LEFT_EDGE;
+    win_data->tools_group_box.MaxX = ITIDY_GROUPBOX_RIGHT_EDGE;
+    
+    printf("Tools group box calculated: (%d,%d) to (%d,%d)\n",
+           win_data->tools_group_box.MinX, win_data->tools_group_box.MinY,
+           win_data->tools_group_box.MaxX, win_data->tools_group_box.MaxY);
+    
+    /* Draw the group boxes immediately after calculating */
+    printf("Drawing initial folder group box...\n");
+    DrawGroupBoxWithLabel(win_data->window,
+                         win_data->visual_info,
+                         &win_data->folder_group_box,
+                         "Folder");
+    printf("Initial folder group box drawing complete\n");
+    
+    printf("Drawing initial tidy options group box...\n");
+    DrawGroupBoxWithLabel(win_data->window,
+                         win_data->visual_info,
+                         &win_data->tidy_options_group_box,
+                         "Tidy options");
+    printf("Initial tidy options group box drawing complete\n");
+    
+    printf("Drawing initial tools group box...\n");
+    DrawGroupBoxWithLabel(win_data->window,
+                         win_data->visual_info,
+                         &win_data->tools_group_box,
+                         "Tools");
+    printf("Initial tools group box drawing complete\n");
 
     /* Mark window as successfully opened */
     win_data->window_open = TRUE;
@@ -773,7 +972,33 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                 break;
 
             case IDCMP_REFRESHWINDOW:
+                printf("REFRESHWINDOW event - drawing groupboxes\n");
                 GT_BeginRefresh(win_data->window);
+                
+                /* Draw group box around folder path and browse button */
+                printf("Drawing folder group box...\n");
+                DrawGroupBoxWithLabel(win_data->window,
+                                     win_data->visual_info,
+                                     &win_data->folder_group_box,
+                                     "Folder");
+                printf("Folder group box drawn\n");
+                
+                /* Draw group box around tidy options */
+                printf("Drawing tidy options group box...\n");
+                DrawGroupBoxWithLabel(win_data->window,
+                                     win_data->visual_info,
+                                     &win_data->tidy_options_group_box,
+                                     "Tidy options");
+                printf("Tidy options group box drawn\n");
+                
+                /* Draw group box around tool buttons */
+                printf("Drawing tools group box...\n");
+                DrawGroupBoxWithLabel(win_data->window,
+                                     win_data->visual_info,
+                                     &win_data->tools_group_box,
+                                     "Tools");
+                printf("Tools group box drawn\n");
+                
                 GT_EndRefresh(win_data->window, TRUE);
                 break;
 

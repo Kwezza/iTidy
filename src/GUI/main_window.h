@@ -41,6 +41,7 @@ struct iTidyMainWindow
     BOOL window_open;                   /* Window state flag */
     
     /* Gadget pointers for easy access */
+    struct Gadget *folder_label;
     struct Gadget *folder_path;
     struct Gadget *browse_btn;
     struct Gadget *order_cycle;
@@ -52,6 +53,7 @@ struct iTidyMainWindow
     struct Gadget *apply_btn;
     struct Gadget *cancel_btn;
     struct Gadget *view_tool_cache_btn;
+    struct Gadget *window_position_label;
     struct Gadget *window_position_cycle;
     struct Gadget *window_position_help_btn;
     
@@ -67,6 +69,11 @@ struct iTidyMainWindow
     
     /* Advanced settings override flag */
     BOOL has_advanced_settings;         /* TRUE if user configured advanced settings */
+    
+    /* Group box rectangles (for layout calculations) */
+    struct Rectangle folder_group_box;
+    struct Rectangle tidy_options_group_box;
+    struct Rectangle tools_group_box;
 };
 
 /*------------------------------------------------------------------------*/

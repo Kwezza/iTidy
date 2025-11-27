@@ -90,6 +90,7 @@ GUI_SRCS = \
 	$(SRC_DIR)/GUI/easy_request_helper.c \
 	$(SRC_DIR)/GUI/window_enumerator.c \
 	$(SRC_DIR)/GUI/wb_classify.c \
+	$(SRC_DIR)/GUI/gui_groupbox.c \
 	$(SRC_DIR)/GUI/StatusWindows/progress_common.c \
 	$(SRC_DIR)/GUI/StatusWindows/progress_window.c \
 	$(SRC_DIR)/GUI/StatusWindows/recursive_progress.c \
