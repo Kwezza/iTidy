@@ -54,9 +54,10 @@ extern void iTidy_CloseToolRestoreWindow(struct Window *window);
 #define ITIDY_WINDOW_HEIGHT 350
 #define ITIDY_WINDOW_LEFT 50
 #define ITIDY_WINDOW_TOP 30
-#define ITIDY_WINDOW_GAP_BETWEEN_GROUPS 45
+#define ITIDY_WINDOW_GAP_BETWEEN_GROUPS 40
 #define ITIDY_WINDOW_LEFT_GROUP_GADETS 95
 #define ITIDY_WINDOW_LEFT_GROUP_GADETS_LABEL 30
+#define ITIDY_WINDOW_LEFT_GROUP_GADETS_COLUMN_2 295
 
 /* Groupbox alignment constants (shared by gadgets and groupboxes) */
 #define ITIDY_GROUPBOX_LEFT_EDGE 15    /* Left edge of all groupboxes */
@@ -272,10 +273,11 @@ static BOOL request_directory(char *buffer, ULONG buffer_size, const char *initi
  *
  * @param win_data Pointer to window data structure
  * @param topborder Top border height for gadget positioning
+ * @param out_window_height Pointer to store calculated window height
  * @return BOOL TRUE if successful, FALSE otherwise
  */
 /*------------------------------------------------------------------------*/
-static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder)
+static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder, WORD *out_window_height)
 {
     struct NewGadget ng;
     struct Gadget *gad;
@@ -438,7 +440,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
     /*====================================================================*/
     /* SORT BY CYCLE GADGET - Top row right                              */
     /*====================================================================*/
-    ng.ng_LeftEdge = 295;
+    ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS_COLUMN_2;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 90;
     ng.ng_Height = font_height + 6;
@@ -456,7 +458,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
         return FALSE;
     }
     
-    current_y += font_height + 16;
+    current_y += font_height + 10;
     
     /*====================================================================*/
     /* RECURSIVE SUBFOLDERS CHECKBOX - Middle row left                   */
@@ -478,12 +480,12 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
         return FALSE;
     }
     
-    current_y += font_height + 8;
+    //current_y += font_height + 8;
     
     /*====================================================================*/
     /* BACKUP (LHA) CHECKBOX - Middle row left (stacked below recursive) */
     /*====================================================================*/
-    ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS;
+    ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS_COLUMN_2;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 26;
     ng.ng_Height = font_height + 4;
@@ -500,7 +502,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
         return FALSE;
     }
     
-    current_y += font_height + 16;
+    current_y += font_height + 10;
     
     /*====================================================================*/
     /* WINDOW POSITION LABEL (TEXT GADGET) - Bottom row                  */
@@ -547,7 +549,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
     /*====================================================================*/
     /* WINDOW POSITION HELP BUTTON - Bottom row right                    */
     /*====================================================================*/
-    ng.ng_LeftEdge = 270;  /* After cycle + gap */
+    ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS_COLUMN_2;  /* After cycle + gap */
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 30;
     ng.ng_Height = font_height + 6;
@@ -630,7 +632,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
         }
     }
     
-    current_y += font_height + 35;
+    current_y += font_height + 27;
     
     /*====================================================================*/
     /* APPLY BUTTON (Row 2, Position 1) - Dynamic width calculation      */
@@ -677,6 +679,12 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
     }
 
     current_y += font_height + 1;
+    
+    /* Store calculated window height */
+    if (out_window_height != NULL)
+    {
+        *out_window_height = current_y + ITIDY_WINDOW_STANDARD_PADDING +1 ;
+    }
     
     printf("All gadgets created successfully\n");
     return TRUE;
@@ -743,8 +751,9 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     /* Calculate top border for gadget positioning */
     topborder = win_data->screen->WBorTop + win_data->screen->RastPort.TxHeight + 1;
 
-    /* Create all gadgets */
-    if (!create_gadgets(win_data, topborder))
+    /* Create all gadgets and get calculated window height */
+    WORD calculated_height = ITIDY_WINDOW_HEIGHT;  /* Default fallback */
+    if (!create_gadgets(win_data, topborder, &calculated_height))
     {
         printf("ERROR: Failed to create gadgets\n");
         FreeVisualInfo(win_data->visual_info);
@@ -752,12 +761,12 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
         return FALSE;
     }
 
-    /* Open the window */
+    /* Open the window with calculated height based on font size */
     win_data->window = OpenWindowTags(NULL,
         WA_Left, ITIDY_WINDOW_LEFT,
         WA_Top, ITIDY_WINDOW_TOP,
         WA_Width, ITIDY_WINDOW_WIDTH,
-        WA_Height, ITIDY_WINDOW_HEIGHT,
+        WA_Height, calculated_height,
         WA_Title, ITIDY_WINDOW_TITLE,
         WA_DragBar, TRUE,
         WA_DepthGadget, TRUE,
@@ -811,7 +820,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     /* Extend the groupbox to include Window Position controls below */
     /* Window Position controls are at current_y which is about 16px below backup checkbox */
     /* Add approximately 30px to MaxY to encompass the Window Position row */
-    win_data->tidy_options_group_box.MaxY += 30;
+    win_data->tidy_options_group_box.MaxY += 25;
     
     /* Override MinX and MaxX to enforce alignment constants */
     win_data->tidy_options_group_box.MinX = ITIDY_GROUPBOX_LEFT_EDGE;
