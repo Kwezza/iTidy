@@ -8,6 +8,9 @@
 #include "itidy_types.h"
 #include "dos/getDiskDetails.h"
 
+/* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
+#include <console_output.h>
+
 
 char left_out_icons[MAX_LEFT_OUT_ICONS][MAX_PATH_LENGTH];
 
@@ -30,10 +33,10 @@ void getDeviceNameFromPath(const char *path, char *device_name, int max_length) 
             /* Truncate if necessary */
             strncpy(device_name, path, max_length - 1);
             device_name[max_length - 1] = '\0';
-            printf("Device name truncated to fit buffer.\n");
+            CONSOLE_WARNING("Device name truncated to fit buffer.\n");
         }
     } else {
-        printf("No colon found in the provided path: %s\n", path);
+        CONSOLE_ERROR("No colon found in the provided path: %s\n", path);
         device_name[0] = '\0';  /* Set device_name to an empty string */
     }
 }
@@ -51,7 +54,7 @@ void loadLeftOutIcons(const char *file_path) {
     /* Get the device name from the given file path */
     getDeviceNameFromPath(file_path, device_name, MAX_DEVICE_NAME_LENGTH);
     if (device_name[0] == '\0') {
-        printf("Error: Could not determine device name for path: %s\n", file_path);
+        CONSOLE_ERROR("Could not determine device name for path: %s\n", file_path);
         return;
     }
 
@@ -61,7 +64,7 @@ void loadLeftOutIcons(const char *file_path) {
     if (strlen(device_name) + 11 <= sizeof(backdrop_path)) {  /* 11 for ":.backdrop" + null terminator */
         sprintf(backdrop_path, "%s:.backdrop", device_name);
     } else {
-        printf("Backdrop path too long.\n");
+        CONSOLE_ERROR("Backdrop path too long.\n");
         return;
     }
 

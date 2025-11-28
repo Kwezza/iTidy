@@ -9,6 +9,9 @@
 
 #include "platform/platform.h"
 
+/* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
+#include <console_output.h>
+
 /* Platform-specific includes FIRST */
 #if PLATFORM_HOST
     #ifdef _WIN32
@@ -19,7 +22,7 @@
     #endif
     #include <sys/stat.h>
     #include <unistd.h>
-    #define DEBUG_LOG(fmt, ...) printf("[DEBUG" ] fmt "\n", __VA_ARGS__)
+    #define DEBUG_LOG(fmt, ...) CONSOLE_DEBUG("[DEBUG] " fmt "\n", __VA_ARGS__)
 #else
     #include <dos/dos.h>
     #include <proto/dos.h>

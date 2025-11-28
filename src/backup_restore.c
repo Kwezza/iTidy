@@ -13,6 +13,9 @@
 #include "file_directory_handling.h"
 #include "GUI/StatusWindows/progress_window.h"
 
+/* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
+#include <console_output.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -79,13 +82,8 @@ static BOOL RestoreCatalogEntryCallback(const BackupArchiveEntry *entry, void *u
     /* Use the catalog entry's original path as the destination */
     destPath = entry->originalPath;
     
-    #ifdef PLATFORM_AMIGA
-    printf("Restoring archive: %s\n", archivePath);
-    printf("  -> Restoring to: %s\n", destPath);
-    #else
-    printf("Restoring archive: %s\n", archivePath);
-    printf("  -> Restoring to: %s\n", destPath);
-    #endif
+    CONSOLE_STATUS("Restoring archive: %s\n", archivePath);
+    CONSOLE_STATUS("  -> Restoring to: %s\n", destPath);
     
     /* Check if archive exists */
     if (!FileExists(archivePath)) {
@@ -132,11 +130,7 @@ static BOOL RestoreCatalogEntryCallback(const BackupArchiveEntry *entry, void *u
     ULONG archiveSize = GetArchiveSize(archivePath);
     UpdateStatistics(rctx, TRUE, archiveSize);
     
-    #ifdef PLATFORM_AMIGA
-    printf("  -> Restored successfully\n");
-    #else
-    printf("  -> Restored successfully\n");
-    #endif
+    CONSOLE_STATUS("  -> Restored successfully\n");
     
     return TRUE;  /* Continue parsing */
 }
@@ -309,7 +303,7 @@ static BOOL RestoreWindowGeometry(const char *folderPath, const BackupArchiveEnt
     /* For now, we'll just update window geometry and let view mode stay as-is */
     SaveFolderSettings(folderPath, &windowInfo, 0);
     
-    printf("  Restored window geometry: %dx%d+%d+%d\n",
+    CONSOLE_STATUS("  Restored window geometry: %dx%d+%d+%d\n",
            windowInfo.width, windowInfo.height,
            windowInfo.left, windowInfo.top);
     
@@ -395,11 +389,7 @@ RestoreStatus RestoreArchive(RestoreContext *ctx, const char *archivePath) {
     if (!ctx->lhaAvailable) return RESTORE_LHA_NOT_FOUND;
     
     /* Log start of restore */
-    #ifdef PLATFORM_AMIGA
-    printf("Restoring archive: %s\n", archivePath);
-    #else
-    printf("Restoring archive: %s\n", archivePath);
-    #endif
+    CONSOLE_STATUS("Restoring archive: %s\n", archivePath);
     
     /* Check if archive exists */
     if (!FileExists(archivePath)) {
@@ -417,11 +407,7 @@ RestoreStatus RestoreArchive(RestoreContext *ctx, const char *archivePath) {
         return RESTORE_MARKER_READ_FAILED;
     }
     
-    #ifdef PLATFORM_AMIGA
-    printf("  -> Restoring to: %s\n", originalPath);
-    #else
-    printf("  -> Restoring to: %s\n", originalPath);
-    #endif
+    CONSOLE_STATUS("  -> Restoring to: %s\n", originalPath);
     
     /* Validate destination path */
     if (!ValidateRestorePath(originalPath)) {
@@ -456,11 +442,7 @@ RestoreStatus RestoreArchive(RestoreContext *ctx, const char *archivePath) {
     ULONG archiveSize = GetArchiveSize(archivePath);
     UpdateStatistics(ctx, TRUE, archiveSize);
     
-    #ifdef PLATFORM_AMIGA
-    printf("  -> Restored successfully\n");
-    #else
-    printf("  -> Restored successfully\n");
-    #endif
+    CONSOLE_STATUS("  -> Restored successfully\n");
     
     return RESTORE_OK;
 }
@@ -474,17 +456,10 @@ RestoreStatus RestoreFullRun(RestoreContext *ctx, const char *runDirectory) {
     if (!ctx || !runDirectory) return RESTORE_INVALID_PARAMS;
     if (!ctx->lhaAvailable) return RESTORE_LHA_NOT_FOUND;
     
-    #ifdef PLATFORM_AMIGA
-    printf("\n========================================\n");
-    printf("Starting Full Run Restore\n");
-    printf("Run Directory: %s\n", runDirectory);
-    printf("========================================\n\n");
-    #else
-    printf("\n========================================\n");
-    printf("Starting Full Run Restore\n");
-    printf("Run Directory: %s\n", runDirectory);
-    printf("========================================\n\n");
-    #endif
+    CONSOLE_STATUS("\n========================================\n");
+    CONSOLE_STATUS("Starting Full Run Restore\n");
+    CONSOLE_STATUS("Run Directory: %s\n", runDirectory);
+    CONSOLE_STATUS("========================================\n\n");
     
     /* Build catalog path */
     char catalogPath[MAX_RESTORE_PATH];
@@ -496,11 +471,7 @@ RestoreStatus RestoreFullRun(RestoreContext *ctx, const char *runDirectory) {
         return RESTORE_CATALOG_NOT_FOUND;
     }
     
-    #ifdef PLATFORM_AMIGA
-    printf("Reading catalog: %s\n\n", catalogPath);
-    #else
-    printf("Reading catalog: %s\n\n", catalogPath);
-    #endif
+    CONSOLE_STATUS("Reading catalog: %s\n\n", catalogPath);
     
     /* Setup context for catalog iteration */
     CatalogIterContext iterCtx = {
@@ -516,23 +487,13 @@ RestoreStatus RestoreFullRun(RestoreContext *ctx, const char *runDirectory) {
     }
     
     /* Print summary */
-    #ifdef PLATFORM_AMIGA
-    printf("\n========================================\n");
-    printf("Restore Summary\n");
-    printf("========================================\n");
-    printf("Archives restored: %u\n", ctx->stats.archivesRestored);
-    printf("Archives failed:   %u\n", ctx->stats.archivesFailed);
-    printf("Total data:        %lu bytes\n", ctx->stats.totalBytesRestored);
-    printf("========================================\n\n");
-    #else
-    printf("\n========================================\n");
-    printf("Restore Summary\n");
-    printf("========================================\n");
-    printf("Archives restored: %u\n", ctx->stats.archivesRestored);
-    printf("Archives failed:   %u\n", ctx->stats.archivesFailed);
-    printf("Total data:        %lu bytes\n", ctx->stats.totalBytesRestored);
-    printf("========================================\n\n");
-    #endif
+    CONSOLE_STATUS("\n========================================\n");
+    CONSOLE_STATUS("Restore Summary\n");
+    CONSOLE_STATUS("========================================\n");
+    CONSOLE_STATUS("Archives restored: %u\n", ctx->stats.archivesRestored);
+    CONSOLE_STATUS("Archives failed:   %u\n", ctx->stats.archivesFailed);
+    CONSOLE_STATUS("Total data:        %lu bytes\n", ctx->stats.totalBytesRestored);
+    CONSOLE_STATUS("========================================\n\n");
     
     /* Return success if at least one archive was restored */
     if (ctx->stats.archivesRestored > 0) {

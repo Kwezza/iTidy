@@ -8,6 +8,9 @@
  */
 
 /* Platform-specific includes FIRST to avoid type conflicts */
+/* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
+#include <console_output.h>
+
 #ifdef PLATFORM_HOST
     #ifdef _WIN32
         #define WIN32_LEAN_AND_MEAN
@@ -20,7 +23,7 @@
     #endif
     #include <sys/stat.h>
     #include <unistd.h>
-    #define DEBUG_LOG(fmt, ...) printf("[DEBUG] " fmt "\n", __VA_ARGS__)
+    #define DEBUG_LOG(fmt, ...) CONSOLE_DEBUG("[DEBUG] " fmt "\n", __VA_ARGS__)
 #else
     #include <dos/dos.h>
     #include <proto/dos.h>

@@ -15,6 +15,9 @@
 #include <string.h>
 #include <stdlib.h>
 
+/* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
+#include <console_output.h>
+
 /*========================================================================*/
 /* Filesystem Lock Release Timing Fix Configuration                      */
 /*========================================================================*/
@@ -123,7 +126,7 @@ static struct DateStamp g_endTime;
     do { \
         char _buf[256]; \
         snprintf(_buf, sizeof(_buf), __VA_ARGS__); \
-        printf("%s\n", _buf); \
+        CONSOLE_STATUS("%s\n", _buf); \
         if (g_progressWindow) { \
             itidy_main_progress_window_append_status(g_progressWindow, _buf); \
             itidy_main_progress_window_handle_events(g_progressWindow); \
@@ -134,7 +137,7 @@ static struct DateStamp g_endTime;
 #define CHECK_CANCEL() \
     do { \
         if (g_progressWindow && g_progressWindow->cancel_requested) { \
-            printf("\n*** User cancelled operation ***\n"); \
+            CONSOLE_STATUS("\n*** User cancelled operation ***\n"); \
             return FALSE; \
         } \
     } while (0)
@@ -178,7 +181,7 @@ BOOL ProcessDirectoryWithPreferencesAndProgress(struct iTidyMainProgressWindow *
     
     if (!progress_window)
     {
-        printf("Error: NULL progress window pointer\n");
+        CONSOLE_ERROR("Error: NULL progress window pointer\n");
         return FALSE;
     }
     
@@ -208,14 +211,14 @@ BOOL ProcessDirectoryWithPreferences(void)
     prefs = GetGlobalPreferences();
     if (!prefs)
     {
-        printf("Error: Failed to get global preferences\n");
+        CONSOLE_ERROR("Error: Failed to get global preferences\n");
         return FALSE;
     }
     
     /* Validate path from preferences */
     if (!prefs->folder_path || prefs->folder_path[0] == '\0')
     {
-        printf("Error: No folder path set in preferences\n");
+        CONSOLE_ERROR("Error: No folder path set in preferences\n");
         return FALSE;
     }
     
@@ -304,8 +307,8 @@ BOOL ProcessDirectoryWithPreferences(void)
     /* Initialize backup session if backup is enabled */
     if (prefs->backupPrefs.enableUndoBackup)
     {
-        printf("\n*** Backup enabled - creating backup session ***\n");
-        printf("Backup location: %s\n", prefs->backupPrefs.backupRootPath);
+        CONSOLE_STATUS("\n*** Backup enabled - creating backup session ***\n");
+        CONSOLE_STATUS("Backup location: %s\n", prefs->backupPrefs.backupRootPath);
         
         /* Copy backup preferences from layout preferences */
         backupPrefs.enableUndoBackup = prefs->backupPrefs.enableUndoBackup;
@@ -317,22 +320,22 @@ BOOL ProcessDirectoryWithPreferences(void)
         if (InitBackupSession(&localContext, &backupPrefs, sanitizedPath))
         {
             g_backupContext = &localContext;
-            printf("Backup session started successfully (Run #%u)\n", localContext.runNumber);
-            printf("Backup directory: %s\n", localContext.runDirectory);
-            printf("Source directory: %s\n", sanitizedPath);
+            CONSOLE_STATUS("Backup session started successfully (Run #%u)\n", localContext.runNumber);
+            CONSOLE_STATUS("Backup directory: %s\n", localContext.runDirectory);
+            CONSOLE_STATUS("Source directory: %s\n", sanitizedPath);
             append_to_log("Backup session started: %s\n", localContext.runDirectory);
             append_to_log("Source directory: %s\n", sanitizedPath);
         }
         else
         {
-            printf("Warning: Failed to start backup session - continuing without backup\n");
+            CONSOLE_WARNING("Warning: Failed to start backup session - continuing without backup\n");
             append_to_log("ERROR: Failed to start backup session\n");
             g_backupContext = NULL;
         }
     }
     else
     {
-        printf("\n*** Backup disabled - no backup will be created ***\n");
+        CONSOLE_STATUS("\n*** Backup disabled - no backup will be created ***\n");
         g_backupContext = NULL;
     }
     
@@ -1363,7 +1366,7 @@ static BOOL ProcessSingleDirectory(const char *path,
     if (!lock)
     {
         LONG error = IoErr();
-        printf("Failed to lock directory: %s (error: %ld)\n", path, error);
+        CONSOLE_ERROR("Failed to lock directory: %s (error: %ld)\n", path, error);
 #ifdef DEBUG
         append_to_log("Failed to lock %s, error: %ld\n", path, error);
 #endif
@@ -1642,7 +1645,7 @@ static BOOL ProcessDirectoryRecursive(const char *path,
                         append_to_log("Skipping hidden folder (no .info): %s\n", subdir);
 #endif
                         /* Only log to console, don't show in progress window */
-                        printf("Skipping hidden folder: %s\n", fib->fib_FileName);
+                        CONSOLE_STATUS("Skipping hidden folder: %s\n", fib->fib_FileName);
                         continue;
                     }
                     UnLock(iconLock);

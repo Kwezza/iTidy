@@ -16,6 +16,9 @@
 #include <string.h>
 #include <stdio.h>
 
+/* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
+#include <console_output.h>
+
 #include "beta_options_window.h"
 #include "layout_preferences.h"
 #include "writeLog.h"
@@ -104,7 +107,7 @@ static struct Gadget *create_beta_options_gadgets(struct iTidyBetaOptionsWindow 
     gad = CreateContext(&beta_data->glist);
     if (!gad)
     {
-        printf("ERROR: Failed to create gadget context for beta options window\n");
+        CONSOLE_ERROR("Failed to create gadget context for beta options window\n");
         return NULL;
     }
     
@@ -129,7 +132,7 @@ static struct Gadget *create_beta_options_gadgets(struct iTidyBetaOptionsWindow 
     
     if (!gad)
     {
-        printf("ERROR: Failed to create open folders checkbox\n");
+        CONSOLE_ERROR("Failed to create open folders checkbox\n");
         return NULL;
     }
     
@@ -152,7 +155,7 @@ static struct Gadget *create_beta_options_gadgets(struct iTidyBetaOptionsWindow 
     
     if (!gad)
     {
-        printf("ERROR: Failed to create update windows checkbox\n");
+        CONSOLE_ERROR("Failed to create update windows checkbox\n");
         return NULL;
     }
     
@@ -178,7 +181,7 @@ static struct Gadget *create_beta_options_gadgets(struct iTidyBetaOptionsWindow 
     
     if (!gad)
     {
-        printf("ERROR: Failed to create log level cycle gadget\n");
+        CONSOLE_ERROR("Failed to create log level cycle gadget\n");
         return NULL;
     }
     
@@ -201,7 +204,7 @@ static struct Gadget *create_beta_options_gadgets(struct iTidyBetaOptionsWindow 
     
     if (!gad)
     {
-        printf("ERROR: Failed to create memory logging checkbox\n");
+        CONSOLE_ERROR("Failed to create memory logging checkbox\n");
         return NULL;
     }
     
@@ -224,7 +227,7 @@ static struct Gadget *create_beta_options_gadgets(struct iTidyBetaOptionsWindow 
     
     if (!gad)
     {
-        printf("ERROR: Failed to create performance logging checkbox\n");
+        CONSOLE_ERROR("Failed to create performance logging checkbox\n");
         return NULL;
     }
     
@@ -246,7 +249,7 @@ static struct Gadget *create_beta_options_gadgets(struct iTidyBetaOptionsWindow 
     
     if (!gad)
     {
-        printf("ERROR: Failed to create OK button\n");
+        CONSOLE_ERROR("Failed to create OK button\n");
         return NULL;
     }
     
@@ -266,7 +269,7 @@ static struct Gadget *create_beta_options_gadgets(struct iTidyBetaOptionsWindow 
     
     if (!gad)
     {
-        printf("ERROR: Failed to create Cancel button\n");
+        CONSOLE_ERROR("Failed to create Cancel button\n");
         return NULL;
     }
     
@@ -304,7 +307,7 @@ BOOL open_itidy_beta_options_window(struct iTidyBetaOptionsWindow *beta_data,
     beta_data->screen = LockPubScreen("Workbench");
     if (!beta_data->screen)
     {
-        printf("ERROR: Failed to lock Workbench screen\n");
+        CONSOLE_ERROR("Failed to lock Workbench screen\n");
         return FALSE;
     }
     
@@ -312,7 +315,7 @@ BOOL open_itidy_beta_options_window(struct iTidyBetaOptionsWindow *beta_data,
     beta_data->visual_info = GetVisualInfo(beta_data->screen, TAG_END);
     if (!beta_data->visual_info)
     {
-        printf("ERROR: Failed to get visual info\n");
+        CONSOLE_ERROR("Failed to get visual info\n");
         UnlockPubScreen(NULL, beta_data->screen);
         return FALSE;
     }
@@ -333,7 +336,7 @@ BOOL open_itidy_beta_options_window(struct iTidyBetaOptionsWindow *beta_data,
     gad = create_beta_options_gadgets(beta_data, &font_attr);
     if (!gad)
     {
-        printf("ERROR: Failed to create beta options gadgets\n");
+        CONSOLE_ERROR("Failed to create beta options gadgets\n");
         close_itidy_beta_options_window(beta_data);
         return FALSE;
     }
@@ -371,7 +374,7 @@ BOOL open_itidy_beta_options_window(struct iTidyBetaOptionsWindow *beta_data,
     
     if (!beta_data->window)
     {
-        printf("ERROR: Failed to open beta options window\n");
+        CONSOLE_ERROR("Failed to open beta options window\n");
         close_itidy_beta_options_window(beta_data);
         return FALSE;
     }

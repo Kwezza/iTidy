@@ -172,6 +172,9 @@
 #include <stdio.h>
 #include <string.h>
 
+/* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
+#include <console_output.h>
+
 /*---------------------------------------------------------------------------*/
 /* Feature Guards                                                            */
 /*---------------------------------------------------------------------------*/
@@ -796,17 +799,15 @@ void iTidy_SortListViewEntries(struct List *list, int col, iTidy_ColumnType type
                      col, type_str, dir_str, elapsedMillis, elapsedMicros % 1000);
             log_info(LOG_GUI, "       Entries: %d\n", count);
             if (count > 0) {
-                log_info(LOG_GUI, "       Time per entry: %lu microseconds\n",
-                         elapsedMicros / count);
+            log_info(LOG_GUI, "       Time per entry: %lu microseconds\n",
+                     elapsedMicros / count);
             }
             
-            printf("  [TIMING] Sort (%s/%s): %lu.%03lu ms (%d entries)\n",
+            CONSOLE_STATUS("  [TIMING] Sort (%s/%s): %lu.%03lu ms (%d entries)\n",
                    type_str, dir_str, elapsedMillis, elapsedMicros % 1000, count);
         }
     }
-}
-
-/*---------------------------------------------------------------------------*/
+}/*---------------------------------------------------------------------------*/
 /* Helper: Calculate actual column widths                                    */
 /*---------------------------------------------------------------------------*/
 
@@ -2225,9 +2226,9 @@ struct List *iTidy_FormatListViewColumns(
             }
             log_info(LOG_GUI, "====================================\n");
             
-                 printf("  [TIMING] ListView format: %lu.%03lu ms total (%d entries)\n",
+                 CONSOLE_STATUS("  [TIMING] ListView format: %lu.%03lu ms total (%d entries)\n",
                      elapsedMillis, elapsedMicros % 1000, entry_count);
-                 printf("           Sort: %lu.%03lu ms | Width: %lu.%03lu ms | Format: %lu.%03lu ms\n",
+                 CONSOLE_STATUS("           Sort: %lu.%03lu ms | Width: %lu.%03lu ms | Format: %lu.%03lu ms\n",
                      sortMicros / 1000, sortMicros % 1000,
                      widthMicros / 1000, widthMicros % 1000,
                      formatMicros / 1000, formatMicros % 1000);
@@ -3112,9 +3113,9 @@ BOOL iTidy_ResortListViewByClick(
             }
             log_info(LOG_GUI, "====================================\n");
             
-            printf("  [TIMING] ListView resort: %lu.%03lu ms total (col %d, %s/%s, %d entries)\n",
+            CONSOLE_STATUS("  [TIMING] ListView resort: %lu.%03lu ms total (col %d, %s/%s, %d entries)\n",
                    elapsedMillis, elapsedMicros % 1000, clicked_col, type_str, dir_str, entry_count);
-            printf("           Sort: %lu.%03lu ms | Rebuild: %lu.%03lu ms\n",
+            CONSOLE_STATUS("           Sort: %lu.%03lu ms | Rebuild: %lu.%03lu ms\n",
                    sortMicros / 1000, sortMicros % 1000,
                    rebuildMicros / 1000, rebuildMicros % 1000);
         }

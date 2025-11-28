@@ -18,6 +18,9 @@
 #include <string.h>
 #include <stdio.h>
 
+/* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
+#include <console_output.h>
+
 #include "main_window.h"
 #include "advanced_window.h"
 #include "restore_window.h"
@@ -223,11 +226,11 @@ static BOOL request_directory(char *buffer, ULONG buffer_size, const char *initi
     freq = (struct FileRequester *)AllocAslRequest(ASL_FileRequest, NULL);
     if (freq == NULL)
     {
-        printf("ERROR: Failed to allocate ASL file requester\n");
+        CONSOLE_ERROR("Failed to allocate ASL file requester\n");
         return FALSE;
     }
     
-    printf("Opening directory requester...\n");
+    CONSOLE_STATUS("Opening directory requester...\n");
     
     /* Request a directory */
     if (AslRequestTags(freq,
@@ -238,7 +241,7 @@ static BOOL request_directory(char *buffer, ULONG buffer_size, const char *initi
         TAG_END))
     {
         /* User selected a directory */
-        printf("User selected: %s\n", freq->rf_Dir);
+        CONSOLE_STATUS("User selected: %s\n", freq->rf_Dir);
         
         /* Copy the directory path to temp buffer */
         if (freq->rf_Dir && freq->rf_Dir[0])
@@ -250,13 +253,13 @@ static BOOL request_directory(char *buffer, ULONG buffer_size, const char *initi
             strncpy(buffer, temp_buffer, buffer_size - 1);
             buffer[buffer_size - 1] = '\0';
             
-            printf("Selected folder: %s\n", buffer);
+            CONSOLE_STATUS("Selected folder: %s\n", buffer);
             result = TRUE;
         }
     }
     else
     {
-        printf("User cancelled directory selection\n");
+        CONSOLE_STATUS("User cancelled directory selection\n");
     }
     
     /* Free the requester */
@@ -292,7 +295,7 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder, WOR
     gad = CreateContext(&win_data->glist);
     if (!gad)
     {
-        printf("ERROR: Failed to create gadget context\n");
+        CONSOLE_ERROR("Failed to create gadget context\n");
         return FALSE;
     }
     
@@ -326,7 +329,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
         TAG_END);
     if (!gad)
     {
-        printf("ERROR: Failed to create folder label\n");
+        CONSOLE_ERROR("Failed to create folder label\n");
         return FALSE;
     }
     
@@ -347,7 +350,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
         TAG_END);
     if (!gad)
     {
-        printf("ERROR: Failed to create folder path gadget\n");
+        CONSOLE_ERROR("Failed to create folder path gadget\n");
         return FALSE;
     }
     
@@ -365,7 +368,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
     win_data->browse_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
     if (!gad)
     {
-        printf("ERROR: Failed to create browse button\n");
+        CONSOLE_ERROR("Failed to create browse button\n");
         return FALSE;
     }
     
@@ -392,7 +395,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
         TAG_END);
     if (!gad)
     {
-        printf("ERROR: Failed to create order label\n");
+        CONSOLE_ERROR("Failed to create order label\n");
         return FALSE;
     }
     
@@ -413,7 +416,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
         TAG_END);
     if (!gad)
     {
-        printf("ERROR: Failed to create order cycle\n");
+        CONSOLE_ERROR("Failed to create order cycle\n");
         return FALSE;
     }
     
@@ -434,7 +437,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
         TAG_END);
     if (!gad)
     {
-        printf("ERROR: Failed to create by label\n");
+        CONSOLE_ERROR("Failed to create by label\n");
         return FALSE;
     }
     
@@ -455,7 +458,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
         TAG_END);
     if (!gad)
     {
-        printf("ERROR: Failed to create sortby cycle\n");
+        CONSOLE_ERROR("Failed to create sortby cycle\n");
         return FALSE;
     }
     
@@ -477,7 +480,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
         TAG_END);
     if (!gad)
     {
-        printf("ERROR: Failed to create recursive checkbox\n");
+        CONSOLE_ERROR("Failed to create recursive checkbox\n");
         return FALSE;
     }
     
@@ -499,7 +502,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
         TAG_END);
     if (!gad)
     {
-        printf("ERROR: Failed to create backup checkbox\n");
+        CONSOLE_ERROR("Failed to create backup checkbox\n");
         return FALSE;
     }
     
@@ -522,7 +525,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
         TAG_END);
     if (!gad)
     {
-        printf("ERROR: Failed to create window position label\n");
+        CONSOLE_ERROR("Failed to create window position label\n");
         return FALSE;
     }
     
@@ -543,7 +546,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
         TAG_END);
     if (!gad)
     {
-        printf("ERROR: Failed to create window position cycle\n");
+        CONSOLE_ERROR("Failed to create window position cycle\n");
         return FALSE;
     }
     
@@ -562,7 +565,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
         TAG_END);
     if (!gad)
     {
-        printf("ERROR: Failed to create window position help button\n");
+        CONSOLE_ERROR("Failed to create window position help button\n");
         return FALSE;
     }
     
@@ -590,7 +593,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
             TAG_END);
         if (!gad)
         {
-            printf("ERROR: Failed to create advanced button\n");
+            CONSOLE_ERROR("Failed to create advanced button\n");
             return FALSE;
         }
         
@@ -608,7 +611,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
         win_data->view_tool_cache_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
         if (!gad)
         {
-            printf("ERROR: Failed to create view tool cache button\n");
+            CONSOLE_ERROR("Failed to create view tool cache button\n");
             return FALSE;
         }
         
@@ -628,7 +631,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
             TAG_END);
         if (!gad)
         {
-            printf("ERROR: Failed to create restore button\n");
+            CONSOLE_ERROR("Failed to create restore button\n");
             return FALSE;
         }
     }
@@ -656,7 +659,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
         win_data->apply_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
         if (!gad)
         {
-            printf("ERROR: Failed to create apply button\n");
+            CONSOLE_ERROR("Failed to create apply button\n");
             return FALSE;
         }
         
@@ -674,7 +677,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
         win_data->cancel_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
         if (!gad)
         {
-            printf("ERROR: Failed to create cancel button\n");
+            CONSOLE_ERROR("Failed to create cancel button\n");
             return FALSE;
         }
     }
@@ -699,7 +702,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
             TAG_END);
         if (!gad)
         {
-            printf("ERROR: Failed to create progress test button\n");
+            CONSOLE_ERROR("Failed to create progress test button\n");
             return FALSE;
         }
     }
@@ -712,7 +715,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
         *out_window_height = current_y + ITIDY_WINDOW_STANDARD_PADDING + 1;
     }
     
-    printf("All gadgets created successfully\n");
+    CONSOLE_STATUS("All gadgets created successfully\n");
     return TRUE;
 }
 
@@ -734,7 +737,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     /* Validate input */
     if (win_data == NULL)
     {
-        printf("ERROR: Invalid window data structure\n");
+        CONSOLE_ERROR("Invalid window data structure\n");
         return FALSE;
     }
 
@@ -759,7 +762,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     win_data->screen = LockPubScreen(NULL);
     if (win_data->screen == NULL)
     {
-        printf("ERROR: Could not lock Workbench screen\n");
+        CONSOLE_ERROR("Could not lock Workbench screen\n");
         return FALSE;
     }
 
@@ -767,12 +770,12 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     win_data->visual_info = GetVisualInfo(win_data->screen, TAG_END);
     if (win_data->visual_info == NULL)
     {
-        printf("ERROR: Could not get visual info\n");
+        CONSOLE_ERROR("Could not get visual info\n");
         UnlockPubScreen(NULL, win_data->screen);
         return FALSE;
     }
 
-    printf("Opening iTidy main window with GadTools gadgets...\n");
+    CONSOLE_STATUS("Opening iTidy main window with GadTools gadgets...\n");
 
     /* Calculate top border for gadget positioning */
     topborder = win_data->screen->WBorTop + win_data->screen->RastPort.TxHeight + 1;
@@ -781,7 +784,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     WORD calculated_height = ITIDY_WINDOW_HEIGHT;  /* Default fallback */
     if (!create_gadgets(win_data, topborder, &calculated_height))
     {
-        printf("ERROR: Failed to create gadgets\n");
+        CONSOLE_ERROR("Failed to create gadgets\n");
         FreeVisualInfo(win_data->visual_info);
         UnlockPubScreen(NULL, win_data->screen);
         return FALSE;
@@ -805,7 +808,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
 
     if (win_data->window == NULL)
     {
-        printf("ERROR: Could not open window\n");
+        CONSOLE_ERROR("Could not open window\n");
         FreeGadgets(win_data->glist);
         FreeVisualInfo(win_data->visual_info);
         UnlockPubScreen(NULL, win_data->screen);
@@ -817,7 +820,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     
     /* Calculate group box rectangles for visual grouping */
     /* This must be done after window is open and gadgets have final geometry */
-    printf("Calculating folder group box...\n");
+    CONSOLE_DEBUG("Calculating folder group box...\n");
     CalcGadgetGroupBoxRect(win_data->window,
                           win_data->folder_label,  /* Start from label, not string gadget */
                           win_data->browse_btn,
@@ -827,11 +830,11 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     win_data->folder_group_box.MinX = ITIDY_GROUPBOX_LEFT_EDGE;
     win_data->folder_group_box.MaxX = ITIDY_GROUPBOX_RIGHT_EDGE;
     
-    printf("Folder group box calculated: (%d,%d) to (%d,%d)\n",
+    CONSOLE_DEBUG("Folder group box calculated: (%d,%d) to (%d,%d)\n",
            win_data->folder_group_box.MinX, win_data->folder_group_box.MinY,
            win_data->folder_group_box.MaxX, win_data->folder_group_box.MaxY);
     
-    printf("Calculating tidy options group box...\n");
+    CONSOLE_DEBUG("Calculating tidy options group box...\n");
     CalcGadgetGroupBoxRect(win_data->window,
                           win_data->order_cycle,
                           win_data->backup_check,  /* Use backup check as end - Window Position controls added manually */
@@ -839,7 +842,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     
     /* Check if calculation failed (MinY would be very small or negative) */
     if (win_data->tidy_options_group_box.MinY < 50) {
-        printf("WARNING: Tidy options groupbox calculation may have failed. MinY=%d\n", 
+        CONSOLE_WARNING("Tidy options groupbox calculation may have failed. MinY=%d\n", 
                win_data->tidy_options_group_box.MinY);
     }
     
@@ -852,11 +855,11 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     win_data->tidy_options_group_box.MinX = ITIDY_GROUPBOX_LEFT_EDGE;
     win_data->tidy_options_group_box.MaxX = ITIDY_GROUPBOX_RIGHT_EDGE;
     
-    printf("Tidy options group box calculated: (%d,%d) to (%d,%d)\n",
+    CONSOLE_DEBUG("Tidy options group box calculated: (%d,%d) to (%d,%d)\n",
            win_data->tidy_options_group_box.MinX, win_data->tidy_options_group_box.MinY,
            win_data->tidy_options_group_box.MaxX, win_data->tidy_options_group_box.MaxY);
     
-    printf("Calculating tools group box...\n");
+    CONSOLE_DEBUG("Calculating tools group box...\n");
     CalcGadgetGroupBoxRect(win_data->window,
                           win_data->advanced_btn,
                           win_data->restore_btn,
@@ -866,40 +869,40 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     win_data->tools_group_box.MinX = ITIDY_GROUPBOX_LEFT_EDGE;
     win_data->tools_group_box.MaxX = ITIDY_GROUPBOX_RIGHT_EDGE;
     
-    printf("Tools group box calculated: (%d,%d) to (%d,%d)\n",
+    CONSOLE_DEBUG("Tools group box calculated: (%d,%d) to (%d,%d)\n",
            win_data->tools_group_box.MinX, win_data->tools_group_box.MinY,
            win_data->tools_group_box.MaxX, win_data->tools_group_box.MaxY);
     
     /* Draw the group boxes immediately after calculating */
-    printf("Drawing initial folder group box...\n");
+    CONSOLE_DEBUG("Drawing initial folder group box...\n");
     DrawGroupBoxWithLabel(win_data->window,
                          win_data->visual_info,
                          &win_data->folder_group_box,
                          "Folder");
-    printf("Initial folder group box drawing complete\n");
+    CONSOLE_DEBUG("Initial folder group box drawing complete\n");
     
-    printf("Drawing initial tidy options group box...\n");
+    CONSOLE_DEBUG("Drawing initial tidy options group box...\n");
     DrawGroupBoxWithLabel(win_data->window,
                          win_data->visual_info,
                          &win_data->tidy_options_group_box,
                          "Tidy options");
-    printf("Initial tidy options group box drawing complete\n");
+    CONSOLE_DEBUG("Initial tidy options group box drawing complete\n");
     
-    printf("Drawing initial tools group box...\n");
+    CONSOLE_DEBUG("Drawing initial tools group box...\n");
     DrawGroupBoxWithLabel(win_data->window,
                          win_data->visual_info,
                          &win_data->tools_group_box,
                          "Tools");
-    printf("Initial tools group box drawing complete\n");
+    CONSOLE_DEBUG("Initial tools group box drawing complete\n");
 
     /* Mark window as successfully opened */
     win_data->window_open = TRUE;
 
-    printf("iTidy main window opened successfully\n");
-    printf("Window dimensions: %dx%d at position (%d,%d)\n",
+    CONSOLE_STATUS("iTidy main window opened successfully\n");
+    CONSOLE_DEBUG("Window dimensions: %dx%d at position (%d,%d)\n",
            ITIDY_WINDOW_WIDTH, ITIDY_WINDOW_HEIGHT,
            ITIDY_WINDOW_LEFT, ITIDY_WINDOW_TOP);
-    printf("Ready for user interaction.\n");
+    CONSOLE_STATUS("Ready for user interaction.\n");
 
     return TRUE;
 }
@@ -921,7 +924,7 @@ void close_itidy_main_window(struct iTidyMainWindow *win_data)
         return;
     }
 
-    printf("Closing iTidy main window...\n");
+    CONSOLE_STATUS("Closing iTidy main window...\n");
 
     /* Close window if it's open */
     if (win_data->window != NULL)
@@ -929,7 +932,7 @@ void close_itidy_main_window(struct iTidyMainWindow *win_data)
         CloseWindow(win_data->window);
         win_data->window = NULL;
         win_data->window_open = FALSE;
-        printf("Window closed\n");
+        CONSOLE_DEBUG("Window closed\n");
     }
 
     /* Free gadgets */
@@ -937,7 +940,7 @@ void close_itidy_main_window(struct iTidyMainWindow *win_data)
     {
         FreeGadgets(win_data->glist);
         win_data->glist = NULL;
-        printf("Gadgets freed\n");
+        CONSOLE_DEBUG("Gadgets freed\n");
     }
 
     /* Free visual info */
@@ -945,7 +948,7 @@ void close_itidy_main_window(struct iTidyMainWindow *win_data)
     {
         FreeVisualInfo(win_data->visual_info);
         win_data->visual_info = NULL;
-        printf("Visual info freed\n");
+        CONSOLE_DEBUG("Visual info freed\n");
     }
 
     /* Unlock the Workbench screen */
@@ -953,10 +956,10 @@ void close_itidy_main_window(struct iTidyMainWindow *win_data)
     {
         UnlockPubScreen(NULL, win_data->screen);
         win_data->screen = NULL;
-        printf("Screen unlocked\n");
+        CONSOLE_DEBUG("Screen unlocked\n");
     }
 
-    printf("iTidy main window cleanup complete\n");
+    CONSOLE_STATUS("iTidy main window cleanup complete\n");
 }
 
 /*------------------------------------------------------------------------*/
@@ -1002,37 +1005,37 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
         switch (msg_class)
         {
             case IDCMP_CLOSEWINDOW:
-                printf("Close gadget clicked - shutting down\n");
+                CONSOLE_STATUS("Close gadget clicked - shutting down\n");
                 continue_running = FALSE;
                 break;
 
             case IDCMP_REFRESHWINDOW:
-                printf("REFRESHWINDOW event - drawing groupboxes\n");
+                CONSOLE_DEBUG("REFRESHWINDOW event - drawing groupboxes\n");
                 GT_BeginRefresh(win_data->window);
                 
                 /* Draw group box around folder path and browse button */
-                printf("Drawing folder group box...\n");
+                CONSOLE_DEBUG("Drawing folder group box...\n");
                 DrawGroupBoxWithLabel(win_data->window,
                                      win_data->visual_info,
                                      &win_data->folder_group_box,
                                      "Folder");
-                printf("Folder group box drawn\n");
+                CONSOLE_DEBUG("Folder group box drawn\n");
                 
                 /* Draw group box around tidy options */
-                printf("Drawing tidy options group box...\n");
+                CONSOLE_DEBUG("Drawing tidy options group box...\n");
                 DrawGroupBoxWithLabel(win_data->window,
                                      win_data->visual_info,
                                      &win_data->tidy_options_group_box,
                                      "Tidy options");
-                printf("Tidy options group box drawn\n");
+                CONSOLE_DEBUG("Tidy options group box drawn\n");
                 
                 /* Draw group box around tool buttons */
-                printf("Drawing tools group box...\n");
+                CONSOLE_DEBUG("Drawing tools group box...\n");
                 DrawGroupBoxWithLabel(win_data->window,
                                      win_data->visual_info,
                                      &win_data->tools_group_box,
                                      "Tools");
-                printf("Tools group box drawn\n");
+                CONSOLE_DEBUG("Tools group box drawn\n");
                 
                 GT_EndRefresh(win_data->window, TRUE);
                 break;
@@ -1042,7 +1045,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                 switch (gad->GadgetID)
                 {
                     case GID_BROWSE:
-                        printf("Browse button clicked\n");
+                        CONSOLE_STATUS("Browse button clicked\n");
                         /* Open ASL directory requester */
                         if (request_directory(win_data->folder_path_buffer, 
                                             sizeof(win_data->folder_path_buffer),
@@ -1052,7 +1055,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                             GT_SetGadgetAttrs(win_data->folder_path, win_data->window, NULL,
                                 GTST_String, win_data->folder_path_buffer,
                                 TAG_END);
-                            printf("Folder path updated to: %s\n", win_data->folder_path_buffer);
+                            CONSOLE_STATUS("Folder path updated to: %s\n", win_data->folder_path_buffer);
                         }
                         break;
 
@@ -1062,9 +1065,11 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         LayoutPreferences *prefs;
                         BOOL success;
                         
-                        printf("\n===============================================\n");
-                        printf("Apply button clicked - Processing icons...\n");
-                        printf("===============================================\n\n");
+                        CONSOLE_NEWLINE();
+                        CONSOLE_SEPARATOR();
+                        CONSOLE_STATUS("Apply button clicked - Processing icons...\n");
+                        CONSOLE_SEPARATOR();
+                        CONSOLE_NEWLINE();
                         
                         /* Get mutable access to global preferences */
                         prefs = (LayoutPreferences *)GetGlobalPreferences();
@@ -1125,7 +1130,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         /* Open progress window */
                         if (!itidy_main_progress_window_open(&progress_window))
                         {
-                            printf("ERROR: Failed to open progress window\n");
+                            CONSOLE_ERROR("Failed to open progress window\n");
                             ShowEasyRequest(win_data->window,
                                 "Error",
                                 "Failed to open progress window",
@@ -1140,7 +1145,9 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         ModifyIDCMP(win_data->window, 0);
                         
                         /* Process the directory with progress window integration */
-                        printf("\n>>> Starting icon processing...\n\n");
+                        CONSOLE_NEWLINE();
+                        CONSOLE_STATUS(">>> Starting icon processing...\n");
+                        CONSOLE_NEWLINE();
                         success = ProcessDirectoryWithPreferencesAndProgress(&progress_window);
                         
                         /* Show result in progress window */
@@ -1149,7 +1156,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                             "===============================================");
                         if (success)
                         {
-                            printf("Icon processing completed successfully!\n");
+                            CONSOLE_STATUS("Icon processing completed successfully!\n");
                             itidy_main_progress_window_append_status(&progress_window, 
                                 "Icon processing completed successfully!");
                             itidy_main_progress_window_append_status(&progress_window, 
@@ -1157,13 +1164,14 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         }
                         else
                         {
-                            printf("Icon processing failed or was incomplete\n");
+                            CONSOLE_WARNING("Icon processing failed or was incomplete\n");
                             itidy_main_progress_window_append_status(&progress_window, 
                                 "Icon processing failed or was incomplete");
                         }
                         itidy_main_progress_window_append_status(&progress_window, 
                             "===============================================");
-                        printf("===============================================\n\n");
+                        CONSOLE_SEPARATOR();
+                        CONSOLE_NEWLINE();
                         
                         /* Change Cancel button to Close now that processing is complete */
                         itidy_main_progress_window_set_button_text(&progress_window, "Close");
@@ -1186,7 +1194,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                     }
 
                     case GID_CANCEL:
-                        printf("Cancel button clicked - closing window\n");
+                        CONSOLE_STATUS("Cancel button clicked - closing window\n");
                         continue_running = FALSE;
                         break;
 
@@ -1194,7 +1202,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         {
                             struct iTidyRestoreWindow restore_data;
                             
-                            printf("Restore Backups button clicked - opening Restore window\n");
+                            CONSOLE_STATUS("Restore Backups button clicked - opening Restore window\n");
                             
                             /* Set busy pointer on main window */
                             SetWindowPointer(win_data->window,
@@ -1226,7 +1234,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                 ModifyIDCMP(win_data->window, 
                                     IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW);
                                 
-                                printf("Restore window closed\n");
+                                CONSOLE_DEBUG("Restore window closed\n");
                             }
                             else
                             {
@@ -1235,7 +1243,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                                WA_Pointer, NULL,
                                                TAG_END);
                                 
-                                printf("ERROR: Failed to open Restore window\n");
+                                CONSOLE_ERROR("Failed to open Restore window\n");
                             }
                         }
                         break;
@@ -1245,7 +1253,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                             struct iTidyAdvancedWindow adv_data;
                             LayoutPreferences temp_prefs;
                             
-                            printf("Advanced button clicked - opening Advanced Settings window\n");
+                            CONSOLE_STATUS("Advanced button clicked - opening Advanced Settings window\n");
                             
                             /* Get current global preferences (includes any previously saved advanced settings) */
                             memcpy(&temp_prefs, GetGlobalPreferences(), sizeof(LayoutPreferences));
@@ -1290,10 +1298,10 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                 /* If changes were accepted, update global preferences */
                                 if (adv_data.changes_accepted)
                                 {
-                                    printf("Advanced settings accepted - updating global preferences\n");
-                                    printf("  Aspect Ratio: %.2f\n", temp_prefs.aspectRatio);
-                                    printf("  Overflow Mode: %d\n", temp_prefs.overflowMode);
-                                    printf("  Spacing: %hux%hu\n", 
+                                    CONSOLE_STATUS("Advanced settings accepted - updating global preferences\n");
+                                    CONSOLE_DEBUG("  Aspect Ratio: %.2f\n", temp_prefs.aspectRatio);
+                                    CONSOLE_DEBUG("  Overflow Mode: %d\n", temp_prefs.overflowMode);
+                                    CONSOLE_DEBUG("  Spacing: %hux%hu\n", 
                                            temp_prefs.iconSpacingX,
                                            temp_prefs.iconSpacingY);
                                     
@@ -1301,28 +1309,28 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                     UpdateGlobalPreferences(&temp_prefs);
                                     win_data->has_advanced_settings = TRUE;
                                     
-                                    printf("  (Settings will be applied when you click Apply button)\n");
+                                    CONSOLE_DEBUG("  (Settings will be applied when you click Apply button)\n");
                                 }
                                 else
                                 {
-                                    printf("Advanced settings cancelled\n");
+                                    CONSOLE_DEBUG("Advanced settings cancelled\n");
                                 }
                             }
                             else
                             {
-                                printf("ERROR: Failed to open Advanced Settings window\n");
+                                CONSOLE_ERROR("Failed to open Advanced Settings window\n");
                             }
                         }
                         break;
 
                     case GID_FOLDER_PATH:
-                        printf("Folder path changed: %s\n", win_data->folder_path_buffer);
+                        CONSOLE_DEBUG("Folder path changed: %s\n", win_data->folder_path_buffer);
                         break;
 
                     case GID_ORDER:
                         /* Use msg_code which contains the new cycle gadget selection */
                         win_data->order_selected = msg_code;
-                        printf("Order changed to: %s\n", order_labels[win_data->order_selected]);
+                        CONSOLE_DEBUG("Order changed to: %s\n", order_labels[win_data->order_selected]);
                         append_to_log("Order cycle changed to: %d (%s)\n", 
                                     win_data->order_selected, 
                                     order_labels[win_data->order_selected]);
@@ -1331,13 +1339,13 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                     case GID_SORTBY:
                         /* Use msg_code which contains the new cycle gadget selection */
                         win_data->sortby_selected = msg_code;
-                        printf("Sort by changed to: %s\n", sortby_labels[win_data->sortby_selected]);
+                        CONSOLE_DEBUG("Sort by changed to: %s\n", sortby_labels[win_data->sortby_selected]);
                         break;
 
                     case GID_WINDOW_POSITION:
                         /* Use msg_code which contains the new cycle gadget selection */
                         win_data->window_position_selected = msg_code;
-                        printf("Window position changed to: %s\n", window_position_labels[win_data->window_position_selected]);
+                        CONSOLE_DEBUG("Window position changed to: %s\n", window_position_labels[win_data->window_position_selected]);
                         break;
 
                     case GID_WINDOW_POSITION_HELP:
@@ -1373,7 +1381,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                 GTCB_Checked, &checked,
                                 TAG_END);
                             win_data->recursive_subdirs = (BOOL)checked;
-                            printf("Recursive subfolders: %s\n", win_data->recursive_subdirs ? "ON" : "OFF");
+                            CONSOLE_DEBUG("Recursive subfolders: %s\n", win_data->recursive_subdirs ? "ON" : "OFF");
                         }
                         break;
 
@@ -1384,7 +1392,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                 GTCB_Checked, &checked,
                                 TAG_END);
                             win_data->enable_backup = (BOOL)checked;
-                            printf("Backup: %s\n", win_data->enable_backup ? "ON" : "OFF");
+                            CONSOLE_DEBUG("Backup: %s\n", win_data->enable_backup ? "ON" : "OFF");
                         }
                         break;
 

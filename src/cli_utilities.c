@@ -21,6 +21,9 @@
 #include "cli_utilities.h"
 #include "itidy_types.h"
 
+/* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
+#include <console_output.h>
+
 /* VBCC MIGRATION NOTE: Forward declarations for internal functions */
 static void wrap_and_page_text_with_markup(const char *text, int indent, int width, int maxRows, int *printedRows);
 static int matchTag(const char *text, int i, const char *tag);
@@ -76,7 +79,7 @@ static void wrap_and_page_text_with_markup(const char *text,
 
     while (i < textLen)
     {
-        printf("i=%d", i);  // Debug print
+        CONSOLE_DEBUG("i=%d", i);  // Debug print
         /* 1) Check for markup tags (<b>, </b>) before printing a character. */
         if (strncmp(text + i, "<b>", 3) == 0)
         {
@@ -85,20 +88,20 @@ static void wrap_and_page_text_with_markup(const char *text,
             fputs("\x1B[1m", stdout);
             i = i + 3; /* Skip "<b>" */
             /* No visible characters added, so do NOT increment currentLength. */
-            printf(" bold on ");
-            printf("new i=%d\n", i);
+            CONSOLE_DEBUG(" bold on ");
+            CONSOLE_DEBUG("new i=%d\n", i);
             continue;
 
         }
         if (strncmp(text + i, "</b>", 4) == 0)
         {
-            printf("i=%d\n", i);
+            CONSOLE_DEBUG("i=%d\n", i);
             /* Print bold off: "\x1B[0m" */
             fputs("\x1B[0m", stdout);
             i = i + 4; /* Skip "</b>" */
             /* No visible characters added, so do NOT increment currentLength. */
-            printf(" bold off ");
-            printf("new i=%d\n", i);
+            CONSOLE_DEBUG(" bold off ");
+            CONSOLE_DEBUG("new i=%d\n", i);
             continue;
 
         }
@@ -117,7 +120,7 @@ static void wrap_and_page_text_with_markup(const char *text,
 
         {
             c = text[i];
-            printf("c=%c;", c);  // Debug print
+            CONSOLE_DEBUG("c=%c;", c);  // Debug print
 
             /* Track whitespace for word breaks. */
             if (isspace((unsigned char)c))
@@ -143,12 +146,12 @@ static void wrap_and_page_text_with_markup(const char *text,
                     /* Paging check. */
                     if (*printedRows >= maxRows - 1)
                     {
-                        printf("Press any key to continue...");
+                        CONSOLE_STATUS("Press any key to continue...");
                         fflush(stdout);
                         /* Wait for user input (implementation up to you). */
                         getchar(); /* or WaitChar() on Amiga, etc. */
                         /* Clear the prompt line: */
-                        printf("\r                           \r");
+                        CONSOLE_STATUS("\r                           \r");
                         *printedRows = 0;
                     }
 
@@ -173,10 +176,10 @@ static void wrap_and_page_text_with_markup(const char *text,
 
                     if (*printedRows >= maxRows - 1)
                     {
-                        printf("Press any key to continue...");
+                        CONSOLE_STATUS("Press any key to continue...");
                         fflush(stdout);
                         getchar();
-                        printf("\r                           \r");
+                        CONSOLE_STATUS("\r                           \r");
                         *printedRows = 0;
                     }
                 }
@@ -199,7 +202,7 @@ static void wrap_and_page_text_with_markup(const char *text,
     if (currentLength > 0)
     {
         int j;
-        printf("[ Print left over ]");
+        CONSOLE_DEBUG("[ Print left over ]");
         for (j = start; j < i; j++)
         {
             putchar(text[j]);
@@ -209,10 +212,10 @@ static void wrap_and_page_text_with_markup(const char *text,
 
         if (*printedRows >= maxRows - 1)
         {
-            printf("Press any key to continue...");
+            CONSOLE_STATUS("Press any key to continue...");
             fflush(stdout);
             getchar();
-            printf("\r                           \r");
+            CONSOLE_STATUS("\r                           \r");
             *printedRows = 0;
         }
     }
@@ -258,17 +261,17 @@ static void parse_and_display_line(const char *line,
         }
 
         /* 1) Print the command (indent=0). */
-        printf(" [Step 1] ");
+        CONSOLE_DEBUG(" [Step 1] ");
         wrap_and_page_text_with_markup(command, 0, width, maxRows, printedRows);
-        printf(" [Step 2] ");
+        CONSOLE_DEBUG(" [Step 2] ");
         /* 2) Print the description (indent=15). */
         wrap_and_page_text_with_markup(description, 15, width, maxRows, printedRows);
-        printf(" [Step 3] ");
-        /* If there’s anything after </p>, you could parse it or ignore it. */
+        CONSOLE_DEBUG(" [Step 3] ");
+        /* If there's anything after </p>, you could parse it or ignore it. */
     }
     else
     {
-        printf(" [no p found] ");
+        CONSOLE_DEBUG(" [no p found] ");
         /* No <p> or </p> found, just print the whole line flush-left. */
         wrap_and_page_text_with_markup(line, 0, width, maxRows, printedRows);
     }

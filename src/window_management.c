@@ -15,6 +15,9 @@
 #include <proto/iffparse.h>
 #endif
 
+/* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
+#include <console_output.h>
+
 #include "itidy_types.h"
 #include "Settings/WorkbenchPrefs.h"
 #include "Settings/IControlPrefs.h"
@@ -297,7 +300,7 @@ void GetWorkbenchIconFont(char *fontName, int *fontSize)
     iff = AllocIFF();
     if (!iff)
     {
-        printf("Failed to allocate IFF parser.\n");
+        CONSOLE_ERROR("Failed to allocate IFF parser.\n");
         return;
     }
 
@@ -305,7 +308,7 @@ void GetWorkbenchIconFont(char *fontName, int *fontSize)
     file = Open("ENV:sys/font.prefs", MODE_OLDFILE);
     if (!file)
     {
-        printf("Failed to open ENV:sys/font.prefs. Using default: %s, size: %d\n", fontName, *fontSize);
+        CONSOLE_WARNING("Failed to open ENV:sys/font.prefs. Using default: %s, size: %d\n", fontName, *fontSize);
         FreeIFF(iff);
         return;
     }
@@ -315,7 +318,7 @@ void GetWorkbenchIconFont(char *fontName, int *fontSize)
 
     if (OpenIFF(iff, IFFF_READ) != 0)
     {
-        printf("Failed to open IFF structure.\n");
+        CONSOLE_ERROR("Failed to open IFF structure.\n");
         Close(file);
         FreeIFF(iff);
         return;
@@ -347,7 +350,7 @@ void GetWorkbenchIconFont(char *fontName, int *fontSize)
 
     // Debug Output
     #ifdef DEBUG
-    printf("Workbench Icon Font: %s, Size: %d\n", fontName, *fontSize);
+    CONSOLE_DEBUG("Workbench Icon Font: %s, Size: %d\n", fontName, *fontSize);
     #endif
 #else
     (void)fontName;
@@ -383,12 +386,12 @@ void SetIconFont(void)
     if (iconFont)
     {
         SetFont(rastPort, iconFont);
-        printf("Workbench Icon Font: %s (%d pt) loaded\n", 
+        CONSOLE_STATUS("Workbench Icon Font: %s (%d pt) loaded\n", 
                fontPrefs->name, (int)fontPrefs->size);
     }
     else
     {
-        printf("Failed to load Workbench Icon Font, using default screen font.\n");
+        CONSOLE_WARNING("Failed to load Workbench Icon Font, using default screen font.\n");
         SetFont(rastPort, screen->RastPort.Font);
     }
 #endif
@@ -406,7 +409,7 @@ int InitializeWindow(void)
     screen = LockPubScreen("Workbench");
     if (!screen)
     {
-        printf("Failed to lock Workbench screen.\n");
+        CONSOLE_ERROR("Failed to lock Workbench screen.\n");
         return 0;
     }
 
@@ -427,7 +430,7 @@ int InitializeWindow(void)
                             TAG_DONE);
     if (!window)
     {
-        printf("Failed to open window.\n");
+        CONSOLE_ERROR("Failed to open window.\n");
         UnlockPubScreen("Workbench", screen);
         return 0;
     }
@@ -435,7 +438,7 @@ int InitializeWindow(void)
     rastPort = window->RPort;
     if (!rastPort)
     {
-        printf("RastPort failed to create.\n");
+        CONSOLE_ERROR("RastPort failed to create.\n");
         return 0;
     }
 

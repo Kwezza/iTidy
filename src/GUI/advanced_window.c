@@ -16,6 +16,9 @@
 #include <string.h>
 #include <stdio.h>
 
+/* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
+#include <console_output.h>
+
 #include "advanced_window.h"
 #include "beta_options_window.h"
 #include "layout_preferences.h"
@@ -195,7 +198,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     gad = CreateContext(&adv_data->glist);
     if (!gad)
     {
-        printf("ERROR: Failed to create gadget context\n");
+        CONSOLE_ERROR("Failed to create gadget context\n");
         return NULL;
     }
     
@@ -221,7 +224,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     
     if (!gad)
     {
-        printf("ERROR: Failed to create aspect ratio cycle gadget\n");
+        CONSOLE_ERROR("Failed to create aspect ratio cycle gadget\n");
         return NULL;
     }
     
@@ -245,7 +248,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     
     if (!gad)
     {
-        printf("ERROR: Failed to create overflow mode cycle gadget\n");
+        CONSOLE_ERROR("Failed to create overflow mode cycle gadget\n");
         return NULL;
     }
     
@@ -274,7 +277,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     
     if (!gad)
     {
-        printf("ERROR: Failed to create horizontal spacing slider\n");
+        CONSOLE_ERROR("Failed to create horizontal spacing slider\n");
         return NULL;
     }
     
@@ -303,7 +306,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     
     if (!gad)
     {
-        printf("ERROR: Failed to create vertical spacing slider\n");
+        CONSOLE_ERROR("Failed to create vertical spacing slider\n");
         return NULL;
     }
     
@@ -328,7 +331,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     
     if (!gad)
     {
-        printf("ERROR: Failed to create min icons/row integer gadget\n");
+        CONSOLE_ERROR("Failed to create min icons/row integer gadget\n");
         return NULL;
     }
     
@@ -351,7 +354,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     
     if (!gad)
     {
-        printf("ERROR: Failed to create auto max icons checkbox\n");
+        CONSOLE_ERROR("Failed to create auto max icons checkbox\n");
         return NULL;
     }
     
@@ -376,7 +379,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     
     if (!gad)
     {
-        printf("ERROR: Failed to create max icons/row integer gadget\n");
+        CONSOLE_ERROR("Failed to create max icons/row integer gadget\n");
         return NULL;
     }
     
@@ -401,7 +404,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     
     if (!gad)
     {
-        printf("ERROR: Failed to create max window width percentage cycle gadget\n");
+        CONSOLE_ERROR("Failed to create max window width percentage cycle gadget\n");
         return NULL;
     }
     
@@ -425,7 +428,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     
     if (!gad)
     {
-        printf("ERROR: Failed to create vertical alignment cycle gadget\n");
+        CONSOLE_ERROR("Failed to create vertical alignment cycle gadget\n");
         return NULL;
     }
     
@@ -448,7 +451,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     
     if (!gad)
     {
-        printf("ERROR: Failed to create reverse sort checkbox\n");
+        CONSOLE_ERROR("Failed to create reverse sort checkbox\n");
         return NULL;
     }
     
@@ -471,7 +474,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     
     if (!gad)
     {
-        printf("ERROR: Failed to create optimize columns checkbox\n");
+        CONSOLE_ERROR("Failed to create optimize columns checkbox\n");
         return NULL;
     }
         current_y += ADV_WINDOW_GAP_BETWEEN_CHECKBOXES_VERTICAL + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
@@ -493,7 +496,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     
     if (!gad)
     {
-        printf("ERROR: Failed to create column layout checkbox\n");
+        CONSOLE_ERROR("Failed to create column layout checkbox\n");
         return NULL;
     }
     current_y += ADV_WINDOW_GAP_BETWEEN_CHECKBOXES_VERTICAL + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
@@ -515,7 +518,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     
     if (!gad)
     {
-        printf("ERROR: Failed to create skip hidden folders checkbox\n");
+        CONSOLE_ERROR("Failed to create skip hidden folders checkbox\n");
         return NULL;
     }
     
@@ -539,7 +542,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     
     if (!gad)
     {
-        printf("ERROR: Failed to create Beta Options button\n");
+        CONSOLE_ERROR("Failed to create Beta Options button\n");
         return NULL;
     }
     
@@ -559,7 +562,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     
     if (!gad)
     {
-        printf("ERROR: Failed to create OK button\n");
+        CONSOLE_ERROR("Failed to create OK button\n");
         return NULL;
     }
     
@@ -571,7 +574,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     
     if (!gad)
     {
-        printf("ERROR: Failed to create Cancel button\n");
+        CONSOLE_ERROR("Failed to create Cancel button\n");
         return NULL;
     }
     
@@ -597,7 +600,7 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
     
     if (!adv_data || !prefs)
     {
-        printf("ERROR: NULL pointer passed to open_itidy_advanced_window\n");
+        CONSOLE_ERROR("NULL pointer passed to open_itidy_advanced_window\n");
         return FALSE;
     }
     
@@ -638,7 +641,7 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
     adv_data->screen = LockPubScreen(NULL);
     if (!adv_data->screen)
     {
-        printf("ERROR: Failed to lock Workbench screen\n");
+        CONSOLE_ERROR("Failed to lock Workbench screen\n");
         return FALSE;
     }
     
@@ -646,7 +649,7 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
     adv_data->visual_info = GetVisualInfo(adv_data->screen, TAG_END);
     if (!adv_data->visual_info)
     {
-        printf("ERROR: Failed to get visual info\n");
+        CONSOLE_ERROR("Failed to get visual info\n");
         UnlockPubScreen(NULL, adv_data->screen);
         return FALSE;
     }
@@ -655,7 +658,7 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
     glist = create_advanced_gadgets(adv_data, &calculated_window_height);
     if (!glist)
     {
-        printf("ERROR: Failed to create gadgets\n");
+        CONSOLE_ERROR("Failed to create gadgets\n");
         FreeVisualInfo(adv_data->visual_info);
         UnlockPubScreen(NULL, adv_data->screen);
         return FALSE;
@@ -679,7 +682,7 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
     
     if (!adv_data->window)
     {
-        printf("ERROR: Failed to open advanced settings window\n");
+        CONSOLE_ERROR("Failed to open advanced settings window\n");
         FreeGadgets(adv_data->glist);
         FreeVisualInfo(adv_data->visual_info);
         UnlockPubScreen(NULL, adv_data->screen);
@@ -694,7 +697,7 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
     /* Refresh gadgets */
     GT_RefreshWindow(adv_data->window, NULL);
     
-    printf("Advanced Settings window opened successfully\n");
+    CONSOLE_STATUS("Advanced Settings window opened successfully\n");
     return TRUE;
 }
 
@@ -735,7 +738,7 @@ void close_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data)
     
     adv_data->window_open = FALSE;
     
-    printf("Advanced Settings window closed\n");
+    CONSOLE_STATUS("Advanced Settings window closed\n");
 }
 
 void set_max_icons_gadget_state(struct iTidyAdvancedWindow *adv_data,
@@ -779,7 +782,7 @@ void save_advanced_window_to_preferences(struct iTidyAdvancedWindow *adv_data)
 {
     if (!adv_data || !adv_data->prefs)
     {
-        printf("ERROR: NULL pointer in save_advanced_window_to_preferences\n");
+        CONSOLE_ERROR("NULL pointer in save_advanced_window_to_preferences\n");
         return;
     }
     
@@ -802,7 +805,7 @@ void save_advanced_window_to_preferences(struct iTidyAdvancedWindow *adv_data)
         {
             /* Invalid height, default to Classic */
             adv_data->prefs->aspectRatio = 1600;  /* 1.6 * 1000 */
-            printf("WARNING: Invalid custom aspect height, using default 1.6\n");
+            CONSOLE_WARNING("Invalid custom aspect height, using default 1.6\n");
         }
     }
     else
@@ -866,24 +869,24 @@ void save_advanced_window_to_preferences(struct iTidyAdvancedWindow *adv_data)
     log_debug(LOG_GUI, "  Saved prefs->overflowMode = %ld\n", (long)adv_data->prefs->overflowMode);
     log_debug(LOG_GUI, "  Saved prefs->reverseSort = %s\n", adv_data->prefs->reverseSort ? "YES" : "NO");
     
-    printf("Advanced settings saved to preferences:\n");
-    printf("  Aspect Ratio: %.2f (Custom: %s)\n", 
+    CONSOLE_DEBUG("Advanced settings saved to preferences:\n");
+    CONSOLE_DEBUG("  Aspect Ratio: %.2f (Custom: %s)\n", 
            adv_data->prefs->aspectRatio,
            adv_data->prefs->useCustomAspectRatio ? "YES" : "NO");
-    printf("  Overflow Mode: %d\n", adv_data->prefs->overflowMode);
-    printf("  Spacing: %hu x %hu\n", 
+    CONSOLE_DEBUG("  Overflow Mode: %d\n", adv_data->prefs->overflowMode);
+    CONSOLE_DEBUG("  Spacing: %hu x %hu\n", 
            adv_data->prefs->iconSpacingX, 
            adv_data->prefs->iconSpacingY);
-    printf("  Min Icons/Row: %hu\n", adv_data->prefs->minIconsPerRow);
-    printf("  Max Icons/Row: %hu (%s)\n", 
+    CONSOLE_DEBUG("  Min Icons/Row: %hu\n", adv_data->prefs->minIconsPerRow);
+    CONSOLE_DEBUG("  Max Icons/Row: %hu (%s)\n", 
            adv_data->prefs->maxIconsPerRow,
            adv_data->prefs->maxIconsPerRow == 0 ? "AUTO" : "MANUAL");
-    printf("  Max Window Width: %hu%% (%s)\n",
+    CONSOLE_DEBUG("  Max Window Width: %hu%% (%s)\n",
            adv_data->prefs->maxWindowWidthPct,
            adv_data->prefs->maxWindowWidthPct == 0 ? "AUTO" : "MANUAL");
-    printf("  Vertical Alignment: %s\n",
+    CONSOLE_DEBUG("  Vertical Alignment: %s\n",
            vertical_align_labels[adv_data->prefs->textAlignment]);
-    printf("  Reverse Sort: %s\n",
+    CONSOLE_DEBUG("  Reverse Sort: %s\n",
            adv_data->prefs->reverseSort ? "YES" : "NO");
 }
 
@@ -914,7 +917,7 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
         switch (msg_class)
         {
             case IDCMP_CLOSEWINDOW:
-                printf("Advanced window close requested\n");
+                CONSOLE_DEBUG("Advanced window close requested\n");
                 adv_data->changes_accepted = FALSE;
                 continue_running = FALSE;
                 break;
@@ -928,7 +931,7 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                 switch (gad->GadgetID)
                 {
                     case GID_ADV_OK:
-                        printf("OK button clicked\n");
+                        CONSOLE_DEBUG("OK button clicked\n");
                         
                         /* Read all gadget values into local variables */
                         {
@@ -1005,7 +1008,7 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                         break;
                         
                     case GID_ADV_CANCEL:
-                        printf("Cancel button clicked\n");
+                        CONSOLE_DEBUG("Cancel button clicked\n");
                         adv_data->changes_accepted = FALSE;
                         continue_running = FALSE;
                         break;
@@ -1013,14 +1016,14 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                     case GID_ADV_ASPECT_RATIO:
                         /* CRITICAL: Use msg_code for cycle gadgets (not GT_GetGadgetAttrs) */
                         adv_data->aspect_preset_selected = msg_code;
-                        printf("Aspect ratio changed to: %s\n", 
+                        CONSOLE_DEBUG("Aspect ratio changed to: %s\n", 
                                aspect_ratio_labels[adv_data->aspect_preset_selected]);
                         break;
                         
                     case GID_ADV_OVERFLOW_MODE:
                         /* CRITICAL: Use msg_code for cycle gadgets (not GT_GetGadgetAttrs) */
                         adv_data->overflow_mode_selected = msg_code;
-                        printf("Overflow mode changed to: %s\n", 
+                        CONSOLE_DEBUG("Overflow mode changed to: %s\n", 
                                overflow_mode_labels[adv_data->overflow_mode_selected]);
                         break;
                         
@@ -1033,7 +1036,7 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                                             GTCB_Checked, &checked, TAG_END);
                             adv_data->max_auto_enabled = (BOOL)checked;
                             
-                            printf("Auto Max Icons/Row: %s\n",
+                            CONSOLE_DEBUG("Auto Max Icons/Row: %s\n",
                                    adv_data->max_auto_enabled ? "ENABLED" : "DISABLED");
                             
                             /* Enable/disable the max icons/row integer gadget */
@@ -1047,14 +1050,14 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                     case GID_ADV_MAX_WIDTH_PCT:
                         /* Max window width percentage changed */
                         adv_data->max_width_pct_selected = msg_code;
-                        printf("Max window width changed to: %s\n", 
+                        CONSOLE_DEBUG("Max window width changed to: %s\n", 
                                max_width_pct_labels[adv_data->max_width_pct_selected]);
                         break;
                     
                     case GID_ADV_VERTICAL_ALIGN:
                         /* Vertical alignment changed */
                         adv_data->vertical_align_selected = msg_code;
-                        printf("Vertical alignment changed to: %s\n",
+                        CONSOLE_DEBUG("Vertical alignment changed to: %s\n",
                                vertical_align_labels[adv_data->vertical_align_selected]);
                         break;
                     
@@ -1065,7 +1068,7 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                                 GTCB_Checked, &checked,
                                 TAG_END);
                             adv_data->reverse_sort_enabled = (BOOL)checked;
-                            printf("Reverse Sort: %s\n", 
+                            CONSOLE_DEBUG("Reverse Sort: %s\n", 
                                    adv_data->reverse_sort_enabled ? "ENABLED" : "DISABLED");
                         }
                         break;
@@ -1077,7 +1080,7 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                                 GTCB_Checked, &checked,
                                 TAG_END);
                             adv_data->optimize_cols_enabled = (BOOL)checked;
-                            printf("Optimize Column Widths: %s\n", 
+                            CONSOLE_DEBUG("Optimize Column Widths: %s\n", 
                                    adv_data->optimize_cols_enabled ? "ENABLED" : "DISABLED");
                         }
                         break;
@@ -1089,7 +1092,7 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                                 GTCB_Checked, &checked,
                                 TAG_END);
                             adv_data->skip_hidden_enabled = (BOOL)checked;
-                            printf("Skip Hidden Folders: %s\n", 
+                            CONSOLE_DEBUG("Skip Hidden Folders: %s\n", 
                                    adv_data->skip_hidden_enabled ? "ENABLED" : "DISABLED");
                         }
                         break;
@@ -1101,7 +1104,7 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                                 GTCB_Checked, &checked,
                                 TAG_END);
                             adv_data->column_layout_enabled = (BOOL)checked;
-                            printf("Column Layout: %s\n", 
+                            CONSOLE_DEBUG("Column Layout: %s\n", 
                                    adv_data->column_layout_enabled ? "ENABLED" : "DISABLED");
                         }
                         break;
@@ -1111,7 +1114,7 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                         {
                             struct iTidyBetaOptionsWindow beta_window;
                             
-                            printf("Opening Beta Options window...\n");
+                            CONSOLE_DEBUG("Opening Beta Options window...\n");
                             
                             if (open_itidy_beta_options_window(&beta_window, adv_data->prefs))
                             {
@@ -1127,16 +1130,16 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                                 /* Log result */
                                 if (beta_window.changes_accepted)
                                 {
-                                    printf("Beta options saved\n");
+                                    CONSOLE_DEBUG("Beta options saved\n");
                                 }
                                 else
                                 {
-                                    printf("Beta options cancelled\n");
+                                    CONSOLE_DEBUG("Beta options cancelled\n");
                                 }
                             }
                             else
                             {
-                                printf("ERROR: Failed to open Beta Options window\n");
+                                CONSOLE_ERROR("Failed to open Beta Options window\n");
                             }
                         }
                         break;
@@ -1149,7 +1152,7 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                         break;
                         
                     default:
-                        printf("Unknown gadget ID: %lu\n", (unsigned long)gad->GadgetID);
+                        CONSOLE_DEBUG("Unknown gadget ID: %lu\n", (unsigned long)gad->GadgetID);
                         break;
                 }
                 break;
@@ -1163,7 +1166,7 @@ void load_preferences_to_advanced_window(struct iTidyAdvancedWindow *adv_data)
 {
     if (!adv_data || !adv_data->window || !adv_data->prefs)
     {
-        printf("ERROR: NULL pointer in load_preferences_to_advanced_window\n");
+        CONSOLE_ERROR("NULL pointer in load_preferences_to_advanced_window\n");
         return;
     }
     
@@ -1230,5 +1233,5 @@ void load_preferences_to_advanced_window(struct iTidyAdvancedWindow *adv_data)
     /* Enable/disable max width pct gadget based on Auto checkbox */
     update_max_width_pct_gadget_state(adv_data);
     
-    printf("Preferences loaded into advanced window\n");
+    CONSOLE_DEBUG("Preferences loaded into advanced window\n");
 }

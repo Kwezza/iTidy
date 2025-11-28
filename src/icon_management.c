@@ -26,6 +26,9 @@
 #include "Settings/WorkbenchPrefs.h"
 #include "Settings/IControlPrefs.h"
 
+/* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
+#include <console_output.h>
+
 /* External timer base for performance measurement */
 extern struct Device* TimerBase;
 
@@ -173,7 +176,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
 
     if (!iconArray)
     {
-        fprintf(stderr, "Error: Failed to create icon array.\n");
+        CONSOLE_ERROR("Failed to create icon array.\n");
 #ifdef DEBUG
         log_error(LOG_ICONS, "Failed to create icon array");
 #endif
@@ -230,7 +233,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
 #endif
     if (!anchorPath)
     {
-        fprintf(stderr, "Error: Failed to allocate AnchorPath for pattern matching.\n");
+        CONSOLE_ERROR("Failed to allocate AnchorPath for pattern matching.\n");
 #ifdef DEBUG
         log_error(LOG_ICONS, "Failed to allocate AnchorPath (out of memory?)");
 #endif
@@ -625,7 +628,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                         newIcon.icon_full_path = (char *)whd_malloc(strlen(fullPathAndFile) + 1);
                         if (!newIcon.icon_full_path)
                         {
-                            fprintf(stderr, "Error: Failed to allocate memory for icon full path.\n");
+                            CONSOLE_ERROR("Failed to allocate memory for icon full path.\n");
 #ifdef DEBUG
                             log_error(LOG_ICONS, "  MALLOC FAILED for icon_full_path\n");
 #endif
@@ -651,7 +654,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                         newIcon.icon_text = (char *)whd_malloc(textLength);
                         if (!newIcon.icon_text)
                         {
-                            fprintf(stderr, "Error: Failed to allocate memory for icon text.\n");
+                            CONSOLE_ERROR("Failed to allocate memory for icon text.\n");
 #ifdef DEBUG
                             log_error(LOG_ICONS, "  MALLOC FAILED for icon_text\n");
 #endif
@@ -684,7 +687,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                         /* Add new icon to the array */
                         if (!AddIconToArray(iconArray, &newIcon))
                         {
-                            fprintf(stderr, "Error: Failed to add icon to array.\n");
+                            CONSOLE_ERROR("Failed to add icon to array.\n");
                             append_to_log(">>> ERROR: AddIconToArray FAILED!\n");
 #ifdef DEBUG
                             log_error(LOG_ICONS, "  AddIconToArray FAILED\n");
@@ -808,7 +811,7 @@ append_to_log("Has only borderless icons: %d\n", iconArray->hasOnlyBorderlessIco
             append_to_log("==================================");
             
             /* Also print to console for immediate visibility */
-            printf("  [TIMING] Icon loading: %lu.%03lu ms for %lu icons\n",
+            CONSOLE_STATUS("  [TIMING] Icon loading: %lu.%03lu ms for %lu icons\n",
                    elapsedMillis, elapsedMicros % 1000, (unsigned long)iconArray->size);
         }
     }
@@ -823,10 +826,12 @@ int CompareByFolderAndName(const void *a, const void *b)
     const FullIconDetails *iconA = (const FullIconDetails *)a;
     const FullIconDetails *iconB = (const FullIconDetails *)b;
 
-    /* Debug: Print comparison details /
-    printf("Comparing: %s (folder: %d) vs %s (folder: %d)\n",
+    /* Debug: Print comparison details */
+    /*
+    CONSOLE_DEBUG("Comparing: %s (folder: %d) vs %s (folder: %d)\n",
            iconA->icon_text, iconA->is_folder,
-           iconB->icon_text, iconB->is_folder);*
+           iconB->icon_text, iconB->is_folder);
+    */
 
     /* Compare by is_folder: folders should come before files */
     if (iconA->is_folder != iconB->is_folder)
@@ -840,8 +845,10 @@ int CompareByFolderAndName(const void *a, const void *b)
     nameComparisonResult = strncasecmp_custom(iconA->icon_text, iconB->icon_text,
                                               strlen(iconA->icon_text) > strlen(iconB->icon_text) ? strlen(iconB->icon_text) : strlen(iconA->icon_text));
 
-    /* Debug: Print name comparison result /
-    printf("Name comparison result for %s vs %s: %d\n", iconA->icon_text, iconB->icon_text, nameComparisonResult);*/
+    /* Debug: Print name comparison result */
+    /*
+    CONSOLE_DEBUG("Name comparison result for %s vs %s: %d\n", iconA->icon_text, iconB->icon_text, nameComparisonResult);
+    */
 
     return nameComparisonResult;
 }
@@ -864,7 +871,7 @@ BOOL checkIconFrame(const char *iconName)
     char *newIconName = (char *)malloc((new_len + 1) * sizeof(char));
     if (newIconName == NULL)
     {
-        printf("Memory allocation failed\n");
+        CONSOLE_ERROR("Memory allocation failed\n");
         return FALSE;
     }
 
@@ -878,7 +885,7 @@ BOOL checkIconFrame(const char *iconName)
     IconBase = OpenLibrary("icon.library", 0);
     if (!IconBase)
     {
-        printf("Failed to open icon.library\n");
+        CONSOLE_ERROR("Failed to open icon.library\n");
         free(newIconName);
         return TRUE; /* Assume it has a frame if library can't be opened */
     }
@@ -931,7 +938,7 @@ BOOL checkIconFrame(const char *iconName)
     }
     else
     {
-        printf("Failed to retrieve frame information; error code: %ld\n", errorCode);
+        CONSOLE_ERROR("Failed to retrieve frame information; error code: %ld\n", errorCode);
         PrintFault(errorCode, NULL);
     }
 

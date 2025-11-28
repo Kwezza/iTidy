@@ -6,6 +6,9 @@
 #include <string.h>
 #include <math.h>
 
+/* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
+#include <console_output.h>
+
 #if PLATFORM_AMIGA
 #include <proto/diskfont.h>
 #include <graphics/text.h>
@@ -250,7 +253,7 @@ int fetchIControlSettings(struct IControlPrefsDetails *details)
                 }
                 else
                 {
-                    printf("Error opening IFF file: %ld\n", ifferror);
+                    CONSOLE_ERROR("Error opening IFF file: %ld\n", ifferror);
                     rc = RETURN_FAIL;
                 }
                 Close((BPTR)iffhandle->iff_Stream);
@@ -263,14 +266,14 @@ int fetchIControlSettings(struct IControlPrefsDetails *details)
         }
         else
         {
-            printf("Unable to allocate IFF handle\n");
+            CONSOLE_ERROR("Unable to allocate IFF handle\n");
             rc = RETURN_FAIL;
         }
         CloseLibrary(IFFParseBase);
     }
     else
     {
-        printf("Unable to open IFFParse library\n");
+        CONSOLE_ERROR("Unable to open IFFParse library\n");
         rc = RETURN_FAIL;
     }
     

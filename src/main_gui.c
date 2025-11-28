@@ -19,6 +19,9 @@
 #include <platform/platform.h>
 #include <platform/amiga_headers.h>
 
+/* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
+#include <console_output.h>
+
 /* VBCC MIGRATION NOTE: Amiga-specific headers wrapped in guard */
 #ifdef __AMIGA__
 #include <exec/types.h>
@@ -137,10 +140,10 @@ static void log_system_info(void)
     ULONG chip_kb, fast_kb;
     const char *cpu_name;
 
-    printf("DEBUG: log_system_info() called\n");
+    CONSOLE_DEBUG("DEBUG: log_system_info() called\n");
     
     cpu_name = get_cpu_name();
-    printf("DEBUG: CPU name: %s\n", cpu_name);
+    CONSOLE_DEBUG("DEBUG: CPU name: %s\n", cpu_name);
     
     /* Get memory info using AvailMem() */
     chip_free_total = AvailMem(MEMF_CHIP);
@@ -148,13 +151,13 @@ static void log_system_info(void)
     fast_free_total = AvailMem(MEMF_FAST);
     fast_free_largest = AvailMem(MEMF_FAST | MEMF_LARGEST);
     
-    printf("DEBUG: Chip=%lu, Fast=%lu\n", chip_free_total, fast_free_total);
+    CONSOLE_DEBUG("DEBUG: Chip=%lu, Fast=%lu\n", chip_free_total, fast_free_total);
     
     /* Convert to KB (round up) */
     chip_kb = (chip_free_total + 1023UL) / 1024UL;
     fast_kb = (fast_free_total + 1023UL) / 1024UL;
     
-    printf("DEBUG: About to log system info...\n");
+    CONSOLE_DEBUG("DEBUG: About to log system info...\n");
     log_info(LOG_GENERAL, "=== SYSTEM INFORMATION ===\n");
     log_info(LOG_GENERAL, "CPU: %s\n", cpu_name);
     log_info(LOG_GENERAL, "Chip RAM: %lu KB free (%lu bytes total, %lu bytes largest block)\n", 
@@ -167,9 +170,9 @@ static void log_system_info(void)
                  fast_kb, fast_free_total, fast_free_largest);
     }
     log_info(LOG_GENERAL, "==========================\n");
-    printf("DEBUG: System info logging complete\n");
+    CONSOLE_DEBUG("DEBUG: System info logging complete\n");
 #else
-    printf("DEBUG: Not __AMIGA__, skipping system info\n");
+    CONSOLE_DEBUG("DEBUG: Not __AMIGA__, skipping system info\n");
 #endif
 }
 
@@ -187,7 +190,7 @@ void AddIconError(IconErrorTrackerStruct *tracker, STRPTR filePath)
         newList = whd_malloc(newSize * sizeof(STRPTR));
         if (newList == NULL)
         {
-            printf("Error reallocating memory for icon error list\n");
+            CONSOLE_ERROR("Error reallocating memory for icon error list\n");
             return;
         }
         memset(newList, 0, newSize * sizeof(STRPTR));
@@ -216,7 +219,7 @@ void AddIconError(IconErrorTrackerStruct *tracker, STRPTR filePath)
     }
     else
     {
-        printf("Error allocating memory for icon file path\n");
+        CONSOLE_ERROR("Error allocating memory for icon file path\n");
     }
 }
 
@@ -263,12 +266,12 @@ int main(int argc, char **argv)
     user_stripIconPosition = FALSE;
     user_forceStandardIcons = FALSE;
     
-    printf("\n");
+    CONSOLE_NEWLINE();
 
     /* KEEP: Timer setup */
     if (setupTimer() != 0)
     {
-        printf("Failed to setup timer\n");
+        CONSOLE_ERROR("Failed to setup timer\n");
         return 1;
     }
 
@@ -276,7 +279,7 @@ int main(int argc, char **argv)
     fontPrefs = whd_malloc(sizeof(struct FontPrefs));
     if (!fontPrefs)
     {
-        printf("Error: Failed to allocate memory for fontPrefs\n");
+        CONSOLE_ERROR("Error: Failed to allocate memory for fontPrefs\n");
         return 1;
     }
     memset(fontPrefs, 0, sizeof(struct FontPrefs));
@@ -288,16 +291,17 @@ int main(int argc, char **argv)
 
     if (iconsErrorTracker.list == NULL)
     {
-        printf("Error allocating memory for icon error list\n");
+        CONSOLE_ERROR("Error allocating memory for icon error list\n");
         return 1;
     }
 
     /* KEEP: Banner display */
-    printf("==================================================\n");
-    printf("   iTidy GUI V%s - Amiga Workbench Icon Tidier\n", VERSION);
-    printf("==================================================\n\n");
-    printf("   by Kerry Thompson\n");
-    printf("   compiled: %s at %s\n\n", __DATE__, __TIME__);
+    CONSOLE_SEPARATOR();
+    CONSOLE_BANNER("   iTidy GUI V%s - Amiga Workbench Icon Tidier\n", VERSION);
+    CONSOLE_SEPARATOR();
+    CONSOLE_NEWLINE();
+    CONSOLE_BANNER("   by Kerry Thompson\n");
+    CONSOLE_BANNER("   compiled: %s at %s\n\n", __DATE__, __TIME__);
 
     /* Initialize enhanced logging system (TRUE = clean old logs) */
     initialize_log_system(TRUE);
@@ -330,7 +334,7 @@ int main(int argc, char **argv)
     /* KEEP: Workbench version check */
     if (workbenchVersion < 36000)
     {
-        printf("This program requires Workbench 2.0 or higher.\n");
+        CONSOLE_ERROR("This program requires Workbench 2.0 or higher.\n");
         return RETURN_FAIL;
     }
 
@@ -365,10 +369,10 @@ int main(int argc, char **argv)
 #endif
 
     /* GUI MIGRATION: Open the GUI window */
-    printf("Opening iTidy GUI window...\n");
+    CONSOLE_STATUS("Opening iTidy GUI window...\n");
     if (!open_itidy_main_window(&gui_window))
     {
-        printf("Failed to open GUI window\n");
+        CONSOLE_ERROR("Failed to open GUI window\n");
         /* Cleanup and exit */
         CleanupWindow();
         disposeTimer();
@@ -381,13 +385,13 @@ int main(int argc, char **argv)
         return RETURN_FAIL;
     }
 
-    printf("GUI window opened successfully.\n");
-    printf("Click the close gadget to exit.\n\n");
+    CONSOLE_STATUS("GUI window opened successfully.\n");
+    CONSOLE_STATUS("Click the close gadget to exit.\n\n");
     
     /* Log CPU and memory information now that logging is fully initialized */
-    printf("DEBUG: About to call log_system_info()...\n");
+    CONSOLE_DEBUG("DEBUG: About to call log_system_info()...\n");
     log_system_info();
-    printf("DEBUG: log_system_info() completed\n");
+    CONSOLE_DEBUG("DEBUG: log_system_info() completed\n");
 
     /* GUI MIGRATION: Main GUI event loop */
     keep_running = TRUE;
@@ -402,7 +406,7 @@ int main(int argc, char **argv)
     }
 
     /* GUI MIGRATION: Close the GUI window */
-    printf("\nClosing GUI window...\n");
+    CONSOLE_STATUS("\nClosing GUI window...\n");
     close_itidy_main_window(&gui_window);
 
     /* KEEP: Cleanup window system */
@@ -462,7 +466,7 @@ int main(int argc, char **argv)
     /* Shutdown logging system */
     shutdown_log_system();
 
-    printf("\niTidy GUI shutdown complete\n\n");
+    CONSOLE_STATUS("\niTidy GUI shutdown complete\n\n");
 
     /* KEEP: VBCC -lauto workaround */
 #ifdef __AMIGA__

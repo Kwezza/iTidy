@@ -1,5 +1,9 @@
 #include "spinner.h"
 #include <stdio.h>
+
+/* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
+#include <console_output.h>
+
 #include <exec/memory.h>
 #include <exec/exec.h>
 #include <dos/dos.h>
@@ -32,20 +36,20 @@ void updateCursor(void) {
         currentCursor = (currentCursor + 1) % 4;
 
         // Print the current cursor character
-        printf("\r  %c\r", cursorChars[currentCursor]);
+        CONSOLE_STATUS("\r  %c\r", cursorChars[currentCursor]);
         fflush(stdout);
     }
 }
 
 void eraseSpinner(void) {
-    printf("\r  \r");
+    CONSOLE_STATUS("\r  \r");
     fflush(stdout);
 }
 
 int setupTimer(void) {
     // Open the timer device
     if (OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest *)&timereq, 0) != 0) {
-        printf("Failed to open timer.device\n");
+        CONSOLE_ERROR("Failed to open timer.device\n");
         return 1;
     }
     TimerBase = timereq.tr_node.io_Device;

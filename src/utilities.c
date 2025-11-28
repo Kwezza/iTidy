@@ -13,6 +13,9 @@
 #include <stddef.h>
 #include <string.h>
 
+/* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
+#include <console_output.h>
+
 #include "itidy_types.h"
 #include "writeLog.h"
 #include "icon_misc.h"
@@ -215,7 +218,7 @@ void CalculateTextExtent(const char *text, struct TextExtent *textExtent)
 
     if (!rastPort)
     {
-        printf("RastPort is not initialized.\n");
+        CONSOLE_ERROR("RastPort is not initialized.\n");
         return;
     }
 

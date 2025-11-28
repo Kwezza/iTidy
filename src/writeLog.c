@@ -15,6 +15,10 @@
  */
 
 #include "platform/platform.h"
+
+/* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
+#include <console_output.h>
+
 #include "writeLog.h"
 #include "file_directory_handling.h"
 #include <devices/timer.h>

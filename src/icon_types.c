@@ -20,6 +20,9 @@
 #include "icon_misc.h"
 #include "Settings/WorkbenchPrefs.h"
 
+/* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
+#include <console_output.h>
+
 void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
 {
     struct DiskObject *diskObject;
@@ -32,7 +35,7 @@ void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
 
     if (!filePath || !newIconSize)
     {
-        printf("Invalid filePath or newIconSize pointer.\n");
+        CONSOLE_ERROR("Invalid filePath or newIconSize pointer.\n");
         return;
     }
 
@@ -41,7 +44,7 @@ void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
     filePathCopy = (char *)whd_malloc(filePathLen + 1);
     if (!filePathCopy)
     {
-        printf("Memory allocation failed.\n");
+        CONSOLE_ERROR("Memory allocation failed.\n");
         return;
     }
 
@@ -66,7 +69,7 @@ void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
     diskObject = GetDiskObject(filePathCopy);
     if (!diskObject)
     {
-        printf("Failed to get DiskObject for the file: %s\n", filePathCopy);
+        CONSOLE_ERROR("Failed to get DiskObject for the file: %s\n", filePathCopy);
         whd_free(filePathCopy);
         return;
     }
@@ -74,7 +77,7 @@ void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
     toolTypes = diskObject->do_ToolTypes;
     if (!toolTypes)
     {
-        printf("Invalid or missing ToolTypes in DiskObject.\n");
+        CONSOLE_WARNING("Invalid or missing ToolTypes in DiskObject.\n");
         FreeDiskObject(diskObject);
         whd_free(filePathCopy);
         return;
@@ -226,7 +229,7 @@ IconPosition GetIconPositionFromPath(const char *iconPath)
     pathCopy = (char *)whd_malloc(pathLength + 1);
     if (pathCopy == NULL)
     {
-        printf("Failed to allocate memory for path copy.\n");
+        CONSOLE_ERROR("Failed to allocate memory for path copy.\n");
         return position;
     }
 
@@ -247,7 +250,7 @@ IconPosition GetIconPositionFromPath(const char *iconPath)
     diskObject = GetDiskObject(pathCopy);
     if (diskObject == NULL)
     {
-        printf("Error: Unable to load icon. Corrupted or unknown format: %s.info\n", pathCopy);
+        CONSOLE_ERROR("Unable to load icon. Corrupted or unknown format: %s.info\n", pathCopy);
         whd_free(pathCopy); /* Free the allocated memory */
         return position;
     }
@@ -374,7 +377,7 @@ if (fib_DirEntryType > 0) return 0;
     file = fopen(filename, "rb");
     if (file == NULL)
     {
-        perror("Error opening file");
+        CONSOLE_ERROR("Error opening file: %s\n", filename);
         return 0; /* Return false on error */
     }
 
@@ -433,7 +436,7 @@ int isOS35IconFormat(const char *filename)
     file = fopen(filename, "rb");
     if (file == NULL)
     {
-        perror("Error opening file");
+        CONSOLE_ERROR("Error opening file: %s\n", filename);
         return 0; /* Return false on error */
     }
 
@@ -532,7 +535,7 @@ int isOS35IconFormat(const char *filename)
     /* Check for errors after fread loop */
     if (ferror(file))
     {
-        perror("Error reading file");
+        CONSOLE_ERROR("Error reading file: %s\n", filename);
         fclose(file);
         return 0;
     }
@@ -605,7 +608,7 @@ int getOS35IconSize(const char *filename, IconSize *size)
     file = fopen(filename, "rb");
     if (file == NULL)
     {
-        perror("Error opening file");
+        CONSOLE_ERROR("Error opening file: %s\n", filename);
         return 0; /* Return false on error */
     }
 

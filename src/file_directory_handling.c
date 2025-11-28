@@ -18,6 +18,9 @@
 #include "utilities.h"
 #include "writeLog.h"
 #include "icon_misc.h"
+
+/* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
+#include <console_output.h>
 #include "dos/getDiskDetails.h"
 #include "icon_management.h"
 
@@ -205,7 +208,7 @@ append_to_log("%-3d | %-4d | %-4d | %-40s\n", i, currentIcon->icon_x, currentIco
         }
         else
         {
-            fprintf(stderr, "Error: Invalid icon: %s\n", currentIcon->icon_full_path);
+            CONSOLE_ERROR("Invalid icon: %s\n", currentIcon->icon_full_path);
         }
     }
     
@@ -233,7 +236,7 @@ append_to_log("%-3d | %-4d | %-4d | %-40s\n", i, currentIcon->icon_x, currentIco
         append_to_log("=================================\n\n");
         
         /* Also print to console for immediate visibility */
-        printf("  [TIMING] Icon saving: %lu.%03lu ms for %d icons\n",
+        CONSOLE_STATUS("  [TIMING] Icon saving: %lu.%03lu ms for %d icons\n",
                elapsedMillis, elapsedMicros % 1000, iconArraySize);
     }
     
@@ -819,7 +822,7 @@ BOOL isDirectory(const char *path)
     fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
     if (fib == NULL)
     {
-        printf("Error: Unable to allocate FileInfoBlock.\n");
+        CONSOLE_ERROR("Unable to allocate FileInfoBlock.\n");
         return FALSE;
     }
 
@@ -830,7 +833,7 @@ BOOL isDirectory(const char *path)
         pathWithoutInfo = (char *)malloc(pathLen - infoLen + 1);
         if (pathWithoutInfo == NULL)
         {
-            printf("Error: Unable to allocate memory for pathWithoutInfo.\n");
+            CONSOLE_ERROR("Unable to allocate memory for pathWithoutInfo.\n");
             FreeDosObject(DOS_FIB, fib);
             return FALSE;
         }
@@ -845,7 +848,7 @@ BOOL isDirectory(const char *path)
         pathWithoutInfo = (char *)malloc(pathLen + 1);
         if (pathWithoutInfo == NULL)
         {
-            printf("Error: Unable to allocate memory for pathWithoutInfo.\n");
+            CONSOLE_ERROR("Unable to allocate memory for pathWithoutInfo.\n");
             FreeDosObject(DOS_FIB, fib);
             return FALSE;
         }
@@ -878,7 +881,7 @@ BOOL isDirectory(const char *path)
     }
     else
     {
-        printf("Error: Examine() failed.\n");
+        CONSOLE_ERROR("Examine() failed.\n");
     }
 
     /* Unlock the path and free the FileInfoBlock */

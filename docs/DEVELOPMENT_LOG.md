@@ -7,7 +7,47 @@ iTidy is an Amiga icon management utility that allows users to sort and arrange 
 
 ## Development Timeline
 
-### Latest: Empty Folder Resize Fix (November 26, 2025)
+### Latest: Console Output Compile Flag System (November 28, 2025)
+
+#### Implemented ENABLE_CONSOLE Conditional Compilation
+* **Status**: Complete - All printf calls converted to conditional macros
+* **Impact**: Release builds no longer open a console window; debug builds retain full console output
+* **Date**: November 28, 2025
+* **Files Created**: `include/console_output.h`
+* **Files Modified**: Makefile, ~20 source files across src/, src/GUI/, src/helpers/, src/Settings/
+
+**Purpose:**
+Allow building iTidy as a pure GUI application without any console window appearing in release builds, while preserving console output capability for debugging.
+
+**Implementation:**
+Created `console_output.h` header with conditional macros that expand to `printf()` when `ENABLE_CONSOLE` is defined, or to `((void)0)` (no-op) when undefined:
+- `CONSOLE_PRINTF()` - General output
+- `CONSOLE_ERROR()` - Error messages (auto-prefixes "ERROR: ")
+- `CONSOLE_WARNING()` - Warning messages (auto-prefixes "WARNING: ")
+- `CONSOLE_STATUS()` - Status/progress messages
+- `CONSOLE_DEBUG()` - Debug-level detail
+- `CONSOLE_BANNER()` - Banner/header messages
+- `CONSOLE_SEPARATOR()` / `CONSOLE_NEWLINE()` - Formatting helpers
+
+**Build Usage:**
+| Command | Result |
+|---------|--------|
+| `make` | Release build - no console output |
+| `make CONSOLE=1` | Debug build - console output enabled |
+
+**Conversion Summary:**
+- Converted ~180 printf() calls across GUI, processing, backup, and utility modules
+- Updated DEBUG_LOG macros in backup_*.c files to use CONSOLE_DEBUG
+- AmigaOS `Printf()` (capital P) calls intentionally left unchanged (DOS library API)
+- Commented-out debug printf statements converted to CONSOLE_DEBUG within comments
+
+**Notes:**
+- Build shows harmless "warning 153: statement has no effect" when console disabled - expected behavior
+- Full documentation added to Makefile help target (`make help`)
+
+---
+
+### Empty Folder Resize Fix (November 26, 2025)
 
 #### Fixed Empty Folders Not Being Resized to Default Size
 * **Status**: Complete - Implemented and compiled successfully

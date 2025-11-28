@@ -14,13 +14,16 @@
 #include <stdio.h>
 #include <ctype.h>
 
+/* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
+#include <console_output.h>
+
 /* Platform-specific includes */
 #if PLATFORM_HOST
     #include <sys/stat.h>
     #include <sys/types.h>
     #include <dirent.h>
     #include <errno.h>
-    #define DEBUG_LOG(fmt, ...) printf("[DEBUG] " fmt "\n", __VA_ARGS__)
+    #define DEBUG_LOG(fmt, ...) CONSOLE_DEBUG("[DEBUG] " fmt "\n", __VA_ARGS__)
     
     /* Windows compatibility */
     #ifdef _WIN32

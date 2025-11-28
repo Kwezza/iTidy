@@ -16,6 +16,9 @@
 /* Fixed-point scale factor for aspect ratios */
 #define ASPECT_SCALE 1000
 
+/* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
+#include <console_output.h>
+
 #include "aspect_ratio_layout.h"
 #include "layout_preferences.h"
 #include "icon_management.h"
@@ -84,8 +87,8 @@ BOOL ValidateCustomAspectRatio(int width, int height, int *outRatio)
     /* Check for invalid values (zero or negative) */
     if (width <= 0 || height <= 0)
     {
-        printf("ERROR: Aspect ratio values must be positive integers.\n");
-        printf("       Received: %d:%d\n", width, height);
+        CONSOLE_ERROR("Aspect ratio values must be positive integers.\n");
+        CONSOLE_ERROR("       Received: %d:%d\n", width, height);
 #ifdef DEBUG
         append_to_log("ValidateCustomAspectRatio: Invalid values %d:%d (must be positive)\n",
                       width, height);
@@ -102,9 +105,9 @@ BOOL ValidateCustomAspectRatio(int width, int height, int *outRatio)
     /* 5.0 = 5000, 0.2 = 200 in fixed-point */
     if (ratio > 5000 || ratio < 200)
     {
-        printf("WARNING: Very extreme aspect ratio (%d.%02d).\n", 
+        CONSOLE_WARNING("Very extreme aspect ratio (%d.%02d).\n", 
                ratio / ASPECT_SCALE, (ratio % ASPECT_SCALE) / 10);
-        printf("         Window may have unusual proportions.\n");
+        CONSOLE_WARNING("         Window may have unusual proportions.\n");
 #ifdef DEBUG
         append_to_log("ValidateCustomAspectRatio: Extreme ratio %d from %d:%d\n",
                       ratio, width, height);
@@ -513,7 +516,7 @@ void CalculateLayoutWithAspectRatio(const IconArray *iconArray,
             append_to_log("====================================\n\n");
             
             /* Also print to console for immediate visibility */
-            printf("  [TIMING] Aspect ratio calculation: %lu.%03lu ms for %lu icons\n",
+            CONSOLE_STATUS("  [TIMING] Aspect ratio calculation: %lu.%03lu ms for %lu icons\n",
                    elapsedMillis, elapsedMicros % 1000, (unsigned long)iconArray->size);
         }
     }

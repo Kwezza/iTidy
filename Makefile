@@ -6,6 +6,10 @@
 # Target selection: host or amiga
 TARGET ?= amiga
 
+# Console output: Set CONSOLE=1 to enable printf output (opens console window)
+# Default: disabled for release builds (GUI only, no console window)
+CONSOLE ?= 0
+
 # Project name
 PROJECT = iTidy
 
@@ -14,10 +18,18 @@ SRC_DIR = src
 INC_DIR = include
 BUILD_DIR = build
 
+# Console output flag
+ifeq ($(CONSOLE),1)
+    CONSOLE_FLAG = -DENABLE_CONSOLE
+else
+    CONSOLE_FLAG =
+endif
+
 ifeq ($(TARGET),host)
     # Host build configuration (GCC on Windows/Linux/macOS)
+    # Console always enabled on host for testing
     CC = gcc
-    CFLAGS = -std=c99 -Wall -Wextra -pedantic -I$(INC_DIR) -Isrc -DPLATFORM_HOST=1
+    CFLAGS = -std=c99 -Wall -Wextra -pedantic -I$(INC_DIR) -Isrc -DPLATFORM_HOST=1 -DENABLE_CONSOLE
     LDFLAGS =
     OUT_DIR = $(BUILD_DIR)/host
     BIN = $(OUT_DIR)/$(PROJECT).exe
@@ -29,8 +41,9 @@ else
     # Note: VBCC warnings from system headers (51: bitfield, 61: array size) cannot be suppressed
     # EASY_REQUEST_HELPER: -DBUILD_WITH_MOVEWINDOW disabled (causes flicker on slow Amigas)
     # CPU TARGET: 68000 for maximum compatibility (A500/A600/A1200)
+    # CONSOLE: Add -DENABLE_CONSOLE via CONSOLE=1 to open console window for debugging
     CC = vc
-    CFLAGS = +aos68k -c99 -cpu=68000 -O2 -size -I$(INC_DIR) -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG
+    CFLAGS = +aos68k -c99 -cpu=68000 -O2 -size -I$(INC_DIR) -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG $(CONSOLE_FLAG)
     LDFLAGS = +aos68k -cpu=68000 -O2 -size -final -lamiga -lauto
     OUT_DIR = $(BUILD_DIR)/amiga
     BIN_DIR = Bin/Amiga
@@ -255,8 +268,9 @@ help:
 	@echo ==================
 	@echo.
 	@echo Targets:
-	@echo   make                    - Build for Amiga (default)
-	@echo   make TARGET=host        - Build for host PC (GCC)
+	@echo   make                    - Build for Amiga (default, no console)
+	@echo   make CONSOLE=1          - Build with console output enabled
+	@echo   make TARGET=host        - Build for host PC (GCC, console always on)
 	@echo   make TARGET=amiga       - Build for Amiga (vbcc)
 	@echo   make host               - Shortcut for host build
 	@echo   make amiga              - Shortcut for Amiga build
@@ -265,6 +279,10 @@ help:
 	@echo   make clean-all          - Clean all builds
 	@echo   make help               - Show this help
 	@echo.
+	@echo Console Output:
+	@echo   CONSOLE=0 (default)     - Release build, no console window opens
+	@echo   CONSOLE=1               - Debug build, console window with output
+	@echo.
 	@echo Build Outputs:
 	@echo   Host:   $(BUILD_DIR)/host/$(PROJECT).exe
 	@echo   Amiga:  $(BUILD_DIR)/amiga/$(PROJECT)
@@ -272,6 +290,7 @@ help:
 	@echo.
 	@echo Current Configuration:
 	@echo   TARGET:  $(TARGET)
+	@echo   CONSOLE: $(CONSOLE)
 	@echo   CC:      $(CC)
 	@echo   OUT_DIR: $(OUT_DIR)
 	@echo   BIN:     $(BIN)
