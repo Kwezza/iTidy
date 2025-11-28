@@ -887,11 +887,6 @@ static BOOL parse_catalog_callback(const char *line, struct iTidyFolderViewWindo
                 return FALSE;
             }
             memset(entry->display_text, 0, 300);
-            {
-                FreeVec(entry->path);
-                FreeVec(entry);
-                return FALSE;
-            }
             
             format_folder_display_with_size(entry->path, depth, combined_str, entry->display_text, 300);
             

@@ -582,7 +582,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
 
     if (calculated_height)
     {
-        *calculated_height = current_y 
+        *calculated_height = current_y ;
     }
 
     return adv_data->glist;

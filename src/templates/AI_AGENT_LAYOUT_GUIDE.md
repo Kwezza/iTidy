@@ -1200,6 +1200,229 @@ After implementing ListView labels:
 **SUMMARY:**
 Use **empty string labels** with ListView gadgets and create a separate TEXT gadget for the label. This gives you precise control, works with all font sizes, and makes your code cleaner and more maintainable.
 
+### 0.3. Updating Button Text at Runtime (GadTools BUTTON_KIND Pattern)
+
+**THE PROBLEM:** On classic Amiga Workbench 3.0/3.1 with GadTools `BUTTON_KIND` gadgets, you cannot change button text at runtime using `GT_SetGadgetAttrs()` like you might expect. The `GA_Text` attribute doesn't work for runtime updates on button gadgets.
+
+**COMMON USE CASE:** Progress windows where you want the "Cancel" button to change to "Close" when processing completes, allowing users to clearly see that they're dismissing results rather than canceling an operation.
+
+**SYMPTOMS:**
+- Button text doesn't update when you call `GT_SetGadgetAttrs()`
+- Button continues to show original creation text
+- No visual change occurs even with `RefreshGList()` or `GT_RefreshWindow()`
+
+**ROOT CAUSE:** GadTools button gadgets don't have a proper `GA_Text` attribute for runtime text changes. The button label comes from `NewGadget.ng_GadgetText`, which is just a **pointer** to your string. GadTools **does not copy** the string; it only stores the pointer.
+
+**❌ WRONG WAY (doesn't work on WB 3.0/3.1):**
+```c
+/* BAD: Trying to use GT_SetGadgetAttrs to change button text */
+void update_button_text(struct Window *window, struct Gadget *button, const char *new_text)
+{
+    /* This doesn't work - BUTTON_KIND doesn't support GA_Text updates! */
+    GT_SetGadgetAttrs(button, window, NULL,
+                      GA_Text, (ULONG)new_text,
+                      TAG_DONE);
+    
+    RefreshGList(button, window, NULL, 1);  /* Still doesn't work */
+}
+```
+
+**✅ CORRECT WAY - Mutable Buffer Pattern (WB 3.0 compatible):**
+
+The proper solution uses a **mutable buffer + refresh** pattern:
+
+**Step 1: Create a static/global buffer for the button label**
+```c
+/* At file scope - buffer must outlive the gadget */
+static char g_cancel_button_label[16] = "Cancel";
+```
+
+**Step 2: Point ng_GadgetText to the mutable buffer when creating gadget**
+```c
+/* Initialize the buffer */
+strncpy(g_cancel_button_label, "Cancel", sizeof(g_cancel_button_label) - 1);
+g_cancel_button_label[sizeof(g_cancel_button_label) - 1] = '\0';
+
+/* Create gadget pointing to the buffer */
+struct NewGadget ng;
+ng.ng_LeftEdge = current_x;
+ng.ng_TopEdge = current_y;
+ng.ng_Width = button_width;
+ng.ng_Height = button_height;
+ng.ng_GadgetText = (UBYTE *)g_cancel_button_label;  /* Point to mutable buffer */
+ng.ng_GadgetID = GID_CANCEL_BUTTON;
+ng.ng_Flags = PLACETEXT_IN;
+
+cancel_button = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+```
+
+**Step 3: Change the buffer contents and refresh when you need to update text**
+```c
+void set_cancel_button_text(struct WindowData *data, const char *new_text)
+{
+    if (data == NULL || data->cancel_button == NULL || data->window == NULL)
+        return;
+    
+    if (new_text == NULL || new_text[0] == '\0')
+        return;
+    
+    /* Update the mutable buffer that ng_GadgetText points to */
+    strncpy(g_cancel_button_label, new_text, sizeof(g_cancel_button_label) - 1);
+    g_cancel_button_label[sizeof(g_cancel_button_label) - 1] = '\0';
+    
+    /* Refresh the gadget to display the new text */
+    RefreshGList(data->cancel_button, data->window, NULL, 1);
+}
+
+/* Usage: Change "Cancel" to "Close" when processing completes */
+set_cancel_button_text(&window_data, "Close");
+```
+
+**HOW IT WORKS:**
+1. **Creation:** GadTools stores the **pointer** to `g_cancel_button_label`, not a copy of the string
+2. **Update:** When you change the buffer contents with `strncpy()`, the pointer still points to the same buffer
+3. **Refresh:** `RefreshGList()` redraws the button, reading from the buffer (which now has different text)
+4. **Result:** Button displays the new text
+
+**KEY RULES:**
+- ⚠️ **CRITICAL:** Button label buffer must be `static` or globally allocated - **NOT** on the stack
+- ⚠️ **CRITICAL:** Buffer must remain valid for the entire lifetime of the gadget
+- ⚠️ **ALWAYS** use `strncpy()` with explicit null termination for safety
+- ⚠️ **ALWAYS** call `RefreshGList()` after changing buffer to update display
+- ⚠️ **NEVER** use string literals like `"Cancel"` directly - they can't be modified
+- ⚠️ **NEVER** use local stack buffers - they'll be invalid after function returns
+- ✅ Each button that needs dynamic text must have its own separate buffer
+- ✅ Buffer size should accommodate longest expected text + null terminator
+
+**BUFFER SCOPE OPTIONS:**
+
+```c
+/* Option 1: Static/file scope (recommended for single instances) */
+static char g_button_label[16] = "Initial";
+
+/* Option 2: Global scope (if needed across files) */
+char g_button_label[16] = "Initial";
+
+/* Option 3: Window data structure (recommended for multiple instances) */
+struct MyWindowData {
+    char cancel_label_buffer[16];
+    char ok_label_buffer[16];
+    struct Gadget *cancel_button;
+    struct Gadget *ok_button;
+    /* ... other fields ... */
+};
+
+/* Initialize in window creation */
+strncpy(data->cancel_label_buffer, "Cancel", sizeof(data->cancel_label_buffer) - 1);
+ng.ng_GadgetText = (UBYTE *)data->cancel_label_buffer;
+```
+
+**REAL-WORLD EXAMPLE (iTidy main progress window):**
+
+```c
+/* From main_progress_window.c */
+
+/* Step 1: Static buffer at file scope */
+static char g_cancel_button_label[16] = "Cancel";
+
+/* Step 2: Create button using buffer */
+BOOL itidy_main_progress_window_open(struct iTidyMainProgressWindow *window_data)
+{
+    /* ... other setup ... */
+    
+    /* Initialize label buffer */
+    strncpy(g_cancel_button_label, "Cancel", sizeof(g_cancel_button_label) - 1);
+    g_cancel_button_label[sizeof(g_cancel_button_label) - 1] = '\0';
+    
+    /* Create button pointing to mutable buffer */
+    ng.ng_GadgetText = (UBYTE *)g_cancel_button_label;
+    window_data->cancel_button = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+    
+    /* ... */
+}
+
+/* Step 3: Update function */
+void itidy_main_progress_window_set_button_text(struct iTidyMainProgressWindow *window_data,
+                                                const char *text)
+{
+    if (window_data == NULL || window_data->cancel_button == NULL || window_data->window == NULL)
+        return;
+    
+    /* Update buffer */
+    strncpy(g_cancel_button_label, text, sizeof(g_cancel_button_label) - 1);
+    g_cancel_button_label[sizeof(g_cancel_button_label) - 1] = '\0';
+    
+    /* Refresh gadget */
+    RefreshGList(window_data->cancel_button, window_data->window, NULL, 1);
+}
+
+/* Usage when processing completes */
+itidy_main_progress_window_set_button_text(&progress_window, "Close");
+```
+
+**ALTERNATIVE APPROACH (GT_RefreshWindow):**
+
+Some systems may require a full window refresh instead of just the gadget:
+
+```c
+void set_button_text_alt(struct WindowData *data, const char *new_text)
+{
+    /* Update buffer */
+    strncpy(g_button_label, new_text, sizeof(g_button_label) - 1);
+    g_button_label[sizeof(g_button_label) - 1] = '\0';
+    
+    /* Option 1: Refresh just the gadget (usually sufficient) */
+    RefreshGList(data->button, data->window, NULL, 1);
+    
+    /* Option 2: Full window refresh (if Option 1 doesn't work) */
+    GT_RefreshWindow(data->window, NULL);
+}
+```
+
+**COMMON USE CASES:**
+- ✅ Cancel → Close (progress windows)
+- ✅ Start → Stop (toggle operations)
+- ✅ Enable → Disable (state toggles)
+- ✅ Show → Hide (visibility controls)
+- ✅ Dynamic button labels based on state
+
+**WHEN NOT TO USE:**
+- ❌ Static button text that never changes
+- ❌ Buttons with multiple possible states (use multiple buttons instead)
+- ❌ Complex state machines (consider separate buttons with GA_Disabled)
+
+**TESTING CHECKLIST:**
+- [ ] Button displays initial text correctly
+- [ ] Text updates when function is called
+- [ ] Refresh occurs immediately (no delay)
+- [ ] Text doesn't get corrupted or truncated
+- [ ] Works with different fonts (Topaz 8, Topaz 9, etc.)
+- [ ] Buffer doesn't overflow with longest expected text
+- [ ] Multiple rapid updates don't cause visual glitches
+
+**PORTABILITY:**
+- ✅ Works on all Workbench versions (2.0, 2.1, 3.0, 3.1, 3.2)
+- ✅ Uses only standard GadTools/Intuition APIs
+- ✅ No special libraries or OS patches required
+- ✅ Follows AmigaOS RKM (Reference Kernel Manual) patterns
+
+**DEBUGGING:**
+If button text doesn't update:
+1. Verify buffer is `static` or global (not local stack variable)
+2. Check that buffer address matches `ng.ng_GadgetText` address
+3. Ensure `RefreshGList()` is called after buffer update
+4. Try `GT_RefreshWindow()` instead of `RefreshGList()`
+5. Log buffer contents before/after to verify change
+6. Verify button pointer is still valid (window hasn't been closed)
+
+**KEY PRINCIPLE:**
+GadTools buttons store a **pointer** to your label string, not the string itself. By using a mutable buffer and keeping the pointer constant, you can change what the button displays without recreating the gadget. This is the WB 3.0-compatible way to achieve dynamic button text.
+
+**REFERENCE:**
+- See `docs/gadtools_button_text_update.md` for detailed explanation
+- See `src/GUI/StatusWindows/main_progress_window.c` for production implementation
+- AmigaOS RKM Libraries: GadTools chapter on BUTTON_KIND gadgets
+
 ### 1. ListView Height "Snapping" Issue
 
 **THE PROBLEM:** ListView gadgets automatically adjust their height to show complete rows. The height you request is NOT the height you get.

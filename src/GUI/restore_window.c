@@ -1256,7 +1256,7 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     ng.ng_LeftEdge = current_x;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = listview_width;
-    ng.ng_Height = listview_requested_height;
+    ng.ng_Height = (font_height + 2) * 7;;
     ng.ng_GadgetText = "";
     ng.ng_GadgetID = GID_RESTORE_RUN_LIST;
     ng.ng_Flags = PLACETEXT_ABOVE;

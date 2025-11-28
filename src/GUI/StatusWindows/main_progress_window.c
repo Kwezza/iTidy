@@ -23,6 +23,9 @@
 
 #define ITIDY_MAIN_PROGRESS_TITLE "iTidy - Progress"
 
+/* Mutable buffer for Cancel button text (must outlive the gadget) */
+static char g_cancel_button_label[16] = "Cancel";
+
 #ifndef NewList
 VOID NewList(struct List *list);
 #endif
@@ -141,6 +144,10 @@ BOOL itidy_main_progress_window_open(struct iTidyMainProgressWindow *window_data
         goto cleanup;
     }
 
+    /* Initialize cancel button label to "Cancel" */
+    strncpy(g_cancel_button_label, "Cancel", sizeof(g_cancel_button_label) - 1);
+    g_cancel_button_label[sizeof(g_cancel_button_label) - 1] = '\0';
+
     memset(&ng, 0, sizeof(ng));
     ng.ng_VisualInfo = window_data->visual_info;
     ng.ng_LeftEdge = window_data->history_listview->LeftEdge;
@@ -148,7 +155,7 @@ BOOL itidy_main_progress_window_open(struct iTidyMainProgressWindow *window_data
                     window_data->history_listview->Height + ITIDY_MAIN_PROGRESS_SPACE_Y;
     ng.ng_Width = window_data->history_listview->Width;
     ng.ng_Height = button_height;
-    ng.ng_GadgetText = (UBYTE *)"Cancel";
+    ng.ng_GadgetText = (UBYTE *)g_cancel_button_label;  /* Point to mutable buffer */
     ng.ng_GadgetID = ITIDY_MAIN_PROGRESS_GID_CANCEL;
     ng.ng_Flags = PLACETEXT_IN;
 
@@ -292,23 +299,33 @@ BOOL itidy_main_progress_window_handle_events(struct iTidyMainProgressWindow *wi
             case IDCMP_GADGETUP:
                 if (gadget_id == ITIDY_MAIN_PROGRESS_GID_CANCEL)
                 {
-                    /* Confirm cancellation with user */
-                    BOOL confirmed = ShowEasyRequest(
-                        window_data->window,
-                        "Confirm Cancel",
-                        "Are you sure you want to cancel?\n"
-                        "\n"
-                        "Note: Changes already made to icons\n"
-                        "will NOT be reverted.",
-                        "Yes, Cancel|No, Continue"
-                    );
-                    
-                    if (confirmed)
+                    /* Check button text - only confirm if it says "Cancel" */
+                    if (strcmp(g_cancel_button_label, "Cancel") == 0)
                     {
+                        /* Confirm cancellation with user */
+                        BOOL confirmed = ShowEasyRequest(
+                            window_data->window,
+                            "Confirm Cancel",
+                            "Are you sure you want to cancel?\n"
+                            "\n"
+                            "Note: Changes already made to icons\n"
+                            "will NOT be reverted.",
+                            "Yes, Cancel|No, Continue"
+                        );
+                        
+                        if (confirmed)
+                        {
+                            window_data->cancel_requested = TRUE;
+                            keep_running = FALSE;
+                        }
+                        /* If not confirmed, just continue - keep_running stays TRUE */
+                    }
+                    else
+                    {
+                        /* Button says "Close" - just close without confirmation */
                         window_data->cancel_requested = TRUE;
                         keep_running = FALSE;
                     }
-                    /* If not confirmed, just continue - keep_running stays TRUE */
                 }
                 break;
 
@@ -479,12 +496,10 @@ static void free_history_entries(struct iTidyMainProgressWindow *window_data)
 void itidy_main_progress_window_set_button_text(struct iTidyMainProgressWindow *window_data,
                                                 const char *text)
 {
-    /* CRITICAL FIX: Don't dynamically change button text - causes gadget list corruption
-     * and Workbench lockups. Use GT_SetGadgetAttrs which is safer but may not always
-     * display the change visually on all Workbench versions.
-     * 
-     * The proper solution would be to create the button with "Close" text initially
-     * and just disable it during processing, or use two separate windows.
+    /* Proper GadTools BUTTON_KIND text update pattern (WB 3.0 compatible):
+     * 1. Change the mutable buffer that ng_GadgetText points to
+     * 2. Call RefreshGList to redraw the gadget with the new text
+     * See: docs/gadtools_button_text_update.md
      */
     
     if (window_data == NULL || window_data->cancel_button == NULL || window_data->window == NULL)
@@ -497,12 +512,10 @@ void itidy_main_progress_window_set_button_text(struct iTidyMainProgressWindow *
         return;
     }
 
-    /* Try to change the text using GT_SetGadgetAttrs (safest approach) */
-    GT_SetGadgetAttrs(window_data->cancel_button, window_data->window, NULL,
-                      GA_Text, (ULONG)text,
-                      TAG_DONE);
+    /* Update the mutable buffer that the button's ng_GadgetText points to */
+    strncpy(g_cancel_button_label, text, sizeof(g_cancel_button_label) - 1);
+    g_cancel_button_label[sizeof(g_cancel_button_label) - 1] = '\0';
     
-    /* Refresh the window - may or may not show the text change depending on WB version */
+    /* Refresh the gadget to display the new text */
     RefreshGList(window_data->cancel_button, window_data->window, NULL, 1);
-    GT_RefreshWindow(window_data->window, NULL);
 }

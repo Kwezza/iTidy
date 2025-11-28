@@ -345,6 +345,12 @@ BOOL ProcessDirectoryWithPreferences(void)
     PROGRESS_STATUS("Processing: %s", sanitizedPath);
     PROGRESS_STATUS("Recursive: %s", prefs->recursive_subdirs ? "Yes" : "No");
     
+    /* Pre-scan disabled - not currently used */
+    /* NOTE: Pre-scan functionality exists but is disabled to improve performance.
+     * The folder count from prescan was not being used for progress tracking.
+     * If needed in the future, uncomment the block below.
+     */
+#if 0
     /* Pre-scan folders if recursive mode is enabled (for progress tracking) */
     if (prefs->recursive_subdirs)
     {
@@ -367,6 +373,7 @@ BOOL ProcessDirectoryWithPreferences(void)
             PROGRESS_STATUS("Warning: Pre-scan failed, continuing without folder count");
         }
     }
+#endif
     
     /* Start processing */
     CHECK_CANCEL();
