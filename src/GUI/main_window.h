@@ -28,6 +28,7 @@
 #define GID_VIEW_TOOL_CACHE  18
 #define GID_WINDOW_POSITION  21
 #define GID_WINDOW_POSITION_HELP 22
+#define GID_TEST_PROGRESS    23  /* Temporary progress window tester */
 
 /*------------------------------------------------------------------------*/
 /* Main Window Data Structure                                            */
@@ -56,6 +57,7 @@ struct iTidyMainWindow
     struct Gadget *window_position_label;
     struct Gadget *window_position_cycle;
     struct Gadget *window_position_help_btn;
+    struct Gadget *test_progress_btn;
     
     /* Temporary GUI state (for gadget selections only) */
     WORD order_selected;

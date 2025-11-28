@@ -20,15 +20,23 @@
 #include "beta_options_window.h"
 #include "layout_preferences.h"
 #include "writeLog.h"
+#include "../Settings/IControlPrefs.h"
 
 /*------------------------------------------------------------------------*/
 /* Window Constants                                                       */
 /*------------------------------------------------------------------------*/
 #define ADV_WINDOW_TITLE "iTidy - Advanced Settings"
-#define ADV_WINDOW_WIDTH 420
-#define ADV_WINDOW_HEIGHT 400
+#define ADV_WINDOW_WIDTH 530
+#define ADV_WINDOW_HEIGHT 600
 #define ADV_WINDOW_LEFT 100
 #define ADV_WINDOW_TOP 50
+
+#define ADV_WINDOW_STANDARD_PADDING 15
+#define ADV_WINDOW_Column_1_LEFT 140
+#define ADV_WINDOW_Column_2_LEFT 400
+#define ADV_WINDOW_TOP_START 10
+#define ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL 10
+#define ADV_WINDOW_GAP_BETWEEN_CHECKBOXES_VERTICAL 10
 
 /*------------------------------------------------------------------------*/
 /* Cycle Gadget Labels                                                   */
@@ -165,7 +173,8 @@ static UWORD get_max_width_pct_value(WORD index, const LayoutPreferences *prefs)
  * @param adv_data Pointer to advanced window data structure
  * @return struct Gadget* Pointer to gadget list, or NULL on failure
  */
-static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_data)
+static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_data,
+                                              UWORD *calculated_height)
 {
     struct Gadget *gad = NULL;
     struct NewGadget ng;
@@ -190,16 +199,16 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
         return NULL;
     }
     
-    current_y = 10;
+    current_y = ADV_WINDOW_TOP_START + prefsIControl.currentTitleBarHeight;
     
     /*--------------------------------------------------------------------*/
     /* Aspect Ratio Cycle Gadget                                         */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = gadget_x;
+    ng.ng_LeftEdge = ADV_WINDOW_Column_1_LEFT;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = gadget_width;
     ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Aspect Ratio:";
+    ng.ng_GadgetText = "Layout Aspect Ratio:";
     ng.ng_TextAttr = font;
     ng.ng_GadgetID = GID_ADV_ASPECT_RATIO;
     ng.ng_Flags = PLACETEXT_LEFT;
@@ -216,66 +225,16 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
         return NULL;
     }
     
-    current_y += button_height + 8;
     
-    /*--------------------------------------------------------------------*/
-    /* Custom Aspect Ratio Width Integer Gadget                         */
-    /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = gadget_x;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = small_gadget_width;
-    ng.ng_Height = string_height;
-    ng.ng_GadgetText = "Custom Width:";
-    ng.ng_GadgetID = GID_ADV_CUSTOM_WIDTH;
-    ng.ng_Flags = PLACETEXT_LEFT;
-    
-    adv_data->custom_width_int = gad = CreateGadget(INTEGER_KIND, gad, &ng,
-        GTIN_Number, adv_data->custom_aspect_width,
-        GTIN_MaxChars, 3,
-        GA_Disabled, (adv_data->aspect_preset_selected != ASPECT_PRESET_CUSTOM),
-        TAG_END);
-    
-    if (!gad)
-    {
-        printf("ERROR: Failed to create custom width integer gadget\n");
-        return NULL;
-    }
-    
-    current_y += string_height + 4;
-    
-    /*--------------------------------------------------------------------*/
-    /* Custom Aspect Ratio Height Integer Gadget                        */
-    /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = gadget_x;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = small_gadget_width;
-    ng.ng_Height = string_height;
-    ng.ng_GadgetText = "Custom Height:";
-    ng.ng_GadgetID = GID_ADV_CUSTOM_HEIGHT;
-    ng.ng_Flags = PLACETEXT_LEFT;
-    
-    adv_data->custom_height_int = gad = CreateGadget(INTEGER_KIND, gad, &ng,
-        GTIN_Number, adv_data->custom_aspect_height,
-        GTIN_MaxChars, 3,
-        GA_Disabled, (adv_data->aspect_preset_selected != ASPECT_PRESET_CUSTOM),
-        TAG_END);
-    
-    if (!gad)
-    {
-        printf("ERROR: Failed to create custom height integer gadget\n");
-        return NULL;
-    }
-    
-    current_y += string_height + 12;
-    
+
     /*--------------------------------------------------------------------*/
     /* Window Overflow Mode Cycle Gadget                                 */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = gadget_x;
+    ng.ng_LeftEdge = 370;
     ng.ng_TopEdge = current_y;
-    ng.ng_Width = gadget_width + 60;
+    ng.ng_Width = 135;
     ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Window Overflow:";
+    ng.ng_GadgetText = "Overflow Strategy:";
     ng.ng_GadgetID = GID_ADV_OVERFLOW_MODE;
     ng.ng_Flags = PLACETEXT_LEFT;
     
@@ -295,11 +254,11 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     /*--------------------------------------------------------------------*/
     /* Horizontal Spacing Slider                                         */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = gadget_x;
+    ng.ng_LeftEdge = ADV_WINDOW_Column_1_LEFT;
     ng.ng_TopEdge = current_y;
-    ng.ng_Width = gadget_width + 40;
+    ng.ng_Width = 50;
     ng.ng_Height = slider_height;
-    ng.ng_GadgetText = "Horizontal Spacing:";
+    ng.ng_GadgetText = "Icon Spacing:  X:";
     ng.ng_GadgetID = GID_ADV_SPACING_X;
     ng.ng_Flags = PLACETEXT_LEFT;
     
@@ -319,16 +278,16 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
         return NULL;
     }
     
-    current_y += slider_height + 8;
+
     
     /*--------------------------------------------------------------------*/
     /* Vertical Spacing Slider                                           */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = gadget_x;
+    ng.ng_LeftEdge = ADV_WINDOW_Column_1_LEFT + ADV_WINDOW_STANDARD_PADDING +50+ 38; // extra 38 for the previous slider output number
     ng.ng_TopEdge = current_y;
-    ng.ng_Width = gadget_width + 40;
+    ng.ng_Width = 50;
     ng.ng_Height = slider_height;
-    ng.ng_GadgetText = "Vertical Spacing:";
+    ng.ng_GadgetText = "Y:";
     ng.ng_GadgetID = GID_ADV_SPACING_Y;
     ng.ng_Flags = PLACETEXT_LEFT;
     
@@ -348,16 +307,17 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
         return NULL;
     }
     
-    current_y += slider_height + 12;
+    current_y += slider_height  + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
     
+
     /*--------------------------------------------------------------------*/
     /* Min Icons Per Row Integer Gadget                                  */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = gadget_x;
+    ng.ng_LeftEdge = ADV_WINDOW_Column_1_LEFT;
     ng.ng_TopEdge = current_y;
-    ng.ng_Width = small_gadget_width;
+    ng.ng_Width = 30;
     ng.ng_Height = string_height;
-    ng.ng_GadgetText = "Min Icons/Row:";
+    ng.ng_GadgetText = "Icons per Row:  Min:";
     ng.ng_GadgetID = GID_ADV_MIN_ICONS_ROW;
     ng.ng_Flags = PLACETEXT_LEFT;
     
@@ -372,16 +332,16 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
         return NULL;
     }
     
-    current_y += string_height + 4;
+    //current_y += string_height + 4;
     
     /*--------------------------------------------------------------------*/
     /* Auto Max Icons/Row Checkbox                                       */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = gadget_x;
+    ng.ng_LeftEdge = 300;
     ng.ng_TopEdge = current_y;
-    ng.ng_Width = 26;
+    ng.ng_Width = 30;
     ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Auto Max Icons/Row:";
+    ng.ng_GadgetText = "Auto Max Icons:";
     ng.ng_GadgetID = GID_ADV_MAX_AUTO_CHECKBOX;
     ng.ng_Flags = PLACETEXT_LEFT;
     
@@ -395,16 +355,16 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
         return NULL;
     }
     
-    current_y += button_height + 4;
+    //current_y += button_height + 4;
     
     /*--------------------------------------------------------------------*/
     /* Max Icons Per Row Integer Gadget                                  */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = gadget_x;
+    ng.ng_LeftEdge = 385;
     ng.ng_TopEdge = current_y;
-    ng.ng_Width = small_gadget_width;
+    ng.ng_Width = 30;
     ng.ng_Height = string_height;
-    ng.ng_GadgetText = "Max Icons/Row:";
+    ng.ng_GadgetText = "Max:";
     ng.ng_GadgetID = GID_ADV_MAX_ICONS_ROW;
     ng.ng_Flags = PLACETEXT_LEFT;
     
@@ -420,12 +380,12 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
         return NULL;
     }
     
-    current_y += string_height + 4;
+    current_y += string_height + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
     
     /*--------------------------------------------------------------------*/
     /* Max Window Width Percentage Cycle Gadget                          */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = gadget_x;
+    ng.ng_LeftEdge = ADV_WINDOW_Column_1_LEFT;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = gadget_width - 40;
     ng.ng_Height = button_height;
@@ -445,16 +405,16 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
         return NULL;
     }
     
-    current_y += button_height + 16;
+    current_y += button_height + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
     
     /*--------------------------------------------------------------------*/
     /* Vertical Alignment Cycle Gadget                                   */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = gadget_x;
+    ng.ng_LeftEdge = ADV_WINDOW_Column_1_LEFT;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = gadget_width - 40;
     ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Vertical Alignment:";
+    ng.ng_GadgetText = "Align Icons Vertically:";
     ng.ng_GadgetID = GID_ADV_VERTICAL_ALIGN;
     ng.ng_Flags = PLACETEXT_LEFT;
     
@@ -469,12 +429,12 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
         return NULL;
     }
     
-    current_y += button_height + 12;
+    current_y += ADV_WINDOW_GAP_BETWEEN_CHECKBOXES_VERTICAL + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
     
     /*--------------------------------------------------------------------*/
     /* Reverse Sort Checkbox                                             */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = 30;
+    ng.ng_LeftEdge = ADV_WINDOW_Column_1_LEFT;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 26;
     ng.ng_Height = button_height - 4;
@@ -492,12 +452,12 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
         return NULL;
     }
     
-    current_y += button_height + 12;
+    current_y += ADV_WINDOW_GAP_BETWEEN_CHECKBOXES_VERTICAL + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
     
     /*--------------------------------------------------------------------*/
     /* Optimize Column Widths Checkbox                                   */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = 30;
+    ng.ng_LeftEdge = ADV_WINDOW_Column_1_LEFT;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 26;
     ng.ng_Height = button_height - 4;
@@ -514,13 +474,34 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
         printf("ERROR: Failed to create optimize columns checkbox\n");
         return NULL;
     }
+        current_y += ADV_WINDOW_GAP_BETWEEN_CHECKBOXES_VERTICAL + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
     
-    current_y += button_height + 12;
+    /*--------------------------------------------------------------------*/
+    /* Column Layout Checkbox                                            */
+    /*--------------------------------------------------------------------*/
+    ng.ng_LeftEdge = ADV_WINDOW_Column_1_LEFT;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = 26;
+    ng.ng_Height = button_height - 4;
+    ng.ng_GadgetText = "Column Layout (centered columns) ";
+    ng.ng_GadgetID = GID_ADV_COLUMN_LAYOUT;
+    ng.ng_Flags = PLACETEXT_RIGHT;
+    
+    adv_data->column_layout_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
+        GTCB_Checked, adv_data->column_layout_enabled,
+        TAG_END);
+    
+    if (!gad)
+    {
+        printf("ERROR: Failed to create column layout checkbox\n");
+        return NULL;
+    }
+    current_y += ADV_WINDOW_GAP_BETWEEN_CHECKBOXES_VERTICAL + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
     
     /*--------------------------------------------------------------------*/
     /* Skip Hidden Folders Checkbox                                      */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = 30;
+    ng.ng_LeftEdge = ADV_WINDOW_Column_1_LEFT;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 26;
     ng.ng_Height = button_height - 4;
@@ -538,35 +519,14 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
         return NULL;
     }
     
-    current_y += button_height + 12;
+
     
-    /*--------------------------------------------------------------------*/
-    /* Column Layout Checkbox                                            */
-    /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = 30;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 26;
-    ng.ng_Height = button_height - 4;
-    ng.ng_GadgetText = "Column Layout";
-    ng.ng_GadgetID = GID_ADV_COLUMN_LAYOUT;
-    ng.ng_Flags = PLACETEXT_RIGHT;
-    
-    adv_data->column_layout_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
-        GTCB_Checked, adv_data->column_layout_enabled,
-        TAG_END);
-    
-    if (!gad)
-    {
-        printf("ERROR: Failed to create column layout checkbox\n");
-        return NULL;
-    }
-    
-    current_y += button_height + 16;
+
     
     /*--------------------------------------------------------------------*/
     /* Beta Options Button                                               */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = 30;
+    ng.ng_LeftEdge = 5;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 120;
     ng.ng_Height = button_height;
@@ -583,12 +543,11 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
         return NULL;
     }
     
-    current_y += button_height + 8;
     
     /*--------------------------------------------------------------------*/
     /* OK and Cancel Buttons                                             */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = ADV_WINDOW_WIDTH - 200;
+    ng.ng_LeftEdge = 330;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 80;
     ng.ng_Height = button_height;
@@ -604,7 +563,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
         return NULL;
     }
     
-    ng.ng_LeftEdge = ADV_WINDOW_WIDTH - 110;
+    ng.ng_LeftEdge = 330+80+ADV_WINDOW_STANDARD_PADDING;
     ng.ng_GadgetText = "Cancel";
     ng.ng_GadgetID = GID_ADV_CANCEL;
     
@@ -616,6 +575,13 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
         return NULL;
     }
     
+    current_y += button_height  + 5+ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
+
+    if (calculated_height)
+    {
+        *calculated_height = current_y 
+    }
+
     return adv_data->glist;
 }
 
@@ -627,6 +593,7 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
                                  LayoutPreferences *prefs)
 {
     struct Gadget *glist;
+    UWORD calculated_window_height = ADV_WINDOW_HEIGHT;
     
     if (!adv_data || !prefs)
     {
@@ -685,7 +652,7 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
     }
     
     /* Create gadgets */
-    glist = create_advanced_gadgets(adv_data);
+    glist = create_advanced_gadgets(adv_data, &calculated_window_height);
     if (!glist)
     {
         printf("ERROR: Failed to create gadgets\n");
@@ -700,7 +667,7 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
         WA_Left, ADV_WINDOW_LEFT,
         WA_Top, ADV_WINDOW_TOP,
         WA_Width, ADV_WINDOW_WIDTH,
-        WA_Height, ADV_WINDOW_HEIGHT,
+        WA_Height, calculated_window_height,
         WA_DragBar, TRUE,
         WA_DepthGadget, TRUE,
         WA_CloseGadget, TRUE,
@@ -769,31 +736,6 @@ void close_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data)
     adv_data->window_open = FALSE;
     
     printf("Advanced Settings window closed\n");
-}
-
-void set_custom_ratio_gadgets_state(struct iTidyAdvancedWindow *adv_data, 
-                                    BOOL enable)
-{
-    if (!adv_data || !adv_data->window)
-    {
-        return;
-    }
-    
-    /* Enable/disable custom width gadget */
-    if (adv_data->custom_width_int)
-    {
-        GT_SetGadgetAttrs(adv_data->custom_width_int, adv_data->window, NULL,
-            GA_Disabled, !enable,
-            TAG_END);
-    }
-    
-    /* Enable/disable custom height gadget */
-    if (adv_data->custom_height_int)
-    {
-        GT_SetGadgetAttrs(adv_data->custom_height_int, adv_data->window, NULL,
-            GA_Disabled, !enable,
-            TAG_END);
-    }
 }
 
 void set_max_icons_gadget_state(struct iTidyAdvancedWindow *adv_data,
@@ -992,18 +934,6 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                         {
                             LONG temp_number;
                             
-                            /* Custom width */
-                            GT_GetGadgetAttrs(adv_data->custom_width_int, 
-                                            adv_data->window, NULL,
-                                            GTIN_Number, &temp_number, TAG_END);
-                            adv_data->custom_aspect_width = (UWORD)temp_number;
-                            
-                            /* Custom height */
-                            GT_GetGadgetAttrs(adv_data->custom_height_int, 
-                                            adv_data->window, NULL,
-                                            GTIN_Number, &temp_number, TAG_END);
-                            adv_data->custom_aspect_height = (UWORD)temp_number;
-                            
                             /* Min icons per row */
                             GT_GetGadgetAttrs(adv_data->min_icons_row_int, 
                                             adv_data->window, NULL,
@@ -1085,10 +1015,6 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                         adv_data->aspect_preset_selected = msg_code;
                         printf("Aspect ratio changed to: %s\n", 
                                aspect_ratio_labels[adv_data->aspect_preset_selected]);
-                        
-                        /* Enable/disable custom ratio gadgets */
-                        set_custom_ratio_gadgets_state(adv_data, 
-                            adv_data->aspect_preset_selected == ASPECT_PRESET_CUSTOM);
                         break;
                         
                     case GID_ADV_OVERFLOW_MODE:
@@ -1215,8 +1141,6 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                         }
                         break;
                         
-                    case GID_ADV_CUSTOM_WIDTH:
-                    case GID_ADV_CUSTOM_HEIGHT:
                     case GID_ADV_SPACING_X:
                     case GID_ADV_SPACING_Y:
                     case GID_ADV_MIN_ICONS_ROW:
@@ -1252,15 +1176,6 @@ void load_preferences_to_advanced_window(struct iTidyAdvancedWindow *adv_data)
     /* Aspect ratio preset */
     GT_SetGadgetAttrs(adv_data->aspect_ratio_cycle, adv_data->window, NULL,
         GTCY_Active, adv_data->aspect_preset_selected,
-        TAG_END);
-    
-    /* Custom aspect ratio values */
-    GT_SetGadgetAttrs(adv_data->custom_width_int, adv_data->window, NULL,
-        GTIN_Number, adv_data->custom_aspect_width,
-        TAG_END);
-    
-    GT_SetGadgetAttrs(adv_data->custom_height_int, adv_data->window, NULL,
-        GTIN_Number, adv_data->custom_aspect_height,
         TAG_END);
     
     /* Overflow mode */
@@ -1308,10 +1223,6 @@ void load_preferences_to_advanced_window(struct iTidyAdvancedWindow *adv_data)
     GT_SetGadgetAttrs(adv_data->reverse_sort_check, adv_data->window, NULL,
         GTCB_Checked, adv_data->reverse_sort_enabled,
         TAG_END);
-    
-    /* Enable/disable custom ratio gadgets based on selection */
-    set_custom_ratio_gadgets_state(adv_data, 
-        adv_data->aspect_preset_selected == ASPECT_PRESET_CUSTOM);
     
     /* Enable/disable max icons gadget based on Auto checkbox */
     set_max_icons_gadget_state(adv_data, adv_data->max_auto_enabled);

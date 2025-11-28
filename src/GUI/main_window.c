@@ -30,6 +30,7 @@
 #include "writeLog.h"
 #include "window_enumerator.h"
 #include "gui_groupbox.h"
+#include "StatusWindows/main_progress_window.h"
 #include "../icon_types.h"
 
 /*------------------------------------------------------------------------*/
@@ -678,12 +679,37 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
         }
     }
 
-    current_y += font_height + 1;
+    current_y += font_height + 10;
+
+    /*====================================================================*/
+    /* TEMPORARY PROGRESS TEST BUTTON (Full width)                        */
+    /*====================================================================*/
+    {
+        WORD temp_button_width = ITIDY_WINDOW_WIDTH - (2 * ITIDY_WINDOW_STANDARD_PADDING);
+
+        ng.ng_LeftEdge = ITIDY_WINDOW_STANDARD_PADDING;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = temp_button_width;
+        ng.ng_Height = font_height + 8;
+        ng.ng_GadgetText = "Show Progress Window (TEMP)";
+        ng.ng_GadgetID = GID_TEST_PROGRESS;
+        ng.ng_Flags = PLACETEXT_IN;
+
+        win_data->test_progress_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
+            TAG_END);
+        if (!gad)
+        {
+            printf("ERROR: Failed to create progress test button\n");
+            return FALSE;
+        }
+    }
+
+    current_y += font_height + 10;
     
     /* Store calculated window height */
     if (out_window_height != NULL)
     {
-        *out_window_height = current_y + ITIDY_WINDOW_STANDARD_PADDING +1 ;
+        *out_window_height = current_y + ITIDY_WINDOW_STANDARD_PADDING + 1;
     }
     
     printf("All gadgets created successfully\n");
@@ -1360,6 +1386,40 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                     "Failed to open tool cache window.\n"
                                     "Check the log for details.",
                                     "OK");
+                            }
+                        }
+                        break;
+
+                    case GID_TEST_PROGRESS:
+                        {
+                            struct iTidyMainProgressWindow progress_window;
+                            BOOL keep_progress_open = TRUE;
+
+                            memset(&progress_window, 0, sizeof(progress_window));
+                            append_to_log("Temp progress tester button clicked\n");
+
+                            if (itidy_main_progress_window_open(&progress_window))
+                            {
+                                itidy_main_progress_window_append_status(&progress_window, "Initializing layout engine...");
+                                itidy_main_progress_window_append_status(&progress_window, "Scanning Workbench:Utilities");
+                                itidy_main_progress_window_append_status(&progress_window, "Applying spacing profile to DH0:Projects");
+                                itidy_main_progress_window_append_status(&progress_window, "Finished sample run.");
+
+                                while (keep_progress_open && progress_window.window != NULL)
+                                {
+                                    WaitPort(progress_window.window->UserPort);
+                                    keep_progress_open = itidy_main_progress_window_handle_events(&progress_window);
+                                }
+
+                                itidy_main_progress_window_close(&progress_window);
+                            }
+                            else
+                            {
+                                append_to_log("ERROR: Failed to open main progress tester window\n");
+                                ShowEasyRequest(win_data->window,
+                                                "Progress Window",
+                                                "Unable to open the new progress window for testing.",
+                                                "OK");
                             }
                         }
                         break;

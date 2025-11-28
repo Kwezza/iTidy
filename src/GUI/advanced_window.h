@@ -31,6 +31,7 @@
 #define GID_ADV_OPTIMIZE_COLS     1016
 #define GID_ADV_SKIP_HIDDEN       1017
 #define GID_ADV_COLUMN_LAYOUT     1018
+#define GID_ADV_ICONS_LABEL       1019
 #define GID_ADV_BETA_OPTIONS      1015
 #define GID_ADV_OK                1009
 #define GID_ADV_CANCEL            1010
