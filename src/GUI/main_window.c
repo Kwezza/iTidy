@@ -1058,6 +1058,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
 
                     case GID_APPLY:
                     {
+                        struct iTidyMainProgressWindow progress_window;
                         LayoutPreferences *prefs;
                         BOOL success;
                         
@@ -1121,21 +1122,65 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                                prefs->folder_path,
                                                prefs->recursive_subdirs);
                         
-                        /* Process the directory with global preferences */
-                        printf("\n>>> Starting icon processing...\n\n");
-                        success = ProcessDirectoryWithPreferences();
+                        /* Open progress window */
+                        if (!itidy_main_progress_window_open(&progress_window))
+                        {
+                            printf("ERROR: Failed to open progress window\n");
+                            ShowEasyRequest(win_data->window,
+                                "Error",
+                                "Failed to open progress window",
+                                "OK");
+                            break;
+                        }
                         
-                        /* Show result */
-                        printf("\n===============================================\n");
+                        /* Set busy pointer on main window */
+                        SetWindowPointer(win_data->window, WA_BusyPointer, TRUE, TAG_END);
+                        
+                        /* Disable main window input while processing */
+                        ModifyIDCMP(win_data->window, 0);
+                        
+                        /* Process the directory with progress window integration */
+                        printf("\n>>> Starting icon processing...\n\n");
+                        success = ProcessDirectoryWithPreferencesAndProgress(&progress_window);
+                        
+                        /* Show result in progress window */
+                        itidy_main_progress_window_append_status(&progress_window, "");
+                        itidy_main_progress_window_append_status(&progress_window, 
+                            "===============================================");
                         if (success)
                         {
-                            printf("✓ Icon processing completed successfully!\n");
+                            printf("Icon processing completed successfully!\n");
+                            itidy_main_progress_window_append_status(&progress_window, 
+                                "Icon processing completed successfully!");
+                            itidy_main_progress_window_append_status(&progress_window, 
+                                "See statistics above for details.");
                         }
                         else
                         {
-                            printf("✗ Icon processing failed or was incomplete\n");
+                            printf("Icon processing failed or was incomplete\n");
+                            itidy_main_progress_window_append_status(&progress_window, 
+                                "Icon processing failed or was incomplete");
                         }
+                        itidy_main_progress_window_append_status(&progress_window, 
+                            "===============================================");
                         printf("===============================================\n\n");
+                        
+                        /* Change Cancel button to Close now that processing is complete */
+                        itidy_main_progress_window_set_button_text(&progress_window, "Close");
+                        
+                        /* Re-enable main window */
+                        ModifyIDCMP(win_data->window, 
+                            IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_GADGETDOWN | IDCMP_REFRESHWINDOW);
+                        SetWindowPointer(win_data->window, WA_Pointer, NULL, TAG_END);
+                        
+                        /* Keep progress window open so user can review - wait for Cancel/Close */
+                        while (itidy_main_progress_window_handle_events(&progress_window))
+                        {
+                            WaitPort(progress_window.window->UserPort);
+                        }
+                        
+                        /* Close progress window */
+                        itidy_main_progress_window_close(&progress_window);
                         
                         break;
                     }

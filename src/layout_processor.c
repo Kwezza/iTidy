@@ -93,13 +93,51 @@
 /* Backup system integration */
 #include "backup_session.h"
 #include "backup_catalog.h"
+#include "path_utilities.h"
 #include "window_enumerator.h"
+
+/* Progress window integration */
+#include "GUI/StatusWindows/main_progress_window.h"
 
 /* Global backup context (initialized by ProcessDirectoryWithPreferences) */
 static BackupContext *g_backupContext = NULL;
 
 /* External global for default tool validation */
 extern BOOL g_ValidateDefaultTools;
+
+/* External tool cache globals for statistics */
+extern ToolCacheEntry *g_ToolCache;
+extern int g_ToolCacheCount;
+
+/* Global progress window context (set by ProcessDirectoryWithPreferencesAndProgress) */
+static struct iTidyMainProgressWindow *g_progressWindow = NULL;
+
+/* Global statistics tracking */
+static ULONG g_foldersProcessed = 0;
+static ULONG g_iconsProcessed = 0;
+static struct DateStamp g_startTime;
+static struct DateStamp g_endTime;
+
+/* Helper macro for dual output (console + progress window) */
+#define PROGRESS_STATUS(...) \
+    do { \
+        char _buf[256]; \
+        snprintf(_buf, sizeof(_buf), __VA_ARGS__); \
+        printf("%s\n", _buf); \
+        if (g_progressWindow) { \
+            itidy_main_progress_window_append_status(g_progressWindow, _buf); \
+            itidy_main_progress_window_handle_events(g_progressWindow); \
+        } \
+    } while (0)
+
+/* Helper macro to check for user cancellation */
+#define CHECK_CANCEL() \
+    do { \
+        if (g_progressWindow && g_progressWindow->cancel_requested) { \
+            printf("\n*** User cancelled operation ***\n"); \
+            return FALSE; \
+        } \
+    } while (0)
 
 /* Forward declarations for helper functions */
 static int CompareIconsWithPreferences(const void *a, const void *b, 
@@ -134,6 +172,28 @@ static int CompareDateStamps(const struct DateStamp *date1, const struct DateSta
 /* Main Processing Function                                              */
 /*========================================================================*/
 
+BOOL ProcessDirectoryWithPreferencesAndProgress(struct iTidyMainProgressWindow *progress_window)
+{
+    BOOL result;
+    
+    if (!progress_window)
+    {
+        printf("Error: NULL progress window pointer\n");
+        return FALSE;
+    }
+    
+    /* Set global progress window pointer */
+    g_progressWindow = progress_window;
+    
+    /* Call the main processing function */
+    result = ProcessDirectoryWithPreferences();
+    
+    /* Clear global progress window pointer */
+    g_progressWindow = NULL;
+    
+    return result;
+}
+
 BOOL ProcessDirectoryWithPreferences(void)
 {
     const LayoutPreferences *prefs;
@@ -158,6 +218,13 @@ BOOL ProcessDirectoryWithPreferences(void)
         printf("Error: No folder path set in preferences\n");
         return FALSE;
     }
+    
+    /* Initialize statistics tracking and start timer FIRST */
+    g_foldersProcessed = 0;
+    g_iconsProcessed = 0;
+    
+    /* Get start time */
+    DateStamp(&g_startTime);
     
     /* Apply logging preferences before processing */
     set_global_log_level((LogLevel)prefs->logLevel);
@@ -272,8 +339,8 @@ BOOL ProcessDirectoryWithPreferences(void)
     /* Load left-out icons from the device's .backdrop file */
     loadLeftOutIcons(sanitizedPath);
     
-    printf("\nProcessing: %s\n", sanitizedPath);
-    printf("Recursive: %s\n", prefs->recursive_subdirs ? "Yes" : "No");
+    PROGRESS_STATUS("Processing: %s", sanitizedPath);
+    PROGRESS_STATUS("Recursive: %s", prefs->recursive_subdirs ? "Yes" : "No");
     
     /* Pre-scan folders if recursive mode is enabled (for progress tracking) */
     if (prefs->recursive_subdirs)
@@ -281,12 +348,12 @@ BOOL ProcessDirectoryWithPreferences(void)
         ULONG totalFolders = 0;
         
         log_info(LOG_GENERAL, "\n*** Starting pre-scan to count folders with icons ***\n");
-        printf("Pre-scanning folders for progress tracking...\n");
+        PROGRESS_STATUS("Pre-scanning folders for progress tracking...");
         
         if (CountFoldersWithIcons(sanitizedPath, prefs, &totalFolders))
         {
             log_info(LOG_GENERAL, "Pre-scan complete: Found %lu folder(s) with icons\n", totalFolders);
-            printf("Found %lu folder(s) with icons to process\n", totalFolders);
+            PROGRESS_STATUS("Found %lu folder(s) with icons to process", totalFolders);
             
             /* TODO: Initialize progress bar with totalFolders as maximum */
             /* This will be implemented when progress window integration is added */
@@ -294,11 +361,13 @@ BOOL ProcessDirectoryWithPreferences(void)
         else
         {
             log_warning(LOG_GENERAL, "Pre-scan failed - continuing without progress tracking\n");
-            printf("Warning: Pre-scan failed, continuing without folder count\n");
+            PROGRESS_STATUS("Warning: Pre-scan failed, continuing without folder count");
         }
     }
     
     /* Start processing */
+    CHECK_CANCEL();
+    
     if (prefs->recursive_subdirs)
     {
         success = ProcessDirectoryRecursive(sanitizedPath, prefs, 0, 
@@ -315,6 +384,61 @@ BOOL ProcessDirectoryWithPreferences(void)
     {
         log_info(LOG_GENERAL, "Freeing window tracker\n");
         FreeFolderWindowList(&windowTracker);
+    }
+    
+    /* Calculate elapsed time and display statistics */
+    {
+        LONG elapsedDays, elapsedMinutes, elapsedTicks;
+        LONG totalSeconds;
+        LONG minutes, seconds;
+        
+        DateStamp(&g_endTime);
+        
+        /* Calculate difference in each field */
+        elapsedDays = g_endTime.ds_Days - g_startTime.ds_Days;
+        elapsedMinutes = g_endTime.ds_Minute - g_startTime.ds_Minute;
+        elapsedTicks = g_endTime.ds_Tick - g_startTime.ds_Tick;
+        
+        /* Convert to total seconds */
+        /* DateStamp: ds_Days = days since Jan 1, 1978 */
+        /*            ds_Minute = minutes past midnight (0-1439) */
+        /*            ds_Tick = ticks past current minute (0-2999, 50 ticks/sec) */
+        totalSeconds = (elapsedDays * 24 * 60 * 60) +  /* Days to seconds */
+                       (elapsedMinutes * 60) +           /* Minutes to seconds */
+                       (elapsedTicks / 50);              /* Ticks to seconds (PAL: 50/sec) */
+        
+        minutes = totalSeconds / 60;
+        seconds = totalSeconds % 60;
+        
+        /* Display final statistics */
+        PROGRESS_STATUS("");
+        PROGRESS_STATUS("=== Processing Statistics ===");
+        PROGRESS_STATUS("  Folders processed: %lu", g_foldersProcessed);
+        PROGRESS_STATUS("  Icons processed: %lu", g_iconsProcessed);
+        
+        /* Display default tool validation statistics if enabled */
+        if (g_ValidateDefaultTools && g_ToolCache && g_ToolCacheCount > 0)
+        {
+            int validTools = 0;
+            int missingTools = 0;
+            int i;
+            
+            /* Count valid vs missing tools */
+            for (i = 0; i < g_ToolCacheCount; i++)
+            {
+                if (g_ToolCache[i].exists)
+                    validTools++;
+                else
+                    missingTools++;
+            }
+            
+            PROGRESS_STATUS("  Default tools: %d valid, %d missing", validTools, missingTools);
+        }
+        
+        if (minutes > 0)
+            PROGRESS_STATUS("  Total time: %ld min %ld sec", minutes, seconds);
+        else
+            PROGRESS_STATUS("  Total time: %ld seconds", seconds);
     }
     
     /* Free PATH search list if validation was enabled */
@@ -334,12 +458,13 @@ BOOL ProcessDirectoryWithPreferences(void)
     /* End backup session if one was started */
     if (g_backupContext != NULL)
     {
-        printf("\n*** Finalizing backup session ***\n");
+        PROGRESS_STATUS("");
+        PROGRESS_STATUS("*** Finalizing backup session ***");
         CloseBackupSession(g_backupContext);
-        printf("Backup session completed successfully\n");
-        printf("  Folders backed up: %u\n", g_backupContext->foldersBackedUp);
-        printf("  Total bytes archived: %lu\n", (unsigned long)g_backupContext->totalBytesArchived);
-        printf("  Location: %s\n", g_backupContext->runDirectory);
+        PROGRESS_STATUS("Backup session completed successfully");
+        PROGRESS_STATUS("  Folders backed up: %u", g_backupContext->foldersBackedUp);
+        PROGRESS_STATUS("  Total bytes archived: %lu", (unsigned long)g_backupContext->totalBytesArchived);
+        PROGRESS_STATUS("  Location: %s", g_backupContext->runDirectory);
 
         log_info(LOG_GENERAL, "\n*** Backup session completed ***\n");
         append_to_log("  Folders backed up: %u\n", g_backupContext->foldersBackedUp);
@@ -1246,15 +1371,17 @@ static BOOL ProcessSingleDirectory(const char *path,
     }
     
     /* Create icon array from directory */
-    printf("  Reading icons...\n");
+    PROGRESS_STATUS("  Scanning for icons...");
 #ifdef DEBUG
     append_to_log("==== SECTION: LOADING ICONS ====\n");
 #endif
     iconArray = CreateIconArrayFromPath(lock, path);
     
+    CHECK_CANCEL();
+    
     if (!iconArray)
     {
-        printf("  Error reading directory\n");
+        PROGRESS_STATUS("  Error reading directory");
 #ifdef DEBUG
         append_to_log("Error creating icon array: %s\n", path);
 #endif
@@ -1264,7 +1391,7 @@ static BOOL ProcessSingleDirectory(const char *path,
     
     if (iconArray->size == 0)
     {
-        printf("  No icons found in directory\n");
+        PROGRESS_STATUS("  No icons found in directory");
 #ifdef DEBUG
         append_to_log("No icons in directory: %s\n", path);
 #endif
@@ -1272,7 +1399,7 @@ static BOOL ProcessSingleDirectory(const char *path,
         /* Resize window to default empty folder size if requested */
         if (prefs->resizeWindows)
         {
-            printf("  Resizing to default empty folder size...\n");
+            PROGRESS_STATUS("  Resizing to default empty folder size...");
             resizeFolderToContents((char *)path, iconArray, windowTracker, prefs);
         }
         
@@ -1281,32 +1408,40 @@ static BOOL ProcessSingleDirectory(const char *path,
         return TRUE;  /* Success - folder processed (even though empty) */
     }
     
-    printf("  Found %lu icons\n", (unsigned long)iconArray->size);
+    PROGRESS_STATUS("  Found %lu icons", (unsigned long)iconArray->size);
+    
+    /* Update statistics */
+    g_foldersProcessed++;
+    g_iconsProcessed += iconArray->size;
+    
+    CHECK_CANCEL();
     
     /* Backup this directory if backup is enabled */
     if (g_backupContext != NULL)
     {
-        printf("  Creating backup...\n");
+        PROGRESS_STATUS("  Creating backup...");
         BackupStatus status = BackupFolder(g_backupContext, path, (UWORD)iconArray->size);
         if (status == BACKUP_OK)
         {
-            printf("  ✓ Backup created successfully\n");
+            PROGRESS_STATUS("  ✓ Backup created successfully");
         }
         else
         {
-            printf("  Warning: Backup failed (status %d) - continuing anyway\n", status);
+            PROGRESS_STATUS("  Warning: Backup failed (status %d) - continuing anyway", status);
         }
+        CHECK_CANCEL();
     }
     
     /* Sort icons according to preferences */
-    printf("  Sorting icons...\n");
+    PROGRESS_STATUS("  Sorting icons...");
 #ifdef DEBUG
     append_to_log("==== SECTION: SORTING ICONS ====\n");
 #endif
     SortIconArrayWithPreferences(iconArray, prefs);
     
+    CHECK_CANCEL();
+    
     /* Calculate and apply new positions based on sorted order */
-    printf("  Calculating layout...\n");
 #ifdef DEBUG
     append_to_log("==== SECTION: CALCULATING LAYOUT ====\n");
 #endif
@@ -1344,23 +1479,25 @@ static BOOL ProcessSingleDirectory(const char *path,
     /* Resize window if requested */
     if (prefs->resizeWindows)
     {
-        printf("  Resizing window...\n");
+        PROGRESS_STATUS("  Resizing window...");
         resizeFolderToContents((char *)path, iconArray, windowTracker, prefs);
     }
     
+    CHECK_CANCEL();
+    
     /* Save icon positions to disk */
-    printf("  Saving icon positions...\n");
+    PROGRESS_STATUS("  Saving icon positions...");
 #ifdef DEBUG
     append_to_log("==== SECTION: SAVING ICONS ====\n");
 #endif
     if (saveIconsPositionsToDisk(iconArray) == 0)
     {
         success = TRUE;
-        printf("  Done!\n");
+        PROGRESS_STATUS("  Done!");
     }
     else
     {
-        printf("  Failed to save icon positions\n");
+        PROGRESS_STATUS("  Failed to save icon positions");
     }
     
     /* Experimental Feature: Auto-open folders during processing
@@ -1425,10 +1562,13 @@ static BOOL ProcessDirectoryRecursive(const char *path,
                   path, recursion_level);
 #endif
     
+    /* Check for user cancellation */
+    CHECK_CANCEL();
+    
     /* Safety check for recursion depth */
     if (recursion_level > 50)
     {
-        printf("Warning: Maximum recursion depth reached at: %s\n", path);
+        PROGRESS_STATUS("Warning: Maximum recursion depth reached at: %s", path);
         return FALSE;
     }
     
@@ -1501,6 +1641,7 @@ static BOOL ProcessDirectoryRecursive(const char *path,
 #ifdef DEBUG
                         append_to_log("Skipping hidden folder (no .info): %s\n", subdir);
 #endif
+                        /* Only log to console, don't show in progress window */
                         printf("Skipping hidden folder: %s\n", fib->fib_FileName);
                         continue;
                     }
@@ -1508,7 +1649,12 @@ static BOOL ProcessDirectoryRecursive(const char *path,
                 }
                 
                 /* Recursively process subdirectory */
-                printf("\nEntering: %s\n", subdir);
+                PROGRESS_STATUS("");
+                {
+                    char shortened_path[256];
+                    iTidy_ShortenPathWithParentDir(subdir, shortened_path, 60);
+                    PROGRESS_STATUS("Entering: %s", shortened_path);
+                }
                 ProcessDirectoryRecursive(subdir, prefs, recursion_level + 1, windowTracker);
             }
         }

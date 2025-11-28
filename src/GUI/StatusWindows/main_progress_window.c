@@ -7,6 +7,7 @@
 
 #include "main_progress_window.h"
 #include "writeLog.h"
+#include "easy_request_helper.h"
 
 #include <exec/lists.h>
 #include <intuition/intuition.h>
@@ -291,8 +292,23 @@ BOOL itidy_main_progress_window_handle_events(struct iTidyMainProgressWindow *wi
             case IDCMP_GADGETUP:
                 if (gadget_id == ITIDY_MAIN_PROGRESS_GID_CANCEL)
                 {
-                    window_data->cancel_requested = TRUE;
-                    keep_running = FALSE;
+                    /* Confirm cancellation with user */
+                    BOOL confirmed = ShowEasyRequest(
+                        window_data->window,
+                        "Confirm Cancel",
+                        "Are you sure you want to cancel?\n"
+                        "\n"
+                        "Note: Changes already made to icons\n"
+                        "will NOT be reverted.",
+                        "Yes, Cancel|No, Continue"
+                    );
+                    
+                    if (confirmed)
+                    {
+                        window_data->cancel_requested = TRUE;
+                        keep_running = FALSE;
+                    }
+                    /* If not confirmed, just continue - keep_running stays TRUE */
                 }
                 break;
 
@@ -458,4 +474,35 @@ static void free_history_entries(struct iTidyMainProgressWindow *window_data)
 
     NewList(&window_data->history_entries);
     window_data->history_count = 0;
+}
+
+void itidy_main_progress_window_set_button_text(struct iTidyMainProgressWindow *window_data,
+                                                const char *text)
+{
+    /* CRITICAL FIX: Don't dynamically change button text - causes gadget list corruption
+     * and Workbench lockups. Use GT_SetGadgetAttrs which is safer but may not always
+     * display the change visually on all Workbench versions.
+     * 
+     * The proper solution would be to create the button with "Close" text initially
+     * and just disable it during processing, or use two separate windows.
+     */
+    
+    if (window_data == NULL || window_data->cancel_button == NULL || window_data->window == NULL)
+    {
+        return;
+    }
+
+    if (text == NULL || text[0] == '\0')
+    {
+        return;
+    }
+
+    /* Try to change the text using GT_SetGadgetAttrs (safest approach) */
+    GT_SetGadgetAttrs(window_data->cancel_button, window_data->window, NULL,
+                      GA_Text, (ULONG)text,
+                      TAG_DONE);
+    
+    /* Refresh the window - may or may not show the text change depending on WB version */
+    RefreshGList(window_data->cancel_button, window_data->window, NULL, 1);
+    GT_RefreshWindow(window_data->window, NULL);
 }
