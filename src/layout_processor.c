@@ -1433,7 +1433,7 @@ static BOOL ProcessSingleDirectory(const char *path,
         BackupStatus status = BackupFolder(g_backupContext, path, (UWORD)iconArray->size);
         if (status == BACKUP_OK)
         {
-            PROGRESS_STATUS("  ✓ Backup created successfully");
+            PROGRESS_STATUS("  Backup created successfully");
         }
         else
         {

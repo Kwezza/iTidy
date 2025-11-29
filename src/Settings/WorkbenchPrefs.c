@@ -7,6 +7,10 @@
 #include <prefs/workbench.h>
 #include <string.h>  // Include for memset
 
+#ifdef __AMIGA__
+extern struct ExecBase *SysBase;
+#endif
+
 #define PREFS_FILE "ENV:sys/Workbench.prefs"
 
 /* Function to initialize settings with default values */
@@ -18,6 +22,8 @@ void InitializeDefaultWorkbenchSettings(struct WorkbenchSettings *settings) {
     settings->colorIconSupport = TRUE;  // Color Icon Support: Yes
     settings->disableTitleBar = FALSE;  // Disable Title Bar: No
     settings->disableVolumeGauge = FALSE;  // Disable Volume Gauge: No
+    /* NOTE: workbenchVersion and iconLibraryVersion are set dynamically 
+     * by fetchWorkbenchSettings() and should NOT be reset here */
     #ifdef DEBUG
     append_to_log("Initialized default workbench settings\n");
 #endif
@@ -93,10 +99,26 @@ static BOOL ReadWorkbenchSettings(BPTR file, struct WorkbenchSettings *settings)
 /* Function to fetch Workbench settings */
 void fetchWorkbenchSettings(struct WorkbenchSettings *settings) {
     BPTR file;
+    struct Library *IconBase;
 
     DumpWorkbenchSettings(settings);
     /* Clear the structure to ensure no garbage values */
     memset(settings, 0, sizeof(struct WorkbenchSettings));
+    
+#ifdef __AMIGA__
+    /* Get Workbench/Kickstart version from SysBase */
+    if (SysBase) {
+        settings->workbenchVersion = SysBase->LibNode.lib_Version;
+    }
+    
+    /* Get icon.library version */
+    IconBase = OpenLibrary("icon.library", 0);
+    if (IconBase) {
+        settings->iconLibraryVersion = IconBase->lib_Version;
+        CloseLibrary(IconBase);
+    }
+#endif
+    
     file = Open(PREFS_FILE, MODE_OLDFILE);
     if (file) {
         ReadWorkbenchSettings(file, settings);
@@ -115,6 +137,8 @@ void DumpWorkbenchSettings(const struct WorkbenchSettings *settings) {
     append_to_log("-------------------------\n");
     append_to_log("Workbench Settings Dump:\n");
     append_to_log("-------------------------\n");
+    append_to_log("Workbench Version: %u\n", settings->workbenchVersion);
+    append_to_log("icon.library Version: %u\n", settings->iconLibraryVersion);
     append_to_log("Borderless: %s\n", settings->borderless ? "Yes" : "No");
     append_to_log("Emboss Rectangle Size: %d\n", settings->embossRectangleSize);
     append_to_log("Max Name Length: %d\n", settings->maxNameLength);

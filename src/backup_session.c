@@ -52,7 +52,7 @@
 BOOL InitBackupSession(BackupContext *ctx, const BackupPreferences *prefs, const char *sourceDirectory) {
     if (!ctx || !prefs) {
         /* DEBUG_LOG("Invalid parameters for InitBackupSession"); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
         append_to_log("[BACKUP] ERROR: Invalid parameters for InitBackupSession\n");
 #endif
         return FALSE;
@@ -61,7 +61,7 @@ BOOL InitBackupSession(BackupContext *ctx, const BackupPreferences *prefs, const
     /* Validate preferences */
     if (!prefs->enableUndoBackup || !prefs->useLha) {
         /* DEBUG_LOG("Backup disabled in preferences"); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
         append_to_log("[BACKUP] Backup disabled in preferences\n");
 #endif
         return FALSE;
@@ -69,7 +69,7 @@ BOOL InitBackupSession(BackupContext *ctx, const BackupPreferences *prefs, const
     
     if (strlen(prefs->backupRootPath) == 0) {
         /* DEBUG_LOG("Backup root path not set"); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
         append_to_log("[BACKUP] ERROR: Backup root path not set\n");
 #endif
         return FALSE;
@@ -84,7 +84,7 @@ BOOL InitBackupSession(BackupContext *ctx, const BackupPreferences *prefs, const
         ctx->sourceDirectory[sizeof(ctx->sourceDirectory) - 1] = '\0';
     }
     
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
     append_to_log("[BACKUP] Initializing backup session...\n");
     append_to_log("[BACKUP] Root path: %s\n", prefs->backupRootPath);
     if (ctx->sourceDirectory[0] != '\0') {
@@ -95,7 +95,7 @@ BOOL InitBackupSession(BackupContext *ctx, const BackupPreferences *prefs, const
     /* Check if LHA is available */
     if (!CheckLhaAvailable(ctx->lhaPath)) {
         /* DEBUG_LOG("LHA not found - backup disabled"); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
         append_to_log("[BACKUP] ERROR: LHA not found - backup disabled\n");
 #endif
         ctx->lhaAvailable = FALSE;
@@ -103,33 +103,33 @@ BOOL InitBackupSession(BackupContext *ctx, const BackupPreferences *prefs, const
     }
     ctx->lhaAvailable = TRUE;
     /* DEBUG_LOG("LHA found at: %s", ctx->lhaPath); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
     append_to_log("[BACKUP] LHA found at: %s\n", ctx->lhaPath);
 #endif
     
     /* Get next run number and create run directory */
     if (!CreateNextRunDirectory(prefs->backupRootPath, ctx->runDirectory, &ctx->runNumber)) {
         /* DEBUG_LOG("Failed to create run directory"); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
         append_to_log("[BACKUP] ERROR: Failed to create run directory\n");
 #endif
         return FALSE;
     }
     /* DEBUG_LOG("Created run directory: %s (run %d)", ctx->runDirectory, ctx->runNumber); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
     append_to_log("[BACKUP] Created run directory: %s (run %u)\n", ctx->runDirectory, ctx->runNumber);
 #endif
     
     /* Create catalog */
     if (!CreateCatalog(ctx)) {
         /* DEBUG_LOG("Failed to create catalog"); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
         append_to_log("[BACKUP] ERROR: Failed to create catalog\n");
 #endif
         return FALSE;
     }
     /* DEBUG_LOG("Catalog created successfully"); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
     append_to_log("[BACKUP] Catalog created successfully\n");
 #endif
     
@@ -141,7 +141,7 @@ BOOL InitBackupSession(BackupContext *ctx, const BackupPreferences *prefs, const
     ctx->sessionActive = TRUE;
     
     /* DEBUG_LOG("Backup session initialized successfully"); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
     append_to_log("[BACKUP] Session initialized successfully\n");
 #endif
     return TRUE;
@@ -199,14 +199,14 @@ BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath, UWORD icon
     }
     
     /* DEBUG_LOG("Backing up folder: %s (index: %d)", folderPath, ctx->archiveIndex); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
     append_to_log("[BACKUP] Backing up folder: %s (index: %u)\n", folderPath, ctx->archiveIndex);
 #endif
     
     /* Check if folder has .info files */
     if (!FolderHasInfoFiles(folderPath)) {
         /* DEBUG_LOG("Folder has no .info files, skipping"); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
         append_to_log("[BACKUP] Folder has no .info files, skipping\n");
 #endif
         return BACKUP_NO_ICONS;
@@ -216,12 +216,12 @@ BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath, UWORD icon
     if (iconCount == 0) {
         iconCount = CountInfoFiles(folderPath);
         /* DEBUG_LOG("Counted %hu .info files", iconCount); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
         append_to_log("[BACKUP] Counted %hu .info files\n", iconCount);
 #endif
     } else {
         /* DEBUG_LOG("Using provided icon count: %hu", iconCount); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
         append_to_log("[BACKUP] Using provided icon count: %hu\n", iconCount);
 #endif
     }
@@ -229,21 +229,21 @@ BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath, UWORD icon
     /* Determine if this is a root folder */
     isRoot = IsRootFolder(folderPath);
     /* DEBUG_LOG("Root folder: %s", isRoot ? "YES" : "NO"); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
     append_to_log("[BACKUP] Root folder: %s\n", isRoot ? "YES" : "NO");
 #endif
     
     /* Calculate archive path */
     CalculateArchivePath(archivePath, ctx->runDirectory, ctx->archiveIndex);
     /* DEBUG_LOG("Archive path: %s", archivePath); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
     append_to_log("[BACKUP] Archive path: %s\n", archivePath);
 #endif
     
     /* Calculate and ensure subfolder exists */
     CalculateSubfolderPath(subfolderPath, ctx->runDirectory, ctx->archiveIndex);
     /* DEBUG_LOG("Ensuring subfolder exists: %s", subfolderPath); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
     append_to_log("[BACKUP] Ensuring subfolder exists: %s\n", subfolderPath);
 #endif
     
@@ -290,41 +290,41 @@ BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath, UWORD icon
         return BACKUP_ARCHIVE_ERROR;
     }
     /* DEBUG_LOG("Archive created successfully"); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
     append_to_log("[BACKUP] Archive created successfully\n");
 #endif
     
     /* Create path marker */
     /* DEBUG_LOG("Creating path marker..."); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
     append_to_log("[BACKUP] Creating path marker...\n");
 #endif
     if (!CreateTempPathMarker(markerPath, folderPath, ctx->archiveIndex, NULL)) {
         /* DEBUG_LOG("Failed to create path marker"); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
         append_to_log("[BACKUP] WARNING: Failed to create path marker (non-fatal)\n");
 #endif
         /* Non-fatal - archive exists, just missing marker */
     } else {
         /* DEBUG_LOG("Path marker created: %s", markerPath); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
         append_to_log("[BACKUP] Path marker created: %s\n", markerPath);
 #endif
         
         /* Add marker to archive */
         /* DEBUG_LOG("Adding marker to archive..."); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
         append_to_log("[BACKUP] Adding marker to archive...\n");
 #endif
         if (!AddFileToArchive(ctx->lhaPath, archivePath, markerPath)) {
             /* DEBUG_LOG("Failed to add marker to archive"); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
             append_to_log("[BACKUP] WARNING: Failed to add marker to archive (non-fatal)\n");
 #endif
             /* Non-fatal - can still restore using catalog */
         } else {
             /* DEBUG_LOG("Marker added successfully"); */
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
             append_to_log("[BACKUP] Marker added successfully\n");
 #endif
         }
@@ -350,7 +350,10 @@ BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath, UWORD icon
     entry.originalPath[sizeof(entry.originalPath) - 1] = '\0';
     entry.successful = TRUE;
     
-#ifndef PLATFORM_HOST
+#if !PLATFORM_HOST
+    /* TEST: Verify this code path executes */
+    log_info(LOG_BACKUP, "About to capture window geometry for: %s", folderPath);
+    
     /* Capture window geometry from folder's .info file */
     {
         folderWindowSize windowInfo;

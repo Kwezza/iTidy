@@ -32,6 +32,7 @@
 #define GID_ADV_SKIP_HIDDEN       1017
 #define GID_ADV_COLUMN_LAYOUT     1018
 #define GID_ADV_ICONS_LABEL       1019
+#define GID_ADV_STRIP_NEWICON_BORDERS 1020
 #define GID_ADV_BETA_OPTIONS      1015
 #define GID_ADV_OK                1009
 #define GID_ADV_CANCEL            1010
@@ -84,6 +85,7 @@ struct iTidyAdvancedWindow
     struct Gadget *optimize_cols_check;
     struct Gadget *skip_hidden_check;
     struct Gadget *column_layout_check;
+    struct Gadget *strip_newicon_borders_check;
     struct Gadget *beta_options_btn;
     struct Gadget *ok_btn;
     struct Gadget *cancel_btn;
@@ -104,6 +106,7 @@ struct iTidyAdvancedWindow
     BOOL optimize_cols_enabled;         /* TRUE if column width optimization enabled */
     BOOL skip_hidden_enabled;           /* TRUE if skip hidden folders enabled */
     BOOL column_layout_enabled;         /* TRUE if column layout (center icons) enabled */
+    BOOL strip_newicon_borders_enabled; /* TRUE if strip NewIcon borders enabled */
     
     /* Pointer to preferences to update */
     LayoutPreferences *prefs;

@@ -160,6 +160,7 @@ typedef struct {
     /* Backup and Icon Upgrade Settings */
     BOOL enable_backup;              /* Create backup before processing */
     BOOL enable_icon_upgrade;        /* Upgrade icon formats during processing */
+    BOOL stripNewIconBorders;        /* Strip borders from NewIcons (one-way, requires icon.library v44+) */
     
     /* Advanced Settings */
     BOOL skipHiddenFolders;          /* Skip folders without .info files (hidden) */
@@ -233,6 +234,9 @@ typedef struct {
 
 /* Default Tool Backup Defaults */
 #define DEFAULT_ENABLE_DEFAULT_TOOL_BACKUP                 TRUE    /* Default: Enabled (auto-backup before default tool changes) */
+
+/* NewIcon Border Stripping Defaults */
+#define DEFAULT_STRIP_NEWICON_BORDERS                      FALSE   /* Default: Disabled (one-way operation, requires backup) */
 
 /* Icon Spacing Limits */
 #define MIN_ICON_SPACING            0    /* Minimum 0px (allow testing exact boundaries) */

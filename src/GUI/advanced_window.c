@@ -24,6 +24,10 @@
 #include "layout_preferences.h"
 #include "writeLog.h"
 #include "../Settings/IControlPrefs.h"
+#include "../Settings/WorkbenchPrefs.h"
+
+/* External global for Workbench settings */
+extern struct WorkbenchSettings prefsWorkbench;
 
 /*------------------------------------------------------------------------*/
 /* Window Constants                                                       */
@@ -521,6 +525,40 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
         CONSOLE_ERROR("Failed to create skip hidden folders checkbox\n");
         return NULL;
     }
+    current_y += ADV_WINDOW_GAP_BETWEEN_CHECKBOXES_VERTICAL + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
+    
+    /*--------------------------------------------------------------------*/
+    /* Strip NewIcon Borders Checkbox                                    */
+    /*--------------------------------------------------------------------*/
+    ng.ng_LeftEdge = ADV_WINDOW_Column_1_LEFT;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = 26;
+    ng.ng_Height = button_height - 4;
+    ng.ng_GadgetText = "Strip NewIcon Borders (one-way)";
+    ng.ng_GadgetID = GID_ADV_STRIP_NEWICON_BORDERS;
+    ng.ng_Flags = PLACETEXT_RIGHT;
+    
+    /* Only enable if icon.library v44+ is available */
+    if (prefsWorkbench.iconLibraryVersion >= 44)
+    {
+        adv_data->strip_newicon_borders_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
+            GTCB_Checked, adv_data->strip_newicon_borders_enabled,
+            TAG_END);
+    }
+    else
+    {
+        /* Disabled checkbox for icon.library < v44 */
+        adv_data->strip_newicon_borders_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
+            GTCB_Checked, FALSE,
+            GA_Disabled, TRUE,
+            TAG_END);
+    }
+    
+    if (!gad)
+    {
+        CONSOLE_ERROR("Failed to create strip NewIcon borders checkbox\n");
+        return NULL;
+    }
     
 
     
@@ -625,6 +663,7 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
     adv_data->optimize_cols_enabled = prefs->useColumnWidthOptimization;  /* Load optimize columns setting */
     adv_data->skip_hidden_enabled = prefs->skipHiddenFolders;  /* Load skip hidden folders setting */
     adv_data->column_layout_enabled = prefs->centerIconsInColumn;  /* Load column layout setting */
+    adv_data->strip_newicon_borders_enabled = prefs->stripNewIconBorders;  /* Load strip NewIcon borders setting */
     
     log_debug(LOG_GUI, "Loading prefs into adv_data on window open:\n");
     log_debug(LOG_GUI, "  prefs->iconSpacingX = %hu\n", prefs->iconSpacingX);
@@ -636,6 +675,8 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
     log_debug(LOG_GUI, "  prefs->overflowMode = %ld\n", (long)prefs->overflowMode);
     log_debug(LOG_GUI, "  prefs->aspectRatio = %d\n", prefs->aspectRatio);
     log_debug(LOG_GUI, "  prefs->reverseSort = %s\n", prefs->reverseSort ? "YES" : "NO");
+    log_debug(LOG_GUI, "  prefs->stripNewIconBorders = %s\n", prefs->stripNewIconBorders ? "YES" : "NO");
+    log_debug(LOG_GUI, "  adv_data->strip_newicon_borders_enabled = %s\n", adv_data->strip_newicon_borders_enabled ? "YES" : "NO");
     
     /* Get Workbench screen */
     adv_data->screen = LockPubScreen(NULL);
@@ -857,6 +898,9 @@ void save_advanced_window_to_preferences(struct iTidyAdvancedWindow *adv_data)
     
     /* Save column layout setting */
     adv_data->prefs->centerIconsInColumn = adv_data->column_layout_enabled;
+    
+    /* Save strip NewIcon borders setting */
+    adv_data->prefs->stripNewIconBorders = adv_data->strip_newicon_borders_enabled;
     
     log_debug(LOG_GUI, "save_advanced_window_to_preferences() called:\n");
     log_debug(LOG_GUI, "  adv_data->max_width_pct_selected = %ld\n", (long)adv_data->max_width_pct_selected);
@@ -1097,6 +1141,18 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                         }
                         break;
                     
+                    case GID_ADV_STRIP_NEWICON_BORDERS:
+                        {
+                            ULONG checked = 0;
+                            GT_GetGadgetAttrs(gad, adv_data->window, NULL,
+                                GTCB_Checked, &checked,
+                                TAG_END);
+                            adv_data->strip_newicon_borders_enabled = (BOOL)checked;
+                            CONSOLE_DEBUG("Strip NewIcon Borders: %s\n", 
+                                   adv_data->strip_newicon_borders_enabled ? "ENABLED" : "DISABLED");
+                        }
+                        break;
+                    
                     case GID_ADV_COLUMN_LAYOUT:
                         {
                             ULONG checked = 0;
@@ -1225,6 +1281,26 @@ void load_preferences_to_advanced_window(struct iTidyAdvancedWindow *adv_data)
     /* Reverse sort checkbox */
     GT_SetGadgetAttrs(adv_data->reverse_sort_check, adv_data->window, NULL,
         GTCB_Checked, adv_data->reverse_sort_enabled,
+        TAG_END);
+    
+    /* Optimize columns checkbox */
+    GT_SetGadgetAttrs(adv_data->optimize_cols_check, adv_data->window, NULL,
+        GTCB_Checked, adv_data->optimize_cols_enabled,
+        TAG_END);
+    
+    /* Column layout checkbox */
+    GT_SetGadgetAttrs(adv_data->column_layout_check, adv_data->window, NULL,
+        GTCB_Checked, adv_data->column_layout_enabled,
+        TAG_END);
+    
+    /* Skip hidden folders checkbox */
+    GT_SetGadgetAttrs(adv_data->skip_hidden_check, adv_data->window, NULL,
+        GTCB_Checked, adv_data->skip_hidden_enabled,
+        TAG_END);
+    
+    /* Strip NewIcon borders checkbox */
+    GT_SetGadgetAttrs(adv_data->strip_newicon_borders_check, adv_data->window, NULL,
+        GTCB_Checked, adv_data->strip_newicon_borders_enabled,
         TAG_END);
     
     /* Enable/disable max icons gadget based on Auto checkbox */

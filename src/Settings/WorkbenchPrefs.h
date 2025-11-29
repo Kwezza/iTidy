@@ -13,6 +13,8 @@ struct WorkbenchSettings {
     BOOL colorIconSupport;
     BOOL disableTitleBar;
     BOOL disableVolumeGauge;
+    UWORD workbenchVersion;      /* Workbench/Kickstart version (e.g., 37, 39, 40, 45) */
+    UWORD iconLibraryVersion;    /* icon.library version (e.g., 37, 44, 46) */
 };
 
 /* Function to fetch Workbench settings */

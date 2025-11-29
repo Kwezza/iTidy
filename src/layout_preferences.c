@@ -74,6 +74,7 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     /* Backup and Icon Upgrade Settings */
     prefs->enable_backup = FALSE;
     prefs->enable_icon_upgrade = FALSE;
+    prefs->stripNewIconBorders = DEFAULT_STRIP_NEWICON_BORDERS;
     
     /* Advanced Settings */
     prefs->skipHiddenFolders = DEFAULT_SKIP_HIDDEN_FOLDERS;

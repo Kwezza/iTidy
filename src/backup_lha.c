@@ -567,23 +567,10 @@ BOOL ExtractLhaArchive(const char *lhaPath, const char *archivePath,
     /* On host, use path as-is */
     strncpy(absArchivePath, archivePath, sizeof(absArchivePath) - 1);
     absArchivePath[sizeof(absArchivePath) - 1] = '\0';
-#else
-    /* On Amiga, expand PROGDIR: to absolute path */
-    if (!ExpandProgDir(archivePath, absArchivePath, sizeof(absArchivePath))) {
-        append_to_log("[BACKUP] ERROR: Failed to expand archive path for extraction\n");
-        return FALSE;
-    }
-#endif
     
-    /* Build command: lha x archive.lha destdir/ */
-#ifdef PLATFORM_HOST
+    /* Build command: lha x archive.lha -w=destdir/ */
     len = snprintf(command, sizeof(command), "%s x \"%s\" -w=\"%s\"",
                   lhaPath, absArchivePath, destDir);
-#else
-    /* Amiga LhA uses different syntax for destination */
-    len = snprintf(command, sizeof(command), "%s x %s %s",
-                  lhaPath, absArchivePath, destDir);
-#endif
     
     if (len >= MAX_COMMAND_LEN) {
         DEBUG_LOG("Command too long");
@@ -591,6 +578,52 @@ BOOL ExtractLhaArchive(const char *lhaPath, const char *archivePath,
     }
     
     return ExecuteLhaCommand(command);
+#else
+    /* On Amiga, expand PROGDIR: to absolute path */
+    if (!ExpandProgDir(archivePath, absArchivePath, sizeof(absArchivePath))) {
+        append_to_log("[BACKUP] ERROR: Failed to expand archive path for extraction\n");
+        return FALSE;
+    }
+    
+    /* Amiga: Use CurrentDir() to change to destination directory first */
+    /* LHA on Amiga extracts to current directory, not to a specified path */
+    BPTR oldDir, destLock;
+    BOOL result;
+    
+    destLock = Lock((STRPTR)destDir, SHARED_LOCK);
+    if (!destLock) {
+        append_to_log("[BACKUP] ERROR: Failed to lock destination directory: %s\n", destDir);
+        return FALSE;
+    }
+    
+    oldDir = CurrentDir(destLock);
+    
+    /* Build command: lha x archive.lha (extracts to current dir) */
+    len = snprintf(command, sizeof(command), "%s x %s",
+                  lhaPath, absArchivePath);
+    
+    if (len >= MAX_COMMAND_LEN) {
+        CurrentDir(oldDir);
+        UnLock(destLock);
+        append_to_log("[BACKUP] ERROR: Command too long\n");
+        return FALSE;
+    }
+    
+    append_to_log("[BACKUP] Extracting to: %s\n", destDir);
+    result = ExecuteLhaCommand(command);
+    
+    /* Restore original directory */
+    CurrentDir(oldDir);
+    UnLock(destLock);
+    
+    if (result) {
+        append_to_log("[BACKUP] Extraction succeeded\n");
+    } else {
+        append_to_log("[BACKUP] ERROR: Extraction failed\n");
+    }
+    
+    return result;
+#endif
 }
 
 BOOL ExtractFileFromArchive(const char *lhaPath, const char *archivePath,
@@ -609,28 +642,53 @@ BOOL ExtractFileFromArchive(const char *lhaPath, const char *archivePath,
     /* On host, use path as-is */
     strncpy(absArchivePath, archivePath, sizeof(absArchivePath) - 1);
     absArchivePath[sizeof(absArchivePath) - 1] = '\0';
-#else
-    /* On Amiga, expand PROGDIR: to absolute path */
-    if (!ExpandProgDir(archivePath, absArchivePath, sizeof(absArchivePath))) {
-        append_to_log("[BACKUP] ERROR: Failed to expand archive path for file extraction\n");
-        return FALSE;
-    }
-#endif
     
     /* Build command: lha x archive.lha filename -w=destdir */
-#ifdef PLATFORM_HOST
     len = snprintf(command, sizeof(command), "%s x \"%s\" \"%s\" -w=\"%s\"",
                   lhaPath, absArchivePath, fileName, destDir);
-#else
-    len = snprintf(command, sizeof(command), "%s x %s %s %s",
-                  lhaPath, absArchivePath, fileName, destDir);
-#endif
     
     if (len >= MAX_COMMAND_LEN) {
         return FALSE;
     }
     
     return ExecuteLhaCommand(command);
+#else
+    /* On Amiga, expand PROGDIR: to absolute path */
+    if (!ExpandProgDir(archivePath, absArchivePath, sizeof(absArchivePath))) {
+        append_to_log("[BACKUP] ERROR: Failed to expand archive path for file extraction\n");
+        return FALSE;
+    }
+    
+    /* Amiga: Use CurrentDir() to change to destination directory first */
+    BPTR oldDir, destLock;
+    BOOL result;
+    
+    destLock = Lock((STRPTR)destDir, SHARED_LOCK);
+    if (!destLock) {
+        append_to_log("[BACKUP] ERROR: Failed to lock destination directory: %s\n", destDir);
+        return FALSE;
+    }
+    
+    oldDir = CurrentDir(destLock);
+    
+    /* Build command: lha x archive.lha filename (extracts to current dir) */
+    len = snprintf(command, sizeof(command), "%s x %s %s",
+                  lhaPath, absArchivePath, fileName);
+    
+    if (len >= MAX_COMMAND_LEN) {
+        CurrentDir(oldDir);
+        UnLock(destLock);
+        return FALSE;
+    }
+    
+    result = ExecuteLhaCommand(command);
+    
+    /* Restore original directory */
+    CurrentDir(oldDir);
+    UnLock(destLock);
+    
+    return result;
+#endif
 }
 
 BOOL TestLhaArchive(const char *lhaPath, const char *archivePath) {

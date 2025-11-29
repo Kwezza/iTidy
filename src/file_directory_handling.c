@@ -18,6 +18,8 @@
 #include "utilities.h"
 #include "writeLog.h"
 #include "icon_misc.h"
+#include "layout_preferences.h"
+#include "Settings/WorkbenchPrefs.h"
 
 /* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
 #include <console_output.h>
@@ -173,19 +175,79 @@ append_to_log("%-3d | %-4d | %-4d | %-40s\n", i, currentIcon->icon_x, currentIco
 #endif
             }
 
-            // Save the updated DiskObject back to disk
-            if (!PutDiskObject(fileNameNoInfo, diskObject))
+            /* Strip icon borders if enabled (icon.library v44+ only) */
+            /* Works on any icon format: classic NewIcons, OS3.5 color icons, or standard icons with borders */
             {
+                const LayoutPreferences *prefs = GetGlobalPreferences();
+                BOOL borderStripped = FALSE;
+                
+                if (prefs->stripNewIconBorders && 
+                    prefsWorkbench.iconLibraryVersion >= 44)
+                {
+                    /* Use TagItem array approach as per OS 3.2+ documentation */
+                    struct TagItem icTags[2];
+                    icTags[0].ti_Tag  = ICONCTRLA_SetFrameless;
+                    icTags[0].ti_Data = TRUE;
+                    icTags[1].ti_Tag  = TAG_DONE;
+                    icTags[1].ti_Data = 0;
+                    
+                    if (IconControlA(diskObject, icTags) != 0)  /* non-zero = success */
+                    {
+                        borderStripped = TRUE;
 #ifdef DEBUG
-                append_to_log("!! Failed to save icon %s\n", fileNameNoInfo);
+                        append_to_log("   Set frameless flag on icon: %s\n", fileNameNoInfo);
 #endif
-            }
+                    }
 #ifdef DEBUG
-            else
-            {
-                append_to_log("   Saved OK: %s\n", fileNameNoInfo);
-            }
+                    else
+                    {
+                        append_to_log("   Warning: Failed to set frameless flag on: %s\n", fileNameNoInfo);
+                    }
 #endif
+                }
+                
+                /* Save the updated DiskObject back to disk */
+                /* Use PutIconTagList for v44+ to preserve frameless attribute, otherwise use PutDiskObject */
+                if (borderStripped && prefsWorkbench.iconLibraryVersion >= 44)
+                {
+                    /* Notify Workbench of the change - critical for persistence */
+                    struct TagItem putTags[2];
+                    putTags[0].ti_Tag  = ICONPUTA_NotifyWorkbench;
+                    putTags[0].ti_Data = TRUE;
+                    putTags[1].ti_Tag  = TAG_DONE;
+                    putTags[1].ti_Data = 0;
+                    
+                    /* Use PutIconTagList to preserve the frameless attribute set by IconControl */
+                    if (PutIconTagList(fileNameNoInfo, diskObject, putTags))
+                    {
+#ifdef DEBUG
+                        append_to_log("   Saved OK (with frameless): %s\n", fileNameNoInfo);
+#endif
+                    }
+#ifdef DEBUG
+                    else
+                    {
+                        append_to_log("!! Failed to save icon with PutIconTagList: %s\n", fileNameNoInfo);
+                    }
+#endif
+                }
+                else
+                {
+                    /* Standard save with PutDiskObject */
+                    if (!PutDiskObject(fileNameNoInfo, diskObject))
+                    {
+#ifdef DEBUG
+                        append_to_log("!! Failed to save icon %s\n", fileNameNoInfo);
+#endif
+                    }
+#ifdef DEBUG
+                    else
+                    {
+                        append_to_log("   Saved OK: %s\n", fileNameNoInfo);
+                    }
+#endif
+                }
+            }
 
             FreeDiskObject(diskObject);
             /* Reinstate the original write and delete protection if it was modified. */
@@ -454,9 +516,7 @@ BOOL GetFolderWindowSettings(const char *folderPath, folderWindowSize *folderInf
         *viewMode = 0;
     }
 
-#ifdef DEBUG_MAX
-    append_to_log("Reading folder window settings for: %s\n", folderPath);
-#endif
+    log_info(LOG_BACKUP, "Reading folder window settings for: %s", folderPath);
 
     strcpy(diskInfoPath, folderPath);
 
@@ -470,9 +530,8 @@ BOOL GetFolderWindowSettings(const char *folderPath, folderWindowSize *folderInf
     diskObject = GetDiskObject(diskInfoPath);
     if (diskObject == NULL)
     {
-#ifdef DEBUG
-        append_to_log("Unable to load .info file for folder: %s\n", diskInfoPath);
-#endif
+        /* Always log this to help diagnose backup issues */
+        log_info(LOG_BACKUP, "Unable to load .info file for folder: %s", diskInfoPath);
         return FALSE;
     }
 
@@ -492,18 +551,15 @@ BOOL GetFolderWindowSettings(const char *folderPath, folderWindowSize *folderInf
             *viewMode = drawerData->dd_ViewModes;
         }
 
-#ifdef DEBUG_MAX
-        append_to_log("Folder window settings: LeftEdge=%d, TopEdge=%d, Width=%d, Height=%d, ViewMode=%d\n",
-                      folderInfo->left, folderInfo->top, folderInfo->width, folderInfo->height,
-                      viewMode ? *viewMode : 0);
-#endif
+        log_info(LOG_BACKUP, "Folder window settings: LeftEdge=%d, TopEdge=%d, Width=%d, Height=%d, ViewMode=%d",
+                 folderInfo->left, folderInfo->top, folderInfo->width, folderInfo->height,
+                 viewMode ? *viewMode : 0);
         result = TRUE;
     }
     else
     {
-#ifdef DEBUG
-        append_to_log("Not a drawer/disk or missing DrawerData: %s\n", diskInfoPath);
-#endif
+        log_info(LOG_BACKUP, "Not a drawer/disk or missing DrawerData: %s (type=%d)", 
+                 diskInfoPath, diskObject->do_Type);
     }
 
     FreeDiskObject(diskObject);

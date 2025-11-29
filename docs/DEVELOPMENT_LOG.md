@@ -1,11 +1,231 @@
 # iTidy Development Log
 
+---
+
+### Bug Fix: Window Geometry Not Captured in Backups (November 29, 2025)
+
+* **Author**: AI Agent (GitHub Copilot)
+* **Status**: ✅ Fixed
+* **Severity**: High - Window geometry backup feature completely non-functional
+* **Impact**: Window geometry (position and size) is now correctly captured and stored in backup catalogs
+* **Description**: Fixed backup system that was not capturing folder window geometry settings. All catalog entries showed "N/A" for Window Geometry column despite backup archives being created successfully. The window restore feature was non-functional because no geometry data was being saved.
+* **Root Cause**: Preprocessor directive error - used `#ifndef PLATFORM_HOST` instead of `#if !PLATFORM_HOST`. Since `PLATFORM_HOST` is defined as `0` for Amiga builds (in platform.h), `#ifndef` evaluated to false because the symbol IS defined (even though its value is 0). This caused the entire window geometry capture block to be skipped on Amiga builds.
+* **Solution**: Changed all occurrences of `#ifndef PLATFORM_HOST` to `#if !PLATFORM_HOST` in backup_session.c to properly check the value rather than existence of the macro.
+* **Files Modified**: 
+   - `src/backup_session.c` - Fixed preprocessor directives (21 occurrences)
+   - `src/file_directory_handling.c` - Changed from `append_to_log()` to `log_info(LOG_BACKUP, ...)` for better diagnostic logging
+* **Diagnostic Enhancement**: Added detailed logging to GetFolderWindowSettings() to show when .info files are read and what geometry data is found
+* **Testing**: Verified on WinUAE - backup catalog now shows proper window geometry like "470x308+85+102" instead of "N/A", and backup log file confirms geometry capture with messages like "Folder window settings: LeftEdge=85, TopEdge=102, Width=470, Height=308, ViewMode=1"
+* **Impact**: Window position restore feature now functional - backup catalogs contain all necessary data to restore folder windows to their original positions
+
+---
+
+### Bug Fix: Icon Restore Not Writing to Disk (November 29, 2025)
+
+* **Author**: AI Agent (GitHub Copilot)
+* **Status**: ✅ Fixed
+* **Severity**: Critical - Restore feature completely non-functional on Amiga
+* **Impact**: Icon restoration from backups now correctly writes files to disk
+* **Description**: Fixed restore operation that appeared to succeed but did not actually extract icons to disk. The issue was that Amiga's LHA command does not support specifying a destination directory as a parameter - it always extracts to the current directory.
+* **Root Cause**: The `ExtractLhaArchive()` function was using incorrect syntax for Amiga LHA extraction, passing destination directory as third parameter which was silently ignored. Files extracted to wrong location (likely PROGDIR: or current shell directory).
+* **Solution**: Changed to use proper AmigaDOS pattern with `Lock()` + `CurrentDir()` to change to destination directory before extraction, matching the pattern already established in `AddFileToArchive()`.
+* **Files Modified**: 
+   - `src/backup_lha.c` - Fixed `ExtractLhaArchive()` and `ExtractFileFromArchive()` functions
+   - Added detailed logging for extraction operations
+* **Testing**: Build successful. Ready for testing on WinUAE.
+* **Documentation**: See `docs/BUGFIX_RESTORE_LHA_EXTRACTION.md` for detailed analysis
+
+---
+
+### Feature: Strip NewIcon Borders (November 29, 2025)
+
+* **Author**: AI Agent (GitHub Copilot)
+* **Status**: Completed
+* **Impact**: Allows users to permanently remove decorative borders from NewIcon/OS3.5 color icons using icon.library v44+ functionality
+* **Description**: Added "Strip NewIcon Borders" preference that removes icon borders when saving icon positions. Feature uses IconControl API with ICONCTRLA_SetFrameless flag and PutIconTagList with ICONPUTA_NotifyWorkbench to properly persist the frameless attribute.
+* **Implementation Details**:
+   - Added `stripNewIconBorders` boolean field to LayoutPreferences structure with default FALSE
+   - Created checkbox in Advanced Options window (GID_ADV_STRIP_NEWICON_BORDERS)
+   - Checkbox automatically disabled on systems with icon.library < v44
+   - Border stripping logic in saveIconsPositionsToDisk() uses TagItem array approach for proper v44+ compatibility
+   - Works on all icon formats: classic NewIcons, OS3.5 color icons, and standard icons with borders
+* **Files Modified**:
+   - src/layout_preferences.h/c - Added stripNewIconBorders preference field
+   - src/GUI/advanced_window.h/c - Added checkbox gadget with version-based enable/disable
+   - src/file_directory_handling.c - Implemented border stripping with IconControlA and PutIconTagList
+   - src/Settings/WorkbenchPrefs.c - Fixed version detection bug (was resetting to 0)
+* **Bug Fixes During Development**:
+   - Fixed icon type detection issue (borders weren't being stripped because icons were misidentified)
+   - Fixed iconLibraryVersion being reset to 0 in InitializeDefaultWorkbenchSettings
+   - Switched from varargs IconControl to TagItem array approach (IconControlA)
+   - Added ICONPUTA_NotifyWorkbench tag to ensure proper persistence
+* **Requirements**: icon.library v44+ (Workbench 3.2+)
+* **User-Facing**: Checkbox appears in Advanced Options window, labeled "Strip NewIcon Borders (one-way)" with warning that operation is permanent
+
+---
+
+### Proposed: Save Current Default-Tool Analysis Snapshot (November 28, 2025)
+
+* **Status**: Proposed - Needs design & implementation
+* **Impact**: Large scans (hours, thousands of entries) can be paused and resumed; reduces re-scan time
+* **Description**: Add a feature to save the "current analysis" of the Default Tools analysis run — the in-memory lists and processing metadata that the analysis builds while scanning. This is intentionally NOT a backup of files; it only stores the in-use lists, progress cursor, and settings required to resume or review the analysis later.
+* **Rationale**:
+   - Users may run very long analyses (user reported ~1 hour, thousands of entries). Being able to persist the analysis state lets them stop and resume without re-scanning.
+* **Requirements / Notes**:
+   - UI: Add `Save Analysis` and `Load Analysis` buttons in the Default Tools analysis window, plus an autosave option.
+   - Format: Portable, versioned snapshot (suggestion: compressed JSON with a header containing version, timestamp, scan path, and preferences). Include only lists and metadata — no file contents or full backups.
+   - Contents to persist: in-use default-tool lists, scan path, current index/position, preferences used for the scan, and a timestamp. Consider also storing a small checksum of the target folder (e.g., list of top-level filenames + mtime) to detect drift.
+   - Storage: User-chosen file; default folder suggestion: `Bin/Amiga/logs/analysis/` (or `build/amiga/logs/analysis/` during development). Use extension `.itidy-analysis` (or similar).
+   - Resume semantics: Loading a snapshot allows previewing entries, resuming processing from the saved cursor, or re-running analysis-only tasks against the saved lists.
+   - Distinction from backups: Backups are full LHA archives or file snapshots. This feature only preserves analysis lists and state — smaller, faster, and intended for workflow convenience, not disaster recovery.
+   - Implementation hints: Add serialization helpers in `src/` (e.g., `src/analysis_snapshot.c/h`), expose save/load functions in the GUI (`src/GUI/default_tool_update_window.c`), and add unit tests in `src/tests/`.
+   - Additional behavior for bulk default-tool updates:
+      - When a user has updated a large number of default tools (for example: 4,000+ changed to a new value), provide an option when loading a snapshot to "Sync to main default-tools list" — this will apply the snapshot's in-use list updates to the primary default-tools registry so the user can see overall progress.
+      - The sync operation should record per-entry status (e.g., `unchanged`, `updated`, `failed`) and write counters (e.g., `updated_count`, `skipped_count`) into the snapshot metadata so the user knows how many items were actually changed during a batch operation.
+      - Support marking entries in the main UI as `Updated` (a visual flag) after they are changed by a sync/load operation. This helps track progress when an initial save contained many planned updates but a later batch run applied only a subset.
+      - Record partial-batch behavior explicitly: in real usage a batch update may only change a subset (e.g., 200 of 4,000). The snapshot metadata must capture the exact list of items changed by the batch and the total offered-for-restore count (e.g., `offered_restore_count`) so the user understands why only a subset was applied or restored.
+      - Provide an audit view (from the snapshot loader) listing items: `id`, `path`, `previous_default`, `new_default`, `status`, and `timestamp` for quick review before committing a sync.
+   - Performance & memory considerations:
+      - Warning on large folder counts: If a snapshot includes a very large number of folders (for example > 500 folders), viewing or restoring the snapshot in the main "ListView" UI may be slow even on emulated full-speed systems. Present a confirmation dialog when the snapshot's `folder_count` exceeds a configurable threshold (default: 500) asking "This snapshot contains N folders — viewing/restoring may be slow. Continue?".
+      - Low-memory checks: Before building an in-memory list for preview or restore, check available memory and compare against an estimated memory footprint for the snapshot (store an `estimated_memory_bytes` field in the snapshot metadata). If available memory is below a safe threshold, show an informative error and offer alternatives (view a paged/audited subset, increase swap/host memory, or run the sync in smaller batches).
+      - Snapshot should include light-weight statistics: `folder_count`, `entry_count`, and `estimated_memory_bytes` so the UI can make informed decisions and warn the user prior to heavy operations.
+* **Next Steps**:
+   - Design snapshot schema and file format
+   - Add serialization + load/resume support in processing pipeline
+   - Add GUI controls and user documentation
+   - Add automated tests and manual QA with large scan datasets
+
+---
+
+### Proposed: NewIcons Borderless Display & "Show All" for File-Only Folders (November 29, 2025)
+
+* **Status**: Proposed - Needs design & implementation
+* **Purpose**: Provide better visual control for NewIcons-format icons and allow iTidy to treat folders that contain files but no `.info` icons as "Show All" drawers (with optional filename-listing view), so they can be processed and presented in list form without requiring .info icons.
+* **Description / UI**:
+   - Add a global preference (and per-run override) `display_newicons_borderless` (boolean) that disables emboss/border drawing when rendering NewIcons in previews and in UI listviews. This does not change icon files on disk, only how the UI renders them.
+   - Add a setting `treat_file_only_folders_as_show_all` (boolean) and an option `view_by_filename_when_show_all` (boolean). When enabled, during scanning iTidy will detect folders that contain files but no icons and will set the folder's presentation mode to `Show All` and optionally render the list ordered by filename for previewing and applying layout rules.
+   - Provide an Advanced option in the Default Tools / Analysis window to enable these options per-scan.
+
+* **Behavior & Notes**:
+   - `display_newicons_borderless` should apply only to NewIcons-format icons and be implemented in the rendering/preview code paths (icon drawing and listview cell rendering). It should be safe to toggle without modifying on-disk icons.
+   - `treat_file_only_folders_as_show_all` must be opt-in. When active, the scanner should not rely solely on `.info` files to detect drawer content; instead it will treat files as icons for purposes of layout and optionally write the `ShowAll` flag into the drawer data when the user confirms a layout or resize operation.
+   - `view_by_filename_when_show_all` should offer two modes for these folders: 
+      - `Filename View`: List entries by filename (text-only list) which is useful for cleanup and batch-default-tool operations. 
+      - `Icon-like View`: Render filename plus a placeholder icon cell so the layout engine can still compute sizes if the user requests a pseudo-icon layout.
+   - Respect Workbench compatibility: any change to drawer presentation should be done via proper DrawerData updates and must preserve compatibility with Workbench 3.0/3.1 semantics (follow the project's CRITICAL templates for writing .info data).
+
+* **Implementation hints**:
+   - GUI changes: `src/GUI/main_window.c` (advanced options), `src/GUI/default_tool_update_window.c` (analysis preview), and listview renderers in `src/GUI/`.
+   - Scanner changes: `src/folder_scanner.c` to add detection for file-only folders and populate a `FileOnlyFolder` preview structure.
+   - Rendering: Add a helper in `src/icon_render.c` (or existing icon rendering module) to suppress emboss/border for NewIcons when `display_newicons_borderless` is set.
+   - Persistence: Do NOT change on-disk icon data unless user explicitly requests; for folder presentation changes use DrawerData updates via `PutDiskObject()` only after user confirmation.
+   - Tests: Add test cases in `src/tests/` that simulate folders with files but no `.info` files and verify `ShowAll` behavior and filename view rendering.
+
+* **Edge Cases**:
+   - Mixed folders (some icons with .info, some plain files): scanner should present a combined view with clear visual distinction and offer user controls to convert files into icons or treat the folder as Show All only.
+   - Performance: For large file-only folders, use the same paging/audit checks added for snapshots (folder_count/entry_count/estimated_memory_bytes) to avoid UI freezes.
+
+---
+
+### Proposed: Save/Load Main Window Settings (November 29, 2025)
+
+* **Status**: Proposed - Needs design & implementation
+* **Purpose**: Allow users to export the current main-window settings to a portable snapshot file and later import them to restore UI state, presets, and processing preferences. This is intended as a convenience for users who tune many options and want to reuse or share configurations.
+* **Impact**: Saves time when reconfiguring environments, enables sharing presets between machines, and supports quick rollback to a known-good settings snapshot.
+* **Description / UI**:
+   - Add `Save Settings` and `Load Settings` buttons to the main window (and an export/import option in the Advanced Settings window).
+   - Allow saving either the full set of preferences or a subset (e.g., GUI-only, processing-only, backup settings). Provide a small checkbox list in the Save dialog to choose categories.
+   - File format: versioned JSON (or compact binary + header) with fields: `format_version`, `timestamp`, `author` (optional), and `preferences` (structured object). Use extension `.itidy-prefs`.
+   - Default storage folder suggestion: `Bin/Amiga/config/` or `build/amiga/config/` during development; user can choose file location.
+
+* **Behavior & Notes**:
+   - Loading settings should validate schema version and present a preview of differences between current prefs and file contents, allowing the user to choose `Apply`, `Apply & Save Global`, or `Cancel`.
+   - When applying loaded settings, use `UpdateGlobalPreferences()` to ensure the central preferences are updated and any dependent subsystems (layout engine, scanner, backup) are notified.
+   - Respect read-only or critical fields: some runtime-only fields (temporary paths, ephemeral session IDs) should not be persisted; document which fields are saved.
+   - Provide an option to `Auto-apply on startup` with a trusted file path for automation workflows.
+
+* **Implementation hints**:
+   - Add serialization helpers: `src/Settings/settings_io.c` and `src/Settings/settings_io.h` with `bool save_preferences(const LayoutPreferences *prefs, const char *path)` and `bool load_preferences(LayoutPreferences *out, const char *path)`.
+   - Add UI wiring in `src/GUI/main_window.c` for the Save/Load buttons and `src/GUI/advanced_settings.c` for per-category export options.
+   - Add validation / schema migration helpers to handle older formats (increase `format_version` and write migration path functions).
+   - Add unit tests in `src/tests/` that save, modify, and restore preferences to ensure round-trip fidelity.
+
+* **Edge Cases**:
+   - If the loaded settings include preferences unsupported by the current binary (newer format), the loader should warn and skip unsupported fields rather than failing entirely.
+   - Merge semantics: when loading a subset, offer `Replace` (overwrite) or `Merge` (only apply supplied keys) modes.
+
+---
+
+
+
 ## Project Overview
+
 iTidy is an Amiga icon management utility that allows users to sort and arrange icons in directories. The application features a GadTools-based GUI and supports multiple sorting modes with configurable layout presets.
+**Known Issue: misaligned icons in `whd:beta-game/w/winterlandmegalomaina`**
+
+* **Observed**: Icons within `whd:beta-game/w/winterlandmegalomaina` are not aligned according to current layout rules and the drawer window has not expanded to accommodate contents.
+* **Impact**: Layout/resize operations appear to have skipped or not applied for that folder; manual inspection and restore operations are slow due to the folder size.
+* **Suggested Investigation**:
+   - Re-run a focused scan on that drawer with debug logging enabled to capture scanning decisions.
+   - Verify whether icons in that folder have unusual metadata (frameless, non-standard icon format, or corrupted .info entries).
+   - Check window resize logic path in `ProcessSingleDirectory()` and `resizeFolderToContents()` for early returns or skipped branches when encountering mixed icon/file folders.
+   - Consider using the new snapshot/audit features (when implemented) to capture that folder's analysis for offline review.
+
+* **Additional Observations**:
+   - The scanner appears to have trouble with extra-large WHDLoad-format icons: some icons overlap, show visual artifacts, or otherwise distort layout calculations. This is particularly noticeable with WHDLoad bundles that include oversized icon artwork.
+   - A test copy of `HuntForRedOctober` has been placed in the `amiga` folder for further testing and repro. Use this file when running focused scans and rendering tests.
+   - These artifacts may affect both the layout engine (icon sizing/spacing) and the window-resize logic (calculated content area smaller than actual artwork), so both rendering and sizing subsystems should be inspected.
+
+* **Suggested Debug Steps for WHDLoad icons**:
+   - Run the focused scan on the `HuntForRedOctober` test folder with `DEBUG_LOG` and `GUI_RENDER_TRACE` enabled (or equivalent logging) to capture icon size calculations and render pass data.
+   - Inspect icon metadata for WHDLoad-specific markers and verify `GetIconDetailsFromDisk()` handles large bitmap sizes and masks correctly.
+   - Test rendering with `display_newicons_borderless` toggled to see if emboss/border suppression reduces overlap artifacts.
+   - If artifacts are render-only, consider adding a clipping or scale-down fallback for icons larger than a threshold (configurable) to avoid layout corruption.
+
+* **HuntForRedOctober icon-size discrepancy**: ✅ **FIXED** (November 29, 2025)
+   - **Problem**: The Amiga icon editor reported `48×20` for `HuntForRedOctober` icon, but Workbench folder view rendered it much larger. iTidy was using incorrect dimensions from `DiskObject->do_Gadget.Width/Height` instead of actual NewIcon bitmap size.
+   - **Root Cause**: `GetIconDetailsFromDisk()` in `src/icon_types.c` was detecting NewIcon format correctly via `IsNewIcon()`, but failed to extract the actual bitmap dimensions from the `IM1=` tooltype. The existing function `GetNewIconSizePath()` was available but never called.
+   - **Fix Applied**: Added call to `GetNewIconSizePath()` immediately after NewIcon detection (line 788 in `src/icon_types.c`). This function parses the `IM1=` tooltype to extract true bitmap dimensions (characters at positions [5] and [6], decoded by subtracting ASCII `'!'`).
+   - **Impact**: NewIcons like HuntForRedOctober now report correct dimensions, fixing layout calculation errors where icons would overlap or windows were sized incorrectly.
+   - **Test Results**: Confirmed working - HuntForRedOctober and other WHDLoad NewIcons now display with proper sizing.
+
 
 ---
 
 ## Development Timeline
+
+### NewIcon Size Detection Fix (November 29, 2025)
+
+#### Fixed NewIcon Bitmap Dimension Extraction
+* **Status**: Complete - NewIcons now report accurate bitmap dimensions
+* **Impact**: Fixes layout errors for WHDLoad icons and other NewIcons with size discrepancies
+* **Date**: November 29, 2025
+* **Files Modified**: `src/icon_types.c` (line 788)
+
+**Problem:**
+NewIcons like `HuntForRedOctober` were reporting incorrect dimensions. The icon editor showed `48×20`, but Workbench rendered it much larger. iTidy was using `DiskObject->do_Gadget.Width/Height` values (which can be inaccurate for NewIcons) instead of the actual bitmap size encoded in the `IM1=` tooltype.
+
+**Root Cause:**
+`GetIconDetailsFromDisk()` correctly detected NewIcon format via `IsNewIcon()`, but failed to extract true bitmap dimensions. The function `GetNewIconSizePath()` existed to parse `IM1=` tooltype data, but was never called—likely missed during the GUI rewrite migration.
+
+**Solution:**
+Added call to `GetNewIconSizePath(filePath, &details->size)` immediately after NewIcon detection in `GetIconDetailsFromDisk()`. This function decodes the actual bitmap width/height from characters at positions [5] and [6] of the `IM1=` tooltype (subtract ASCII `'!'` to get pixel dimensions).
+
+**Technical Details:**
+```c
+/* In GetIconDetailsFromDisk() after IsNewIcon() detection */
+if (details->isNewIcon)
+{
+    details->iconType = icon_type_newIcon;
+    /* Get actual NewIcon bitmap size from IM1= tooltype */
+    GetNewIconSizePath(filePath, &details->size);
+}
+```
+
+**Testing:**
+Confirmed with `HuntForRedOctober` icon and other WHDLoad NewIcons. Icons now report correct dimensions, eliminating layout overlap and window sizing errors.
+
+---
 
 ### Latest: Console Output Compile Flag System (November 28, 2025)
 
@@ -5941,3 +6161,26 @@ make
 ---
 
 *Last Updated: October 20, 2025*
+
+---
+
+### Proposed: Save Current Default-Tool Analysis Snapshot (November 28, 2025)
+
+* **Status**: Proposed - Needs design & implementation
+* **Impact**: Large scans (hours, thousands of entries) can be paused and resumed; reduces re-scan time
+* **Description**: Add a feature to save the "current analysis" of the Default Tools analysis run — the in-memory lists and processing metadata that the analysis builds while scanning. This is intentionally NOT a backup of files; it only stores the in-use lists, progress cursor, and settings required to resume or review the analysis later.
+* **Rationale**:
+   - Users may run very long analyses (user reported ~1 hour, thousands of entries). Being able to persist the analysis state lets them stop and resume without re-scanning.
+* **Requirements / Notes**:
+   - UI: Add `Save Analysis` and `Load Analysis` buttons in the Default Tools analysis window, plus an autosave option.
+   - Format: Portable, versioned snapshot (suggestion: compressed JSON with a header containing version, timestamp, scan path, and preferences). Include only lists and metadata — no file contents or full backups.
+   - Contents to persist: in-use default-tool lists, scan path, current index/position, preferences used for the scan, and a timestamp. Consider also storing a small checksum of the target folder (e.g., list of top-level filenames + mtime) to detect drift.
+   - Storage: User-chosen file; default folder suggestion: `Bin/Amiga/logs/analysis/` (or `build/amiga/logs/analysis/` during development). Use extension `.itidy-analysis` (or similar).
+   - Resume semantics: Loading a snapshot allows previewing entries, resuming processing from the saved cursor, or re-running analysis-only tasks against the saved lists.
+   - Distinction from backups: Backups are full LHA archives or file snapshots. This feature only preserves analysis lists and state — smaller, faster, and intended for workflow convenience, not disaster recovery.
+   - Implementation hints: Add serialization helpers in `src/` (e.g., `src/analysis_snapshot.c/h`), expose save/load functions in the GUI (`src/GUI/default_tool_update_window.c`), and add unit tests in `src/tests/`.
+* **Next Steps**:
+   - Design snapshot schema and file format
+   - Add serialization + load/resume support in processing pipeline
+   - Add GUI controls and user documentation
+   - Add automated tests and manual QA with large scan datasets

@@ -781,6 +781,9 @@ BOOL GetIconDetailsFromDisk(const char *filePath, IconDetailsFromDisk *details, 
     if (details->isNewIcon)
     {
         details->iconType = icon_type_newIcon;
+        /* Get actual NewIcon bitmap size from IM1= tooltype */
+        /* This fixes size discrepancies where DiskObject gadget size != actual bitmap size */
+        GetNewIconSizePath(filePath, &details->size);
     }
     
     /* Check for OS3.5 icon format */
@@ -797,6 +800,8 @@ BOOL GetIconDetailsFromDisk(const char *filePath, IconDetailsFromDisk *details, 
     
     /* Determine frame status (only on Amiga with icon.library v44+) */
 #if PLATFORM_AMIGA
+    /* Only attempt frameless detection if icon.library v44+ is available */
+    if (prefsWorkbench.iconLibraryVersion >= 44)
     {
         struct Library *IconBase = OpenLibrary("icon.library", 44);
         if (IconBase != NULL)
