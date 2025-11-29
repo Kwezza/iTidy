@@ -505,3 +505,65 @@ char *removeTextFromStartOfString(const char *str, const char *prefix) {
 
     return newStr;
 }
+
+/**
+ * Expand PROGDIR: to absolute path on Amiga
+ * Returns TRUE if expansion successful, FALSE otherwise
+ */
+BOOL ExpandProgDir(const char *path, char *expanded, size_t maxLen) {
+#if PLATFORM_AMIGA
+    BPTR lock;
+    char buffer[512];
+    BOOL success = FALSE;
+    
+    if (!path || !expanded || maxLen == 0) {
+        return FALSE;
+    }
+    
+    /* If path doesn't start with PROGDIR:, just copy it */
+    if (strncmp(path, "PROGDIR:", 8) != 0) {
+        strncpy(expanded, path, maxLen - 1);
+        expanded[maxLen - 1] = '\0';
+        return TRUE;
+    }
+    
+    /* Lock PROGDIR: to get its absolute path */
+    lock = Lock((STRPTR)"PROGDIR:", ACCESS_READ);
+    if (lock) {
+        /* Get the full path name */
+        if (NameFromLock(lock, (STRPTR)buffer, sizeof(buffer))) {
+            /* Combine the expanded PROGDIR with the rest of the path */
+            const char *remainder = path + 8;  /* Skip "PROGDIR:" */
+            if (*remainder == '/' || *remainder == ':') {
+                remainder++;  /* Skip separator */
+            }
+            
+            /* Build the full path */
+            if (*remainder) {
+                snprintf(expanded, maxLen, "%s/%s", buffer, remainder);
+            } else {
+                strncpy(expanded, buffer, maxLen - 1);
+                expanded[maxLen - 1] = '\0';
+            }
+            success = TRUE;
+        }
+        UnLock(lock);
+    }
+    
+    if (!success) {
+        /* Fallback: just copy the original path */
+        strncpy(expanded, path, maxLen - 1);
+        expanded[maxLen - 1] = '\0';
+    }
+    
+    return success;
+#else
+    /* Host platform: just copy the path as-is */
+    if (!path || !expanded || maxLen == 0) {
+        return FALSE;
+    }
+    strncpy(expanded, path, maxLen - 1);
+    expanded[maxLen - 1] = '\0';
+    return TRUE;
+#endif
+}

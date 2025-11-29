@@ -35,5 +35,6 @@ int GetWorkbenchVersion(void);
 char* convertWBVersionWithDot(int number);
 int endsWithInfo(const char *filePath);
 char *removeTextFromStartOfString(const char *str, const char *prefix);
+BOOL ExpandProgDir(const char *path, char *expanded, size_t maxLen);
 
 #endif /* utilities_h */
