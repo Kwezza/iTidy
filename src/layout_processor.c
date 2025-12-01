@@ -491,6 +491,38 @@ BOOL ProcessDirectoryWithPreferences(void)
 /*========================================================================*/
 /* Scan Directory for Default Tools Only (No Tidying)                    */
 /*========================================================================*/
+
+/**
+ * @brief Scan directories for tools with progress window integration
+ * 
+ * Wrapper that sets the global progress window pointer before calling
+ * ScanDirectoryForToolsOnly(), enabling progress updates and cancellation.
+ * 
+ * @param progress_window Pointer to opened progress window
+ * @return TRUE if successful, FALSE on error or cancellation
+ */
+BOOL ScanDirectoryForToolsOnlyWithProgress(struct iTidyMainProgressWindow *progress_window)
+{
+    BOOL result;
+    
+    if (!progress_window)
+    {
+        log_error(LOG_GENERAL, "Error: NULL progress window pointer\n");
+        return FALSE;
+    }
+    
+    /* Set global progress window pointer */
+    g_progressWindow = progress_window;
+    
+    /* Call the main scanning function */
+    result = ScanDirectoryForToolsOnly();
+    
+    /* Clear global progress window pointer */
+    g_progressWindow = NULL;
+    
+    return result;
+}
+
 /**
  * @brief Scan directories and build default tool cache without tidying icons
  * 
@@ -529,15 +561,16 @@ BOOL ScanDirectoryForToolsOnly(void)
     sanitizeAmigaPath(sanitizedPath);
     
     /* Build PATH search list for default tool validation */
-    log_info(LOG_GENERAL, "\n*** Building PATH search list for default tool scanning ***\n");
+    PROGRESS_STATUS("*** Building PATH search list for default tool scanning ***");
     if (!BuildPathSearchList())
     {
         log_error(LOG_GENERAL, "Failed to build PATH search list - scan aborted\n");
+        PROGRESS_STATUS("ERROR: Failed to build PATH search list - scan aborted");
         return FALSE;
     }
     
     g_ValidateDefaultTools = TRUE;
-    log_info(LOG_GENERAL, "Default tool validation enabled\n");
+    PROGRESS_STATUS("Default tool validation enabled");
     
     /* Free existing cache and initialize fresh */
     FreeToolCache();
@@ -549,9 +582,13 @@ BOOL ScanDirectoryForToolsOnly(void)
     /* Load left-out icons from the device's .backdrop file */
     loadLeftOutIcons(sanitizedPath);
     
-    log_info(LOG_GENERAL, "\nScanning for default tools: %s\n", sanitizedPath);
-    log_info(LOG_GENERAL, "Recursive: %s\n", prefs->recursive_subdirs ? "Yes" : "No");
-    log_info(LOG_GENERAL, "Mode: SCAN TOOLS ONLY (no tidying)\n\n");
+    PROGRESS_STATUS("");
+    PROGRESS_STATUS("Scanning for default tools: %s", sanitizedPath);
+    PROGRESS_STATUS("Recursive: %s", prefs->recursive_subdirs ? "Yes" : "No");
+    PROGRESS_STATUS("Mode: SCAN TOOLS ONLY (no tidying)");
+    PROGRESS_STATUS("");
+    
+    CHECK_CANCEL();
     
     /* Start scanning */
     if (prefs->recursive_subdirs)
@@ -564,14 +601,15 @@ BOOL ScanDirectoryForToolsOnly(void)
     }
     
     /* Show results */
-    log_info(LOG_GENERAL, "\n*** Tool scanning complete ***\n");
+    PROGRESS_STATUS("");
+    PROGRESS_STATUS("*** Tool scanning complete ***");
     DumpToolCache();
     
     /* Note: Tool cache remains active for viewing in Tool Cache Window */
-    log_info(LOG_GENERAL, "Tool cache retained for viewing (call FreeToolCache() when done)\n");
+    PROGRESS_STATUS("Tool cache retained for viewing");
     
     /* Free PATH search list */
-    log_info(LOG_GENERAL, "Freeing PATH search list\n");
+    PROGRESS_STATUS("Freeing PATH search list");
     FreePathSearchList();
     g_ValidateDefaultTools = FALSE;
     
@@ -587,7 +625,8 @@ static BOOL ScanSingleDirectoryForTools(const char *path)
     IconArray *iconArray = NULL;
     BOOL success = FALSE;
     
-    log_info(LOG_GENERAL, "  Scanning: %s\n", path);
+    PROGRESS_STATUS("  Scanning: %s", path);
+    CHECK_CANCEL();
     
     /* Lock the directory */
     lock = Lock((STRPTR)path, ACCESS_READ);
@@ -603,12 +642,12 @@ static BOOL ScanSingleDirectoryForTools(const char *path)
     
     if (!iconArray)
     {
-        log_warning(LOG_GENERAL, "  No icons found or error reading directory\n");
+        PROGRESS_STATUS("  No icons found or error reading directory");
         UnLock(lock);
         return FALSE;
     }
     
-    log_info(LOG_GENERAL, "  Found %lu icons (tools validated)\n", (unsigned long)iconArray->size);
+    PROGRESS_STATUS("  Found %lu icons (tools validated)", (unsigned long)iconArray->size);
     success = TRUE;
     
     /* Clean up - we only needed the icons to validate tools */
@@ -695,7 +734,8 @@ static BOOL ScanDirectoryRecursiveForTools(const char *path, int recursion_level
                 }
                 
                 /* Recursively scan subdirectory */
-                log_info(LOG_GENERAL, "\nEntering: %s\n", subdir);
+                PROGRESS_STATUS("");
+                PROGRESS_STATUS("Entering: %s", subdir);
                 ScanDirectoryRecursiveForTools(subdir, recursion_level + 1);
             }
         }

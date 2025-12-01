@@ -10,6 +10,7 @@
 #include "restore_window.h"
 #include "default_tool_backup.h"
 #include "easy_request_helper.h"
+#include "StatusWindows/main_progress_window.h"
 #include "../icon_types.h"
 #include "../itidy_types.h"
 #include "../Settings/IControlPrefs.h"
@@ -84,13 +85,80 @@ extern void iTidy_CloseToolRestoreWindow(struct Window *window);
 /*------------------------------------------------------------------------*/
 /* Forward Declarations                                                   */
 /*------------------------------------------------------------------------*/
+static BOOL request_directory(char *buffer, ULONG buffer_size, const char *initial_path);
 static void populate_tool_list(struct iTidyToolCacheWindow *tool_data);
 static void populate_details_panel(struct iTidyToolCacheWindow *tool_data);
 static BOOL setup_tool_cache_menus(void);
 static void cleanup_tool_cache_menus(void);
 static BOOL handle_tool_cache_menu_selection(ULONG menu_number, struct iTidyToolCacheWindow *tool_data);
-static BOOL save_tool_cache_to_file(const char *filepath);
+static BOOL save_tool_cache_to_file(const char *filepath, const char *folder_path);
 static void handle_save_as_menu(struct iTidyToolCacheWindow *tool_data);
+
+/*------------------------------------------------------------------------*/
+/**
+ * @brief Request a directory using ASL file requester
+ *
+ * Opens a standard Amiga ASL file requester configured to select
+ * directories only. If the user selects a directory, it is copied
+ * to the provided buffer.
+ *
+ * @param buffer Buffer to store the selected path
+ * @param buffer_size Size of the buffer
+ * @param initial_path Initial directory to display (can be NULL)
+ * @return BOOL TRUE if user selected a directory, FALSE if cancelled
+ */
+/*------------------------------------------------------------------------*/
+static BOOL request_directory(char *buffer, ULONG buffer_size, const char *initial_path)
+{
+    struct FileRequester *freq;
+    BOOL result = FALSE;
+    char temp_buffer[256];
+    
+    /* Allocate file requester */
+    freq = (struct FileRequester *)AllocAslRequest(ASL_FileRequest, NULL);
+    if (freq == NULL)
+    {
+        log_error(LOG_GUI, "Failed to allocate ASL file requester\n");
+        return FALSE;
+    }
+    
+    log_debug(LOG_GUI, "Opening directory requester...\n");
+    
+    /* Request a directory */
+    if (AslRequestTags(freq,
+        ASLFR_TitleText, "Select Folder to Process",
+        ASLFR_DrawersOnly, TRUE,
+        ASLFR_InitialDrawer, initial_path ? initial_path : "DH0:",
+        ASLFR_DoPatterns, FALSE,
+        TAG_END))
+    {
+        /* User selected a directory */
+        log_debug(LOG_GUI, "User selected: %s\n", freq->rf_Dir);
+        
+        /* Copy the directory path to temp buffer */
+        if (freq->rf_Dir && freq->rf_Dir[0])
+        {
+            strncpy(temp_buffer, freq->rf_Dir, sizeof(temp_buffer) - 1);
+            temp_buffer[sizeof(temp_buffer) - 1] = '\0';
+            
+            /* Copy to output buffer */
+            strncpy(buffer, temp_buffer, buffer_size - 1);
+            buffer[buffer_size - 1] = '\0';
+            
+            log_info(LOG_GUI, "Selected folder: %s\n", buffer);
+            result = TRUE;
+        }
+    }
+    else
+    {
+        log_debug(LOG_GUI, "User cancelled directory selection\n");
+    }
+    
+    /* Free the requester */
+    FreeAslRequest(freq);
+    
+    return result;
+}
 
 /*------------------------------------------------------------------------*/
 /* Tool Cache Save/Load Functions                                        */
@@ -102,7 +170,8 @@ static void handle_save_as_menu(struct iTidyToolCacheWindow *tool_data);
  * Writes the global g_ToolCache data to a binary file in a format
  * suitable for reloading. File format:
  *   - Header: "ITIDYTOOLCACHE" (14 bytes)
- *   - Version: ULONG (4 bytes) = 1
+ *   - Version: ULONG (4 bytes) = 2
+ *   - Folder path length: LONG, then string (scanned folder path)
  *   - Tool count: LONG (4 bytes)
  *   - For each tool:
  *     - Tool name length: LONG, then string
@@ -116,14 +185,14 @@ static void handle_save_as_menu(struct iTidyToolCacheWindow *tool_data);
  * @param filepath Full path to save file
  * @return TRUE if successful, FALSE on error
  */
-static BOOL save_tool_cache_to_file(const char *filepath)
+static BOOL save_tool_cache_to_file(const char *filepath, const char *folder_path)
 {
     BPTR file;
     LONG i, j;
     LONG len;
     LONG exists_flag;
     const char header[] = "ITIDYTOOLCACHE";
-    ULONG version = 1;
+    ULONG version = 2;  /* Version 2 includes folder path */
     
     if (!filepath || !g_ToolCache)
     {
@@ -156,16 +225,42 @@ static BOOL save_tool_cache_to_file(const char *filepath)
         Close(file);
         return FALSE;
     }
-    
+
+    /* Write folder path */
+    if (folder_path)
+    {
+        len = strlen(folder_path);
+        if (Write(file, (APTR)&len, sizeof(LONG)) != sizeof(LONG))
+        {
+            log_error(LOG_GUI, "Failed to write folder path length\\n");
+            Close(file);
+            return FALSE;
+        }
+        if (Write(file, (APTR)folder_path, len) != len)
+        {
+            log_error(LOG_GUI, "Failed to write folder path\\n");
+            Close(file);
+            return FALSE;
+        }
+    }
+    else
+    {
+        len = 0;
+        if (Write(file, (APTR)&len, sizeof(LONG)) != sizeof(LONG))
+        {
+            log_error(LOG_GUI, "Failed to write folder path length\\n");
+            Close(file);
+            return FALSE;
+        }
+    }
+
     /* Write tool count */
     if (Write(file, (APTR)&g_ToolCacheCount, sizeof(LONG)) != sizeof(LONG))
     {
         log_error(LOG_GUI, "Failed to write tool count\\n");
         Close(file);
         return FALSE;
-    }
-    
-    /* Write each tool entry */
+    }    /* Write each tool entry */
     for (i = 0; i < g_ToolCacheCount; i++)
     {
         /* Write tool name */
@@ -243,11 +338,13 @@ static BOOL save_tool_cache_to_file(const char *filepath)
  * load_tool_cache_from_file - Load tool cache from binary file
  * 
  * Reads and validates a tool cache file, then replaces the global cache.
+ * Only supports version 2 files (with folder path).
  * 
  * @param filepath Full path to load file
+ * @param folder_path_out Buffer to receive loaded folder path (256 bytes min)
  * @return TRUE if successful, FALSE on error
  */
-static BOOL load_tool_cache_from_file(const char *filepath)
+static BOOL load_tool_cache_from_file(const char *filepath, char *folder_path_out)
 {
     BPTR file;
     LONG i, j;
@@ -298,22 +395,59 @@ static BOOL load_tool_cache_from_file(const char *filepath)
         return FALSE;
     }
     
-    if (version != 1)
+    if (version != 2)
     {
-        log_error(LOG_GUI, "Unsupported file version: %lu\\n", version);
+        log_error(LOG_GUI, "Unsupported file version: %lu (expected 2)\\n", version);
         Close(file);
         return FALSE;
     }
-    
+
+    /* Read folder path */
+    if (Read(file, (APTR)&len, sizeof(LONG)) != sizeof(LONG))
+    {
+        log_error(LOG_GUI, "Failed to read folder path length\\n");
+        Close(file);
+        return FALSE;
+    }
+
+    if (len > 0)
+    {
+        if (len > 512)  /* Sanity check */
+        {
+            log_error(LOG_GUI, "Folder path too long: %ld\\n", len);
+            Close(file);
+            return FALSE;
+        }
+
+        if (folder_path_out)
+        {
+            if (Read(file, (APTR)folder_path_out, len) != len)
+            {
+                log_error(LOG_GUI, "Failed to read folder path\\n");
+                Close(file);
+                return FALSE;
+            }
+            folder_path_out[len] = '\0';
+            log_debug(LOG_GUI, "Loaded folder path: %s\\n", folder_path_out);
+        }
+        else
+        {
+            /* Skip folder path if output buffer not provided */
+            Seek(file, len, OFFSET_CURRENT);
+        }
+    }
+    else if (folder_path_out)
+    {
+        folder_path_out[0] = '\0';
+    }
+
     /* Read tool count */
     if (Read(file, (APTR)&tool_count, sizeof(LONG)) != sizeof(LONG))
     {
         log_error(LOG_GUI, "Failed to read tool count\\n");
         Close(file);
         return FALSE;
-    }
-    
-    if (tool_count < 0 || tool_count > 10000)  /* Sanity check */
+    }    if (tool_count < 0 || tool_count > 10000)  /* Sanity check */
     {
         log_error(LOG_GUI, "Invalid tool count: %ld\\n", tool_count);
         Close(file);
@@ -639,13 +773,13 @@ static void handle_save_as_menu(struct iTidyToolCacheWindow *tool_data)
         }
         
         /* Save the file */
-        if (save_tool_cache_to_file(full_path))
+        if (save_tool_cache_to_file(full_path, tool_data->folder_path_buffer))
         {
             ShowEasyRequest(tool_data->window,
                 "Save Successful",
                 "Tool cache saved successfully.",
                 "OK");
-            log_info(LOG_GUI, "Tool cache saved to: %s\\n", full_path);
+            log_info(LOG_GUI, "Tool cache saved to: %s (folder: %s)\\n", full_path, tool_data->folder_path_buffer);
         }
         else
         {
@@ -745,8 +879,29 @@ static void handle_open_menu(struct iTidyToolCacheWindow *tool_data)
         UnLock(lock);
         
         /* Load the file */
-        if (load_tool_cache_from_file(full_path))
+        if (load_tool_cache_from_file(full_path, tool_data->folder_path_buffer))
         {
+            /* Update folder path gadget with loaded path */
+            /* NOTE: Read-only string gadgets don't refresh properly on WB 3.x
+             * Must temporarily disable read-only, update string, then re-enable */
+            GT_SetGadgetAttrs(tool_data->folder_path, tool_data->window, NULL,
+                             GA_ReadOnly, FALSE,
+                             GTST_String, tool_data->folder_path_buffer,
+                             TAG_END);
+            GT_SetGadgetAttrs(tool_data->folder_path, tool_data->window, NULL,
+                             GA_ReadOnly, TRUE,
+                             TAG_END);
+            
+            /* Update global preferences with loaded folder path */
+            LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
+            if (prefs)
+            {
+                strncpy(prefs->folder_path, tool_data->folder_path_buffer, sizeof(prefs->folder_path) - 1);
+                prefs->folder_path[sizeof(prefs->folder_path) - 1] = '\0';
+                UpdateGlobalPreferences(prefs);
+                log_debug(LOG_GUI, "Updated global preferences with loaded folder path: %s\\n", prefs->folder_path);
+            }
+            
             /* Rebuild the display with new data */
             if (build_tool_cache_display_list(tool_data))
             {
@@ -760,7 +915,7 @@ static void handle_open_menu(struct iTidyToolCacheWindow *tool_data)
                     "Load Successful",
                     "Tool cache loaded successfully.",
                     "OK");
-                log_info(LOG_GUI, "Tool cache loaded from: %s\\n", full_path);
+                log_info(LOG_GUI, "Tool cache loaded from: %s (folder: %s)\\n", full_path, tool_data->folder_path_buffer);
             }
             else
             {
@@ -1568,6 +1723,20 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     tool_data->selected_index = -1;
     tool_data->selected_details_index = -1;
     
+    /* Initialize folder path from global preferences */
+    {
+        const LayoutPreferences *prefs = GetGlobalPreferences();
+        if (prefs && prefs->folder_path[0])
+        {
+            strncpy(tool_data->folder_path_buffer, prefs->folder_path, sizeof(tool_data->folder_path_buffer) - 1);
+            tool_data->folder_path_buffer[sizeof(tool_data->folder_path_buffer) - 1] = '\0';
+        }
+        else
+        {
+            strcpy(tool_data->folder_path_buffer, "DH0:");
+        }
+    }
+    
     /* Lock Workbench screen */
     tool_data->screen = LockPubScreen(NULL);
     if (tool_data->screen == NULL)
@@ -1697,6 +1866,70 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     /* Set text attr for all gadgets if using system font */
     ng.ng_TextAttr = using_system_font ? &tool_data->system_font_attr : tool_data->screen->Font;
     ng.ng_VisualInfo = tool_data->visual_info;
+    
+    /*--------------------------------------------------------------------*/
+    /* FOLDER LABEL (TEXT GADGET)                                        */
+    /*--------------------------------------------------------------------*/
+    ng.ng_LeftEdge = current_x;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = font_width * 7;  /* Width for "Folder:" label */
+    ng.ng_Height = font_height + 4;
+    ng.ng_GadgetText = "Folder:";
+    ng.ng_GadgetID = 0;  /* No ID needed for static text */
+    ng.ng_Flags = PLACETEXT_IN;
+    
+    tool_data->folder_label = gad = CreateGadget(TEXT_KIND, gad, &ng,
+        GTTX_Text, "",
+        GTTX_Border, FALSE,
+        TAG_END);
+    if (gad == NULL)
+    {
+        append_to_log("ERROR: Could not create folder label\n");
+        goto cleanup_error;
+    }
+    
+    /*--------------------------------------------------------------------*/
+    /* FOLDER PATH STRING GADGET (READ ONLY)                             */
+    /*--------------------------------------------------------------------*/
+    ng.ng_LeftEdge = current_x + (font_width * 8);
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = reference_width - (font_width * 8) - (font_width * 10) - TOOL_WINDOW_SPACE_X;  /* Space for browse button */
+    ng.ng_Height = font_height + 6;
+    ng.ng_GadgetText = NULL;
+    ng.ng_GadgetID = GID_TOOL_FOLDER_PATH;
+    ng.ng_Flags = 0;
+    
+    tool_data->folder_path = gad = CreateGadget(STRING_KIND, gad, &ng,
+        GTST_String, tool_data->folder_path_buffer,
+        GTST_MaxChars, 255,
+        GA_ReadOnly, TRUE,  /* Make it read-only */
+        TAG_END);
+    if (gad == NULL)
+    {
+        append_to_log("ERROR: Could not create folder path gadget\n");
+        goto cleanup_error;
+    }
+    
+    /*--------------------------------------------------------------------*/
+    /* BROWSE BUTTON                                                      */
+    /*--------------------------------------------------------------------*/
+    ng.ng_LeftEdge = current_x + reference_width - (font_width * 10);
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = font_width * 10;
+    ng.ng_Height = font_height + 6;
+    ng.ng_GadgetText = "Browse...";
+    ng.ng_GadgetID = GID_TOOL_BROWSE;
+    ng.ng_Flags = PLACETEXT_IN;
+    
+    tool_data->browse_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+    if (gad == NULL)
+    {
+        append_to_log("ERROR: Could not create browse button\n");
+        goto cleanup_error;
+    }
+    
+    /* Move to next row with spacing */
+    current_y += font_height + 6 + TOOL_WINDOW_SPACE_Y;
     
     /*--------------------------------------------------------------------*/
     /* MAIN TOOL LISTVIEW                                                */
@@ -2115,18 +2348,132 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                         update_tool_details(tool_data, -1);
                         break;
                     
+                    case GID_TOOL_BROWSE:
+                        log_info(LOG_GUI, "[TOOL_CACHE] Browse button clicked\n");
+                        
+                        /* Open ASL directory requester */
+                        if (request_directory(tool_data->folder_path_buffer, 
+                                            sizeof(tool_data->folder_path_buffer),
+                                            tool_data->folder_path_buffer))
+                        {
+                            /* Update the string gadget display */
+                            GT_SetGadgetAttrs(tool_data->folder_path, tool_data->window, NULL,
+                                GTST_String, tool_data->folder_path_buffer,
+                                TAG_DONE);
+                            
+                            /* Update global preferences so Rebuild Cache uses new path */
+                            {
+                                LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
+                                if (prefs)
+                                {
+                                    strncpy(prefs->folder_path, tool_data->folder_path_buffer, 
+                                           sizeof(prefs->folder_path) - 1);
+                                    prefs->folder_path[sizeof(prefs->folder_path) - 1] = '\0';
+                                    UpdateGlobalPreferences(prefs);
+                                    log_info(LOG_GUI, "Updated global preferences folder: %s\n", prefs->folder_path);
+                                }
+                            }
+                            
+                            log_info(LOG_GUI, "Folder path updated: %s\n", tool_data->folder_path_buffer);
+                        }
+                        break;
+                    
                     case GID_TOOL_REBUILD_CACHE:
+                    {
+                        struct iTidyMainProgressWindow progress_window;
+                        LayoutPreferences *prefs;
+                        BOOL success;
+                        BOOL original_recursive_mode;
+                        
                         log_info(LOG_GUI, "[TOOL_CACHE] Rebuild Cache button clicked\n");
                         
-                        /* Use global preferences for scan path and recursive mode */
-                        log_info(LOG_GUI, "Rescanning using global preferences\n");
+                        /* Update global preferences with current folder path from textbox */
+                        prefs = (LayoutPreferences *)GetGlobalPreferences();
+                        if (prefs)
+                        {
+                            strncpy(prefs->folder_path, tool_data->folder_path_buffer, 
+                                   sizeof(prefs->folder_path) - 1);
+                            prefs->folder_path[sizeof(prefs->folder_path) - 1] = '\0';
+                            
+                            /* Save original recursive mode and force it to TRUE for tool cache rebuild */
+                            original_recursive_mode = prefs->recursive_subdirs;
+                            prefs->recursive_subdirs = TRUE;
+                            
+                            UpdateGlobalPreferences(prefs);
+                            log_info(LOG_GUI, "Using folder path: %s (recursive: FORCED ON)\n", prefs->folder_path);
+                        }
                         
-                        /* Rescan the directory to rebuild tool cache */
-                        if (ScanDirectoryForToolsOnly())
+                        /* Open progress window */
+                        if (!itidy_main_progress_window_open(&progress_window))
+                        {
+                            log_error(LOG_GUI, "Failed to open progress window\n");
+                            
+                            /* Restore original recursive mode before returning */
+                            if (prefs)
+                            {
+                                prefs->recursive_subdirs = original_recursive_mode;
+                                UpdateGlobalPreferences(prefs);
+                            }
+                            
+                            ShowEasyRequest(tool_data->window,
+                                "Error",
+                                "Failed to open progress window",
+                                "OK");
+                            break;
+                        }
+                        
+                        /* Set busy pointer on tool cache window */
+                        SetWindowPointer(tool_data->window, WA_BusyPointer, TRUE, TAG_END);
+                        
+                        /* Rescan the directory to rebuild tool cache (always recursive) */
+                        success = ScanDirectoryForToolsOnlyWithProgress(&progress_window);
+                        
+                        /* Restore original recursive mode */
+                        if (prefs)
+                        {
+                            prefs->recursive_subdirs = original_recursive_mode;
+                            UpdateGlobalPreferences(prefs);
+                            log_info(LOG_GUI, "Restored original recursive mode: %s\n", 
+                                    original_recursive_mode ? "ON" : "OFF");
+                        }
+                        
+                        /* Show result in progress window */
+                        itidy_main_progress_window_append_status(&progress_window, "");
+                        itidy_main_progress_window_append_status(&progress_window, 
+                            "===============================================");
+                        if (success)
                         {
                             log_info(LOG_GUI, "Tool cache rebuilt successfully\n");
-                            
-                            /* Rebuild display list from refreshed cache */
+                            itidy_main_progress_window_append_status(&progress_window, 
+                                "Tool cache rebuilt successfully!");
+                        }
+                        else
+                        {
+                            log_error(LOG_GUI, "Tool cache rebuild failed or was cancelled\n");
+                            itidy_main_progress_window_append_status(&progress_window, 
+                                "Tool cache rebuild failed or was cancelled");
+                        }
+                        itidy_main_progress_window_append_status(&progress_window, 
+                            "===============================================");
+                        
+                        /* Change Cancel button to Close now that processing is complete */
+                        itidy_main_progress_window_set_button_text(&progress_window, "Close");
+                        
+                        /* Clear busy pointer */
+                        SetWindowPointer(tool_data->window, WA_Pointer, NULL, TAG_END);
+                        
+                        /* Keep progress window open so user can review - wait for Cancel/Close */
+                        while (itidy_main_progress_window_handle_events(&progress_window))
+                        {
+                            WaitPort(progress_window.window->UserPort);
+                        }
+                        
+                        /* Close progress window */
+                        itidy_main_progress_window_close(&progress_window);
+                        
+                        /* Rebuild display list from refreshed cache (if successful) */
+                        if (success)
+                        {
                             build_tool_cache_display_list(tool_data);
                             apply_tool_filter(tool_data);
                             populate_tool_list(tool_data);
@@ -2137,12 +2484,9 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                             
                             log_info(LOG_GUI, "Display updated with new cache data\n");
                         }
-                        else
-                        {
-                            log_error(LOG_GUI, "Failed to rebuild tool cache\n");
-                            /* Could show an error requester here */
-                        }
+                        
                         break;
+                    }
                         
                     case GID_TOOL_REPLACE_BATCH:
                     {

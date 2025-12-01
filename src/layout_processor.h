@@ -98,4 +98,27 @@ BOOL ProcessDirectoryWithPreferencesAndProgress(struct iTidyMainProgressWindow *
  */
 BOOL ScanDirectoryForToolsOnly(void);
 
+/**
+ * @brief Scan directory for default tools with progress window integration
+ * 
+ * Same as ScanDirectoryForToolsOnly() but routes all status updates to the
+ * provided progress window. Supports cancellation via the progress window's
+ * Cancel button.
+ * 
+ * @param progress_window Pointer to initialized progress window
+ * @return TRUE if scan completed successfully, FALSE on error or cancellation
+ * 
+ * @note The progress window must be opened by the caller before
+ *       calling this function, and closed after it returns.
+ * 
+ * @example
+ * struct iTidyMainProgressWindow progress_window;
+ * if (itidy_main_progress_window_open(&progress_window))
+ * {
+ *     BOOL success = ScanDirectoryForToolsOnlyWithProgress(&progress_window);
+ *     itidy_main_progress_window_close(&progress_window);
+ * }
+ */
+BOOL ScanDirectoryForToolsOnlyWithProgress(struct iTidyMainProgressWindow *progress_window);
+
 #endif /* LAYOUT_PROCESSOR_H */

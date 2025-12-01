@@ -16,6 +16,8 @@
 /*------------------------------------------------------------------------*/
 /* Gadget IDs                                                             */
 /*------------------------------------------------------------------------*/
+#define GID_TOOL_FOLDER_PATH    4000
+#define GID_TOOL_BROWSE         4011
 #define GID_TOOL_LIST           4001
 #define GID_TOOL_FILTER_ALL     4002
 #define GID_TOOL_FILTER_VALID   4003
@@ -81,6 +83,9 @@ struct iTidyToolCacheWindow
     BOOL window_open;                   /* Window state flag */
     
     /* Gadget pointers */
+    struct Gadget *folder_label;        /* Folder label */
+    struct Gadget *folder_path;         /* Folder path string gadget */
+    struct Gadget *browse_btn;          /* Browse button */
     struct Gadget *tool_list;           /* ListView showing tools */
     struct Gadget *details_listview;    /* ListView showing file details */
     struct Gadget *filter_all_btn;      /* Show All button */
@@ -106,6 +111,9 @@ struct iTidyToolCacheWindow
     LONG selected_index;                /* Currently selected index (-1 = none) */
     LONG selected_details_index;        /* Selected index in details panel (-1 = none) */
     struct List details_list;           /* List for details panel */
+    
+    /* Folder path for Rebuild Cache operation */
+    char folder_path_buffer[256];       /* Current folder path */
 };
 
 /*------------------------------------------------------------------------*/

@@ -1423,6 +1423,160 @@ GadTools buttons store a **pointer** to your label string, not the string itself
 - See `src/GUI/StatusWindows/main_progress_window.c` for production implementation
 - AmigaOS RKM Libraries: GadTools chapter on BUTTON_KIND gadgets
 
+### 0.4. Updating Read-Only String Gadgets (GA_ReadOnly + GTST_String Pattern)
+
+**THE PROBLEM:** On classic Amiga Workbench 3.0/3.1 with GadTools `STRING_KIND` gadgets that have `GA_ReadOnly` set to `TRUE`, calling `GT_SetGadgetAttrs()` to update the string contents may not refresh the visual display. The gadget data changes internally, but the text shown on screen doesn't update.
+
+**COMMON USE CASE:** Display-only path gadgets, status fields, or information boxes where you want to show text but prevent user editing.
+
+**SYMPTOMS:**
+- String gadget shows old text even after `GT_SetGadgetAttrs()` with `GTST_String`
+- Internal buffer is updated but display doesn't refresh
+- Issue only occurs when `GA_ReadOnly, TRUE` was set during creation
+
+**ROOT CAUSE:** GadTools read-only string gadgets on WB 3.x don't always trigger a visual refresh when their contents change via `GT_SetGadgetAttrs()`. The gadget assumes read-only text won't change, so it skips the redraw optimization.
+
+**❌ WRONG WAY (doesn't update display on WB 3.0/3.1):**
+```c
+/* BAD: Trying to update read-only string gadget directly */
+void update_path_display(struct Window *window, struct Gadget *path_gadget, const char *new_path)
+{
+    /* This updates internal data but may not refresh visual display! */
+    GT_SetGadgetAttrs(path_gadget, window, NULL,
+                      GTST_String, new_path,
+                      TAG_END);
+    /* Text still shows old value on screen */
+}
+```
+
+**✅ CORRECT WAY - Toggle Read-Only Pattern (WB 3.0 compatible):**
+
+The proper solution temporarily disables read-only, updates the string, then re-enables read-only:
+
+```c
+void update_readonly_string_gadget(struct Window *window, struct Gadget *gadget, const char *new_text)
+{
+    if (!window || !gadget || !new_text)
+        return;
+    
+    /* Step 1: Temporarily disable read-only and update string */
+    GT_SetGadgetAttrs(gadget, window, NULL,
+                     GA_ReadOnly, FALSE,
+                     GTST_String, new_text,
+                     TAG_END);
+    
+    /* Step 2: Re-enable read-only */
+    GT_SetGadgetAttrs(gadget, window, NULL,
+                     GA_ReadOnly, TRUE,
+                     TAG_END);
+}
+```
+
+**HOW IT WORKS:**
+1. **Disable read-only:** Setting `GA_ReadOnly` to `FALSE` tells GadTools the gadget is editable
+2. **Update string:** With read-only disabled, `GTST_String` triggers proper refresh logic
+3. **Re-enable read-only:** Setting `GA_ReadOnly` back to `TRUE` prevents user editing
+4. **Result:** Display updates correctly while maintaining read-only behavior
+
+**ALTERNATIVE APPROACH (Combined in one call):**
+
+Some systems may allow updating both attributes in a single `GT_SetGadgetAttrs()` call:
+
+```c
+/* Try this first - if it doesn't work, use the two-step pattern above */
+void update_readonly_string_alt(struct Window *window, struct Gadget *gadget, const char *new_text)
+{
+    GT_SetGadgetAttrs(gadget, window, NULL,
+                     GA_ReadOnly, FALSE,
+                     GTST_String, new_text,
+                     GA_ReadOnly, TRUE,  /* Set back to read-only in same call */
+                     TAG_END);
+}
+```
+
+**Note:** The single-call approach may not work reliably on all systems. The two-step pattern (separate `GT_SetGadgetAttrs()` calls) is more robust.
+
+**REAL-WORLD EXAMPLE (iTidy tool cache window):**
+
+```c
+/* From tool_cache_window.c - Loading folder path from saved cache file */
+
+/* Gadget created with read-only flag */
+tool_data->folder_path = gad = CreateGadget(STRING_KIND, gad, &ng,
+    GTST_String, tool_data->folder_path_buffer,
+    GTST_MaxChars, 255,
+    GA_ReadOnly, TRUE,  /* Read-only display field */
+    TAG_END);
+
+/* Later: Update folder path when loading cache file */
+if (load_tool_cache_from_file(full_path, tool_data->folder_path_buffer))
+{
+    /* Update folder path gadget with loaded path */
+    /* NOTE: Read-only string gadgets don't refresh properly on WB 3.x
+     * Must temporarily disable read-only, update string, then re-enable */
+    GT_SetGadgetAttrs(tool_data->folder_path, tool_data->window, NULL,
+                     GA_ReadOnly, FALSE,
+                     GTST_String, tool_data->folder_path_buffer,
+                     TAG_END);
+    GT_SetGadgetAttrs(tool_data->folder_path, tool_data->window, NULL,
+                     GA_ReadOnly, TRUE,
+                     TAG_END);
+    
+    /* ... rest of update logic ... */
+}
+```
+
+**KEY RULES:**
+- ⚠️ **CRITICAL:** Always use two-step pattern for read-only string gadgets on WB 3.x
+- ⚠️ **NEVER** assume `GT_SetGadgetAttrs()` with just `GTST_String` will refresh read-only gadgets
+- ✅ Temporarily disable read-only before updating string
+- ✅ Re-enable read-only immediately after update
+- ✅ This pattern works for all WB versions (2.0, 3.0, 3.1, 3.2)
+- ✅ Safe to call multiple times without performance issues
+
+**WHEN TO USE:**
+- ✅ Display-only path fields (folder paths, file names)
+- ✅ Status displays that show system information
+- ✅ Read-only data entry fields (license keys, serial numbers)
+- ✅ Any string gadget with `GA_ReadOnly, TRUE` that needs runtime updates
+
+**WHEN NOT NEEDED:**
+- ❌ Editable string gadgets (without `GA_ReadOnly`)
+- ❌ String gadgets that never change after creation
+- ❌ Non-string gadget types (buttons, listviews, etc.)
+
+**TESTING CHECKLIST:**
+- [ ] Read-only gadget displays initial value correctly
+- [ ] Text updates when update function is called
+- [ ] Display refreshes immediately (no delay or stale text)
+- [ ] Gadget remains read-only (user cannot edit)
+- [ ] Works with different fonts (Topaz 8, Topaz 9, etc.)
+- [ ] No visual glitches or flickering during update
+- [ ] String doesn't get truncated if it exceeds visible width
+
+**PORTABILITY:**
+- ✅ Works on all Workbench versions (2.0, 2.1, 3.0, 3.1, 3.2)
+- ✅ Uses only standard GadTools/Intuition APIs
+- ✅ No special libraries or OS patches required
+- ✅ Two-step pattern is more reliable than combined approach
+
+**DEBUGGING:**
+If read-only string gadget doesn't update:
+1. Verify gadget was created with `GA_ReadOnly, TRUE`
+2. Ensure you're using two separate `GT_SetGadgetAttrs()` calls
+3. Check that window and gadget pointers are valid
+4. Verify new string is null-terminated and within `GTST_MaxChars` limit
+5. Try adding small delay between disable and re-enable (rare systems only)
+6. Log string contents before/after to verify buffer update
+
+**KEY PRINCIPLE:**
+GadTools read-only string gadgets skip refresh optimizations because read-only text is assumed static. Temporarily toggling the read-only flag forces GadTools to perform a full refresh cycle, ensuring the new text is displayed correctly.
+
+**REFERENCE:**
+- See `src/GUI/tool_cache_window.c` for production implementation
+- See `src/GUI/main_window.c` for editable string gadget updates (no toggle needed)
+- AmigaOS RKM Libraries: GadTools chapter on STRING_KIND and GA_ReadOnly attribute
+
 ### 1. ListView Height "Snapping" Issue
 
 **THE PROBLEM:** ListView gadgets automatically adjust their height to show complete rows. The height you request is NOT the height you get.
