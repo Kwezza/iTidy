@@ -95,6 +95,11 @@ static STRPTR window_position_labels[] = {
 };
 
 /*------------------------------------------------------------------------*/
+/* Forward Declarations                                                   */
+/*------------------------------------------------------------------------*/
+static void draw_folder_path_box(struct iTidyMainWindow *win_data);
+
+/*------------------------------------------------------------------------*/
 /**
  * @brief Print LayoutPreferences structure to console
  * 
@@ -334,25 +339,17 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
     }
     
     /*====================================================================*/
-    /* FOLDER PATH STRING GADGET                                          */
+    /* FOLDER PATH DISPLAY BOX (Custom drawn recessed bevel)             */
     /*====================================================================*/
-    ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 290;
-    ng.ng_Height = font_height + 6;
-    ng.ng_GadgetText = NULL;  /* No label - we have separate label gadget */
-    ng.ng_GadgetID = GID_FOLDER_PATH;
-    ng.ng_Flags = 0;  /* No PLACETEXT flag */
+    /* Store coordinates for custom drawing */
+    win_data->folder_box_left = ITIDY_WINDOW_LEFT_GROUP_GADETS;
+    win_data->folder_box_top = current_y;
+    win_data->folder_box_width = 290;
+    win_data->folder_box_height = font_height + 6;
     
-    win_data->folder_path = gad = CreateGadget(STRING_KIND, gad, &ng,
-        GTST_String, win_data->folder_path_buffer,
-        GTST_MaxChars, 255,
-        TAG_END);
-    if (!gad)
-    {
-        CONSOLE_ERROR("Failed to create folder path gadget\n");
-        return FALSE;
-    }
+    /* Note: Folder path will be drawn in refresh handler */
+    /* No gadget created - this is a custom drawn display area */
+    win_data->folder_path = gad;  /* Keep gadget chain intact */
     
     /*====================================================================*/
     /* BROWSE BUTTON                                                      */
@@ -721,7 +718,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
 
     /* Initialize structure */
     memset(win_data, 0, sizeof(struct iTidyMainWindow));
-    strcpy(win_data->folder_path_buffer, "PC:");
+    strcpy(win_data->folder_path_buffer, "SYS:");
     
     /* Initialize default settings (Classic preset) */
     win_data->order_selected = 0;        /* Folders First */
@@ -869,6 +866,9 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                          &win_data->tools_group_box,
                          "Tools");
     CONSOLE_DEBUG("Initial tools group box drawing complete\n");
+    
+    /* Draw the initial folder path display */
+    draw_folder_path_box(win_data);
 
     /* Mark window as successfully opened */
     win_data->window_open = TRUE;
@@ -996,6 +996,9 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                      "Folder");
                 CONSOLE_DEBUG("Folder group box drawn\n");
                 
+                /* Draw custom folder path display box */
+                draw_folder_path_box(win_data);
+                
                 /* Draw group box around tidy options */
                 CONSOLE_DEBUG("Drawing tidy options group box...\n");
                 DrawGroupBoxWithLabel(win_data->window,
@@ -1026,10 +1029,8 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                             sizeof(win_data->folder_path_buffer),
                                             win_data->folder_path_buffer))
                         {
-                            /* User selected a new directory - update the string gadget */
-                            GT_SetGadgetAttrs(win_data->folder_path, win_data->window, NULL,
-                                GTST_String, win_data->folder_path_buffer,
-                                TAG_END);
+                            /* User selected a new directory - redraw the folder path display */
+                            draw_folder_path_box(win_data);
                             CONSOLE_STATUS("Folder path updated to: %s\n", win_data->folder_path_buffer);
                         }
                         break;
@@ -1298,10 +1299,6 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         }
                         break;
 
-                    case GID_FOLDER_PATH:
-                        CONSOLE_DEBUG("Folder path changed: %s\n", win_data->folder_path_buffer);
-                        break;
-
                     case GID_ORDER:
                         /* Use msg_code which contains the new cycle gadget selection */
                         win_data->order_selected = msg_code;
@@ -1430,6 +1427,105 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
     }
 
     return continue_running;
+}
+
+/*------------------------------------------------------------------------*/
+/* Draw Folder Path Display Box                                          */
+/*------------------------------------------------------------------------*/
+static void draw_folder_path_box(struct iTidyMainWindow *win_data)
+{
+    struct RastPort *rp;
+    struct DrawInfo *dri;
+    WORD text_x, text_y;
+    
+    if (!win_data || !win_data->window)
+        return;
+    
+    rp = win_data->window->RPort;
+    dri = GetScreenDrawInfo(win_data->window->WScreen);
+    if (!dri)
+        return;
+    
+    /* Draw recessed bevel box */
+    DrawBevelBox(rp,
+                 win_data->folder_box_left,
+                 win_data->folder_box_top,
+                 win_data->folder_box_width,
+                 win_data->folder_box_height,
+                 GT_VisualInfo, win_data->visual_info,
+                 GTBB_Recessed, TRUE,
+                 TAG_END);
+    
+    /* Draw text inside box */
+    SetAPen(rp, dri->dri_Pens[TEXTPEN]);
+    SetBPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
+    SetDrMd(rp, JAM2);
+    
+    /* Position text with padding inside box */
+    text_x = win_data->folder_box_left + 4;
+    text_y = win_data->folder_box_top + rp->TxBaseline + 2;
+    
+    /* Clear background first */
+    SetAPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
+    RectFill(rp,
+             win_data->folder_box_left + 2,
+             win_data->folder_box_top + 2,
+             win_data->folder_box_left + win_data->folder_box_width - 3,
+             win_data->folder_box_top + win_data->folder_box_height - 3);
+    
+    /* Draw text with truncation if needed */
+    SetAPen(rp, dri->dri_Pens[TEXTPEN]);
+    Move(rp, text_x, text_y);
+    
+    {
+        char display_buffer[512];
+        const char *text_to_display = win_data->folder_path_buffer;
+        int text_len = strlen(text_to_display);
+        int available_width = win_data->folder_box_width - 8; /* Account for padding */
+        int text_width = TextLength(rp, text_to_display, text_len);
+        
+        /* Check if text fits */
+        if (text_width > available_width)
+        {
+            /* Text is too long - truncate with ellipsis */
+            const char *ellipsis = "...";
+            int ellipsis_width = TextLength(rp, ellipsis, 3);
+            int target_width = available_width - ellipsis_width;
+            
+            /* Binary search for maximum fitting length */
+            int low = 0, high = text_len;
+            int best_len = 0;
+            
+            while (low <= high)
+            {
+                int mid = (low + high) / 2;
+                int mid_width = TextLength(rp, text_to_display, mid);
+                
+                if (mid_width <= target_width)
+                {
+                    best_len = mid;
+                    low = mid + 1;
+                }
+                else
+                {
+                    high = mid - 1;
+                }
+            }
+            
+            /* Build truncated string with ellipsis */
+            if (best_len > 0 && best_len < sizeof(display_buffer) - 4)
+            {
+                strncpy(display_buffer, text_to_display, best_len);
+                strcpy(display_buffer + best_len, ellipsis);
+                text_to_display = display_buffer;
+                text_len = best_len + 3;
+            }
+        }
+        
+        Text(rp, text_to_display, text_len);
+    }
+    
+    FreeScreenDrawInfo(win_data->window->WScreen, dri);
 }
 
 /* End of main_window.c */

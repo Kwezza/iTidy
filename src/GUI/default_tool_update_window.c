@@ -6,6 +6,7 @@
 
 #include "platform/platform.h"
 #include "default_tool_update_window.h"
+#include "tool_cache_window.h"
 #include "default_tool_backup.h"
 #include "../icon_types.h"
 #include "../itidy_types.h"
@@ -315,6 +316,12 @@ static BOOL perform_tool_update(struct iTidy_DefaultToolUpdateWindow *data)
         }
     }
     
+    /* Log BEFORE update for debugging */
+    log_info(LOG_GUI, "=== BATCH UPDATE STARTING ===");
+    log_info(LOG_GUI, "Old tool: '%s'", data->context.current_tool ? data->context.current_tool : "(none)");
+    log_info(LOG_GUI, "New tool: '%s'", data->new_tool_path[0] ? data->new_tool_path : "(none)");
+    log_info(LOG_GUI, "Icon count received: %d", data->context.icon_count);
+    
     /* Perform update based on mode */
     if (data->context.mode == UPDATE_MODE_BATCH)
     {
@@ -371,6 +378,11 @@ static BOOL perform_tool_update(struct iTidy_DefaultToolUpdateWindow *data)
                                           old_tool ? old_tool : "",
                                           data->new_tool_path[0] ? data->new_tool_path : "");
                 }
+                
+                /* Update tool cache to reflect the change */
+                UpdateToolCacheForFileChange(info_path,
+                                            old_tool ? old_tool : NULL,
+                                            data->new_tool_path[0] ? data->new_tool_path : NULL);
                 
                 add_status_entry(data, info_path, "SUCCESS");
                 append_to_log("  %s: SUCCESS\n", info_path);
@@ -469,6 +481,11 @@ static BOOL perform_tool_update(struct iTidy_DefaultToolUpdateWindow *data)
                                       data->new_tool_path[0] ? data->new_tool_path : "");
             }
             
+            /* Update tool cache to reflect the change */
+            UpdateToolCacheForFileChange(info_path,
+                                        old_tool ? old_tool : NULL,
+                                        data->new_tool_path[0] ? data->new_tool_path : NULL);
+            
             add_status_entry(data, info_path, "SUCCESS");
             append_to_log("  SUCCESS\n");
             success_count = 1;
@@ -506,9 +523,10 @@ static BOOL perform_tool_update(struct iTidy_DefaultToolUpdateWindow *data)
         WA_BusyPointer, FALSE,
         TAG_END);
     
-    /* Re-enable update button */
+    /* Keep update button disabled after completion to prevent double-updates */
+    /* User must close window to refresh parent and update again if needed */
     GT_SetGadgetAttrs(data->update_btn, data->window, NULL,
-        GA_Disabled, FALSE,
+        GA_Disabled, TRUE,
         TAG_END);
     
     /* Clear progress flag */
@@ -516,6 +534,36 @@ static BOOL perform_tool_update(struct iTidy_DefaultToolUpdateWindow *data)
     
     append_to_log("Update complete: %d succeeded, %d failed\n", 
                  success_count, failed_count);
+    append_to_log("Update button disabled - close window to perform new updates\n");
+    
+    log_info(LOG_GUI, "=== BATCH UPDATE COMPLETE ===");
+    log_info(LOG_GUI, "Success: %d, Failed: %d", success_count, failed_count);
+    
+    /* Show completion message to user */
+    {
+        char msg_buffer[256];
+        
+        if (failed_count > 0)
+        {
+            sprintf(msg_buffer, 
+                    "Update Complete\n\n"
+                    "Successfully updated: %d icon%s\n"
+                    "Failed: %d icon%s\n\n"
+                    "Close this window to see updated tool cache.",
+                    success_count, (success_count == 1) ? "" : "s",
+                    failed_count, (failed_count == 1) ? "" : "s");
+        }
+        else
+        {
+            sprintf(msg_buffer,
+                    "Update Complete\n\n"
+                    "Successfully updated: %d icon%s\n\n"
+                    "Close this window to see updated tool cache.",
+                    success_count, (success_count == 1) ? "" : "s");
+        }
+        
+        ShowEasyRequest(data->window, "Default Tool Update", msg_buffer, "OK");
+    }
     
     return (success_count > 0);
 }
@@ -714,13 +762,14 @@ BOOL iTidy_OpenDefaultToolUpdateWindow(struct iTidy_DefaultToolUpdateWindow *dat
     /* Calculate status listview height */
     status_listview_height = listview_line_height * TOOL_UPDATE_STATUS_LINES;
     
-    /* Calculate equal-width buttons (Update + Close = 2 buttons) */
+    /* Calculate equal-width buttons (Update + Close = 2 buttons side by side) */
     max_btn_text_width = TextLength(&temp_rp, "Update Default Tool", 19);
     temp_width = TextLength(&temp_rp, "Close", 5);
     if (temp_width > max_btn_text_width)
         max_btn_text_width = temp_width;
     
-    equal_button_width = reference_width;  /* Full width buttons */
+    /* Two buttons side by side, sharing the reference width */
+    equal_button_width = (reference_width - TOOL_UPDATE_WINDOW_SPACE_X) / 2;
     if (equal_button_width < max_btn_text_width + TOOL_UPDATE_BUTTON_PADDING)
         equal_button_width = max_btn_text_width + TOOL_UPDATE_BUTTON_PADDING;
     
@@ -879,51 +928,6 @@ BOOL iTidy_OpenDefaultToolUpdateWindow(struct iTidy_DefaultToolUpdateWindow *dat
         goto cleanup_error;
     }
     
-    current_y += button_height + TOOL_UPDATE_WINDOW_SPACE_Y;
-    
-    /*--------------------------------------------------------------------*/
-    /* BACKUP CHECKBOX (disabled for now)                                */
-    /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = current_x;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = font_height;
-    ng.ng_Height = font_height + 4;  /* Add padding for label text */
-    ng.ng_GadgetText = "Backup icon(s) before update (not yet implemented)";
-    ng.ng_GadgetID = GID_TOOL_BACKUP_CHECKBOX;
-    ng.ng_Flags = PLACETEXT_RIGHT;
-    
-    data->backup_checkbox = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
-        GTCB_Checked, FALSE,
-        GA_Disabled, TRUE,  /* Disabled for now */
-        TAG_END);
-    
-    if (gad == NULL)
-    {
-        append_to_log("ERROR: Could not create backup checkbox\n");
-        goto cleanup_error;
-    }
-    
-    current_y += gad->Height + TOOL_UPDATE_WINDOW_SPACE_Y;
-    
-    /*--------------------------------------------------------------------*/
-    /* UPDATE BUTTON (full width)                                        */
-    /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = current_x;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = equal_button_width;
-    ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Update Default Tool";
-    ng.ng_GadgetID = GID_TOOL_UPDATE_BTN;
-    ng.ng_Flags = PLACETEXT_IN;
-    
-    data->update_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
-    
-    if (gad == NULL)
-    {
-        append_to_log("ERROR: Could not create update button\n");
-        goto cleanup_error;
-    }
-    
     current_y += button_height + TOOL_UPDATE_WINDOW_SPACE_Y * 2;
     
     /*--------------------------------------------------------------------*/
@@ -955,9 +959,28 @@ BOOL iTidy_OpenDefaultToolUpdateWindow(struct iTidy_DefaultToolUpdateWindow *dat
     current_y = gad->TopEdge + gad->Height + TOOL_UPDATE_WINDOW_SPACE_Y;
     
     /*--------------------------------------------------------------------*/
-    /* CLOSE BUTTON (full width)                                         */
+    /* UPDATE BUTTON (left side of bottom row)                           */
     /*--------------------------------------------------------------------*/
     ng.ng_LeftEdge = current_x;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = equal_button_width;
+    ng.ng_Height = button_height;
+    ng.ng_GadgetText = "Update Default Tool";
+    ng.ng_GadgetID = GID_TOOL_UPDATE_BTN;
+    ng.ng_Flags = PLACETEXT_IN;
+    
+    data->update_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+    
+    if (gad == NULL)
+    {
+        append_to_log("ERROR: Could not create update button\n");
+        goto cleanup_error;
+    }
+    
+    /*--------------------------------------------------------------------*/
+    /* CLOSE BUTTON (right side of bottom row)                           */
+    /*--------------------------------------------------------------------*/
+    ng.ng_LeftEdge = current_x + equal_button_width + TOOL_UPDATE_WINDOW_SPACE_X;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = equal_button_width;
     ng.ng_Height = button_height;
@@ -1054,6 +1077,14 @@ void iTidy_CloseDefaultToolUpdateWindow(struct iTidy_DefaultToolUpdateWindow *da
     
     /* Cleanup backup manager (will end session if still active) */
     iTidy_CleanupToolBackupManager(&data->backup_manager);
+    
+    /* Refresh parent tool cache window if it exists */
+    if (data->context.parent_window != NULL)
+    {
+        struct iTidyToolCacheWindow *parent = (struct iTidyToolCacheWindow *)data->context.parent_window;
+        append_to_log("Refreshing parent Tool Cache window after updates\n");
+        refresh_tool_cache_window(parent);
+    }
     
     /* Close window */
     if (data->window != NULL)

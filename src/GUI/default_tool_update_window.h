@@ -19,7 +19,6 @@
 
 #define GID_TOOL_NEW_PATH_STRING        (GID_TOOL_UPDATE_BASE + 1)
 #define GID_TOOL_BROWSE_BTN             (GID_TOOL_UPDATE_BASE + 2)
-#define GID_TOOL_BACKUP_CHECKBOX        (GID_TOOL_UPDATE_BASE + 3)
 #define GID_TOOL_UPDATE_BTN             (GID_TOOL_UPDATE_BASE + 4)
 #define GID_TOOL_STATUS_LISTVIEW        (GID_TOOL_UPDATE_BASE + 5)
 #define GID_TOOL_CLOSE_BTN              (GID_TOOL_UPDATE_BASE + 6)
@@ -64,6 +63,9 @@ struct iTidy_DefaultToolUpdateContext {
     
     /* For single mode: */
     char *single_info_path;          /* Single .info file path */
+    
+    /* Parent window refresh callback */
+    void *parent_window;             /* Pointer to parent iTidyToolCacheWindow (if any) */
 };
 
 /*------------------------------------------------------------------------*/
@@ -95,7 +97,6 @@ struct iTidy_DefaultToolUpdateWindow {
     struct Gadget *change_to_label;      /* "Change to:" label (TEXT_KIND) */
     struct Gadget *new_path_string;      /* New tool path (STRING_KIND, read-only) */
     struct Gadget *browse_btn;           /* Browse button (BUTTON_KIND) */
-    struct Gadget *backup_checkbox;      /* Backup checkbox (CHECKBOX_KIND, disabled for now) */
     struct Gadget *update_btn;           /* Update button (BUTTON_KIND) */
     struct Gadget *status_listview;      /* Status listview (LISTVIEW_KIND) */
     struct Gadget *close_btn;            /* Close button (BUTTON_KIND) */

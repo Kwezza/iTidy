@@ -67,6 +67,12 @@ struct iTidyMainWindow
     /* Temporary folder path buffer (for string gadget only) */
     char folder_path_buffer[256];
     
+    /* Folder path display box coordinates (for custom drawing) */
+    WORD folder_box_left;
+    WORD folder_box_top;
+    WORD folder_box_width;
+    WORD folder_box_height;
+    
     /* Advanced settings override flag */
     BOOL has_advanced_settings;         /* TRUE if user configured advanced settings */
     

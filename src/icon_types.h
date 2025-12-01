@@ -149,6 +149,32 @@ void FreeToolCache(void);
 BOOL AddFileReferenceToToolCache(const char *toolName, const char *filePath);
 
 /**
+ * @brief Remove a file reference from a tool cache entry
+ * 
+ * Removes a specific file path from a tool's referencing files list.
+ * This is used when a file's default tool changes.
+ * 
+ * @param toolName The tool name to remove the file reference from
+ * @param filePath The file path to remove
+ * @return TRUE if removed successfully, FALSE if not found
+ */
+BOOL RemoveFileReferenceFromToolCache(const char *toolName, const char *filePath);
+
+/**
+ * @brief Update tool cache when a file's default tool changes
+ * 
+ * Atomically moves a file reference from one tool to another in the cache.
+ * This removes the file from oldTool's list and adds it to newTool's list,
+ * creating the newTool cache entry if needed.
+ * 
+ * @param filePath The .info file path being updated
+ * @param oldTool The previous default tool name (NULL or empty if none)
+ * @param newTool The new default tool name (NULL or empty to clear)
+ * @return TRUE if cache updated successfully
+ */
+BOOL UpdateToolCacheForFileChange(const char *filePath, const char *oldTool, const char *newTool);
+
+/**
  * @brief Dump tool cache contents to log
  * 
  * Outputs all cached tool information to the log for debugging and

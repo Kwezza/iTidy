@@ -63,7 +63,8 @@ struct ToolCacheDisplayEntry
     char *tool_name;                /* Tool name */
     char *display_text;             /* Formatted display text for listview */
     BOOL exists;                    /* TRUE if tool exists */
-    int hit_count;                  /* Number of references */
+    int hit_count;                  /* Number of cache hits (deprecated - use file_count) */
+    int file_count;                 /* Number of files using this tool */
     char *full_path;                /* Full path or "(not found)" */
     char *version;                  /* Version string or "(no version)" */
 };
@@ -111,6 +112,12 @@ struct iTidyToolCacheWindow
     
     /* Folder path for Rebuild Cache operation */
     char folder_path_buffer[256];       /* Current folder path */
+    
+    /* Folder path display box coordinates (for custom drawing) */
+    WORD folder_box_left;
+    WORD folder_box_top;
+    WORD folder_box_width;
+    WORD folder_box_height;
 };
 
 /*------------------------------------------------------------------------*/
@@ -180,5 +187,16 @@ void update_tool_details(struct iTidyToolCacheWindow *tool_data, LONG selected_i
  * @param tool_data Pointer to tool cache window data
  */
 void free_tool_cache_entries(struct iTidyToolCacheWindow *tool_data);
+
+/**
+ * @brief Refresh the tool cache window display
+ * 
+ * Rebuilds the display list from the current g_ToolCache and refreshes
+ * both the tool list and details panel. Call this after the cache has
+ * been modified externally (e.g., by default tool updates).
+ * 
+ * @param tool_data Pointer to tool cache window data
+ */
+void refresh_tool_cache_window(struct iTidyToolCacheWindow *tool_data);
 
 #endif /* ITIDY_TOOL_CACHE_WINDOW_H */

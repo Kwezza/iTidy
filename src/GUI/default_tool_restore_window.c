@@ -116,6 +116,8 @@ struct iTidy_ToolRestoreData {
     /* Layout dimensions */
     UWORD listview_width;               /* Width of ListViews for formatter */
     
+    /* Restore tracking - for cache invalidation */
+    BOOL restore_performed;             /* TRUE if any restore operation completed */
 };
 
 /* ============================================
@@ -482,7 +484,19 @@ static void handle_restore_all(iTidy_ToolRestoreData *data)
     }
     
     /* Perform restore */
+    log_info(LOG_GUI, "[RESTORE_TRACKING] Starting restore operation for session: %s\n", data->selected_session_id);
+    
     if (iTidy_RestoreAllIcons(data->selected_session_id, &success_count, &failed_count)) {
+        log_info(LOG_GUI, "[RESTORE_TRACKING] Restore completed: success=%u, failed=%u\n", success_count, failed_count);
+        
+        /* Mark that a restore was performed (even if some failed) */
+        if (success_count > 0) {
+            data->restore_performed = TRUE;
+            log_info(LOG_GUI, "[RESTORE_TRACKING] Setting restore_performed flag to TRUE\n");
+        } else {
+            log_info(LOG_GUI, "[RESTORE_TRACKING] No icons restored successfully - flag remains FALSE\n");
+        }
+        
         /* Show result */
         snprintf(message, sizeof(message),
                  "Restore complete:\n%u icon%s restored successfully\n%u failed",
@@ -509,7 +523,9 @@ struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_
     struct NewGadget ng;
     struct Gadget *gad;
     UWORD top_edge, left_edge;
-    UWORD list_width, list_height;
+    UWORD list_width, session_list_height, changes_list_height;
+    UWORD font_height, listview_line_height;
+    UWORD button_height, window_height;
     struct TextAttr listview_font;
     UWORD font_char_width;
     
@@ -521,11 +537,18 @@ struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_
     listview_font.ta_Style = FS_NORMAL;
     listview_font.ta_Flags = 0;
     font_char_width = prefsIControl.systemFontCharWidth;
+    font_height = prefsIControl.systemFontSize;
     
     log_info(LOG_GUI, "Using system font for ListView: %s size=%u, char_width=%u\n", 
              listview_font.ta_Name, listview_font.ta_YSize, font_char_width);
     log_info(LOG_GUI, "Screen font: %s size=%u\n", 
              screen->Font->ta_Name, screen->Font->ta_YSize);
+    
+    /* Calculate ListView line height */
+    listview_line_height = font_height + 2;
+    
+    /* Calculate button height */
+    button_height = 20;  /* Standard button height */
     
     /* Allocate window data */
     data = AllocVec(sizeof(iTidy_ToolRestoreData), MEMF_CLEAR);
@@ -535,6 +558,7 @@ struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_
     
     data->selected_session_index = -1;
     data->session_display_list = NULL;  /* Will be created by simple API */
+    data->restore_performed = FALSE;     /* Track if any restores happen */
     NewList(&data->session_list);
     NewList(&data->changes_list);
     NewList(&data->changes_display_list);
@@ -558,7 +582,10 @@ struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_
     top_edge = screen->WBorTop + screen->Font->ta_YSize + 2;
     left_edge = 8;
     list_width = WINDOW_WIDTH - 16;  /* Full width */
-    list_height = (WINDOW_HEIGHT - top_edge - 80) / 2;  /* Split vertically */
+    
+    /* Calculate ListView heights based on font */
+    session_list_height = listview_line_height * 9;  /* 9 rows for sessions */
+    changes_list_height = listview_line_height * 3;  /* 3 rows for changes */
     
     /* Store ListView width in CHARACTERS for formatter (not pixels!) */
     /* Account for: scrollbar (~20px), left border (~4px), right border (~4px), padding (~8px) = ~36px total */
@@ -571,7 +598,7 @@ struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_
     ng.ng_LeftEdge = left_edge;
     ng.ng_TopEdge = top_edge + 14;
     ng.ng_Width = list_width;
-    ng.ng_Height = list_height;
+    ng.ng_Height = session_list_height;
     ng.ng_GadgetText = "Backup Sessions:";
     ng.ng_TextAttr = &listview_font;  /* Use icon font from preferences */
     ng.ng_GadgetID = GID_SESSION_LIST;
@@ -585,7 +612,8 @@ struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_
     data->session_listview = gad;
     
     /* Changes ListView (bottom) */
-    ng.ng_TopEdge = top_edge + 14 + list_height + 16;
+    ng.ng_TopEdge = top_edge + 14 + session_list_height + 16;
+    ng.ng_Height = changes_list_height;
     ng.ng_GadgetText = "Tool Changes in Session:";
     ng.ng_GadgetID = GID_CHANGES_LIST;
     
@@ -595,34 +623,42 @@ struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_
                        TAG_DONE);
     data->changes_listview = gad;
     
+    /* Calculate equal button widths */
+    UWORD button_width = (list_width - 8) / 2;  /* Two buttons with gap in middle */
+    
     /* Restore All button */
     ng.ng_LeftEdge = left_edge;
-    ng.ng_TopEdge = top_edge + 14 + (list_height * 2) + 30;
-    ng.ng_Width = 120;
-    ng.ng_Height = 20;
-    ng.ng_GadgetText = "Restore All";
+    ng.ng_TopEdge = top_edge + 14 + session_list_height + 16 + changes_list_height + 16;
+    ng.ng_Width = button_width;
+    ng.ng_Height = button_height;
+    ng.ng_GadgetText = "Restore selected";
     ng.ng_GadgetID = GID_RESTORE_ALL;
-    ng.ng_Flags = PLACETEXT_IN;
+    ng.ng_Flags = 0;  /* Default centered text in button */
     
     gad = CreateGadget(BUTTON_KIND, gad, &ng,
                        GA_Disabled, TRUE,  /* Disabled until selection */
                        TAG_DONE);
     data->restore_button = gad;
     
-    /* Close button */
-    ng.ng_LeftEdge = WINDOW_WIDTH - 120 - 8;
+    /* Close button - equal width with gap */
+    ng.ng_LeftEdge = left_edge + button_width + 8;  /* After first button + gap */
+    ng.ng_Width = button_width;
     ng.ng_GadgetText = "Close";
     ng.ng_GadgetID = GID_CLOSE;
+    ng.ng_Flags = 0;  /* Default centered text in button */
     
     gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_DONE);
     data->close_button = gad;
     
+    /* Calculate window height: top_edge + label space + session list + spacing + label space + changes list + spacing + buttons + bottom margin */
+    window_height = ng.ng_TopEdge + button_height + 8;  /* Button top + button height + bottom padding */
+    
     /* Open window */
     data->window = OpenWindowTags(NULL,
         WA_Left, (screen->Width - WINDOW_WIDTH) / 2,
-        WA_Top, (screen->Height - WINDOW_HEIGHT) / 2,
+        WA_Top, (screen->Height - window_height) / 2,
         WA_Width, WINDOW_WIDTH,
-        WA_Height, WINDOW_HEIGHT,
+        WA_Height, window_height,
         WA_Title, (ULONG)WINDOW_TITLE,
         WA_Flags, WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_CLOSEGADGET | WFLG_ACTIVATE,
         WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_REFRESHWINDOW | IDCMP_GADGETUP | IDCMP_MOUSEBUTTONS | LISTVIEWIDCMP | BUTTONIDCMP,
@@ -656,6 +692,9 @@ struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_
  * @brief Handle window events (call from main event loop)
  * 
  * @return TRUE to keep window open, FALSE to close
+ * 
+ * NOTE: To check if any restores were performed after window closes,
+ *       call iTidy_WasRestorePerformed() before calling cleanup.
  */
 BOOL iTidy_HandleToolRestoreWindowEvent(struct Window *window, struct IntuiMessage *msg)
 {
@@ -818,6 +857,27 @@ BOOL iTidy_HandleToolRestoreWindowEvent(struct Window *window, struct IntuiMessa
  * ============================================ */
 
 /**
+ * @brief Check if any restore operations were performed
+ * 
+ * Call this AFTER the window event loop ends but BEFORE calling
+ * iTidy_CloseToolRestoreWindow() to determine if tool cache should
+ * be invalidated.
+ * 
+ * @return TRUE if at least one restore operation completed successfully
+ */
+BOOL iTidy_WasRestorePerformed(void)
+{
+    if (g_restore_window_data) {
+        BOOL result = g_restore_window_data->restore_performed;
+        log_info(LOG_GUI, "[RESTORE_TRACKING] iTidy_WasRestorePerformed() called: returning %s\n", 
+                 result ? "TRUE" : "FALSE");
+        return result;
+    }
+    log_info(LOG_GUI, "[RESTORE_TRACKING] iTidy_WasRestorePerformed() called but g_restore_window_data is NULL\n");
+    return FALSE;
+}
+
+/**
  * @brief Close and cleanup restore window
  */
 void iTidy_CloseToolRestoreWindow(struct Window *window)
@@ -830,6 +890,12 @@ void iTidy_CloseToolRestoreWindow(struct Window *window)
     
     /* Retrieve data from global pointer */
     data = g_restore_window_data;
+    
+    if (data) {
+        log_info(LOG_GUI, "[RESTORE_TRACKING] iTidy_CloseToolRestoreWindow: restore_performed=%s\n",
+                 data->restore_performed ? "TRUE" : "FALSE");
+    }
+    
     g_restore_window_data = NULL;  /* Clear global */
     
     if (data) {

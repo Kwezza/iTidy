@@ -1490,6 +1490,78 @@ BOOL InitToolCache(void)
 }
 
 /**
+ * @brief Remove a tool entry from the cache
+ * 
+ * Completely removes a tool from the cache, freeing all associated memory.
+ * This is typically called when a tool has no more file references.
+ * 
+ * @param toolName The tool name to remove from cache
+ * @return TRUE if removed successfully, FALSE if not found
+ */
+static BOOL RemoveToolFromCache(const char *toolName)
+{
+#if PLATFORM_AMIGA
+    int i, j, tool_index;
+    
+    if (!toolName || !g_ToolCache || g_ToolCacheCount == 0)
+        return FALSE;
+    
+    /* Find the tool in the cache */
+    tool_index = -1;
+    for (i = 0; i < g_ToolCacheCount; i++)
+    {
+        if (g_ToolCache[i].toolName && strcmp(g_ToolCache[i].toolName, toolName) == 0)
+        {
+            tool_index = i;
+            break;
+        }
+    }
+    
+    if (tool_index < 0)
+    {
+        log_debug(LOG_ICONS, "RemoveToolFromCache: Tool '%s' not found\n", toolName);
+        return FALSE;
+    }
+    
+    /* Free all strings in this entry */
+    if (g_ToolCache[tool_index].toolName)
+        whd_free(g_ToolCache[tool_index].toolName);
+    if (g_ToolCache[tool_index].fullPath)
+        whd_free(g_ToolCache[tool_index].fullPath);
+    if (g_ToolCache[tool_index].versionString)
+        whd_free(g_ToolCache[tool_index].versionString);
+    
+    /* Free file references array */
+    if (g_ToolCache[tool_index].referencingFiles)
+    {
+        for (j = 0; j < g_ToolCache[tool_index].fileCount; j++)
+        {
+            if (g_ToolCache[tool_index].referencingFiles[j])
+                whd_free(g_ToolCache[tool_index].referencingFiles[j]);
+        }
+        whd_free(g_ToolCache[tool_index].referencingFiles);
+    }
+    
+    /* Shift remaining entries down (this copies pointers, not memory) */
+    for (i = tool_index; i < g_ToolCacheCount - 1; i++)
+    {
+        g_ToolCache[i] = g_ToolCache[i + 1];
+    }
+    
+    /* Clear last entry (don't free - we just moved the pointers) */
+    memset(&g_ToolCache[g_ToolCacheCount - 1], 0, sizeof(ToolCacheEntry));
+    g_ToolCacheCount--;
+    
+    log_debug(LOG_ICONS, "RemoveToolFromCache: Removed tool '%s' from cache (%d tools remain)\n",
+             toolName, g_ToolCacheCount);
+    
+    return TRUE;
+#else
+    return FALSE;
+#endif
+}
+
+/**
  * @brief Search for a tool in the cache
  * 
  * Uses case-insensitive comparison since AmigaDOS paths are case-insensitive.
@@ -1810,6 +1882,219 @@ BOOL AddFileReferenceToToolCache(const char *toolName, const char *filePath)
              filePath, toolName, entry->fileCount, TOOL_CACHE_MAX_FILES_PER_TOOL);
     
     return TRUE;
+#else
+    return FALSE;
+#endif
+}
+
+/**
+ * @brief Remove a file reference from a tool cache entry
+ * 
+ * Removes a specific file path from a tool's referencing files list.
+ * This is used when a file's default tool changes.
+ * 
+ * @param toolName The tool name to remove the file reference from
+ * @param filePath The file path to remove
+ * @return TRUE if removed successfully, FALSE if not found
+ */
+BOOL RemoveFileReferenceFromToolCache(const char *toolName, const char *filePath)
+{
+#if PLATFORM_AMIGA
+    ToolCacheEntry *entry;
+    int i, j;
+    
+    if (!toolName || !filePath || !g_ToolCache)
+        return FALSE;
+    
+    /* Find the tool in the cache */
+    entry = NULL;
+    for (i = 0; i < g_ToolCacheCount; i++)
+    {
+        if (g_ToolCache[i].toolName && strcmp(g_ToolCache[i].toolName, toolName) == 0)
+        {
+            entry = &g_ToolCache[i];
+            break;
+        }
+    }
+    
+    if (!entry || !entry->referencingFiles)
+    {
+        log_debug(LOG_ICONS, "RemoveFileReferenceFromToolCache: Tool '%s' not found or has no files\n", toolName);
+        return FALSE;
+    }
+    
+    /* Find and remove the file */
+    for (i = 0; i < entry->fileCount; i++)
+    {
+        if (entry->referencingFiles[i] && strcmp(entry->referencingFiles[i], filePath) == 0)
+        {
+            /* Free this file path */
+            whd_free(entry->referencingFiles[i]);
+            
+            /* Shift remaining entries down */
+            for (j = i; j < entry->fileCount - 1; j++)
+            {
+                entry->referencingFiles[j] = entry->referencingFiles[j + 1];
+            }
+            
+            /* Clear last entry */
+            entry->referencingFiles[entry->fileCount - 1] = NULL;
+            entry->fileCount--;
+            
+            log_debug(LOG_ICONS, "RemoveFileReferenceFromToolCache: Removed file '%s' from tool '%s' (%d files remain)\n",
+                     filePath, toolName, entry->fileCount);
+            
+            /* If this was the last file, remove the entire tool entry from cache */
+            if (entry->fileCount == 0)
+            {
+                log_debug(LOG_ICONS, "RemoveFileReferenceFromToolCache: Tool '%s' has no more files, removing from cache\n",
+                         toolName);
+                RemoveToolFromCache(toolName);
+            }
+            
+            return TRUE;
+        }
+    }
+    
+    log_debug(LOG_ICONS, "RemoveFileReferenceFromToolCache: File '%s' not found in tool '%s'\n",
+             filePath, toolName);
+    return FALSE;
+#else
+    return FALSE;
+#endif
+}
+
+/**
+ * @brief Update tool cache when a file's default tool changes
+ * 
+ * Atomically moves a file reference from one tool to another in the cache.
+ * This removes the file from oldTool's list and adds it to newTool's list,
+ * creating the newTool cache entry if needed.
+ * 
+ * @param filePath The .info file path being updated
+ * @param oldTool The previous default tool name (NULL or empty if none)
+ * @param newTool The new default tool name (NULL or empty to clear)
+ * @return TRUE if cache updated successfully
+ */
+BOOL UpdateToolCacheForFileChange(const char *filePath, const char *oldTool, const char *newTool)
+{
+#if PLATFORM_AMIGA
+    BOOL removed = FALSE;
+    BOOL added = FALSE;
+    ToolCacheEntry *newEntry;
+    
+    if (!filePath)
+        return FALSE;
+    
+    log_debug(LOG_ICONS, "UpdateToolCacheForFileChange: Updating cache for '%s'\n", filePath);
+    log_debug(LOG_ICONS, "  Old tool: '%s'\n", oldTool ? oldTool : "(none)");
+    log_debug(LOG_ICONS, "  New tool: '%s'\n", newTool ? newTool : "(none)");
+    
+    /* Log current cache state for old tool */
+    if (oldTool && oldTool[0] != '\0')
+    {
+        ToolCacheEntry *oldEntry = SearchToolCache(oldTool);
+        if (oldEntry)
+        {
+            log_debug(LOG_ICONS, "  BEFORE: Old tool '%s' has %d files in cache\n", 
+                     oldTool, oldEntry->fileCount);
+        }
+    }
+    
+    /* Log current cache state for new tool */
+    if (newTool && newTool[0] != '\0')
+    {
+        ToolCacheEntry *preCheckEntry = SearchToolCache(newTool);
+        if (preCheckEntry)
+        {
+            log_debug(LOG_ICONS, "  BEFORE: New tool '%s' has %d files in cache\n",
+                     newTool, preCheckEntry->fileCount);
+        }
+        else
+        {
+            log_debug(LOG_ICONS, "  BEFORE: New tool '%s' not yet in cache\n", newTool);
+        }
+    }
+    
+    /* Remove from old tool (if any) */
+    if (oldTool && oldTool[0] != '\0')
+    {
+        removed = RemoveFileReferenceFromToolCache(oldTool, filePath);
+        if (removed)
+        {
+            log_debug(LOG_ICONS, "  Successfully removed from old tool cache\n");
+        }
+        else
+        {
+            log_debug(LOG_ICONS, "  Note: File not found in old tool cache (may not have been scanned)\n");
+        }
+    }
+    
+    /* Add to new tool (if any) */
+    if (newTool && newTool[0] != '\0')
+    {
+        /* First check if this tool exists in cache - if not, validate it */
+        newEntry = SearchToolCache(newTool);
+        
+        if (!newEntry)
+        {
+            /* Tool not in cache yet - validate it to create proper entry
+             * This will search for the tool, get its path, version, etc. */
+            log_debug(LOG_ICONS, "  New tool '%s' not in cache - validating and caching\n", newTool);
+            ValidateDefaultTool(newTool);  /* This adds to cache with full info */
+            
+            /* Search again to get the newly created entry */
+            newEntry = SearchToolCache(newTool);
+        }
+        
+        /* Now add the file reference */
+        if (newEntry)
+        {
+            added = AddFileReferenceToToolCache(newTool, filePath);
+            if (added)
+            {
+                log_debug(LOG_ICONS, "  Successfully added to new tool cache\n");
+            }
+            else
+            {
+                log_debug(LOG_ICONS, "  Warning: Failed to add to new tool cache (may be at capacity)\n");
+            }
+        }
+        else
+        {
+            log_debug(LOG_ICONS, "  Warning: Failed to create cache entry for new tool\n");
+        }
+    }
+    
+    /* Log AFTER cache state for verification */
+    if (oldTool && oldTool[0] != '\0')
+    {
+        ToolCacheEntry *oldEntry = SearchToolCache(oldTool);
+        if (oldEntry)
+        {
+            log_debug(LOG_ICONS, "  AFTER: Old tool '%s' now has %d files in cache\n",
+                     oldTool, oldEntry->fileCount);
+        }
+        else
+        {
+            log_debug(LOG_ICONS, "  AFTER: Old tool '%s' removed from cache (0 files)\n", oldTool);
+        }
+    }
+    
+    if (newTool && newTool[0] != '\0')
+    {
+        ToolCacheEntry *newEntry = SearchToolCache(newTool);
+        if (newEntry)
+        {
+            log_debug(LOG_ICONS, "  AFTER: New tool '%s' now has %d files in cache\n",
+                     newTool, newEntry->fileCount);
+        }
+    }
+    
+    log_debug(LOG_ICONS, "UpdateToolCacheForFileChange: Complete (removed=%d, added=%d)\n",
+             removed, added);
+    
+    return TRUE;  /* Return TRUE even if individual ops failed - cache is still consistent */
 #else
     return FALSE;
 #endif

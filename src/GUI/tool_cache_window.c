@@ -75,6 +75,7 @@ static struct NewMenu tool_cache_menu_template[] =
 /*------------------------------------------------------------------------*/
 extern struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_manager);
 extern BOOL iTidy_HandleToolRestoreWindowEvent(struct Window *window, struct IntuiMessage *msg);
+extern BOOL iTidy_WasRestorePerformed(void);
 extern void iTidy_CloseToolRestoreWindow(struct Window *window);
 
 /*------------------------------------------------------------------------*/
@@ -85,6 +86,7 @@ extern void iTidy_CloseToolRestoreWindow(struct Window *window);
 /*------------------------------------------------------------------------*/
 /* Forward Declarations                                                   */
 /*------------------------------------------------------------------------*/
+static void draw_folder_path_box(struct iTidyToolCacheWindow *tool_data);
 static BOOL request_directory(char *buffer, ULONG buffer_size, const char *initial_path);
 static void populate_tool_list(struct iTidyToolCacheWindow *tool_data);
 static void populate_details_panel(struct iTidyToolCacheWindow *tool_data);
@@ -882,16 +884,8 @@ static void handle_open_menu(struct iTidyToolCacheWindow *tool_data)
         /* Load the file */
         if (load_tool_cache_from_file(full_path, tool_data->folder_path_buffer))
         {
-            /* Update folder path gadget with loaded path */
-            /* NOTE: Read-only string gadgets don't refresh properly on WB 3.x
-             * Must temporarily disable read-only, update string, then re-enable */
-            GT_SetGadgetAttrs(tool_data->folder_path, tool_data->window, NULL,
-                             GA_ReadOnly, FALSE,
-                             GTST_String, tool_data->folder_path_buffer,
-                             TAG_END);
-            GT_SetGadgetAttrs(tool_data->folder_path, tool_data->window, NULL,
-                             GA_ReadOnly, TRUE,
-                             TAG_END);
+            /* Redraw folder path display box with loaded path */
+            draw_folder_path_box(tool_data);
             
             /* Update global preferences with loaded folder path */
             LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
@@ -1164,7 +1158,7 @@ BOOL build_tool_cache_display_list(struct iTidyToolCacheWindow *tool_data)
     sprintf(header_buffer, "%-*s| %4s | %s",
         TOOL_NAME_COLUMN_WIDTH,
         "Tool",
-        "Refs",
+        "Files",
         "Status");
     
     entry = (struct ToolCacheDisplayEntry *)whd_malloc(sizeof(struct ToolCacheDisplayEntry));
@@ -1234,6 +1228,7 @@ BOOL build_tool_cache_display_list(struct iTidyToolCacheWindow *tool_data)
         entry->tool_name = g_ToolCache[i].toolName;  /* Point to cache data - don't duplicate */
         entry->exists = g_ToolCache[i].exists;
         entry->hit_count = g_ToolCache[i].hitCount;
+        entry->file_count = g_ToolCache[i].fileCount;  /* Number of files using this tool */
         entry->full_path = g_ToolCache[i].fullPath;  /* Point to cache data */
         entry->version = g_ToolCache[i].versionString;  /* Point to cache data */
         
@@ -1254,13 +1249,13 @@ BOOL build_tool_cache_display_list(struct iTidyToolCacheWindow *tool_data)
             append_to_log("  Truncated: '%s' -> '%s'\n", entry->tool_name, truncated_name);
         }
         
-        /* Format display text: "Tool Name             | Hits | Status  " */
+        /* Format display text: "Tool Name             | Files | Status  " */
         /* Use fixed-width format for column alignment */
-        /* Add 1 to hit_count for display (user-friendly numbering starting from 1) */
+        /* Display file_count (number of files using this tool) */
         sprintf(buffer, "%-*s| %4d | %s",
             TOOL_NAME_COLUMN_WIDTH,
             truncated_name,
-            entry->hit_count + 1,
+            entry->file_count,
             entry->exists ? "EXISTS " : "MISSING");
         
         /* Allocate and copy display text */
@@ -1613,6 +1608,105 @@ void update_tool_details(struct iTidyToolCacheWindow *tool_data, LONG selected_i
 }
 
 /*------------------------------------------------------------------------*/
+/* Draw Folder Path Display Box                                          */
+/*------------------------------------------------------------------------*/
+static void draw_folder_path_box(struct iTidyToolCacheWindow *tool_data)
+{
+    struct RastPort *rp;
+    struct DrawInfo *dri;
+    WORD text_x, text_y;
+    
+    if (!tool_data || !tool_data->window)
+        return;
+    
+    rp = tool_data->window->RPort;
+    dri = GetScreenDrawInfo(tool_data->window->WScreen);
+    if (!dri)
+        return;
+    
+    /* Draw recessed bevel box */
+    DrawBevelBox(rp,
+                 tool_data->folder_box_left,
+                 tool_data->folder_box_top,
+                 tool_data->folder_box_width,
+                 tool_data->folder_box_height,
+                 GT_VisualInfo, tool_data->visual_info,
+                 GTBB_Recessed, TRUE,
+                 TAG_END);
+    
+    /* Draw text inside box */
+    SetAPen(rp, dri->dri_Pens[TEXTPEN]);
+    SetBPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
+    SetDrMd(rp, JAM2);
+    
+    /* Position text with padding inside box */
+    text_x = tool_data->folder_box_left + 4;
+    text_y = tool_data->folder_box_top + rp->TxBaseline + 2;
+    
+    /* Clear background first */
+    SetAPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
+    RectFill(rp,
+             tool_data->folder_box_left + 2,
+             tool_data->folder_box_top + 2,
+             tool_data->folder_box_left + tool_data->folder_box_width - 3,
+             tool_data->folder_box_top + tool_data->folder_box_height - 3);
+    
+    /* Draw text with truncation if needed */
+    SetAPen(rp, dri->dri_Pens[TEXTPEN]);
+    Move(rp, text_x, text_y);
+    
+    {
+        char display_buffer[512];
+        const char *text_to_display = tool_data->folder_path_buffer;
+        int text_len = strlen(text_to_display);
+        int available_width = tool_data->folder_box_width - 8; /* Account for padding */
+        int text_width = TextLength(rp, text_to_display, text_len);
+        
+        /* Check if text fits */
+        if (text_width > available_width)
+        {
+            /* Text is too long - truncate with ellipsis */
+            const char *ellipsis = "...";
+            int ellipsis_width = TextLength(rp, ellipsis, 3);
+            int target_width = available_width - ellipsis_width;
+            
+            /* Binary search for maximum fitting length */
+            int low = 0, high = text_len;
+            int best_len = 0;
+            
+            while (low <= high)
+            {
+                int mid = (low + high) / 2;
+                int mid_width = TextLength(rp, text_to_display, mid);
+                
+                if (mid_width <= target_width)
+                {
+                    best_len = mid;
+                    low = mid + 1;
+                }
+                else
+                {
+                    high = mid - 1;
+                }
+            }
+            
+            /* Build truncated string with ellipsis */
+            if (best_len > 0 && best_len < sizeof(display_buffer) - 4)
+            {
+                strncpy(display_buffer, text_to_display, best_len);
+                strcpy(display_buffer + best_len, ellipsis);
+                text_to_display = display_buffer;
+                text_len = best_len + 3;
+            }
+        }
+        
+        Text(rp, text_to_display, text_len);
+    }
+    
+    FreeScreenDrawInfo(tool_data->window->WScreen, dri);
+}
+
+/*------------------------------------------------------------------------*/
 /* Free Tool Cache Entries                                               */
 /*------------------------------------------------------------------------*/
 void free_tool_cache_entries(struct iTidyToolCacheWindow *tool_data)
@@ -1961,26 +2055,17 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     }
     
     /*--------------------------------------------------------------------*/
-    /* FOLDER PATH STRING GADGET (READ ONLY)                             */
+    /* FOLDER PATH DISPLAY BOX (Custom drawn recessed bevel)             */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = current_x + (font_width * 8);
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = reference_width - (font_width * 8) - (font_width * 10) - TOOL_WINDOW_SPACE_X;  /* Space for browse button only */
-    ng.ng_Height = font_height + 6;
-    ng.ng_GadgetText = NULL;
-    ng.ng_GadgetID = GID_TOOL_FOLDER_PATH;
-    ng.ng_Flags = 0;
+    /* Store coordinates for custom drawing */
+    tool_data->folder_box_left = current_x + (font_width * 8);
+    tool_data->folder_box_top = current_y;
+    tool_data->folder_box_width = reference_width - (font_width * 8) - (font_width * 10) - TOOL_WINDOW_SPACE_X;
+    tool_data->folder_box_height = font_height + 6;
     
-    tool_data->folder_path = gad = CreateGadget(STRING_KIND, gad, &ng,
-        GTST_String, tool_data->folder_path_buffer,
-        GTST_MaxChars, 255,
-        GA_ReadOnly, TRUE,  /* Make it read-only */
-        TAG_END);
-    if (gad == NULL)
-    {
-        append_to_log("ERROR: Could not create folder path gadget\n");
-        goto cleanup_error;
-    }
+    /* Note: Folder path will be drawn in refresh handler */
+    /* No gadget created - this is a custom drawn display area */
+    tool_data->folder_path = gad;  /* Keep gadget chain intact */
     
     /*--------------------------------------------------------------------*/
     /* BROWSE BUTTON (moved to right side)                               */
@@ -2250,6 +2335,9 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     /* Initialize button states (will disable buttons if no data/selection) */
     update_button_states(tool_data);
     
+    /* Draw initial folder path display box */
+    draw_folder_path_box(tool_data);
+    
     tool_data->window_open = TRUE;
     append_to_log("Tool cache window opened successfully\n");
     
@@ -2371,6 +2459,7 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                 
             case IDCMP_REFRESHWINDOW:
                 GT_BeginRefresh(tool_data->window);
+                draw_folder_path_box(tool_data);  /* Redraw custom folder path display */
                 GT_EndRefresh(tool_data->window, TRUE);
                 break;
                 
@@ -2429,10 +2518,8 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                                             sizeof(tool_data->folder_path_buffer),
                                             tool_data->folder_path_buffer))
                         {
-                            /* Update the string gadget display */
-                            GT_SetGadgetAttrs(tool_data->folder_path, tool_data->window, NULL,
-                                GTST_String, tool_data->folder_path_buffer,
-                                TAG_DONE);
+                            /* Redraw the folder path display box */
+                            draw_folder_path_box(tool_data);
                             
                             /* Update global preferences so Rebuild Cache uses new path */
                             {
@@ -2460,6 +2547,31 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                         BOOL original_recursive_mode;
                         
                         log_info(LOG_GUI, "[TOOL_CACHE] Rebuild Cache button clicked\n");
+                        
+                        /* IMMEDIATELY detach and clear ListViews for instant visual feedback */
+                        GT_SetGadgetAttrs(tool_data->tool_list, tool_data->window, NULL,
+                                         GTLV_Labels, ~0,
+                                         TAG_DONE);
+                        GT_SetGadgetAttrs(tool_data->details_listview, tool_data->window, NULL,
+                                         GTLV_Labels, ~0,
+                                         TAG_DONE);
+                        
+                        /* Free old display entries */
+                        free_tool_cache_entries(tool_data);
+                        
+                        /* Re-initialize empty lists */
+                        NewList(&tool_data->tool_entries);
+                        NewList(&tool_data->filtered_entries);
+                        NewList(&tool_data->details_list);
+                        
+                        /* Attach empty lists and refresh display */
+                        GT_SetGadgetAttrs(tool_data->tool_list, tool_data->window, NULL,
+                                         GTLV_Labels, &tool_data->filtered_entries,
+                                         TAG_DONE);
+                        GT_SetGadgetAttrs(tool_data->details_listview, tool_data->window, NULL,
+                                         GTLV_Labels, &tool_data->details_list,
+                                         TAG_DONE);
+                        GT_RefreshWindow(tool_data->window, NULL);
                         
                         /* Update global preferences with current folder path from textbox */
                         prefs = (LayoutPreferences *)GetGlobalPreferences();
@@ -2517,9 +2629,64 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                             "===============================================");
                         if (success)
                         {
+                            char stats_buffer[256];
+                            int valid_tools = 0;
+                            int invalid_tools = 0;
+                            int valid_icon_count = 0;
+                            int invalid_icon_count = 0;
+                            int i;
+                            
                             log_info(LOG_GUI, "Tool cache rebuilt successfully\n");
                             itidy_main_progress_window_append_status(&progress_window, 
                                 "Tool cache rebuilt successfully!");
+                            
+                            /* Calculate statistics from global tool cache */
+                            for (i = 0; i < g_ToolCacheCount; i++)
+                            {
+                                if (g_ToolCache[i].exists)
+                                {
+                                    valid_tools++;
+                                    valid_icon_count += g_ToolCache[i].fileCount;
+                                }
+                                else
+                                {
+                                    invalid_tools++;
+                                    invalid_icon_count += g_ToolCache[i].fileCount;
+                                }
+                            }
+                            
+                            /* Display valid tools statistics */
+                            itidy_main_progress_window_append_status(&progress_window, "");
+                            if (valid_tools > 0)
+                            {
+                                sprintf(stats_buffer, "Valid: %d tool%s found (%d icon%s)",
+                                       valid_tools,
+                                       valid_tools == 1 ? "" : "s",
+                                       valid_icon_count,
+                                       valid_icon_count == 1 ? "" : "s");
+                                itidy_main_progress_window_append_status(&progress_window, stats_buffer);
+                            }
+                            else
+                            {
+                                itidy_main_progress_window_append_status(&progress_window, 
+                                    "Valid: No valid tools were found");
+                            }
+                            
+                            /* Display invalid tools statistics */
+                            if (invalid_tools > 0)
+                            {
+                                sprintf(stats_buffer, "Invalid: %d tool%s not found (%d icon%s)",
+                                       invalid_tools,
+                                       invalid_tools == 1 ? "" : "s",
+                                       invalid_icon_count,
+                                       invalid_icon_count == 1 ? "" : "s");
+                                itidy_main_progress_window_append_status(&progress_window, stats_buffer);
+                            }
+                            else
+                            {
+                                itidy_main_progress_window_append_status(&progress_window, 
+                                    "Invalid: No invalid tools were found");
+                            }
                         }
                         else
                         {
@@ -2634,10 +2801,31 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                                             break;
                                         }
                                         
-                                        /* Copy icon path pointers (they're already allocated in g_ToolCache) */
+                                        /* CRITICAL: Make deep copies of icon paths!
+                                         * Cannot use direct pointers because UpdateToolCacheForFileChange()
+                                         * will free the strings from the old tool's cache during processing */
                                         for (j = 0; j < g_ToolCache[i].fileCount; j++)
                                         {
-                                            icon_paths_array[j] = g_ToolCache[i].referencingFiles[j];
+                                            int path_len = strlen(g_ToolCache[i].referencingFiles[j]);
+                                            icon_paths_array[j] = (char *)whd_malloc(path_len + 1);
+                                            if (icon_paths_array[j] != NULL)
+                                            {
+                                                strcpy(icon_paths_array[j], g_ToolCache[i].referencingFiles[j]);
+                                            }
+                                            else
+                                            {
+                                                /* Allocation failed - free what we've allocated so far */
+                                                int k;
+                                                for (k = 0; k < j; k++)
+                                                {
+                                                    if (icon_paths_array[k] != NULL)
+                                                        FreeVec(icon_paths_array[k]);
+                                                }
+                                                FreeVec(icon_paths_array);
+                                                FreeVec(update_window);
+                                                log_error(LOG_GUI, "[TOOL_CACHE] Failed to allocate path copy\n");
+                                                break;
+                                            }
                                         }
                                         
                                         /* Populate context for batch mode */
@@ -2646,9 +2834,13 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                                         update_ctx.current_tool = g_ToolCache[i].toolName;
                                         update_ctx.icon_count = g_ToolCache[i].fileCount;
                                         update_ctx.icon_paths = icon_paths_array;
+                                        update_ctx.parent_window = (void *)tool_data;  /* Pass parent for refresh */
+                                        update_ctx.parent_window = (void *)tool_data;  /* Pass parent for refresh */
                                         
                                         log_info(LOG_GUI, "[TOOL_CACHE] Opening batch update window for %d icons\n",
                                                      update_ctx.icon_count);
+                                        log_info(LOG_GUI, "[TOOL_CACHE] Tool name: '%s', Cache fileCount: %d\n",
+                                                     g_ToolCache[i].toolName, g_ToolCache[i].fileCount);
                                         
                                         /* Initialize window data structure */
                                         memset(update_window, 0, sizeof(struct iTidy_DefaultToolUpdateWindow));
@@ -2675,9 +2867,16 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                                         /* Free the window structure */
                                         FreeVec(update_window);
                                         
-                                        /* Free the icon paths array (but not the strings themselves) */
+                                        /* Free the icon paths array AND the copied strings */
                                         if (icon_paths_array != NULL)
+                                        {
+                                            for (j = 0; j < g_ToolCache[i].fileCount; j++)
+                                            {
+                                                if (icon_paths_array[j] != NULL)
+                                                    FreeVec(icon_paths_array[j]);
+                                            }
                                             FreeVec(icon_paths_array);
+                                        }
                                         
                                         break;
                                     }
@@ -2804,6 +3003,8 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                                         update_ctx.mode = UPDATE_MODE_SINGLE;
                                         update_ctx.current_tool = g_ToolCache[i].toolName;
                                         update_ctx.single_info_path = g_ToolCache[i].referencingFiles[file_index];
+                                        update_ctx.parent_window = (void *)tool_data;  /* Pass parent for refresh */
+                                        update_ctx.parent_window = (void *)tool_data;  /* Pass parent for refresh */
                                         
                                         log_info(LOG_GUI, "[TOOL_CACHE] Opening single update window for file [%d]: %s\n",
                                                      file_index, update_ctx.single_info_path);
@@ -2912,17 +3113,92 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                                 }
                             }
                             
+                            /* Check if any restore operations were performed */
+                            log_info(LOG_GUI, "[RESTORE_TRACKING] Calling iTidy_WasRestorePerformed()...\n");
+                            BOOL restore_performed = iTidy_WasRestorePerformed();
+                            log_info(LOG_GUI, "[RESTORE_TRACKING] iTidy_WasRestorePerformed() returned: %s\n",
+                                     restore_performed ? "TRUE" : "FALSE");
+                            
                             /* Close restore window */
                             iTidy_CloseToolRestoreWindow(restore_window);
                             
                             /* Cleanup backup manager */
                             iTidy_CleanupToolBackupManager(&temp_manager);
                             
+                            /* If restores were performed, invalidate cache */
+                            if (restore_performed)
+                            {
+                                log_info(LOG_GUI, "[RESTORE_TRACKING] Restores were performed - clearing tool cache\n");
+                                
+                                /* Detach lists from gadgets */
+                                GT_SetGadgetAttrs(tool_data->tool_list, tool_data->window, NULL,
+                                                 GTLV_Labels, ~0,
+                                                 TAG_DONE);
+                                GT_SetGadgetAttrs(tool_data->details_listview, tool_data->window, NULL,
+                                                 GTLV_Labels, ~0,
+                                                 TAG_DONE);
+                                
+                                /* Free display entries */
+                                free_tool_cache_entries(tool_data);
+                                
+                                /* Free global tool cache */
+                                FreeToolCache();
+                                
+                                /* Re-initialize empty lists */
+                                NewList(&tool_data->tool_entries);
+                                NewList(&tool_data->filtered_entries);
+                                NewList(&tool_data->details_list);
+                                
+                                /* Attach empty lists back to gadgets */
+                                GT_SetGadgetAttrs(tool_data->tool_list, tool_data->window, NULL,
+                                                 GTLV_Labels, &tool_data->filtered_entries,
+                                                 GTLV_Selected, ~0,
+                                                 TAG_DONE);
+                                GT_SetGadgetAttrs(tool_data->details_listview, tool_data->window, NULL,
+                                                 GTLV_Labels, &tool_data->details_list,
+                                                 GTLV_Selected, ~0,
+                                                 TAG_DONE);
+                                
+                                /* Clear summary text */
+                                tool_data->total_count = 0;
+                                tool_data->valid_count = 0;
+                                tool_data->missing_count = 0;
+                                sprintf(tool_data->summary_text, "Total Tools: 0  |  Valid: 0  |  Missing: 0");
+                                
+                                /* Clear selected indices */
+                                tool_data->selected_index = -1;
+                                tool_data->selected_details_index = -1;
+                                
+                                /* NOTE: Keep folder_path_buffer intact so user can click Scan again */
+                                /* Do NOT clear: tool_data->folder_path_buffer[0] = '\0'; */
+                                /* Do NOT clear: GT_SetGadgetAttrs(tool_data->folder_path, ...) */
+                                
+                                /* Update button states (disables Update button) */
+                                update_button_states(tool_data);
+                                
+                                /* Refresh the window to show cleared lists */
+                                GT_RefreshWindow(tool_data->window, NULL);
+                                
+                                /* Show message to user */
+                                ShowEasyRequest(
+                                    tool_data->window,
+                                    "Cache Cleared",
+                                    "Tool cache cleared due to restore operation.\n"
+                                    "Please scan a folder to refresh the cache.",
+                                    "OK");
+                                
+                                log_info(LOG_GUI, "[RESTORE_TRACKING] Tool cache cleared - user must rescan\n");
+                            }
+                            else
+                            {
+                                log_info(LOG_GUI, "[RESTORE_TRACKING] No restores performed - cache remains valid\n");
+                            }
+                            
                             /* Re-enable tool cache window input */
                             ModifyIDCMP(tool_data->window, 
                                 IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_GADGETDOWN | IDCMP_REFRESHWINDOW);
                             
-                            log_info(LOG_GUI, "Restore Default Tools window closed\n");
+                            log_info(LOG_GUI, "[RESTORE_TRACKING] Restore Default Tools window closed\n");
                         }
                         break;
                         
@@ -2950,5 +3226,123 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
     }
     
     return TRUE;  /* Continue running */
+}
+
+/*------------------------------------------------------------------------*/
+/* Refresh Tool Cache Window Display                                      */
+/*------------------------------------------------------------------------*/
+/**
+ * @brief Refresh the tool cache window display
+ * 
+ * Rebuilds the display list from the current g_ToolCache and refreshes
+ * both the tool list and details panel. Call this after the cache has
+ * been modified externally (e.g., by default tool updates).
+ * 
+ * @param tool_data Pointer to tool cache window data
+ */
+void refresh_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
+{
+    struct Node *node;
+    int count = 0;
+    
+    if (!tool_data || !tool_data->window)
+        return;
+    
+    log_info(LOG_GUI, "refresh_tool_cache_window: Refreshing display from updated cache\n");
+    
+    /* Free existing entries */
+    free_tool_cache_entries(tool_data);
+    
+    /* Rebuild from current cache */
+    if (build_tool_cache_display_list(tool_data))
+    {
+        /* Apply current filter */
+        apply_tool_filter(tool_data);
+        
+        /* Count items in filtered list (excluding header rows) */
+        for (node = tool_data->filtered_entries.lh_Head; 
+             node->ln_Succ != NULL; 
+             node = node->ln_Succ)
+        {
+            struct ToolCacheDisplayEntry *entry;
+            
+            /* Calculate entry pointer from filter_node offset */
+            entry = (struct ToolCacheDisplayEntry *)((char *)node - sizeof(struct Node));
+            
+            /* Only count non-header entries (headers have NULL tool_name) */
+            if (entry->tool_name != NULL)
+            {
+                count++;
+            }
+        }
+        
+        /* Detach list from gadget */
+        GT_SetGadgetAttrs(tool_data->tool_list, tool_data->window, NULL,
+            GTLV_Labels, ~0,
+            TAG_END);
+        
+        /* Attach filtered list and select last item if list is not empty */
+        if (count > 0)
+        {
+            int header_rows = 2;    /* Two header rows: column names + separator */
+            int visible_rows = 6;   /* Must match listview_line_height * 6 from window creation */
+            int top_index;
+            
+            /* Calculate scroll position accounting for header rows */
+            /* We want to show the last item, so scroll down enough to make it visible */
+            if (count + header_rows > visible_rows)
+            {
+                top_index = count + header_rows - visible_rows;
+            }
+            else
+            {
+                top_index = 0;
+            }
+            
+            /* First, attach the list */
+            GT_SetGadgetAttrs(tool_data->tool_list, tool_data->window, NULL,
+                GTLV_Labels, &tool_data->filtered_entries,
+                TAG_END);
+            
+            /* Then set selection and scroll position in separate call */
+            /* Selection index is offset by header rows */
+            GT_SetGadgetAttrs(tool_data->tool_list, tool_data->window, NULL,
+                GTLV_Selected, count - 1 + header_rows,  /* Select last DATA item (offset by headers) */
+                GTLV_Top, top_index,                      /* Scroll to make last item visible */
+                TAG_END);
+            
+            tool_data->selected_index = count - 1;
+            tool_data->selected_details_index = -1;
+            
+            log_info(LOG_GUI, "refresh_tool_cache_window: Auto-selected last item (data_index=%d, list_index=%d, top=%d, total=%d)\n", 
+                     count - 1, count - 1 + header_rows, top_index, count + header_rows);
+            
+            /* Build and populate details for the newly selected tool */
+            update_tool_details(tool_data, count - 1);
+        }
+        else
+        {
+            GT_SetGadgetAttrs(tool_data->tool_list, tool_data->window, NULL,
+                GTLV_Labels, &tool_data->filtered_entries,
+                GTLV_Selected, ~0,  /* No selection */
+                TAG_END);
+            
+            tool_data->selected_index = -1;
+            tool_data->selected_details_index = -1;
+            populate_details_panel(tool_data);
+        }
+        
+        /* Update button states based on new selection */
+        update_button_states(tool_data);
+        
+        /* Refresh window */
+        GT_RefreshWindow(tool_data->window, NULL);
+        
+        log_info(LOG_GUI, "refresh_tool_cache_window: Display refreshed successfully (%d tools)\n", count);
+    }
+    else
+    {
+        log_error(LOG_GUI, "refresh_tool_cache_window: Failed to rebuild display list\n");
+    }
 }
 
