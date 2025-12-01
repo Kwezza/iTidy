@@ -19,15 +19,14 @@
 #define GID_TOOL_FOLDER_PATH    4000
 #define GID_TOOL_BROWSE         4011
 #define GID_TOOL_LIST           4001
-#define GID_TOOL_FILTER_ALL     4002
-#define GID_TOOL_FILTER_VALID   4003
-#define GID_TOOL_FILTER_MISSING 4004
+#define GID_TOOL_FILTER_CYCLE   4002
 #define GID_TOOL_REBUILD_CACHE  4005
 #define GID_TOOL_CACHE_CLOSE    4006
 #define GID_TOOL_REPLACE_BATCH  4007
 #define GID_TOOL_REPLACE_SINGLE 4008
 #define GID_TOOL_DETAILS_LIST   4009
 #define GID_TOOL_RESTORE_DEFAULT_TOOLS 4010
+#define GID_TOOL_SCAN_BOTTOM    4012
 
 /*------------------------------------------------------------------------*/
 /* Window Spacing Constants                                              */
@@ -88,10 +87,8 @@ struct iTidyToolCacheWindow
     struct Gadget *browse_btn;          /* Browse button */
     struct Gadget *tool_list;           /* ListView showing tools */
     struct Gadget *details_listview;    /* ListView showing file details */
-    struct Gadget *filter_all_btn;      /* Show All button */
-    struct Gadget *filter_valid_btn;    /* Show Valid Only button */
-    struct Gadget *filter_missing_btn;  /* Show Missing Only button */
-    struct Gadget *rebuild_cache_btn;   /* Rebuild Cache button */
+    struct Gadget *filter_cycle;        /* Filter cycle gadget */
+    struct Gadget *scan_bottom_btn;     /* Scan button (bottom row) */
     struct Gadget *close_btn;           /* Close button */
     struct Gadget *replace_batch_btn;   /* Replace Tool (Batch) button */
     struct Gadget *replace_single_btn;  /* Replace Tool (Single) button */

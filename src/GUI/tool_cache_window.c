@@ -88,6 +88,7 @@ extern void iTidy_CloseToolRestoreWindow(struct Window *window);
 static BOOL request_directory(char *buffer, ULONG buffer_size, const char *initial_path);
 static void populate_tool_list(struct iTidyToolCacheWindow *tool_data);
 static void populate_details_panel(struct iTidyToolCacheWindow *tool_data);
+static void update_button_states(struct iTidyToolCacheWindow *tool_data);
 static BOOL setup_tool_cache_menus(void);
 static void cleanup_tool_cache_menus(void);
 static BOOL handle_tool_cache_menu_selection(ULONG menu_number, struct iTidyToolCacheWindow *tool_data);
@@ -1401,6 +1402,7 @@ void update_tool_details(struct iTidyToolCacheWindow *tool_data, LONG selected_i
     {
         log_info(LOG_GUI, "[TOOL_CACHE] No tool selected (index < 0), clearing details\n");
         populate_details_panel(tool_data);
+        update_button_states(tool_data);
         return;
     }
     
@@ -1451,9 +1453,16 @@ void update_tool_details(struct iTidyToolCacheWindow *tool_data, LONG selected_i
                     }
                     
                     /* Add status and version on second line */
-                    sprintf(buffer, "Status: %s  |  Version: %s",
-                        entry->exists ? "EXISTS" : "MISSING",
-                        entry->version ? entry->version : "(no version)");
+                    if (entry->exists)
+                    {
+                        sprintf(buffer, "Status: %s  |  Version: %s",
+                            "EXISTS",
+                            entry->version ? entry->version : "(no version)");
+                    }
+                    else
+                    {
+                        sprintf(buffer, "Status: %s", "MISSING");
+                    }
                     
                     detail_node = (struct Node *)whd_malloc(sizeof(struct Node));
                     if (detail_node)
@@ -1598,6 +1607,9 @@ void update_tool_details(struct iTidyToolCacheWindow *tool_data, LONG selected_i
     
     /* Update details listview */
     populate_details_panel(tool_data);
+    
+    /* Update button states based on selection */
+    update_button_states(tool_data);
 }
 
 /*------------------------------------------------------------------------*/
@@ -1631,6 +1643,75 @@ void free_tool_cache_entries(struct iTidyToolCacheWindow *tool_data)
 }
 
 /*------------------------------------------------------------------------*/
+/* Update Button and Cycle Gadget States                                 */
+/*------------------------------------------------------------------------*/
+static void update_button_states(struct iTidyToolCacheWindow *tool_data)
+{
+    BOOL has_tool_data;
+    BOOL has_valid_tool_selection;
+    BOOL has_valid_details_selection;
+    struct Node *node;
+    struct ToolCacheDisplayEntry *entry;
+    int data_count = 0;
+    LONG index;
+    
+    if (tool_data == NULL || tool_data->window == NULL)
+        return;
+    
+    /* Count non-header entries in filtered list */
+    for (node = tool_data->filtered_entries.lh_Head; 
+         node->ln_Succ != NULL; 
+         node = node->ln_Succ)
+    {
+        entry = (struct ToolCacheDisplayEntry *)((char *)node - sizeof(struct Node));
+        /* Skip header rows (they have NULL tool_name) */
+        if (entry->tool_name != NULL)
+            data_count++;
+    }
+    
+    has_tool_data = (data_count > 0);
+    
+    /* Check if top listview has a valid (non-header) selection */
+    has_valid_tool_selection = FALSE;
+    if (tool_data->selected_index >= 0)
+    {
+        /* Walk through filtered list to find selected entry */
+        index = 0;
+        for (node = tool_data->filtered_entries.lh_Head; 
+             node->ln_Succ != NULL; 
+             node = node->ln_Succ, index++)
+        {
+            if (index == tool_data->selected_index)
+            {
+                entry = (struct ToolCacheDisplayEntry *)((char *)node - sizeof(struct Node));
+                /* Valid selection only if it's not a header row (tool_name != NULL) */
+                has_valid_tool_selection = (entry->tool_name != NULL);
+                break;
+            }
+        }
+    }
+    
+    /* Check if details listview has a valid (non-header) selection */
+    /* Details list has 3 header rows: "Tool: ...", "Status: ...", "-----" */
+    has_valid_details_selection = (tool_data->selected_details_index >= 3);
+    
+    /* Filter cycle gadget: enabled only if there's tool data */
+    GT_SetGadgetAttrs(tool_data->filter_cycle, tool_data->window, NULL,
+        GA_Disabled, !has_tool_data,
+        TAG_END);
+    
+    /* Replace Tool (Batch) button: enabled only if valid tool is selected in top listview */
+    GT_SetGadgetAttrs(tool_data->replace_batch_btn, tool_data->window, NULL,
+        GA_Disabled, !has_valid_tool_selection,
+        TAG_END);
+    
+    /* Replace Tool (Single) button: enabled only if valid item selected in details listview */
+    GT_SetGadgetAttrs(tool_data->replace_single_btn, tool_data->window, NULL,
+        GA_Disabled, !has_valid_details_selection,
+        TAG_END);
+}
+
+/*------------------------------------------------------------------------*/
 /* Populate Tool List                                                     */
 /*------------------------------------------------------------------------*/
 static void populate_tool_list(struct iTidyToolCacheWindow *tool_data)
@@ -1648,6 +1729,9 @@ static void populate_tool_list(struct iTidyToolCacheWindow *tool_data)
         GTLV_Labels, &tool_data->filtered_entries,
         GTLV_Selected, ~0,  /* Clear selection */
         TAG_END);
+    
+    /* Update button states based on new list content */
+    update_button_states(tool_data);
     
     /* Refresh window */
     GT_RefreshWindow(tool_data->window, NULL);
@@ -1806,37 +1890,25 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     
     /* Calculate listview dimensions */
     listview_width = reference_width;
-    listview_height = listview_line_height * 12;  /* Show 12 tools */
+    listview_height = listview_line_height * 6;  /* Show 12 tools */
     
     /* Calculate details panel height */
-    details_listview_height = listview_line_height * 5;  /* 5 detail lines */
+    details_listview_height = listview_line_height * 4;  /* 5 detail lines */
     
-    /* Pre-calculate equal-width buttons (3 filter buttons + rebuild + close = 5 buttons) */
-    UWORD button_count = 5;
+    /* Pre-calculate equal-width filter buttons (3 buttons spanning full width) */
+    UWORD filter_button_count = 3;
+    UWORD filter_button_width;
+    UWORD batch_button_width;
     
-    /* Find maximum button text width */
-    max_btn_text_width = TextLength(&temp_rp, "Show Missing Only", 17);
-    temp_width = TextLength(&temp_rp, "Show Valid Only", 15);
-    if (temp_width > max_btn_text_width)
-        max_btn_text_width = temp_width;
-    temp_width = TextLength(&temp_rp, "Rebuild Cache", 13);
-    if (temp_width > max_btn_text_width)
-        max_btn_text_width = temp_width;
-    temp_width = TextLength(&temp_rp, "Show All", 8);
-    if (temp_width > max_btn_text_width)
-        max_btn_text_width = temp_width;
-    temp_width = TextLength(&temp_rp, "Close", 5);
-    if (temp_width > max_btn_text_width)
-        max_btn_text_width = temp_width;
+    /* Calculate filter button width (3 buttons spanning full width) */
+    filter_button_width = (reference_width - ((filter_button_count - 1) * TOOL_WINDOW_SPACE_X)) / filter_button_count;
     
-    /* Calculate equal button width */
-    equal_button_width = (reference_width - ((button_count - 1) * TOOL_WINDOW_SPACE_X)) / button_count;
-    if (equal_button_width < max_btn_text_width + TOOL_WINDOW_BUTTON_PADDING)
-        equal_button_width = max_btn_text_width + TOOL_WINDOW_BUTTON_PADDING;
+    /* Calculate batch button width (2 buttons spanning full width) */
+    batch_button_width = (reference_width - TOOL_WINDOW_SPACE_X) / 2;
     
     append_to_log("=== PRE-CALCULATED LAYOUT ===\n");
     append_to_log("Reference width: %d, max_right: %d\n", reference_width, precalc_max_right);
-    append_to_log("Equal button width: %d\n", equal_button_width);
+    append_to_log("Filter button width: %d\n", filter_button_width);
     
     /* Get visual info */
     tool_data->visual_info = GetVisualInfo(tool_data->screen, TAG_END);
@@ -1893,7 +1965,7 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     /*--------------------------------------------------------------------*/
     ng.ng_LeftEdge = current_x + (font_width * 8);
     ng.ng_TopEdge = current_y;
-    ng.ng_Width = reference_width - (font_width * 8) - (font_width * 10) - TOOL_WINDOW_SPACE_X;  /* Space for browse button */
+    ng.ng_Width = reference_width - (font_width * 8) - (font_width * 10) - TOOL_WINDOW_SPACE_X;  /* Space for browse button only */
     ng.ng_Height = font_height + 6;
     ng.ng_GadgetText = NULL;
     ng.ng_GadgetID = GID_TOOL_FOLDER_PATH;
@@ -1911,7 +1983,7 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     }
     
     /*--------------------------------------------------------------------*/
-    /* BROWSE BUTTON                                                      */
+    /* BROWSE BUTTON (moved to right side)                               */
     /*--------------------------------------------------------------------*/
     ng.ng_LeftEdge = current_x + reference_width - (font_width * 10);
     ng.ng_TopEdge = current_y;
@@ -1930,6 +2002,39 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     
     /* Move to next row with spacing */
     current_y += font_height + 6 + TOOL_WINDOW_SPACE_Y;
+    
+    /*--------------------------------------------------------------------*/
+    /* FILTER CYCLE GADGET (replaces filter buttons)                     */
+    /*--------------------------------------------------------------------*/
+    {
+        static STRPTR filter_labels[] = {
+            "Show All",
+            "Show Valid Only",
+            "Show Missing Only",
+            NULL
+        };
+        
+        ng.ng_LeftEdge = current_x;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = reference_width;
+        ng.ng_Height = button_height;
+        ng.ng_GadgetText = "Filter:";
+        ng.ng_GadgetID = GID_TOOL_FILTER_CYCLE;
+        ng.ng_Flags = PLACETEXT_LEFT;
+        
+        tool_data->filter_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
+            GTCY_Labels, filter_labels,
+            GTCY_Active, tool_data->current_filter,
+            TAG_END);
+        if (gad == NULL)
+        {
+            append_to_log("ERROR: Could not create filter cycle gadget\n");
+            goto cleanup_error;
+        }
+    }
+    
+    /* Move to next row with spacing */
+    current_y += button_height ;
     
     /*--------------------------------------------------------------------*/
     /* MAIN TOOL LISTVIEW                                                */
@@ -1958,44 +2063,6 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     current_y = gad->TopEdge + actual_listview_height + TOOL_WINDOW_SPACE_Y;
     
     /*--------------------------------------------------------------------*/
-    /* REPLACE TOOL (BATCH) BUTTON - Under upper listview                */
-    /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = current_x;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = equal_button_width * 2;  /* Make it wider */
-    ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Replace Tool (Batch)";
-    ng.ng_GadgetID = GID_TOOL_REPLACE_BATCH;
-    ng.ng_Flags = PLACETEXT_IN;
-    
-    tool_data->replace_batch_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
-    if (gad == NULL)
-    {
-        append_to_log("ERROR: Could not create Replace Tool (Batch) button\n");
-        goto cleanup_error;
-    }
-    
-    /*--------------------------------------------------------------------*/
-    /* RESTORE DEFAULT TOOLS BUTTON - Next to Replace Tool (Batch)       */
-    /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = current_x + (equal_button_width * 2) + TOOL_WINDOW_SPACE_X;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = equal_button_width * 2;  /* Make it wider */
-    ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Restore Default Tools...";
-    ng.ng_GadgetID = GID_TOOL_RESTORE_DEFAULT_TOOLS;
-    ng.ng_Flags = PLACETEXT_IN;
-    
-    tool_data->restore_default_tools_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
-    if (gad == NULL)
-    {
-        append_to_log("ERROR: Could not create Restore Default Tools button\n");
-        goto cleanup_error;
-    }
-    
-    current_y = gad->TopEdge + gad->Height + TOOL_WINDOW_SPACE_Y;
-    
-    /*--------------------------------------------------------------------*/
     /* DETAILS PANEL LISTVIEW                                            */
     /*--------------------------------------------------------------------*/
     ng.ng_LeftEdge = current_x;
@@ -2020,94 +2087,101 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     current_y = gad->TopEdge + gad->Height + TOOL_WINDOW_SPACE_Y;
     
     /*--------------------------------------------------------------------*/
-    /* REPLACE TOOL (SINGLE) BUTTON - Under details panel                */
+    /* REPLACE TOOL BUTTON ROW - Batch (left) and Single (right)        */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = current_x;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = equal_button_width * 2;  /* Make it wider */
-    ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Replace Tool (Single)";
-    ng.ng_GadgetID = GID_TOOL_REPLACE_SINGLE;
-    ng.ng_Flags = PLACETEXT_IN;
-    
-    tool_data->replace_single_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
-    if (gad == NULL)
+    /* Calculate equal button widths */
     {
-        append_to_log("ERROR: Could not create Replace Tool (Single) button\n");
-        goto cleanup_error;
+        UWORD replace_button_width = (reference_width - TOOL_WINDOW_SPACE_X) / 2;
+        
+        /* Replace Tool (Batch) button - left side */
+        ng.ng_LeftEdge = current_x;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = replace_button_width;
+        ng.ng_Height = button_height;
+        ng.ng_GadgetText = "Replace Tool (Batch)";
+        ng.ng_GadgetID = GID_TOOL_REPLACE_BATCH;
+        ng.ng_Flags = PLACETEXT_IN;
+        
+        tool_data->replace_batch_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+        if (gad == NULL)
+        {
+            append_to_log("ERROR: Could not create Replace Tool (Batch) button\n");
+            goto cleanup_error;
+        }
+        
+        /* Replace Tool (Single) button - right side */
+        ng.ng_LeftEdge = current_x + replace_button_width + TOOL_WINDOW_SPACE_X;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = replace_button_width;
+        ng.ng_Height = button_height;
+        ng.ng_GadgetText = "Replace Tool (Single)";
+        ng.ng_GadgetID = GID_TOOL_REPLACE_SINGLE;
+        ng.ng_Flags = PLACETEXT_IN;
+        
+        tool_data->replace_single_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+        if (gad == NULL)
+        {
+            append_to_log("ERROR: Could not create Replace Tool (Single) button\n");
+            goto cleanup_error;
+        }
     }
     
     current_y = gad->TopEdge + gad->Height + TOOL_WINDOW_SPACE_Y;
     
     /*--------------------------------------------------------------------*/
-    /* FILTER AND CLOSE BUTTONS (4 equal-width buttons)                  */
+    /* BOTTOM BUTTON ROW                                                  */
     /*--------------------------------------------------------------------*/
     
-    /* Show All button */
+    /* Calculate button widths */
+    UWORD restore_button_width = TextLength(&temp_rp, "Restore Default Tools...", 25) + TOOL_WINDOW_BUTTON_PADDING;
+    UWORD scan_button_width = 40 + TOOL_WINDOW_BUTTON_PADDING;
+    UWORD close_button_width = 40 + TOOL_WINDOW_BUTTON_PADDING;
+    
+    /* Restore Default Tools button - left side */
     ng.ng_LeftEdge = current_x;
     ng.ng_TopEdge = current_y;
-    ng.ng_Width = equal_button_width;
+    ng.ng_Width = restore_button_width;
     ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Show All";
-    ng.ng_GadgetID = GID_TOOL_FILTER_ALL;
+    ng.ng_GadgetText = "Restore Default Tools...";
+    ng.ng_GadgetID = GID_TOOL_RESTORE_DEFAULT_TOOLS;
     ng.ng_Flags = PLACETEXT_IN;
     
-    tool_data->filter_all_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+    tool_data->restore_default_tools_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
     if (gad == NULL)
     {
-        append_to_log("ERROR: Could not create Show All button\n");
+        append_to_log("ERROR: Could not create Restore Default Tools button\n");
         goto cleanup_error;
     }
     
-    /* Show Valid Only button */
-    ng.ng_LeftEdge = current_x + equal_button_width + TOOL_WINDOW_SPACE_X;
-    ng.ng_Width = equal_button_width;
-    ng.ng_GadgetText = "Show Valid Only";
-    ng.ng_GadgetID = GID_TOOL_FILTER_VALID;
-    
-    tool_data->filter_valid_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
-    if (gad == NULL)
-    {
-        append_to_log("ERROR: Could not create Show Valid button\n");
-        goto cleanup_error;
-    }
-    
-    /* Show Missing Only button */
-    ng.ng_LeftEdge = current_x + (2 * equal_button_width) + (2 * TOOL_WINDOW_SPACE_X);
-    ng.ng_Width = equal_button_width;
-    ng.ng_GadgetText = "Show Missing Only";
-    ng.ng_GadgetID = GID_TOOL_FILTER_MISSING;
-    
-    tool_data->filter_missing_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
-    if (gad == NULL)
-    {
-        append_to_log("ERROR: Could not create Show Missing button\n");
-        goto cleanup_error;
-    }
-    
-    /* Rebuild Cache button */
-    ng.ng_LeftEdge = current_x + (3 * equal_button_width) + (3 * TOOL_WINDOW_SPACE_X);
-    ng.ng_Width = equal_button_width;
-    ng.ng_GadgetText = "Rebuild Cache";
-    ng.ng_GadgetID = GID_TOOL_REBUILD_CACHE;
-    
-    tool_data->rebuild_cache_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
-    if (gad == NULL)
-    {
-        append_to_log("ERROR: Could not create Rebuild Cache button\n");
-        goto cleanup_error;
-    }
-    
-    /* Close button */
-    ng.ng_LeftEdge = current_x + (4 * equal_button_width) + (4 * TOOL_WINDOW_SPACE_X);
-    ng.ng_Width = equal_button_width;
+    /* Close button - right side */
+    ng.ng_LeftEdge = current_x + reference_width - close_button_width;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = close_button_width;
+    ng.ng_Height = button_height;
     ng.ng_GadgetText = "Close";
     ng.ng_GadgetID = GID_TOOL_CACHE_CLOSE;
+    ng.ng_Flags = PLACETEXT_IN;
     
     tool_data->close_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
     if (gad == NULL)
     {
         append_to_log("ERROR: Could not create Close button\n");
+        goto cleanup_error;
+    }
+    
+    /* Scan button - to the left of Close with standard padding */
+    ng.ng_LeftEdge = current_x + reference_width - close_button_width - TOOL_WINDOW_SPACE_X - scan_button_width;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = scan_button_width;
+    ng.ng_Height = button_height;
+    ng.ng_GadgetText = "Scan";
+    ng.ng_GadgetID = GID_TOOL_SCAN_BOTTOM;
+    ng.ng_Flags = PLACETEXT_IN;
+    
+    tool_data->scan_bottom_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+    if (gad == NULL)
+    {
+        append_to_log("ERROR: Could not create Scan button\n");
         goto cleanup_error;
     }
     
@@ -2172,6 +2246,9 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     
     /* Populate listview */
     populate_tool_list(tool_data);
+    
+    /* Initialize button states (will disable buttons if no data/selection) */
+    update_button_states(tool_data);
     
     tool_data->window_open = TRUE;
     append_to_log("Tool cache window opened successfully\n");
@@ -2320,33 +2397,29 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                             GTLV_Selected, &selected,
                             TAG_END);
                         tool_data->selected_details_index = selected;
+                        update_button_states(tool_data);
                         log_info(LOG_GUI, "[TOOL_CACHE] Details item selected: index=%ld\n", selected);
                         break;
                     }
                     
-                    case GID_TOOL_FILTER_ALL:
-                        tool_data->current_filter = TOOL_FILTER_ALL;
-                        apply_tool_filter(tool_data);
-                        populate_tool_list(tool_data);
-                        tool_data->selected_index = -1;
-                        update_tool_details(tool_data, -1);
-                        break;
+                    case GID_TOOL_FILTER_CYCLE:
+                    {
+                        /* Get selected filter from cycle gadget */
+                        LONG selected = 0;
+                        GT_GetGadgetAttrs(tool_data->filter_cycle, tool_data->window, NULL,
+                            GTCY_Active, &selected,
+                            TAG_END);
                         
-                    case GID_TOOL_FILTER_VALID:
-                        tool_data->current_filter = TOOL_FILTER_VALID;
+                        /* Update filter and refresh list */
+                        tool_data->current_filter = (ToolFilterType)selected;
                         apply_tool_filter(tool_data);
                         populate_tool_list(tool_data);
                         tool_data->selected_index = -1;
                         update_tool_details(tool_data, -1);
-                        break;
                         
-                    case GID_TOOL_FILTER_MISSING:
-                        tool_data->current_filter = TOOL_FILTER_MISSING;
-                        apply_tool_filter(tool_data);
-                        populate_tool_list(tool_data);
-                        tool_data->selected_index = -1;
-                        update_tool_details(tool_data, -1);
+                        log_info(LOG_GUI, "[TOOL_CACHE] Filter changed to: %ld\n", selected);
                         break;
+                    }
                     
                     case GID_TOOL_BROWSE:
                         log_info(LOG_GUI, "[TOOL_CACHE] Browse button clicked\n");
@@ -2378,7 +2451,8 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                         }
                         break;
                     
-                    case GID_TOOL_REBUILD_CACHE:
+                    case GID_TOOL_SCAN_BOTTOM:
+                    handle_rebuild_cache:  /* Scan button handler */
                     {
                         struct iTidyMainProgressWindow progress_window;
                         LayoutPreferences *prefs;
