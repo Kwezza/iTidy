@@ -97,6 +97,7 @@ GUI_SRCS = \
 	$(SRC_DIR)/GUI/restore_window.c \
 	$(SRC_DIR)/GUI/folder_view_window.c \
 	$(SRC_DIR)/GUI/tool_cache_window.c \
+	$(SRC_DIR)/GUI/tool_cache_reports.c \
 	$(SRC_DIR)/GUI/default_tool_update_window.c \
 	$(SRC_DIR)/GUI/default_tool_backup.c \
 	$(SRC_DIR)/GUI/default_tool_restore_window.c \

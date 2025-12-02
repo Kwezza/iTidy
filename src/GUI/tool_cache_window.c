@@ -6,6 +6,7 @@
 
 #include "platform/platform.h"
 #include "tool_cache_window.h"
+#include "tool_cache_reports.h"
 #include "default_tool_update_window.h"
 #include "restore_window.h"
 #include "default_tool_backup.h"
@@ -46,6 +47,9 @@ extern struct GfxBase *GfxBase;
 #define MENU_PROJECT_SAVE_AS    5004
 #define MENU_PROJECT_CLOSE      5005
 
+#define MENU_FILE_EXPORT_TOOLS      5010
+#define MENU_FILE_EXPORT_FILES      5011
+
 /*------------------------------------------------------------------------*/
 /* Menu System Global Variables                                          */
 /*------------------------------------------------------------------------*/
@@ -67,6 +71,11 @@ static struct NewMenu tool_cache_menu_template[] =
 	{ NM_ITEM,  "Save as...",   "A",  0, 0, (APTR)MENU_PROJECT_SAVE_AS },
 	{ NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
 	{ NM_ITEM,  "Close",        "C",  0, 0, (APTR)MENU_PROJECT_CLOSE },
+	
+	{ NM_TITLE, "File",         NULL, 0, 0, NULL },
+	{ NM_ITEM,  "Export list of tools",           "T",  0, 0, (APTR)MENU_FILE_EXPORT_TOOLS },
+	{ NM_ITEM,  "Export list of files and tools", "F",  0, 0, (APTR)MENU_FILE_EXPORT_FILES },
+	
 	{ NM_END,   NULL,           NULL, 0, 0, NULL }
 };
 
@@ -96,6 +105,10 @@ static void cleanup_tool_cache_menus(void);
 static BOOL handle_tool_cache_menu_selection(ULONG menu_number, struct iTidyToolCacheWindow *tool_data);
 static BOOL save_tool_cache_to_file(const char *filepath, const char *folder_path);
 static void handle_save_as_menu(struct iTidyToolCacheWindow *tool_data);
+static void handle_new_menu(struct iTidyToolCacheWindow *tool_data);
+static void handle_save_menu(struct iTidyToolCacheWindow *tool_data);
+static void handle_export_tools_menu(struct iTidyToolCacheWindow *tool_data);
+static void handle_export_files_and_tools_menu(struct iTidyToolCacheWindow *tool_data);
 
 /*------------------------------------------------------------------------*/
 /**
@@ -683,6 +696,123 @@ load_error:
 }
 
 /**
+ * handle_new_menu - Handle "New" menu selection
+ * 
+ * Resets the folder path to "SYS:", clears the tool cache,
+ * and clears all listviews to provide a fresh start.
+ * 
+ * @param tool_data Pointer to tool cache window data
+ */
+static void handle_new_menu(struct iTidyToolCacheWindow *tool_data)
+{
+    if (!tool_data || !tool_data->window)
+        return;
+    
+    log_debug(LOG_GUI, "Menu: New clicked - resetting window\n");
+    
+    /* CRITICAL: Detach listviews BEFORE clearing data to avoid dangling pointers */
+    GT_SetGadgetAttrs(tool_data->tool_list, tool_data->window, NULL,
+        GTLV_Labels, ~0,
+        TAG_END);
+    
+    GT_SetGadgetAttrs(tool_data->details_listview, tool_data->window, NULL,
+        GTLV_Labels, ~0,
+        TAG_END);
+    
+    /* Set folder path to SYS: */
+    strcpy(tool_data->folder_path_buffer, "SYS:");
+    
+    /* Redraw folder path display box */
+    draw_folder_path_box(tool_data);
+    
+    /* Clear the tool cache */
+    FreeToolCache();
+    
+    /* Clear filtered_entries list (re-initialize to empty list) */
+    NewList(&tool_data->filtered_entries);
+    
+    /* Clear display entries (frees tool_entries and details_list) */
+    free_tool_cache_entries(tool_data);
+    
+    /* Reset counts */
+    tool_data->total_count = 0;
+    tool_data->valid_count = 0;
+    tool_data->missing_count = 0;
+    tool_data->selected_index = -1;
+    tool_data->selected_details_index = -1;
+    
+    /* Re-attach empty lists to listviews */
+    GT_SetGadgetAttrs(tool_data->tool_list, tool_data->window, NULL,
+        GTLV_Labels, &tool_data->filtered_entries,
+        GTLV_Selected, ~0,
+        TAG_END);
+    
+    GT_SetGadgetAttrs(tool_data->details_listview, tool_data->window, NULL,
+        GTLV_Labels, &tool_data->details_list,
+        GTLV_Selected, ~0,
+        TAG_END);
+    
+    /* Clear last save path */
+    tool_data->last_save_path[0] = '\0';
+    
+    /* Update button states */
+    update_button_states(tool_data);
+    
+    /* Refresh window */
+    GT_RefreshWindow(tool_data->window, NULL);
+    
+    log_info(LOG_GUI, "Tool cache window reset to defaults\n");
+}
+
+/**
+ * handle_save_menu - Handle "Save" menu selection
+ * 
+ * Saves the tool cache to the last saved file path.
+ * If no previous save path exists, calls handle_save_as_menu instead.
+ * 
+ * @param tool_data Pointer to tool cache window data
+ */
+static void handle_save_menu(struct iTidyToolCacheWindow *tool_data)
+{
+    if (!tool_data || !tool_data->window)
+        return;
+    
+    /* Check if there's data to save */
+    if (!g_ToolCache || g_ToolCacheCount == 0)
+    {
+        ShowEasyRequest(tool_data->window,
+            "No Data to Save",
+            "The tool cache is empty.\\nPlease scan a directory first.",
+            "OK");
+        return;
+    }
+    
+    /* If no last save path, call Save As instead */
+    if (tool_data->last_save_path[0] == '\0')
+    {
+        log_debug(LOG_GUI, "Menu: Save clicked but no previous save path - calling Save As\n");
+        handle_save_as_menu(tool_data);
+        return;
+    }
+    
+    log_info(LOG_GUI, "Menu: Save clicked - saving to %s\n", tool_data->last_save_path);
+    
+    /* Save the file */
+    if (save_tool_cache_to_file(tool_data->last_save_path, tool_data->folder_path_buffer))
+    {
+        log_info(LOG_GUI, "Tool cache saved to: %s (folder: %s)\n", 
+                 tool_data->last_save_path, tool_data->folder_path_buffer);
+    }
+    else
+    {
+        ShowEasyRequest(tool_data->window,
+            "Save Failed",
+            "Failed to save tool cache file.",
+            "OK");
+    }
+}
+
+/**
  * handle_save_as_menu - Handle "Save as..." menu selection
  * 
  * Opens an ASL file requester to let user choose save location,
@@ -766,10 +896,10 @@ static void handle_save_as_menu(struct iTidyToolCacheWindow *tool_data)
             /* File exists - ask for confirmation */
             if (!ShowEasyRequest(tool_data->window,
                 "File Exists",
-                "File already exists.\\nDo you want to replace it?",
+                "File already exists.\nDo you want to replace it?",
                 "Replace|Cancel"))
             {
-                log_info(LOG_GUI, "User cancelled overwrite\\n");
+                log_info(LOG_GUI, "User cancelled overwrite\n");
                 FreeAslRequest(freq);
                 return;
             }
@@ -778,6 +908,10 @@ static void handle_save_as_menu(struct iTidyToolCacheWindow *tool_data)
         /* Save the file */
         if (save_tool_cache_to_file(full_path, tool_data->folder_path_buffer))
         {
+            /* Store the save path for future Save operations */
+            strncpy(tool_data->last_save_path, full_path, sizeof(tool_data->last_save_path) - 1);
+            tool_data->last_save_path[sizeof(tool_data->last_save_path) - 1] = '\0';
+            
             ShowEasyRequest(tool_data->window,
                 "Save Successful",
                 "Tool cache saved successfully.",
@@ -798,6 +932,28 @@ static void handle_save_as_menu(struct iTidyToolCacheWindow *tool_data)
     }
     
     FreeAslRequest(freq);
+}
+
+/**
+ * handle_export_tools_menu - Handle "Export list of tools" menu selection
+ */
+static void handle_export_tools_menu(struct iTidyToolCacheWindow *tool_data)
+{
+    if (!tool_data || !tool_data->window)
+        return;
+    
+    export_tool_list(tool_data->window, tool_data->folder_path_buffer);
+}
+
+/**
+ * handle_export_files_and_tools_menu - Handle "Export list of files and tools" menu selection
+ */
+static void handle_export_files_and_tools_menu(struct iTidyToolCacheWindow *tool_data)
+{
+    if (!tool_data || !tool_data->window)
+        return;
+    
+    export_files_and_tools_list(tool_data->window, tool_data->folder_path_buffer);
 }
 
 /**
@@ -924,7 +1080,7 @@ static void handle_open_menu(struct iTidyToolCacheWindow *tool_data)
         {
             ShowEasyRequest(tool_data->window,
                 "Load Failed",
-                "Failed to load tool cache file.\\nFile may be corrupted or invalid.",
+                "Failed to load tool cache file.\nFile may be corrupted or invalid.",
                 "OK");
         }
     }
@@ -1077,11 +1233,7 @@ static BOOL handle_tool_cache_menu_selection(ULONG menu_number, struct iTidyTool
             switch (item_id)
             {
                 case MENU_PROJECT_NEW:
-                    ShowEasyRequest(
-                        tool_data->window,
-                        "Menu Selection",
-                        "New menu item selected",
-                        "OK");
+                    handle_new_menu(tool_data);
                     break;
                     
                 case MENU_PROJECT_OPEN:
@@ -1089,11 +1241,7 @@ static BOOL handle_tool_cache_menu_selection(ULONG menu_number, struct iTidyTool
                     break;
                     
                 case MENU_PROJECT_SAVE:
-                    ShowEasyRequest(
-                        tool_data->window,
-                        "Menu Selection",
-                        "Save menu item selected",
-                        "OK");
+                    handle_save_menu(tool_data);
                     break;
                     
                 case MENU_PROJECT_SAVE_AS:
@@ -1101,12 +1249,15 @@ static BOOL handle_tool_cache_menu_selection(ULONG menu_number, struct iTidyTool
                     break;
                     
                 case MENU_PROJECT_CLOSE:
-                    ShowEasyRequest(
-                        tool_data->window,
-                        "Menu Selection",
-                        "Close menu item selected",
-                        "OK");
                     continue_running = FALSE;  /* Close window */
+                    break;
+                    
+                case MENU_FILE_EXPORT_TOOLS:
+                    handle_export_tools_menu(tool_data);
+                    break;
+                    
+                case MENU_FILE_EXPORT_FILES:
+                    handle_export_files_and_tools_menu(tool_data);
                     break;
                     
                 default:
@@ -2218,16 +2369,16 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     /*--------------------------------------------------------------------*/
     
     /* Calculate button widths */
-    UWORD restore_button_width = TextLength(&temp_rp, "Restore Default Tools...", 25) + TOOL_WINDOW_BUTTON_PADDING;
+    UWORD restore_button_width = TextLength(&temp_rp, "Restore Default Tools Backups...", 35) + TOOL_WINDOW_BUTTON_PADDING;
     UWORD scan_button_width = 40 + TOOL_WINDOW_BUTTON_PADDING;
     UWORD close_button_width = 40 + TOOL_WINDOW_BUTTON_PADDING;
     
     /* Restore Default Tools button - left side */
     ng.ng_LeftEdge = current_x;
     ng.ng_TopEdge = current_y;
-    ng.ng_Width = restore_button_width;
+    //ng.ng_Width = restore_button_width;
     ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Restore Default Tools...";
+    ng.ng_GadgetText = "Restore Default Tools Backups...";
     ng.ng_GadgetID = GID_TOOL_RESTORE_DEFAULT_TOOLS;
     ng.ng_Flags = PLACETEXT_IN;
     
@@ -2376,13 +2527,25 @@ void close_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
             log_info(LOG_GUI, "Menu strip cleared from tool cache window\n");
         }
         
+        /* Detach tool list */
         if (tool_data->tool_list != NULL)
         {
             GT_SetGadgetAttrs(tool_data->tool_list, tool_data->window, NULL,
                 GTLV_Labels, ~0,
                 TAG_END);
         }
+        
+        /* Detach details listview */
+        if (tool_data->details_listview != NULL)
+        {
+            GT_SetGadgetAttrs(tool_data->details_listview, tool_data->window, NULL,
+                GTLV_Labels, ~0,
+                TAG_END);
+        }
     }
+    
+    /* Clear filtered_entries list before freeing entries (prevents dangling pointers) */
+    NewList(&tool_data->filtered_entries);
     
     /* Free lists */
     free_tool_cache_entries(tool_data);

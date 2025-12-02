@@ -718,17 +718,28 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
 
     /* Initialize structure */
     memset(win_data, 0, sizeof(struct iTidyMainWindow));
-    strcpy(win_data->folder_path_buffer, "SYS:");
     
-    /* Initialize default settings (Classic preset) */
-    win_data->order_selected = 0;        /* Folders First */
-    win_data->sortby_selected = 0;       /* Name */
-    win_data->recursive_subdirs = FALSE;
-    win_data->enable_backup = FALSE;
-    win_data->window_position_selected = 0; /* Default: Center Screen */
-    
-    /* Initialize advanced settings flag */
-    win_data->has_advanced_settings = FALSE;
+    /* Load current global preferences into window controls */
+    {
+        const LayoutPreferences *prefs = GetGlobalPreferences();
+        
+        win_data->order_selected = prefs->sortPriority;
+        win_data->sortby_selected = prefs->sortBy;
+        win_data->recursive_subdirs = prefs->recursive_subdirs;
+        win_data->enable_backup = prefs->enable_backup;
+        win_data->window_position_selected = prefs->windowPositionMode;
+        
+        /* Copy folder path from prefs, or use default if empty */
+        if (prefs->folder_path[0] != '\0')
+        {
+            strncpy(win_data->folder_path_buffer, prefs->folder_path, sizeof(win_data->folder_path_buffer) - 1);
+            win_data->folder_path_buffer[sizeof(win_data->folder_path_buffer) - 1] = '\0';
+        }
+        else
+        {
+            strcpy(win_data->folder_path_buffer, "SYS:");
+        }
+    }
 
     /* Lock the Workbench screen */
     win_data->screen = LockPubScreen(NULL);
@@ -1050,53 +1061,23 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         /* Get mutable access to global preferences */
                         prefs = (LayoutPreferences *)GetGlobalPreferences();
                         
-                        /* Only apply Classic defaults if user hasn't customized advanced settings
-                         * This preserves user's advanced settings when they click Apply */
-                        if (!win_data->has_advanced_settings)
-                        {
-                            /* Apply Classic preset defaults */
-                            append_to_log("Applying Classic preset defaults\n");
-                            ApplyPreset(prefs, PRESET_CLASSIC);
-                            
-                            /* Override with user's GUI selections */
-                            MapGuiToPreferences(prefs,
-                                0,  /* Always use row-major layout (column mode not implemented) */
-                                0,  /* Horizontal sort (default) */
-                                win_data->order_selected,
-                                win_data->sortby_selected,
-                                TRUE,  /* center_icons now in advanced settings */
-                                TRUE);  /* optimize_columns now in advanced settings */
-                        }
-                        else
-                        {
-                            /* User has advanced settings - only update basic GUI fields, preserve advanced */
-                            append_to_log("Preserving advanced settings (user customized)\n");
-                            
-                            /* Only update sort-related fields from GUI (these don't conflict with advanced settings) */
-                            prefs->sortPriority = win_data->order_selected;
-                            prefs->sortBy = win_data->sortby_selected;
-                            /* centerIconsInColumn now in advanced settings */
-                            /* useColumnWidthOptimization now in advanced settings */
-                            /* sortOrder now uses Classic default (HORIZONTAL) */
-                        }
-                        
-                        /* Set folder path and recursive mode from GUI (applies to both modes) */
-                        strncpy(prefs->folder_path, win_data->folder_path_buffer, sizeof(prefs->folder_path) - 1);
-                        prefs->folder_path[sizeof(prefs->folder_path) - 1] = '\0';
+                        /* Update only the fields controlled by main window gadgets */
+                        /* All other settings (aspect ratio, spacing, etc.) remain unchanged */
+                        prefs->sortPriority = win_data->order_selected;
+                        prefs->sortBy = win_data->sortby_selected;
                         prefs->recursive_subdirs = win_data->recursive_subdirs;
-                        
-                        /* Set backup preferences from GUI (applies to both modes) */
                         prefs->enable_backup = win_data->enable_backup;
-                        /* skipHiddenFolders now in advanced settings */
-                        
-                        /* Set backup preferences from GUI (applies to both modes) */
-                        prefs->backupPrefs.enableUndoBackup = win_data->enable_backup;
-                        
-                        /* Set window position mode from GUI (applies to both modes) */
                         prefs->windowPositionMode = (WindowPositionMode)win_data->window_position_selected;
                         
-                        /* Advanced settings are already in global prefs (set by Advanced window) */
-                        /* Beta settings are already in global prefs (set by Beta Options window) */
+                        /* Update folder path from GUI */
+                        strncpy(prefs->folder_path, win_data->folder_path_buffer, sizeof(prefs->folder_path) - 1);
+                        prefs->folder_path[sizeof(prefs->folder_path) - 1] = '\0';
+                        
+                        /* Update backup preferences */
+                        prefs->backupPrefs.enableUndoBackup = win_data->enable_backup;
+                        
+                        /* Advanced settings (aspect ratio, spacing, etc.) are preserved */
+                        /* Beta settings are preserved */
                         
                         /* Print preferences for debugging */
                         print_layout_preferences(prefs, 
@@ -1231,25 +1212,8 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                             
                             CONSOLE_STATUS("Advanced button clicked - opening Advanced Settings window\n");
                             
-                            /* Get current global preferences (includes any previously saved advanced settings) */
+                            /* Get current global preferences (includes all current settings) */
                             memcpy(&temp_prefs, GetGlobalPreferences(), sizeof(LayoutPreferences));
-                            
-                            /* Only apply Classic defaults if user hasn't customized advanced settings yet
-                             * This preserves user's advanced settings when reopening the window */
-                            if (!win_data->has_advanced_settings)
-                            {
-                                /* Apply Classic preset to get baseline settings */
-                                ApplyPreset(&temp_prefs, PRESET_CLASSIC);
-                                
-                                /* Also apply GUI selections to get current state */
-                                MapGuiToPreferences(&temp_prefs,
-                                    0,  /* Always use row-major layout */
-                                    0,  /* Horizontal sort (default) */
-                                    win_data->order_selected,
-                                    win_data->sortby_selected,
-                                    TRUE,  /* center_icons now in advanced settings */
-                                    TRUE);  /* optimize_columns now in advanced settings */
-                            }
                             
                             /* Open advanced window (modal) */
                             if (open_itidy_advanced_window(&adv_data, &temp_prefs))
@@ -1275,7 +1239,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                 if (adv_data.changes_accepted)
                                 {
                                     CONSOLE_STATUS("Advanced settings accepted - updating global preferences\n");
-                                    CONSOLE_DEBUG("  Aspect Ratio: %.2f\n", temp_prefs.aspectRatio);
+                                    CONSOLE_DEBUG("  Aspect Ratio: %.2f\n", temp_prefs.aspectRatio / 1000.0);
                                     CONSOLE_DEBUG("  Overflow Mode: %d\n", temp_prefs.overflowMode);
                                     CONSOLE_DEBUG("  Spacing: %hux%hu\n", 
                                            temp_prefs.iconSpacingX,
@@ -1283,7 +1247,6 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                     
                                     /* Update global preferences with advanced settings */
                                     UpdateGlobalPreferences(&temp_prefs);
-                                    win_data->has_advanced_settings = TRUE;
                                     
                                     CONSOLE_DEBUG("  (Settings will be applied when you click Apply button)\n");
                                 }

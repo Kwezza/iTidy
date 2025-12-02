@@ -213,7 +213,7 @@ typedef struct {
 #define DEFAULT_MIN_ICONS_PER_ROW   2   /* Prevent 1×N layouts */
 #define DEFAULT_MAX_ICONS_PER_ROW   0   /* Auto: Calculate from screen width */
 #define DEFAULT_MAX_WIDTH_PCT       55
-#define DEFAULT_ASPECT_RATIO        1600  /* 1.6 * 1000 (fixed-point) */
+#define DEFAULT_ASPECT_RATIO        2000  /* 2.0 * 1000 (fixed-point) */
 #define DEFAULT_OVERFLOW_MODE       OVERFLOW_HORIZONTAL  /* Classic behavior */
 #define DEFAULT_WINDOW_POSITION_MODE WINDOW_POS_CENTER_SCREEN  /* Classic auto-center behavior */
 #define DEFAULT_ICON_SPACING_X      8    /* 8px horizontal spacing */

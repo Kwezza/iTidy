@@ -112,6 +112,7 @@ struct iTidyToolCacheWindow
     
     /* Folder path for Rebuild Cache operation */
     char folder_path_buffer[256];       /* Current folder path */
+    char last_save_path[512];           /* Last saved file path for Save menu */
     
     /* Folder path display box coordinates (for custom drawing) */
     WORD folder_box_left;

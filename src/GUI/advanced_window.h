@@ -46,7 +46,6 @@
 #define ASPECT_PRESET_CLASSIC     3   /* 1.6  (16:10) */
 #define ASPECT_PRESET_WIDE        4   /* 2.0  (2:1) */
 #define ASPECT_PRESET_ULTRAWIDE   5   /* 2.4  (21:9 approx) */
-#define ASPECT_PRESET_CUSTOM      6   /* User-defined */
 
 /*------------------------------------------------------------------------*/
 /* Max Window Width Percentage Preset Indices                            */

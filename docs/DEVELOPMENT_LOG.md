@@ -2,6 +2,36 @@
 
 ---
 
+### Refactoring: Global Preferences as Single Source of Truth (December 2, 2025)
+
+* **Author**: AI Agent (GitHub Copilot)
+* **Status**: ✅ Completed
+* **Severity**: Medium - Architectural improvement
+* **Impact**: Window controls now properly initialize from and update global preferences without overwrites
+* **Description**: Refactored settings management to use GetGlobalPreferences() as the single source of truth. Main window controls now read from global preferences on startup and only update their specific fields on Apply, preserving all other settings (aspect ratio, spacing, etc.). Removed conditional PRESET_CLASSIC application logic that was overwriting user preferences.
+* **Root Cause**: Main window was initializing controls with hardcoded values instead of reading from global preferences. Apply button unconditionally called ApplyPreset(PRESET_CLASSIC) when user hadn't opened Advanced window, overwriting the default aspectRatio from 2000 (Wide 2.0) back to 1600 (Classic 1.6).
+* **Solution**: 
+   - Phase 1: Initialize window controls from GetGlobalPreferences() instead of hardcoded values
+   - Phase 2-3: Remove ApplyPreset(PRESET_CLASSIC) calls from Apply handler, update only main window fields
+   - Phase 4: Simplify Advanced window handler, remove conditional preset application
+   - Phase 5: Remove has_advanced_settings flag - no longer needed with clear field ownership
+* **Files Modified**:
+   - `src/GUI/main_window.c` - Initialize from global prefs, remove PRESET_CLASSIC overwrites
+   - `src/GUI/main_window.h` - Remove has_advanced_settings flag from struct
+   - `src/layout_preferences.c` - Update PRESET_CLASSIC aspectRatio from 1600 to 2000
+   - `src/layout_preferences.h` - Change DEFAULT_ASPECT_RATIO from 1600 to 2000
+   - `src/GUI/advanced_window.c` - Remove "Custom" option from aspect ratio cycle gadget
+   - `src/GUI/advanced_window.h` - Remove ASPECT_PRESET_CUSTOM constant
+* **Benefits**: 
+   - Settings persist correctly across window opens/closes
+   - No conflicts between main window and advanced window settings
+   - Simpler code with clear field ownership
+   - Default aspect ratio (Wide 2.0) now correctly preserved
+   - Each window manages only its own fields without overwriting others
+* **Testing**: Build successful with no errors
+
+---
+
 ### Bug Fix: Window Geometry Not Captured in Backups (November 29, 2025)
 
 * **Author**: AI Agent (GitHub Copilot)

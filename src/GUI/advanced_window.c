@@ -55,7 +55,6 @@ static STRPTR aspect_ratio_labels[] = {
     "Classic (1.6)",
     "Wide (2.0)",
     "Ultrawide (2.4)",
-    "Custom",
     NULL
 };
 
@@ -92,8 +91,7 @@ static const int aspect_ratio_presets[] = {
     1300,  /* Compact (1.3 * 1000) */
     1600,  /* Classic (1.6 * 1000) */
     2000,  /* Wide (2.0 * 1000) */
-    2400,  /* Ultrawide (2.4 * 1000) */
-    0      /* Custom (calculated from width:height) */
+    2400   /* Ultrawide (2.4 * 1000) */
 };
 
 /*------------------------------------------------------------------------*/
@@ -110,12 +108,6 @@ static WORD get_aspect_ratio_preset_index(const LayoutPreferences *prefs)
 {
     int i;
     
-    /* Check if using custom aspect ratio */
-    if (prefs->useCustomAspectRatio)
-    {
-        return ASPECT_PRESET_CUSTOM;
-    }
-    
     /* Find matching preset (allow small differences due to rounding) */
     for (i = 0; i < 6; i++)
     {
@@ -128,8 +120,8 @@ static WORD get_aspect_ratio_preset_index(const LayoutPreferences *prefs)
         }
     }
     
-    /* Default to Classic if no match */
-    return ASPECT_PRESET_CLASSIC;
+    /* Default to Wide if no match */
+    return ASPECT_PRESET_WIDE;
 }
 
 /**
@@ -534,7 +526,7 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 26;
     ng.ng_Height = button_height - 4;
-    ng.ng_GadgetText = "Strip NewIcon Borders (one-way)";
+    ng.ng_GadgetText = "Strip NewIcon Borders";
     ng.ng_GadgetID = GID_ADV_STRIP_NEWICON_BORDERS;
     ng.ng_Flags = PLACETEXT_RIGHT;
     
@@ -827,35 +819,10 @@ void save_advanced_window_to_preferences(struct iTidyAdvancedWindow *adv_data)
         return;
     }
     
-    /* Save aspect ratio settings */
-    if (adv_data->aspect_preset_selected == ASPECT_PRESET_CUSTOM)
-    {
-        /* Using custom aspect ratio */
-        adv_data->prefs->useCustomAspectRatio = TRUE;
-        adv_data->prefs->customAspectWidth = adv_data->custom_aspect_width;
-        adv_data->prefs->customAspectHeight = adv_data->custom_aspect_height;
-        
-        /* Calculate aspect ratio from custom values (fixed-point: scaled by 1000) */
-        if (adv_data->custom_aspect_height > 0)
-        {
-            adv_data->prefs->aspectRatio = 
-                (adv_data->custom_aspect_width * 1000) / 
-                adv_data->custom_aspect_height;
-        }
-        else
-        {
-            /* Invalid height, default to Classic */
-            adv_data->prefs->aspectRatio = 1600;  /* 1.6 * 1000 */
-            CONSOLE_WARNING("Invalid custom aspect height, using default 1.6\n");
-        }
-    }
-    else
-    {
-        /* Using preset aspect ratio */
-        adv_data->prefs->useCustomAspectRatio = FALSE;
-        adv_data->prefs->aspectRatio = 
-            aspect_ratio_presets[adv_data->aspect_preset_selected];
-    }
+    /* Save aspect ratio settings (always use preset) */
+    adv_data->prefs->useCustomAspectRatio = FALSE;
+    adv_data->prefs->aspectRatio = 
+        aspect_ratio_presets[adv_data->aspect_preset_selected];
     
     /* Save overflow mode */
     adv_data->prefs->overflowMode = adv_data->overflow_mode_selected;

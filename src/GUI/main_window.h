@@ -73,9 +73,6 @@ struct iTidyMainWindow
     WORD folder_box_width;
     WORD folder_box_height;
     
-    /* Advanced settings override flag */
-    BOOL has_advanced_settings;         /* TRUE if user configured advanced settings */
-    
     /* Group box rectangles (for layout calculations) */
     struct Rectangle folder_group_box;
     struct Rectangle tidy_options_group_box;

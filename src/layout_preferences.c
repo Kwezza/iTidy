@@ -135,7 +135,7 @@ void ApplyPreset(LayoutPreferences *prefs, int preset)
             prefs->minIconsPerRow = 2;
             prefs->maxIconsPerRow = 0;  /* AUTO: Calculate from screen width */
             prefs->maxWindowWidthPct = 55;
-            prefs->aspectRatio = 1600;  /* 1.6 * 1000 */
+            prefs->aspectRatio = 2000;  /* 2.0 * 1000 (Wide) */
             prefs->overflowMode = OVERFLOW_HORIZONTAL;  /* Wide scrolling */
             prefs->iconSpacingX = 8;   /* Standard spacing */
             prefs->iconSpacingY = 8;
