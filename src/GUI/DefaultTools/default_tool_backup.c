@@ -7,8 +7,8 @@
 
 #include "platform/platform.h"
 #include "default_tool_backup.h"
-#include "../path_utilities.h"
-#include "../writeLog.h"
+#include "path_utilities.h"
+#include "writeLog.h"
 
 #include <exec/memory.h>
 #include <dos/dos.h>

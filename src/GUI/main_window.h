@@ -67,6 +67,9 @@ struct iTidyMainWindow
     /* Temporary folder path buffer (for string gadget only) */
     char folder_path_buffer[256];
     
+    /* Last save path (for Project menu Save/Save As) */
+    char last_save_path[256];
+    
     /* Folder path display box coordinates (for custom drawing) */
     WORD folder_box_left;
     WORD folder_box_top;

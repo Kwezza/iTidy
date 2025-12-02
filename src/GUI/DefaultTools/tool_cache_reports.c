@@ -7,10 +7,10 @@
 
 #include "platform/platform.h"
 #include "tool_cache_reports.h"
-#include "easy_request_helper.h"
-#include "../icon_types.h"
-#include "../writeLog.h"
-#include "../path_utilities.h"
+#include <easy_request_helper.h>
+#include "icon_types.h"
+#include "writeLog.h"
+#include "path_utilities.h"
 
 #include <libraries/asl.h>
 #include <proto/dos.h>

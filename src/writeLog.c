@@ -47,7 +47,7 @@ static char g_logsDirectory[256] = {0};
 static BOOL g_logSystemInitialized = FALSE;
 
 // Global log level and memory tracking control
-static LogLevel g_globalLogLevel = LOG_LEVEL_DEBUG;
+static LogLevel g_globalLogLevel = LOG_LEVEL_ERROR;  /* Default to ERROR (quietest) */
 static BOOL g_memoryLoggingEnabled = FALSE;
 static BOOL g_performanceLoggingEnabled = FALSE;
 

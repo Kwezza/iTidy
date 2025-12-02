@@ -325,13 +325,13 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
 #ifdef DEBUG
     if (matchResult == 0)
     {
-        append_to_log("MatchFirst successful, entering processing loop\n");
-        append_to_log(">>> AFTER MATCHFIRST: ap_Strlen=%ld, ap_Buf='%s'\n",
+        log_debug(LOG_ICONS, "MatchFirst successful, entering processing loop\n");
+        log_debug(LOG_ICONS, ">>> AFTER MATCHFIRST: ap_Strlen=%ld, ap_Buf='%s'\n",
                      anchorPath->ap_Strlen, anchorPath->ap_Buf ? anchorPath->ap_Buf : "(null)");
     }
     else
     {
-        append_to_log("MatchFirst returned %ld (no .info files found or error)\n", matchResult);
+        log_debug(LOG_ICONS, "MatchFirst returned %ld (no .info files found or error)\n", matchResult);
     }
 #endif
     
@@ -471,8 +471,8 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
 #endif
                     if (GetIconDetailsFromDisk(fullPathAndFile, &iconDetails, fileNameNoInfo))
                     {
-                        append_to_log(">>> GetIconDetailsFromDisk SUCCESS\n");
 #ifdef DEBUG
+                        log_debug(LOG_ICONS, ">>> GetIconDetailsFromDisk SUCCESS\n");
                         log_debug(LOG_ICONS, "  GetIconDetailsFromDisk SUCCESS\n");
 #endif
                         /* Extract position */
@@ -682,8 +682,8 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
 
 #ifdef DEBUG
                         log_debug(LOG_ICONS, "  Adding icon to array...\n");
+                        log_debug(LOG_ICONS, ">>> About to call AddIconToArray, fileCount=%d\n", fileCount);
 #endif
-                        append_to_log(">>> About to call AddIconToArray, fileCount=%d\n", fileCount);
                         /* Add new icon to the array */
                         if (!AddIconToArray(iconArray, &newIcon))
                         {
@@ -704,8 +704,8 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                             return NULL;
                         }
 
-                        append_to_log(">>> AddIconToArray SUCCESS, fileCount now %d\n", fileCount + 1);
 #ifdef DEBUG
+                        log_debug(LOG_ICONS, ">>> AddIconToArray SUCCESS, fileCount now %d\n", fileCount + 1);
                         log_debug(LOG_ICONS, "  Icon added successfully, fileCount now: %d\n", fileCount + 1);
 #endif
                         fileCount++;
@@ -741,13 +741,15 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
          * ============================================================
          */
         eraseSpinner();
-        append_to_log(">>> About to call MatchNext, fileCount=%d\n", fileCount);
 #ifdef DEBUG
-        append_to_log(">>> AnchorPath buffer strlen=%ld, buf='%s'\n", 
+        log_debug(LOG_ICONS, ">>> About to call MatchNext, fileCount=%d\n", fileCount);
+        log_debug(LOG_ICONS, ">>> AnchorPath buffer strlen=%ld, buf='%s'\n", 
                      anchorPath->ap_Strlen, anchorPath->ap_Buf ? anchorPath->ap_Buf : "(null)");
 #endif
         matchResult = MatchNext(anchorPath);
-        append_to_log(">>> MatchNext returned: %ld\n", matchResult);
+#ifdef DEBUG
+        log_debug(LOG_ICONS, ">>> MatchNext returned: %ld\n", matchResult);
+#endif
         
         /* Small delay to let DOS cleanup locks (similar to layout_processor fix) */
         #if PLATFORM_AMIGA

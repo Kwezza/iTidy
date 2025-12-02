@@ -108,7 +108,249 @@ const char version[] = VERSION_STRING;
 /* External reference to SysBase (provided by VBCC runtime) */
 #ifdef __AMIGA__
 extern struct ExecBase *SysBase;
+/* VBCC's -lauto provides this global for Workbench startup */
+extern struct WBStartup *_WBenchMsg;
 #endif
+
+/*---------------------------------------------------------------------------*/
+/* ToolType Processing System                                               */
+/*---------------------------------------------------------------------------*/
+
+/**
+ * @brief Structure to hold parsed tooltype settings
+ * 
+ * This structure stores all tooltype values extracted from the program's
+ * icon when launched from Workbench. Values are parsed once at startup.
+ */
+typedef struct {
+    BOOL tooltypes_loaded;      /* TRUE if tooltypes were successfully parsed */
+    UWORD debug_level;          /* DEBUGLEVEL=n (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR) */
+    BOOL debug_level_set;       /* TRUE if DEBUGLEVEL was found in tooltypes */
+} ToolTypeSettings;
+
+/* Global tooltype settings (initialized at startup) */
+static ToolTypeSettings g_tooltypes = { FALSE, 3, FALSE }; /* Default: ERROR level */
+
+/**
+ * @brief Case-insensitive string comparison (snake_case naming)
+ * 
+ * @param str1 First string to compare
+ * @param str2 Second string to compare
+ * @param len Maximum number of characters to compare
+ * @return int 0 if equal (ignoring case), non-zero otherwise
+ */
+static int stricmp_n(const char *str1, const char *str2, int len)
+{
+    int i;
+    for (i = 0; i < len && str1[i] && str2[i]; i++)
+    {
+        char c1 = (char)tolower((unsigned char)str1[i]);
+        char c2 = (char)tolower((unsigned char)str2[i]);
+        if (c1 != c2)
+        {
+            return c1 - c2;
+        }
+    }
+    /* If we reached the end of comparison length, strings are equal */
+    if (i == len)
+    {
+        return 0;
+    }
+    /* Otherwise, compare the final characters */
+    return tolower((unsigned char)str1[i]) - tolower((unsigned char)str2[i]);
+}
+
+/**
+ * @brief Parse program tooltypes from Workbench startup
+ * 
+ * Reads the program's icon tooltypes and extracts configuration values.
+ * Called once at program startup if launched from Workbench.
+ * 
+ * Supported tooltypes:
+ *   DEBUGLEVEL=n  - Set log level (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR)
+ * 
+ * @param wb_startup Pointer to WBStartup message (NULL if launched from CLI)
+ */
+static void parse_program_tooltypes(struct WBStartup *wb_startup)
+{
+    struct DiskObject *dobj = NULL;
+    struct Library *IconBase = NULL;
+    BPTR old_dir = (BPTR)-1;
+    STRPTR *tool_types = NULL;
+    STRPTR tool_value;
+    int value;
+    
+    CONSOLE_DEBUG("DEBUG: parse_program_tooltypes() called\n");
+    
+    /* Reset to defaults */
+    g_tooltypes.tooltypes_loaded = FALSE;
+    g_tooltypes.debug_level = 3;        /* Default: ERROR (changed from INFO) */
+    g_tooltypes.debug_level_set = FALSE;
+    
+    /* If not launched from Workbench, nothing to parse */
+    if (wb_startup == NULL)
+    {
+        CONSOLE_DEBUG("DEBUG: wb_startup is NULL - launched from CLI\n");
+        /* Note: Logging not available yet during early initialization */
+        return;
+    }
+    
+    CONSOLE_DEBUG("DEBUG: Launched from Workbench, wb_startup=0x%08lx\n", (unsigned long)wb_startup);
+    CONSOLE_DEBUG("DEBUG: wb_startup->sm_NumArgs = %d\n", wb_startup->sm_NumArgs);
+    
+    /* Open icon.library to use GetDiskObject/FreeDiskObject */
+    IconBase = OpenLibrary((STRPTR)"icon.library", 0);
+    if (IconBase == NULL)
+    {
+        CONSOLE_ERROR("ERROR: Failed to open icon.library!\n");
+        /* Can't parse tooltypes without icon.library - use defaults */
+        return;
+    }
+    
+    CONSOLE_DEBUG("DEBUG: icon.library opened successfully\n");
+    
+    /* Get the program's directory and icon */
+    if (wb_startup->sm_NumArgs > 0)
+    {
+        CONSOLE_DEBUG("DEBUG: Program name: %s\n", wb_startup->sm_ArgList[0].wa_Name);
+        
+        /* Change to program's directory */
+        old_dir = CurrentDir(wb_startup->sm_ArgList[0].wa_Lock);
+        CONSOLE_DEBUG("DEBUG: Changed to program directory\n");
+        
+        /* Get the program's icon */
+        dobj = GetDiskObject((STRPTR)wb_startup->sm_ArgList[0].wa_Name);
+        
+        if (dobj != NULL)
+        {
+            CONSOLE_DEBUG("DEBUG: Got DiskObject successfully\n");
+            
+            /* Get the tooltypes array */
+            tool_types = (STRPTR *)dobj->do_ToolTypes;
+            
+            if (tool_types != NULL)
+            {
+                CONSOLE_DEBUG("DEBUG: ToolTypes array exists\n");
+                
+                /* Parse DEBUGLEVEL=n */
+                tool_value = (STRPTR)FindToolType(tool_types, (STRPTR)"DEBUGLEVEL");
+                if (tool_value != NULL)
+                {
+                    CONSOLE_DEBUG("DEBUG: Found DEBUGLEVEL tooltype: %s\n", tool_value);
+                    value = atoi(tool_value);
+                    /* Validate range 0-3 */
+                    if (value >= 0 && value <= 3)
+                    {
+                        g_tooltypes.debug_level = (UWORD)value;
+                        g_tooltypes.debug_level_set = TRUE;
+                        CONSOLE_DEBUG("DEBUG: Set debug level to %d\n", value);
+                        /* Logging will report this after system is initialized */
+                    }
+                    else
+                    {
+                        CONSOLE_WARNING("WARNING: DEBUGLEVEL=%d out of range (0-3)\n", value);
+                    }
+                }
+                else
+                {
+                    CONSOLE_DEBUG("DEBUG: No DEBUGLEVEL tooltype found\n");
+                }
+                
+                /* Future tooltypes can be added here */
+                /* Example:
+                 * tool_value = FindToolType(tool_types, "OPTION");
+                 * if (tool_value != NULL) { ... }
+                 */
+                
+                g_tooltypes.tooltypes_loaded = TRUE;
+                CONSOLE_DEBUG("DEBUG: ToolTypes loaded successfully\n");
+                /* Logging will report tooltype status after system is initialized */
+            }
+            else
+            {
+                CONSOLE_WARNING("WARNING: ToolTypes array is NULL\n");
+            }
+            
+            /* Free the icon */
+            FreeDiskObject(dobj);
+            CONSOLE_DEBUG("DEBUG: DiskObject freed\n");
+        }
+        else
+        {
+            CONSOLE_ERROR("ERROR: GetDiskObject() returned NULL!\n");
+        }
+        
+        /* Restore original directory */
+        if (old_dir != (BPTR)-1)
+        {
+            CurrentDir(old_dir);
+        }
+    }
+    
+    /* Close icon.library */
+    if (IconBase != NULL)
+    {
+        CloseLibrary(IconBase);
+    }
+}
+
+/**
+ * @brief Check if a specific tooltype with value exists (case-insensitive)
+ * 
+ * This function allows checking for specific tooltype=value combinations.
+ * Comparison is case-insensitive for both key and value.
+ * 
+ * Example usage:
+ *   if (check_tooltype_value("DEBUGLEVEL", "0")) { ... }
+ *   if (check_tooltype_value("debuglevel", "3")) { ... }
+ * 
+ * @param key ToolType key to check (case-insensitive)
+ * @param value ToolType value to match (case-insensitive)
+ * @return BOOL TRUE if tooltype exists and matches value, FALSE otherwise
+ */
+static BOOL check_tooltype_value(const char *key, const char *value)
+{
+    /* ToolTypes must be loaded first */
+    if (!g_tooltypes.tooltypes_loaded)
+    {
+        return FALSE;
+    }
+    
+    /* Check DEBUGLEVEL (case-insensitive) */
+    if (stricmp_n(key, "DEBUGLEVEL", 10) == 0)
+    {
+        if (g_tooltypes.debug_level_set)
+        {
+            char level_str[4];
+            sprintf(level_str, "%d", g_tooltypes.debug_level);
+            return (stricmp_n(value, level_str, 3) == 0);
+        }
+        return FALSE;
+    }
+    
+    /* Future tooltype checks can be added here */
+    /* Example:
+     * if (stricmp_n(key, "OTHEROPTION", 11) == 0) {
+     *     return (g_tooltypes.other_option && stricmp_n(value, "yes", 3) == 0);
+     * }
+     */
+    
+    return FALSE;
+}
+
+/**
+ * @brief Get the debug level from tooltypes (public accessor)
+ * 
+ * @return UWORD Debug level (0-3), or 3 (ERROR) if not set
+ */
+UWORD get_tooltype_debug_level(void)
+{
+    if (g_tooltypes.debug_level_set)
+    {
+        return g_tooltypes.debug_level;
+    }
+    return 3; /* Default: ERROR */
+}
 
 /**
  * @brief Get CPU name from ExecBase AttnFlags
@@ -251,6 +493,7 @@ int main(int argc, char **argv)
     /* GUI MIGRATION: New GUI window structure */
     struct iTidyMainWindow gui_window;
     BOOL keep_running;
+    struct WBStartup *wb_startup = NULL;
     
     int workbenchVersion = GetWorkbenchVersion();
     int fontNameSet = 0;
@@ -258,6 +501,28 @@ int main(int argc, char **argv)
 
 #ifdef DEBUG
     char *stringWBVersion;
+#endif
+
+    CONSOLE_PRINTF("\n*** iTidy starting up ***\n");
+    CONSOLE_PRINTF("argc = %d\n", argc);
+
+    /* Detect if launched from Workbench (argc == 0) */
+#ifdef __AMIGA__
+    /* VBCC with -lauto: Use _WBenchMsg instead of manual message handling */
+    if (argc == 0 && _WBenchMsg != NULL)
+    {
+        CONSOLE_PRINTF("Detected Workbench launch via _WBenchMsg\n");
+        wb_startup = _WBenchMsg;
+        CONSOLE_PRINTF("WBStartup message: 0x%08lx\n", (unsigned long)wb_startup);
+    }
+    else if (argc == 0)
+    {
+        CONSOLE_PRINTF("ERROR: argc==0 but _WBenchMsg is NULL!\n");
+    }
+    else
+    {
+        CONSOLE_PRINTF("Launched from CLI\n");
+    }
 #endif
 
     /* GUI MIGRATION: Initialize default settings (previously set from CLI args) */
@@ -306,8 +571,25 @@ int main(int argc, char **argv)
     /* Initialize enhanced logging system (TRUE = clean old logs) */
     initialize_log_system(TRUE);
     
-    /* Set default log level (DEBUG for testing, can be changed via Beta Options) */
-    set_global_log_level(LOG_LEVEL_DEBUG);
+    /* Parse program tooltypes from Workbench (if launched from WB) */
+    parse_program_tooltypes(wb_startup);
+    
+    /* Set log level IMMEDIATELY to avoid logging at DEBUG level during initialization
+     * Note: This will be reset later by InitializeGlobalPreferences(), but we need it
+     * now to control logging during startup. The tooltype will be applied to preferences
+     * after GUI window opens. */
+    if (g_tooltypes.debug_level_set)
+    {
+        /* Apply tooltype debug level (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR) */
+        set_global_log_level((LogLevel)g_tooltypes.debug_level);
+        log_info(LOG_GENERAL, "ToolType DEBUGLEVEL=%d found - log level applied for startup\n", g_tooltypes.debug_level);
+    }
+    else
+    {
+        /* Set default log level (ERROR - least verbose, no tooltype found) */
+        set_global_log_level(LOG_LEVEL_ERROR);
+        /* Don't log anything here - we're at ERROR level, these would be filtered anyway */
+    }
     
     /* Disable memory logging by default (can be enabled via Beta Options) */
     set_memory_logging_enabled(FALSE);
@@ -470,6 +752,9 @@ int main(int argc, char **argv)
 
     /* KEEP: VBCC -lauto workaround */
 #ifdef __AMIGA__
+    /* NOTE: DO NOT reply to WBStartup message - VBCC's -lauto does this automatically */
+    /* Replying manually causes the program to hang when launched from Workbench */
+    
     RemTask(NULL);
     return RETURN_OK;
 #else

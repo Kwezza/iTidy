@@ -52,18 +52,18 @@
 #include "restore_window.h"
 #include "GUI/StatusWindows/progress_window.h"
 #include "helpers/listview_simple_columns.h"
-#include "../helpers/list_formatter.h"  /* Justified list formatter */
-#include "../backup_restore.h"
-#include "../writeLog.h"
+#include "helpers/list_formatter.h"  /* Justified list formatter */
+#include "backup_restore.h"
+#include "writeLog.h"
 #include "folder_view_window.h"
-#include "test_simple_window.h"  /* TESTING: Simple window test */
-#include "../backup_runs.h"
-#include "../backup_catalog.h"
-#include "../backup_restore.h"
-#include "../writeLog.h"
-#include "../Settings/IControlPrefs.h"
-#include "../string_functions.h"    /* For iTidy_FormatTimestamp() */
-#include "easy_request_helper.h"  /* Global EasyRequest helper */
+#include "GUI/test_simple_window.h"  /* TESTING: Simple window test */
+#include "backup_runs.h"
+#include "backup_catalog.h"
+#include "backup_restore.h"
+#include "writeLog.h"
+#include "Settings/IControlPrefs.h"
+#include "string_functions.h"    /* For iTidy_FormatTimestamp() */
+#include <easy_request_helper.h>  /* Global EasyRequest helper */
 
 #ifndef NewList
 VOID NewList(struct List *list);

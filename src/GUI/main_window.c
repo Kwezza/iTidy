@@ -23,9 +23,9 @@
 
 #include "main_window.h"
 #include "advanced_window.h"
-#include "restore_window.h"
-#include "tool_cache_window.h"
-#include "default_tool_backup.h"
+#include "RestoreBackups/restore_window.h"
+#include "DefaultTools/tool_cache_window.h"
+#include "DefaultTools/default_tool_backup.h"
 #include "easy_request_helper.h"
 #include "layout_preferences.h"
 #include "layout_processor.h"
@@ -35,6 +35,7 @@
 #include "gui_groupbox.h"
 #include "StatusWindows/main_progress_window.h"
 #include "../icon_types.h"
+#include "../path_utilities.h"
 
 /*------------------------------------------------------------------------*/
 /* External Tool Cache Variables                                         */
@@ -47,6 +48,11 @@ extern int g_ToolCacheCount;
 /*------------------------------------------------------------------------*/
 extern struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_manager);
 extern BOOL iTidy_HandleToolRestoreWindowEvent(struct Window *window, struct IntuiMessage *msg);
+
+/*------------------------------------------------------------------------*/
+/* External ToolType Access (from main_gui.c)                            */
+/*------------------------------------------------------------------------*/
+extern UWORD get_tooltype_debug_level(void);
 extern void iTidy_CloseToolRestoreWindow(struct Window *window);
 
 /*------------------------------------------------------------------------*/
@@ -67,6 +73,39 @@ extern void iTidy_CloseToolRestoreWindow(struct Window *window);
 #define ITIDY_GROUPBOX_LEFT_EDGE 15    /* Left edge of all groupboxes */
 #define ITIDY_GROUPBOX_RIGHT_EDGE 485  /* Right edge of all groupboxes (WINDOW_WIDTH - 15) */
 #define ITIDY_GROUPBOX_USABLE_WIDTH 440 /* Inner width for button calculations (470 - 30 margins) */
+
+/*------------------------------------------------------------------------*/
+/* Menu Item IDs                                                          */
+/*------------------------------------------------------------------------*/
+#define MENU_PROJECT_NEW        1001
+#define MENU_PROJECT_OPEN       1002
+#define MENU_PROJECT_SAVE       1003
+#define MENU_PROJECT_SAVE_AS    1004
+#define MENU_PROJECT_CLOSE      1005
+
+/*------------------------------------------------------------------------*/
+/* Menu System Global Variables                                          */
+/*------------------------------------------------------------------------*/
+static struct Screen *wb_screen_menu = NULL;     /* Workbench screen for menus */
+static struct DrawInfo *draw_info_menu = NULL;   /* Drawing info for menus */
+static APTR visual_info_menu = NULL;             /* Visual info for menus */
+static struct Menu *main_menu_strip = NULL;      /* Menu strip */
+
+/*------------------------------------------------------------------------*/
+/* Menu Template                                                          */
+/*------------------------------------------------------------------------*/
+static struct NewMenu main_window_menu_template[] = 
+{
+	{ NM_TITLE, "Project",      NULL, 0, 0, NULL },
+	{ NM_ITEM,  "New",          "N",  0, 0, (APTR)MENU_PROJECT_NEW },
+	{ NM_ITEM,  "Open...",      "O",  0, 0, (APTR)MENU_PROJECT_OPEN },
+	{ NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
+	{ NM_ITEM,  "Save",         "S",  0, 0, (APTR)MENU_PROJECT_SAVE },
+	{ NM_ITEM,  "Save as...",   "A",  0, 0, (APTR)MENU_PROJECT_SAVE_AS },
+	{ NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
+	{ NM_ITEM,  "Close",        "C",  0, 0, (APTR)MENU_PROJECT_CLOSE },
+	{ NM_END,   NULL,           NULL, 0, 0, NULL }
+};
 
 /*------------------------------------------------------------------------*/
 /* Cycle Gadget Labels                                                   */
@@ -98,6 +137,185 @@ static STRPTR window_position_labels[] = {
 /* Forward Declarations                                                   */
 /*------------------------------------------------------------------------*/
 static void draw_folder_path_box(struct iTidyMainWindow *win_data);
+static BOOL setup_main_window_menus(void);
+static void cleanup_main_window_menus(void);
+static BOOL handle_main_window_menu_selection(ULONG menu_number, struct iTidyMainWindow *win_data);
+static void handle_main_new_menu(struct iTidyMainWindow *win_data);
+static void handle_main_open_menu(struct iTidyMainWindow *win_data);
+static void handle_main_save_menu(struct iTidyMainWindow *win_data);
+static void handle_main_save_as_menu(struct iTidyMainWindow *win_data);
+static BOOL save_preferences_to_file(const char *filepath, const LayoutPreferences *prefs);
+static BOOL load_preferences_from_file(const char *filepath, LayoutPreferences *prefs);
+static void sync_gui_from_preferences(struct iTidyMainWindow *win_data, const LayoutPreferences *prefs);
+static void sync_gui_to_preferences(struct iTidyMainWindow *win_data, LayoutPreferences *prefs);
+
+/*------------------------------------------------------------------------*/
+/* Menu System Functions                                                  */
+/*------------------------------------------------------------------------*/
+
+/**
+ * setup_main_window_menus - Initialize GadTools NewLook menu system
+ * 
+ * This function sets up GadTools menus with proper Workbench 3.x NewLook
+ * appearance. The menus will automatically use system colors and modern
+ * white background styling.
+ *
+ * Returns: TRUE if successful, FALSE on failure
+ */
+static BOOL setup_main_window_menus(void)
+{
+    /* Lock Workbench screen for menu system */
+    wb_screen_menu = LockPubScreen("Workbench");
+    if (!wb_screen_menu)
+    {
+        log_error(LOG_GUI, "Error: Could not lock Workbench screen for menus\n");
+        return FALSE;
+    }
+    
+    /* Get screen drawing information */
+    draw_info_menu = GetScreenDrawInfo(wb_screen_menu);
+    if (!draw_info_menu)
+    {
+        log_error(LOG_GUI, "Error: Could not get screen DrawInfo for menus\n");
+        UnlockPubScreen(NULL, wb_screen_menu);
+        wb_screen_menu = NULL;
+        return FALSE;
+    }
+    
+    /* Get visual information for GadTools */
+    visual_info_menu = GetVisualInfo(wb_screen_menu, TAG_END);
+    if (!visual_info_menu)
+    {
+        log_error(LOG_GUI, "Error: Could not get VisualInfo for menus\n");
+        FreeScreenDrawInfo(wb_screen_menu, draw_info_menu);
+        UnlockPubScreen(NULL, wb_screen_menu);
+        draw_info_menu = NULL;
+        wb_screen_menu = NULL;
+        return FALSE;
+    }
+    
+    /* Create menu strip from template */
+    main_menu_strip = CreateMenus(main_window_menu_template, TAG_END);
+    if (!main_menu_strip)
+    {
+        log_error(LOG_GUI, "Error: Could not create menu strip\n");
+        FreeVisualInfo(visual_info_menu);
+        FreeScreenDrawInfo(wb_screen_menu, draw_info_menu);
+        UnlockPubScreen(NULL, wb_screen_menu);
+        visual_info_menu = NULL;
+        draw_info_menu = NULL;
+        wb_screen_menu = NULL;
+        return FALSE;
+    }
+    
+    /* Layout menus with NewLook appearance */
+    if (!LayoutMenus(main_menu_strip, visual_info_menu, GTMN_NewLookMenus, TRUE, TAG_END))
+    {
+        log_error(LOG_GUI, "Error: Could not layout NewLook menus\n");
+        FreeMenus(main_menu_strip);
+        FreeVisualInfo(visual_info_menu);
+        FreeScreenDrawInfo(wb_screen_menu, draw_info_menu);
+        UnlockPubScreen(NULL, wb_screen_menu);
+        main_menu_strip = NULL;
+        visual_info_menu = NULL;
+        draw_info_menu = NULL;
+        wb_screen_menu = NULL;
+        return FALSE;
+    }
+    
+    log_info(LOG_GUI, "Main window menus initialized successfully\n");
+    return TRUE;
+}
+
+/**
+ * cleanup_main_window_menus - Release all menu system resources
+ * 
+ * This function properly releases all resources allocated during
+ * menu setup, following proper AmigaOS resource management.
+ */
+static void cleanup_main_window_menus(void)
+{
+    if (main_menu_strip)
+    {
+        FreeMenus(main_menu_strip);
+        main_menu_strip = NULL;
+    }
+    
+    if (visual_info_menu)
+    {
+        FreeVisualInfo(visual_info_menu);
+        visual_info_menu = NULL;
+    }
+    
+    if (draw_info_menu)
+    {
+        FreeScreenDrawInfo(wb_screen_menu, draw_info_menu);
+        draw_info_menu = NULL;
+    }
+    
+    if (wb_screen_menu)
+    {
+        UnlockPubScreen(NULL, wb_screen_menu);
+        wb_screen_menu = NULL;
+    }
+    
+    log_info(LOG_GUI, "Main window menus cleaned up\n");
+}
+
+/**
+ * handle_main_window_menu_selection - Process menu item selections
+ * 
+ * @param menu_number: The menu selection number from IDCMP_MENUPICK
+ * @param win_data: Pointer to main window data structure
+ * @return: TRUE to continue running, FALSE to close window
+ */
+static BOOL handle_main_window_menu_selection(ULONG menu_number, struct iTidyMainWindow *win_data)
+{
+    struct MenuItem *menu_item = NULL;
+    ULONG item_id = 0;
+    BOOL continue_running = TRUE;
+    
+    while (menu_number != MENUNULL)
+    {
+        menu_item = ItemAddress(main_menu_strip, menu_number);
+        if (menu_item)
+        {
+            item_id = (ULONG)GTMENUITEM_USERDATA(menu_item);
+            
+            /* Handle menu selections */
+            switch (item_id)
+            {
+                case MENU_PROJECT_NEW:
+                    handle_main_new_menu(win_data);
+                    break;
+                    
+                case MENU_PROJECT_OPEN:
+                    handle_main_open_menu(win_data);
+                    break;
+                    
+                case MENU_PROJECT_SAVE:
+                    handle_main_save_menu(win_data);
+                    break;
+                    
+                case MENU_PROJECT_SAVE_AS:
+                    handle_main_save_as_menu(win_data);
+                    break;
+                    
+                case MENU_PROJECT_CLOSE:
+                    continue_running = FALSE;  /* Close window */
+                    break;
+                    
+                default:
+                    log_warning(LOG_GUI, "Unknown menu item ID: %ld\n", item_id);
+                    break;
+            }
+        }
+        
+        menu_number = menu_item->NextSelect;
+    }
+    
+    return continue_running;
+}
 
 /*------------------------------------------------------------------------*/
 /**
@@ -667,7 +885,7 @@ ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABE
         ng.ng_TopEdge = current_y;
         ng.ng_Width = button_width;
         ng.ng_Height = font_height + 8;
-        ng.ng_GadgetText = "Cancel";
+        ng.ng_GadgetText = "Exit";
         ng.ng_GadgetID = GID_CANCEL;
         ng.ng_Flags = PLACETEXT_IN;
         
@@ -715,6 +933,23 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
 
     /* Initialize global preferences on first window open */
     InitializeGlobalPreferences();
+    
+    /* Apply tooltype settings to preferences (if any were found during startup) */
+    {
+        LayoutPreferences temp_prefs;
+        const LayoutPreferences *current_prefs = GetGlobalPreferences();
+        UWORD tooltype_log_level;
+        
+        /* Copy current preferences */
+        memcpy(&temp_prefs, current_prefs, sizeof(LayoutPreferences));
+        
+        /* Apply tooltype log level if it was set at startup */
+        tooltype_log_level = get_tooltype_debug_level();
+        temp_prefs.logLevel = tooltype_log_level;
+        
+        /* Update global preferences with tooltype-modified values */
+        UpdateGlobalPreferences(&temp_prefs);
+    }
 
     /* Initialize structure */
     memset(win_data, 0, sizeof(struct iTidyMainWindow));
@@ -773,6 +1008,16 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
         return FALSE;
     }
 
+    /* Setup menu system BEFORE opening window */
+    if (!setup_main_window_menus())
+    {
+        CONSOLE_ERROR("ERROR: Could not setup menus\n");
+        FreeGadgets(win_data->glist);
+        FreeVisualInfo(win_data->visual_info);
+        UnlockPubScreen(NULL, win_data->screen);
+        return FALSE;
+    }
+
     /* Open the window with calculated height based on font size */
     win_data->window = OpenWindowTags(NULL,
         WA_Left, ITIDY_WINDOW_LEFT,
@@ -786,16 +1031,25 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
         WA_Activate, TRUE,
         WA_PubScreen, win_data->screen,
         WA_Gadgets, win_data->glist,
-        WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW,
+        WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW | IDCMP_MENUPICK,
+        WA_NewLookMenus, TRUE,  /* Enable NewLook menus */
         TAG_END);
 
     if (win_data->window == NULL)
     {
         CONSOLE_ERROR("Could not open window\n");
+        cleanup_main_window_menus();
         FreeGadgets(win_data->glist);
         FreeVisualInfo(win_data->visual_info);
         UnlockPubScreen(NULL, win_data->screen);
         return FALSE;
+    }
+
+    /* Attach menu strip to window */
+    if (main_menu_strip)
+    {
+        SetMenuStrip(win_data->window, main_menu_strip);
+        log_info(LOG_GUI, "Menu strip attached to main window\n");
     }
 
     /* Refresh gadgets */
@@ -915,6 +1169,13 @@ void close_itidy_main_window(struct iTidyMainWindow *win_data)
     /* Close window if it's open */
     if (win_data->window != NULL)
     {
+        /* Clear menu strip before closing window */
+        if (main_menu_strip)
+        {
+            ClearMenuStrip(win_data->window);
+            log_info(LOG_GUI, "Menu strip cleared from main window\n");
+        }
+        
         CloseWindow(win_data->window);
         win_data->window = NULL;
         win_data->window_open = FALSE;
@@ -936,6 +1197,9 @@ void close_itidy_main_window(struct iTidyMainWindow *win_data)
         win_data->visual_info = NULL;
         CONSOLE_DEBUG("Visual info freed\n");
     }
+
+    /* Clean up menu system */
+    cleanup_main_window_menus();
 
     /* Unlock the Workbench screen */
     if (win_data->screen != NULL)
@@ -1135,7 +1399,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         
                         /* Re-enable main window */
                         ModifyIDCMP(win_data->window, 
-                            IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_GADGETDOWN | IDCMP_REFRESHWINDOW);
+                            IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_GADGETDOWN | IDCMP_REFRESHWINDOW | IDCMP_MENUPICK);
                         SetWindowPointer(win_data->window, WA_Pointer, NULL, TAG_END);
                         
                         /* Keep progress window open so user can review - wait for Cancel/Close */
@@ -1189,7 +1453,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                 
                                 /* Re-enable main window input */
                                 ModifyIDCMP(win_data->window, 
-                                    IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW);
+                                    IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW | IDCMP_MENUPICK);
                                 
                                 CONSOLE_DEBUG("Restore window closed\n");
                             }
@@ -1233,13 +1497,13 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                                 
                                 /* Re-enable main window input */
                                 ModifyIDCMP(win_data->window, 
-                                    IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW);
+                                    IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW | IDCMP_MENUPICK);
                                 
                                 /* If changes were accepted, update global preferences */
                                 if (adv_data.changes_accepted)
                                 {
                                     CONSOLE_STATUS("Advanced settings accepted - updating global preferences\n");
-                                    CONSOLE_DEBUG("  Aspect Ratio: %.2f\n", temp_prefs.aspectRatio / 1000.0);
+                                    CONSOLE_DEBUG("  Aspect Ratio: %lu\n", (unsigned long)temp_prefs.aspectRatio);
                                     CONSOLE_DEBUG("  Overflow Mode: %d\n", temp_prefs.overflowMode);
                                     CONSOLE_DEBUG("  Spacing: %hux%hu\n", 
                                            temp_prefs.iconSpacingX,
@@ -1383,6 +1647,14 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                 }
                 break;
 
+            case IDCMP_MENUPICK:
+                /* Handle menu selections */
+                if (!handle_main_window_menu_selection(msg_code, win_data))
+                {
+                    return FALSE;  /* Menu requested window close */
+                }
+                break;
+
             default:
                 /* Unknown message - ignore */
                 break;
@@ -1489,6 +1761,575 @@ static void draw_folder_path_box(struct iTidyMainWindow *win_data)
     }
     
     FreeScreenDrawInfo(win_data->window->WScreen, dri);
+}
+
+/*------------------------------------------------------------------------*/
+/* Save/Load Preferences Functions                                        */
+/*------------------------------------------------------------------------*/
+
+/**
+ * save_preferences_to_file - Save LayoutPreferences to binary file
+ * 
+ * Writes the LayoutPreferences structure to a binary file in a format
+ * suitable for reloading. File format:
+ *   - Header: "ITIDYPREFS" (10 bytes)
+ *   - Version: ULONG (4 bytes) = 1
+ *   - LayoutPreferences structure (binary)
+ * 
+ * @param filepath Full path to save file
+ * @param prefs Pointer to LayoutPreferences to save
+ * @return TRUE if successful, FALSE on error
+ */
+static BOOL save_preferences_to_file(const char *filepath, const LayoutPreferences *prefs)
+{
+    BPTR file;
+    const char header[] = "ITIDYPREFS";
+    ULONG version = 1;
+    
+    if (!filepath || !prefs)
+    {
+        log_error(LOG_GUI, "save_preferences_to_file: Invalid parameters\n");
+        return FALSE;
+    }
+    
+    /* Open file for writing */
+    file = Open((STRPTR)filepath, MODE_NEWFILE);
+    if (!file)
+    {
+        log_error(LOG_GUI, "save_preferences_to_file: Failed to create file: %s\n", filepath);
+        return FALSE;
+    }
+    
+    log_info(LOG_GUI, "Saving preferences to: %s\n", filepath);
+    
+    /* Write header */
+    if (Write(file, (APTR)header, 10) != 10)
+    {
+        log_error(LOG_GUI, "Failed to write header\n");
+        Close(file);
+        return FALSE;
+    }
+    
+    /* Write version */
+    if (Write(file, (APTR)&version, sizeof(ULONG)) != sizeof(ULONG))
+    {
+        log_error(LOG_GUI, "Failed to write version\n");
+        Close(file);
+        return FALSE;
+    }
+    
+    /* Write LayoutPreferences structure */
+    if (Write(file, (APTR)prefs, sizeof(LayoutPreferences)) != sizeof(LayoutPreferences))
+    {
+        log_error(LOG_GUI, "Failed to write preferences structure\n");
+        Close(file);
+        return FALSE;
+    }
+    
+    Close(file);
+    log_info(LOG_GUI, "Successfully saved preferences to: %s\n", filepath);
+    return TRUE;
+}
+
+/**
+ * load_preferences_from_file - Load LayoutPreferences from binary file
+ * 
+ * Reads and validates a preferences file, then loads into provided structure.
+ * 
+ * @param filepath Full path to load file
+ * @param prefs Pointer to LayoutPreferences to receive loaded data
+ * @return TRUE if successful, FALSE on error
+ */
+static BOOL load_preferences_from_file(const char *filepath, LayoutPreferences *prefs)
+{
+    BPTR file;
+    char header[11];
+    ULONG version;
+    
+    if (!filepath || !prefs)
+    {
+        log_error(LOG_GUI, "load_preferences_from_file: Invalid parameters\n");
+        return FALSE;
+    }
+    
+    log_info(LOG_GUI, "Loading preferences from: %s\n", filepath);
+    
+    /* Open file for reading */
+    file = Open((STRPTR)filepath, MODE_OLDFILE);
+    if (!file)
+    {
+        log_error(LOG_GUI, "Failed to open file for reading: %s\n", filepath);
+        return FALSE;
+    }
+    
+    /* Read and validate header */
+    memset(header, 0, sizeof(header));
+    if (Read(file, (APTR)header, 10) != 10)
+    {
+        log_error(LOG_GUI, "Failed to read header\n");
+        Close(file);
+        return FALSE;
+    }
+    
+    if (strncmp(header, "ITIDYPREFS", 10) != 0)
+    {
+        log_error(LOG_GUI, "Invalid file header: %s\n", header);
+        Close(file);
+        return FALSE;
+    }
+    
+    /* Read version */
+    if (Read(file, (APTR)&version, sizeof(ULONG)) != sizeof(ULONG))
+    {
+        log_error(LOG_GUI, "Failed to read version\n");
+        Close(file);
+        return FALSE;
+    }
+    
+    if (version != 1)
+    {
+        log_error(LOG_GUI, "Unsupported file version: %lu\n", version);
+        Close(file);
+        return FALSE;
+    }
+    
+    /* Read LayoutPreferences structure */
+    if (Read(file, (APTR)prefs, sizeof(LayoutPreferences)) != sizeof(LayoutPreferences))
+    {
+        log_error(LOG_GUI, "Failed to read preferences structure\n");
+        Close(file);
+        return FALSE;
+    }
+    
+    Close(file);
+    log_info(LOG_GUI, "Successfully loaded preferences from: %s\n", filepath);
+    return TRUE;
+}
+
+/**
+ * sync_gui_from_preferences - Update all GUI gadgets from preferences
+ * 
+ * @param win_data Pointer to main window data
+ * @param prefs Pointer to LayoutPreferences to sync from
+ */
+static void sync_gui_from_preferences(struct iTidyMainWindow *win_data, const LayoutPreferences *prefs)
+{
+    if (!win_data || !win_data->window || !prefs)
+        return;
+    
+    /* Update window data from preferences */
+    win_data->order_selected = prefs->sortPriority;
+    win_data->sortby_selected = prefs->sortBy;
+    win_data->recursive_subdirs = prefs->recursive_subdirs;
+    win_data->enable_backup = prefs->enable_backup;
+    win_data->window_position_selected = prefs->windowPositionMode;
+    
+    strncpy(win_data->folder_path_buffer, prefs->folder_path, sizeof(win_data->folder_path_buffer) - 1);
+    win_data->folder_path_buffer[sizeof(win_data->folder_path_buffer) - 1] = '\0';
+    
+    /* Update gadgets */
+    if (win_data->order_cycle)
+    {
+        GT_SetGadgetAttrs(win_data->order_cycle, win_data->window, NULL,
+                         GTCY_Active, win_data->order_selected,
+                         TAG_DONE);
+    }
+    
+    if (win_data->sortby_cycle)
+    {
+        GT_SetGadgetAttrs(win_data->sortby_cycle, win_data->window, NULL,
+                         GTCY_Active, win_data->sortby_selected,
+                         TAG_DONE);
+    }
+    
+    if (win_data->recursive_check)
+    {
+        GT_SetGadgetAttrs(win_data->recursive_check, win_data->window, NULL,
+                         GTCB_Checked, win_data->recursive_subdirs,
+                         TAG_DONE);
+    }
+    
+    if (win_data->backup_check)
+    {
+        GT_SetGadgetAttrs(win_data->backup_check, win_data->window, NULL,
+                         GTCB_Checked, win_data->enable_backup,
+                         TAG_DONE);
+    }
+    
+    if (win_data->window_position_cycle)
+    {
+        GT_SetGadgetAttrs(win_data->window_position_cycle, win_data->window, NULL,
+                         GTCY_Active, win_data->window_position_selected,
+                         TAG_DONE);
+    }
+    
+    /* Redraw folder path */
+    draw_folder_path_box(win_data);
+    
+    log_info(LOG_GUI, "GUI synchronized from loaded preferences\n");
+}
+
+/**
+ * sync_gui_to_preferences - Update preferences from current GUI state
+ * 
+ * @param win_data Pointer to main window data
+ * @param prefs Pointer to LayoutPreferences to update
+ */
+static void sync_gui_to_preferences(struct iTidyMainWindow *win_data, LayoutPreferences *prefs)
+{
+    if (!win_data || !prefs)
+        return;
+    
+    /* Update preferences from current GUI state */
+    prefs->sortPriority = win_data->order_selected;
+    prefs->sortBy = win_data->sortby_selected;
+    prefs->recursive_subdirs = win_data->recursive_subdirs;
+    prefs->enable_backup = win_data->enable_backup;
+    prefs->windowPositionMode = (WindowPositionMode)win_data->window_position_selected;
+    
+    /* Update folder path from GUI buffer */
+    strncpy(prefs->folder_path, win_data->folder_path_buffer, sizeof(prefs->folder_path) - 1);
+    prefs->folder_path[sizeof(prefs->folder_path) - 1] = '\0';
+    
+    /* Update backup preferences */
+    prefs->backupPrefs.enableUndoBackup = win_data->enable_backup;
+    
+    log_debug(LOG_GUI, "Preferences updated from GUI state (folder: %s)\n", prefs->folder_path);
+}
+
+/*------------------------------------------------------------------------*/
+/* Menu Handler Functions                                                */
+/*------------------------------------------------------------------------*/
+
+/**
+ * handle_main_new_menu - Handle "New" menu selection
+ * 
+ * Resets all preferences to defaults and updates GUI.
+ * 
+ * @param win_data Pointer to main window data
+ */
+static void handle_main_new_menu(struct iTidyMainWindow *win_data)
+{
+    LayoutPreferences default_prefs;
+    
+    if (!win_data || !win_data->window)
+        return;
+    
+    log_debug(LOG_GUI, "Menu: New clicked - resetting to defaults\n");
+    
+    /* Initialize default preferences */
+    InitLayoutPreferences(&default_prefs);
+    
+    /* Update global preferences */
+    UpdateGlobalPreferences(&default_prefs);
+    
+    /* Sync GUI from new defaults */
+    sync_gui_from_preferences(win_data, &default_prefs);
+    
+    /* Clear last save path */
+    win_data->last_save_path[0] = '\0';
+    
+    /* Refresh window */
+    GT_RefreshWindow(win_data->window, NULL);
+    
+    log_info(LOG_GUI, "Preferences reset to defaults\n");
+}
+
+/**
+ * handle_main_save_menu - Handle "Save" menu selection
+ * 
+ * Saves preferences to last saved file path.
+ * If no previous save path exists, calls handle_main_save_as_menu instead.
+ * 
+ * @param win_data Pointer to main window data
+ */
+static void handle_main_save_menu(struct iTidyMainWindow *win_data)
+{
+    LayoutPreferences *prefs;
+    
+    if (!win_data || !win_data->window)
+        return;
+    
+    /* Get mutable access to global preferences */
+    prefs = (LayoutPreferences *)GetGlobalPreferences();
+    if (!prefs)
+    {
+        ShowEasyRequest(win_data->window,
+            "Error",
+            "Failed to get preferences.",
+            "OK");
+        return;
+    }
+    
+    /* If no last save path, call Save As instead */
+    if (win_data->last_save_path[0] == '\0')
+    {
+        log_debug(LOG_GUI, "Menu: Save clicked but no previous save path - calling Save As\n");
+        handle_main_save_as_menu(win_data);
+        return;
+    }
+    
+    /* Update global preferences from current GUI state */
+    sync_gui_to_preferences(win_data, prefs);
+    UpdateGlobalPreferences(prefs);
+    
+    log_info(LOG_GUI, "Menu: Save clicked - saving to %s\n", win_data->last_save_path);
+    
+    /* Save the file */
+    if (save_preferences_to_file(win_data->last_save_path, prefs))
+    {
+        log_info(LOG_GUI, "Preferences saved to: %s\n", win_data->last_save_path);
+    }
+    else
+    {
+        ShowEasyRequest(win_data->window,
+            "Save Failed",
+            "Failed to save preferences file.",
+            "OK");
+    }
+}
+
+/**
+ * handle_main_save_as_menu - Handle "Save as..." menu selection
+ * 
+ * Opens ASL file requester, checks for overwrite, and saves preferences.
+ * 
+ * @param win_data Pointer to main window data
+ */
+static void handle_main_save_as_menu(struct iTidyMainWindow *win_data)
+{
+    struct FileRequester *freq;
+    char full_path[512];
+    char expanded_drawer[512];
+    BPTR lock;
+    LayoutPreferences *prefs;
+    
+    if (!win_data || !win_data->window)
+        return;
+    
+    /* Get mutable access to global preferences */
+    prefs = (LayoutPreferences *)GetGlobalPreferences();
+    if (!prefs)
+    {
+        ShowEasyRequest(win_data->window,
+            "Error",
+            "Failed to get preferences.",
+            "OK");
+        return;
+    }
+    
+    /* Update global preferences from current GUI state */
+    sync_gui_to_preferences(win_data, prefs);
+    UpdateGlobalPreferences(prefs);
+    
+    /* Expand PROGDIR: to actual path for ASL requester */
+    if (!ExpandProgDir("PROGDIR:userdata/Settings", expanded_drawer, sizeof(expanded_drawer)))
+    {
+        log_warning(LOG_GUI, "Could not expand PROGDIR:, using fallback path\n");
+        strcpy(expanded_drawer, "RAM:");
+    }
+    
+    log_debug(LOG_GUI, "Using initial drawer: %s\n", expanded_drawer);
+    
+    /* Allocate file requester */
+    freq = (struct FileRequester *)AllocAslRequestTags(ASL_FileRequest,
+        ASLFR_TitleText, "Save Preferences As...",
+        ASLFR_InitialDrawer, expanded_drawer,
+        ASLFR_InitialFile, "iTidy.prefs",
+        ASLFR_DoSaveMode, TRUE,
+        ASLFR_RejectIcons, TRUE,
+        ASLFR_Window, win_data->window,
+        TAG_END);
+    
+    if (!freq)
+    {
+        log_error(LOG_GUI, "Failed to allocate file requester\n");
+        ShowEasyRequest(win_data->window,
+            "Error",
+            "Could not open file requester.",
+            "OK");
+        return;
+    }
+    
+    /* Display requester */
+    if (AslRequest(freq, NULL))
+    {
+        /* Build full path */
+        strcpy(full_path, freq->fr_Drawer);
+        if (!AddPart((STRPTR)full_path, (STRPTR)freq->fr_File, sizeof(full_path)))
+        {
+            log_error(LOG_GUI, "Path too long: %s + %s\n", freq->fr_Drawer, freq->fr_File);
+            FreeAslRequest(freq);
+            ShowEasyRequest(win_data->window,
+                "Error",
+                "File path is too long.",
+                "OK");
+            return;
+        }
+        
+        log_info(LOG_GUI, "User selected save path: %s\n", full_path);
+        
+        /* Check if file exists */
+        lock = Lock((STRPTR)full_path, ACCESS_READ);
+        if (lock)
+        {
+            UnLock(lock);
+            
+            /* File exists - ask for confirmation */
+            if (!ShowEasyRequest(win_data->window,
+                "File Exists",
+                "File already exists.\\nDo you want to replace it?",
+                "Replace|Cancel"))
+            {
+                log_info(LOG_GUI, "User cancelled overwrite\n");
+                FreeAslRequest(freq);
+                return;
+            }
+        }
+        
+        /* Save the file */
+        if (save_preferences_to_file(full_path, prefs))
+        {
+            /* Store the save path for future Save operations */
+            strncpy(win_data->last_save_path, full_path, sizeof(win_data->last_save_path) - 1);
+            win_data->last_save_path[sizeof(win_data->last_save_path) - 1] = '\0';
+            
+            ShowEasyRequest(win_data->window,
+                "Save Successful",
+                "Preferences saved successfully.",
+                "OK");
+            log_info(LOG_GUI, "Preferences saved to: %s\n", full_path);
+        }
+        else
+        {
+            ShowEasyRequest(win_data->window,
+                "Save Failed",
+                "Failed to save preferences file.",
+                "OK");
+        }
+    }
+    else
+    {
+        log_info(LOG_GUI, "User cancelled save operation\n");
+    }
+    
+    FreeAslRequest(freq);
+}
+
+/**
+ * handle_main_open_menu - Handle "Open..." menu selection
+ * 
+ * Opens ASL file requester, loads preferences, updates GUI.
+ * 
+ * @param win_data Pointer to main window data
+ */
+static void handle_main_open_menu(struct iTidyMainWindow *win_data)
+{
+    struct FileRequester *freq;
+    char full_path[512];
+    char expanded_drawer[512];
+    BPTR lock;
+    LayoutPreferences loaded_prefs;
+    
+    if (!win_data || !win_data->window)
+        return;
+    
+    log_debug(LOG_GUI, "Menu: Open... clicked\n");
+    
+    /* Expand PROGDIR: to actual path for ASL requester */
+    if (!ExpandProgDir("PROGDIR:userdata/Settings", expanded_drawer, sizeof(expanded_drawer)))
+    {
+        log_warning(LOG_GUI, "Could not expand PROGDIR:, using fallback path\n");
+        strcpy(expanded_drawer, "RAM:");
+    }
+    
+    log_debug(LOG_GUI, "Using initial drawer: %s\n", expanded_drawer);
+    
+    /* Allocate file requester */
+    freq = (struct FileRequester *)AllocAslRequestTags(ASL_FileRequest,
+        ASLFR_TitleText, "Open Preferences File...",
+        ASLFR_InitialDrawer, expanded_drawer,
+        ASLFR_InitialFile, "iTidy.prefs",
+        ASLFR_DoSaveMode, FALSE,
+        ASLFR_RejectIcons, TRUE,
+        ASLFR_Window, win_data->window,
+        TAG_END);
+    
+    if (!freq)
+    {
+        log_error(LOG_GUI, "Failed to allocate file requester\n");
+        ShowEasyRequest(win_data->window,
+            "Error",
+            "Could not open file requester.",
+            "OK");
+        return;
+    }
+    
+    /* Display requester */
+    if (AslRequest(freq, NULL))
+    {
+        /* Build full path */
+        strcpy(full_path, freq->fr_Drawer);
+        if (!AddPart((STRPTR)full_path, (STRPTR)freq->fr_File, sizeof(full_path)))
+        {
+            log_error(LOG_GUI, "Path too long: %s + %s\n", freq->fr_Drawer, freq->fr_File);
+            FreeAslRequest(freq);
+            ShowEasyRequest(win_data->window,
+                "Error",
+                "File path is too long.",
+                "OK");
+            return;
+        }
+        
+        log_info(LOG_GUI, "User selected file: %s\n", full_path);
+        
+        /* Check if file exists */
+        lock = Lock((STRPTR)full_path, ACCESS_READ);
+        if (!lock)
+        {
+            log_error(LOG_GUI, "File does not exist: %s\n", full_path);
+            FreeAslRequest(freq);
+            ShowEasyRequest(win_data->window,
+                "File Not Found",
+                "The selected file does not exist.",
+                "OK");
+            return;
+        }
+        UnLock(lock);
+        
+        /* Load the file */
+        if (load_preferences_from_file(full_path, &loaded_prefs))
+        {
+            /* Update global preferences */
+            UpdateGlobalPreferences(&loaded_prefs);
+            
+            /* Sync GUI from loaded preferences */
+            sync_gui_from_preferences(win_data, &loaded_prefs);
+            
+            /* Store as last save path */
+            strncpy(win_data->last_save_path, full_path, sizeof(win_data->last_save_path) - 1);
+            win_data->last_save_path[sizeof(win_data->last_save_path) - 1] = '\0';
+            
+            ShowEasyRequest(win_data->window,
+                "Load Successful",
+                "Preferences loaded successfully.",
+                "OK");
+            log_info(LOG_GUI, "Preferences loaded from: %s\n", full_path);
+        }
+        else
+        {
+            ShowEasyRequest(win_data->window,
+                "Load Failed",
+                "Failed to load preferences file.\\nFile may be corrupted or invalid.",
+                "OK");
+        }
+    }
+    else
+    {
+        log_info(LOG_GUI, "User cancelled load operation\n");
+    }
+    
+    FreeAslRequest(freq);
 }
 
 /* End of main_window.c */

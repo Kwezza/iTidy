@@ -8,17 +8,17 @@
 #include "tool_cache_window.h"
 #include "tool_cache_reports.h"
 #include "default_tool_update_window.h"
-#include "restore_window.h"
+#include "GUI/RestoreBackups/restore_window.h"
 #include "default_tool_backup.h"
-#include "easy_request_helper.h"
-#include "StatusWindows/main_progress_window.h"
-#include "../icon_types.h"
-#include "../itidy_types.h"
-#include "../Settings/IControlPrefs.h"
-#include "../writeLog.h"
-#include "../layout_processor.h"
-#include "../path_utilities.h"
-#include "../utilities.h"
+#include <easy_request_helper.h>
+#include "GUI/StatusWindows/main_progress_window.h"
+#include "icon_types.h"
+#include "itidy_types.h"
+#include "Settings/IControlPrefs.h"
+#include "writeLog.h"
+#include "layout_processor.h"
+#include "path_utilities.h"
+#include "utilities.h"
 
 #include <exec/memory.h>
 #include <intuition/gadgetclass.h>
@@ -3359,7 +3359,7 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                             
                             /* Re-enable tool cache window input */
                             ModifyIDCMP(tool_data->window, 
-                                IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_GADGETDOWN | IDCMP_REFRESHWINDOW);
+                                IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_GADGETDOWN | IDCMP_REFRESHWINDOW | IDCMP_MENUPICK);
                             
                             log_info(LOG_GUI, "[RESTORE_TRACKING] Restore Default Tools window closed\n");
                         }

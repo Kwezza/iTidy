@@ -29,10 +29,10 @@
 #include "platform/platform.h"
 #include "default_tool_backup.h"
 #include "helpers/listview_simple_columns.h"
-#include "easy_request_helper.h"
-#include "../writeLog.h"
-#include "../Settings/IControlPrefs.h"  /* For prefsIControl global */
-#include "../string_functions.h"
+#include <easy_request_helper.h>
+#include "writeLog.h"
+#include "Settings/IControlPrefs.h"  /* For prefsIControl global */
+#include "string_functions.h"
 
 /* NewList macro if not available */
 #ifndef NewList
@@ -162,11 +162,16 @@ static void cleanup_display_lists(iTidy_ToolRestoreData *data)
         data->session_display_list = NULL;
     }
     
-    /* Free changes display list (ln_Name belongs to change) */
+    /* Free changes display list (both tool lines and count lines are allocated) */
     node = data->changes_display_list.lh_Head;
     while (node->ln_Succ) {
         next_node = node->ln_Succ;
         Remove(node);
+        /* Free allocated strings (tool lines and count lines) */
+        /* Check if it's an allocated string (not the placeholder) */
+        if (node->ln_Name && strcmp(node->ln_Name, "(No tool changes in session)") != 0) {
+            whd_free(node->ln_Name);
+        }
         FreeVec(node);
         node = next_node;
     }
@@ -356,6 +361,8 @@ static void populate_changes_list(iTidy_ToolRestoreData *data)
 {
     iTidy_ToolChange *change;
     struct Node *change_node, *display_node;
+    char *tool_line;
+    char *count_line;
     UWORD count;
     
     /* Clear existing changes display list */
@@ -365,6 +372,10 @@ static void populate_changes_list(iTidy_ToolRestoreData *data)
         while (node->ln_Succ) {
             next_node = node->ln_Succ;
             Remove(node);
+            /* Free allocated string if it's not pointing to change->display_text */
+            if (node->ln_Name && strncmp(node->ln_Name, "Total icons updated:", 20) == 0) {
+                whd_free(node->ln_Name);
+            }
             FreeVec(node);
             node = next_node;
         }
@@ -396,27 +407,47 @@ static void populate_changes_list(iTidy_ToolRestoreData *data)
             AddTail(&data->changes_display_list, display_node);
         }
     } else {
-        /* Create display nodes pointing to change display_text */
+        /* Create TWO display nodes for each change: tool conversion + icon count */
         for (change_node = data->changes_list.lh_Head; 
              change_node->ln_Succ != NULL; 
              change_node = change_node->ln_Succ)
         {
             change = (iTidy_ToolChange *)change_node;
             
-            log_message(LOG_GUI, LOG_LEVEL_DEBUG,
-                        "DISPLAY CHANGE: display_text='%s' ln_Name='%s'",
-                        change->display_text ? change->display_text : "(null)",
-                        change->node.ln_Name ? change->node.ln_Name : "(null)");
+            /* First row: Tool conversion (old -> new) */
+            tool_line = (char *)whd_malloc(256);
+            if (tool_line) {
+                sprintf(tool_line, "%s -> %s",
+                        change->old_tool[0] ? change->old_tool : "(none)",
+                        change->new_tool[0] ? change->new_tool : "(none)");
+                
+                display_node = AllocVec(sizeof(struct Node), MEMF_CLEAR);
+                if (display_node) {
+                    display_node->ln_Name = tool_line;
+                    AddTail(&data->changes_display_list, display_node);
+                    
+                    log_message(LOG_GUI, LOG_LEVEL_DEBUG,
+                                "TOOL LINE: '%s'", tool_line);
+                } else {
+                    whd_free(tool_line);
+                }
+            }
             
-            display_node = AllocVec(sizeof(struct Node), MEMF_CLEAR);
-            if (display_node) {
-                display_node->ln_Name = change->display_text;
+            /* Second row: Icon count */
+            count_line = (char *)whd_malloc(128);
+            if (count_line) {
+                sprintf(count_line, "Total icons updated: %d", change->icon_count);
                 
-                log_message(LOG_GUI, LOG_LEVEL_DEBUG,
-                            "DISPLAY NODE: ln_Name='%s'",
-                            display_node->ln_Name ? display_node->ln_Name : "(null)");
-                
-                AddTail(&data->changes_display_list, display_node);
+                display_node = AllocVec(sizeof(struct Node), MEMF_CLEAR);
+                if (display_node) {
+                    display_node->ln_Name = count_line;
+                    AddTail(&data->changes_display_list, display_node);
+                    
+                    log_message(LOG_GUI, LOG_LEVEL_DEBUG,
+                                "COUNT LINE: '%s'", count_line);
+                } else {
+                    whd_free(count_line);
+                }
             }
         }
     }

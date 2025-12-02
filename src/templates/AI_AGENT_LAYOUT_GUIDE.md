@@ -120,6 +120,57 @@ See `amiga_window_template.c` → `calculate_font_dimensions()` for production c
 
 **Why:** ListView scroll arrow buttons generate `IDCMP_GADGETDOWN` events, not `IDCMP_GADGETUP`. This is a GadTools requirement that is easy to forget.
 
+## ⚠️ CRITICAL: Menu Items Stop Working After Modal Windows (ModifyIDCMP Bug)
+
+**If your window has GadTools menus AND opens modal child windows (requesters, dialogs):**
+- **MUST** include `IDCMP_MENUPICK` when using `ModifyIDCMP()` to re-enable the parent window
+- **Without this:** Menus appear but clicking items does nothing (events are silently dropped)
+- **Common scenario:** Main window → Advanced Options dialog → Close dialog → Menu broken
+
+**Why:** When you disable a window's IDCMP events during a modal operation using `ModifyIDCMP(window, 0)`, you must restore ALL original IDCMP flags when re-enabling, including `IDCMP_MENUPICK`. Forgetting this flag causes Intuition to stop delivering menu events to your window.
+
+**The Bug Pattern (WRONG):**
+```c
+/* Window opened with menus */
+window = OpenWindowTags(NULL,
+    WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW | IDCMP_MENUPICK,
+    TAG_DONE);
+
+/* User clicks "Advanced" button - disable main window during modal */
+ModifyIDCMP(window, 0);
+advanced_window = open_advanced_window();  /* Modal dialog */
+close_advanced_window(advanced_window);
+
+/* Re-enable main window - MISSING IDCMP_MENUPICK! */
+ModifyIDCMP(window, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW);
+/* ^^^ BUG: Menus now broken - clicking menu items does nothing! */
+```
+
+**The Correct Pattern:**
+```c
+/* Re-enable main window with ALL original IDCMP flags */
+ModifyIDCMP(window, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW | IDCMP_MENUPICK);
+/* ^^^ CORRECT: Menu events now delivered properly */
+```
+
+**Debugging Tips:**
+- **Symptom:** Menu highlights when you click, but nothing happens (no menu event received)
+- **Symptom:** Menu works fine at startup, breaks after opening/closing a dialog
+- **Check:** Search for all `ModifyIDCMP()` calls that re-enable windows (non-zero flags)
+- **Fix:** Add `IDCMP_MENUPICK` to the flag list if the window has menus
+- **Pattern:** Any window that uses `SetMenuStrip()` MUST have `IDCMP_MENUPICK` in IDCMP flags
+
+**Real-World Example (Fixed):**
+```c
+/* main_window.c - Restore window after closing Restore Backups dialog */
+ModifyIDCMP(win_data->window, 
+    IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW | IDCMP_MENUPICK);
+
+/* tool_cache_window.c - Restore window after closing Restore Default Tools dialog */  
+ModifyIDCMP(tool_data->window,
+    IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_GADGETDOWN | IDCMP_REFRESHWINDOW | IDCMP_MENUPICK);
+```
+
 ## ⚠️ CRITICAL: Font Selection for Column-Based Layouts
 
 **If your ListView displays data in columns** (tabular data, logs, file listings):

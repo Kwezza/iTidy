@@ -20,7 +20,7 @@
 #include <exec/lists.h>
 
 #include "folder_view_window.h"
-#include "../writeLog.h"
+#include "writeLog.h"
 
 #include <string.h>
 #include <stdio.h>

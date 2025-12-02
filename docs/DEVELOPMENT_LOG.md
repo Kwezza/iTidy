@@ -2,6 +2,41 @@
 
 ---
 
+### Feature: ToolType-Based Debug Level Control (December 2, 2025)
+
+* **Author**: AI Agent (GitHub Copilot)
+* **Status**: ✅ Implemented
+* **Severity**: Low - Quality of life improvement
+* **Impact**: Debug logging can now be controlled via icon tooltypes without recompilation
+* **Description**: Implemented tooltype parsing system to allow users to control debug logging level by adding DEBUGLEVEL=n to the iTidy icon. Previously, debug level was hardcoded in preferences with no way to change it without modifying GUI settings.
+* **Root Cause**: Debug level was embedded in preferences system and initialized to INFO (level 1), causing verbose logging even when not needed. No mechanism existed to override this from the icon.
+* **Solution**:
+   - Added tooltype parser that reads DEBUGLEVEL=0/1/2/3 from program icon when launched from Workbench
+   - Changed default log level from INFO (1) to ERROR (3) for quieter operation by default
+   - Tooltype value is applied to global preferences during startup and persists through Apply button clicks
+   - Changed verbose icon scanning messages from INFO to DEBUG level to reduce log noise
+   - Fixed logging system initialization to start at ERROR level instead of DEBUG to prevent INFO spam during startup
+* **ToolType Values**:
+   - DEBUGLEVEL=0 - DEBUG (most verbose, all messages)
+   - DEBUGLEVEL=1 - INFO (informational messages and above)
+   - DEBUGLEVEL=2 - WARNING (warnings and errors only)
+   - DEBUGLEVEL=3 - ERROR (errors only, quietest - default)
+   - No tooltype - Defaults to ERROR level
+* **Files Modified**:
+   - `src/main_gui.c` - Added tooltype parsing infrastructure and public accessor functions
+   - `src/GUI/main_window.c` - Apply tooltype log level to preferences after initialization
+   - `src/layout_preferences.h` - Changed DEFAULT_LOG_LEVEL from 1 (INFO) to 3 (ERROR)
+   - `src/writeLog.c` - Changed g_globalLogLevel initialization from DEBUG to ERROR
+   - `src/icon_management.c` - Changed verbose >>> debug messages from INFO to DEBUG level
+* **Benefits**:
+   - Users can enable debug logging without rebuilding or using GUI
+   - Cleaner log files by default (errors only)
+   - Useful for troubleshooting without cluttering logs during normal use
+   - Tooltype setting persists throughout session even when Apply is clicked
+* **Testing**: Verified on WinUAE - DEBUGLEVEL=0 enables full verbose logging, no tooltype produces clean error-only logs
+
+---
+
 ### Refactoring: Global Preferences as Single Source of Truth (December 2, 2025)
 
 * **Author**: AI Agent (GitHub Copilot)

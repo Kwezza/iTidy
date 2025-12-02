@@ -7,8 +7,8 @@
 TARGET ?= amiga
 
 # Console output: Set CONSOLE=1 to enable printf output (opens console window)
-# Default: disabled for release builds (GUI only, no console window)
-CONSOLE ?= 0
+# Default: ENABLED for debugging Workbench launch issues
+CONSOLE ?= 1
 
 # Project name
 PROJECT = iTidy
@@ -94,13 +94,6 @@ GUI_SRCS = \
 	$(SRC_DIR)/GUI/main_window.c \
 	$(SRC_DIR)/GUI/advanced_window.c \
 	$(SRC_DIR)/GUI/beta_options_window.c \
-	$(SRC_DIR)/GUI/restore_window.c \
-	$(SRC_DIR)/GUI/folder_view_window.c \
-	$(SRC_DIR)/GUI/tool_cache_window.c \
-	$(SRC_DIR)/GUI/tool_cache_reports.c \
-	$(SRC_DIR)/GUI/default_tool_update_window.c \
-	$(SRC_DIR)/GUI/default_tool_backup.c \
-	$(SRC_DIR)/GUI/default_tool_restore_window.c \
 	$(SRC_DIR)/GUI/easy_request_helper.c \
 	$(SRC_DIR)/GUI/window_enumerator.c \
 	$(SRC_DIR)/GUI/wb_classify.c \
@@ -110,6 +103,19 @@ GUI_SRCS = \
 	$(SRC_DIR)/GUI/StatusWindows/recursive_progress.c \
 	$(SRC_DIR)/GUI/StatusWindows/main_progress_window.c \
 	$(SRC_DIR)/GUI/test_simple_window.c
+
+# Default Tools subsystem source files
+DEFAULT_TOOLS_SRCS = \
+	$(SRC_DIR)/GUI/DefaultTools/tool_cache_window.c \
+	$(SRC_DIR)/GUI/DefaultTools/tool_cache_reports.c \
+	$(SRC_DIR)/GUI/DefaultTools/default_tool_update_window.c \
+	$(SRC_DIR)/GUI/DefaultTools/default_tool_backup.c \
+	$(SRC_DIR)/GUI/DefaultTools/default_tool_restore_window.c
+
+# Restore/Backup window subsystem source files
+RESTORE_BACKUP_SRCS = \
+	$(SRC_DIR)/GUI/RestoreBackups/restore_window.c \
+	$(SRC_DIR)/GUI/RestoreBackups/folder_view_window.c
 
 # DOS subdirectory sources
 DOS_SRCS = \
@@ -133,7 +139,7 @@ endif
 MEMORY_TRACKING_SRCS = $(INC_DIR)/platform/platform.c
 
 # All sources
-SRCS = $(CORE_SRCS) $(BACKUP_SRCS) $(HELPERS_SRCS) $(GUI_SRCS) $(DOS_SRCS) $(SETTINGS_SRCS) $(PLATFORM_SRCS) $(MEMORY_TRACKING_SRCS)
+SRCS = $(CORE_SRCS) $(BACKUP_SRCS) $(HELPERS_SRCS) $(GUI_SRCS) $(DEFAULT_TOOLS_SRCS) $(RESTORE_BACKUP_SRCS) $(DOS_SRCS) $(SETTINGS_SRCS) $(PLATFORM_SRCS) $(MEMORY_TRACKING_SRCS)
 
 # Object files (in build directory)
 # Note: platform.c is in include/platform, needs special handling
@@ -141,12 +147,14 @@ CORE_OBJS = $(CORE_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 BACKUP_OBJS = $(BACKUP_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 HELPERS_OBJS = $(HELPERS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 GUI_OBJS = $(GUI_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
+DEFAULT_TOOLS_OBJS = $(DEFAULT_TOOLS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
+RESTORE_BACKUP_OBJS = $(RESTORE_BACKUP_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 DOS_OBJS = $(DOS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 SETTINGS_OBJS = $(SETTINGS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 PLATFORM_OBJS = $(PLATFORM_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 MEMORY_TRACKING_OBJS = $(OUT_DIR)/platform_memory.o
 
-OBJS = $(CORE_OBJS) $(BACKUP_OBJS) $(HELPERS_OBJS) $(GUI_OBJS) $(DOS_OBJS) $(SETTINGS_OBJS) $(PLATFORM_OBJS) $(MEMORY_TRACKING_OBJS)
+OBJS = $(CORE_OBJS) $(BACKUP_OBJS) $(HELPERS_OBJS) $(GUI_OBJS) $(DEFAULT_TOOLS_OBJS) $(RESTORE_BACKUP_OBJS) $(DOS_OBJS) $(SETTINGS_OBJS) $(PLATFORM_OBJS) $(MEMORY_TRACKING_OBJS)
 
 ################################################################################
 # Test Programs
@@ -204,6 +212,8 @@ directories:
 	@if not exist "$(OUT_DIR)\helpers" mkdir "$(OUT_DIR)\helpers"
 	@if not exist "$(OUT_DIR)\GUI" mkdir "$(OUT_DIR)\GUI"
 	@if not exist "$(OUT_DIR)\GUI\StatusWindows" mkdir "$(OUT_DIR)\GUI\StatusWindows"
+	@if not exist "$(OUT_DIR)\GUI\DefaultTools" mkdir "$(OUT_DIR)\GUI\DefaultTools"
+	@if not exist "$(OUT_DIR)\GUI\RestoreBackups" mkdir "$(OUT_DIR)\GUI\RestoreBackups"
 	@if not exist "$(OUT_DIR)\tests" mkdir "$(OUT_DIR)\tests"
 ifeq ($(TARGET),amiga)
 	@if not exist "$(BIN_DIR)" mkdir "$(BIN_DIR)"

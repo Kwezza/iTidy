@@ -198,7 +198,141 @@ void iTidy_Progress_DrawBevelBox(struct RastPort *rp,
 
 Adhering to this policy prevents subtle build breaks, macro-related parse errors, and runtime inconsistencies across different AmigaOS setups. Future AI agents should treat this convention as mandatory when proposing, generating, or refactoring code in this repository.
 
-## �📋 Template Modification Checklists
+---
+
+## 🚀 CRITICAL: Workbench Startup with VBCC -lauto (MANDATORY READING)
+
+### The Problem: Double-Click Doesn't Work, "Execute Command" Does
+
+If your Amiga application works when launched from CLI or Workbench's "Execute Command" menu but **does nothing** when double-clicking the icon, you're likely handling WBStartup messages incorrectly.
+
+### The VBCC -lauto Solution (CORRECT WAY)
+
+When compiling with VBCC's `-lauto` library (which iTidy uses), **DO NOT** manually handle the WBStartup message. The library provides a global variable `_WBenchMsg` that's automatically set when launched from Workbench.
+
+#### Correct Pattern for VBCC -lauto:
+
+```c
+/* Declare external VBCC -lauto global */
+#ifdef __AMIGA__
+extern struct WBStartup *_WBenchMsg;
+#endif
+
+int main(int argc, char **argv)
+{
+    struct WBStartup *wb_startup = NULL;
+    
+    /* CORRECT: Use _WBenchMsg provided by VBCC -lauto */
+#ifdef __AMIGA__
+    if (argc == 0 && _WBenchMsg != NULL)
+    {
+        /* Launched from Workbench */
+        wb_startup = _WBenchMsg;
+    }
+#endif
+    
+    /* Your initialization code here */
+    
+    /* ... program execution ... */
+    
+    /* CRITICAL: DO NOT ReplyMsg() the WBStartup message! */
+    /* VBCC -lauto handles this automatically */
+    
+    return RETURN_OK;
+}
+```
+
+### What NOT to Do (WRONG - Causes Hangs):
+
+```c
+/* ❌ WRONG: Manual message handling with -lauto causes hangs */
+if (argc == 0)
+{
+    struct Process *proc = (struct Process *)FindTask(NULL);
+    WaitPort(&proc->pr_MsgPort);  /* ❌ Blocks forever! */
+    wb_startup = (struct WBStartup *)GetMsg(&proc->pr_MsgPort);
+}
+
+/* ❌ WRONG: Manual ReplyMsg with -lauto causes hangs */
+if (wb_startup != NULL)
+{
+    Forbid();
+    ReplyMsg((struct Message *)wb_startup);  /* ❌ Double-reply crash! */
+}
+```
+
+### Why This Happens:
+
+1. **VBCC's `-lauto` startup code** automatically retrieves the WBStartup message before calling `main()`
+2. **It stores the message** in the global variable `_WBenchMsg`
+3. **It automatically replies** to the message when `main()` returns
+4. **Manual message handling** tries to get a message that's already been retrieved → hangs forever
+5. **Manual ReplyMsg()** tries to reply to a message that will be auto-replied → double-reply crash
+
+### Reading ToolTypes from Workbench Launch:
+
+```c
+static void parse_program_tooltypes(struct WBStartup *wb_startup)
+{
+    struct DiskObject *dobj = NULL;
+    struct Library *IconBase = NULL;
+    BPTR old_dir = (BPTR)-1;
+    STRPTR *tool_types = NULL;
+    
+    if (wb_startup == NULL)
+        return;  /* Launched from CLI */
+    
+    /* Open icon.library (required for GetDiskObject/FreeDiskObject) */
+    IconBase = OpenLibrary((STRPTR)"icon.library", 0);
+    if (IconBase == NULL)
+        return;
+    
+    /* Get program's directory and icon */
+    if (wb_startup->sm_NumArgs > 0)
+    {
+        old_dir = CurrentDir(wb_startup->sm_ArgList[0].wa_Lock);
+        dobj = GetDiskObject((STRPTR)wb_startup->sm_ArgList[0].wa_Name);
+        
+        if (dobj != NULL)
+        {
+            tool_types = (STRPTR *)dobj->do_ToolTypes;
+            if (tool_types != NULL)
+            {
+                /* Parse tooltypes */
+                STRPTR value = (STRPTR)FindToolType(tool_types, (STRPTR)"YOUROPTION");
+                if (value != NULL)
+                {
+                    /* Use the tooltype value */
+                }
+            }
+            FreeDiskObject(dobj);
+        }
+        
+        if (old_dir != (BPTR)-1)
+            CurrentDir(old_dir);
+    }
+    
+    CloseLibrary(IconBase);
+}
+```
+
+### Testing Checklist:
+
+- [ ] Program launches from CLI → Works
+- [ ] Program launches from "Execute Command" menu → Works
+- [ ] **Program launches from double-clicking icon** → Works (this is the critical test!)
+- [ ] Program launches from Workbench with icon deleted ("Show All Files") → Works
+- [ ] If any of these fail, check you're using `_WBenchMsg` correctly
+
+### Reference Implementation:
+
+See `src/main_gui.c` for the complete working implementation of VBCC `-lauto` Workbench startup handling.
+
+**BOTTOM LINE:** With VBCC `-lauto`, use the `_WBenchMsg` global variable and **never** manually handle WBStartup message retrieval or reply. The library does it all for you.
+
+---
+
+## 📋 Template Modification Checklists
 
 ## Dynamic Window Template
 

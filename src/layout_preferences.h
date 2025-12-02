@@ -225,7 +225,7 @@ typedef struct {
 #define DEFAULT_BETA_FIND_WINDOW_ON_WORKBENCH_AND_UPDATE   FALSE   /* Enable for testing */
 
 /* Logging and Debug Defaults */
-#define DEFAULT_LOG_LEVEL                                  1       /* Default: INFO level (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR) */
+#define DEFAULT_LOG_LEVEL                                  3       /* Default: ERROR level (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR) */
 #define DEFAULT_MEMORY_LOGGING_ENABLED                     FALSE   /* Default: Disabled (can be very verbose) */
 #define DEFAULT_PERFORMANCE_LOGGING_ENABLED                FALSE   /* Default: Disabled (performance timing logs) */
 

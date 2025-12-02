@@ -3,15 +3,38 @@
  *  $Id: simplemenu.c,v 2.0 2025/07/01 15:00:00 user Exp $
  *                                                                        *
  *  SimpleMenu - Workbench 3.x NewLook Menu Template                      *
- *  Template for creating modern Ami
- *  IMPORTANT LIMITATION (for AI agents):                            *
- *  - This template intentionally does NOT use IDCMP_MENUVERIFY or     *
- *    MENUVERIFY.                                                      *
- *  - Do NOT add IDCMP_MENUVERIFY to the IDCMP mask.                   *
- *  - All menu behaviour must be implemented via IDCMP_MENUPICK only,  *
- *    using ItemAddress() + GTMENUITEM_USERDATA() as shown below.      *
- *                                                                      *
-ga menus with proper appearance       *
+ *  Template for creating modern Amiga menus with proper appearance       *
+ *                                                                        *
+ *  ⚠️ CRITICAL BUG WARNING (ModifyIDCMP and Menus):                      *
+ *  ==================================================                    *
+ *  If your window opens MODAL child windows (requesters, dialogs),       *
+ *  you MUST restore IDCMP_MENUPICK when re-enabling the parent window!   *
+ *                                                                        *
+ *  SYMPTOM: Menu items appear but don't respond after modal closes       *
+ *  ROOT CAUSE: ModifyIDCMP(window, flags) without IDCMP_MENUPICK         *
+ *                                                                        *
+ *  WRONG (menu breaks after modal window):                               *
+ *    ModifyIDCMP(window, 0);  // Disable during modal                    *
+ *    ... modal window runs ...                                           *
+ *    ModifyIDCMP(window, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP);  // BROKEN!*
+ *                                                                        *
+ *  CORRECT (menu works after modal window):                              *
+ *    ModifyIDCMP(window, 0);  // Disable during modal                    *
+ *    ... modal window runs ...                                           *
+ *    ModifyIDCMP(window, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP |            *
+ *                        IDCMP_REFRESHWINDOW | IDCMP_MENUPICK);  // OK!  *
+ *                                                                        *
+ *  RULE: When restoring IDCMP flags with ModifyIDCMP(), include ALL      *
+ *        flags that were present in the original OpenWindowTags() call,  *
+ *        including IDCMP_MENUPICK. Missing IDCMP_MENUPICK = broken menus.*
+ *                                                                        *
+ *  IMPORTANT LIMITATION (for AI agents):                                 *
+ *  - This template intentionally does NOT use IDCMP_MENUVERIFY or        *
+ *    MENUVERIFY.                                                         *
+ *  - Do NOT add IDCMP_MENUVERIFY to the IDCMP mask.                      *
+ *  - All menu behaviour must be implemented via IDCMP_MENUPICK only,     *
+ *    using ItemAddress() + GTMENUITEM_USERDATA() as shown below.         *
+ *                                                                        *
  *                                                                        *
  *  TEMPLATE USAGE GUIDE FOR AI AGENTS:                                   *
  *  ====================================                                  *

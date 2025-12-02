@@ -8,13 +8,13 @@
 #include "default_tool_update_window.h"
 #include "tool_cache_window.h"
 #include "default_tool_backup.h"
-#include "../icon_types.h"
-#include "../itidy_types.h"
-#include "../path_utilities.h"
-#include "../Settings/IControlPrefs.h"
-#include "../layout_preferences.h"
-#include "../writeLog.h"
-#include "easy_request_helper.h"
+#include "icon_types.h"
+#include "itidy_types.h"
+#include "path_utilities.h"
+#include "Settings/IControlPrefs.h"
+#include "layout_preferences.h"
+#include "writeLog.h"
+#include <easy_request_helper.h>
 
 #include <exec/memory.h>
 #include <intuition/gadgetclass.h>
