@@ -173,6 +173,7 @@ The scanner builds a cache of tool locations to speed up repeated scans. The cac
 - Built fresh when you click "Rebuild Cache"
 - Retained during the session for quick lookups
 - Cleared when you close iTidy
+- Also populated as iTidy performes an icon tidy run
 
 ### Backup Integration
 
