@@ -82,6 +82,7 @@ enum {
     GID_SESSION_LIST = 1,
     GID_CHANGES_LIST,
     GID_RESTORE_ALL,
+    GID_DELETE_SESSION,
     GID_CLOSE
 };
 
@@ -101,6 +102,7 @@ struct iTidy_ToolRestoreData {
     struct Gadget *session_listview;
     struct Gadget *changes_listview;
     struct Gadget *restore_button;
+    struct Gadget *delete_button;
     struct Gadget *close_button;
     
     /* Session tracking */
@@ -334,10 +336,9 @@ static void populate_session_list(iTidy_ToolRestoreData *data)
     /* Update the ListView gadget */
     log_debug(LOG_GUI, "populate_session_list: Updating ListView gadget\n");
     if (data->session_listview && data->window) {
-        LONG select_row = (count > 0) ? 2 : ~0;  /* Row 2 = first data row */
         GT_SetGadgetAttrs(data->session_listview, data->window, NULL,
                           GTLV_Labels, data->session_display_list,
-                          GTLV_Selected, select_row,
+                          GTLV_Selected, ~0,  /* No selection on load */
                           TAG_DONE);
         log_debug(LOG_GUI, "populate_session_list: ListView updated\n");
     }
@@ -654,15 +655,16 @@ struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_
                        TAG_DONE);
     data->changes_listview = gad;
     
-    /* Calculate equal button widths */
-    UWORD button_width = (list_width - 8) / 2;  /* Two buttons with gap in middle */
+    /* Calculate equal button widths for 3 buttons with gaps */
+    UWORD button_gap = 8;
+    UWORD button_width = (list_width - (2 * button_gap)) / 3;  /* Three buttons with gaps */
     
     /* Restore All button */
     ng.ng_LeftEdge = left_edge;
     ng.ng_TopEdge = top_edge + 14 + session_list_height + 16 + changes_list_height + 16;
     ng.ng_Width = button_width;
     ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Restore selected";
+    ng.ng_GadgetText = "Restore";
     ng.ng_GadgetID = GID_RESTORE_ALL;
     ng.ng_Flags = 0;  /* Default centered text in button */
     
@@ -671,8 +673,20 @@ struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_
                        TAG_DONE);
     data->restore_button = gad;
     
-    /* Close button - equal width with gap */
-    ng.ng_LeftEdge = left_edge + button_width + 8;  /* After first button + gap */
+    /* Delete Session button */
+    ng.ng_LeftEdge = left_edge + button_width + button_gap;
+    ng.ng_Width = button_width;
+    ng.ng_GadgetText = "Delete";
+    ng.ng_GadgetID = GID_DELETE_SESSION;
+    ng.ng_Flags = 0;  /* Default centered text in button */
+    
+    gad = CreateGadget(BUTTON_KIND, gad, &ng,
+                       GA_Disabled, TRUE,  /* Disabled until selection */
+                       TAG_DONE);
+    data->delete_button = gad;
+    
+    /* Close button */
+    ng.ng_LeftEdge = left_edge + (2 * button_width) + (2 * button_gap);
     ng.ng_Width = button_width;
     ng.ng_GadgetText = "Close";
     ng.ng_GadgetID = GID_CLOSE;
@@ -855,9 +869,14 @@ BOOL iTidy_HandleToolRestoreWindowEvent(struct Window *window, struct IntuiMessa
                                         data_index, session->date_string, 
                                         session->session_id, session->icons_changed);
                                 
-                                /* Enable Restore All button */
+                                /* Enable Restore and Delete buttons */
                                 if (data->restore_button && window) {
                                     GT_SetGadgetAttrs(data->restore_button, window, NULL,
+                                                     GA_Disabled, FALSE,
+                                                     TAG_DONE);
+                                }
+                                if (data->delete_button && window) {
+                                    GT_SetGadgetAttrs(data->delete_button, window, NULL,
                                                      GA_Disabled, FALSE,
                                                      TAG_DONE);
                                 }
@@ -871,6 +890,93 @@ BOOL iTidy_HandleToolRestoreWindowEvent(struct Window *window, struct IntuiMessa
                     
                 case GID_RESTORE_ALL:
                     handle_restore_all(data);
+                    break;
+                
+                case GID_DELETE_SESSION:
+                    {
+                        iTidy_ToolBackupSession *session;
+                        struct Node *node;
+                        LONG index;
+                        char message[256];
+                        char formatted_date[32];
+                        LONG result;
+                        
+                        /* Validate selection */
+                        if (data->selected_session_index < 0 || data->selected_session_id[0] == '\0') {
+                            break;
+                        }
+                        
+                        /* Find session to get details for confirmation */
+                        index = 0;
+                        session = NULL;
+                        for (node = data->session_list.lh_Head; 
+                             node->ln_Succ != NULL; 
+                             node = node->ln_Succ)
+                        {
+                            if (index == data->selected_session_index) {
+                                session = (iTidy_ToolBackupSession *)node;
+                                break;
+                            }
+                            index++;
+                        }
+                        
+                        if (!session) {
+                            break;
+                        }
+                        
+                        /* Format date for display */
+                        if (!iTidy_FormatTimestamp(data->selected_session_id, formatted_date, sizeof(formatted_date))) {
+                            strncpy(formatted_date, data->selected_session_id, sizeof(formatted_date) - 1);
+                            formatted_date[sizeof(formatted_date) - 1] = '\0';
+                        }
+                        
+                        /* Confirmation dialog */
+                        snprintf(message, sizeof(message),
+                                 "Delete backup session %s?\n\nThis will permanently delete:\n- %u tool change record%s\n\nThis action cannot be undone!",
+                                 formatted_date,
+                                 session->icons_changed,
+                                 session->icons_changed == 1 ? "" : "s");
+                        
+                        result = ShowEasyRequest(data->window, "Confirm Delete", 
+                                                 message, "Delete|Cancel");
+                        
+                        if (result != 1) {
+                            break;  /* User cancelled */
+                        }
+                        
+                        /* Perform delete */
+                        log_info(LOG_GUI, "Deleting backup session: %s\n", data->selected_session_id);
+                        
+                        if (iTidy_DeleteBackupSession(data->selected_session_id)) {
+                            /* Clear selection state */
+                            data->selected_session_index = -1;
+                            data->selected_session_id[0] = '\0';
+                            
+                            /* Disable buttons since no selection */
+                            if (data->restore_button && window) {
+                                GT_SetGadgetAttrs(data->restore_button, window, NULL,
+                                                 GA_Disabled, TRUE,
+                                                 TAG_DONE);
+                            }
+                            if (data->delete_button && window) {
+                                GT_SetGadgetAttrs(data->delete_button, window, NULL,
+                                                 GA_Disabled, TRUE,
+                                                 TAG_DONE);
+                            }
+                            
+                            /* Clear changes list */
+                            populate_changes_list(data);
+                            
+                            /* Refresh session list (will rescan backup directory) */
+                            populate_session_list(data);
+                            
+                            ShowEasyRequest(data->window, "Delete Complete",
+                                           "Backup session deleted successfully.", "OK");
+                        } else {
+                            ShowEasyRequest(data->window, "Delete Failed",
+                                           "Failed to delete backup session.\nSee log for details.", "OK");
+                        }
+                    }
                     break;
                     
                 case GID_CLOSE:
