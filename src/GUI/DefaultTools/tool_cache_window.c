@@ -50,6 +50,8 @@ extern struct GfxBase *GfxBase;
 #define MENU_FILE_EXPORT_TOOLS      5010
 #define MENU_FILE_EXPORT_FILES      5011
 
+#define MENU_VIEW_SYSTEM_PATH       5020
+
 /*------------------------------------------------------------------------*/
 /* Menu System Global Variables                                          */
 /*------------------------------------------------------------------------*/
@@ -75,6 +77,9 @@ static struct NewMenu tool_cache_menu_template[] =
 	{ NM_TITLE, "File",         NULL, 0, 0, NULL },
 	{ NM_ITEM,  "Export list of tools",           "T",  0, 0, (APTR)MENU_FILE_EXPORT_TOOLS },
 	{ NM_ITEM,  "Export list of files and tools", "F",  0, 0, (APTR)MENU_FILE_EXPORT_FILES },
+	
+	{ NM_TITLE, "View",         NULL, 0, 0, NULL },
+	{ NM_ITEM,  "System PATH...", "P",  0, 0, (APTR)MENU_VIEW_SYSTEM_PATH },
 	
 	{ NM_END,   NULL,           NULL, 0, 0, NULL }
 };
@@ -109,6 +114,7 @@ static void handle_new_menu(struct iTidyToolCacheWindow *tool_data);
 static void handle_save_menu(struct iTidyToolCacheWindow *tool_data);
 static void handle_export_tools_menu(struct iTidyToolCacheWindow *tool_data);
 static void handle_export_files_and_tools_menu(struct iTidyToolCacheWindow *tool_data);
+static void handle_view_system_path_menu(struct iTidyToolCacheWindow *tool_data);
 
 /*------------------------------------------------------------------------*/
 /**
@@ -957,6 +963,73 @@ static void handle_export_files_and_tools_menu(struct iTidyToolCacheWindow *tool
 }
 
 /**
+ * handle_view_system_path_menu - Handle "View System PATH..." menu selection
+ * 
+ * Displays the current system PATH search list in an EasyRequest dialog.
+ * Shows all directories that iTidy searches when validating default tools.
+ */
+static void handle_view_system_path_menu(struct iTidyToolCacheWindow *tool_data)
+{
+    extern char **g_PathSearchList;
+    extern int g_PathSearchCount;
+    char *message_buffer;
+    int buffer_size = 2048;  /* Should be enough for PATH list */
+    int i;
+    int offset = 0;
+    
+    if (!tool_data || !tool_data->window)
+        return;
+    
+    log_debug(LOG_GUI, "Menu: View System PATH... clicked\n");
+    
+    /* Allocate buffer for message text */
+    message_buffer = (char *)whd_malloc(buffer_size);
+    if (!message_buffer)
+    {
+        ShowEasyRequest(tool_data->window, 
+                        "Memory Error",
+                        "Failed to allocate memory for PATH display.",
+                        "OK");
+        return;
+    }
+    
+    memset(message_buffer, 0, buffer_size);
+    
+    /* Build message text */
+    if (g_PathSearchList && g_PathSearchCount > 0)
+    {
+        offset += snprintf(message_buffer + offset, buffer_size - offset,
+                          "iTidy searches these directories for default tools:\n\n");
+        
+        for (i = 0; i < g_PathSearchCount && offset < buffer_size - 100; i++)
+        {
+            offset += snprintf(message_buffer + offset, buffer_size - offset,
+                              "  %d. %s\n", i + 1, g_PathSearchList[i]);
+        }
+        
+        if (i < g_PathSearchCount)
+        {
+            offset += snprintf(message_buffer + offset, buffer_size - offset,
+                              "\n  ... and %d more directories", g_PathSearchCount - i);
+        }
+    }
+    else
+    {
+        snprintf(message_buffer, buffer_size,
+                "No PATH search list is currently loaded.\n\n"
+                "The PATH is built when you click the Scan button.");
+    }
+    
+    /* Display in EasyRequest dialog */
+    ShowEasyRequest(tool_data->window, "System PATH", message_buffer, "OK");
+    
+    /* Free buffer */
+    whd_free(message_buffer);
+    
+    log_debug(LOG_GUI, "PATH viewer closed\n");
+}
+
+/**
  * handle_open_menu - Handle "Open..." menu selection
  * 
  * Opens an ASL file requester to let user choose a cache file to load,
@@ -1258,6 +1331,10 @@ static BOOL handle_tool_cache_menu_selection(ULONG menu_number, struct iTidyTool
                     
                 case MENU_FILE_EXPORT_FILES:
                     handle_export_files_and_tools_menu(tool_data);
+                    break;
+                    
+                case MENU_VIEW_SYSTEM_PATH:
+                    handle_view_system_path_menu(tool_data);
                     break;
                     
                 default:

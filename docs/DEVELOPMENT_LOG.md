@@ -2,6 +2,46 @@
 
 ---
 
+### Feature: PATH Search List from Startup Scripts (December 4, 2025)
+
+* **Author**: AI Agent (GitHub Copilot)
+* **Status**: ✅ Implemented
+* **Severity**: High - Core functionality improvement
+* **Impact**: Default tool validation now finds tools in all user PATH directories, not just C:
+* **Description**: Implemented startup script parser to build PATH search list from S:Startup-Sequence and S:User-Startup. This allows default tool validation to find executables in custom directories like Workbench:sc/c (SAS/C compiler tools), Workbench:Utilities, Workbench:Rexxc, etc. Previously only C: directory was searched, causing many valid tools to show as MISSING.
+* **Root Cause**: When iTidy is launched from Workbench (not CLI), it has no process CLI structure and spawned shells don't inherit user's PATH configuration. Attempted shell spawn methods (SystemTagList, Execute, Run, SYS_UserShell) all failed to retrieve the full PATH - only returned C: directory.
+* **Solution**:
+   - Direct parsing of S:Startup-Sequence and S:User-Startup files
+   - Extracts PATH commands in execution order, respecting both replace and ADD modes
+   - Handles "Path dirs" (replace) and "Path dirs ADD" (append) syntax correctly
+   - Builds global g_PathSearchList array with all discovered directories
+   - ValidateDefaultTool() searches all PATH directories when validating simple tool names
+   - PATH building deferred until after main window opens to prevent slow startup
+   - Busy pointer displayed during PATH construction for user feedback
+* **Attempted Approaches** (all failed from Workbench launch):
+   - Reading CLI structure pr_CLI->cli_CommandDir (NULL when launched from Workbench)
+   - SystemTagList spawning shell with "Path >file" redirection (only got C:)
+   - Execute() with shell script (minimal shell environment)
+   - Run command for background shell (still minimal PATH)
+   - SYS_UserShell tag (supposed to run startup scripts, didn't work on WB 3.0/3.1)
+   - Direct Lock() on tool names (DOS doesn't auto-search PATH)
+* **Files Modified**:
+   - src/icon_types.c - Rewrote BuildPathSearchList() to parse startup scripts
+   - src/main_gui.c - Removed PATH building from startup, added note about deferred loading
+   - src/GUI/main_window.c - Added PATH building at end of window open with busy pointer
+   - include/dos/dostags.h - Added include for SYS_UserShell tag (during experimentation)
+* **Benefits**:
+   - Accurate tool validation for custom PATH directories (SAS/C, REXX, etc.)
+   - No dependency on CLI context or shell environment
+   - Fast window opening (PATH built after GUI appears)
+   - User sees busy pointer during initialization
+   - Supports full AmigaDOS Path command syntax
+   - Works identically whether launched from Workbench or CLI
+* **Performance**: Window opens immediately, PATH parsing happens in background with visual feedback (busy pointer)
+* **Testing**: Verified SAS/C compiler tools (sc, smake, scopts, etc.) in Workbench:sc/c now correctly show as EXISTS with version detection
+
+---
+
 ### Feature: ToolType-Based Debug Level Control (December 2, 2025)
 
 * **Author**: AI Agent (GitHub Copilot)

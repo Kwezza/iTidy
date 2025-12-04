@@ -28,6 +28,7 @@
 #include "DefaultTools/default_tool_backup.h"
 #include "easy_request_helper.h"
 #include "layout_preferences.h"
+#include "icon_types.h"  /* For BuildPathSearchList() */
 #include "layout_processor.h"
 #include "folder_scanner.h"
 #include "writeLog.h"
@@ -1142,6 +1143,23 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     CONSOLE_DEBUG("Window dimensions: %dx%d at position (%d,%d)\n",
            ITIDY_WINDOW_WIDTH, ITIDY_WINDOW_HEIGHT,
            ITIDY_WINDOW_LEFT, ITIDY_WINDOW_TOP);
+
+    /* Build PATH search list for default tool validation (deferred until after window opens) */
+    /* Show busy pointer while parsing S:Startup-Sequence and S:User-Startup */
+    CONSOLE_STATUS("Building system PATH list...\n");
+    SetWindowPointer(win_data->window, WA_BusyPointer, TRUE, TAG_DONE);
+    
+    log_info(LOG_GENERAL, "Building system PATH search list (deferred after window open)...\n");
+    if (!BuildPathSearchList())
+    {
+        log_warning(LOG_GENERAL, "Failed to build PATH search list - default tool validation may be limited\n");
+    }
+    else
+    {
+        log_info(LOG_GENERAL, "PATH search list built successfully\n");
+    }
+    
+    SetWindowPointer(win_data->window, WA_Pointer, NULL, TAG_DONE);
     CONSOLE_STATUS("Ready for user interaction.\n");
 
     return TRUE;

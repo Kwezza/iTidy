@@ -9,6 +9,7 @@
 
 #ifdef __AMIGA__
 #include <dos/dosextens.h>
+#include <dos/dostags.h>
 #endif
 
 #include "itidy_types.h"
@@ -1199,218 +1200,298 @@ char **g_PathSearchList = NULL;
 int g_PathSearchCount = 0;
 
 /**
- * @brief Build PATH search list from AmigaDOS Process->pr_Path
+ * @brief Build hardcoded fallback PATH list
  * 
- * Reads the system PATH from the current process's CLI structure
- * and builds a global array of directory paths for tool validation.
+ * Creates a minimal PATH list with common Amiga system directories.
+ * Used when spawning a shell to get PATH fails or when running from Workbench.
  * 
- * This implementation:
- * 1. Gets the current process structure
- * 2. Gets the CLI structure from pr_CLI
- * 3. Walks the cli_CommandDir BPTR linked list (the PATH)
- * 4. Uses NameFromLock() to convert each BPTR to a path string
- * 5. Stores paths in a dynamically allocated array
+ * @return TRUE if fallback list created successfully, FALSE on error
+ */
+static BOOL BuildFallbackPathList(void)
+{
+    const char *fallback_paths[] = {
+        "C:",
+        "SYS:Utilities/",
+        "SYS:Tools/",
+        "SYS:System/",
+        "S:",
+        NULL  /* Terminator */
+    };
+    int count = 0;
+    int i;
+    
+    /* Count entries */
+    while (fallback_paths[count] != NULL)
+    {
+        count++;
+    }
+    
+    log_info(LOG_GENERAL, "BuildFallbackPathList: Creating fallback PATH with %d entries\n", count);
+    
+    /* Allocate array for path strings */
+    g_PathSearchList = (char **)whd_malloc(count * sizeof(char *));
+    if (!g_PathSearchList)
+    {
+        log_error(LOG_GENERAL, "BuildFallbackPathList: Failed to allocate PATH array\n");
+        return FALSE;
+    }
+    memset(g_PathSearchList, 0, count * sizeof(char *));
+    
+    /* Copy paths */
+    for (i = 0; i < count; i++)
+    {
+        int len = strlen(fallback_paths[i]);
+        g_PathSearchList[i] = (char *)whd_malloc(len + 1);
+        if (!g_PathSearchList[i])
+        {
+            /* Cleanup on failure */
+            int j;
+            log_error(LOG_GENERAL, "BuildFallbackPathList: Failed to allocate string for path %d\n", i);
+            for (j = 0; j < i; j++)
+            {
+                if (g_PathSearchList[j])
+                {
+                    whd_free(g_PathSearchList[j]);
+                }
+            }
+            whd_free(g_PathSearchList);
+            g_PathSearchList = NULL;
+            g_PathSearchCount = 0;
+            return FALSE;
+        }
+        strcpy(g_PathSearchList[i], fallback_paths[i]);
+        log_info(LOG_GENERAL, "  [%d] %s\n", i + 1, fallback_paths[i]);
+    }
+    
+    g_PathSearchCount = count;
+    log_info(LOG_GENERAL, "BuildFallbackPathList: Fallback PATH list created with %d directories\n", 
+             g_PathSearchCount);
+    
+    return TRUE;
+}
+
+/**
+ * @brief Build PATH search list by executing shell Path command
  * 
- * The cli_CommandDir is a BPTR linked list where each node contains:
- *   - Next pointer (BPTR to next node)
- *   - Lock (BPTR lock to the directory)
+ * This function obtains the system PATH by spawning a shell and executing
+ * the "Path" command, which outputs the current PATH directories. The output
+ * is written to a temporary file (RAM:iTidy_paths.txt) and then parsed.
+ * 
+ * This approach works whether iTidy is launched from:
+ * - CLI/Shell: Gets the actual shell PATH configuration
+ * - Workbench: Gets the default system PATH from a spawned shell
+ * 
+ * The implementation:
+ * 1. Executes "Path >RAM:iTidy_paths.txt" via SystemTagList()
+ * 2. Reads and parses the temp file line-by-line
+ * 3. Builds g_PathSearchList array with normalized paths
+ * 4. Deletes the temp file
+ * 5. Falls back to hardcoded paths if anything fails
+ * 
+ * Note: The first line of Path output is "Current directory" - we skip it.
  * 
  * @return TRUE if PATH list was built successfully, FALSE on error
  */
 BOOL BuildPathSearchList(void)
 {
 #if PLATFORM_AMIGA
-    struct Process *proc;
-    struct CommandLineInterface *cli;
-    BPTR pathPtr;
-    BPTR currentPath;
-    int count = 0;
-    int i;
-    char pathBuffer[256];
-    BPTR lock;
+    BPTR file = 0;
+    char line[512];
+    char *paths[100];  /* Temp storage for paths (max 100) */
+    int path_count = 0;
+    int i, j;
+    const char *script_files[] = {
+        "S:Startup-Sequence",
+        "S:User-Startup",
+        NULL
+    };
     
-    /* Get current process */
-    proc = (struct Process *)FindTask(NULL);
-    if (!proc)
-    {
-        log_error(LOG_GENERAL, "BuildPathSearchList: Failed to get current process\n");
-        return FALSE;
-    }
+    log_info(LOG_GENERAL, "BuildPathSearchList: Parsing startup scripts for PATH commands...\n");
     
-    /* Get CLI structure - pr_CLI is a BPTR */
-    if (!proc->pr_CLI)
+    /* Process each startup script in order */
+    for (i = 0; script_files[i] != NULL; i++)
     {
-        log_warning(LOG_GENERAL, "BuildPathSearchList: Not running from CLI (no pr_CLI)\n");
-        log_info(LOG_GENERAL, "BuildPathSearchList: Using C: as default PATH\n");
+        const char *script_name = script_files[i];
         
-        /* Allocate array for just "C:" */
-        g_PathSearchList = (char **)whd_malloc(sizeof(char *));
-        if (!g_PathSearchList)
+        log_info(LOG_GENERAL, "BuildPathSearchList: Opening %s\n", script_name);
+        
+        file = Open((CONST_STRPTR)script_name, MODE_OLDFILE);
+        if (!file)
         {
-            log_error(LOG_GENERAL, "BuildPathSearchList: Failed to allocate PATH array\n");
-            return FALSE;
+            LONG error = IoErr();
+            log_info(LOG_GENERAL, "BuildPathSearchList: Could not open %s (IoErr=%ld), skipping\n", 
+                     script_name, error);
+            continue;  /* Try next file */
         }
-        memset(g_PathSearchList, 0, sizeof(char *));
         
-        g_PathSearchList[0] = (char *)whd_malloc(3);  /* "C:" + null */
-        if (!g_PathSearchList[0])
+        log_info(LOG_GENERAL, "BuildPathSearchList: Parsing %s for PATH commands...\n", script_name);
+        
+        /* Read file line by line */
+        while (FGets(file, line, sizeof(line) - 1))
         {
-            whd_free(g_PathSearchList);
-            g_PathSearchList = NULL;
-            log_error(LOG_GENERAL, "BuildPathSearchList: Failed to allocate C: string\n");
-            return FALSE;
-        }
-        memset(g_PathSearchList[0], 0, 3);
-        
-        strcpy(g_PathSearchList[0], "C:");
-        g_PathSearchCount = 1;
-        return TRUE;
-    }
-    
-    cli = (struct CommandLineInterface *)BADDR(proc->pr_CLI);
-    if (!cli)
-    {
-        log_error(LOG_GENERAL, "BuildPathSearchList: Failed to get CLI structure\n");
-        return FALSE;
-    }
-    
-    /* Get cli_CommandDir (this is the PATH list) */
-    pathPtr = cli->cli_CommandDir;
-    
-    /* First pass: count the number of path entries */
-    currentPath = pathPtr;
-    while (currentPath)
-    {
-        /* Convert BPTR to actual pointer */
-        struct PathNode {
-            BPTR pn_Next;
-            BPTR pn_Lock;
-        } *pathNode;
-        
-        pathNode = (struct PathNode *)BADDR(currentPath);
-        if (!pathNode)
-            break;
+            char *trimmed = line;
+            char *dir_start;
+            char *token;
+            BOOL is_add_command = FALSE;
+            int len;
             
-        count++;
-        currentPath = pathNode->pn_Next;
-        
-        /* Safety limit */
-        if (count > 100)
-        {
-            log_warning(LOG_GENERAL, "BuildPathSearchList: Path list exceeds 100 entries, truncating\n");
-            break;
-        }
-    }
-    
-    if (count == 0)
-    {
-        log_info(LOG_GENERAL, "BuildPathSearchList: No PATH entries found, using C: as default\n");
-        
-        /* Allocate array for just "C:" */
-        g_PathSearchList = (char **)whd_malloc(sizeof(char *));
-        if (!g_PathSearchList)
-        {
-            log_error(LOG_GENERAL, "BuildPathSearchList: Failed to allocate PATH array\n");
-            return FALSE;
-        }
-        memset(g_PathSearchList, 0, sizeof(char *));
-        
-        g_PathSearchList[0] = (char *)whd_malloc(3);  /* "C:" + null */
-        if (!g_PathSearchList[0])
-        {
-            whd_free(g_PathSearchList);
-            g_PathSearchList = NULL;
-            log_error(LOG_GENERAL, "BuildPathSearchList: Failed to allocate C: string\n");
-            return FALSE;
-        }
-        memset(g_PathSearchList[0], 0, 3);
-        
-        strcpy(g_PathSearchList[0], "C:");
-        g_PathSearchCount = 1;
-        log_info(LOG_GENERAL, "BuildPathSearchList: Using default PATH: C:\n");
-        return TRUE;
-    }
-    
-    /* Allocate array for path strings */
-    g_PathSearchList = (char **)whd_malloc(count * sizeof(char *));
-    if (!g_PathSearchList)
-    {
-        log_error(LOG_GENERAL, "BuildPathSearchList: Failed to allocate PATH array for %d entries\n", count);
-        return FALSE;
-    }
-    memset(g_PathSearchList, 0, count * sizeof(char *));
-    
-    /* Second pass: extract path strings */
-    currentPath = pathPtr;
-    i = 0;
-    
-    log_info(LOG_GENERAL, "BuildPathSearchList: Reading system PATH (%d entries):\n", count);
-    
-    while (currentPath && i < count)
-    {
-        struct PathNode {
-            BPTR pn_Next;
-            BPTR pn_Lock;
-        } *pathNode;
-        
-        pathNode = (struct PathNode *)BADDR(currentPath);
-        if (!pathNode)
-            break;
-        
-        /* Get the lock to this directory */
-        lock = pathNode->pn_Lock;
-        if (lock)
-        {
-            /* Convert lock to path string */
-            if (NameFromLock(lock, pathBuffer, sizeof(pathBuffer)))
+            /* Remove newline */
+            len = strlen(line);
+            if (len > 0 && line[len - 1] == '\n')
             {
-                int len = strlen(pathBuffer);
+                line[len - 1] = '\0';
+                len--;
+            }
+            
+            /* Trim leading whitespace */
+            while (*trimmed == ' ' || *trimmed == '\t')
+                trimmed++;
+            
+            /* Check if line starts with "Path " or "PATH " (case insensitive) */
+            if (strncmp(trimmed, "Path ", 5) != 0 && strncmp(trimmed, "PATH ", 5) != 0 &&
+                strncmp(trimmed, "path ", 5) != 0)
+            {
+                continue;  /* Not a PATH command */
+            }
+            
+            log_info(LOG_GENERAL, "  Found PATH command: '%s'\n", trimmed);
+            
+            /* Skip past "Path " */
+            dir_start = trimmed + 5;
+            
+            /* Skip whitespace after "Path" */
+            while (*dir_start == ' ' || *dir_start == '\t')
+                dir_start++;
+            
+            /* Check if command ends with "ADD" */
+            len = strlen(dir_start);
+            if (len >= 3)
+            {
+                char *end = dir_start + len - 1;
                 
-                /* Ensure path ends with / or : */
-                if (len > 0 && pathBuffer[len - 1] != '/' && pathBuffer[len - 1] != ':')
+                /* Trim trailing whitespace */
+                while (end > dir_start && (*end == ' ' || *end == '\t' || *end == '\n'))
                 {
-                    if (len < sizeof(pathBuffer) - 1)
+                    *end = '\0';
+                    end--;
+                    len--;
+                }
+                
+                /* Check for ADD at end */
+                if (len >= 3)
+                {
+                    char *add_pos = dir_start + len - 3;
+                    if (strncmp(add_pos, "ADD", 3) == 0 || strncmp(add_pos, "add", 3) == 0)
                     {
-                        pathBuffer[len] = '/';
-                        pathBuffer[len + 1] = '\0';
-                        len++;
+                        is_add_command = TRUE;
+                        *add_pos = '\0';  /* Remove "ADD" from string */
+                        
+                        /* Trim whitespace before ADD */
+                        add_pos--;
+                        while (add_pos > dir_start && (*add_pos == ' ' || *add_pos == '\t'))
+                        {
+                            *add_pos = '\0';
+                            add_pos--;
+                        }
                     }
                 }
-                
-                /* Allocate and copy path string */
-                g_PathSearchList[i] = (char *)whd_malloc(len + 1);
-                if (g_PathSearchList[i])
+            }
+            
+            /* If not ADD command, clear existing paths */
+            if (!is_add_command)
+            {
+                log_info(LOG_GENERAL, "  -> REPLACE mode: clearing %d existing paths\n", path_count);
+                for (j = 0; j < path_count; j++)
                 {
-                    memset(g_PathSearchList[i], 0, len + 1);
-                    strcpy(g_PathSearchList[i], pathBuffer);
-                    log_info(LOG_GENERAL, "  [%d] %s\n", i + 1, pathBuffer);
-                    i++;
+                    whd_free(paths[j]);
                 }
-                else
-                {
-                    log_error(LOG_GENERAL, "BuildPathSearchList: Failed to allocate string for path %d\n", i);
-                }
+                path_count = 0;
             }
             else
             {
-                log_warning(LOG_GENERAL, "BuildPathSearchList: NameFromLock failed for path entry %d\n", i);
+                log_info(LOG_GENERAL, "  -> ADD mode: appending to existing %d paths\n", path_count);
+            }
+            
+            /* Parse directory list (space-separated) */
+            token = strtok(dir_start, " \t");
+            while (token != NULL && path_count < 100)
+            {
+                int token_len = strlen(token);
+                
+                if (token_len > 0)
+                {
+                    /* Ensure path ends with / or : */
+                    char *path_copy;
+                    if (token[token_len - 1] != '/' && token[token_len - 1] != ':')
+                    {
+                        path_copy = (char *)whd_malloc(token_len + 2);
+                        if (path_copy)
+                        {
+                            strcpy(path_copy, token);
+                            path_copy[token_len] = '/';
+                            path_copy[token_len + 1] = '\0';
+                        }
+                    }
+                    else
+                    {
+                        path_copy = (char *)whd_malloc(token_len + 1);
+                        if (path_copy)
+                        {
+                            strcpy(path_copy, token);
+                        }
+                    }
+                    
+                    if (path_copy)
+                    {
+                        paths[path_count] = path_copy;
+                        log_info(LOG_GENERAL, "    Added path [%d]: '%s'\n", path_count + 1, path_copy);
+                        path_count++;
+                    }
+                }
+                
+                token = strtok(NULL, " \t");
             }
         }
         
-        currentPath = pathNode->pn_Next;
+        Close(file);
+        log_info(LOG_GENERAL, "BuildPathSearchList: Finished parsing %s, current path count: %d\n", 
+                 script_name, path_count);
     }
     
-    g_PathSearchCount = i;
-    
-    if (g_PathSearchCount == 0)
+    /* Check if we got any paths */
+    if (path_count == 0)
     {
-        log_error(LOG_GENERAL, "BuildPathSearchList: Failed to extract any valid paths\n");
-        whd_free(g_PathSearchList);
-        g_PathSearchList = NULL;
-        return FALSE;
+        log_warning(LOG_GENERAL, "BuildPathSearchList: No PATH entries found in startup scripts, using fallback\n");
+        return BuildFallbackPathList();
     }
     
-    log_info(LOG_GENERAL, "BuildPathSearchList: Successfully built PATH list with %d directories\n", 
+    log_info(LOG_GENERAL, "BuildPathSearchList: Allocating global array for %d paths\n", path_count);
+    
+    /* Allocate global array */
+    g_PathSearchList = (char **)whd_malloc(path_count * sizeof(char *));
+    if (!g_PathSearchList)
+    {
+        log_error(LOG_GENERAL, "BuildPathSearchList: Failed to allocate PATH array\n");
+        /* Free temp paths */
+        for (i = 0; i < path_count; i++)
+        {
+            whd_free(paths[i]);
+        }
+        return BuildFallbackPathList();
+    }
+    memset(g_PathSearchList, 0, path_count * sizeof(char *));
+    
+    /* Transfer paths to global array */
+    log_info(LOG_GENERAL, "BuildPathSearchList: Final PATH list:\n");
+    for (i = 0; i < path_count; i++)
+    {
+        g_PathSearchList[i] = paths[i];
+        log_info(LOG_GENERAL, "  [%d] %s\n", i + 1, g_PathSearchList[i]);
+    }
+    
+    g_PathSearchCount = path_count;
+    
+    log_info(LOG_GENERAL, "BuildPathSearchList: SUCCESS - Built PATH list with %d directories from startup scripts\n", 
              g_PathSearchCount);
     
     return TRUE;

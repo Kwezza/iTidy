@@ -644,6 +644,9 @@ int main(int argc, char **argv)
     dumpIControlPrefs(&prefsIControl);
 #endif
 
+    /* NOTE: PATH search list is now built AFTER window opens (see main_window.c) */
+    /* This prevents slow startup when parsing S:Startup-Sequence and S:User-Startup */
+
     /* KEEP: Initialize window system (for icon processing, not GUI) */
     InitializeWindow();
 #ifdef DEBUG
@@ -737,6 +740,15 @@ int main(int argc, char **argv)
     FreeToolCache();
 #ifdef DEBUG
     log_debug(LOG_GENERAL, "DEBUG: Tool cache cleanup completed\n");
+#endif
+
+    /* Free PATH search list if it exists */
+#ifdef DEBUG
+    log_debug(LOG_GENERAL, "DEBUG: Freeing PATH search list...\n");
+#endif
+    FreePathSearchList();
+#ifdef DEBUG
+    log_debug(LOG_GENERAL, "DEBUG: PATH search list freed\n");
 #endif
 
     /* Report memory status before shutdown */

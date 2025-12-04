@@ -560,13 +560,24 @@ BOOL ScanDirectoryForToolsOnly(void)
     sanitizedPath[sizeof(sanitizedPath) - 1] = '\0';
     sanitizeAmigaPath(sanitizedPath);
     
-    /* Build PATH search list for default tool validation */
-    PROGRESS_STATUS("*** Building PATH search list for default tool scanning ***");
-    if (!BuildPathSearchList())
+    /* Check if PATH search list is already built (should be at program startup) */
+    /* If not, build it now */
+    extern char **g_PathSearchList;
+    extern int g_PathSearchCount;
+    
+    if (!g_PathSearchList || g_PathSearchCount == 0)
     {
-        log_error(LOG_GENERAL, "Failed to build PATH search list - scan aborted\n");
-        PROGRESS_STATUS("ERROR: Failed to build PATH search list - scan aborted");
-        return FALSE;
+        PROGRESS_STATUS("*** Building PATH search list for default tool scanning ***");
+        if (!BuildPathSearchList())
+        {
+            log_warning(LOG_GENERAL, "Failed to build PATH search list - validation may be limited\n");
+            PROGRESS_STATUS("WARNING: Failed to build PATH search list - validation may be limited");
+        }
+    }
+    else
+    {
+        PROGRESS_STATUS("*** Using PATH search list (already loaded at startup) ***");
+        log_info(LOG_GENERAL, "PATH search list already built (%d directories)\n", g_PathSearchCount);
     }
     
     g_ValidateDefaultTools = TRUE;
@@ -608,9 +619,8 @@ BOOL ScanDirectoryForToolsOnly(void)
     /* Note: Tool cache remains active for viewing in Tool Cache Window */
     PROGRESS_STATUS("Tool cache retained for viewing");
     
-    /* Free PATH search list */
-    PROGRESS_STATUS("Freeing PATH search list");
-    FreePathSearchList();
+    /* Note: PATH search list is kept loaded for the entire session */
+    /* It will be freed at program exit */
     g_ValidateDefaultTools = FALSE;
     
     return success;
