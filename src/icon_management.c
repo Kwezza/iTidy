@@ -490,9 +490,13 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                         newIcon.default_tool = iconDetails.defaultTool; /* Transfer ownership */
                         
                         /* Log default tool information and validate existence (if enabled) */
+                        /* IMPORTANT: Only validate default tools for WBPROJECT icons.
+                         * WBTOOL icons (executables) don't use their default tool - Workbench
+                         * runs the tool itself, not the default tool. Default tool field in
+                         * WBTOOL icons is often garbage or leftover data from icon editors. */
                         if (iconDetails.defaultTool != NULL && iconDetails.defaultTool[0] != '\0')
                         {
-                            if (g_ValidateDefaultTools)
+                            if (g_ValidateDefaultTools && iconDetails.workbenchType == WBPROJECT)
                             {
                                 BOOL toolExists = ValidateDefaultTool(iconDetails.defaultTool);
                                 
@@ -502,6 +506,12 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                                 log_info(LOG_ICONS, "  Default Tool: '%s' -> %s [%s]\n", 
                                         iconDetails.defaultTool, fileNameNoInfo,
                                         toolExists ? "EXISTS" : "MISSING");
+                            }
+                            else if (iconDetails.workbenchType == WBTOOL)
+                            {
+                                /* Skip validation for WBTOOL - default tool is not used by Workbench */
+                                log_info(LOG_ICONS, "  Default Tool: '%s' -> %s (WBTOOL - not validated)\n", 
+                                        iconDetails.defaultTool, fileNameNoInfo);
                             }
                             else
                             {

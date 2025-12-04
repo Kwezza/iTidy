@@ -26,6 +26,7 @@ typedef struct {
     IconPosition position;      /* Icon X,Y coordinates */
     IconSize size;              /* Icon width and height (base bitmap only) */
     int iconType;               /* Icon format: standard, NewIcon, or OS3.5 */
+    UBYTE workbenchType;        /* Workbench icon type: WBTOOL, WBPROJECT, WBDRAWER, etc. */
     BOOL hasFrame;              /* Whether icon has a border/frame */
     char *defaultTool;          /* Default tool path (caller must free) */
     BOOL isNewIcon;             /* TRUE if NewIcon format detected */

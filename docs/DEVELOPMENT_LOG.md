@@ -2,6 +2,38 @@
 
 ---
 
+### Bugfix: Skip Default Tool Validation for WBTOOL Icons (December 4, 2025)
+
+* **Author**: AI Agent (GitHub Copilot)
+* **Status**: ✅ Fixed
+* **Severity**: Medium - Data quality improvement
+* **Impact**: Eliminates noise from garbage default tool values in executable icons
+* **Description**: Default tool validation now only checks WBPROJECT icons (data files). WBTOOL icons (executables) are skipped because Workbench doesn't use their default tool field - it runs the executable directly. The default tool field in WBTOOL icons often contains garbage or leftover data from icon editors.
+* **Root Cause**: iTidy was validating default tools for all icon types including WBTOOL (executables). Since Workbench never uses the default tool field for WBTOOL icons, these validations were meaningless and added noise to the tool cache. Examples included "JUNK" and other random strings appearing as MISSING tools.
+* **How Workbench Uses Icons**:
+   - WBPROJECT icons (data files): Default tool specifies which program to launch when double-clicking the data file (e.g., "MultiView" for a .txt file)
+   - WBTOOL icons (executables): You double-click the tool itself to run it - default tool field is irrelevant and ignored by Workbench
+   - WBDRAWER/WBDISK icons (drawers/disks): No default tool used
+* **Solution**:
+   - Added workbenchType field to IconDetailsFromDisk structure to capture do_Type from DiskObject
+   - Extract Workbench icon type (WBPROJECT, WBTOOL, WBDRAWER, etc.) in GetIconDetailsFromDisk()
+   - Modified default tool validation in ScanDirectoryForIcons() to only validate when workbenchType equals WBPROJECT
+   - WBTOOL icons with default tools are logged as "WBTOOL - not validated" for debugging
+   - Tool cache no longer polluted with meaningless entries from executable icons
+* **Files Modified**:
+   - src/icon_types.h - Added workbenchType field to IconDetailsFromDisk structure
+   - src/icon_types.c - Extract do_Type from DiskObject during icon details reading
+   - src/icon_management.c - Added type check before calling ValidateDefaultTool(), separate logging path for WBTOOL icons
+* **Benefits**:
+   - Cleaner tool cache with only semantically relevant default tools
+   - No more "JUNK" or garbage strings showing as MISSING tools
+   - Faster scanning (fewer validation Lock() calls for irrelevant tools)
+   - More accurate representation of actual default tool usage
+   - Reduced log noise from validating tools that Workbench ignores
+* **Testing**: Verified that WBTOOL icons (like SAS/C compiler executables) with garbage default tool values no longer appear in validation reports or tool cache
+
+---
+
 ### Feature: PATH Search List from Startup Scripts (December 4, 2025)
 
 * **Author**: AI Agent (GitHub Copilot)

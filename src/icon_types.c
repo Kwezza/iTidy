@@ -755,6 +755,9 @@ BOOL GetIconDetailsFromDisk(const char *filePath, IconDetailsFromDisk *details, 
     details->size.width = diskObj->do_Gadget.Width;
     details->size.height = diskObj->do_Gadget.Height;
     
+    /* Extract Workbench icon type (WBPROJECT, WBTOOL, WBDRAWER, etc.) */
+    details->workbenchType = diskObj->do_Type;
+    
     /* Extract and copy default tool if present */
     if (diskObj->do_DefaultTool != NULL && diskObj->do_DefaultTool[0] != '\0')
     {
