@@ -6,7 +6,23 @@ This document explains the Default Tool Analysis window, accessible by clicking 
 
 ## Purpose
 
-This feature scans icons in the selected folder to find and optionally repair missing or invalid default tools.
+This feature scans WBPROJECT icons (data files) in the selected folder to find and optionally repair missing or invalid default tools.
+
+Executable WBTOOL icons are ignored for validation, because Workbench always runs the tool itself and never uses their default tool field. This keeps the results focused on real “open this data file with that program” associations.
+
+
+### What gets scanned
+
+The Default Tool Analysis only validates default tools on:
+
+- **WBPROJECT icons** – data files that rely on a default tool to open (e.g. text files, images, music, scripts)
+
+It deliberately **skips**:
+
+- **WBTOOL icons** – executable programs; Workbench ignores their default tool field
+- **WBDRAWER / WBDISK icons** – drawers and disks have no default tool
+
+This avoids filling the tool list with junk values from executable icons and keeps the report focused on meaningful default tool usage.
 
 ---
 
@@ -163,9 +179,13 @@ The **Restore Default Tools Backups...** button opens a window to restore previo
 
 ### PATH Searching
 
-The scanner searches for tools using the Amiga PATH environment variable. This includes:
-- `C:` (standard commands directory)
-- Any directories added to your PATH in `S:Startup-Sequence` or `S:User-Startup`
+When validating a simple tool name (e.g. `MultiView`, `sc`, `smake`), iTidy:
+
+- Parses `S:Startup-Sequence` and `S:User-Startup` to reconstruct the **PATH**
+- Understands both `Path DIR` (replace) and `Path DIR ADD` (append) forms
+- Searches **all directories** in the boot PATH, not just `C:`
+
+Absolute paths (e.g. `Work:Tools/MultiView`) are validated directly.
 
 ### Tool Cache
 

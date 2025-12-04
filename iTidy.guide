@@ -1,0 +1,59 @@
+@database iTidy.guide
+@node Main "iTidy v2.0 - AmigaGuide Manual"
+
+@{b}iTidy v2.0 - Icon & Window Tidy Tool@{ub}
+
+@{u}Table of Contents@{uu}
+@{l}Introduction@{ul} [Introduction]
+@{l}Getting Started@{ul} [Getting_Started]
+@{l}Main Window@{ul} [Main_Window]
+@{l}Advanced Settings@{ul} [Advanced_Settings]
+@{l}Default Tool Analysis@{ul} [Default_Tool_Analysis]
+@{l}Restoring Backups@{ul} [Restoring_Backups]
+@{l}Tips & Troubleshooting@{ul} [Tips_Troubleshooting]
+@{l}Credits & Version Info@{ul} [Credits]
+
+@node Introduction "Introduction"
+@{b}What is iTidy?@{ub}
+  iTidy is a Workbench utility for tidying icons and resizing windows across entire directory trees. It solves the problem of manual, one-folder-at-a-time tidying and helps keep your Workbench neat, consistent, and recoverable.
+
+@{b}Why use iTidy?@{ub}
+  - Tidy thousands of drawers in one run
+  - Fix layouts after changing fonts or screen modes
+  - Repair broken or missing default tools
+  - Safely undo changes with built-in backup/restore
+
+@node Getting_Started "Getting Started"
+To launch iTidy, double-click the iTidy icon from Workbench. Select the folder you wish to tidy, adjust options as needed, and click "Start". For more control, use the Advanced Settings window.
+
+@node Main_Window "Main Window"
+The main window provides quick access to the most common tidying operations:
+- @{b}Folder Path@{ub}: Shows the selected folder
+- @{b}Browse...@{ub}: Opens a requester to choose a folder
+- @{b}Tidy Options@{ub}: Choose sort order (Folders First, Files First, Mixed)
+- @{b}Start@{ub}: Begins tidying with current settings
+
+@node Advanced_Settings "Advanced Settings"
+Accessed via "More Options...". Here you can:
+- Set window aspect ratio (Tall, Square, Wide, etc.)
+- Choose overflow strategy (Expand Horizontally, Vertically, Both)
+- Adjust icon spacing (X and Y)
+
+@node Default_Tool_Analysis "Default Tool Analysis"
+Use "Fix Default Tools..." to scan for missing or invalid default tools in WBPROJECT icons. Filter results, review tool paths, and repair broken associations easily.
+
+@node Restoring_Backups "Restoring Backups"
+If backups were enabled, use "Restore Backups..." to revert folders to their previous state. Select a backup run, review details, and restore as needed.
+
+@node Tips_Troubleshooting "Tips & Troubleshooting"
+- Always enable backups for large changes
+- Use Advanced Settings for best layout results
+- If icons don't open, check default tool paths
+- For help, see this guide or contact the author
+
+@node Credits "Credits & Version Info"
+Author: Kwezza
+Version: 2.0
+Contact: [Your Contact Info Here]
+
+@endnode

@@ -203,19 +203,6 @@ When enabled, removes the border/frame around icons during processing. This appl
 
 ---
 
-## Beta Options... Button
-
-Opens a separate window with experimental features that are still under development. These features may change or be removed in future versions.
-
-**Current beta features include:**
-- **Open folders after processing** - Automatically opens processed folders on Workbench
-- **Find and update open windows** - Moves/resizes already-open folder windows to match saved geometry
-- **Logging controls** - Log level selection, memory logging, performance logging toggles
-- **Default tool validation** - Validates that default tools exist in system PATH
-- **Default tool backup** - Creates CSV backup before modifying default tools
-
----
-
 ## OK and Cancel Buttons
 
 - **OK** - Saves all settings and closes the Advanced Settings window. Settings are applied when you click "Apply" in the main iTidy window.
