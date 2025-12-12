@@ -358,9 +358,9 @@ By using iTidy, you accept that you do so entirely at your own risk. The author 
 
 ## Credits & Version Info
 
-**Author:** Kerry Thompson
-**Version:** 1.2  
-**Bug reports and improvement ideas welcome:** https://github.com/Kwezza/iTidy
+**Author:** Kwezza  
+**Version:** 2.0  
+**Contact:** [Your Contact Info Here]
 
 ---
 
