@@ -1,0 +1,54 @@
+itidy.guide:1:Database "iTidy.guide" and file name "itidy" do not match
+itidy.guide:6:@node: wrong number of arguments
+itidy.guide:33:Unbalanced @endnode
+itidy.guide:35:@node: wrong number of arguments
+itidy.guide:62:Unbalanced @endnode
+itidy.guide:64:@node: wrong number of arguments
+itidy.guide:117:Unbalanced @endnode
+itidy.guide:119:@node: wrong number of arguments
+itidy.guide:156:Unbalanced @endnode
+itidy.guide:158:@node: wrong number of arguments
+itidy.guide:236:Unbalanced @endnode
+itidy.guide:238:@node: wrong number of arguments
+itidy.guide:318:Unbalanced @endnode
+itidy.guide:320:@node: wrong number of arguments
+itidy.guide:383:Unbalanced @endnode
+itidy.guide:385:@node: wrong number of arguments
+itidy.guide:449:Unbalanced @endnode
+itidy.guide:451:@node: wrong number of arguments
+itidy.guide:547:Unbalanced @endnode
+itidy.guide:549:@node: wrong number of arguments
+itidy.guide:586:Unbalanced @endnode
+itidy.guide:66:@next references undefined node "GETTINGSTARTED"
+itidy.guide:67:@prev references undefined node "REQUIREMENTS"
+itidy.guide:121:@next references undefined node "MAINWINDOW"
+itidy.guide:122:@prev references undefined node "INTRODUCTION"
+itidy.guide:160:@next references undefined node "ADVANCED"
+itidy.guide:161:@prev references undefined node "GETTINGSTARTED"
+itidy.guide:240:@next references undefined node "DEFAULTTOOL"
+itidy.guide:241:@prev references undefined node "MAINWINDOW"
+itidy.guide:322:@next references undefined node "RESTORE"
+itidy.guide:323:@prev references undefined node "ADVANCED"
+itidy.guide:387:@next references undefined node "TIPS"
+itidy.guide:388:@prev references undefined node "DEFAULTTOOL"
+itidy.guide:453:@next references undefined node "CREDITS"
+itidy.guide:454:@prev references undefined node "RESTORE"
+itidy.guide:551:@prev references undefined node "TIPS"
+itidy.guide:1:MAIN node missing
+itidy.guide:36:TOC node "MAIN" missing
+itidy.guide:65:TOC node "MAIN" missing
+itidy.guide:65:More than one @TOC at top level
+itidy.guide:120:TOC node "MAIN" missing
+itidy.guide:120:More than one @TOC at top level
+itidy.guide:159:TOC node "MAIN" missing
+itidy.guide:159:More than one @TOC at top level
+itidy.guide:239:TOC node "MAIN" missing
+itidy.guide:239:More than one @TOC at top level
+itidy.guide:321:TOC node "MAIN" missing
+itidy.guide:321:More than one @TOC at top level
+itidy.guide:386:TOC node "MAIN" missing
+itidy.guide:386:More than one @TOC at top level
+itidy.guide:452:TOC node "MAIN" missing
+itidy.guide:452:More than one @TOC at top level
+itidy.guide:550:TOC node "MAIN" missing
+itidy.guide:550:More than one @TOC at top level

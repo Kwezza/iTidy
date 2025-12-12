@@ -37,6 +37,8 @@
 #include "StatusWindows/main_progress_window.h"
 #include "../icon_types.h"
 #include "../path_utilities.h"
+#include "GUI/gui_utilities.h"
+#include "Settings/WorkbenchPrefs.h"
 
 /*------------------------------------------------------------------------*/
 /* External Tool Cache Variables                                         */
@@ -209,10 +211,25 @@ static BOOL setup_main_window_menus(void)
         return FALSE;
     }
     
-    /* Layout menus with NewLook appearance */
-    if (!LayoutMenus(main_menu_strip, visual_info_menu, GTMN_NewLookMenus, TRUE, TAG_END))
+    /* Layout menus - use NewLook appearance on WB 3.0+ only */
+    /* On WB 2.x, GTMN_NewLookMenus is not available */
+    BOOL layout_success;
+    if (prefsWorkbench.workbenchVersion >= 39)
     {
-        log_error(LOG_GUI, "Error: Could not layout NewLook menus\n");
+        /* WB 3.0+ - Use NewLook menus */
+        layout_success = LayoutMenus(main_menu_strip, visual_info_menu, GTMN_NewLookMenus, TRUE, TAG_END);
+        log_info(LOG_GUI, "Using NewLook menus (WB 3.0+)\n");
+    }
+    else
+    {
+        /* WB 2.x - Use classic menu layout */
+        layout_success = LayoutMenus(main_menu_strip, visual_info_menu, TAG_END);
+        log_info(LOG_GUI, "Using classic menus (WB 2.x)\n");
+    }
+    
+    if (!layout_success)
+    {
+        log_error(LOG_GUI, "Error: Could not layout menus\n");
         FreeMenus(main_menu_strip);
         FreeVisualInfo(visual_info_menu);
         FreeScreenDrawInfo(wb_screen_menu, draw_info_menu);
@@ -1020,21 +1037,44 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     }
 
     /* Open the window with calculated height based on font size */
-    win_data->window = OpenWindowTags(NULL,
-        WA_Left, ITIDY_WINDOW_LEFT,
-        WA_Top, ITIDY_WINDOW_TOP,
-        WA_Width, ITIDY_WINDOW_WIDTH,
-        WA_Height, calculated_height,
-        WA_Title, ITIDY_WINDOW_TITLE,
-        WA_DragBar, TRUE,
-        WA_DepthGadget, TRUE,
-        WA_CloseGadget, TRUE,
-        WA_Activate, TRUE,
-        WA_PubScreen, win_data->screen,
-        WA_Gadgets, win_data->glist,
-        WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW | IDCMP_MENUPICK,
-        WA_NewLookMenus, TRUE,  /* Enable NewLook menus */
-        TAG_END);
+    /* WA_NewLookMenus is only available on WB 3.0+ (Intuition v39+) */
+    if (prefsWorkbench.workbenchVersion >= 39)
+    {
+        /* WB 3.0+ - Enable NewLook menus */
+        win_data->window = OpenWindowTags(NULL,
+            WA_Left, ITIDY_WINDOW_LEFT,
+            WA_Top, ITIDY_WINDOW_TOP,
+            WA_Width, ITIDY_WINDOW_WIDTH,
+            WA_Height, calculated_height,
+            WA_Title, ITIDY_WINDOW_TITLE,
+            WA_DragBar, TRUE,
+            WA_DepthGadget, TRUE,
+            WA_CloseGadget, TRUE,
+            WA_Activate, TRUE,
+            WA_PubScreen, win_data->screen,
+            WA_Gadgets, win_data->glist,
+            WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW | IDCMP_MENUPICK,
+            WA_NewLookMenus, TRUE,  /* Enable NewLook menus (WB 3.0+) */
+            TAG_END);
+    }
+    else
+    {
+        /* WB 2.x - Classic menus (no WA_NewLookMenus tag) */
+        win_data->window = OpenWindowTags(NULL,
+            WA_Left, ITIDY_WINDOW_LEFT,
+            WA_Top, ITIDY_WINDOW_TOP,
+            WA_Width, ITIDY_WINDOW_WIDTH,
+            WA_Height, calculated_height,
+            WA_Title, ITIDY_WINDOW_TITLE,
+            WA_DragBar, TRUE,
+            WA_DepthGadget, TRUE,
+            WA_CloseGadget, TRUE,
+            WA_Activate, TRUE,
+            WA_PubScreen, win_data->screen,
+            WA_Gadgets, win_data->glist,
+            WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW | IDCMP_MENUPICK,
+            TAG_END);
+    }
 
     if (win_data->window == NULL)
     {
@@ -1147,7 +1187,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     /* Build PATH search list for default tool validation (deferred until after window opens) */
     /* Show busy pointer while parsing S:Startup-Sequence and S:User-Startup */
     CONSOLE_STATUS("Building system PATH list...\n");
-    SetWindowPointer(win_data->window, WA_BusyPointer, TRUE, TAG_DONE);
+    safe_set_window_pointer(win_data->window, TRUE);
     
     log_info(LOG_GENERAL, "Building system PATH search list (deferred after window open)...\n");
     if (!BuildPathSearchList())
@@ -1159,7 +1199,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
         log_info(LOG_GENERAL, "PATH search list built successfully\n");
     }
     
-    SetWindowPointer(win_data->window, WA_Pointer, NULL, TAG_DONE);
+    safe_set_window_pointer(win_data->window, FALSE);
     CONSOLE_STATUS("Ready for user interaction.\n");
 
     return TRUE;
@@ -1378,7 +1418,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         }
                         
                         /* Set busy pointer on main window */
-                        SetWindowPointer(win_data->window, WA_BusyPointer, TRUE, TAG_END);
+                        safe_set_window_pointer(win_data->window, TRUE);
                         
                         /* Disable main window input while processing */
                         ModifyIDCMP(win_data->window, 0);
@@ -1418,7 +1458,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         /* Re-enable main window */
                         ModifyIDCMP(win_data->window, 
                             IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_GADGETDOWN | IDCMP_REFRESHWINDOW | IDCMP_MENUPICK);
-                        SetWindowPointer(win_data->window, WA_Pointer, NULL, TAG_END);
+                        safe_set_window_pointer(win_data->window, FALSE);
                         
                         /* Keep progress window open so user can review - wait for Cancel/Close */
                         while (itidy_main_progress_window_handle_events(&progress_window))
@@ -1444,17 +1484,13 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                             CONSOLE_STATUS("Restore Backups button clicked - opening Restore window\n");
                             
                             /* Set busy pointer on main window */
-                            SetWindowPointer(win_data->window,
-                                           WA_BusyPointer, TRUE,
-                                           TAG_END);
+                            safe_set_window_pointer(win_data->window, TRUE);
                             
                             /* Open restore window (modal) */
                             if (open_restore_window(&restore_data))
                             {
                                 /* Clear busy pointer - restore window is now open */
-                                SetWindowPointer(win_data->window,
-                                               WA_Pointer, NULL,
-                                               TAG_END);
+                                safe_set_window_pointer(win_data->window, FALSE);
                                 
                                 /* Disable main window input while restore window is open */
                                 ModifyIDCMP(win_data->window, 0);
@@ -1478,9 +1514,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                             else
                             {
                                 /* Clear busy pointer on error */
-                                SetWindowPointer(win_data->window,
-                                               WA_Pointer, NULL,
-                                               TAG_END);
+                                safe_set_window_pointer(win_data->window, FALSE);
                                 
                                 CONSOLE_ERROR("Failed to open Restore window\n");
                             }

@@ -6,6 +6,7 @@
 #include "recursive_progress.h"
 #include "progress_common.h"
 #include "Settings/IControlPrefs.h"
+#include "GUI/gui_utilities.h"
 
 #include <exec/types.h>
 #include <exec/memory.h>
@@ -473,9 +474,7 @@ struct iTidy_RecursiveProgressWindow* iTidy_OpenRecursiveProgress(
     }
     
     /* Set busy pointer IMMEDIATELY */
-    SetWindowPointer(rpw->window,
-                     WA_BusyPointer, TRUE,
-                     TAG_END);
+    safe_set_window_pointer(rpw->window, TRUE);
     
     /* Draw initial empty state */
     RedrawRecursiveWindow(rpw);
@@ -695,9 +694,7 @@ void iTidy_CloseRecursiveProgress(
     
     if (rpw->window) {
         /* Clear busy pointer */
-        SetWindowPointer(rpw->window,
-                         WA_Pointer, NULL,
-                         TAG_END);
+        safe_set_window_pointer(rpw->window, FALSE);
         
         CloseWindow(rpw->window);
         rpw->window = NULL;

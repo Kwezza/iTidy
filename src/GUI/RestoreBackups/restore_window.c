@@ -57,6 +57,7 @@
 #include "writeLog.h"
 #include "folder_view_window.h"
 #include "GUI/test_simple_window.h"  /* TESTING: Simple window test */
+#include "GUI/gui_utilities.h"
 #include "backup_runs.h"
 #include "backup_catalog.h"
 #include "backup_restore.h"
@@ -1538,9 +1539,7 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     RefreshGList(restore_data->glist, restore_data->window, NULL, -1); */
     
     /* Set busy pointer while scanning for backup runs */
-    SetWindowPointer(restore_data->window,
-                     WA_BusyPointer, TRUE,
-                     TAG_END);
+    safe_set_window_pointer(restore_data->window, TRUE);
     
     /* Scan for backup runs */
     append_to_log("Scanning for backup runs in: %s\n", restore_data->backup_root_path);
@@ -1558,9 +1557,7 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     }
     
     /* Clear busy pointer - scanning complete */
-    SetWindowPointer(restore_data->window,
-                     WA_Pointer, NULL,
-                     TAG_END);
+    safe_set_window_pointer(restore_data->window, FALSE);
     
     /* Free DrawInfo - no longer needed after window is created */
     if (draw_info != NULL)

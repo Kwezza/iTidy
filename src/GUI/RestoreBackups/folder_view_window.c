@@ -21,6 +21,7 @@
 
 #include "folder_view_window.h"
 #include "writeLog.h"
+#include "GUI/gui_utilities.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -196,9 +197,7 @@ BOOL open_folder_view_window(struct iTidyFolderViewWindow *folder_data,
     append_to_log("Window UserPort: %p\n", folder_data->window->UserPort);
     
     /* Set busy pointer while populating listview */
-    SetWindowPointer(folder_data->window,
-                     WA_BusyPointer, TRUE,
-                     TAG_END);
+    safe_set_window_pointer(folder_data->window, TRUE);
     
     /* NOW parse catalog and build folder tree - AFTER window is open */
     if (stored_catalog_path != NULL)
@@ -209,9 +208,7 @@ BOOL open_folder_view_window(struct iTidyFolderViewWindow *folder_data,
             append_to_log("ERROR: Failed to parse catalog\n");
             
             /* Clear busy pointer even on error */
-            SetWindowPointer(folder_data->window,
-                             WA_Pointer, NULL,
-                             TAG_END);
+            safe_set_window_pointer(folder_data->window, FALSE);
             
             /* Close window and cleanup */
             close_folder_view_window(folder_data);
@@ -267,9 +264,7 @@ BOOL open_folder_view_window(struct iTidyFolderViewWindow *folder_data,
     append_to_log("Gadgets refreshed with populated list\n");
     
     /* Clear busy pointer - listview is populated and window is ready */
-    SetWindowPointer(folder_data->window,
-                     WA_Pointer, NULL,
-                     TAG_END);
+    safe_set_window_pointer(folder_data->window, FALSE);
     
     folder_data->window_open = TRUE;
     folder_data->system_font = NULL;  /* We're not using custom fonts */

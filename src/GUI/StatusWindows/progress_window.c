@@ -6,6 +6,7 @@
 #include "progress_window.h"
 #include "progress_common.h"
 #include "Settings/IControlPrefs.h"
+#include "GUI/gui_utilities.h"
 
 #include <exec/types.h>
 #include <exec/memory.h>
@@ -201,9 +202,7 @@ struct iTidy_ProgressWindow* iTidy_OpenProgressWindow(
     }
     
     /* Set busy pointer IMMEDIATELY after window opens */
-    SetWindowPointer(pw->window,
-                     WA_BusyPointer, TRUE,
-                     TAG_END);
+    safe_set_window_pointer(pw->window, TRUE);
     
     /* Draw initial empty state */
     RedrawProgressWindow(pw);
@@ -324,9 +323,7 @@ void iTidy_ShowCompletionState(
         return;
     
     /* Clear busy pointer - operation is complete */
-    SetWindowPointer(pw->window,
-                     WA_Pointer, NULL,
-                     TAG_END);
+    safe_set_window_pointer(pw->window, FALSE);
     
     /* Get theme pens */
     if (!iTidy_Progress_GetPens(pw->screen, &pens))
@@ -454,9 +451,7 @@ void iTidy_CloseProgressWindow(
         }
         
         /* Clear busy pointer if still set */
-        SetWindowPointer(pw->window,
-                         WA_Pointer, NULL,
-                         TAG_END);
+        safe_set_window_pointer(pw->window, FALSE);
         
         CloseWindow(pw->window);
         pw->window = NULL;

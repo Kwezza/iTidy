@@ -33,6 +33,7 @@
 #include "writeLog.h"
 #include "Settings/IControlPrefs.h"  /* For prefsIControl global */
 #include "string_functions.h"
+#include "GUI/gui_utilities.h"
 
 /* NewList macro if not available */
 #ifndef NewList
@@ -240,7 +241,7 @@ static void populate_session_list(iTidy_ToolRestoreData *data)
     
     /* Set busy pointer during loading */
     if (data->window) {
-        SetWindowPointer(data->window, WA_BusyPointer, TRUE, TAG_DONE);
+        safe_set_window_pointer(data->window, TRUE);
     }
     
     /* Free old ListView resources */
@@ -268,7 +269,7 @@ static void populate_session_list(iTidy_ToolRestoreData *data)
     if (!data->session_display_list) {
         log_error(LOG_GUI, "populate_session_list: Failed to allocate display list\n");
         if (data->window) {
-            SetWindowPointer(data->window, WA_BusyPointer, FALSE, TAG_DONE);
+            safe_set_window_pointer(data->window, FALSE);
         }
         return;
     }
@@ -345,7 +346,7 @@ static void populate_session_list(iTidy_ToolRestoreData *data)
     
     /* Clear busy pointer */
     if (data->window) {
-        SetWindowPointer(data->window, WA_BusyPointer, FALSE, TAG_DONE);
+        safe_set_window_pointer(data->window, FALSE);
     }
     
     log_debug(LOG_GUI, "populate_session_list: Complete\n");

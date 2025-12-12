@@ -334,9 +334,9 @@ This error means the icon's default tool path points to a program that doesn't e
 
 ## Credits & Version Info
 
-**Author:** Kwezza  
-**Version:** 2.0  
-**Contact:** [Your Contact Info Here]
+**Author:** Kerry Thompson
+**Version:** 1.2  
+**Bug reports and improvement ideas welcome:** https://github.com/Kwezza/iTidy
 
 ---
 

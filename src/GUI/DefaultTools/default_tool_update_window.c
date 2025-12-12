@@ -15,6 +15,7 @@
 #include "layout_preferences.h"
 #include "writeLog.h"
 #include <easy_request_helper.h>
+#include "GUI/gui_utilities.h"
 
 #include <exec/memory.h>
 #include <intuition/gadgetclass.h>
@@ -285,9 +286,7 @@ static BOOL perform_tool_update(struct iTidy_DefaultToolUpdateWindow *data)
     data->update_in_progress = TRUE;
     
     /* Set busy pointer */
-    SetWindowPointer(data->window,
-        WA_BusyPointer, TRUE,
-        TAG_END);
+    safe_set_window_pointer(data->window, TRUE);
     
     /* Disable update button during operation */
     GT_SetGadgetAttrs(data->update_btn, data->window, NULL,
@@ -443,9 +442,7 @@ static BOOL perform_tool_update(struct iTidy_DefaultToolUpdateWindow *data)
                     }
                     
                     /* Restore normal pointer */
-                    SetWindowPointer(data->window,
-                        WA_BusyPointer, FALSE,
-                        TAG_END);
+                    safe_set_window_pointer(data->window, FALSE);
                     
                     /* Re-enable update button */
                     GT_SetGadgetAttrs(data->update_btn, data->window, NULL,
@@ -519,9 +516,7 @@ static BOOL perform_tool_update(struct iTidy_DefaultToolUpdateWindow *data)
     }
     
     /* Restore normal pointer */
-    SetWindowPointer(data->window,
-        WA_BusyPointer, FALSE,
-        TAG_END);
+    safe_set_window_pointer(data->window, FALSE);
     
     /* Keep update button disabled after completion to prevent double-updates */
     /* User must close window to refresh parent and update again if needed */

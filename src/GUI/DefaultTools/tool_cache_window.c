@@ -12,6 +12,7 @@
 #include "default_tool_backup.h"
 #include <easy_request_helper.h>
 #include "GUI/StatusWindows/main_progress_window.h"
+#include "GUI/gui_utilities.h"
 #include "icon_types.h"
 #include "itidy_types.h"
 #include "Settings/IControlPrefs.h"
@@ -2849,7 +2850,7 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                         }
                         
                         /* Set busy pointer on tool cache window */
-                        SetWindowPointer(tool_data->window, WA_BusyPointer, TRUE, TAG_END);
+                        safe_set_window_pointer(tool_data->window, TRUE);
                         
                         /* Rescan the directory to rebuild tool cache (always recursive) */
                         success = ScanDirectoryForToolsOnlyWithProgress(&progress_window);
@@ -2941,7 +2942,7 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                         itidy_main_progress_window_set_button_text(&progress_window, "Close");
                         
                         /* Clear busy pointer */
-                        SetWindowPointer(tool_data->window, WA_Pointer, NULL, TAG_END);
+                        safe_set_window_pointer(tool_data->window, FALSE);
                         
                         /* Keep progress window open so user can review - wait for Cancel/Close */
                         while (itidy_main_progress_window_handle_events(&progress_window))
@@ -3306,7 +3307,7 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                             }
                             
                             /* Set busy pointer */
-                            SetWindowPointer(tool_data->window, WA_BusyPointer, TRUE, TAG_END);
+                            safe_set_window_pointer(tool_data->window, TRUE);
                             
                             /* Create restore window */
                             restore_window = iTidy_CreateToolRestoreWindow(
@@ -3316,7 +3317,7 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                             if (!restore_window)
                             {
                                 /* Clear busy pointer */
-                                SetWindowPointer(tool_data->window, WA_Pointer, NULL, TAG_END);
+                                safe_set_window_pointer(tool_data->window, FALSE);
                                 
                                 iTidy_CleanupToolBackupManager(&temp_manager);
                                 
@@ -3330,7 +3331,7 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                             }
                             
                             /* Clear busy pointer - window is now open */
-                            SetWindowPointer(tool_data->window, WA_Pointer, NULL, TAG_END);
+                            safe_set_window_pointer(tool_data->window, FALSE);
                             
                             /* Disable tool cache window input while restore window is open */
                             ModifyIDCMP(tool_data->window, 0);
