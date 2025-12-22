@@ -33,7 +33,7 @@ extern struct WorkbenchSettings prefsWorkbench;
 /* Window Constants                                                       */
 /*------------------------------------------------------------------------*/
 #define ADV_WINDOW_TITLE "iTidy - Advanced Settings"
-#define ADV_WINDOW_WIDTH 530
+#define ADV_WINDOW_WIDTH 625
 #define ADV_WINDOW_HEIGHT 600
 #define ADV_WINDOW_LEFT 100
 #define ADV_WINDOW_TOP 50

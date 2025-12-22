@@ -63,19 +63,19 @@ extern void iTidy_CloseToolRestoreWindow(struct Window *window);
 /*------------------------------------------------------------------------*/
 #define ITIDY_WINDOW_STANDARD_PADDING 15
 #define ITIDY_WINDOW_TITLE "iTidy v1.2 - Icon Cleanup Tool"
-#define ITIDY_WINDOW_WIDTH 500
+#define ITIDY_WINDOW_WIDTH 625
 #define ITIDY_WINDOW_HEIGHT 350
 #define ITIDY_WINDOW_LEFT 50
 #define ITIDY_WINDOW_TOP 30
 #define ITIDY_WINDOW_GAP_BETWEEN_GROUPS 40
 #define ITIDY_WINDOW_LEFT_GROUP_GADETS 95
 #define ITIDY_WINDOW_LEFT_GROUP_GADETS_LABEL 30
-#define ITIDY_WINDOW_LEFT_GROUP_GADETS_COLUMN_2 295
+#define ITIDY_WINDOW_LEFT_GROUP_GADETS_COLUMN_2 356
 
 /* Groupbox alignment constants (shared by gadgets and groupboxes) */
 #define ITIDY_GROUPBOX_LEFT_EDGE 15    /* Left edge of all groupboxes */
-#define ITIDY_GROUPBOX_RIGHT_EDGE 485  /* Right edge of all groupboxes (WINDOW_WIDTH - 15) */
-#define ITIDY_GROUPBOX_USABLE_WIDTH 440 /* Inner width for button calculations (470 - 30 margins) */
+#define ITIDY_GROUPBOX_RIGHT_EDGE 610  /* Right edge of all groupboxes (WINDOW_WIDTH - 15) */
+#define ITIDY_GROUPBOX_USABLE_WIDTH 565 /* Inner width for button calculations (470 - 30 margins) */
 
 /*------------------------------------------------------------------------*/
 /* Menu Item IDs                                                          */
@@ -554,252 +554,231 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder, WOR
     /*********************************************************/
 
     /*====================================================================*/
-    /* FOLDER LABEL (TEXT GADGET)                                        */
+    /* BROWSE BUTTON - Calculate position from right edge FIRST          */
     /*====================================================================*/
-    ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS_LABEL;
-    ng.ng_TopEdge = current_y;
-ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABEL-2;
-    ng.ng_Height = font_height + 4;
-    ng.ng_GadgetText = "Folder:";
-    ng.ng_GadgetID = 0;  /* No ID needed for static text */
-    ng.ng_Flags = PLACETEXT_IN;
-    
-    win_data->folder_label = gad = CreateGadget(TEXT_KIND, gad, &ng,
-        GTTX_Text, "",
-        GTTX_Border, FALSE,
-        TAG_END);
-    if (!gad)
     {
-        CONSOLE_ERROR("Failed to create folder label\n");
-        return FALSE;
-    }
-    
-    /*====================================================================*/
-    /* FOLDER PATH DISPLAY BOX (Custom drawn recessed bevel)             */
-    /*====================================================================*/
-    /* Store coordinates for custom drawing */
-    win_data->folder_box_left = ITIDY_WINDOW_LEFT_GROUP_GADETS;
-    win_data->folder_box_top = current_y;
-    win_data->folder_box_width = 290;
-    win_data->folder_box_height = font_height + 6;
-    
-    /* Note: Folder path will be drawn in refresh handler */
-    /* No gadget created - this is a custom drawn display area */
-    win_data->folder_path = gad;  /* Keep gadget chain intact */
-    
-    /*====================================================================*/
-    /* BROWSE BUTTON                                                      */
-    /*====================================================================*/
-    ng.ng_LeftEdge = 390;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 90;
-    ng.ng_Height = font_height + 6;
-    ng.ng_GadgetText = "Browse...";
-    ng.ng_GadgetID = GID_BROWSE;
-    ng.ng_Flags = PLACETEXT_IN;
-    
-    win_data->browse_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
-    if (!gad)
-    {
-        CONSOLE_ERROR("Failed to create browse button\n");
-        return FALSE;
+        WORD browse_width = 90;
+        WORD browse_left = ITIDY_GROUPBOX_RIGHT_EDGE - ITIDY_WINDOW_STANDARD_PADDING - browse_width;
+        
+        ng.ng_LeftEdge = browse_left;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = browse_width;
+        ng.ng_Height = font_height + 6;
+        ng.ng_GadgetText = "Browse...";
+        ng.ng_GadgetID = GID_BROWSE;
+        ng.ng_Flags = PLACETEXT_IN;
+        
+        win_data->browse_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create browse button\n");
+            return FALSE;
+        }
+        
+        /*====================================================================*/
+        /* FOLDER LABEL (TEXT GADGET)                                        */
+        /*====================================================================*/
+        ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS_LABEL;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABEL-2;
+        ng.ng_Height = font_height + 4;
+        ng.ng_GadgetText = "Folder:";
+        ng.ng_GadgetID = 0;  /* No ID needed for static text */
+        ng.ng_Flags = PLACETEXT_IN;
+        
+        win_data->folder_label = gad = CreateGadget(TEXT_KIND, gad, &ng,
+            GTTX_Text, "",
+            GTTX_Border, FALSE,
+            TAG_END);
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create folder label\n");
+            return FALSE;
+        }
+        
+        /*====================================================================*/
+        /* FOLDER PATH DISPLAY BOX (Custom drawn recessed bevel)             */
+        /* Width dynamically calculated to fill space between label and      */
+        /* Browse button: browse_left - gap - label_right                    */
+        /*====================================================================*/
+        win_data->folder_box_left = ITIDY_WINDOW_LEFT_GROUP_GADETS;
+        win_data->folder_box_top = current_y;
+        win_data->folder_box_width = browse_left - ITIDY_WINDOW_LEFT_GROUP_GADETS - ITIDY_WINDOW_STANDARD_PADDING;
+        win_data->folder_box_height = font_height + 6;
+        
+        /* Note: Folder path will be drawn in refresh handler */
+        /* No gadget created - this is a custom drawn display area */
+        win_data->folder_path = gad;  /* Keep gadget chain intact */
     }
     
     current_y += font_height + ITIDY_WINDOW_GAP_BETWEEN_GROUPS;
     
-
-
-
-
-    /*====================================================================*/
-    /* ORDER LABEL (TEXT GADGET) - Top row left                          */
-    /*====================================================================*/
-    ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS_LABEL;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABEL-2;
-    ng.ng_Height = font_height + 4;
-    ng.ng_GadgetText = "Order:";
-    ng.ng_GadgetID = 0;
-    ng.ng_Flags = PLACETEXT_IN;
+    /* *******************************************************/
+    /* Group Box for Tidy Options - Two Column Layout       */
+    /*********************************************************/
     
-    gad = CreateGadget(TEXT_KIND, gad, &ng,
-        GTTX_Text, "",
-        GTTX_Border, FALSE,
-        TAG_END);
-    if (!gad)
+    /*====================================================================*/
+    /* Calculate two-column layout with measured label widths            */
+    /*====================================================================*/
     {
-        CONSOLE_ERROR("Failed to create order label\n");
-        return FALSE;
-    }
-    
-    /*====================================================================*/
-    /* ORDER CYCLE GADGET - Top row left                                 */
-    /*====================================================================*/
-    ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 140;
-    ng.ng_Height = font_height + 6;
-    ng.ng_GadgetText = NULL;
-    ng.ng_GadgetID = GID_ORDER;
-    ng.ng_Flags = 0;
-    
-    win_data->order_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
-        GTCY_Labels, order_labels,
-        GTCY_Active, 0,
-        TAG_END);
-    if (!gad)
-    {
-        CONSOLE_ERROR("Failed to create order cycle\n");
-        return FALSE;
-    }
-    
-    /*====================================================================*/
-    /* BY LABEL (TEXT GADGET) - Top row right                            */
-    /*====================================================================*/
-    ng.ng_LeftEdge = 260;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 30;
-    ng.ng_Height = font_height + 4;
-    ng.ng_GadgetText = "By:";
-    ng.ng_GadgetID = 0;
-    ng.ng_Flags = PLACETEXT_IN;
-    
-    gad = CreateGadget(TEXT_KIND, gad, &ng,
-        GTTX_Text, "",
-        GTTX_Border, FALSE,
-        TAG_END);
-    if (!gad)
-    {
-        CONSOLE_ERROR("Failed to create by label\n");
-        return FALSE;
-    }
-    
-    /*====================================================================*/
-    /* SORT BY CYCLE GADGET - Top row right                              */
-    /*====================================================================*/
-    ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS_COLUMN_2;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 90;
-    ng.ng_Height = font_height + 6;
-    ng.ng_GadgetText = NULL;
-    ng.ng_GadgetID = GID_SORTBY;
-    ng.ng_Flags = 0;
-    
-    win_data->sortby_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
-        GTCY_Labels, sortby_labels,
-        GTCY_Active, 0,
-        TAG_END);
-    if (!gad)
-    {
-        CONSOLE_ERROR("Failed to create sortby cycle\n");
-        return FALSE;
-    }
-    
-    current_y += font_height + 10;
-    
-    /*====================================================================*/
-    /* RECURSIVE SUBFOLDERS CHECKBOX - Middle row left                   */
-    /*====================================================================*/
-    ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 26;
-    ng.ng_Height = font_height + 4;
-    ng.ng_GadgetText = "Cleanup subfolders";
-    ng.ng_GadgetID = GID_RECURSIVE;
-    ng.ng_Flags = PLACETEXT_RIGHT;
-    
-    win_data->recursive_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
-        GTCB_Checked, FALSE,
-        TAG_END);
-    if (!gad)
-    {
-        CONSOLE_ERROR("Failed to create recursive checkbox\n");
-        return FALSE;
-    }
-    
-    //current_y += font_height + 8;
-    
-    /*====================================================================*/
-    /* BACKUP (LHA) CHECKBOX - Middle row left (stacked below recursive) */
-    /*====================================================================*/
-    ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS_COLUMN_2;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 26;
-    ng.ng_Height = font_height + 4;
-    ng.ng_GadgetText = "Backup icons using LhA";
-    ng.ng_GadgetID = GID_BACKUP;
-    ng.ng_Flags = PLACETEXT_RIGHT;
-    
-    win_data->backup_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
-        GTCB_Checked, FALSE,
-        TAG_END);
-    if (!gad)
-    {
-        CONSOLE_ERROR("Failed to create backup checkbox\n");
-        return FALSE;
-    }
-    
-    current_y += font_height + 10;
-    
-    /*====================================================================*/
-    /* WINDOW POSITION LABEL (TEXT GADGET) - Bottom row                  */
-    /*====================================================================*/
-    ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS_LABEL;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABEL-2;  /* Width for "Position:" text */
-    ng.ng_Height = font_height + 4;
-    ng.ng_GadgetText = "Position:";
-    ng.ng_GadgetID = 0;  /* No ID needed for static text */
-    ng.ng_Flags = PLACETEXT_IN;
-    
-    win_data->window_position_label = gad = CreateGadget(TEXT_KIND, gad, &ng,
-        GTTX_Text, "",
-        GTTX_Border, FALSE,
-        TAG_END);
-    if (!gad)
-    {
-        CONSOLE_ERROR("Failed to create window position label\n");
-        return FALSE;
-    }
-    
-    /*====================================================================*/
-    /* WINDOW POSITION CYCLE GADGET - Bottom row center                  */
-    /*====================================================================*/
-    ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS;  /* After "Position:" label */
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 150;
-    ng.ng_Height = font_height + 6;
-    ng.ng_GadgetText = NULL;  /* No label - we have separate label gadget */
-    ng.ng_GadgetID = GID_WINDOW_POSITION;
-    ng.ng_Flags = 0;  /* No PLACETEXT flag */
-    
-    win_data->window_position_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
-        GTCY_Labels, window_position_labels,
-        GTCY_Active, 0,  /* Default to "Center Screen" */
-        TAG_END);
-    if (!gad)
-    {
-        CONSOLE_ERROR("Failed to create window position cycle\n");
-        return FALSE;
-    }
-    
-    /*====================================================================*/
-    /* WINDOW POSITION HELP BUTTON - Bottom row right                    */
-    /*====================================================================*/
-    ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS_COLUMN_2;  /* After cycle + gap */
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 30;
-    ng.ng_Height = font_height + 6;
-    ng.ng_GadgetText = "?";
-    ng.ng_GadgetID = GID_WINDOW_POSITION_HELP;
-    ng.ng_Flags = PLACETEXT_IN;
-    
-    win_data->window_position_help_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
-        TAG_END);
-    if (!gad)
-    {
-        CONSOLE_ERROR("Failed to create window position help button\n");
-        return FALSE;
+        struct RastPort *rp = &win_data->screen->RastPort;
+        WORD available_width;
+        WORD column_gap;
+        WORD column_width;
+        WORD left_col_gadget_x;
+        WORD right_col_gadget_x;
+        WORD left_cycle_width;
+        WORD right_cycle_width;
+        
+        /* Measure label widths using current font */
+        WORD order_label_width = TextLength(rp, "Order:", 6);
+        WORD by_label_width = TextLength(rp, "By:", 3);
+        WORD position_label_width = TextLength(rp, "Position:", 9);
+        
+        /* Find widest label in each column */
+        WORD left_label_width = (order_label_width > position_label_width) ? order_label_width : position_label_width;
+        WORD right_label_width = by_label_width;
+        
+        /* Calculate midpoint of usable area using bit shift (avoids division) */
+        available_width = ITIDY_GROUPBOX_RIGHT_EDGE - ITIDY_GROUPBOX_LEFT_EDGE - (2 * ITIDY_WINDOW_STANDARD_PADDING);
+        WORD content_left = ITIDY_GROUPBOX_LEFT_EDGE + ITIDY_WINDOW_STANDARD_PADDING;
+        WORD midpoint = content_left + (available_width >> 1);  /* Bit shift right = divide by 2 */
+        
+        /* Position left column gadgets (start after label + gap) */
+        left_col_gadget_x = content_left + left_label_width + 8;
+        
+        /* Position right column gadgets at midpoint (with small adjustment + label + gap) */
+        right_col_gadget_x = midpoint + 15 + right_label_width + 8;
+        
+        /* Calculate cycle widths to fill to edge/midpoint */
+        left_cycle_width = midpoint - left_col_gadget_x - 15;
+        right_cycle_width = ITIDY_GROUPBOX_RIGHT_EDGE - ITIDY_WINDOW_STANDARD_PADDING - right_col_gadget_x;
+        
+        /*====================================================================*/
+        /* ORDER CYCLE GADGET - Top row left with built-in label             */
+        /*====================================================================*/
+        ng.ng_LeftEdge = left_col_gadget_x;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = left_cycle_width;
+        ng.ng_Height = font_height + 6;
+        ng.ng_GadgetText = "Order:";
+        ng.ng_GadgetID = GID_ORDER;
+        ng.ng_Flags = PLACETEXT_LEFT;  /* GadTools places label to left, right-justified */
+        
+        win_data->order_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
+            GTCY_Labels, order_labels,
+            GTCY_Active, 0,
+            TAG_END);
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create order cycle\n");
+            return FALSE;
+        }
+        
+        /*====================================================================*/
+        /* SORT BY CYCLE GADGET - Top row right with built-in label          */
+        /*====================================================================*/
+        ng.ng_LeftEdge = right_col_gadget_x;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = right_cycle_width;
+        ng.ng_Height = font_height + 6;
+        ng.ng_GadgetText = "By:";
+        ng.ng_GadgetID = GID_SORTBY;
+        ng.ng_Flags = PLACETEXT_LEFT;  /* GadTools places label to left, right-justified */
+        
+        win_data->sortby_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
+            GTCY_Labels, sortby_labels,
+            GTCY_Active, 0,
+            TAG_END);
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create sortby cycle\n");
+            return FALSE;
+        }
+        
+        current_y += font_height + 10;
+        
+        /*====================================================================*/
+        /* RECURSIVE SUBFOLDERS CHECKBOX - Middle row left                   */
+        /*====================================================================*/
+        ng.ng_LeftEdge = left_col_gadget_x;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = 26;
+        ng.ng_Height = font_height + 4;
+        ng.ng_GadgetText = "Cleanup subfolders";
+        ng.ng_GadgetID = GID_RECURSIVE;
+        ng.ng_Flags = PLACETEXT_RIGHT;
+        
+        win_data->recursive_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
+            GTCB_Checked, FALSE,
+            TAG_END);
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create recursive checkbox\n");
+            return FALSE;
+        }
+        
+        /*====================================================================*/
+        /* BACKUP (LHA) CHECKBOX - Middle row right                          */
+        /*====================================================================*/
+        ng.ng_LeftEdge = right_col_gadget_x;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = 26;
+        ng.ng_Height = font_height + 4;
+        ng.ng_GadgetText = "Backup icons using LhA";
+        ng.ng_GadgetID = GID_BACKUP;
+        ng.ng_Flags = PLACETEXT_RIGHT;
+        
+        win_data->backup_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
+            GTCB_Checked, FALSE,
+            TAG_END);
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create backup checkbox\n");
+            return FALSE;
+        }
+        
+        current_y += font_height + 10;
+        
+        /*====================================================================*/
+        /* WINDOW POSITION CYCLE GADGET - Bottom row left with built-in label*/
+        /*====================================================================*/
+        ng.ng_LeftEdge = left_col_gadget_x;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = left_cycle_width;
+        ng.ng_Height = font_height + 6;
+        ng.ng_GadgetText = "Position:";
+        ng.ng_GadgetID = GID_WINDOW_POSITION;
+        ng.ng_Flags = PLACETEXT_LEFT;  /* GadTools places label to left, right-justified */
+        
+        win_data->window_position_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
+            GTCY_Labels, window_position_labels,
+            GTCY_Active, 0,
+            TAG_END);
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create window position cycle\n");
+            return FALSE;
+        }
+        
+        /*====================================================================*/
+        /* WINDOW POSITION HELP BUTTON - Bottom row right                    */
+        /*====================================================================*/
+        ng.ng_LeftEdge = right_col_gadget_x;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = 26;
+        ng.ng_Height = font_height + 6;
+        ng.ng_GadgetText = "?";
+        ng.ng_GadgetID = GID_WINDOW_POSITION_HELP;
+        ng.ng_Flags = PLACETEXT_IN;
+        
+        win_data->window_position_help_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
+            TAG_END);
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create window position help button\n");
+            return FALSE;
+        }
     }
     
     current_y += font_height + ITIDY_WINDOW_GAP_BETWEEN_GROUPS;
@@ -1750,7 +1729,7 @@ static void draw_folder_path_box(struct iTidyMainWindow *win_data)
     
     /* Position text with padding inside box */
     text_x = win_data->folder_box_left + 4;
-    text_y = win_data->folder_box_top + rp->TxBaseline + 2;
+    text_y = win_data->folder_box_top + rp->TxBaseline + 3; /* Moved down by 1px for better vertical centering */
     
     /* Clear background first */
     SetAPen(rp, dri->dri_Pens[BACKGROUNDPEN]);

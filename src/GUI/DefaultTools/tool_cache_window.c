@@ -1870,7 +1870,7 @@ static void draw_folder_path_box(struct iTidyToolCacheWindow *tool_data)
     
     /* Position text with padding inside box */
     text_x = tool_data->folder_box_left + 4;
-    text_y = tool_data->folder_box_top + rp->TxBaseline + 2;
+    text_y = tool_data->folder_box_top + rp->TxBaseline + 3;
     
     /* Clear background first */
     SetAPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
