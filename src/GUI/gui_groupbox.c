@@ -95,21 +95,27 @@ VOID CalcGadgetGroupBoxRect(struct Window    *win,
     innerPad  = fh / 4;  /* Reduced from fh/3 for tighter fit */
     titleBandH = fh + 4;   /* strip where the caption sits */
 
+    /* Calculate font-proportional padding for top/bottom
+     * This ensures group boxes scale properly with different font sizes
+     * Using fh/2 to leave room for gaps between groups */
+    WORD topPad = fh / 2;      /* Top padding: half font height */
+    WORD bottomPad = fh / 2;   /* Bottom padding: half font height */
+
     /* Calculate box bounds:
-     *  - Use equal padding top and bottom for centered appearance
+     *  - Use font-proportional padding for proper scaling with large fonts
      *  - Add configurable padding values
      */
     box->MinX = minX - hMargin - GROUPBOX_PADDING_LEFT;
     box->MaxX = maxX + hMargin + GROUPBOX_PADDING_RIGHT;
-    box->MinY = minY - innerPad - GROUPBOX_PADDING_TOP;  /* Equal padding above gadgets */
-    box->MaxY = maxY + innerPad + GROUPBOX_PADDING_BOTTOM;  
+    box->MinY = minY - innerPad - topPad;  /* Font-proportional padding above gadgets */
+    box->MaxY = maxY + innerPad + bottomPad;  /* Font-proportional padding below gadgets */
     
-    log_debug(LOG_GUI, "CalcGadgetGroupBoxRect: innerPad=%d, GROUPBOX_PADDING_TOP=%d\n",
-             innerPad, GROUPBOX_PADDING_TOP);
-    log_debug(LOG_GUI, "CalcGadgetGroupBoxRect: Top spacing = minY(%d) - innerPad(%d) - PADDING_TOP(%d) = %d\n",
-             minY, innerPad, GROUPBOX_PADDING_TOP, box->MinY);
-    log_debug(LOG_GUI, "CalcGadgetGroupBoxRect: Bottom spacing = maxY(%d) + innerPad(%d) + PADDING_TOP(%d) = %d\n",
-             maxY, innerPad, GROUPBOX_PADDING_TOP, box->MaxY);
+    log_debug(LOG_GUI, "CalcGadgetGroupBoxRect: innerPad=%d, topPad=%d, bottomPad=%d, fh=%d\n",
+             innerPad, topPad, bottomPad, fh);
+    log_debug(LOG_GUI, "CalcGadgetGroupBoxRect: Top spacing = minY(%d) - innerPad(%d) - topPad(%d) = %d\n",
+             minY, innerPad, topPad, box->MinY);
+    log_debug(LOG_GUI, "CalcGadgetGroupBoxRect: Bottom spacing = maxY(%d) + innerPad(%d) + bottomPad(%d) = %d\n",
+             maxY, innerPad, bottomPad, box->MaxY);
     log_debug(LOG_GUI, "CalcGadgetGroupBoxRect: Box = (%d,%d) to (%d,%d), fh=%d\n",
              box->MinX, box->MinY, box->MaxX, box->MaxY, fh);
 }
