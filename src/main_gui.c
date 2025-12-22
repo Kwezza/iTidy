@@ -113,6 +113,126 @@ extern struct WBStartup *_WBenchMsg;
 #endif
 
 /*---------------------------------------------------------------------------*/
+/* Workbench Version Check System                                            */
+/*---------------------------------------------------------------------------*/
+
+/**
+ * @brief Check if Workbench 3.0 or later is running
+ * 
+ * iTidy requires Workbench 3.0 (Kickstart 3.0, v39+) minimum.
+ * Earlier versions will crash due to missing GadTools features.
+ * 
+ * This check uses SysBase->LibNode.lib_Version which reflects the
+ * Kickstart/exec.library version:
+ *   - v37 = Kickstart 2.04 (Workbench 2.0)
+ *   - v38 = Kickstart 2.1 (Workbench 2.1)
+ *   - v39 = Kickstart 3.0 (Workbench 3.0)
+ *   - v40 = Kickstart 3.1 (Workbench 3.1)
+ * 
+ * @return 1 if OK to run (v39+), 0 if version too old (should quit)
+ */
+static int RequireWB3OrBetter(void)
+{
+#ifdef __AMIGA__
+    UWORD detected_version;
+    BPTR log_file;
+    char version_msg[256];
+    
+    /* Get the exec.library version */
+    detected_version = SysBase->LibNode.lib_Version;
+    
+    /* Log version check to file (before logging system is initialized) */
+    log_file = Open((STRPTR)"PROGDIR:version_check.log", MODE_NEWFILE);
+    if (log_file)
+    {
+        sprintf(version_msg, "iTidy Version Check\n");
+        Write(log_file, version_msg, strlen(version_msg));
+        sprintf(version_msg, "===================\n");
+        Write(log_file, version_msg, strlen(version_msg));
+        sprintf(version_msg, "SysBase->LibNode.lib_Version = %u\n", detected_version);
+        Write(log_file, version_msg, strlen(version_msg));
+        sprintf(version_msg, "Required: 39 (Kickstart/WB 3.0) or higher\n");
+        Write(log_file, version_msg, strlen(version_msg));
+        
+        if (detected_version >= 39)
+        {
+            sprintf(version_msg, "Result: OK - Version check passed\n");
+            Write(log_file, version_msg, strlen(version_msg));
+        }
+        else
+        {
+            sprintf(version_msg, "Result: FAILED - Version too old\n");
+            Write(log_file, version_msg, strlen(version_msg));
+            sprintf(version_msg, "Displaying error alert and exiting...\n");
+            Write(log_file, version_msg, strlen(version_msg));
+        }
+        
+        Close(log_file);
+    }
+    
+    /* Exec v39 == Kickstart 3.0 (Workbench 3.0 era) */
+    if (detected_version >= 39)
+    {
+        /* Version OK - write to console and continue */
+        sprintf(version_msg, "[Version Check] SysBase version %u - OK\n", detected_version);
+        PutStr(version_msg);
+        return 1;
+    }
+
+    /* Version too old - display error */
+    sprintf(version_msg, "[Version Check] SysBase version %u - TOO OLD (need 39+)\n", detected_version);
+    PutStr(version_msg);
+    
+    /* Display error alert using AutoRequest (compatible with WB1.x+) */
+    {
+        struct IntuiText body_text;
+        struct IntuiText pos_text;
+        
+        /* Initialize body text (keep it simple - single line) */
+        body_text.FrontPen = 1;
+        body_text.BackPen = 0;
+        body_text.DrawMode = JAM1;
+        body_text.LeftEdge = 10;
+        body_text.TopEdge = 10;
+        body_text.ITextFont = NULL;
+        body_text.IText = (UBYTE *)"iTidy requires Workbench 3.0 or later";
+        body_text.NextText = NULL;
+        
+        /* Initialize positive button text */
+        pos_text.FrontPen = 1;
+        pos_text.BackPen = 0;
+        pos_text.DrawMode = JAM1;
+        pos_text.LeftEdge = 6;
+        pos_text.TopEdge = 3;
+        pos_text.ITextFont = NULL;
+        pos_text.IText = (UBYTE *)"Exit";
+        pos_text.NextText = NULL;
+        
+        /* Try to show requester */
+        AutoRequest(NULL, &body_text, &pos_text, NULL, 0, 0, 300, 60);
+        
+        /* Always echo to Shell (primary output for older systems) */
+        PutStr("\n");
+        PutStr("===============================================\n");
+        PutStr("  iTidy - Version Check Error\n");
+        PutStr("===============================================\n");
+        PutStr("\n");
+        PutStr("iTidy requires Workbench 3.0 or later.\n");
+        PutStr("You appear to be running an older version.\n");
+        PutStr("\n");
+        PutStr("If you need a WB2/WB1 build, please contact:\n");
+        PutStr("GitHub: Kwezza/iTidy\n");
+        PutStr("\n");
+    }
+
+    return 0;
+#else
+    /* Non-Amiga builds always pass (for testing on host) */
+    return 1;
+#endif
+}
+
+/*---------------------------------------------------------------------------*/
 /* ToolType Processing System                                               */
 /*---------------------------------------------------------------------------*/
 
@@ -490,6 +610,13 @@ void FreeIconErrorList(IconErrorTrackerStruct *tracker)
 
 int main(int argc, char **argv)
 {
+    /* CRITICAL: Check Workbench version FIRST (before any initialization) */
+    if (!RequireWB3OrBetter())
+    {
+        /* Version check failed - alert displayed, exit cleanly */
+        return RETURN_FAIL;
+    }
+
     /* GUI MIGRATION: New GUI window structure */
     struct iTidyMainWindow gui_window;
     BOOL keep_running;
@@ -613,10 +740,13 @@ int main(int argc, char **argv)
     whd_free(stringWBVersion);
 #endif
 
-    /* KEEP: Workbench version check */
-    if (workbenchVersion < 36000)
+    /* KEEP: Secondary version check (primary WB3.0+ check is at startup) */
+    /* This check is now redundant (RequireWB3OrBetter() already enforced v39+) */
+    /* but kept for belt-and-suspenders safety in case GetWorkbenchVersion() differs */
+    if (workbenchVersion < 39000)
     {
-        CONSOLE_ERROR("This program requires Workbench 2.0 or higher.\n");
+        CONSOLE_ERROR("This program requires Workbench 3.0 or higher.\n");
+        log_error(LOG_GENERAL, "Workbench version check failed: %d (requires 39000+)\n", workbenchVersion);
         return RETURN_FAIL;
     }
 

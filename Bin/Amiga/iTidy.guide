@@ -7,15 +7,27 @@
 @{APEN 2}@{B}iTidy v2.0@{UB}@{APEN 1}
 ==========
 
-1. @{"Requirements" LINK RESTORING_BACKUPS}
-2. @{"Introduction" LINK INTRODUCTION}
-3. @{"Getting Started" LINK GETTING_STARTED}
-4. @{"Main Window" LINK MAIN_WINDOW}
-5. @{"Advanced Settings" LINK ADVANCED_SETTINGS}
-6. @{"Default Tool Analysis" LINK DEFAULT_TOOL_ANALYSIS}
-7. @{"Restoring Backups" LINK RESTORING_BACKUPS}
-8. @{"Tips & Troubleshooting" LINK TIPS_TROUBLESHOOTING}
-9. @{"Credits & Version Info" LINK CREDITS_VERSION_INFO}
+iTidy is a small Workbench utility I wrote after getting fed up with the
+mess left behind by large archive extractions -- especially when unpacking
+thousands of WHDLoad games and demos into drawer trees like
+"Games/AGA/A/", "Games/AGA/B/", and so on. The aim was simple: point it at
+a folder, let it recurse through everything underneath, and have it tidy
+icon layouts and drawer windows in a consistent way.
+
+It works by updating Workbench ".info" files and drawer/window layout
+information only -- it doesn't touch the contents of your data files. If
+you enable backups, iTidy can create LhA restore points so you can roll
+back icon and layout changes later.
+
+ @{" Requirements             " LINK "REQUIREMENTS"}
+ @{" Introduction             " LINK "INTRODUCTION"}
+ @{" Getting Started          " LINK "GETTING_STARTED"}
+ @{" Main Window              " LINK "MAIN_WINDOW"}
+ @{" Advanced Settings        " LINK "ADVANCED_SETTINGS"}
+ @{" Default Tool Analysis    " LINK "DEFAULT_TOOL_ANALYSIS"}
+ @{" Restoring Backups        " LINK "RESTORING_BACKUPS"}
+ @{" Tips & Troubleshooting   " LINK "TIPS_TROUBLESHOOTING"}
+ @{" Credits & Version Info   " LINK "CREDITS_VERSION_INFO"}
 
 --------------------------------------------------------------------------
 
@@ -41,8 +53,6 @@ iTidy requires the following to run properly:
   path
   - Download LhA from: http://aminet.net/package/util/arc/lha
 
-@{"Back to top" LINK REQUIREMENTS}
-
 --------------------------------------------------------------------------
 
 
@@ -58,84 +68,87 @@ iTidy requires the following to run properly:
 @{APEN 2}@{B}Introduction@{UB}@{APEN 1}
 ============
 
-iTidy is a comprehensive Workbench utility designed to solve four major
-problems faced by Amiga users:
+iTidy is a Workbench utility I wrote to deal with a few recurring
+annoyances I kept running into when using my own Amiga systems.
 
-- @{B}Tedious manual tidying:@{UB} Workbench's built-in "Clean Up" only works on
-  one folder at a time. iTidy can process thousands of drawers and
-  subfolders in a single run, making it ideal for large WHDLoad
-  collections, extracted archives, and project folders.
+The point where I properly decided to write it was after extracting
+thousands of WHDLoad games and demos. Once everything was neatly filed
+away into folders like "Games/AGA/A/", "Games/AGA/B/", "Games/AGA/C/",
+etc., Workbench would still leave the icons and drawer windows in a
+complete mess. Cleaning that up by hand across so many drawers was
+painfully slow, and I had the urge to try and build something that would
+do it for me: give it a folder path, let it dive through all subfolders,
+then arrange the icons and windows neatly. That experiment eventually
+turned into iTidy.
 
-- @{B}Inconsistent layouts:@{UB} Changing fonts, screen modes, or resolutions
-  often leaves icons overlapping or windows shaped awkwardly. iTidy
-  automatically arranges icons in a sensible grid, with customizable
-  aspect ratios and spacing, ensuring every drawer looks neat and
-  matches your setup.
+iTidy focuses on four areas that tend to cause friction once your disks
+and drawers start to grow:
 
-- @{B}Broken or missing default tools:@{UB} Many archives and old projects use
-  default tools that don't exist on your system, leading to "Unable to
-  open your tool" errors. iTidy scans for invalid default tools and
-  helps you repair them quickly, keeping your icons functional.
+- @{B}Manual tidying gets tedious:@{UB} Workbench's built-in "Clean Up" works one
+  drawer at a time. iTidy can walk through entire directory trees in one
+  go, which is useful for large WHDLoad collections, archive
+  extractions, or project directories with lots of subfolders.
+- @{B}Layouts drift over time:@{UB} Changing screen modes, fonts, or resolutions
+  often leaves icons overlapping or windows sized oddly. iTidy
+  re-arranges icons into a simple grid, with adjustable spacing and
+  proportions, so drawers stay readable and consistent with your current
+  setup.
+- @{B}Default tools go missing:@{UB} Older software and archives often reference
+  tools that aren't present on a modern setup, resulting in "Unable to
+  open your tool" errors. iTidy checks for missing or invalid default
+  tools and helps you correct them, so icons continue to behave as
+  expected.
+- @{B}No safety net for large changes:@{UB} Workbench doesn't provide a way to
+  undo icon layout or window changes. iTidy includes an optional backup
+  and restore system, allowing you to roll back changes if the results
+  aren't what you wanted.
 
-- @{B}No easy undo for large changes:@{UB} Workbench offers no built-in "undo"
-  for icon positions or window layouts. iTidy includes a backup and
-  restore system, so you can safely revert changes if needed.
-
-iTidy is designed for everyday Amiga use: it respects your existing
-layouts, offers both quick and advanced controls, and provides safety
-features for large-scale operations. Whether you're tidying a single
-drawer or an entire partition, iTidy helps keep your Workbench organized,
-consistent, and recoverable.
-
-iTidy only works with Workbench ".info" files and window layout
-information - it never modifies the contents of your data files. For added
-safety, you can enable automatic icon backups so changes can be rolled
-back later using the Restore Backups feature.
+The program only works with Workbench ".info" files and drawer layout
+information. It never modifies the contents of your data files. If you
+enable automatic icon backups, any changes can later be reversed using the
+Restore Backups feature.
 
 
 @{APEN 2}WHAT TYPES OF ICONS DOES ITIDY SUPPORT?@{APEN 1}
 ---------------------------------------
 
-iTidy can automatically tidy and process all major Amiga icon formats used
-on Workbench 3.x systems:
+iTidy can work with the common icon formats you'll typically run into on
+Workbench 3.x setups, including:
 
-- Standard/Classic Icons (used on all AmigaOS versions)
-- NewIcons (extended color icons, popular on OS3.x)
-- OS3.5/OS3.9 Color Icons (modern color icons introduced in AmigaOS
-  3.5+)
+- Standard / Classic icons (the original format used across all AmigaOS
+  versions)
+- NewIcons (extended colour icons, widely used on OS3.x)
+- OS3.5 / OS3.9 Colour Icons (the newer colour icon format introduced
+  with OS3.5+)
 
-@{I}Side note: GlowIcons are fully supported--both in their traditional
-NewIcons format and the newer Color Icons format.@{UI}
+Side note: GlowIcons are supported too -- both the older NewIcons-style
+GlowIcons and the newer Colour Icons version.
 
-iTidy detects and handles these formats automatically. You do not need to
-choose or convert icons--just run iTidy and it will tidy, sort, and update
-all supported icon types in your folders.
+iTidy detects icon types automatically, so you don't need to pick a mode
+or convert anything first. You just point it at a folder and it will tidy
+the icons it finds in whatever supported format they're already using.
 
 
 @{APEN 2}SAFETY & DISCLAIMER@{APEN 1}
 -------------------
 
-iTidy is free, hobbyist software developed in the author's spare time. It
-is provided in good faith and has been tested on real Amiga systems, but
-it may still contain bugs or behave in ways that were not anticipated.
+iTidy is free hobby software that I work on in my spare time. It's been
+tested on real Amiga systems, but it may still have bugs or edge cases I
+haven't hit yet.
 
-iTidy only works with ".info" files and Workbench window layouts, and it
-includes an optional backup system to help you roll back icon changes.
-However, this backup feature is still under active development and should
-not be treated as a substitute for your own regular system backups.
+iTidy only touches ".info" files and Workbench drawer/window layout
+information. It also includes an optional backup feature to help roll back
+icon/layout changes, but you shouldn't treat that as a replacement for
+your own regular backups (and it's still being improved).
 
-By using iTidy, you accept that you do so entirely at your own risk. The
-author cannot accept any responsibility or liability for data loss,
-corruption, or any other damage or loss arising from the use or misuse of
-this software.
+If you use iTidy, you do so at your own risk. I can't accept
+responsibility for data loss, corruption, or any other problems caused by
+using (or misusing) the software.
 
-@{B}Before running iTidy for the first time--especially on large or important
-partitions--you must ensure you have a current, verified backup of your
-system.@{UB} For extra safety, consider testing iTidy on a copy of your
-Workbench setup or a small sample folder before using it on your main
-installation.
-
-@{"Back to top" LINK INTRODUCTION}
+Before running iTidy for the first time -- especially on large or
+important partitions -- make sure you have a current, verified backup. If
+you want to be extra cautious, try it on a small test folder or a copy of
+your Workbench setup first.
 
 --------------------------------------------------------------------------
 
@@ -154,35 +167,31 @@ installation.
 
 To get started with iTidy:
 
-1. Double-click the iTidy icon from your Workbench desktop to launch the
-   program.
+1. Double-click the iTidy icon on your Workbench desktop to launch it.
 
-2. In the main window, use the @{B}Browse...@{UB} button to select the folder or
-   partition you want to tidy. The selected path will appear in the
+2. In the main window, click @{B}Browse...@{UB} and choose the folder (or whole
+   partition) you want to tidy. The selected location will appear in the
    Folder Path display.
 
-3. Choose your preferred sorting order for icons using the @{B}Order@{UB} cycle
-   gadget (Folders First, Files First, or Mixed).
+3. Pick how you want icons ordered using the @{B}Order@{UB} cycle gadget (Folders
+   First, Files First, or Mixed).
 
-4. If you want to tidy all subfolders as well, enable the @{B}Cleanup
-   subfolders@{UB} option.
+4. If you want iTidy to process everything underneath the chosen folder
+   as well, enable @{B}Cleanup subfolders@{UB}.
 
-5. For more control over icon layout, window shape, and spacing, click
-   @{B}Advanced...@{UB} to open the Advanced Settings window.
+5. If you want more control over layout, window shape, and spacing,
+   click @{B}Advanced...@{UB} to open the Advanced Settings window.
 
-6. When ready, click @{B}Start@{UB} to begin tidying. iTidy will process the
-   selected folder (and subfolders, if enabled), arranging icons and
-   resizing windows according to your chosen settings.
+6. When you're ready, click @{B}Start@{UB}. iTidy will process the selected
+   folder (and any subfolders, if enabled), arrange the icons, and
+   resize drawer windows using your chosen settings.
 
-7. If you enabled backups, iTidy will create a restore point before
-   making changes. You can revert to this backup later using @{B}Restore
-   Backups...@{UB}.
+7. If backups are enabled, iTidy will create a restore point before
+   making changes. You can roll back later using @{B}Restore Backups...@{UB}.
 
-@{B}Tip:@{UB} For your first run, try tidying a small folder to see how the options
-affect icon layout and window size. You can always restore from backup if
-you want to undo changes.
-
-@{"Back to top" LINK GETTING_STARTED}
+@{B}Tip:@{UB} For your first run, try a small test folder so you can see what the
+options do without touching a whole partition. If you've enabled backups,
+you can always restore afterwards if you want to undo the changes.
 
 --------------------------------------------------------------------------
 
@@ -199,87 +208,88 @@ you want to undo changes.
 @{APEN 2}@{B}Main Window@{UB}@{APEN 1}
 ===========
 
-The iTidy main window is designed for fast, easy access to the most
-important icon tidying features. Here's a breakdown of each section and
-control:
+The main window is where you pick what to tidy and choose the basic
+options. It's meant to make the common "tidy this folder" job quick,
+without getting in the way.
 
 
 @{APEN 2}FOLDER SECTION@{APEN 1}
 --------------
 
-- @{B}Folder Path:@{UB} Displays the Amiga path of the folder to be processed
-  (e.g., "SYS:", "Work:Projects", "DH0:Games"). This is read-only and
-  updates when you select a new folder.
+- @{B}Folder Path:@{UB} Shows the Amiga path of the folder that will be processed
+  (for example "SYS:", "Work:Projects", or "DH0:Games"). It's read-only
+  and updates when you select a new folder.
 
-- @{B}Browse... Button:@{UB} Opens the AmigaDOS file requester, allowing you to
-  navigate and select the folder you want to tidy. Only drawers
-  (folders) are shown, not files. You can also type a path directly. The
-  last selected path is remembered during your session.
+- @{B}Browse... Button:@{UB} Opens a file requester so you can choose the folder
+  you want to tidy. The requester only shows drawers (folders), not
+  files. If you prefer, you can also type a path directly. The last
+  selected path is remembered for the current session.
 
 
 @{APEN 2}TIDY OPTIONS SECTION@{APEN 1}
 --------------------
 
-- @{B}Order:@{UB} Cycle gadget with options for Folders First, Files First, or
-  Mixed. Controls how icons are grouped and sorted in the window.
-  - @{I}Folders First:@{UI} All drawer icons appear before file icons.
-  - @{I}Files First:@{UI} All file icons appear before drawer icons.
-  - @{I}Mixed:@{UI} Folders and files are sorted together alphabetically.
+- @{B}Order:@{UB} Sets how icons are grouped and sorted in the window. The
+  choices are Folders First, Files First, or Mixed.
+  - @{I}Folders First:@{UI} Drawer icons are listed before file icons.
+  - @{I}Files First:@{UI} File icons are listed before drawer icons.
+  - @{I}Mixed:@{UI} Folders and files are sorted together by name.
 
-- @{B}Cleanup subfolders:@{UB} When checked, iTidy processes all subdirectories
-  within the selected folder tree. Useful for tidying entire partitions
-  or large project trees in one pass. @{B}Note:@{UB} On classic hardware this may
-  take a while for very large folder trees, but it's safe to let iTidy
-  run unattended while it works.
+- @{B}Cleanup subfolders:@{UB} If enabled, iTidy will recurse through all
+  subfolders under the selected path. This is the option you'd use for
+  tidying a whole partition or a large folder tree in one pass. On
+  classic hardware, very large trees can take a while, so it's normal to
+  start it and leave it running.
 
-- @{B}Backup icons:@{UB} When checked, iTidy creates an LhA archive backup of all
-  ".info" files before making changes. This backs up icon positions and
-  window layouts--restored via @{B}Restore Backups...@{UB} in the main window.
-  Requires LhA in "C:" directory. Highly recommended for large
-  operations. @{B}Note:@{UB} This is separate from Default Tool backups, which
-  are handled automatically when fixing default tools.
+- @{B}Backup icons:@{UB} If enabled, iTidy creates an LhA archive of the relevant
+  ".info" files before making changes. That gives you something to roll
+  back to later using @{B}Restore Backups...@{UB} from the main window. This
+  requires LhA to be available in "C:". (This backup is about
+  icon/layout changes; Default Tool backups are handled separately when
+  fixing default tools.)
 
-- @{B}Position:@{UB} Controls where folder windows appear after resizing.
-  Options:
-  - @{I}Center Screen:@{UI} Window centered on Workbench screen (default).
-  - @{I}Keep Position:@{UI} Window stays at current location.
-  - @{I}Near Parent:@{UI} Opens slightly down and right of parent window.
-  - @{I}No Change:@{UI} Window resized but not moved.
+- @{B}Position:@{UB} Controls where drawer windows end up after iTidy resizes
+  them.
+  - @{I}Center Screen:@{UI} Centres the window on the Workbench screen (default).
+  - @{I}Keep Position:@{UI} Keeps the window at its current location.
+  - @{I}Near Parent:@{UI} Places the window slightly down and right of the parent
+    window (similar to how Workbench tends to cascade windows).
+  - @{I}No Change:@{UI} Resizes the window but doesn't try to move it.
 
 
 @{APEN 2}OTHER CONTROLS@{APEN 1}
 --------------
 
-- @{B}Start Button:@{UB} Begins the tidying process using your current settings.
+- @{B}Start Button:@{UB} Begins processing using the current settings.
 
-- @{B}Advanced...:@{UB} Opens the Advanced Settings window for further
-  customization.
+- @{B}Advanced...:@{UB} Opens the Advanced Settings window for more detailed
+  control.
 
 
 @{APEN 2}MENU OPTIONS@{APEN 1}
 ------------
 
-iTidy includes menu options to load and save your current settings:
+The menu lets you save and load your settings:
 
-- @{B}Load Settings:@{UB} Restore previously saved preferences for icon layout,
-  sorting, and backup options.
-- @{B}Save Settings:@{UB} Store your current configuration for future use, making
-  it easy to repeat your preferred setup.
+- @{B}Load Settings:@{UB} Loads previously saved preferences for layout, sorting,
+  and backup options.
+- @{B}Save Settings:@{UB} Saves your current configuration so you can reuse it
+  later.
 
-These options help you quickly switch between different layouts or restore
-your favorite configuration after experimenting with new settings.
+This is handy if you want one setup for general Workbench use and another
+for things like WHDLoad folders or archive dumps.
 
 
 @{APEN 2}TIPS@{APEN 1}
 ----
 
-- The main window is optimized for quick, one-click tidying. For more
-  control, use Advanced Settings.
-- You can always return to the main window from other dialogs.
-- All changes are applied to the selected folder and, if enabled, its
-  subfolders.
-
-@{"Back to top" LINK MAIN_WINDOW}
+- The main window is meant for quick "point it at a folder and tidy it"
+  runs. If you need more control over layout and window sizing, use
+  @{B}Advanced...@{UB}.
+- All changes apply to the selected folder and (if enabled) everything
+  underneath it.
+- If you're experimenting, enable backups and start with a small test
+  folder first.
 
 --------------------------------------------------------------------------
 
@@ -296,101 +306,106 @@ your favorite configuration after experimenting with new settings.
 @{APEN 2}@{B}Advanced Settings@{UB}@{APEN 1}
 =================
 
-Accessed via @{B}Advanced...@{UB} in the main window. These options give you
-fine-grained control over icon layout and window sizing.
+You can open this window via @{B}Advanced...@{UB} on the main window. These options
+are there if you want a bit more control over how icons are laid out and
+how drawer windows are sized.
 
 
 @{APEN 2}LAYOUT ASPECT RATIO@{APEN 1}
 -------------------
 
-Controls the target width-to-height ratio for folder windows.
+Sets the target width-to-height "shape" for drawer windows.
 
 - @{I}Tall (0.75):@{UI} Very tall, narrow windows
-- @{I}Square (1.0):@{UI} Square windows
+- @{I}Square (1.0):@{UI} Roughly square windows
 - @{I}Compact (1.3):@{UI} Slightly wider than tall
-- @{I}Classic (1.6):@{UI} Traditional Workbench proportions
-- @{I}Wide (2.0):@{UI} Wide, modern proportions (default)
+- @{I}Classic (1.6):@{UI} More traditional Workbench proportions
+- @{I}Wide (2.0):@{UI} Wider windows (default)
 - @{I}Ultrawide (2.4):@{UI} Very wide windows
 
 
 @{APEN 2}OVERFLOW STRATEGY@{APEN 1}
 -----------------
 
-Determines how iTidy handles folders with too many icons to fit on screen.
+Controls what iTidy does when a drawer has more icons than comfortably fit
+on screen.
 
-- @{I}Expand Horizontally:@{UI} Adds more columns, user scrolls horizontally
+- @{I}Expand Horizontally:@{UI} Adds more columns (you'll scroll left/right)
   (default)
-- @{I}Expand Vertically:@{UI} Adds more rows, user scrolls vertically
-- @{I}Expand Both:@{UI} Balances expansion in both directions
+- @{I}Expand Vertically:@{UI} Adds more rows (you'll scroll up/down)
+- @{I}Expand Both:@{UI} Tries to balance expansion in both directions
 
 
 @{APEN 2}ICON SPACING (X AND Y)@{APEN 1}
 ----------------------
 
-Sets the horizontal and vertical gap between icons (0-20 pixels). Default
-is 8 pixels for both. Lower values create tighter layouts.
+Sets the horizontal and vertical gap between icons (0-20 pixels). The
+default is 8 pixels in both directions. Lower values pack icons tighter;
+higher values give things more breathing room.
 
 
 @{APEN 2}ICONS PER ROW (MIN/MAX)@{APEN 1}
 -----------------------
 
-- @{B}Min:@{UB} Minimum columns (default: 2). Prevents single-column vertical
-  stacks.
-- @{B}Max:@{UB} Maximum columns. Only used when Auto Max is disabled.
-- @{B}Auto Max Icons:@{UB} When checked (default), iTidy calculates max columns
-  automatically based on screen width.
+- @{B}Min:@{UB} The minimum number of columns (default: 2). This stops drawers
+  turning into a single long vertical list.
+- @{B}Max:@{UB} The maximum number of columns (only used when Auto Max is
+  disabled).
+- @{B}Auto Max Icons:@{UB} When enabled (default), iTidy works out a sensible
+  maximum column count based on your screen width.
 
 
 @{APEN 2}MAX WINDOW WIDTH@{APEN 1}
 ----------------
 
-Limits folder window width as a percentage of screen width (Auto, 30%,
-50%, 70%, 90%, 100%). Only applies when Auto Max Icons is enabled.
+Limits how wide drawer windows are allowed to become, as a percentage of
+the screen width (Auto, 30%, 50%, 70%, 90%, 100%). This only applies when
+@{B}Auto Max Icons@{UB} is enabled.
 
 
 @{APEN 2}ALIGN ICONS VERTICALLY@{APEN 1}
 ----------------------
 
-Controls vertical alignment when icons in a row have different heights:
-@{I}Top@{UI}, @{I}Middle@{UI} (default), or @{I}Bottom@{UI}.
+Sets how icons are vertically aligned when a row contains icons of
+different heights: @{I}Top@{UI}, @{I}Middle@{UI} (default), or @{I}Bottom@{UI}.
 
 
 @{APEN 2}REVERSE SORT (Z->A)@{APEN 1}
 -------------------
 
-When checked, reverses the sort order (Z->A, newest-first, largest-first).
+Reverses the current sort direction (for example Z->A, newest-first, or
+largest-first depending on the sort mode).
 
 
 @{APEN 2}OPTIMIZE COLUMN WIDTHS@{APEN 1}
 ----------------------
 
-When checked (default), each column width is based on its widest icon
-rather than a uniform width for all columns.
+When enabled (default), each column is sized based on the widest icon in
+that column rather than forcing every column to use the same width.
 
 
 @{APEN 2}COLUMN LAYOUT (CENTERED)@{APEN 1}
 ------------------------
 
-When checked (default), icons are centered within their column rather than
-left-aligned.
+When enabled (default), icons are centered within their column rather than
+being left-aligned.
 
 
 @{APEN 2}SKIP HIDDEN FOLDERS@{APEN 1}
 -------------------
 
-When checked (default), skips folders without ".info" files during
-recursive processing.
+When enabled (default), iTidy skips folders that don't have ".info" files
+when doing recursive processing. This helps avoid pointless work when
+you're running across large trees.
 
 
 @{APEN 2}STRIP NEWICON BORDERS@{APEN 1}
 ---------------------
 
-Removes borders from NewIcons during processing. Requires icon.library
-v44+ (Workbench 3.5+). @{B}Important:@{UB} This change is permanent for the
-affected icons, so enable icon backups first if you might want to restore
-the original look later.
-
-@{"Back to top" LINK ADVANCED_SETTINGS}
+Removes borders from NewIcons during processing. This requires
+icon.library v44+ (Workbench 3.5+). This change is permanent for the
+affected icons, so if you might want to go back to the original look
+later, enable icon backups first.
 
 --------------------------------------------------------------------------
 
@@ -407,70 +422,76 @@ the original look later.
 @{APEN 2}@{B}Default Tool Analysis@{UB}@{APEN 1}
 =====================
 
-Accessed via @{B}Fix Default Tools...@{UB} in the main window. This feature scans
-WBPROJECT icons to find and repair missing or invalid default tools.
+You can open this window via @{B}Fix Default Tools...@{UB} on the main window. It
+scans WBPROJECT icons and helps you find (and fix) default tools that no
+longer exist.
 
 
 @{APEN 2}WHAT IS A DEFAULT TOOL?@{APEN 1}
 -----------------------
 
-Every Amiga data file icon specifies a "Default Tool"--the program that
-opens when you double-click it. For example, a ".txt" file might use
-"SYS:Utilities/MultiView". When icons are copied between systems or
-extracted from archives, these tool paths often point to programs that
-don't exist, causing "Unable to open your tool" errors.
+On the Amiga, most data file icons have a "Default Tool" set -- the
+program Workbench runs when you double-click that icon. For example, a
+".txt" icon might have "SYS:Utilities/MultiView" as its default tool.
+
+After copying icons between systems or extracting older archives, those
+tool paths often don't match what's actually installed. When that happens
+you'll see the familiar "Unable to open your tool" error.
 
 
 @{APEN 2}USING THE SCANNER@{APEN 1}
 -----------------
 
-1. @{B}Select folder:@{UB} Use @{B}Browse...@{UB} to choose a folder. Scanning is always
-   recursive.
-2. @{B}Scan:@{UB} Click @{B}Scan@{UB} to examine all icons and check if their default
-   tools exist.
-3. @{B}Review:@{UB} The tool list shows each default tool, how many icons use it,
-   and its status (EXISTS or MISSING).
+1. @{B}Select folder:@{UB} Click @{B}Browse...@{UB} and choose a folder to scan. Scanning
+   is always recursive (it will include subfolders).
+2. @{B}Scan:@{UB} Click @{B}Scan@{UB} to examine icons and check whether their default
+   tools can be found.
+3. @{B}Review:@{UB} The list shows each default tool that was found, how many
+   icons reference it, and whether it exists.
 4. @{B}Filter:@{UB} Use the cycle gadget to show All, Existing only, or Missing
    only.
-5. @{B}Fix:@{UB} Select a missing tool and click @{B}Replace Tool (Batch)@{UB} to fix all
-   icons using it, or select a specific file and use @{B}Replace Tool
-   (Single)@{UB}.
+5. @{B}Fix:@{UB} If a tool is missing, select it and use @{B}Replace Tool (Batch)@{UB} to
+   update all icons that use it. If you only want to change one file,
+   select that file and use @{B}Replace Tool (Single)@{UB}.
 
 
 @{APEN 2}TOOL LIST COLUMNS@{APEN 1}
 -----------------
 
-- @{B}Tool:@{UB} The default tool path (e.g., "SYS:Tools/TextEdit")
-- @{B}Files:@{UB} Number of icons using this tool
-- @{B}Status:@{UB} MISSING or EXISTS
+- @{B}Tool:@{UB} The default tool path (for example "SYS:Tools/TextEdit")
+- @{B}Files:@{UB} How many icons reference that tool
+- @{B}Status:@{UB} EXISTS or MISSING
 
 
 @{APEN 2}MENU OPTIONS@{APEN 1}
 ------------
 
-- @{B}Project menu:@{UB} New, Open, Save, Save As, Close. Saving scans is useful
-  for large drives that take time to scan.
-- @{B}File menu:@{UB} Export tool list or detailed file list to text files.
+- @{B}Project menu:@{UB} New, Open, Save, Save As, Close. Saving scan results can
+  be handy when you're working with large drives that take a while to
+  scan.
+- @{B}File menu:@{UB} Export the tool list or a detailed per-file list to text
+  files.
 
 
 @{APEN 2}DEFAULT TOOL BACKUPS@{APEN 1}
 --------------------
 
-iTidy automatically backs up original default tool paths (as small text
-files) before making changes. This is a separate backup system from the
-icon layout backups created during tidying. Use @{B}Restore Default Tools
-Backups...@{UB} within this window to revert default tool changes--this does
-not restore icon positions or window layouts.
+Before iTidy changes anything, it automatically saves the original default
+tool values as small text backups. This backup system is separate from the
+icon/layout backups used for tidying.
+
+To undo default tool changes, use @{B}Restore Default Tools Backups...@{UB} from
+within this window. (This only restores default tool settings -- it won't
+restore icon positions or window layouts.)
 
 
 @{APEN 2}TECHNICAL NOTES@{APEN 1}
 ---------------
 
-iTidy searches the full Amiga PATH (parsed from "S:Startup-Sequence" and
-"S:User-Startup") when validating simple tool names like "MultiView".
-Absolute paths are checked directly.
-
-@{"Back to top" LINK DEFAULT_TOOL_ANALYSIS}
+When validating tools, iTidy checks absolute paths directly. For simple
+tool names like "MultiView", it searches the Amiga PATH (parsed from
+"S:Startup-Sequence" and "S:User-Startup") to see if the tool can be found
+there.
 
 --------------------------------------------------------------------------
 
@@ -487,73 +508,74 @@ Absolute paths are checked directly.
 @{APEN 2}@{B}Restoring Backups@{UB}@{APEN 1}
 =================
 
-Accessed via @{B}Restore Backups...@{UB} in the main window. This feature restores
-icon positions and window layouts from iTidy's LhA backup archives. Only
-available if you previously ran iTidy with @{B}Backup icons@{UB} enabled.
+You can open this window via @{B}Restore Backups...@{UB} on the main window. It
+restores icon positions and drawer/window layout information from the LhA
+backup archives that iTidy created. This is only available if you
+previously ran iTidy with @{B}Backup icons@{UB} enabled.
 
-@{B}Note:@{UB} This restores icon layout backups only. To restore default tool
-changes, use @{B}Restore Default Tools Backups...@{UB} in the Fix Default Tools
-window instead.
+Note: this restores icon/layout backups only. If you're trying to undo
+default tool changes, use @{B}Restore Default Tools Backups...@{UB} in the Fix
+Default Tools window instead.
 
 
 @{APEN 2}RUN LIST@{APEN 1}
 --------
 
-The top list shows all previous backup runs:
+The top list shows previous backup runs:
 
-- @{B}Run:@{UB} Sequential identifier (0001, 0002, etc.)
+- @{B}Run:@{UB} A simple run number (0001, 0002, etc.)
 - @{B}Date/Time:@{UB} When the backup was created
-- @{B}Folders:@{UB} Number of folders backed up
-- @{B}Size:@{UB} Total archive size
+- @{B}Folders:@{UB} How many folders were backed up
+- @{B}Size:@{UB} Total size of the archives
 - @{B}Status:@{UB} Complete or Incomplete
 
-Click a run to select it and view details below.
+Click a run to select it and view its details.
 
 
 @{APEN 2}DETAILS PANEL@{APEN 1}
 -------------
 
-Shows information about the selected run: source directory, total
-archives, size, status, and backup location.
+Shows information about the selected run, including the source directory,
+how many archives were created, total size, status, and where the backups
+are stored.
 
 
 @{APEN 2}CONTROLS@{APEN 1}
 --------
 
-- @{B}Restore window positions:@{UB} When checked (default), also restores window
-  geometry (position and size). A Workbench restart may be required to
-  see changes.
+- @{B}Restore window positions:@{UB} When enabled (default), iTidy also restores
+  drawer window geometry (size and position). Depending on your setup,
+  you may need to restart Workbench before everything visibly updates.
 
 
 @{APEN 2}BUTTONS@{APEN 1}
 -------
 
-- @{B}Restore Run:@{UB} Extracts all archived ".info" files back to their
-  original locations, restoring icon positions and window geometry.
-- @{B}Delete Run:@{UB} Permanently deletes the selected backup. @{B}Important:@{UB} This
-  action cannot be undone, so only delete runs you're sure you no longer
-  need.
-- @{B}View Folders...:@{UB} Shows all folders included in the selected run.
-- @{B}Cancel:@{UB} Close without making changes.
+- @{B}Restore Run:@{UB} Extracts the archived ".info" files back to their
+  original locations, restoring icon positions and (optionally) window
+  geometry.
+- @{B}Delete Run:@{UB} Permanently deletes the selected backup run. This can't be
+  undone, so only delete runs you're sure you no longer need.
+- @{B}View Folders...:@{UB} Shows the list of folders included in the selected
+  run.
+- @{B}Cancel:@{UB} Closes the window without making changes.
 
 
 @{APEN 2}WHAT GETS RESTORED@{APEN 1}
 ------------------
 
-- All ".info" files in each folder
+- The ".info" files that were backed up
 - Icon positions (X/Y coordinates)
-- Window geometry (if checkbox enabled)
+- Window geometry (if enabled)
 - Folder view mode settings
 
 
 @{APEN 2}REQUIREMENTS@{APEN 1}
 ------------
 
-- LhA must be installed in "C:" directory
-- Backup archives in "PROGDIR:Backups/"
-- Sufficient disk space for extraction
-
-@{"Back to top" LINK RESTORING_BACKUPS}
+- LhA must be installed in "C:"
+- Backup archives are stored in "PROGDIR:Backups/"
+- Enough free disk space to extract the archives
 
 --------------------------------------------------------------------------
 
@@ -564,234 +586,131 @@ archives, size, status, and backup location.
 
 @NODE TIPS_TROUBLESHOOTING "Tips & Troubleshooting"
 @PREV RESTORING_BACKUPS
-@NEXT GENERAL_TIPS
+@NEXT CREDITS_VERSION_INFO
 @TOC MAIN
 
 @{APEN 2}@{B}Tips & Troubleshooting@{UB}@{APEN 1}
 ======================
 
-Use these quick links to jump to common topics:
 
-- @{"General tips" LINK GENERAL_TIPS}
-- @{"Icons appear misaligned" LINK ICONS_APPEAR_MISALIGNED_COLOR_ICON_ICON_LIBRARY_ISSUE}
-- @{"Window positions not updating" LINK WINDOW_POSITIONS_NOT_UPDATING}
-- @{"Backup / restore issues" LINK IF_BACKUP_OR_RESTORE_DOESN_T_WORK_AS_EXPECTED}
-- @{"Slow processing on large folders" LINK SLOW_PROCESSING_ON_LARGE_FOLDERS}
-- @{"Icons don't open" LINK ICONS_DON_T_OPEN_UNABLE_TO_OPEN_YOUR_TOOL}
-- @{"Safety & disclaimer" LINK SAFETY_DISCLAIMER}
+@{APEN 2}GENERAL TIPS@{APEN 1}
+------------
 
-
-@{"  Return to Contents  " LINK MAIN}
-
-@ENDNODE
-
-@NODE GENERAL_TIPS "General Tips"
-@PREV TIPS_TROUBLESHOOTING
-@NEXT ICONS_APPEAR_MISALIGNED_COLOR_ICON_ICON_LIBRARY_ISSUE
-@TOC MAIN
-
-@{APEN 2}@{B}Tips & Troubleshooting@{UB}@{APEN 1}
-
-@{APEN 2}@{B}General Tips@{UB}@{APEN 1}
-============
-
-- @{B}Always enable backups@{UB} for large or recursive operations. You can
-  safely experiment knowing you can restore the original layout.
-- @{B}Start small:@{UB} Try tidying a single folder first to see how the settings
-  affect icon layout and window size before processing an entire
+- @{B}Enable backups for big runs:@{UB} If you're tidying a lot of folders
+  (especially with recursion enabled), turning on backups gives you a
+  way back if you don't like the result.
+- @{B}Start small:@{UB} Try a single drawer first so you can see how the settings
+  affect icon layout and window sizing before you point it at a whole
   partition.
-- @{B}Save your settings:@{UB} Once you find a configuration you like, use @{B}Save
-  Settings@{UB} from the menu so you can quickly reload it later.
-- @{B}Live preview trick:@{UB} Keep a folder window open in Workbench while you
-  run iTidy on that folder. This lets you fine-tune settings before
-  committing to a long recursive run across many subfolders. During
-  processing, some icons may temporarily overlap until all icons in that
-  folder have been repositioned; for best results, allow iTidy to finish
-  the folder it's currently working on before cancelling. Once a folder
-  is complete, you can safely stop a long recursive run if you decide
-  you've seen enough. Window size and position might be cached by
-  Workbench until you close and reopen the drawer, but you can
-  immediately see how icons are arranged.
-- @{B}To see window changes:@{UB} Close all affected folders before running
-  iTidy, then reboot after processing completes to see the new window
-  sizes and positions.
-
-@{"Back to Tips & Troubleshooting" LINK TIPS_TROUBLESHOOTING}
+- @{B}Save your settings:@{UB} Once you've found a setup you like, use @{B}Save
+  Settings@{UB} from the menu so you can load it again later.
+- @{B}Live preview trick:@{UB} Keep a drawer window open while you run iTidy on
+  that same drawer. You can quickly see how the layout looks and tweak
+  settings before doing a long recursive run. While iTidy is working
+  through a drawer, icons can briefly overlap until it has repositioned
+  everything. For best results, let it finish the current drawer before
+  cancelling. Once a drawer is complete, it's generally safe to stop a
+  long run if you've seen enough. Workbench may cache window
+  sizing/position until you close and reopen the drawer, but icon
+  placement can be checked straight away.
+- @{B}To see window changes clearly:@{UB} Close any drawers you're tidying before
+  you run iTidy. After it finishes, you may need to restart Workbench
+  (or reboot) to see updated window sizes and positions everywhere.
 
 
-@{"  Return to Contents  " LINK MAIN}
+@{APEN 2}ICONS APPEAR MISALIGNED@{APEN 1}
+-----------------------
 
-@ENDNODE
+If some icons look misaligned after tidying while others look fine, it's
+often down to icon.library support rather than iTidy itself.
 
-@NODE ICONS_APPEAR_MISALIGNED_COLOR_ICON_ICON_LIBRARY_ISSUE "Icons Appear Misaligned (Color Icon / icon.library Issue)"
-@PREV GENERAL_TIPS
-@NEXT WINDOW_POSITIONS_NOT_UPDATING
-@TOC MAIN
+On Workbench 3.0/3.1 with older icon.library versions, OS3.5+ colour icons
+may not render at their real size and can appear as tiny placeholder
+images. iTidy positions icons using the @{I}actual@{UI} icon dimensions, but
+Workbench may draw them at the wrong size, which makes the layout look
+"off".
 
-@{APEN 2}@{B}Tips & Troubleshooting@{UB}@{APEN 1}
+@{B}What to do:@{UB}
 
-@{APEN 2}@{B}Icons Appear Misaligned (Color Icon / icon.library Issue)@{UB}@{APEN 1}
-=========================================================
-
-If some icons appear misaligned after tidying, but others look fine, this
-is usually caused by an outdated icon.library that cannot display modern
-color icons correctly.
-
-@{B}What happens:@{UB} OS 3.5+ color icons require icon.library v44 or higher. On
-older systems (Workbench 3.0/3.1 with the original icon.library), these
-icons display as tiny placeholder images--often just a few pixels tall.
-iTidy reads the @{I}actual@{UI} icon dimensions and positions icons correctly, but
-Workbench displays the wrong size, making icons appear misaligned.
-
-@{B}Solution:@{UB} Update your icon.library to v44 or newer. Updated libraries are
-available from Aminet or as part of OS 3.5/3.9/3.2 upgrades.
-Alternatively, convert color icons to NewIcons or classic format if you
-prefer to stay on an older Workbench.
-
-@{B}Note:@{UB} iTidy reads and positions icons according to their real dimensions.
-On older systems, the visual misalignment is caused by how classic
-icon.library versions render modern color icons, rather than by iTidy's
-layout logic.
-
-@{"Back to Tips & Troubleshooting" LINK TIPS_TROUBLESHOOTING}
+- Update icon.library to v44+ if you want to use OS3.5+ colour icons
+  (typically via OS3.5/3.9/3.2, or an updated library from Aminet).
+- Alternatively, convert colour icons back to NewIcons or classic icons
+  if you're keeping a more stock 3.0/3.1 setup.
 
 
-@{"  Return to Contents  " LINK MAIN}
+@{APEN 2}WINDOW POSITIONS NOT UPDATING@{APEN 1}
+-----------------------------
 
-@ENDNODE
+If you restore a backup (or run iTidy) and window positions don't appear
+to change right away, this is usually Workbench caching.
 
-@NODE WINDOW_POSITIONS_NOT_UPDATING "Window Positions Not Updating"
-@PREV ICONS_APPEAR_MISALIGNED_COLOR_ICON_ICON_LIBRARY_ISSUE
-@NEXT IF_BACKUP_OR_RESTORE_DOESN_T_WORK_AS_EXPECTED
-@TOC MAIN
+@{B}What to do:@{UB}
 
-@{APEN 2}@{B}Tips & Troubleshooting@{UB}@{APEN 1}
-
-@{APEN 2}@{B}Window Positions Not Updating@{UB}@{APEN 1}
-=============================
-
-After restoring a backup or running iTidy, window positions may not appear
-to change immediately.
-
-@{B}Cause:@{UB} Workbench caches window geometry for open folders.
-
-@{B}Solution:@{UB} Close and reopen the affected folder windows. In some cases, you
-may need to restart Workbench or reboot for changes to take effect.
-
-@{"Back to Tips & Troubleshooting" LINK TIPS_TROUBLESHOOTING}
+- Close and reopen the affected drawer windows.
+- If it still doesn't look updated, restart Workbench or reboot.
 
 
-@{"  Return to Contents  " LINK MAIN}
+@{APEN 2}IF BACKUP OR RESTORE DOESN'T WORK AS EXPECTED@{APEN 1}
+---------------------------------------------
 
-@ENDNODE
+A few quick things to check:
 
-@NODE IF_BACKUP_OR_RESTORE_DOESN_T_WORK_AS_EXPECTED "If Backup or Restore Doesn't Work as Expected"
-@PREV WINDOW_POSITIONS_NOT_UPDATING
-@NEXT SLOW_PROCESSING_ON_LARGE_FOLDERS
-@TOC MAIN
-
-@{APEN 2}@{B}Tips & Troubleshooting@{UB}@{APEN 1}
-
-@{APEN 2}@{B}If Backup or Restore Doesn't Work as Expected@{UB}@{APEN 1}
-=============================================
-
-@{B}Check the following:@{UB}
-
-- LhA must be installed in "C:" directory
-- Sufficient free disk space for archives (backups) or extraction
+- LhA is installed in "C:"
+- You have enough free disk space for archives (backups) or extraction
   (restores)
-- The original folder paths must still exist when restoring
-- Check "PROGDIR:logs/" for detailed error messages
-
-@{"Back to Tips & Troubleshooting" LINK TIPS_TROUBLESHOOTING}
+- The original folder paths still exist when restoring
+- Check "PROGDIR:logs/" for any error details
 
 
-@{"  Return to Contents  " LINK MAIN}
+@{APEN 2}SLOW PROCESSING ON LARGE FOLDER TREES@{APEN 1}
+-------------------------------------
 
-@ENDNODE
+Recursing through thousands of folders takes time on real hardware,
+especially with mechanical drives.
 
-@NODE SLOW_PROCESSING_ON_LARGE_FOLDERS "Slow Processing on Large Folders"
-@PREV IF_BACKUP_OR_RESTORE_DOESN_T_WORK_AS_EXPECTED
-@NEXT ICONS_DON_T_OPEN_UNABLE_TO_OPEN_YOUR_TOOL
-@TOC MAIN
+A few tips:
 
-@{APEN 2}@{B}Tips & Troubleshooting@{UB}@{APEN 1}
-
-@{APEN 2}@{B}Slow Processing on Large Folders@{UB}@{APEN 1}
-================================
-
-Processing thousands of folders recursively is naturally time-consuming,
-especially on real Amiga hardware with mechanical drives.
-
-@{B}Tips:@{UB}
-
-- iTidy can be left running unattended for large operations
-- Avoid running other disk-intensive programs simultaneously
-- For very large collections, consider breaking the work into chunks
-  (e.g., "WHDLoad:Games" then "WHDLoad:Demos") rather than processing
-  everything at once
-
-@{"Back to Tips & Troubleshooting" LINK TIPS_TROUBLESHOOTING}
+- It's fine to leave iTidy running unattended during large jobs.
+- Avoid running other disk-heavy tasks at the same time.
+- If you're doing a huge collection, it can be quicker (and safer) to
+  work in chunks (for example "WHDLoad:Games" first, then
+  "WHDLoad:Demos") rather than doing everything in one run.
 
 
-@{"  Return to Contents  " LINK MAIN}
+@{APEN 2}ICONS DON'T OPEN ("UNABLE TO OPEN YOUR TOOL")@{APEN 1}
+---------------------------------------------
 
-@ENDNODE
+This usually means an icon's Default Tool points to something that isn't
+installed on your system.
 
-@NODE ICONS_DON_T_OPEN_UNABLE_TO_OPEN_YOUR_TOOL "Icons Don't Open ("Unable to open your tool")"
-@PREV SLOW_PROCESSING_ON_LARGE_FOLDERS
-@NEXT SAFETY_DISCLAIMER
-@TOC MAIN
+@{B}What to do:@{UB}
 
-@{APEN 2}@{B}Tips & Troubleshooting@{UB}@{APEN 1}
+- Use @{B}Fix Default Tools...@{UB} to scan for missing tools and repair them.
+- See the Default Tool Analysis section for how the scanner works.
 
-@{APEN 2}@{B}Icons Don't Open ("Unable to open your tool")@{UB}@{APEN 1}
-=============================================
-
-This error means the icon's default tool path points to a program that
-doesn't exist on your system.
-
-@{B}Solution:@{UB} Use @{B}Fix Default Tools...@{UB} to scan for missing tools and repair
-them. See the Default Tool Analysis section for details.
-
-@{"Back to Tips & Troubleshooting" LINK TIPS_TROUBLESHOOTING}
+--------------------------------------------------------------------------
 
 
-@{"  Return to Contents  " LINK MAIN}
+@{APEN 2}SAFETY & DISCLAIMER@{APEN 1}
+-------------------
 
-@ENDNODE
+iTidy is free hobby software that I work on in my spare time. It's been
+tested on real Amiga systems, but it may still have bugs or edge cases I
+haven't run into yet.
 
-@NODE SAFETY_DISCLAIMER "Safety & Disclaimer"
-@PREV ICONS_DON_T_OPEN_UNABLE_TO_OPEN_YOUR_TOOL
-@NEXT CREDITS_VERSION_INFO
-@TOC MAIN
+iTidy only touches ".info" files and Workbench drawer/window layout
+information. It also includes an optional backup system to help roll back
+changes, but you shouldn't treat that as a replacement for your own
+regular system backups (and it's still being improved).
 
-@{APEN 2}@{B}Tips & Troubleshooting@{UB}@{APEN 1}
+If you use iTidy, you do so at your own risk. I can't accept
+responsibility for data loss, corruption, or any other damage caused by
+using (or misusing) the software.
 
-@{APEN 2}@{B}Safety & Disclaimer@{UB}@{APEN 1}
-===================
-
-iTidy is free, hobbyist software developed in the author's spare time. It
-is provided in good faith and has been tested on real Amiga systems, but
-it may still contain bugs or behave in ways that were not anticipated.
-
-iTidy only works with ".info" files and Workbench window layouts, and it
-includes an optional backup system to help you roll back icon changes.
-However, this backup feature is still under active development and should
-not be treated as a substitute for your own regular system backups.
-
-By using iTidy, you accept that you do so entirely at your own risk. The
-author cannot accept any responsibility or liability for data loss,
-corruption, or any other damage or loss arising from the use or misuse of
-this software.
-
-@{B}Before running iTidy for the first time--especially on large or important
-partitions--you must ensure you have a current, verified backup of your
-system.@{UB} For extra safety, consider testing iTidy on a copy of your
-Workbench setup or a small sample folder before using it on your main
-installation.
-
-@{"Back to Tips & Troubleshooting" LINK TIPS_TROUBLESHOOTING}
+Before running iTidy for the first time -- especially on large or
+important partitions -- make sure you have a current, verified backup. If
+you want to be extra cautious, try it on a small test folder or a copy of
+your Workbench setup first.
 
 --------------------------------------------------------------------------
 
@@ -801,15 +720,14 @@ installation.
 @ENDNODE
 
 @NODE CREDITS_VERSION_INFO "Credits & Version Info"
-@PREV SAFETY_DISCLAIMER
+@PREV TIPS_TROUBLESHOOTING
 @TOC MAIN
 
 @{APEN 2}@{B}Credits & Version Info@{UB}@{APEN 1}
 ======================
 
 @{B}Author:@{UB} Kerry Thompson
-@{B}Version:@{UB} 1.2
-@{B}Website:@{UB} https://github.com/Kwezza/iTidy
+@{B}Version:@{UB} 2.0 @{B}Website:@{UB} https://github.com/Kwezza/iTidy
 
 --------------------------------------------------------------------------
 

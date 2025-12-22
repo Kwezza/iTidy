@@ -2,7 +2,15 @@
 
 ## Project Overview
 
-iTidy is an **AmigaOS Workbench 3.0 GUI application** that tidies up icons and resizes folder windows. This is a **complete rewrite as a GUI-only application** (no CLI version). Written in **C89/C99** and targets **Workbench 3.0/3.1** on **AmigaOS 3.x** systems (68k architecture).
+iTidy is an **AmigaOS Workbench 3.0/3.1 GUI application** that automatically tidies icon layouts and resizes folder windows. This is a **complete GUI rewrite** (no CLI version) of the original command-line tool. Written in **C89/C99** (VBCC-compatible) targeting **Workbench 3.0 (V39)** and **3.1 (V40)** on **68000/68020** systems.
+
+**Key Capabilities:**
+- Intelligent icon grid layout with configurable sorting (name, type, date, size)
+- Automated window resizing with aspect ratio control and overflow handling
+- LHA-based backup system with restore capability
+- Recursive directory processing with hidden folder filtering
+- Default tool validation and upgrade system
+- Performance-optimized for low-memory Amigas (A500/A600/A1200)
 
 ---
 
@@ -59,6 +67,27 @@ Any section marked **CRITICAL** or **⚠️** is a **show-stopper issue** that:
 - **CRITICAL**: Test code must NOT pollute main codebase
 - **NEVER** include host-specific code (GCC extensions, Windows APIs, etc.) in production files
 - Tests are for validation only - final code must compile with VBCC for Amiga
+
+### Build Commands
+```powershell
+# Clean build (recommended after significant changes)
+make clean && make
+
+# Incremental build (faster for small changes)
+make
+
+# Build with console output enabled (debugging Workbench launch issues)
+make CONSOLE=1
+
+# Host build for algorithm testing (GCC on PC)
+make TARGET=host
+```
+
+### Debugging Build Errors
+1. Check `build_output_latest.txt` for compiler output
+2. VBCC warnings 51 (bitfield) and 61 (array size) from system headers are **expected** and cannot be suppressed
+3. Memory tracking adds ~32 bytes overhead per allocation - disable for performance testing
+4. Stack size is set to 80KB in `main_gui.c` (line 71): `long __stack = 80000L;`
 
 ## Language and Coding Standards
 
@@ -213,6 +242,13 @@ whd_memory_report();
 ```
 
 **CRITICAL**: All iTidy production code MUST use `whd_malloc()`/`whd_free()` for general-purpose allocations. Only use standard `malloc()`/`free()` in standalone test programs in `src\tests\`.
+
+**Fast RAM Optimization (CRITICAL for Performance)**:
+`whd_malloc()` uses `AllocVec(size, MEMF_ANY | MEMF_CLEAR)` on Amiga, which prefers Fast RAM when available. This provides **15x performance improvement** on systems with Fast RAM expansion (A500/A600/A1200 with 8MB):
+- Chip RAM: ~0.250 seconds/operation
+- Fast RAM: ~0.017 seconds/operation (59x faster!)
+- Standard `malloc()` only allocates from Chip RAM, leaving Fast RAM unused
+- See `docs/DEVELOPMENT_LOG.md` (November 20, 2025 entry) for benchmarks
 
 #### AmigaOS-Specific Memory:
 ```c
@@ -800,14 +836,33 @@ ng.ng_Width = 584;  // This is pixels - ListView will show nothing!
 17. **Window cleanup order** - Always: detach lists → close window → free gadgets → free visual info
 18. **Fast window opening** - Open window first, populate lists after (deferred loading pattern)
 
+## Development Log and Change History
+
+**CRITICAL RESOURCE**: The `docs/DEVELOPMENT_LOG.md` file contains the complete development history with:
+- Detailed bug fix documentation with root cause analysis
+- Performance optimization discoveries and benchmarks
+- Architecture decisions and rationale
+- Known issues and workarounds
+- Recent changes (check latest entries first)
+
+**Before implementing any change**, search the development log for related issues or prior work. Many bugs have been encountered and solved before.
+
+**Recent critical fixes documented**:
+- RAM disk crash on fast emulators (filesystem lock timing)
+- Fast RAM allocation 15x performance breakthrough
+- PATH search list from startup scripts
+- Default tool validation improvements
+- Emergency out-of-memory handler
+
 ## Additional Resources (Read in this order)
 
 1. **`src/templates/AI_AGENT_GETTING_STARTED.md`** - **REQUIRED READING** for any window/GUI work
-2. `docs/AI_AGENT_GUIDE_embedded.md` - Window template usage patterns
-3. `docs/MEMORY_TRACKING_QUICKSTART.md` - Memory debugging guide
-4. `docs/MEMORY_TRACKING_SYSTEM.md` - Detailed tracking system info
-5. `src/templates/` - Canonical code templates (use as reference)
-6. `Makefile` - Build configuration and flags
+2. **`docs/DEVELOPMENT_LOG.md`** - Complete history of bugs, fixes, and architectural decisions
+3. `docs/AI_AGENT_GUIDE_embedded.md` - Window template usage patterns
+4. `docs/MEMORY_TRACKING_QUICKSTART.md` - Memory debugging guide
+5. `docs/MEMORY_TRACKING_SYSTEM.md` - Detailed tracking system info
+6. `src/templates/` - Canonical code templates (use as reference)
+7. `Makefile` - Build configuration and flags
 
 ## Version Information
 
@@ -858,6 +913,13 @@ ng.ng_Width = 584;  // This is pixels - ListView will show nothing!
 - [ ] Have you set `ap_Strlen` manually to the buffer size?
 - [ ] Are you using `FreeVec()` (not `FreeDosObject()`) for cleanup?
 - [ ] Is the buffer at least 512 bytes (preferably 1024) for deep paths?
+
+**When updating the development log (docs\DEVELOPMENT_LOG.md):**
+- [ ] Have you documented the change with date, author, and description?
+- [ ] Is the update brief but informative?
+- [ ] **CRITICAL**: Do NOT include code snippets in development log entries
+- [ ] Focus on describing WHAT changed, WHY it changed, and the IMPACT
+- [ ] Keep entries concise - link to detailed bug fix docs for technical details
 
 ** When updating the development log (docs\DEVELOPMENT_LOG.md)):**
 - [ ] Have you documented the change with date, author, and description?
