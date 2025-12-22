@@ -2,6 +2,39 @@
 
 ---
 
+### Feature: Advanced Settings Window Dynamic Layout (December 4, 2025)
+
+* **Author**: AI Agent (GitHub Copilot)
+* **Status**: ✅ Implemented
+* **Severity**: Medium - GUI improvement
+* **Impact**: Advanced Settings window now adapts to any font (Topaz, custom fonts) without overflow
+* **Description**: Implemented font-aware dynamic layout for Advanced Settings window matching the main window's TextLength()-based approach. All 14 rows now calculate positions dynamically based on actual label widths, with proper two-column layout, flow layout for multi-gadget rows, and right-justified bottom buttons.
+* **Background**: After successfully implementing dynamic layout for main window (see DYNAMIC_TWO_COLUMN_LAYOUT.md), user requested same treatment for Advanced Settings window which had hardcoded positions (370px, 300px, 385px, 330px) causing Topaz font overflow.
+* **Solution**:
+   - Row 1: Two-column layout (Aspect Ratio left, Overflow Strategy right) using midpoint calculation
+   - Row 2: Flow layout for Icon Spacing X/Y sliders with calculated slider level output width (3 chars × font width + 8px)
+   - Row 3: Flow layout for Icons per Row (Min integer + Auto checkbox + Max integer) sequentially positioned
+   - Rows 4-5: Standard label + cycle gadget (Max Window Width, Vertical Alignment)
+   - Rows 9-13: Left-aligned checkboxes (Reverse Sort, Optimize Columns, Column Layout, Skip Hidden, Strip NewIcon)
+   - Row 14: Right-justified OK/Cancel buttons calculated from ADV_GROUPBOX_RIGHT_EDGE, Beta Options left-aligned
+* **Key Technical Details**:
+   - Added RastPort *rp variable to create_gadgets() for TextLength() calls
+   - Calculate midpoint: `midpoint = ADV_CONTENT_LEFT + ((ADV_CONTENT_RIGHT - ADV_CONTENT_LEFT) >> 1)`
+   - Slider level width: `(3 * rp->Font->tf_XSize) + 8` for GTSL_MaxLevelLen=3
+   - Right-justify buttons: `cancel_x = ADV_GROUPBOX_RIGHT_EDGE - width`, `ok_x = cancel_x - width - gap`
+   - Removed temporary ADV_WINDOW_Column_1_LEFT compatibility constant after full replacement
+* **Files Modified**:
+   - src/GUI/advanced_window.c - Complete rewrite of create_gadgets() function (lines 180-640)
+* **Benefits**:
+   - Window adapts to any font without hardcoded positions
+   - No overflow with Topaz or custom fonts
+   - Consistent layout pattern with main window
+   - Right-justified buttons look professional
+   - Flow layout for sliders handles variable label widths perfectly
+* **Testing**: Build succeeded with only expected system header warnings (51, 61), compiles cleanly
+
+---
+
 ### Bugfix: Skip Default Tool Validation for WBTOOL Icons (December 4, 2025)
 
 * **Author**: AI Agent (GitHub Copilot)

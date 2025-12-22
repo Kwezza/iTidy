@@ -39,11 +39,15 @@ extern struct WorkbenchSettings prefsWorkbench;
 #define ADV_WINDOW_TOP 50
 
 #define ADV_WINDOW_STANDARD_PADDING 15
-#define ADV_WINDOW_Column_1_LEFT 140
-#define ADV_WINDOW_Column_2_LEFT 400
 #define ADV_WINDOW_TOP_START 10
 #define ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL 10
 #define ADV_WINDOW_GAP_BETWEEN_CHECKBOXES_VERTICAL 10
+
+/* Groupbox alignment constants (like main window) */
+#define ADV_GROUPBOX_LEFT_EDGE 15
+#define ADV_GROUPBOX_RIGHT_EDGE 610  /* WINDOW_WIDTH - 15 */
+#define ADV_CONTENT_LEFT (ADV_GROUPBOX_LEFT_EDGE + ADV_WINDOW_STANDARD_PADDING)
+#define ADV_CONTENT_RIGHT (ADV_GROUPBOX_RIGHT_EDGE - ADV_WINDOW_STANDARD_PADDING)
 
 /*------------------------------------------------------------------------*/
 /* Cycle Gadget Labels                                                   */
@@ -185,10 +189,15 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     
     /* Get screen's default font height for gadget sizing */
     struct TextAttr *font = adv_data->screen->Font;
+    struct RastPort *rp = &adv_data->screen->RastPort;
     UWORD font_height = font->ta_YSize;
     UWORD button_height = font_height + 6;
     UWORD string_height = font_height + 4;
     UWORD slider_height = font_height + 6;
+    
+    /* Calculate available width and midpoint for two-column layouts */
+    WORD available_width = ADV_GROUPBOX_RIGHT_EDGE - ADV_GROUPBOX_LEFT_EDGE - (2 * ADV_WINDOW_STANDARD_PADDING);
+    WORD midpoint = ADV_CONTENT_LEFT + (available_width >> 1);  /* Bit shift = divide by 2 */
     
     /* Create a context gadget (required by GadTools) */
     gad = CreateContext(&adv_data->glist);
@@ -201,239 +210,286 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     current_y = ADV_WINDOW_TOP_START + prefsIControl.currentTitleBarHeight;
     
     /*--------------------------------------------------------------------*/
-    /* Aspect Ratio Cycle Gadget                                         */
+    /* ROW 1: Two-column layout - Aspect Ratio (left) + Overflow (right) */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = ADV_WINDOW_Column_1_LEFT;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = gadget_width;
-    ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Layout Aspect Ratio:";
-    ng.ng_TextAttr = font;
-    ng.ng_GadgetID = GID_ADV_ASPECT_RATIO;
-    ng.ng_Flags = PLACETEXT_LEFT;
-    ng.ng_VisualInfo = adv_data->visual_info;
-    
-    adv_data->aspect_ratio_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
-        GTCY_Labels, aspect_ratio_labels,
-        GTCY_Active, adv_data->aspect_preset_selected,
-        TAG_END);
-    
-    if (!gad)
     {
-        CONSOLE_ERROR("Failed to create aspect ratio cycle gadget\n");
-        return NULL;
-    }
-    
-    
-
-    /*--------------------------------------------------------------------*/
-    /* Window Overflow Mode Cycle Gadget                                 */
-    /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = 370;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 135;
-    ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Overflow Strategy:";
-    ng.ng_GadgetID = GID_ADV_OVERFLOW_MODE;
-    ng.ng_Flags = PLACETEXT_LEFT;
-    
-    adv_data->overflow_mode_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
-        GTCY_Labels, overflow_mode_labels,
-        GTCY_Active, adv_data->overflow_mode_selected,
-        TAG_END);
-    
-    if (!gad)
-    {
-        CONSOLE_ERROR("Failed to create overflow mode cycle gadget\n");
-        return NULL;
+        /* Measure labels for proper positioning */
+        WORD aspect_label_width = TextLength(rp, "Layout Aspect:", 14);
+        WORD overflow_label_width = TextLength(rp, "When full:", 10);
+        
+        /* Measure longest option text in each cycle gadget for proper width */
+        WORD aspect_longest = TextLength(rp, "Ultrawide (2.4)", 15);  /* Longest option */
+        WORD overflow_longest = TextLength(rp, "Expand Horizontally", 19);  /* Longest option */
+        WORD cycle_arrow_width = 24;  /* Space for cycle arrow button */
+        
+        /* Left column: Aspect Ratio */
+        WORD left_gadget_x = ADV_CONTENT_LEFT + aspect_label_width + 8;
+        WORD left_cycle_width = aspect_longest + cycle_arrow_width + 8;  /* Width based on content */
+        
+        ng.ng_LeftEdge = left_gadget_x;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = left_cycle_width;
+        ng.ng_Height = button_height;
+        ng.ng_GadgetText = "Layout Aspect:";
+        ng.ng_TextAttr = font;
+        ng.ng_GadgetID = GID_ADV_ASPECT_RATIO;
+        ng.ng_Flags = PLACETEXT_LEFT;
+        ng.ng_VisualInfo = adv_data->visual_info;
+        
+        adv_data->aspect_ratio_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
+            GTCY_Labels, aspect_ratio_labels,
+            GTCY_Active, adv_data->aspect_preset_selected,
+            TAG_END);
+        
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create aspect ratio cycle gadget\n");
+            return NULL;
+        }
+        
+        /* Right column: Overflow Strategy - start after left gadget + gap */
+        WORD right_gadget_x = left_gadget_x + left_cycle_width + 15 + overflow_label_width + 8;
+        WORD right_cycle_width = overflow_longest + cycle_arrow_width + 8;  /* Width based on content */
+        
+        ng.ng_LeftEdge = right_gadget_x;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = right_cycle_width;
+        ng.ng_Height = button_height;
+        ng.ng_GadgetText = "When full:";
+        ng.ng_GadgetID = GID_ADV_OVERFLOW_MODE;
+        ng.ng_Flags = PLACETEXT_LEFT;
+        
+        adv_data->overflow_mode_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
+            GTCY_Labels, overflow_mode_labels,
+            GTCY_Active, adv_data->overflow_mode_selected,
+            TAG_END);
+        
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create overflow mode cycle gadget\n");
+            return NULL;
+        }
     }
     
     current_y += button_height + 12;
     
     /*--------------------------------------------------------------------*/
-    /* Horizontal Spacing Slider                                         */
+    /* ROW 2: Flow layout - Icon Spacing X and Y sliders                 */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = ADV_WINDOW_Column_1_LEFT;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 50;
-    ng.ng_Height = slider_height;
-    ng.ng_GadgetText = "Icon Spacing:  X:";
-    ng.ng_GadgetID = GID_ADV_SPACING_X;
-    ng.ng_Flags = PLACETEXT_LEFT;
-    
-    adv_data->spacing_x_slider = gad = CreateGadget(SLIDER_KIND, gad, &ng,
-        GTSL_Min, 0,
-        GTSL_Max, 20,
-        GTSL_Level, adv_data->spacing_x_value,
-        GTSL_MaxLevelLen, 3,
-        GTSL_LevelFormat, "%2ld",
-        GTSL_LevelPlace, PLACETEXT_RIGHT,
-        GA_RelVerify, TRUE,
-        TAG_END);
-    
-    if (!gad)
     {
-        CONSOLE_ERROR("Failed to create horizontal spacing slider\n");
-        return NULL;
-    }
-    
-
-    
-    /*--------------------------------------------------------------------*/
-    /* Vertical Spacing Slider                                           */
-    /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = ADV_WINDOW_Column_1_LEFT + ADV_WINDOW_STANDARD_PADDING +50+ 38; // extra 38 for the previous slider output number
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 50;
-    ng.ng_Height = slider_height;
-    ng.ng_GadgetText = "Y:";
-    ng.ng_GadgetID = GID_ADV_SPACING_Y;
-    ng.ng_Flags = PLACETEXT_LEFT;
-    
-    adv_data->spacing_y_slider = gad = CreateGadget(SLIDER_KIND, gad, &ng,
-        GTSL_Min, 0,
-        GTSL_Max, 20,
-        GTSL_Level, adv_data->spacing_y_value,
-        GTSL_MaxLevelLen, 3,
-        GTSL_LevelFormat, "%2ld",
-        GTSL_LevelPlace, PLACETEXT_RIGHT,
-        GA_RelVerify, TRUE,
-        TAG_END);
-    
-    if (!gad)
-    {
-        CONSOLE_ERROR("Failed to create vertical spacing slider\n");
-        return NULL;
+        /* Calculate slider level output width (3 digits * char_width + padding) */
+        WORD level_output_width = (3 * rp->Font->tf_XSize) + 8;
+        WORD slider_width = 50;
+        WORD row_x = ADV_CONTENT_LEFT;
+        
+        /* Measure labels */
+        WORD spacing_label_width = TextLength(rp, "Icon Spacing:  X:", 17);
+        WORD y_label_width = TextLength(rp, "Y:", 2);
+        
+        /* X slider */
+        ng.ng_LeftEdge = row_x + spacing_label_width + 8;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = slider_width;
+        ng.ng_Height = slider_height;
+        ng.ng_GadgetText = "Icon Spacing:  X:";
+        ng.ng_GadgetID = GID_ADV_SPACING_X;
+        ng.ng_Flags = PLACETEXT_LEFT;
+        
+        adv_data->spacing_x_slider = gad = CreateGadget(SLIDER_KIND, gad, &ng,
+            GTSL_Min, 0,
+            GTSL_Max, 20,
+            GTSL_Level, adv_data->spacing_x_value,
+            GTSL_MaxLevelLen, 3,
+            GTSL_LevelFormat, "%2ld",
+            GTSL_LevelPlace, PLACETEXT_RIGHT,
+            GA_RelVerify, TRUE,
+            TAG_END);
+        
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create horizontal spacing slider\n");
+            return NULL;
+        }
+        
+        /* Move row_x forward: X slider + level output + gap */
+        row_x = ng.ng_LeftEdge + slider_width + level_output_width + 15;
+        
+        /* Y slider */
+        ng.ng_LeftEdge = row_x + y_label_width + 8;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = slider_width;
+        ng.ng_Height = slider_height;
+        ng.ng_GadgetText = "Y:";
+        ng.ng_GadgetID = GID_ADV_SPACING_Y;
+        ng.ng_Flags = PLACETEXT_LEFT;
+        
+        adv_data->spacing_y_slider = gad = CreateGadget(SLIDER_KIND, gad, &ng,
+            GTSL_Min, 0,
+            GTSL_Max, 20,
+            GTSL_Level, adv_data->spacing_y_value,
+            GTSL_MaxLevelLen, 3,
+            GTSL_LevelFormat, "%2ld",
+            GTSL_LevelPlace, PLACETEXT_RIGHT,
+            GA_RelVerify, TRUE,
+            TAG_END);
+        
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create vertical spacing slider\n");
+            return NULL;
+        }
     }
     
     current_y += slider_height  + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
-    
-
     /*--------------------------------------------------------------------*/
-    /* Min Icons Per Row Integer Gadget                                  */
+    /* ROW 3: Flow layout - Icons per Row (Min + Auto checkbox + Max)    */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = ADV_WINDOW_Column_1_LEFT;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 30;
-    ng.ng_Height = string_height;
-    ng.ng_GadgetText = "Icons per Row:  Min:";
-    ng.ng_GadgetID = GID_ADV_MIN_ICONS_ROW;
-    ng.ng_Flags = PLACETEXT_LEFT;
-    
-    adv_data->min_icons_row_int = gad = CreateGadget(INTEGER_KIND, gad, &ng,
-        GTIN_Number, adv_data->min_icons_per_row,
-        GTIN_MaxChars, 2,
-        TAG_END);
-    
-    if (!gad)
     {
-        CONSOLE_ERROR("Failed to create min icons/row integer gadget\n");
-        return NULL;
-    }
-    
-    //current_y += string_height + 4;
-    
-    /*--------------------------------------------------------------------*/
-    /* Auto Max Icons/Row Checkbox                                       */
-    /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = 300;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 30;
-    ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Auto Max Icons:";
-    ng.ng_GadgetID = GID_ADV_MAX_AUTO_CHECKBOX;
-    ng.ng_Flags = PLACETEXT_LEFT;
-    
-    adv_data->max_auto_checkbox = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
-        GTCB_Checked, adv_data->max_auto_enabled,
-        TAG_END);
-    
-    if (!gad)
-    {
-        CONSOLE_ERROR("Failed to create auto max icons checkbox\n");
-        return NULL;
-    }
-    
-    //current_y += button_height + 4;
-    
-    /*--------------------------------------------------------------------*/
-    /* Max Icons Per Row Integer Gadget                                  */
-    /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = 385;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 30;
-    ng.ng_Height = string_height;
-    ng.ng_GadgetText = "Max:";
-    ng.ng_GadgetID = GID_ADV_MAX_ICONS_ROW;
-    ng.ng_Flags = PLACETEXT_LEFT;
-    
-    adv_data->max_icons_row_int = gad = CreateGadget(INTEGER_KIND, gad, &ng,
-        GTIN_Number, adv_data->max_icons_per_row > 0 ? adv_data->max_icons_per_row : 5,
-        GTIN_MaxChars, 2,
-        GA_Disabled, adv_data->max_auto_enabled,  /* Disabled if Auto checked */
-        TAG_END);
-    
-    if (!gad)
-    {
-        CONSOLE_ERROR("Failed to create max icons/row integer gadget\n");
-        return NULL;
+        WORD integer_width = 30;
+        WORD checkbox_width = 30;
+        WORD row_x = ADV_CONTENT_LEFT;
+        
+        /* Measure labels */
+        WORD min_label_width = TextLength(rp, "Icons per Row:  Min:", 20);
+        WORD auto_label_width = TextLength(rp, "Auto Max Icons:", 15);
+        WORD max_label_width = TextLength(rp, "Max:", 4);
+        
+        /* Min integer */
+        ng.ng_LeftEdge = row_x + min_label_width + 8;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = integer_width;
+        ng.ng_Height = string_height;
+        ng.ng_GadgetText = "Icons per Row:  Min:";
+        ng.ng_GadgetID = GID_ADV_MIN_ICONS_ROW;
+        ng.ng_Flags = PLACETEXT_LEFT;
+        
+        adv_data->min_icons_row_int = gad = CreateGadget(INTEGER_KIND, gad, &ng,
+            GTIN_Number, adv_data->min_icons_per_row,
+            GTIN_MaxChars, 2,
+            TAG_END);
+        
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create min icons/row integer gadget\n");
+            return NULL;
+        }
+        
+        /* Move forward: integer + gap */
+        row_x = ng.ng_LeftEdge + integer_width + 15;
+        
+        /* Auto checkbox */
+        ng.ng_LeftEdge = row_x + auto_label_width + 8;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = checkbox_width;
+        ng.ng_Height = button_height;
+        ng.ng_GadgetText = "Auto Max Icons:";
+        ng.ng_GadgetID = GID_ADV_MAX_AUTO_CHECKBOX;
+        ng.ng_Flags = PLACETEXT_LEFT;
+        
+        adv_data->max_auto_checkbox = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
+            GTCB_Checked, adv_data->max_auto_enabled,
+            TAG_END);
+        
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create auto max icons checkbox\n");
+            return NULL;
+        }
+        
+        /* Move forward: checkbox + gap */
+        row_x = ng.ng_LeftEdge + checkbox_width + 15;
+        
+        /* Max integer */
+        ng.ng_LeftEdge = row_x + max_label_width + 8;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = integer_width;
+        ng.ng_Height = string_height;
+        ng.ng_GadgetText = "Max:";
+        ng.ng_GadgetID = GID_ADV_MAX_ICONS_ROW;
+        ng.ng_Flags = PLACETEXT_LEFT;
+        
+        adv_data->max_icons_row_int = gad = CreateGadget(INTEGER_KIND, gad, &ng,
+            GTIN_Number, adv_data->max_icons_per_row > 0 ? adv_data->max_icons_per_row : 5,
+            GTIN_MaxChars, 2,
+            GA_Disabled, adv_data->max_auto_enabled,  /* Disabled if Auto checked */
+            TAG_END);
+        
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create max icons/row integer gadget\n");
+            return NULL;
+        }
     }
     
     current_y += string_height + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
     
     /*--------------------------------------------------------------------*/
-    /* Max Window Width Percentage Cycle Gadget                          */
+    /* ROW 4: Max Window Width Cycle                                      */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = ADV_WINDOW_Column_1_LEFT;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = gadget_width - 40;
-    ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Max Window Width:";
-    ng.ng_GadgetID = GID_ADV_MAX_WIDTH_PCT;
-    ng.ng_Flags = PLACETEXT_LEFT;
-    
-    adv_data->max_width_pct_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
-        GTCY_Labels, max_width_pct_labels,
-        GTCY_Active, adv_data->max_width_pct_selected,
-        GA_Disabled, !adv_data->max_auto_enabled,  /* Disabled if manual mode */
-        TAG_END);
-    
-    if (!gad)
     {
-        CONSOLE_ERROR("Failed to create max window width percentage cycle gadget\n");
-        return NULL;
+        WORD label_width = TextLength(rp, "Max Window Width:", 17);
+        WORD gadget_x = ADV_CONTENT_LEFT + label_width + 8;
+        WORD gadget_width = ADV_CONTENT_RIGHT - gadget_x;
+        
+        ng.ng_LeftEdge = gadget_x;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = gadget_width;
+        ng.ng_Height = button_height;
+        ng.ng_GadgetText = "Max Window Width:";
+        ng.ng_GadgetID = GID_ADV_MAX_WIDTH_PCT;
+        ng.ng_Flags = PLACETEXT_LEFT;
+        
+        adv_data->max_width_pct_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
+            GTCY_Labels, max_width_pct_labels,
+            GTCY_Active, adv_data->max_width_pct_selected,
+            GA_Disabled, !adv_data->max_auto_enabled,  /* Disabled if manual mode */
+            TAG_END);
+        
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create max window width percentage cycle gadget\n");
+            return NULL;
+        }
     }
     
     current_y += button_height + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
     
     /*--------------------------------------------------------------------*/
-    /* Vertical Alignment Cycle Gadget                                   */
+    /* ROW 5: Vertical Alignment Cycle                                    */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = ADV_WINDOW_Column_1_LEFT;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = gadget_width - 40;
-    ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Align Icons Vertically:";
-    ng.ng_GadgetID = GID_ADV_VERTICAL_ALIGN;
-    ng.ng_Flags = PLACETEXT_LEFT;
-    
-    adv_data->vertical_align_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
-        GTCY_Labels, vertical_align_labels,
-        GTCY_Active, adv_data->vertical_align_selected,
-        TAG_END);
-    
-    if (!gad)
     {
-        CONSOLE_ERROR("Failed to create vertical alignment cycle gadget\n");
-        return NULL;
+        WORD label_width = TextLength(rp, "Align Icons Vertically:", 23);
+        WORD gadget_x = ADV_CONTENT_LEFT + label_width + 8;
+        WORD gadget_width = ADV_CONTENT_RIGHT - gadget_x;
+        
+        ng.ng_LeftEdge = gadget_x;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = gadget_width;
+        ng.ng_Height = button_height;
+        ng.ng_GadgetText = "Align Icons Vertically:";
+        ng.ng_GadgetID = GID_ADV_VERTICAL_ALIGN;
+        ng.ng_Flags = PLACETEXT_LEFT;
+        
+        adv_data->vertical_align_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
+            GTCY_Labels, vertical_align_labels,
+            GTCY_Active, adv_data->vertical_align_selected,
+            TAG_END);
+        
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create vertical alignment cycle gadget\n");
+            return NULL;
+        }
     }
     
     current_y += ADV_WINDOW_GAP_BETWEEN_CHECKBOXES_VERTICAL + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
     
     /*--------------------------------------------------------------------*/
-    /* Reverse Sort Checkbox                                             */
+    /* ROWS 9-13: Checkbox rows (left-aligned)                           */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = ADV_WINDOW_Column_1_LEFT;
+    
+    /* ROW 9: Reverse Sort Checkbox */
+    ng.ng_LeftEdge = ADV_CONTENT_LEFT;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 26;
     ng.ng_Height = button_height - 4;
@@ -453,10 +509,8 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     
     current_y += ADV_WINDOW_GAP_BETWEEN_CHECKBOXES_VERTICAL + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
     
-    /*--------------------------------------------------------------------*/
-    /* Optimize Column Widths Checkbox                                   */
-    /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = ADV_WINDOW_Column_1_LEFT;
+    /* ROW 10: Optimize Column Widths Checkbox */
+    ng.ng_LeftEdge = ADV_CONTENT_LEFT;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 26;
     ng.ng_Height = button_height - 4;
@@ -473,12 +527,11 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
         CONSOLE_ERROR("Failed to create optimize columns checkbox\n");
         return NULL;
     }
-        current_y += ADV_WINDOW_GAP_BETWEEN_CHECKBOXES_VERTICAL + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
     
-    /*--------------------------------------------------------------------*/
-    /* Column Layout Checkbox                                            */
-    /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = ADV_WINDOW_Column_1_LEFT;
+    current_y += ADV_WINDOW_GAP_BETWEEN_CHECKBOXES_VERTICAL + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
+    
+    /* ROW 11: Column Layout Checkbox */
+    ng.ng_LeftEdge = ADV_CONTENT_LEFT;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 26;
     ng.ng_Height = button_height - 4;
@@ -495,12 +548,11 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
         CONSOLE_ERROR("Failed to create column layout checkbox\n");
         return NULL;
     }
+    
     current_y += ADV_WINDOW_GAP_BETWEEN_CHECKBOXES_VERTICAL + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
     
-    /*--------------------------------------------------------------------*/
-    /* Skip Hidden Folders Checkbox                                      */
-    /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = ADV_WINDOW_Column_1_LEFT;
+    /* ROW 12: Skip Hidden Folders Checkbox */
+    ng.ng_LeftEdge = ADV_CONTENT_LEFT;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 26;
     ng.ng_Height = button_height - 4;
@@ -517,12 +569,11 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
         CONSOLE_ERROR("Failed to create skip hidden folders checkbox\n");
         return NULL;
     }
+    
     current_y += ADV_WINDOW_GAP_BETWEEN_CHECKBOXES_VERTICAL + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
     
-    /*--------------------------------------------------------------------*/
-    /* Strip NewIcon Borders Checkbox                                    */
-    /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = ADV_WINDOW_Column_1_LEFT;
+    /* ROW 13: Strip NewIcon Borders Checkbox */
+    ng.ng_LeftEdge = ADV_CONTENT_LEFT;
     ng.ng_TopEdge = current_y;
     ng.ng_Width = 26;
     ng.ng_Height = button_height - 4;
@@ -553,59 +604,70 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     }
     
 
-    
-
-    
     /*--------------------------------------------------------------------*/
-    /* Beta Options Button                                               */
+    /* ROW 14: Bottom buttons - Beta Options (left), OK/Cancel (right)   */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = 5;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 120;
-    ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Beta Options...";
-    ng.ng_GadgetID = GID_ADV_BETA_OPTIONS;
-    ng.ng_Flags = PLACETEXT_IN;
-    
-    adv_data->beta_options_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
-        TAG_END);
-    
-    if (!gad)
     {
-        CONSOLE_ERROR("Failed to create Beta Options button\n");
-        return NULL;
-    }
-    
-    
-    /*--------------------------------------------------------------------*/
-    /* OK and Cancel Buttons                                             */
-    /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = 330;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 80;
-    ng.ng_Height = button_height;
-    ng.ng_GadgetText = "OK";
-    ng.ng_GadgetID = GID_ADV_OK;
-    ng.ng_Flags = PLACETEXT_IN;
-    
-    adv_data->ok_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
-    
-    if (!gad)
-    {
-        CONSOLE_ERROR("Failed to create OK button\n");
-        return NULL;
-    }
-    
-    ng.ng_LeftEdge = 330+80+ADV_WINDOW_STANDARD_PADDING;
-    ng.ng_GadgetText = "Cancel";
-    ng.ng_GadgetID = GID_ADV_CANCEL;
-    
-    adv_data->cancel_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
-    
-    if (!gad)
-    {
-        CONSOLE_ERROR("Failed to create Cancel button\n");
-        return NULL;
+        /* Measure Beta Options button text for dynamic width */
+        WORD beta_text_width = TextLength(rp, "Beta Options...", 15);
+        WORD button_width_beta = beta_text_width + 20;  /* Text + padding */
+        WORD button_width_std = 80;
+        WORD button_gap = ADV_WINDOW_STANDARD_PADDING;
+        
+        /* OK and Cancel buttons - right-justified (calculate first) */
+        /* Cancel is rightmost, OK is before it */
+        WORD cancel_x = ADV_GROUPBOX_RIGHT_EDGE - button_width_std;
+        WORD ok_x = cancel_x - button_width_std - button_gap;
+        
+        /* Beta Options button - positioned to the left of OK button */
+        WORD beta_x = ok_x - button_width_beta - button_gap;
+        
+        ng.ng_LeftEdge = beta_x;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = button_width_beta;
+        ng.ng_Height = button_height;
+        ng.ng_GadgetText = "Beta Options...";
+        ng.ng_GadgetID = GID_ADV_BETA_OPTIONS;
+        ng.ng_Flags = PLACETEXT_IN;
+        
+        adv_data->beta_options_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
+            TAG_END);
+        
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create Beta Options button\n");
+            return NULL;
+        }
+        
+        /* OK button */
+        ng.ng_LeftEdge = ok_x;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = button_width_std;
+        ng.ng_Height = button_height;
+        ng.ng_GadgetText = "OK";
+        ng.ng_GadgetID = GID_ADV_OK;
+        ng.ng_Flags = PLACETEXT_IN;
+        
+        adv_data->ok_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+        
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create OK button\n");
+            return NULL;
+        }
+        
+        /* Cancel button */
+        ng.ng_LeftEdge = cancel_x;
+        ng.ng_GadgetText = "Cancel";
+        ng.ng_GadgetID = GID_ADV_CANCEL;
+        
+        adv_data->cancel_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+        
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create Cancel button\n");
+            return NULL;
+        }
     }
     
     current_y += button_height  + 5+ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;

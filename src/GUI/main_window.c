@@ -67,7 +67,7 @@ extern void iTidy_CloseToolRestoreWindow(struct Window *window);
 #define ITIDY_WINDOW_HEIGHT 350
 #define ITIDY_WINDOW_LEFT 50
 #define ITIDY_WINDOW_TOP 30
-#define ITIDY_WINDOW_GAP_BETWEEN_GROUPS 40
+#define ITIDY_WINDOW_GAP_BETWEEN_GROUPS 30
 #define ITIDY_WINDOW_LEFT_GROUP_GADETS 95
 #define ITIDY_WINDOW_LEFT_GROUP_GADETS_LABEL 30
 #define ITIDY_WINDOW_LEFT_GROUP_GADETS_COLUMN_2 356
@@ -786,11 +786,12 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder, WOR
     /*====================================================================*/
     /* ADVANCED BUTTON (Row 1, Position 1) - Equal width buttons         */
     /* Calculate button width dynamically:                               */
-    /* Total available width = RIGHT_EDGE - LEFT_EDGE - 2*PADDING        */
-    /* Space for 3 buttons with 2 gaps = (available - 2*gap) / 3         */
+    /* Inner content width = RIGHT_EDGE - LEFT_EDGE - 2*PADDING (for box borders) */
+    /* Space for 3 buttons with 2 gaps = (inner_width - 2*gap) / 3       */
     /*====================================================================*/
     {
-        WORD button_width = ((ITIDY_GROUPBOX_RIGHT_EDGE - ITIDY_GROUPBOX_LEFT_EDGE - 2 * ITIDY_WINDOW_STANDARD_PADDING) - (2 * ITIDY_WINDOW_STANDARD_PADDING)) / 3;
+        WORD inner_width = ITIDY_GROUPBOX_RIGHT_EDGE - ITIDY_GROUPBOX_LEFT_EDGE - (2 * ITIDY_WINDOW_STANDARD_PADDING);
+        WORD button_width = (inner_width - (2 * ITIDY_WINDOW_STANDARD_PADDING)) / 3;
         
         ng.ng_LeftEdge = ITIDY_GROUPBOX_LEFT_EDGE + ITIDY_WINDOW_STANDARD_PADDING;
         ng.ng_TopEdge = current_y;
@@ -852,15 +853,15 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder, WOR
     
     /*====================================================================*/
     /* APPLY BUTTON (Row 2, Position 1) - Dynamic width calculation      */
-    /* Calculate button width dynamically:                               */
-    /* Total available width = WINDOW_WIDTH - 2*PADDING                  */
-    /* Space for 2 buttons with 1 gap = (available - gap) / 2            */
+    /* These buttons exist outside group boxes, align with groupbox edges */
+    /* Total width = RIGHT_EDGE - LEFT_EDGE (align with group box borders) */
+    /* Space for 2 buttons with 1 gap = (total - gap) / 2                */
     /*====================================================================*/
     {
-        WORD total_available = ITIDY_WINDOW_WIDTH - (2 * ITIDY_WINDOW_STANDARD_PADDING);
-        WORD button_width = (total_available - ITIDY_WINDOW_STANDARD_PADDING) / 2;
+        WORD total_width = ITIDY_GROUPBOX_RIGHT_EDGE - ITIDY_GROUPBOX_LEFT_EDGE;
+        WORD button_width = (total_width - ITIDY_WINDOW_STANDARD_PADDING) / 2;
         
-        ng.ng_LeftEdge = ITIDY_WINDOW_STANDARD_PADDING;
+        ng.ng_LeftEdge = ITIDY_GROUPBOX_LEFT_EDGE;
         ng.ng_TopEdge = current_y;
         ng.ng_Width = button_width;
         ng.ng_Height = font_height + 8;
@@ -875,16 +876,30 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder, WOR
             return FALSE;
         }
         
+        log_debug(LOG_GUI, "Start button created: X=%d, Width=%d, RightEdge=%d\n", 
+                 ng.ng_LeftEdge, ng.ng_Width, ng.ng_LeftEdge + ng.ng_Width);
+        
         /*====================================================================*/
         /* CANCEL BUTTON (Row 2, Position 2) - Dynamic width calculation     */
+        /* Make this button extend to GROUPBOX_RIGHT_EDGE exactly            */
+        /* IMPORTANT: +3 pixels added to compensate for GadTools button      */
+        /* internal bevel rendering. The button gadget structure uses full   */
+        /* width, but the visible button face is drawn inset by ~3 pixels    */
+        /* from the gadget boundary. Without this adjustment, the visual     */
+        /* right edge appears 3 pixels short of the group box border.        */
         /*====================================================================*/
-        ng.ng_LeftEdge = ITIDY_WINDOW_STANDARD_PADDING + button_width + ITIDY_WINDOW_STANDARD_PADDING;
+        ng.ng_LeftEdge = ITIDY_GROUPBOX_LEFT_EDGE + button_width + ITIDY_WINDOW_STANDARD_PADDING;
         ng.ng_TopEdge = current_y;
-        ng.ng_Width = button_width;
+        ng.ng_Width = ITIDY_GROUPBOX_RIGHT_EDGE - ng.ng_LeftEdge + 3;  /* +3 compensates for button bevel inset */
         ng.ng_Height = font_height + 8;
         ng.ng_GadgetText = "Exit";
         ng.ng_GadgetID = GID_CANCEL;
         ng.ng_Flags = PLACETEXT_IN;
+        
+        log_debug(LOG_GUI, "Exit button calculation: total_width=%d, button_width=%d, LeftEdge=%d, Width=%d, Expected RightEdge=%d\n",
+                 total_width, button_width, ng.ng_LeftEdge, ng.ng_Width, ng.ng_LeftEdge + ng.ng_Width);
+        log_debug(LOG_GUI, "ITIDY_GROUPBOX_RIGHT_EDGE=%d, ITIDY_GROUPBOX_LEFT_EDGE=%d\n",
+                 ITIDY_GROUPBOX_RIGHT_EDGE, ITIDY_GROUPBOX_LEFT_EDGE);
         
         win_data->cancel_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
         if (!gad)
@@ -892,6 +907,11 @@ static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder, WOR
             CONSOLE_ERROR("Failed to create cancel button\n");
             return FALSE;
         }
+        
+        log_debug(LOG_GUI, "Exit button created: X=%d, Width=%d, RightEdge=%d\n",
+                 ng.ng_LeftEdge, ng.ng_Width, ng.ng_LeftEdge + ng.ng_Width);
+        log_debug(LOG_GUI, "Exit button ACTUAL gadget: LeftEdge=%d, Width=%d, RightEdge=%d\n",
+                 gad->LeftEdge, gad->Width, gad->LeftEdge + gad->Width);
     }
 
     current_y += font_height + 10;
@@ -1079,8 +1099,8 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     /* This must be done after window is open and gadgets have final geometry */
     CONSOLE_DEBUG("Calculating folder group box...\n");
     CalcGadgetGroupBoxRect(win_data->window,
-                          win_data->folder_label,  /* Start from label, not string gadget */
                           win_data->browse_btn,
+                          win_data->folder_label,  /* Gadgets are chained in creation order */
                           &win_data->folder_group_box);
     
     /* Override MinX and MaxX to enforce alignment constants */
