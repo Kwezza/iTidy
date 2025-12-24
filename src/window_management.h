@@ -26,7 +26,7 @@
 #include "utilities.h"
 #include "writeLog.h"
 #include "icon_misc.h"
-#include "window_enumerator.h"
+#include "GUI/window_enumerator.h"
 #include "layout_preferences.h"
 
 void CleanupWindow(void);

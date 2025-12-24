@@ -29,7 +29,7 @@
 #include "platform/platform.h"
 #include "default_tool_backup.h"
 #include "helpers/listview_simple_columns.h"
-#include <easy_request_helper.h>
+#include "../easy_request_helper.h"
 #include "writeLog.h"
 #include "Settings/IControlPrefs.h"  /* For prefsIControl global */
 #include "string_functions.h"

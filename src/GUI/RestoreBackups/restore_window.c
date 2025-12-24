@@ -64,7 +64,7 @@
 #include "writeLog.h"
 #include "Settings/IControlPrefs.h"
 #include "string_functions.h"    /* For iTidy_FormatTimestamp() */
-#include <easy_request_helper.h>  /* Global EasyRequest helper */
+#include "../easy_request_helper.h"  /* Global EasyRequest helper */
 
 #ifndef NewList
 VOID NewList(struct List *list);

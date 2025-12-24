@@ -7,7 +7,7 @@
 
 #include "main_progress_window.h"
 #include "writeLog.h"
-#include "easy_request_helper.h"
+#include "../easy_request_helper.h"
 
 #include <exec/lists.h>
 #include <intuition/intuition.h>

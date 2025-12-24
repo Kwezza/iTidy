@@ -15,7 +15,6 @@ PROJECT = iTidy
 
 # Directories
 SRC_DIR = src
-INC_DIR = include
 BUILD_DIR = build
 
 # Console output flag
@@ -29,7 +28,7 @@ ifeq ($(TARGET),host)
     # Host build configuration (GCC on Windows/Linux/macOS)
     # Console always enabled on host for testing
     CC = gcc
-    CFLAGS = -std=c99 -Wall -Wextra -pedantic -I$(INC_DIR) -Isrc -DPLATFORM_HOST=1 -DENABLE_CONSOLE
+	CFLAGS = -std=c99 -Wall -Wextra -pedantic -Isrc -DPLATFORM_HOST=1 -DENABLE_CONSOLE
     LDFLAGS =
     OUT_DIR = $(BUILD_DIR)/host
     BIN = $(OUT_DIR)/$(PROJECT).exe
@@ -43,7 +42,7 @@ else
     # CPU TARGET: 68000 for maximum compatibility (A500/A600/A1200)
     # CONSOLE: Add -DENABLE_CONSOLE via CONSOLE=1 to open console window for debugging
     CC = vc
-    CFLAGS = +aos68k -c99 -cpu=68000 -O2 -size -I$(INC_DIR) -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG $(CONSOLE_FLAG)
+	CFLAGS = +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG $(CONSOLE_FLAG)
     LDFLAGS = +aos68k -cpu=68000 -O2 -size -final -lamiga -lauto
     OUT_DIR = $(BUILD_DIR)/amiga
     BIN_DIR = Bin/Amiga
@@ -136,8 +135,8 @@ else
 endif
 
 # Memory tracking implementation (conditional - only included if DEBUG_MEMORY_TRACKING is defined)
-# To enable: Uncomment #define DEBUG_MEMORY_TRACKING in include/platform/platform.h
-MEMORY_TRACKING_SRCS = $(INC_DIR)/platform/platform.c
+# To enable: Uncomment #define DEBUG_MEMORY_TRACKING in src/platform/platform.h
+MEMORY_TRACKING_SRCS = $(SRC_DIR)/platform/platform.c
 
 # All sources
 SRCS = $(CORE_SRCS) $(BACKUP_SRCS) $(HELPERS_SRCS) $(GUI_SRCS) $(DEFAULT_TOOLS_SRCS) $(RESTORE_BACKUP_SRCS) $(DOS_SRCS) $(SETTINGS_SRCS) $(PLATFORM_SRCS) $(MEMORY_TRACKING_SRCS)
@@ -238,7 +237,7 @@ $(OUT_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Compile memory tracking (from include directory)
-$(OUT_DIR)/platform_memory.o: $(INC_DIR)/platform/platform.c
+$(OUT_DIR)/platform_memory.o: $(SRC_DIR)/platform/platform.c
 	@echo Compiling memory tracking: $@
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -343,15 +342,15 @@ $(OUT_DIR)/GUI/main_window.o: $(SRC_DIR)/GUI/main_window.c $(SRC_DIR)/GUI/main_w
 $(OUT_DIR)/GUI/advanced_window.o: $(SRC_DIR)/GUI/advanced_window.c $(SRC_DIR)/GUI/advanced_window.h
 $(OUT_DIR)/GUI/restore_window.o: $(SRC_DIR)/GUI/restore_window.c $(SRC_DIR)/GUI/restore_window.h
 $(OUT_DIR)/GUI/folder_view_window.o: $(SRC_DIR)/GUI/folder_view_window.c $(SRC_DIR)/GUI/folder_view_window.h
-$(OUT_DIR)/GUI/easy_request_helper.o: $(SRC_DIR)/GUI/easy_request_helper.c $(INC_DIR)/easy_request_helper.h
-$(OUT_DIR)/GUI/window_enumerator.o: $(SRC_DIR)/GUI/window_enumerator.c $(INC_DIR)/window_enumerator.h
-$(OUT_DIR)/GUI/wb_classify.o: $(SRC_DIR)/GUI/wb_classify.c $(INC_DIR)/wb_classify.h
+$(OUT_DIR)/GUI/easy_request_helper.o: $(SRC_DIR)/GUI/easy_request_helper.c $(SRC_DIR)/GUI/easy_request_helper.h
+$(OUT_DIR)/GUI/window_enumerator.o: $(SRC_DIR)/GUI/window_enumerator.c $(SRC_DIR)/GUI/window_enumerator.h
+$(OUT_DIR)/GUI/wb_classify.o: $(SRC_DIR)/GUI/wb_classify.c $(SRC_DIR)/GUI/wb_classify.h
 
 # Platform-specific
-$(OUT_DIR)/platform/host_platform.o: $(SRC_DIR)/platform/host_platform.c $(INC_DIR)/platform/platform.h
-$(OUT_DIR)/platform/amiga_platform.o: $(SRC_DIR)/platform/amiga_platform.c $(INC_DIR)/platform/platform.h
+$(OUT_DIR)/platform/host_platform.o: $(SRC_DIR)/platform/host_platform.c $(SRC_DIR)/platform/platform.h
+$(OUT_DIR)/platform/amiga_platform.o: $(SRC_DIR)/platform/amiga_platform.c $(SRC_DIR)/platform/platform.h
 
 # All objects depend on platform headers
-$(OBJS): $(INC_DIR)/platform/platform.h $(INC_DIR)/platform/platform_types.h
+$(OBJS): $(SRC_DIR)/platform/platform.h $(SRC_DIR)/platform/platform_types.h
 
 # End of Makefile

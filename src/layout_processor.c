@@ -97,7 +97,7 @@
 #include "backup_session.h"
 #include "backup_catalog.h"
 #include "path_utilities.h"
-#include "window_enumerator.h"
+#include "GUI/window_enumerator.h"
 
 /* Progress window integration */
 #include "GUI/StatusWindows/main_progress_window.h"
