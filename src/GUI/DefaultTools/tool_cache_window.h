@@ -89,7 +89,7 @@ struct iTidyToolCacheWindow
     struct Gadget *tool_list;           /* ListView showing tools */
     struct Gadget *details_listview;    /* ListView showing file details */
     struct Gadget *filter_cycle;        /* Filter cycle gadget */
-    struct Gadget *scan_bottom_btn;     /* Scan button (bottom row) */
+    struct Gadget *scan_btn;            /* Scan button (folder row) */
     struct Gadget *close_btn;           /* Close button */
     struct Gadget *replace_batch_btn;   /* Replace Tool (Batch) button */
     struct Gadget *replace_single_btn;  /* Replace Tool (Single) button */

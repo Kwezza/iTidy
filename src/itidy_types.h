@@ -6,10 +6,13 @@
  */
 
 #include <exec/types.h>
+#include "version_info.h"
 
 /* Constants */
 #define ERROR_LIST_INITIAL_SIZE 10
-#define VERSION "2.0"
+#ifndef VERSION
+#define VERSION ITIDY_VERSION
+#endif
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define GAP_BETWEEN_ICON_AND_TEXT 1
 #define ICON_START_X 10

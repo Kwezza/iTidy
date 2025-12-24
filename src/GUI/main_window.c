@@ -22,6 +22,7 @@
 #include <console_output.h>
 
 #include "main_window.h"
+#include "version_info.h"
 #include "advanced_window.h"
 #include "RestoreBackups/restore_window.h"
 #include "DefaultTools/tool_cache_window.h"
@@ -62,7 +63,7 @@ extern void iTidy_CloseToolRestoreWindow(struct Window *window);
 /* Window Constants                                                       */
 /*------------------------------------------------------------------------*/
 #define ITIDY_WINDOW_STANDARD_PADDING 15
-#define ITIDY_WINDOW_TITLE "iTidy v1.2 - Icon Cleanup Tool"
+#define ITIDY_WINDOW_TITLE "iTidy v" ITIDY_VERSION " - Icon Cleanup Tool"
 #define ITIDY_WINDOW_WIDTH 625
 #define ITIDY_WINDOW_HEIGHT 350
 #define ITIDY_WINDOW_LEFT 50
@@ -85,6 +86,7 @@ extern void iTidy_CloseToolRestoreWindow(struct Window *window);
 #define MENU_PROJECT_SAVE       1003
 #define MENU_PROJECT_SAVE_AS    1004
 #define MENU_PROJECT_CLOSE      1005
+#define MENU_PROJECT_ABOUT      1006
 
 /*------------------------------------------------------------------------*/
 /* Menu System Global Variables                                          */
@@ -106,6 +108,8 @@ static struct NewMenu main_window_menu_template[] =
 	{ NM_ITEM,  "Save",         "S",  0, 0, (APTR)MENU_PROJECT_SAVE },
 	{ NM_ITEM,  "Save as...",   "A",  0, 0, (APTR)MENU_PROJECT_SAVE_AS },
 	{ NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
+    { NM_ITEM,  "About...",     NULL, 0, 0, (APTR)MENU_PROJECT_ABOUT },
+    { NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
 	{ NM_ITEM,  "Close",        "C",  0, 0, (APTR)MENU_PROJECT_CLOSE },
 	{ NM_END,   NULL,           NULL, 0, 0, NULL }
 };
@@ -147,6 +151,7 @@ static void handle_main_new_menu(struct iTidyMainWindow *win_data);
 static void handle_main_open_menu(struct iTidyMainWindow *win_data);
 static void handle_main_save_menu(struct iTidyMainWindow *win_data);
 static void handle_main_save_as_menu(struct iTidyMainWindow *win_data);
+static void handle_main_about_menu(struct iTidyMainWindow *win_data);
 static BOOL save_preferences_to_file(const char *filepath, const LayoutPreferences *prefs);
 static BOOL load_preferences_from_file(const char *filepath, LayoutPreferences *prefs);
 static void sync_gui_from_preferences(struct iTidyMainWindow *win_data, const LayoutPreferences *prefs);
@@ -323,6 +328,10 @@ static BOOL handle_main_window_menu_selection(ULONG menu_number, struct iTidyMai
                     continue_running = FALSE;  /* Close window */
                     break;
                     
+                case MENU_PROJECT_ABOUT:
+                    handle_main_about_menu(win_data);
+                    break;
+
                 default:
                     log_warning(LOG_GUI, "Unknown menu item ID: %ld\n", item_id);
                     break;
@@ -2381,6 +2390,28 @@ static void handle_main_open_menu(struct iTidyMainWindow *win_data)
     }
     
     FreeAslRequest(freq);
+}
+
+/**
+ * handle_main_about_menu - Show About requester with version info
+ *
+ * Displays a simple EasyRequest box with the current version string.
+ *
+ * @param win_data Pointer to main window data
+ */
+static void handle_main_about_menu(struct iTidyMainWindow *win_data)
+{
+    char about_text[160];
+
+    if (!win_data || !win_data->window)
+        return;
+
+    snprintf(about_text, sizeof(about_text), "iTidy %s\n\nEnhanced Workbench icon cleanup tool.\nCompiled on %s at %s\n\nBy Kerry Thompson.\n", ITIDY_VERSION, __DATE__, __TIME__);
+
+    ShowEasyRequest(win_data->window,
+        "About iTidy",
+        about_text,
+        "OK");
 }
 
 /* End of main_window.c */

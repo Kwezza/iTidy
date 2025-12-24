@@ -49,6 +49,7 @@
 #include <proto/diskfont.h>
 #include <proto/utility.h>
 #include <proto/iffparse.h>
+#include <itidy_types.h>
 #endif
 
 /* VBCC MIGRATION NOTE: Project headers */
@@ -102,8 +103,9 @@ BOOL user_folderFlags;
 BOOL user_stripIconPosition;
 BOOL user_forceStandardIcons;
 
-#define VERSION_STRING "$VER: iTidy 2.0 (20.10.2025)"
-const char version[] = VERSION_STRING;
+//#define VERSION_STRING "$VER: iTidy 2.0 (20.10.2025)"
+static const char version_string[] ="$VER: iTidy " ITIDY_VERSION " (" __DATE__ ")";
+const char version[] = ITIDY_VERSION;
 
 /* External reference to SysBase (provided by VBCC runtime) */
 #ifdef __AMIGA__

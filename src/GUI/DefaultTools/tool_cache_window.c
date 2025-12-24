@@ -2114,6 +2114,7 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     UWORD listview_width, listview_height, actual_listview_height;
     UWORD details_listview_height;
     UWORD button_width, equal_button_width;
+    UWORD browse_button_width, scan_button_width;
     UWORD reference_width, precalc_max_right;
     UWORD max_btn_text_width, temp_width;
     BOOL using_system_font = FALSE;
@@ -2196,6 +2197,10 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     /* Initialize temp RastPort for TextLength measurements */
     InitRastPort(&temp_rp);
     SetFont(&temp_rp, font);
+
+    /* Pre-calculate button widths used in the folder row */
+    browse_button_width = font_width * 10;
+    scan_button_width = TextLength(&temp_rp, "Scan", 4) + TOOL_WINDOW_BUTTON_PADDING;
     
     /* Calculate gadget heights */
     button_height = font_height + 6;
@@ -2289,7 +2294,11 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     /* Store coordinates for custom drawing */
     tool_data->folder_box_left = current_x + (font_width * 8);
     tool_data->folder_box_top = current_y;
-    tool_data->folder_box_width = reference_width - (font_width * 8) - (font_width * 10) - TOOL_WINDOW_SPACE_X;
+    tool_data->folder_box_width = reference_width - (font_width * 8) - browse_button_width - scan_button_width - (2 * TOOL_WINDOW_SPACE_X);
+    if (tool_data->folder_box_width < font_width * 8)
+    {
+        tool_data->folder_box_width = font_width * 8;
+    }
     tool_data->folder_box_height = font_height + 6;
     
     /* Note: Folder path will be drawn in refresh handler */
@@ -2297,11 +2306,11 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     tool_data->folder_path = gad;  /* Keep gadget chain intact */
     
     /*--------------------------------------------------------------------*/
-    /* BROWSE BUTTON (moved to right side)                               */
+    /* BROWSE BUTTON (shifted left to allow Scan button)                 */
     /*--------------------------------------------------------------------*/
-    ng.ng_LeftEdge = current_x + reference_width - (font_width * 10);
+    ng.ng_LeftEdge = current_x + reference_width - (scan_button_width + TOOL_WINDOW_SPACE_X + browse_button_width);
     ng.ng_TopEdge = current_y;
-    ng.ng_Width = font_width * 10;
+    ng.ng_Width = browse_button_width;
     ng.ng_Height = font_height + 6;
     ng.ng_GadgetText = "Browse...";
     ng.ng_GadgetID = GID_TOOL_BROWSE;
@@ -2311,6 +2320,24 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     if (gad == NULL)
     {
         append_to_log("ERROR: Could not create browse button\n");
+        goto cleanup_error;
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* SCAN BUTTON (top-right, next to Browse)                           */
+    /*--------------------------------------------------------------------*/
+    ng.ng_LeftEdge = current_x + reference_width - scan_button_width;
+    ng.ng_TopEdge = current_y;
+    ng.ng_Width = scan_button_width;
+    ng.ng_Height = font_height + 6;
+    ng.ng_GadgetText = "Scan";
+    ng.ng_GadgetID = GID_TOOL_SCAN_BOTTOM;
+    ng.ng_Flags = PLACETEXT_IN;
+
+    tool_data->scan_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
+    if (gad == NULL)
+    {
+        append_to_log("ERROR: Could not create Scan button\n");
         goto cleanup_error;
     }
     
@@ -2448,7 +2475,6 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     
     /* Calculate button widths */
     UWORD restore_button_width = TextLength(&temp_rp, "Restore Default Tools Backups...", 35) + TOOL_WINDOW_BUTTON_PADDING;
-    UWORD scan_button_width = 40 + TOOL_WINDOW_BUTTON_PADDING;
     UWORD close_button_width = 40 + TOOL_WINDOW_BUTTON_PADDING;
     
     /* Restore Default Tools button - left side */
@@ -2480,22 +2506,6 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     if (gad == NULL)
     {
         append_to_log("ERROR: Could not create Close button\n");
-        goto cleanup_error;
-    }
-    
-    /* Scan button - to the left of Close with standard padding */
-    ng.ng_LeftEdge = current_x + reference_width - close_button_width - TOOL_WINDOW_SPACE_X - scan_button_width;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = scan_button_width;
-    ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Scan";
-    ng.ng_GadgetID = GID_TOOL_SCAN_BOTTOM;
-    ng.ng_Flags = PLACETEXT_IN;
-    
-    tool_data->scan_bottom_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
-    if (gad == NULL)
-    {
-        append_to_log("ERROR: Could not create Scan button\n");
         goto cleanup_error;
     }
     

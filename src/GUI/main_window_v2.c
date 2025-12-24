@@ -17,11 +17,12 @@
 #include <stdio.h>
 
 #include "main_window.h"
+#include "version_info.h"
 
 /*------------------------------------------------------------------------*/
 /* Window Constants                                                       */
 /*------------------------------------------------------------------------*/
-#define ITIDY_WINDOW_TITLE "iTidy v1.2 - Icon Cleanup Tool"
+#define ITIDY_WINDOW_TITLE "iTidy v" ITIDY_VERSION " - Icon Cleanup Tool"
 #define ITIDY_WINDOW_WIDTH 500
 #define ITIDY_WINDOW_HEIGHT 350
 #define ITIDY_WINDOW_LEFT 50

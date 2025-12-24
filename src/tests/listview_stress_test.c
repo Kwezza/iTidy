@@ -38,6 +38,7 @@
 #include "../helpers/listview_columns_api.h"
 #include "../Settings/IControlPrefs.h"
 #include "../writeLog.h"
+#include "../version_info.h"
 
 /* Gadget IDs */
 #define GID_LISTVIEW       1
@@ -2158,7 +2159,7 @@ int main(void)
     
     printf("\n");
     printf("========================================\n");
-    printf("  ListView Stress Test - iTidy v2.0\n");
+    printf("  ListView Stress Test - iTidy v%s\n", ITIDY_VERSION);
     printf("  Performance Benchmark for 7MHz Amiga\n");
     printf("========================================\n");
     
