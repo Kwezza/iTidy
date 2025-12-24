@@ -11,28 +11,13 @@
 /* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
 #include <console_output.h>
 
-#ifdef PLATFORM_HOST
-    #ifdef _WIN32
-        #define WIN32_LEAN_AND_MEAN
-        #include <windows.h>
-        #define PATH_SEP "\\"
-        #define NULL_DEVICE "NUL"
-    #else
-        #define PATH_SEP "/"
-        #define NULL_DEVICE "/dev/null"
-    #endif
-    #include <sys/stat.h>
-    #include <unistd.h>
-    #define DEBUG_LOG(fmt, ...) CONSOLE_DEBUG("[DEBUG] " fmt "\n", __VA_ARGS__)
-#else
-    #include <dos/dos.h>
-    #include <proto/dos.h>
-    #include <proto/exec.h>
-    #include "writeLog.h"
-    #define DEBUG_LOG(...) /* disabled on Amiga */
-    #define PATH_SEP "/"
-    #define NULL_DEVICE "NIL:"
-#endif
+#include <dos/dos.h>
+#include <proto/dos.h>
+#include <proto/exec.h>
+#include "writeLog.h"
+#define DEBUG_LOG(...) /* disabled on Amiga */
+#define PATH_SEP "/"
+#define NULL_DEVICE "NIL:"
 
 #include "backup_lha.h"
 #include <string.h>
@@ -46,7 +31,6 @@
 /* Path Expansion Helper                                                  */
 /*========================================================================*/
 
-#ifndef PLATFORM_HOST
 /**
  * Expand PROGDIR: to absolute path on Amiga
  * Returns TRUE if expansion successful, FALSE otherwise
@@ -101,58 +85,16 @@ static BOOL ExpandProgDir(const char *path, char *expanded, size_t maxLen) {
     
     return success;
 }
-#endif
 
 /*========================================================================*/
 /* LHA Detection                                                          */
 /*========================================================================*/
 
 BOOL CheckLhaAvailable(char *lhaPath) {
-    char command[MAX_COMMAND_LEN];
-    int result;
-    
     if (!lhaPath) {
         return FALSE;
     }
     
-#ifdef PLATFORM_HOST
-    /* On host, try 'lha' command */
-#ifdef _WIN32
-    /* Windows: Try 'lha.exe' in PATH */
-    snprintf(command, sizeof(command), "lha --version >%s 2>&1", NULL_DEVICE);
-    result = system(command);
-    
-    if (result == 0) {
-        strcpy(lhaPath, "lha");
-        DEBUG_LOG("Found LHA in PATH");
-        return TRUE;
-    }
-    
-    /* Try 'lha.exe' explicitly */
-    snprintf(command, sizeof(command), "lha.exe --version >%s 2>&1", NULL_DEVICE);
-    result = system(command);
-    
-    if (result == 0) {
-        strcpy(lhaPath, "lha.exe");
-        DEBUG_LOG("Found lha.exe in PATH");
-        return TRUE;
-    }
-#else
-    /* Unix/Linux: Try 'lha' command */
-    snprintf(command, sizeof(command), "which lha >%s 2>&1", NULL_DEVICE);
-    result = system(command);
-    
-    if (result == 0) {
-        strcpy(lhaPath, "lha");
-        DEBUG_LOG("Found LHA in PATH");
-        return TRUE;
-    }
-#endif
-    
-    DEBUG_LOG("LHA not found in PATH");
-    return FALSE;
-    
-#else
     /* Amiga: Check common LHA locations */
     BPTR lock;
     const char *locations[] = {
@@ -174,45 +116,17 @@ BOOL CheckLhaAvailable(char *lhaPath) {
     
     DEBUG_LOG("LHA not found in common locations");
     return FALSE;
-#endif
 }
 
 BOOL GetLhaVersion(const char *lhaPath, char *versionBuffer) {
-    char command[MAX_COMMAND_LEN];
-    FILE *fp;
-    
     if (!lhaPath || !versionBuffer) {
         return FALSE;
     }
     
-#ifdef PLATFORM_HOST
-    /* Execute lha --version and capture output */
-    snprintf(command, sizeof(command), "%s --version 2>&1", lhaPath);
-    
-    fp = popen(command, "r");
-    if (!fp) {
-        return FALSE;
-    }
-    
-    /* Read first line of output */
-    if (fgets(versionBuffer, 64, fp) != NULL) {
-        /* Remove trailing newline */
-        size_t len = strlen(versionBuffer);
-        if (len > 0 && versionBuffer[len-1] == '\n') {
-            versionBuffer[len-1] = '\0';
-        }
-        pclose(fp);
-        return TRUE;
-    }
-    
-    pclose(fp);
-    return FALSE;
-#else
     /* On Amiga, version detection is more complex */
     /* For now, just return a placeholder */
     strcpy(versionBuffer, "LhA (Amiga)");
     return TRUE;
-#endif
 }
 
 /*========================================================================*/
@@ -253,22 +167,8 @@ BOOL ExecuteLhaCommand(const char *command) {
     }
     
     DEBUG_LOG("Executing: %s", command);
-#ifndef PLATFORM_HOST
     append_to_log("[BACKUP] Executing LHA: %s\n", command);
-#endif
     
-#ifdef PLATFORM_HOST
-    result = system(command);
-    
-    /* system() returns 0 on success */
-    if (result == 0) {
-        DEBUG_LOG("Command succeeded");
-        return TRUE;
-    } else {
-        DEBUG_LOG("Command failed with code: %d", result);
-        return FALSE;
-    }
-#else
     /* Amiga: Use Execute() */
     BPTR input = Open((STRPTR)"NIL:", MODE_OLDFILE);
     BPTR output = Open((STRPTR)"NIL:", MODE_NEWFILE);
@@ -276,9 +176,7 @@ BOOL ExecuteLhaCommand(const char *command) {
     if (!input || !output) {
         if (input) Close(input);
         if (output) Close(output);
-#ifndef PLATFORM_HOST
         append_to_log("[BACKUP] ERROR: Failed to open NIL: for LHA execution\n");
-#endif
         return FALSE;
     }
     
@@ -287,16 +185,13 @@ BOOL ExecuteLhaCommand(const char *command) {
     Close(input);
     Close(output);
     
-#ifndef PLATFORM_HOST
     if (result) {
         append_to_log("[BACKUP] LHA command succeeded\n");
     } else {
         append_to_log("[BACKUP] ERROR: LHA command failed (Execute returned 0)\n");
     }
-#endif
     
     return (result != 0);  /* Execute() returns non-zero on success */
-#endif
 }
 
 /*========================================================================*/
@@ -312,59 +207,19 @@ BOOL CreateLhaArchive(const char *lhaPath, const char *archivePath,
     
     if (!lhaPath || !archivePath || !sourceDir) {
         DEBUG_LOG("Invalid parameters for CreateLhaArchive");
-#ifndef PLATFORM_HOST
         append_to_log("[BACKUP] ERROR: Invalid parameters for CreateLhaArchive\n");
-#endif
         return FALSE;
     }
     
     DEBUG_LOG("Creating archive: %s from %s", archivePath, sourceDir);
-#ifndef PLATFORM_HOST
     append_to_log("[BACKUP] Creating archive: %s from %s\n", archivePath, sourceDir);
-#endif
     
-#ifdef PLATFORM_HOST
-    /* Convert archive path to absolute path for host builds */
-    #ifdef _WIN32
-    if (_fullpath(absArchivePath, archivePath, sizeof(absArchivePath)) == NULL) {
-        strcpy(absArchivePath, archivePath);
-    }
-    #else
-    if (realpath(archivePath, absArchivePath) == NULL) {
-        strcpy(absArchivePath, archivePath);
-    }
-    #endif
-#else
     /* On Amiga, expand PROGDIR: to absolute path */
     if (!ExpandProgDir(archivePath, absArchivePath, sizeof(absArchivePath))) {
         append_to_log("[BACKUP] ERROR: Failed to expand archive path\n");
         return FALSE;
     }
-#endif
     
-    /* Build command: change to source dir and archive from there */
-    /* This avoids issues with wildcards in paths */
-#ifdef PLATFORM_HOST
-    #ifdef _WIN32
-        /* Windows: Use cmd.exe for proper wildcard expansion (PowerShell doesn't expand wildcards in external commands)
-         * Note: -r flag removed as this version of LHA recurses by default */
-        len = snprintf(command, sizeof(command), 
-                      "cmd /c \"cd /d \"%s\" && %s a \"%s\" *\"",
-                      sourceDir, lhaPath, absArchivePath);
-    #else
-        /* Unix: use cd and archive (removed -r flag) */
-        len = snprintf(command, sizeof(command),
-                      "cd \"%s\" && %s a \"%s\" *",
-                      sourceDir, lhaPath, absArchivePath);
-    #endif
-    
-    if (len >= MAX_COMMAND_LEN) {
-        DEBUG_LOG("Command too long");
-        return FALSE;
-    }
-    
-    return ExecuteLhaCommand(command);
-#else
     /* Amiga: Pass full paths directly to LHA */
     /* Archive only .info files in the root of the source directory (non-recursive) */
     /* Format: C:LhA a "archive.lha" source/dir/*.info */
@@ -409,7 +264,6 @@ BOOL CreateLhaArchive(const char *lhaPath, const char *archivePath,
     }
     
     return result;
-#endif
 }
 
 BOOL AddFileToArchive(const char *lhaPath, const char *archivePath,
@@ -447,36 +301,6 @@ BOOL AddFileToArchive(const char *lhaPath, const char *archivePath,
         strcpy(fileName, markerFile);
     }
     
-#ifdef PLATFORM_HOST
-    /* Convert archive path to absolute path for host builds */
-    #ifdef _WIN32
-    if (_fullpath(absArchivePath, archivePath, sizeof(absArchivePath)) == NULL) {
-        strcpy(absArchivePath, archivePath);
-    }
-    #else
-    if (realpath(archivePath, absArchivePath) == NULL) {
-        strcpy(absArchivePath, archivePath);
-    }
-    #endif
-    
-    /* Build command: change to directory and add just the filename */
-    /* This ensures the file is stored without path in the archive */
-    #ifdef _WIN32
-    len = snprintf(command, sizeof(command), 
-                  "pushd \"%s\" & %s a \"%s\" \"%s\" & popd",
-                  dirPath, lhaPath, absArchivePath, fileName);
-    #else
-    len = snprintf(command, sizeof(command), 
-                  "cd \"%s\" && %s a \"%s\" \"%s\"",
-                  dirPath, lhaPath, absArchivePath, fileName);
-    #endif
-    
-    if (len >= MAX_COMMAND_LEN) {
-        return FALSE;
-    }
-    
-    return ExecuteLhaCommand(command);
-#else
     /* Amiga: Use CurrentDir() to change directory (proper AmigaDOS way) */
     BPTR oldDir, newDir;
     
@@ -509,7 +333,6 @@ BOOL AddFileToArchive(const char *lhaPath, const char *archivePath,
     UnLock(newDir);
     
     return result;
-#endif
 }
 
 ULONG GetArchiveSize(const char *archivePath) {
@@ -517,13 +340,6 @@ ULONG GetArchiveSize(const char *archivePath) {
         return 0;
     }
     
-#ifdef PLATFORM_HOST
-    struct stat st;
-    if (stat(archivePath, &st) == 0) {
-        return (ULONG)st.st_size;
-    }
-    return 0;
-#else
     BPTR lock;
     struct FileInfoBlock *fib;
     ULONG size = 0;
@@ -543,7 +359,6 @@ ULONG GetArchiveSize(const char *archivePath) {
     
     UnLock(lock);
     return size;
-#endif
 }
 
 /*========================================================================*/
@@ -563,22 +378,6 @@ BOOL ExtractLhaArchive(const char *lhaPath, const char *archivePath,
     
     DEBUG_LOG("Extracting archive: %s to %s", archivePath, destDir);
     
-#ifdef PLATFORM_HOST
-    /* On host, use path as-is */
-    strncpy(absArchivePath, archivePath, sizeof(absArchivePath) - 1);
-    absArchivePath[sizeof(absArchivePath) - 1] = '\0';
-    
-    /* Build command: lha x archive.lha -w=destdir/ */
-    len = snprintf(command, sizeof(command), "%s x \"%s\" -w=\"%s\"",
-                  lhaPath, absArchivePath, destDir);
-    
-    if (len >= MAX_COMMAND_LEN) {
-        DEBUG_LOG("Command too long");
-        return FALSE;
-    }
-    
-    return ExecuteLhaCommand(command);
-#else
     /* On Amiga, expand PROGDIR: to absolute path */
     if (!ExpandProgDir(archivePath, absArchivePath, sizeof(absArchivePath))) {
         append_to_log("[BACKUP] ERROR: Failed to expand archive path for extraction\n");
@@ -623,7 +422,6 @@ BOOL ExtractLhaArchive(const char *lhaPath, const char *archivePath,
     }
     
     return result;
-#endif
 }
 
 BOOL ExtractFileFromArchive(const char *lhaPath, const char *archivePath,
@@ -638,21 +436,6 @@ BOOL ExtractFileFromArchive(const char *lhaPath, const char *archivePath,
     
     DEBUG_LOG("Extracting file: %s from %s", fileName, archivePath);
     
-#ifdef PLATFORM_HOST
-    /* On host, use path as-is */
-    strncpy(absArchivePath, archivePath, sizeof(absArchivePath) - 1);
-    absArchivePath[sizeof(absArchivePath) - 1] = '\0';
-    
-    /* Build command: lha x archive.lha filename -w=destdir */
-    len = snprintf(command, sizeof(command), "%s x \"%s\" \"%s\" -w=\"%s\"",
-                  lhaPath, absArchivePath, fileName, destDir);
-    
-    if (len >= MAX_COMMAND_LEN) {
-        return FALSE;
-    }
-    
-    return ExecuteLhaCommand(command);
-#else
     /* On Amiga, expand PROGDIR: to absolute path */
     if (!ExpandProgDir(archivePath, absArchivePath, sizeof(absArchivePath))) {
         append_to_log("[BACKUP] ERROR: Failed to expand archive path for file extraction\n");
@@ -688,7 +471,6 @@ BOOL ExtractFileFromArchive(const char *lhaPath, const char *archivePath,
     UnLock(destLock);
     
     return result;
-#endif
 }
 
 BOOL TestLhaArchive(const char *lhaPath, const char *archivePath) {
@@ -718,57 +500,8 @@ BOOL TestLhaArchive(const char *lhaPath, const char *archivePath) {
 
 BOOL ListLhaArchive(const char *lhaPath, const char *archivePath,
                     LhaListCallback callback) {
-    char command[MAX_COMMAND_LEN];
-    FILE *fp;
-    char line[512];
-    int len;
-    
-    if (!lhaPath || !archivePath || !callback) {
-        return FALSE;
-    }
-    
-#ifdef PLATFORM_HOST
-    /* Build command: lha l archive.lha */
-    len = snprintf(command, sizeof(command), "%s l \"%s\" 2>&1",
-                  lhaPath, archivePath);
-    
-    if (len >= MAX_COMMAND_LEN) {
-        return FALSE;
-    }
-    
-    DEBUG_LOG("Listing archive: %s", archivePath);
-    
-    fp = popen(command, "r");
-    if (!fp) {
-        return FALSE;
-    }
-    
-    /* Parse output - format varies by LHA version */
-    /* Typically: filename, size, ratio, date, time */
-    while (fgets(line, sizeof(line), fp)) {
-        char fileName[256];
-        ULONG size;
-        
-        /* Skip header lines */
-        if (line[0] == '-' || strstr(line, "PERMSSN") || 
-            strstr(line, "files") || strlen(line) < 10) {
-            continue;
-        }
-        
-        /* Try to parse filename and size */
-        /* This is simplified - real parsing depends on LHA output format */
-        if (sscanf(line, "%*s %lu %*s %*s %*s %255s", &size, fileName) == 2) {
-            if (!callback(fileName, size)) {
-                break;  /* Callback requested stop */
-            }
-        }
-    }
-    
-    pclose(fp);
-    return TRUE;
-#else
-    /* Amiga implementation would use similar approach */
-    /* but with Execute() and capturing output differently */
+    (void)lhaPath;
+    (void)archivePath;
+    (void)callback;
     return FALSE;  /* Not implemented for Amiga yet */
-#endif
 }

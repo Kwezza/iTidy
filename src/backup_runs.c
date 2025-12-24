@@ -17,28 +17,14 @@
 /* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
 #include <console_output.h>
 
-/* Platform-specific includes */
-#if PLATFORM_HOST
-    #include <sys/stat.h>
-    #include <sys/types.h>
-    #include <dirent.h>
-    #include <errno.h>
-    #define DEBUG_LOG(fmt, ...) CONSOLE_DEBUG("[DEBUG] " fmt "\n", __VA_ARGS__)
-    
-    /* Windows compatibility */
-    #ifdef _WIN32
-        #include <direct.h>
-        #define mkdir(path, mode) _mkdir(path)
-    #endif
-#else
-    #include <dos/dos.h>
-    #include <dos/dosasl.h>
-    #include <proto/dos.h>
-    #include <proto/exec.h>
-    #include <exec/memory.h>
-    #include "writeLog.h"
-    #define DEBUG_LOG(...) /* disabled on Amiga */
-#endif
+/* Amiga-specific includes */
+#include <dos/dos.h>
+#include <dos/dosasl.h>
+#include <proto/dos.h>
+#include <proto/exec.h>
+#include <exec/memory.h>
+#include "writeLog.h"
+#define DEBUG_LOG(...) /* disabled on Amiga */
 
 /*========================================================================*/
 /* Internal Helper Functions                                             */
@@ -48,32 +34,6 @@
  * @brief Create a single directory (not recursive)
  */
 static BOOL CreateSingleDirectory(const char *path) {
-#if PLATFORM_HOST
-    struct stat st;
-    
-    /* Check if already exists */
-    if (stat(path, &st) == 0) {
-        if (S_ISDIR(st.st_mode)) {
-            return TRUE; /* Already exists */
-        }
-        /* DEBUG_LOG("Path exists but is not a directory: %s", path); */
-        return FALSE;
-    }
-    
-    /* Create directory */
-    if (mkdir(path, 0755) == 0) {
-        /* DEBUG_LOG("Created directory: %s", path); */
-        return TRUE;
-    }
-    
-    /* Check if it was created by another process */
-    if (errno == EEXIST && stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
-        return TRUE;
-    }
-    
-    /* DEBUG_LOG("Failed to create directory: %s (errno=%d)", path, errno); */
-    return FALSE;
-#else
     BPTR lock;
     
     /* Check if already exists */
@@ -100,7 +60,6 @@ static BOOL CreateSingleDirectory(const char *path) {
     
     /* DEBUG_LOG("Failed to create directory: %s", path); */
     return FALSE;
-#endif
 }
 
 /*========================================================================*/
@@ -168,40 +127,6 @@ UWORD FindHighestRunNumber(const char *backupRoot) {
         return 0;
     }
     
-#if PLATFORM_HOST
-    DIR *dir;
-    struct dirent *entry;
-    struct stat st;
-    char fullPath[MAX_BACKUP_PATH];
-    
-    dir = opendir(backupRoot);
-    if (!dir) {
-        /* DEBUG_LOG("Cannot open backup root: %s", backupRoot); */
-        return 0;
-    }
-    
-    while ((entry = readdir(dir)) != NULL) {
-        /* Skip . and .. */
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
-            continue;
-        }
-        
-        /* Build full path to check if it's a directory */
-        snprintf(fullPath, sizeof(fullPath), "%s/%s", backupRoot, entry->d_name);
-        
-        if (stat(fullPath, &st) == 0 && S_ISDIR(st.st_mode)) {
-            /* Try to parse run number */
-            current = ParseRunNumber(entry->d_name);
-            if (current > 0 && current > highest) {
-                highest = current;
-                /* DEBUG_LOG("Found run: %s (number=%u)", entry->d_name, current); */
-            }
-        }
-    }
-    
-    closedir(dir);
-    
-#else
     /* AmigaDOS version using pattern matching */
     struct AnchorPath *anchor;
     LONG result;
@@ -241,7 +166,6 @@ UWORD FindHighestRunNumber(const char *backupRoot) {
     
     MatchEnd(anchor);
     FreeVec(anchor);
-#endif
     
     /* DEBUG_LOG("Highest run number found: %u", highest); */
     return highest;
@@ -254,34 +178,6 @@ UWORD CountRunDirectories(const char *backupRoot) {
         return 0;
     }
     
-#if PLATFORM_HOST
-    DIR *dir;
-    struct dirent *entry;
-    struct stat st;
-    char fullPath[MAX_BACKUP_PATH];
-    
-    dir = opendir(backupRoot);
-    if (!dir) {
-        return 0;
-    }
-    
-    while ((entry = readdir(dir)) != NULL) {
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
-            continue;
-        }
-        
-        snprintf(fullPath, sizeof(fullPath), "%s/%s", backupRoot, entry->d_name);
-        
-        if (stat(fullPath, &st) == 0 && S_ISDIR(st.st_mode)) {
-            if (ParseRunNumber(entry->d_name) > 0) {
-                count++;
-            }
-        }
-    }
-    
-    closedir(dir);
-    
-#else
     struct AnchorPath *anchor;
     LONG result;
     char pattern[MAX_BACKUP_PATH * 2];  /* Larger to accommodate full paths */
@@ -309,7 +205,6 @@ UWORD CountRunDirectories(const char *backupRoot) {
     
     MatchEnd(anchor);
     FreeVec(anchor);
-#endif
     
     return count;
 }
@@ -323,20 +218,12 @@ BOOL BackupRootExists(const char *backupRoot) {
         return FALSE;
     }
     
-#if PLATFORM_HOST
-    struct stat st;
-    if (stat(backupRoot, &st) == 0 && S_ISDIR(st.st_mode)) {
-        return TRUE;
-    }
-    return FALSE;
-#else
     BPTR lock = Lock((STRPTR)backupRoot, ACCESS_READ);
     if (lock) {
         UnLock(lock);
         return TRUE;
     }
     return FALSE;
-#endif
 }
 
 BOOL CreateBackupRoot(const char *backupRoot) {

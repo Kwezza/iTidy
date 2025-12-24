@@ -14,17 +14,12 @@
 #include <time.h>
 #include <stdint.h>
 
-/* Platform-specific includes */
-#ifdef PLATFORM_HOST
-    #include <sys/stat.h>
-    #define DEBUG_LOG printf
-#else
-    #include <dos/dos.h>
-    #include <proto/dos.h>
-    #include "writeLog.h"
-    /* VBCC C99 mode has issues with variadic macros, just disable for now */
-    #define DEBUG_LOG(...) /* disabled */
-#endif
+/* Amiga-specific includes */
+#include <dos/dos.h>
+#include <proto/dos.h>
+#include "writeLog.h"
+/* VBCC C99 mode has issues with variadic macros, just disable for now */
+#define DEBUG_LOG(...) /* disabled */
 
 /*========================================================================*/
 /* Constants                                                             */
@@ -58,20 +53,8 @@ static void GetTimestampString(char *buffer, size_t bufSize) {
 }
 
 /**
- * @brief Write a line to file (platform-specific)
+ * @brief Write a line to file (AmigaDOS)
  */
-#ifdef PLATFORM_HOST
-static BOOL WriteLineToFile(void *file, const char *line) {
-    FILE *fp = (FILE *)file;
-    if (!fp || !line) {
-        return FALSE;
-    }
-    if (fprintf(fp, "%s\n", line) < 0) {
-        return FALSE;
-    }
-    return TRUE;
-}
-#else
 static BOOL WriteLineToFile(BPTR file, const char *line) {
     LONG len = strlen(line);
     if (Write(file, (APTR)line, len) != len) {
@@ -82,7 +65,6 @@ static BOOL WriteLineToFile(BPTR file, const char *line) {
     }
     return TRUE;
 }
-#endif
 
 /*========================================================================*/
 /* Size Formatting                                                       */
@@ -142,9 +124,6 @@ BOOL CreateCatalog(BackupContext *ctx) {
     char catalogPath[MAX_BACKUP_PATH];
     char timestamp[64];
     char line[256];
-#ifndef PLATFORM_HOST
-    BPTR file;  /* Only needed on Amiga */
-#endif
     
     if (!ctx || !ctx->runDirectory[0]) {
         DEBUG_LOG("Invalid context for catalog creation");
@@ -159,16 +138,6 @@ BOOL CreateCatalog(BackupContext *ctx) {
     DEBUG_LOG("Creating catalog: %s", catalogPath);
     
     /* Open catalog file for writing */
-#ifdef PLATFORM_HOST
-    {
-        FILE *fp = fopen(catalogPath, "w");
-        if (!fp) {
-            DEBUG_LOG("Failed to create catalog file: %s", catalogPath);
-            return FALSE;
-        }
-        ctx->catalogFile = (void *)fp;  /* Store FILE* directly as void* */
-    }
-#else
     {
         BPTR file = Open((STRPTR)catalogPath, MODE_NEWFILE);
         if (!file) {
@@ -177,7 +146,6 @@ BOOL CreateCatalog(BackupContext *ctx) {
         }
         ctx->catalogFile = file;
     }
-#endif
     ctx->catalogOpen = TRUE;
     
     /* Write header */
@@ -298,11 +266,7 @@ BOOL CloseCatalog(BackupContext *ctx) {
     WriteLineToFile(ctx->catalogFile, CATALOG_SEPARATOR);
     
     /* Close file */
-#ifdef PLATFORM_HOST
-    fclose((FILE *)ctx->catalogFile);
-#else
     Close(ctx->catalogFile);
-#endif
     
     ctx->catalogFile = 0;
     ctx->catalogOpen = FALSE;
@@ -345,11 +309,7 @@ BOOL ParseCatalogLine(const char *line, BackupArchiveEntry *outEntry) {
     outEntry->viewMode = 0;
     
     /* Parse pipe-delimited fields */
-#ifdef PLATFORM_HOST
     token = strtok(tempLine, "|");
-#else
-    token = strtok(tempLine, "|");
-#endif
     
     while (token && field < 7) {
         /* Trim leading/trailing whitespace */
@@ -422,11 +382,7 @@ BOOL ParseCatalogLine(const char *line, BackupArchiveEntry *outEntry) {
         }
         
         field++;
-#ifdef PLATFORM_HOST
         token = strtok(NULL, "|");
-#else
-        token = strtok(NULL, "|");
-#endif
     }
     
     /* Valid entry must have at least the first 5 fields (backwards compatibility) */
@@ -450,24 +406,6 @@ BOOL ParseCatalog(const char *catalogPath,
         return FALSE;
     }
     
-#ifdef PLATFORM_HOST
-    FILE *fp = fopen(catalogPath, "r");
-    if (!fp) {
-        DEBUG_LOG("Failed to open catalog: %s", catalogPath);
-        return FALSE;
-    }
-    
-    while (fgets(line, sizeof(line), fp)) {
-        if (ParseCatalogLine(line, &entry)) {
-            if (!callback(&entry, userData)) {
-                result = FALSE; /* Callback requested stop */
-                break;
-            }
-        }
-    }
-    
-    fclose(fp);
-#else
     file = Open((STRPTR)catalogPath, MODE_OLDFILE);
     if (!file) {
         DEBUG_LOG("Failed to open catalog: %s", catalogPath);
@@ -484,7 +422,6 @@ BOOL ParseCatalog(const char *catalogPath,
     }
     
     Close(file);
-#endif
     
     return result;
 }

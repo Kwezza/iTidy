@@ -8,16 +8,10 @@
 #include <string.h>
 
 /*---------------------------------------------------------------------------*/
-/* Platform Detection                                                        */
+/* Platform Selection                                                        */
 /*---------------------------------------------------------------------------*/
 
-#if defined(__VBCC__) && defined(__AMIGA__)
-    #define PLATFORM_AMIGA 1
-    #define PLATFORM_HOST 0
-#else
-    #define PLATFORM_AMIGA 0
-    #define PLATFORM_HOST 1
-#endif
+#define PLATFORM_AMIGA 1
 
 /*---------------------------------------------------------------------------*/
 /* Memory Allocation Abstraction with Debugging                              */

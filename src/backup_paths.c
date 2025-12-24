@@ -14,12 +14,8 @@
 /* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
 #include <console_output.h>
 
-#ifndef PLATFORM_HOST
 #include "writeLog.h"
 #define DEBUG_LOG(...) /* disabled on Amiga */
-#else
-#define DEBUG_LOG(fmt, ...) CONSOLE_DEBUG("[DEBUG] " fmt "\n", __VA_ARGS__)
-#endif
 
 /*========================================================================*/
 /* Root Folder Detection                                                 */

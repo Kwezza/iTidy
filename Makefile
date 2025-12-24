@@ -1,10 +1,6 @@
 ################################################################################
-# iTidy - Cross-Platform Makefile
-# Supports: HOST (GCC) and AMIGA (vbcc +aos68k)
+# iTidy - Amiga Build Makefile (vbcc +aos68k only)
 ################################################################################
-
-# Target selection: host or amiga
-TARGET ?= amiga
 
 # Console output: Set CONSOLE=1 to enable printf output (opens console window)
 # Default: ENABLED for debugging Workbench launch issues
@@ -24,30 +20,20 @@ else
     CONSOLE_FLAG =
 endif
 
-ifeq ($(TARGET),host)
-    # Host build configuration (GCC on Windows/Linux/macOS)
-    # Console always enabled on host for testing
-    CC = gcc
-	CFLAGS = -std=c99 -Wall -Wextra -pedantic -Isrc -DPLATFORM_HOST=1 -DENABLE_CONSOLE
-    LDFLAGS =
-    OUT_DIR = $(BUILD_DIR)/host
-    BIN = $(OUT_DIR)/$(PROJECT).exe
-else
-    # Amiga build configuration (vbcc cross-compiler)
-    # VBCC MIGRATION NOTE: Changed to use VBCC v0.9x with Workbench 3.2 SDK
-    # Output now goes to Bin/Amiga/ for clean separation
-    # RELEASE BUILD: Optimized for size (-O2 -size), no debug symbols, no math library (uses fixed-point)
-    # Note: VBCC warnings from system headers (51: bitfield, 61: array size) cannot be suppressed
-    # EASY_REQUEST_HELPER: -DBUILD_WITH_MOVEWINDOW disabled (causes flicker on slow Amigas)
-    # CPU TARGET: 68000 for maximum compatibility (A500/A600/A1200)
-    # CONSOLE: Add -DENABLE_CONSOLE via CONSOLE=1 to open console window for debugging
-    CC = vc
-	CFLAGS = +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG $(CONSOLE_FLAG)
-    LDFLAGS = +aos68k -cpu=68000 -O2 -size -final -lamiga -lauto
-    OUT_DIR = $(BUILD_DIR)/amiga
-    BIN_DIR = Bin/Amiga
-    BIN = $(BIN_DIR)/$(PROJECT)
-endif
+# Amiga build configuration (vbcc cross-compiler)
+# VBCC MIGRATION NOTE: Changed to use VBCC v0.9x with Workbench 3.2 SDK
+# Output goes to Bin/Amiga/ for clean separation
+# RELEASE BUILD: Optimized for size (-O2 -size), no debug symbols, no math library (uses fixed-point)
+# Note: VBCC warnings from system headers (51: bitfield, 61: array size) cannot be suppressed
+# EASY_REQUEST_HELPER: -DBUILD_WITH_MOVEWINDOW disabled (causes flicker on slow Amigas)
+# CPU TARGET: 68000 for maximum compatibility (A500/A600/A1200)
+# CONSOLE: Add -DENABLE_CONSOLE via CONSOLE=1 to open console window for debugging
+CC = vc
+CFLAGS = +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG $(CONSOLE_FLAG)
+LDFLAGS = +aos68k -cpu=68000 -O2 -size -final -lamiga -lauto
+OUT_DIR = $(BUILD_DIR)/amiga
+BIN_DIR = Bin/Amiga
+BIN = $(BIN_DIR)/$(PROJECT)
 
 ################################################################################
 # Source Files
@@ -128,11 +114,7 @@ SETTINGS_SRCS = \
 	$(SRC_DIR)/Settings/get_fonts.c
 
 # Platform-specific sources
-ifeq ($(TARGET),host)
-    PLATFORM_SRCS = $(SRC_DIR)/platform/host_platform.c
-else
-    PLATFORM_SRCS = $(SRC_DIR)/platform/amiga_platform.c
-endif
+PLATFORM_SRCS = $(SRC_DIR)/platform/amiga_platform.c
 
 # Memory tracking implementation (conditional - only included if DEBUG_MEMORY_TRACKING is defined)
 # To enable: Uncomment #define DEBUG_MEMORY_TRACKING in src/platform/platform.h
@@ -161,13 +143,8 @@ OBJS = $(CORE_OBJS) $(BACKUP_OBJS) $(HELPERS_OBJS) $(GUI_OBJS) $(DEFAULT_TOOLS_O
 ################################################################################
 
 # Test program binaries
-ifeq ($(TARGET),amiga)
-    TEST_BIN_DIR = $(BIN_DIR)
-    TEST_LISTVIEW_STRESS = $(TEST_BIN_DIR)/listview_stress_test
-else
-    TEST_BIN_DIR = $(OUT_DIR)
-    TEST_LISTVIEW_STRESS = $(TEST_BIN_DIR)/listview_stress_test.exe
-endif
+TEST_BIN_DIR = $(BIN_DIR)
+TEST_LISTVIEW_STRESS = $(TEST_BIN_DIR)/listview_stress_test
 
 # Test program sources
 TEST_LISTVIEW_STRESS_SRCS = $(SRC_DIR)/tests/listview_stress_test.c
@@ -188,18 +165,13 @@ TEST_LISTVIEW_STRESS_OBJS = \
 # Build Rules
 ################################################################################
 
-.PHONY: all clean help host amiga directories test-listview
+.PHONY: all clean help amiga directories test-listview
 
 # Default target
 all: directories $(BIN)
 
-# Host build shortcut
-host:
-	@$(MAKE) TARGET=host
-
 # Amiga build shortcut
-amiga:
-	@$(MAKE) TARGET=amiga
+amiga: all
 
 # Create output directories
 # VBCC MIGRATION NOTE: Added Bin/Amiga directory for final Amiga executables
@@ -215,21 +187,17 @@ directories:
 	@if not exist "$(OUT_DIR)\GUI\DefaultTools" mkdir "$(OUT_DIR)\GUI\DefaultTools"
 	@if not exist "$(OUT_DIR)\GUI\RestoreBackups" mkdir "$(OUT_DIR)\GUI\RestoreBackups"
 	@if not exist "$(OUT_DIR)\tests" mkdir "$(OUT_DIR)\tests"
-ifeq ($(TARGET),amiga)
 	@if not exist "$(BIN_DIR)" mkdir "$(BIN_DIR)"
-endif
 
 # Link executable
 # VBCC MIGRATION NOTE: For Amiga builds, copy to Bin/Amiga/ after linking
 # GUI MIGRATION NOTE: Executable now named iTidy (GUI version)
 # RELEASE BUILD: Optimized executable with dead code elimination (-final)
 $(BIN): $(OBJS)
-	@echo Linking $(TARGET) executable: $(BIN)
+	@echo Linking Amiga executable: $(BIN)
 	$(CC) $(LDFLAGS) -o $@ $^ 
-ifeq ($(TARGET),amiga)
 	@echo Build complete: $(BIN)
 	@echo Release build optimized for size (-O2 -size -final)
-endif
 
 # Compile core source files
 $(OUT_DIR)/%.o: $(SRC_DIR)/%.c
@@ -257,13 +225,12 @@ test-listview: directories $(TEST_LISTVIEW_STRESS)
 $(TEST_LISTVIEW_STRESS): $(TEST_LISTVIEW_STRESS_OBJS)
 	@echo Linking test program: $(TEST_LISTVIEW_STRESS)
 	$(CC) $(LDFLAGS) -o $@ $^
-ifeq ($(TARGET),amiga)
 	@echo Test build complete: $(TEST_LISTVIEW_STRESS)
-endif
 
 # Clean build artifacts
+
 clean:
-	@echo Cleaning $(TARGET) build...
+	@echo Cleaning Amiga build...
 	@if exist "$(OUT_DIR)" rmdir /S /Q "$(OUT_DIR)"
 	@echo Clean complete.
 
@@ -273,20 +240,16 @@ clean-all:
 	@if exist "$(BUILD_DIR)" rmdir /S /Q "$(BUILD_DIR)"
 	@echo Clean complete.
 
-# Help target
 help:
-	@echo iTidy Build System
-	@echo ==================
+	@echo iTidy Amiga Build System
+	@echo ========================
 	@echo.
 	@echo Targets:
 	@echo   make                    - Build for Amiga (default, no console)
 	@echo   make CONSOLE=1          - Build with console output enabled
-	@echo   make TARGET=host        - Build for host PC (GCC, console always on)
-	@echo   make TARGET=amiga       - Build for Amiga (vbcc)
-	@echo   make host               - Shortcut for host build
-	@echo   make amiga              - Shortcut for Amiga build
+	@echo   make amiga              - Shortcut alias for default build
 	@echo   make test-listview      - Build ListView stress test
-	@echo   make clean              - Clean current target build
+	@echo   make clean              - Clean Amiga build artifacts
 	@echo   make clean-all          - Clean all builds
 	@echo   make help               - Show this help
 	@echo.
@@ -295,12 +258,10 @@ help:
 	@echo   CONSOLE=1               - Debug build, console window with output
 	@echo.
 	@echo Build Outputs:
-	@echo   Host:   $(BUILD_DIR)/host/$(PROJECT).exe
 	@echo   Amiga:  $(BUILD_DIR)/amiga/$(PROJECT)
 	@echo   Test:   $(TEST_LISTVIEW_STRESS)
 	@echo.
 	@echo Current Configuration:
-	@echo   TARGET:  $(TARGET)
 	@echo   CONSOLE: $(CONSOLE)
 	@echo   CC:      $(CC)
 	@echo   OUT_DIR: $(OUT_DIR)

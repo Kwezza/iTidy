@@ -15,36 +15,8 @@
 #define BACKUP_TYPES_H
 
 /* Platform-specific includes */
-#if PLATFORM_HOST
-    /* Host compilation - define Amiga types if not already defined by Windows */
-    #ifndef _WINDEF_
-        typedef unsigned char UBYTE;
-        typedef unsigned short UWORD;
-        typedef unsigned long ULONG;
-        typedef signed char BYTE;
-        typedef signed short WORD;
-        typedef signed long LONG;
-        typedef int BOOL;
-        typedef long BPTR;
-        
-        #ifndef TRUE
-        #define TRUE 1
-        #define FALSE 0
-        #endif
-    #else
-        /* Windows headers already define BYTE, WORD, BOOL */
-        typedef unsigned char UBYTE;
-        typedef unsigned short UWORD;
-        typedef unsigned long ULONG;
-        typedef signed long LONG;
-        typedef long BPTR;
-        /* TRUE/FALSE already defined by Windows */
-    #endif
-#else
-    /* Amiga compilation - use native headers */
-    #include <exec/types.h>
-    #include <dos/dos.h>
-#endif
+#include <exec/types.h>
+#include <dos/dos.h>
 
 /*========================================================================*/
 /* Constants                                                             */
@@ -130,11 +102,7 @@ typedef struct {
     char lhaPath[32];                   /* Path to LhA executable */
     
     /* Catalog file handle */
-#ifdef PLATFORM_HOST
-    void *catalogFile;                  /* FILE* on host platform */
-#else
     BPTR catalogFile;                   /* AmigaDOS file handle */
-#endif
     
     /* Statistics */
     ULONG startTime;                    /* Session start time (seconds since epoch) */
