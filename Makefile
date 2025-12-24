@@ -139,33 +139,10 @@ MEMORY_TRACKING_OBJS = $(OUT_DIR)/platform_memory.o
 OBJS = $(CORE_OBJS) $(BACKUP_OBJS) $(HELPERS_OBJS) $(GUI_OBJS) $(DEFAULT_TOOLS_OBJS) $(RESTORE_BACKUP_OBJS) $(DOS_OBJS) $(SETTINGS_OBJS) $(PLATFORM_OBJS) $(MEMORY_TRACKING_OBJS)
 
 ################################################################################
-# Test Programs
-################################################################################
-
-# Test program binaries
-TEST_BIN_DIR = $(BIN_DIR)
-TEST_LISTVIEW_STRESS = $(TEST_BIN_DIR)/listview_stress_test
-
-# Test program sources
-TEST_LISTVIEW_STRESS_SRCS = $(SRC_DIR)/tests/listview_stress_test.c
-
-# Test program objects (minimal - only needs ListView API + dependencies)
-TEST_LISTVIEW_STRESS_OBJS = \
-	$(OUT_DIR)/tests/listview_stress_test.o \
-	$(OUT_DIR)/helpers/listview_columns_api.o \
-	$(OUT_DIR)/path_utilities.o \
-	$(OUT_DIR)/writeLog.o \
-	$(OUT_DIR)/utilities.o \
-	$(OUT_DIR)/Settings/IControlPrefs.o \
-	$(OUT_DIR)/Settings/get_fonts.o \
-	$(OUT_DIR)/platform/amiga_platform.o \
-	$(OUT_DIR)/platform_memory.o
-
-################################################################################
 # Build Rules
 ################################################################################
 
-.PHONY: all clean help amiga directories test-listview
+.PHONY: all clean help amiga directories
 
 # Default target
 all: directories $(BIN)
@@ -186,7 +163,6 @@ directories:
 	@if not exist "$(OUT_DIR)\GUI\StatusWindows" mkdir "$(OUT_DIR)\GUI\StatusWindows"
 	@if not exist "$(OUT_DIR)\GUI\DefaultTools" mkdir "$(OUT_DIR)\GUI\DefaultTools"
 	@if not exist "$(OUT_DIR)\GUI\RestoreBackups" mkdir "$(OUT_DIR)\GUI\RestoreBackups"
-	@if not exist "$(OUT_DIR)\tests" mkdir "$(OUT_DIR)\tests"
 	@if not exist "$(BIN_DIR)" mkdir "$(BIN_DIR)"
 
 # Link executable
@@ -209,24 +185,6 @@ $(OUT_DIR)/platform_memory.o: $(SRC_DIR)/platform/platform.c
 	@echo Compiling memory tracking: $@
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Compile test programs
-$(OUT_DIR)/tests/%.o: $(SRC_DIR)/tests/%.c
-	@echo Compiling test [$@] from $<
-	$(CC) $(CFLAGS) -c $< -o $@
-
-################################################################################
-# Test Program Targets
-################################################################################
-
-# ListView stress test
-test-listview: directories $(TEST_LISTVIEW_STRESS)
-	@echo Test program ready: $(TEST_LISTVIEW_STRESS)
-
-$(TEST_LISTVIEW_STRESS): $(TEST_LISTVIEW_STRESS_OBJS)
-	@echo Linking test program: $(TEST_LISTVIEW_STRESS)
-	$(CC) $(LDFLAGS) -o $@ $^
-	@echo Test build complete: $(TEST_LISTVIEW_STRESS)
-
 # Clean build artifacts
 
 clean:
@@ -248,7 +206,6 @@ help:
 	@echo   make                    - Build for Amiga (default, no console)
 	@echo   make CONSOLE=1          - Build with console output enabled
 	@echo   make amiga              - Shortcut alias for default build
-	@echo   make test-listview      - Build ListView stress test
 	@echo   make clean              - Clean Amiga build artifacts
 	@echo   make clean-all          - Clean all builds
 	@echo   make help               - Show this help
@@ -259,7 +216,6 @@ help:
 	@echo.
 	@echo Build Outputs:
 	@echo   Amiga:  $(BUILD_DIR)/amiga/$(PROJECT)
-	@echo   Test:   $(TEST_LISTVIEW_STRESS)
 	@echo.
 	@echo Current Configuration:
 	@echo   CONSOLE: $(CONSOLE)
