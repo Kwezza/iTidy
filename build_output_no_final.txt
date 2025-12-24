@@ -1,3 +1,0 @@
-""
-"Build complete: ../../Bin/Amiga/listview_stress_test"
-"Optimized for speed (-O2 -speed), debug symbols stripped (-s), unused code eliminated (-final)"

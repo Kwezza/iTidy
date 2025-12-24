@@ -1,3 +1,0 @@
-./test_restore_multi2
-Timestamp: 2025-10-24 20:45:24
-Archive: 00002
