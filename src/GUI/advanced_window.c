@@ -943,9 +943,15 @@ void save_advanced_window_to_preferences(struct iTidyAdvancedWindow *adv_data)
     log_debug(LOG_GUI, "  Saved prefs->reverseSort = %s\n", adv_data->prefs->reverseSort ? "YES" : "NO");
     
     CONSOLE_DEBUG("Advanced settings saved to preferences:\n");
-    CONSOLE_DEBUG("  Aspect Ratio: %.2f (Custom: %s)\n", 
-           adv_data->prefs->aspectRatio,
-           adv_data->prefs->useCustomAspectRatio ? "YES" : "NO");
+    {
+        const LONG aspect_ratio_value = adv_data->prefs->aspectRatio;
+        const LONG aspect_ratio_whole = aspect_ratio_value / 1000L;
+        const LONG aspect_ratio_fraction = aspect_ratio_value % 1000L;
+        CONSOLE_DEBUG("  Aspect Ratio: %ld.%03ld (Custom: %s)\n",
+               aspect_ratio_whole,
+               aspect_ratio_fraction >= 0 ? aspect_ratio_fraction : -aspect_ratio_fraction,
+               adv_data->prefs->useCustomAspectRatio ? "YES" : "NO");
+    }
     CONSOLE_DEBUG("  Overflow Mode: %d\n", adv_data->prefs->overflowMode);
     CONSOLE_DEBUG("  Spacing: %hu x %hu\n", 
            adv_data->prefs->iconSpacingX, 

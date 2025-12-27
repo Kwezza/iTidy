@@ -11,6 +11,7 @@
 
 #if PLATFORM_AMIGA
 #include <proto/diskfont.h>
+#include <proto/graphics.h>
 #include <graphics/text.h>
 #include <prefs/font.h>
 #endif

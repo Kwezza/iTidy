@@ -13,6 +13,7 @@
 #include "../easy_request_helper.h"
 #include "GUI/StatusWindows/main_progress_window.h"
 #include "GUI/gui_utilities.h"
+#include "../../helpers/exec_list_compat.h"
 #include "icon_types.h"
 #include "itidy_types.h"
 #include "Settings/IControlPrefs.h"

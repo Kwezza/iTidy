@@ -456,8 +456,10 @@ static BOOL FindEntryCallback(const BackupArchiveEntry *entry, void *userData) {
 
 static BOOL CountEntryCallback(const BackupArchiveEntry *entry, void *userData) {
     CountEntryContext *ctx = (CountEntryContext *)userData;
+    if (ctx == NULL || entry == NULL) {
+        return FALSE;
+    }
     ctx->count++;
-    (void)entry; /* Unused but required by callback signature */
     return TRUE; /* Continue */
 }
 

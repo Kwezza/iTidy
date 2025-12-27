@@ -14,6 +14,7 @@
 #include "Settings/IControlPrefs.h"
 #include "layout_preferences.h"
 #include "writeLog.h"
+#include "../../helpers/exec_list_compat.h"
 #include "../easy_request_helper.h"
 #include "GUI/gui_utilities.h"
 

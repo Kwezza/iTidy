@@ -2,9 +2,9 @@
 
 **A Workbench Icon & Window Tidy Tool for AmigaOS 3.x**
 
-iTidy is a small Workbench utility I wrote after getting fed up with the mess left behind by large archive extractions — especially when unpacking thousands of WHDLoad games and demos into drawer trees like `Games/AGA/A/`, `Games/AGA/B/`, and so on. The aim was simple: point it at a folder, let it recurse through everything underneath, and have it tidy icon layouts and drawer windows in a consistent way.
+iTidy is a small Workbench utility I wrote after getting fed up with the mess left behind by large archive extractions - especially when unpacking thousands of WHDLoad games and demos into drawer trees like `Games/AGA/A/`, `Games/AGA/B/`, and so on. The aim was simple: point it at a folder, let it recurse through everything underneath, and have it tidy icon layouts and drawer windows in a consistent way.
 
-It works by updating Workbench `.info` files and drawer/window layout information only — it doesn’t touch the contents of your data files. If you enable backups, iTidy can create LhA restore points so you can roll back icon and layout changes later.
+It works by updating Workbench `.info` files and drawer/window layout information only - it doesn’t touch the contents of your data files. If you enable backups, iTidy can create LhA restore points so you can roll back icon and layout changes later.
 
 
 ## Table of Contents
@@ -58,7 +58,7 @@ iTidy can work with the common icon formats you’ll typically run into on Workb
 - NewIcons (extended colour icons, widely used on OS3.x)
 - OS3.5 / OS3.9 Colour Icons (the newer colour icon format introduced with OS3.5+)
 
-Side note: GlowIcons are supported too — both the older NewIcons-style GlowIcons and the newer Colour Icons version.
+Side note: GlowIcons are supported too - both the older NewIcons-style GlowIcons and the newer Colour Icons version.
 
 iTidy detects icon types automatically, so you don’t need to pick a mode or convert anything first. You just point it at a folder and it will tidy the icons it finds in whatever supported format they’re already using.
 
@@ -70,7 +70,7 @@ iTidy only touches `.info` files and Workbench drawer/window layout information.
 
 If you use iTidy, you do so at your own risk. I can’t accept responsibility for data loss, corruption, or any other problems caused by using (or misusing) the software.
 
-Before running iTidy for the first time — especially on large or important partitions — make sure you have a current, verified backup. If you want to be extra cautious, try it on a small test folder or a copy of your Workbench setup first.
+Before running iTidy for the first time - especially on large or important partitions - make sure you have a current, verified backup. If you want to be extra cautious, try it on a small test folder or a copy of your Workbench setup first.
 
 ---
 
@@ -216,7 +216,7 @@ You can open this window via **Fix Default Tools...** on the main window. It sca
 
 ### What is a Default Tool?
 
-On the Amiga, most data file icons have a “Default Tool” set — the program Workbench runs when you double-click that icon. For example, a `.txt` icon might have `SYS:Utilities/MultiView` as its default tool.
+On the Amiga, most data file icons have a “Default Tool” set - the program Workbench runs when you double-click that icon. For example, a `.txt` icon might have `SYS:Utilities/MultiView` as its default tool.
 
 After copying icons between systems or extracting older archives, those tool paths often don’t match what’s actually installed. When that happens you’ll see the familiar “Unable to open your tool” error.
 
@@ -243,7 +243,7 @@ After copying icons between systems or extracting older archives, those tool pat
 
 Before iTidy changes anything, it automatically saves the original default tool values as small text backups. This backup system is separate from the icon/layout backups used for tidying.
 
-To undo default tool changes, use **Restore Default Tools Backups...** from within this window. (This only restores default tool settings — it won’t restore icon positions or window layouts.)
+To undo default tool changes, use **Restore Default Tools Backups...** from within this window. (This only restores default tool settings - it won’t restore icon positions or window layouts.)
 
 ### Technical Notes
 
@@ -345,6 +345,18 @@ A few tips:
 - Avoid running other disk-heavy tasks at the same time.
 - If you’re doing a huge collection, it can be quicker (and safer) to work in chunks (for example `WHDLoad:Games` first, then `WHDLoad:Demos`) rather than doing everything in one run.
 
+### Icons aren't moved, and the progress log shows no icons found.
+
+Check the folder in Workbench and see if the menu `Window->Show->All Files` is selected. This option shows the contents of the folder by giving each item a temporary icon, which won’t be visible to iTidy.
+
+If you want iTidy to tidy this folder, you should create real icons first. Select the folder’s contents via `Window->Select Contents`, then choose `Icons->Snapshot`. Default icons will be created, and iTidy will be able to process them.
+
+## iTidy is skipping some folders that contain valid icons
+
+By default, iTidy will skip processing folders if the parent folder doesn’t have an icon.
+
+To bypass this, go to Advanced Settings and untick "Skip hidden folders"
+
 ### Icons Don’t Open (“Unable to open your tool”)
 
 This usually means an icon’s Default Tool points to something that isn’t installed on your system.
@@ -363,7 +375,7 @@ iTidy only touches `.info` files and Workbench drawer/window layout information.
 
 If you use iTidy, you do so at your own risk. I can’t accept responsibility for data loss, corruption, or any other damage caused by using (or misusing) the software.
 
-Before running iTidy for the first time — especially on large or important partitions — make sure you have a current, verified backup. If you want to be extra cautious, try it on a small test folder or a copy of your Workbench setup first.
+Before running iTidy for the first time - especially on large or important partitions - make sure you have a current, verified backup. If you want to be extra cautious, try it on a small test folder or a copy of your Workbench setup first.
 
 ---
 
