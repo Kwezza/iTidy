@@ -7,6 +7,8 @@
 @{APEN 2}@{B}iTidy v2.0@{UB}@{APEN 1}
 ==========
 
+@{B}A Workbench Icon & Window Tidy Tool for AmigaOS 3.x@{UB}
+
 iTidy is a small Workbench utility I wrote after getting fed up with the
 mess left behind by large archive extractions -- especially when unpacking
 thousands of WHDLoad games and demos into drawer trees like
@@ -19,15 +21,15 @@ information only -- it doesn't touch the contents of your data files. If
 you enable backups, iTidy can create LhA restore points so you can roll
 back icon and layout changes later.
 
- @{" Requirements             " LINK "REQUIREMENTS"}
- @{" Introduction             " LINK "INTRODUCTION"}
- @{" Getting Started          " LINK "GETTING_STARTED"}
- @{" Main Window              " LINK "MAIN_WINDOW"}
- @{" Advanced Settings        " LINK "ADVANCED_SETTINGS"}
- @{" Default Tool Analysis    " LINK "DEFAULT_TOOL_ANALYSIS"}
- @{" Restoring Backups        " LINK "RESTORING_BACKUPS"}
- @{" Tips & Troubleshooting   " LINK "TIPS_TROUBLESHOOTING"}
- @{" Credits & Version Info   " LINK "CREDITS_VERSION_INFO"}
+ @{" Requirements             " LINK REQUIREMENTS}
+ @{" Introduction             " LINK INTRODUCTION}
+ @{" Getting Started          " LINK GETTING_STARTED}
+ @{" Main Window              " LINK MAIN_WINDOW}
+ @{" Advanced Settings        " LINK ADVANCED_SETTINGS}
+ @{" Default Tool Analysis    " LINK DEFAULT_TOOL_ANALYSIS}
+ @{" Restoring Backups        " LINK RESTORING_BACKUPS}
+ @{" Tips & Troubleshooting   " LINK TIPS_TROUBLESHOOTING}
+ @{" Credits & Version Info   " LINK CREDITS_VERSION_INFO}
 
 --------------------------------------------------------------------------
 
@@ -677,6 +679,28 @@ A few tips:
   "WHDLoad:Demos") rather than doing everything in one run.
 
 
+@{APEN 2}ICONS AREN'T MOVED, AND THE PROGRESS LOG SHOWS NO ICONS FOUND.@{APEN 1}
+--------------------------------------------------------------
+
+Check the folder in Workbench and see if the menu "Window->Show->All
+Files" is selected. This option shows the contents of the folder by giving
+each item a temporary icon, which won't be visible to iTidy.
+
+If you want iTidy to tidy this folder, you should create real icons first.
+Select the folder's contents via "Window->Select Contents", then choose
+"Icons->Snapshot". Default icons will be created, and iTidy will be able
+to process them.
+
+
+@{APEN 2}ITIDY IS SKIPPING SOME FOLDERS THAT CONTAIN VALID ICONS@{APEN 1}
+-------------------------------------------------------
+
+By default, iTidy will skip processing folders if the parent folder
+doesn't have an icon.
+
+To bypass this, go to Advanced Settings and untick "Skip hidden folders"
+
+
 @{APEN 2}ICONS DON'T OPEN ("UNABLE TO OPEN YOUR TOOL")@{APEN 1}
 ---------------------------------------------
 
@@ -707,7 +731,7 @@ If you use iTidy, you do so at your own risk. I can't accept
 responsibility for data loss, corruption, or any other damage caused by
 using (or misusing) the software.
 
-Before running iTidy for the first time -- especially on large or
+Before running iTidy for the first time - especially on large or
 important partitions -- make sure you have a current, verified backup. If
 you want to be extra cautious, try it on a small test folder or a copy of
 your Workbench setup first.
