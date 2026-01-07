@@ -27,7 +27,7 @@
 void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
 {
     struct DiskObject *diskObject;
-    char **toolTypes;
+    STRPTR *toolTypes;
     char *toolType;
     char *prefix = "IM1=";
     int i;
@@ -275,7 +275,7 @@ BOOL IsNewIconPath(const STRPTR filePath)
     BOOL newIconFormat = FALSE;
     struct DiskObject *diskObject = NULL;
     char *adjustedFilePath = NULL;
-    char **toolTypes;
+    STRPTR *toolTypes;
 
     /* Check if the provided filepath ends with ".info" */
     size_t len = strlen(filePath);
@@ -560,7 +560,7 @@ int isOS35IconFormat(const char *filename)
 }
 BOOL IsNewIcon(struct DiskObject *diskObject)
 {
-    char **toolTypes;
+    STRPTR *toolTypes;
     BOOL newIconFormat = FALSE;
 
     toolTypes = diskObject->do_ToolTypes;

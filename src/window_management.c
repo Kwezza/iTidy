@@ -878,7 +878,6 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
                                    childIconDetails.position.x + childIconDetails.size.width;
                     proposedTop = parentWindowInfo.top + prefsIControl.currentTitleBarHeight + 
                                   contentAreaTopOffset +
-                                  childIconDetails.position.y + childIconDetails.size.height; 
                                   childIconDetails.position.y + childIconDetails.size.height;
                     
                     log_info(LOG_GUI, "    Proposed position: left=%d, top=%d (bottom-right of icon)\n",

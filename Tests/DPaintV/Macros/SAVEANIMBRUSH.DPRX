@@ -1,7 +1,0 @@
-/* DPaint Generated ARexx Macro */
-
-ADDRESS "DPAINT.1"
-LOCKGUI
-
-SAVEANIMBRUSH 
-UNLOCKGUI

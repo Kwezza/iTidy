@@ -29,22 +29,12 @@
 #include "platform/platform.h"
 #include "default_tool_backup.h"
 #include "helpers/listview_simple_columns.h"
+#include "../../helpers/exec_list_compat.h"
 #include "../easy_request_helper.h"
 #include "writeLog.h"
 #include "Settings/IControlPrefs.h"  /* For prefsIControl global */
 #include "string_functions.h"
 #include "GUI/gui_utilities.h"
-
-/* NewList macro if not available */
-#ifndef NewList
-#define NewList(l) \
-    do { \
-        struct List *_list = (l); \
-        _list->lh_Head = (struct Node *)&_list->lh_Tail; \
-        _list->lh_Tail = NULL; \
-        _list->lh_TailPred = (struct Node *)&_list->lh_Head; \
-    } while(0)
-#endif
 
 /* Forward declarations for external interface */
 struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_manager);
@@ -313,7 +303,7 @@ static void populate_session_list(iTidy_ToolRestoreData *data)
             }
             
             /* Format changed count */
-            sprintf(changed_str, "%d", session->icons_changed);
+            sprintf(changed_str, "%u", (unsigned int)session->icons_changed);
             
             /* Build cell values array */
             cell_values[0] = formatted_date;
@@ -438,7 +428,8 @@ static void populate_changes_list(iTidy_ToolRestoreData *data)
             /* Second row: Icon count */
             count_line = (char *)whd_malloc(128);
             if (count_line) {
-                sprintf(count_line, "Total icons updated: %d", change->icon_count);
+                sprintf(count_line, "Total icons updated: %u",
+                    (unsigned int)change->icon_count);
                 
                 display_node = AllocVec(sizeof(struct Node), MEMF_CLEAR);
                 if (display_node) {
@@ -561,8 +552,6 @@ struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_
     UWORD button_height, window_height;
     struct TextAttr listview_font;
     UWORD font_char_width;
-    
-    (void)backup_manager;  /* Not used - we call iTidy_ScanBackupSessions directly */
     
     /* Use system font from global prefsIControl (already loaded at startup) */
     listview_font.ta_Name = prefsIControl.systemFontName;

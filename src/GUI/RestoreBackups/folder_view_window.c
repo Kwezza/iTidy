@@ -18,6 +18,7 @@
 #include <libraries/gadtools.h>
 #include <exec/memory.h>
 #include <exec/lists.h>
+#include "../../helpers/exec_list_compat.h"
 
 #include "folder_view_window.h"
 #include "writeLog.h"

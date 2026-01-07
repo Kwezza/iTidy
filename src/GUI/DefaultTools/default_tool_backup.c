@@ -6,9 +6,15 @@
  */
 
 #include "platform/platform.h"
+#include <platform/amiga_headers.h>
 #include "default_tool_backup.h"
 #include "path_utilities.h"
 #include "writeLog.h"
+#include "../../helpers/exec_list_compat.h"
+
+#if PLATFORM_AMIGA
+extern LONG SetIconDefaultTool(CONST_STRPTR iconName, CONST_STRPTR newDefaultTool);
+#endif
 
 #include <exec/memory.h>
 #include <dos/dos.h>
@@ -333,9 +339,10 @@ void iTidy_EndBackupSession(iTidy_ToolBackupManager *manager)
         return;
     
     /* Write final statistics to session.txt */
-    sprintf(footer, "Icons changed: %d\nIcons skipped: %d\nTotal processed: %d\n",
-            manager->icons_changed, manager->icons_skipped,
-            manager->icons_changed + manager->icons_skipped);
+        sprintf(footer, "Icons changed: %u\nIcons skipped: %u\nTotal processed: %u\n",
+            (unsigned int)manager->icons_changed,
+            (unsigned int)manager->icons_skipped,
+            (unsigned int)(manager->icons_changed + manager->icons_skipped));
     Write(manager->session_file, footer, strlen(footer));
     
     /* Close files */
@@ -351,8 +358,10 @@ void iTidy_EndBackupSession(iTidy_ToolBackupManager *manager)
         manager->changes_file = 0;
     }
     
-    append_to_log("Backup session ended: %s (%d changed, %d skipped)\n",
-                 manager->session_id, manager->icons_changed, manager->icons_skipped);
+    append_to_log("Backup session ended: %s (%u changed, %u skipped)\n",
+                 manager->session_id,
+                 (unsigned int)manager->icons_changed,
+                 (unsigned int)manager->icons_skipped);
     
     manager->session_active = FALSE;
 }
@@ -475,11 +484,11 @@ UWORD iTidy_ScanBackupSessions(struct List *session_list)
             session->display_text = (char *)whd_malloc(256);
             if (session->display_text)
             {
-                sprintf(session->display_text, "%-20s | %-6s | %-46s | %d changed",
+                sprintf(session->display_text, "%-20s | %-6s | %-46s | %u changed",
                         session->date_string,
                         session->mode,
                         shortened_path,
-                        session->icons_changed);
+                    (unsigned int)session->icons_changed);
                 
                 session->node.ln_Name = session->display_text;
             }
@@ -493,7 +502,7 @@ UWORD iTidy_ScanBackupSessions(struct List *session_list)
     FreeDosObject(DOS_FIB, fib);
     UnLock(lock);
     
-    append_to_log("Found %d backup sessions\n", count);
+    append_to_log("Found %u backup sessions\n", (unsigned int)count);
     return count;
 }
 
@@ -610,10 +619,10 @@ UWORD iTidy_LoadToolChanges(const char *session_id, struct List *tool_change_lis
                 change->display_text = (char *)whd_malloc(256);
                 if (change->display_text)
                 {
-                    sprintf(change->display_text, "%s -> %s | %d icon%s",
+                        sprintf(change->display_text, "%s -> %s | %u icon%s",
                             old_tool[0] ? old_tool : "(none)",
                             new_tool[0] ? new_tool : "(none)",
-                            change->icon_count,
+                                (unsigned int)change->icon_count,
                             change->icon_count == 1 ? "" : "s");
                     
                     change->node.ln_Name = change->display_text;
@@ -640,17 +649,17 @@ UWORD iTidy_LoadToolChanges(const char *session_id, struct List *tool_change_lis
             change->display_text = (char *)whd_malloc(256);
             if (change->display_text)
             {
-                sprintf(change->display_text, "%s -> %s | %d icon%s",
+                    sprintf(change->display_text, "%s -> %s | %u icon%s",
                         change->old_tool[0] ? change->old_tool : "(none)",
                         change->new_tool[0] ? change->new_tool : "(none)",
-                        change->icon_count,
+                            (unsigned int)change->icon_count,
                         change->icon_count == 1 ? "" : "s");
                 
                 change->node.ln_Name = change->display_text;
                 
-                log_message(LOG_BACKUP, LOG_LEVEL_DEBUG,
-                            "UPDATE CHANGE: old='%s' new='%s' count=%d display='%s' ln_Name='%s'",
-                            change->old_tool, change->new_tool, change->icon_count,
+                    log_message(LOG_BACKUP, LOG_LEVEL_DEBUG,
+                                "UPDATE CHANGE: old='%s' new='%s' count=%u display='%s' ln_Name='%s'",
+                                change->old_tool, change->new_tool, (unsigned int)change->icon_count,
                             change->display_text, change->node.ln_Name);
             }
         }
@@ -658,7 +667,8 @@ UWORD iTidy_LoadToolChanges(const char *session_id, struct List *tool_change_lis
     
     Close(file);
     
-    append_to_log("Loaded %d unique tool changes from session %s\n", count, session_id);
+    append_to_log("Loaded %u unique tool changes from session %s\n",
+                 (unsigned int)count, session_id);
     return count;
 }
 
@@ -750,7 +760,8 @@ UWORD iTidy_LoadBackupEntries(const char *session_id, struct List *entry_list)
     
     Close(file);
     
-    append_to_log("Loaded %d entries from session %s\n", count, session_id);
+    append_to_log("Loaded %u entries from session %s\n",
+                 (unsigned int)count, session_id);
     return count;
 }
 
@@ -822,7 +833,8 @@ BOOL iTidy_RestoreAllIcons(const char *session_id,
     if (failed_count)
         *failed_count = failed;
     
-    append_to_log("Restore complete: %d succeeded, %d failed\n", success, failed);
+    append_to_log("Restore complete: %u succeeded, %u failed\n",
+                 (unsigned int)success, (unsigned int)failed);
     
     return (success > 0);
 }
@@ -890,7 +902,8 @@ BOOL iTidy_RestoreToolChange(const char *session_id,
     if (failed_count)
         *failed_count = failed;
     
-    append_to_log("Restore complete: %d succeeded, %d failed\n", success, failed);
+    append_to_log("Restore complete: %u succeeded, %u failed\n",
+                 (unsigned int)success, (unsigned int)failed);
     
     return (success > 0);
 }

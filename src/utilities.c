@@ -12,6 +12,7 @@
 
 #include <stddef.h>
 #include <string.h>
+#include <ctype.h>
 
 /* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
 #include <console_output.h>

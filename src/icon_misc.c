@@ -7,6 +7,7 @@
 #include "icon_misc.h"
 #include "itidy_types.h"
 #include "dos/getDiskDetails.h"
+#include "writeLog.h"
 
 /* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
 #include <console_output.h>

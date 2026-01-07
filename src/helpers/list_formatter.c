@@ -142,13 +142,13 @@
 
 #include "platform/platform.h"
 #include <exec/types.h>
-#include <exec/lists.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <string.h>
 #include <stdio.h>
 
 #include "list_formatter.h"
+#include "exec_list_compat.h"
 #include "../writeLog.h"
 
 /**

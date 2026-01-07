@@ -500,8 +500,9 @@ BOOL TestLhaArchive(const char *lhaPath, const char *archivePath) {
 
 BOOL ListLhaArchive(const char *lhaPath, const char *archivePath,
                     LhaListCallback callback) {
-    (void)lhaPath;
-    (void)archivePath;
-    (void)callback;
-    return FALSE;  /* Not implemented for Amiga yet */
+    if (lhaPath == NULL || archivePath == NULL || callback == NULL) {
+        return FALSE;
+    }
+    /* Not implemented for Amiga yet */
+    return FALSE;
 }

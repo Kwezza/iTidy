@@ -318,7 +318,7 @@ static void parse_program_tooltypes(struct WBStartup *wb_startup)
     }
     
     CONSOLE_DEBUG("DEBUG: Launched from Workbench, wb_startup=0x%08lx\n", (unsigned long)wb_startup);
-    CONSOLE_DEBUG("DEBUG: wb_startup->sm_NumArgs = %d\n", wb_startup->sm_NumArgs);
+    CONSOLE_DEBUG("DEBUG: wb_startup->sm_NumArgs = %ld\n", (long)wb_startup->sm_NumArgs);
     
     /* Open icon.library to use GetDiskObject/FreeDiskObject */
     IconBase = OpenLibrary((STRPTR)"icon.library", 0);
@@ -444,7 +444,7 @@ static BOOL check_tooltype_value(const char *key, const char *value)
         if (g_tooltypes.debug_level_set)
         {
             char level_str[4];
-            sprintf(level_str, "%d", g_tooltypes.debug_level);
+            sprintf(level_str, "%u", (unsigned int)g_tooltypes.debug_level);
             return (stricmp_n(value, level_str, 3) == 0);
         }
         return FALSE;
@@ -711,7 +711,7 @@ int main(int argc, char **argv)
     {
         /* Apply tooltype debug level (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR) */
         set_global_log_level((LogLevel)g_tooltypes.debug_level);
-        log_info(LOG_GENERAL, "ToolType DEBUGLEVEL=%d found - log level applied for startup\n", g_tooltypes.debug_level);
+        log_info(LOG_GENERAL, "ToolType DEBUGLEVEL=%u found - log level applied for startup\n", (unsigned int)g_tooltypes.debug_level);
     }
     else
     {

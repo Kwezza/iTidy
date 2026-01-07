@@ -6,6 +6,8 @@
 #include <proto/dos.h>
 #include "get_fonts.h"
 #include "itidy_types.h"
+#include "../utilities.h"
+#include "../writeLog.h"
 //#include "file_directory_handling.h"
 FontPref *fontPrefs = NULL;
 

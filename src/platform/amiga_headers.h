@@ -18,6 +18,7 @@
     #include <workbench/icon.h>
     #include <proto/exec.h>
     #include <proto/dos.h>
+    #include <proto/utility.h>
     #include <proto/icon.h>
     #include <proto/intuition.h>
     #include <proto/graphics.h>
@@ -32,6 +33,9 @@
     #endif
 #else
     /* Host build stubs for Amiga types */
+
+    typedef char *STRPTR;
+    typedef const char *CONST_STRPTR;
 
     /* Structure definitions for host builds */
     struct Gadget
