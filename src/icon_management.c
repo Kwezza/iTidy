@@ -25,6 +25,8 @@
 #include "dos/getDiskDetails.h"
 #include "Settings/WorkbenchPrefs.h"
 #include "Settings/IControlPrefs.h"
+#include "layout_processor.h"
+#include "GUI/StatusWindows/main_progress_window.h"
 
 /* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
 #include <console_output.h>
@@ -719,6 +721,24 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                         log_debug(LOG_ICONS, "  Icon added successfully, fileCount now: %d\n", fileCount + 1);
 #endif
                         fileCount++;
+                        
+                        /* Update heartbeat status for progress feedback during scan */
+                        {
+                            struct iTidyMainProgressWindow *pw = GetCurrentProgressWindow();
+                            if (pw != NULL)
+                            {
+                                itidy_main_progress_update_heartbeat(pw, "Scanning", fileCount, 0);
+                                /* Also pump events to allow cancellation */
+                                itidy_main_progress_window_handle_events(pw);
+                                
+                                /* Check if user requested cancellation */
+                                if (pw->cancel_requested)
+                                {
+                                    append_to_log("User cancelled during icon scanning at %d icons\n", fileCount);
+                                    goto cleanup_and_return;
+                                }
+                            }
+                        }
                     }
                     else
                     {
@@ -767,6 +787,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
         #endif
     } /* End: pattern matching while loop */
 
+cleanup_and_return:
     /* ================================================================
      * CLEANUP PATTERN MATCHING RESOURCES
      * ================================================================
@@ -778,6 +799,15 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
      * ================================================================
      */
     MatchEnd(anchorPath);
+    
+    /* Clear heartbeat status now that scanning is complete */
+    {
+        struct iTidyMainProgressWindow *pw = GetCurrentProgressWindow();
+        if (pw != NULL)
+        {
+            itidy_main_progress_clear_heartbeat(pw);
+        }
+    }
     
 #if PLATFORM_AMIGA
     /* Free manually allocated AnchorPath+buffer as single block */

@@ -20,6 +20,8 @@
 #include "icon_misc.h"
 #include "layout_preferences.h"
 #include "Settings/WorkbenchPrefs.h"
+#include "layout_processor.h"
+#include "GUI/StatusWindows/main_progress_window.h"
 
 /* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
 #include <console_output.h>
@@ -255,6 +257,29 @@ append_to_log("%-3d | %-4d | %-4d | %-40s\n", i, currentIcon->icon_x, currentIco
                 SetWriteProtection(iconArray->array[i].icon_full_path, 1);
             if (is_delete_protected_icon)
                 SetDeleteProtection(iconArray->array[i].icon_full_path, 1);
+            
+            /* Update heartbeat status for progress feedback during save */
+            {
+                struct iTidyMainProgressWindow *pw = GetCurrentProgressWindow();
+                if (pw != NULL)
+                {
+                    itidy_main_progress_update_heartbeat(pw, "Saving", i + 1, iconArraySize);
+                    /* Also pump events to allow cancellation */
+                    itidy_main_progress_window_handle_events(pw);
+                    
+                    /* Check if user requested cancellation */
+                    if (pw->cancel_requested)
+                    {
+                        append_to_log("User cancelled during icon saving at %d/%d icons\n", i + 1, iconArraySize);
+                        /* Free DiskObject if we have one open */
+                        if (diskObject != NULL)
+                        {
+                            FreeDiskObject(diskObject);
+                        }
+                        goto save_complete;  /* Skip remaining icons but do cleanup */
+                    }
+                }
+            }
 #ifdef DEBUG_MAX
             iconPosition = GetIconPositionFromPath(fileNameNoInfo); // get the current icon position
             if (sanityCheckX != iconPosition.x || sanityCheckY != iconPosition.y)
@@ -271,6 +296,16 @@ append_to_log("%-3d | %-4d | %-4d | %-40s\n", i, currentIcon->icon_x, currentIco
         else
         {
             CONSOLE_ERROR("Invalid icon: %s\n", currentIcon->icon_full_path);
+        }
+    }
+    
+save_complete:
+    /* Clear heartbeat status now that saving is complete */
+    {
+        struct iTidyMainProgressWindow *pw = GetCurrentProgressWindow();
+        if (pw != NULL)
+        {
+            itidy_main_progress_clear_heartbeat(pw);
         }
     }
     

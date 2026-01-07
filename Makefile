@@ -87,8 +87,7 @@ GUI_SRCS = \
 	$(SRC_DIR)/GUI/StatusWindows/progress_common.c \
 	$(SRC_DIR)/GUI/StatusWindows/progress_window.c \
 	$(SRC_DIR)/GUI/StatusWindows/recursive_progress.c \
-	$(SRC_DIR)/GUI/StatusWindows/main_progress_window.c \
-	$(SRC_DIR)/GUI/test_simple_window.c
+	$(SRC_DIR)/GUI/StatusWindows/main_progress_window.c
 
 # Default Tools subsystem source files
 DEFAULT_TOOLS_SRCS = \

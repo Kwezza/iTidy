@@ -15,11 +15,13 @@
 #include <libraries/gadtools.h>
 #include <graphics/gfx.h>
 #include <graphics/text.h>
+#include <graphics/rastport.h>
 #include <proto/intuition.h>
 #include <proto/gadtools.h>
 #include <proto/graphics.h>
 
 #include <string.h>
+#include <stdio.h>
 
 #define ITIDY_MAIN_PROGRESS_TITLE "iTidy - Progress"
 
@@ -144,6 +146,45 @@ BOOL itidy_main_progress_window_open(struct iTidyMainProgressWindow *window_data
         goto cleanup;
     }
 
+    /* Get actual ListView height (may be snapped to row boundary) */
+    {
+        UWORD actual_listview_height = gad->Height;
+        WORD listview_bottom = gad->TopEdge + actual_listview_height;
+        
+        /* Calculate heartbeat text area bounds (between ListView and button)
+         * 
+         * Layout:
+         *   [ListView bottom]
+         *   +-- HEARTBEAT_PAD (4px) --+
+         *   |   heartbeat_area_top    |
+         *   |   [text centered here]  | <- font_height + 2 (for descenders)
+         *   |   heartbeat_area_bottom |
+         *   +-- HEARTBEAT_PAD (4px) --+
+         *   [Button top]
+         *
+         * heartbeat_baseline is where Move() positions text (baseline of text)
+         * We add 2 pixels for descenders when erasing
+         */
+        WORD heartbeat_area_top = listview_bottom + ITIDY_MAIN_PROGRESS_HEARTBEAT_PAD;
+        WORD heartbeat_area_height = font_height + 2;  /* +2 for descenders */
+        
+        window_data->heartbeat_left = gad->LeftEdge;
+        window_data->heartbeat_width = gad->Width;
+        window_data->heartbeat_height = heartbeat_area_height;
+        
+        /* Store top of area for RectFill erase */
+        window_data->heartbeat_area_top = heartbeat_area_top;
+        
+        /* Calculate baseline for centered text: top + font ascender (approximately font_height - 2) */
+        window_data->heartbeat_top = heartbeat_area_top + font_height - 1;
+        
+        window_data->spinner_state = 0;
+        
+        /* Store pen colors from DrawInfo */
+        window_data->text_pen = draw_info->dri_Pens[TEXTPEN];
+        window_data->bg_pen = draw_info->dri_Pens[BACKGROUNDPEN];
+    }
+
     /* Initialize cancel button label to "Cancel" */
     strncpy(g_cancel_button_label, "Cancel", sizeof(g_cancel_button_label) - 1);
     g_cancel_button_label[sizeof(g_cancel_button_label) - 1] = '\0';
@@ -151,8 +192,8 @@ BOOL itidy_main_progress_window_open(struct iTidyMainProgressWindow *window_data
     memset(&ng, 0, sizeof(ng));
     ng.ng_VisualInfo = window_data->visual_info;
     ng.ng_LeftEdge = window_data->history_listview->LeftEdge;
-    ng.ng_TopEdge = window_data->history_listview->TopEdge +
-                    window_data->history_listview->Height + ITIDY_MAIN_PROGRESS_SPACE_Y;
+    /* Position button below heartbeat area (area_top + height + padding) */
+    ng.ng_TopEdge = window_data->heartbeat_area_top + window_data->heartbeat_height + ITIDY_MAIN_PROGRESS_HEARTBEAT_PAD;
     ng.ng_Width = window_data->history_listview->Width;
     ng.ng_Height = button_height;
     ng.ng_GadgetText = (UBYTE *)g_cancel_button_label;  /* Point to mutable buffer */
@@ -518,4 +559,127 @@ void itidy_main_progress_window_set_button_text(struct iTidyMainProgressWindow *
     
     /* Refresh the gadget to display the new text */
     RefreshGList(window_data->cancel_button, window_data->window, NULL, 1);
+}
+
+/*========================================================================*/
+/* Heartbeat Status Functions - Lightweight raw text rendering           */
+/*========================================================================*/
+
+/* Spinner animation characters: |/-\ */
+static const char spinner_chars[] = ITIDY_SPINNER_CHARS;
+
+void itidy_main_progress_clear_heartbeat(struct iTidyMainProgressWindow *window_data)
+{
+    struct RastPort *rp;
+    
+    if (window_data == NULL || window_data->window == NULL)
+    {
+        return;
+    }
+    
+    /* Only erase if heartbeat was actually displayed */
+    if (window_data->heartbeat_visible)
+    {
+        rp = window_data->window->RPort;
+        
+        /* Erase the heartbeat area with background color */
+        SetAPen(rp, window_data->bg_pen);
+        RectFill(rp,
+                 window_data->heartbeat_left,
+                 window_data->heartbeat_area_top,
+                 window_data->heartbeat_left + window_data->heartbeat_width - 1,
+                 window_data->heartbeat_area_top + window_data->heartbeat_height - 1);
+    }
+    
+    /* Reset all heartbeat state for next phase */
+    window_data->spinner_state = 0;
+    window_data->heartbeat_timing_active = FALSE;
+    window_data->heartbeat_visible = FALSE;
+    memset(&window_data->heartbeat_start, 0, sizeof(struct DateStamp));
+}
+
+void itidy_main_progress_update_heartbeat(struct iTidyMainProgressWindow *window_data,
+                                          const char *phase,
+                                          LONG current,
+                                          LONG total)
+{
+    struct RastPort *rp;
+    char status_buffer[80];
+    char spinner_char;
+    int text_len;
+    struct DateStamp now;
+    LONG elapsed_ticks;
+    
+    if (window_data == NULL || window_data->window == NULL || phase == NULL)
+    {
+        return;
+    }
+    
+    /* Start timing on first call of this phase */
+    if (!window_data->heartbeat_timing_active)
+    {
+        DateStamp(&window_data->heartbeat_start);
+        window_data->heartbeat_timing_active = TRUE;
+        window_data->heartbeat_visible = FALSE;
+        return;  /* Don't display on first call - just record start time */
+    }
+    
+    /* Check if enough time has passed to show heartbeat */
+    if (!window_data->heartbeat_visible)
+    {
+        DateStamp(&now);
+        
+        /* Calculate elapsed ticks (50 ticks/sec PAL) */
+        elapsed_ticks = ((now.ds_Days - window_data->heartbeat_start.ds_Days) * 24 * 60 * 60 * 50) +
+                        ((now.ds_Minute - window_data->heartbeat_start.ds_Minute) * 60 * 50) +
+                        (now.ds_Tick - window_data->heartbeat_start.ds_Tick);
+        
+        /* Still under threshold - don't display yet */
+        if (elapsed_ticks < ITIDY_HEARTBEAT_DELAY_TICKS)
+        {
+            return;
+        }
+        
+        /* Threshold exceeded - heartbeat will now be visible */
+        window_data->heartbeat_visible = TRUE;
+    }
+    
+    rp = window_data->window->RPort;
+    
+    /* Get current spinner character and advance state */
+    spinner_char = spinner_chars[window_data->spinner_state];
+    window_data->spinner_state = (window_data->spinner_state + 1) % ITIDY_SPINNER_COUNT;
+    
+    /* Build status string based on whether total is known */
+    if (total > 0)
+    {
+        /* Known total: "/ Saving: 23/47 icons" */
+        snprintf(status_buffer, sizeof(status_buffer), 
+                 "%c %s: %ld/%ld icons", 
+                 spinner_char, phase, current, total);
+    }
+    else
+    {
+        /* Unknown total: "| Scanning: 47 icons found and processed" */
+        /* 'and processed' explains why scanning takes time (icon decryption) */
+        snprintf(status_buffer, sizeof(status_buffer), 
+                 "%c %s: %ld icons found and processed", 
+                 spinner_char, phase, current);
+    }
+    
+    text_len = strlen(status_buffer);
+    
+    /* Erase the heartbeat area with background color */
+    SetAPen(rp, window_data->bg_pen);
+    RectFill(rp,
+             window_data->heartbeat_left,
+             window_data->heartbeat_area_top,
+             window_data->heartbeat_left + window_data->heartbeat_width - 1,
+             window_data->heartbeat_area_top + window_data->heartbeat_height - 1);
+    
+    /* Draw the status text */
+    SetAPen(rp, window_data->text_pen);
+    SetDrMd(rp, JAM1);
+    Move(rp, window_data->heartbeat_left, window_data->heartbeat_top);
+    Text(rp, status_buffer, text_len);
 }

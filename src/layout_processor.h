@@ -121,4 +121,15 @@ BOOL ScanDirectoryForToolsOnly(void);
  */
 BOOL ScanDirectoryForToolsOnlyWithProgress(struct iTidyMainProgressWindow *progress_window);
 
+/**
+ * @brief Get current progress window pointer (for heartbeat updates)
+ * 
+ * Returns the currently active progress window, or NULL if no processing
+ * is in progress. Used by icon scanning and saving functions to provide
+ * per-icon heartbeat feedback.
+ * 
+ * @return Pointer to active progress window, or NULL
+ */
+struct iTidyMainProgressWindow *GetCurrentProgressWindow(void);
+
 #endif /* LAYOUT_PROCESSOR_H */

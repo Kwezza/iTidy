@@ -10,14 +10,14 @@
 @{B}A Workbench Icon & Window Tidy Tool for AmigaOS 3.x@{UB}
 
 iTidy is a small Workbench utility I wrote after getting fed up with the
-mess left behind by large archive extractions -- especially when unpacking
+mess left behind by large archive extractions - especially when unpacking
 thousands of WHDLoad games and demos into drawer trees like
 "Games/AGA/A/", "Games/AGA/B/", and so on. The aim was simple: point it at
 a folder, let it recurse through everything underneath, and have it tidy
 icon layouts and drawer windows in a consistent way.
 
 It works by updating Workbench ".info" files and drawer/window layout
-information only -- it doesn't touch the contents of your data files. If
+information only - it doesn't touch the contents of your data files. If
 you enable backups, iTidy can create LhA restore points so you can roll
 back icon and layout changes later.
 
@@ -123,7 +123,7 @@ Workbench 3.x setups, including:
 - OS3.5 / OS3.9 Colour Icons (the newer colour icon format introduced
   with OS3.5+)
 
-Side note: GlowIcons are supported too -- both the older NewIcons-style
+Side note: GlowIcons are supported too - both the older NewIcons-style
 GlowIcons and the newer Colour Icons version.
 
 iTidy detects icon types automatically, so you don't need to pick a mode
@@ -147,10 +147,10 @@ If you use iTidy, you do so at your own risk. I can't accept
 responsibility for data loss, corruption, or any other problems caused by
 using (or misusing) the software.
 
-Before running iTidy for the first time -- especially on large or
-important partitions -- make sure you have a current, verified backup. If
-you want to be extra cautious, try it on a small test folder or a copy of
-your Workbench setup first.
+Before running iTidy for the first time - especially on large or important
+partitions - make sure you have a current, verified backup. If you want to
+be extra cautious, try it on a small test folder or a copy of your
+Workbench setup first.
 
 --------------------------------------------------------------------------
 
@@ -432,9 +432,9 @@ longer exist.
 @{APEN 2}WHAT IS A DEFAULT TOOL?@{APEN 1}
 -----------------------
 
-On the Amiga, most data file icons have a "Default Tool" set -- the
-program Workbench runs when you double-click that icon. For example, a
-".txt" icon might have "SYS:Utilities/MultiView" as its default tool.
+On the Amiga, most data file icons have a "Default Tool" set - the program
+Workbench runs when you double-click that icon. For example, a ".txt" icon
+might have "SYS:Utilities/MultiView" as its default tool.
 
 After copying icons between systems or extracting older archives, those
 tool paths often don't match what's actually installed. When that happens
@@ -483,7 +483,7 @@ tool values as small text backups. This backup system is separate from the
 icon/layout backups used for tidying.
 
 To undo default tool changes, use @{B}Restore Default Tools Backups...@{UB} from
-within this window. (This only restores default tool settings -- it won't
+within this window. (This only restores default tool settings - it won't
 restore icon positions or window layouts.)
 
 
@@ -731,10 +731,10 @@ If you use iTidy, you do so at your own risk. I can't accept
 responsibility for data loss, corruption, or any other damage caused by
 using (or misusing) the software.
 
-Before running iTidy for the first time - especially on large or
-important partitions -- make sure you have a current, verified backup. If
-you want to be extra cautious, try it on a small test folder or a copy of
-your Workbench setup first.
+Before running iTidy for the first time - especially on large or important
+partitions - make sure you have a current, verified backup. If you want to
+be extra cautious, try it on a small test folder or a copy of your
+Workbench setup first.
 
 --------------------------------------------------------------------------
 

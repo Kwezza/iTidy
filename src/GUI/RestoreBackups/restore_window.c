@@ -56,7 +56,6 @@
 #include "backup_restore.h"
 #include "writeLog.h"
 #include "folder_view_window.h"
-#include "GUI/test_simple_window.h"  /* TESTING: Simple window test */
 #include "GUI/gui_utilities.h"
 #include "backup_runs.h"
 #include "backup_catalog.h"

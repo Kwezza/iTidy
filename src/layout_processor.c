@@ -115,6 +115,13 @@ extern int g_ToolCacheCount;
 /* Global progress window context (set by ProcessDirectoryWithPreferencesAndProgress) */
 static struct iTidyMainProgressWindow *g_progressWindow = NULL;
 
+/* Getter for progress window - allows icon_management.c and file_directory_handling.c
+ * to update the heartbeat status without needing access to the static variable */
+struct iTidyMainProgressWindow *GetCurrentProgressWindow(void)
+{
+    return g_progressWindow;
+}
+
 /* Global statistics tracking */
 static ULONG g_foldersProcessed = 0;
 static ULONG g_iconsProcessed = 0;
@@ -139,6 +146,18 @@ static struct DateStamp g_endTime;
         if (g_progressWindow && g_progressWindow->cancel_requested) { \
             CONSOLE_STATUS("\n*** User cancelled operation ***\n"); \
             return FALSE; \
+        } \
+    } while (0)
+
+/* Helper macro to pump events and check for cancel during long operations */
+#define PUMP_AND_CHECK_CANCEL() \
+    do { \
+        if (g_progressWindow) { \
+            itidy_main_progress_window_handle_events(g_progressWindow); \
+            if (g_progressWindow->cancel_requested) { \
+                CONSOLE_STATUS("\n*** User cancelled operation ***\n"); \
+                return FALSE; \
+            } \
         } \
     } while (0)
 
@@ -387,6 +406,12 @@ BOOL ProcessDirectoryWithPreferences(void)
     {
         success = ProcessSingleDirectory(sanitizedPath, prefs,
                                         trackerBuilt ? &windowTracker : NULL);
+    }
+    
+    /* Clear heartbeat status now that processing is complete */
+    if (g_progressWindow != NULL)
+    {
+        itidy_main_progress_clear_heartbeat(g_progressWindow);
     }
     
     /* Free window tracker if it was built */
@@ -1497,9 +1522,14 @@ static BOOL ProcessSingleDirectory(const char *path,
 #ifdef DEBUG
     append_to_log("==== SECTION: SORTING ICONS ====\n");
 #endif
+    
+    /* Pump events before sort to register any pending Cancel clicks */
+    PUMP_AND_CHECK_CANCEL();
+    
     SortIconArrayWithPreferences(iconArray, prefs);
     
-    CHECK_CANCEL();
+    /* Pump events after sort to allow cancellation */
+    PUMP_AND_CHECK_CANCEL();
     
     /* Calculate and apply new positions based on sorted order */
 #ifdef DEBUG
@@ -1534,6 +1564,9 @@ static BOOL ProcessSingleDirectory(const char *path,
 #endif
             CalculateLayoutPositions(iconArray, prefs, finalColumns);
         }
+        
+        /* Pump events after layout calculation to allow cancellation */
+        PUMP_AND_CHECK_CANCEL();
     }
     
     /* Resize window if requested */
@@ -1543,7 +1576,7 @@ static BOOL ProcessSingleDirectory(const char *path,
         resizeFolderToContents((char *)path, iconArray, windowTracker, prefs);
     }
     
-    CHECK_CANCEL();
+    PUMP_AND_CHECK_CANCEL();
     
     /* Save icon positions to disk */
     PROGRESS_STATUS("  Saving icon positions...");
