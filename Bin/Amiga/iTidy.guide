@@ -1,10 +1,10 @@
 @DATABASE "Readme"
 @INDEX MAIN
 
-@NODE MAIN "iTidy v2.0"
+@NODE MAIN "iTidy v1.0"
 @NEXT REQUIREMENTS
 
-@{APEN 2}@{B}iTidy v2.0@{UB}@{APEN 1}
+@{APEN 2}@{B}iTidy v1.0@{UB}@{APEN 1}
 ==========
 
 @{B}A Workbench Icon & Window Tidy Tool for AmigaOS 3.x@{UB}

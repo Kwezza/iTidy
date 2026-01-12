@@ -9,14 +9,14 @@
 
 @{b}I@{ub}
 
-  @{"iTidy v2.0" LINK README}
+  @{"iTidy v1.0"  LINK README}
 @{b}M@{ub}
 
   @{"Main" LINK MAIN}
 @ENDNODE
 
-@NODE README "iTidy v2.0"
-@{b}@{u}iTidy v2.0@{uu}@{ub}
+@NODE README "iTidy v1.0"
+@{b}@{u}iTidy v1.0@{uu}@{ub}
 
 @{b}A Workbench Icon & Window Tidy Tool for AmigaOS 3.x@{ub}
 

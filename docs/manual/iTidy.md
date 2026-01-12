@@ -1,4 +1,4 @@
-# iTidy v2.0
+# iTidy v1.0
 
 **A Workbench Icon & Window Tidy Tool for AmigaOS 3.x**
 

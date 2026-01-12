@@ -199,7 +199,7 @@ BOOL ExecuteLhaCommand(const char *command) {
 /*========================================================================*/
 
 BOOL CreateLhaArchive(const char *lhaPath, const char *archivePath, 
-                      const char *sourceDir) {
+                      const char *sourceDir, BOOL isRoot) {
     char command[MAX_COMMAND_LEN];
     char absArchivePath[MAX_COMMAND_LEN];
     int len;
@@ -222,15 +222,29 @@ BOOL CreateLhaArchive(const char *lhaPath, const char *archivePath,
     
     /* Amiga: Pass full paths directly to LHA */
     /* Archive only .info files in the root of the source directory (non-recursive) */
-    /* Format: C:LhA a "archive.lha" source/dir/*.info */
-    len = snprintf(command, sizeof(command),
-                  "%s a \"%s\" %s/*.info",
-                  lhaPath, absArchivePath, sourceDir);
+    /* For root folders: "SYS:#?.info" - matches files in root */
+    /* For non-root: "SYS:Programs/#?.info" - matches files inside folder */
+    /* CRITICAL: Never use "SYS:/" as it's invalid on AmigaDOS */
+    if (isRoot) {
+        /* Root folder: append pattern directly (e.g., "SYS:#?.info") */
+        len = snprintf(command, sizeof(command),
+                      "%s a \"%s\" \"%s#?.info\"",
+                      lhaPath, absArchivePath, sourceDir);
+    } else {
+        /* Non-root folder: add trailing slash (e.g., "SYS:Programs/#?.info") */
+        len = snprintf(command, sizeof(command),
+                      "%s a \"%s\" \"%s/#?.info\"",
+                      lhaPath, absArchivePath, sourceDir);
+    }
     
     if (len >= MAX_COMMAND_LEN) {
         append_to_log("[BACKUP] ERROR: Command too long\n");
         return FALSE;
     }
+    
+    /* Log the LHA command at INFO level for debugging */
+    log_info(LOG_BACKUP, "[LHA] Command: %s\n", command);
+    append_to_log("[BACKUP] [LHA] Command: %s\n", command);
     
     result = ExecuteLhaCommand(command);
     
@@ -408,6 +422,9 @@ BOOL ExtractLhaArchive(const char *lhaPath, const char *archivePath,
         return FALSE;
     }
     
+    /* Log the LHA command at INFO level for debugging */
+    log_info(LOG_BACKUP, "[LHA] Command: %s\n", command);
+    append_to_log("[BACKUP] [LHA] Command: %s\n", command);
     append_to_log("[BACKUP] Extracting to: %s\n", destDir);
     result = ExecuteLhaCommand(command);
     
@@ -463,6 +480,9 @@ BOOL ExtractFileFromArchive(const char *lhaPath, const char *archivePath,
         UnLock(destLock);
         return FALSE;
     }
+    
+    /* Log the LHA command at INFO level for debugging */
+    log_info(LOG_BACKUP, "[LHA] Command: %s\n", command);
     
     result = ExecuteLhaCommand(command);
     

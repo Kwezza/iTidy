@@ -209,7 +209,7 @@ BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath, UWORD icon
     
     /* Create LHA archive of folder contents */
     /* DEBUG_LOG("Creating archive..."); */
-    if (!CreateLhaArchive(ctx->lhaPath, archivePath, folderPath)) {
+    if (!CreateLhaArchive(ctx->lhaPath, archivePath, folderPath, isRoot)) {
         /* DEBUG_LOG("Failed to create archive"); */
         ctx->failedBackups++;
         

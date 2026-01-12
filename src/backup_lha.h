@@ -64,19 +64,24 @@ BOOL GetLhaVersion(const char *lhaPath, char *versionBuffer);
  * Command format (host):
  *   lha a -r archive.lha sourcedir/
  * 
- * Command format (Amiga):
- *   LhA a -r archive.lha sourcedir
+ * Command format (Amiga - root):
+ *   LhA a archive.lha SYS:#?.info
+ * 
+ * Command format (Amiga - non-root):
+ *   LhA a archive.lha SYS:Programs/#?.info
  * 
  * @param lhaPath Path to LHA executable
  * @param archivePath Full path where archive should be created
  * @param sourceDir Directory to archive (can be root volume)
+ * @param isRoot TRUE if sourceDir is a root folder (e.g., "SYS:"), FALSE otherwise
  * @return TRUE if archive created successfully, FALSE on error
  * 
  * Example:
- *   CreateLhaArchive("lha", "Run_0001/000/00001.lha", "DH0:Projects/");
+ *   CreateLhaArchive("lha", "Run_0001/000/00001.lha", "DH0:Projects/", FALSE);
+ *   CreateLhaArchive("lha", "Run_0001/000/00002.lha", "SYS:", TRUE);
  */
 BOOL CreateLhaArchive(const char *lhaPath, const char *archivePath, 
-                      const char *sourceDir);
+                      const char *sourceDir, BOOL isRoot);
 
 /**
  * @brief Add path marker file to existing archive

@@ -40,6 +40,7 @@
 #include "../path_utilities.h"
 #include "GUI/gui_utilities.h"
 #include "Settings/WorkbenchPrefs.h"
+#include "../backup_lha.h"
 
 /*------------------------------------------------------------------------*/
 /* External Tool Cache Variables                                         */
@@ -1405,6 +1406,45 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         
                         /* Update backup preferences */
                         prefs->backupPrefs.enableUndoBackup = win_data->enable_backup;
+                        
+                        /* Check if LHA is available when backup is enabled */
+                        if (prefs->enable_backup)
+                        {
+                            char lha_path[32];
+                            if (!CheckLhaAvailable(lha_path))
+                            {
+                                /* LHA not found - ask user if they want to continue */
+                                LONG result = ShowEasyRequest(win_data->window,
+                                    "LHA Not Found",
+                                    "LHA archiver not found in C:, SYS:C/, or SYS:Tools/.\n"
+                                    "Backups cannot be created without LHA.\n\n"
+                                    "Continue without backups?",
+                                    "Continue|Cancel");
+                                
+                                if (result == 0)
+                                {
+                                    /* User chose Cancel - abort operation */
+                                    CONSOLE_STATUS("Operation cancelled - LHA not available\n");
+                                    break;
+                                }
+                                else
+                                {
+                                    /* User chose Continue - disable backup */
+                                    CONSOLE_WARNING("Continuing without backups (LHA not found)\n");
+                                    prefs->enable_backup = FALSE;
+                                    prefs->backupPrefs.enableUndoBackup = FALSE;
+                                    win_data->enable_backup = FALSE;
+                                    
+                                    /* Update checkbox to reflect disabled backup */
+                                    if (win_data->backup_check)
+                                    {
+                                        GT_SetGadgetAttrs(win_data->backup_check, win_data->window, NULL,
+                                                         GTCB_Checked, FALSE,
+                                                         TAG_DONE);
+                                    }
+                                }
+                            }
+                        }
                         
                         /* Advanced settings (aspect ratio, spacing, etc.) are preserved */
                         /* Beta settings are preserved */
