@@ -85,7 +85,6 @@ struct iTidyAdvancedWindow
     struct Gadget *skip_hidden_check;
     struct Gadget *column_layout_check;
     struct Gadget *strip_newicon_borders_check;
-    struct Gadget *beta_options_btn;
     struct Gadget *ok_btn;
     struct Gadget *cancel_btn;
     

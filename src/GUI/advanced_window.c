@@ -20,7 +20,6 @@
 #include <console_output.h>
 
 #include "advanced_window.h"
-#include "beta_options_window.h"
 #include "layout_preferences.h"
 #include "writeLog.h"
 #include "../Settings/IControlPrefs.h"
@@ -485,159 +484,148 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
     current_y += ADV_WINDOW_GAP_BETWEEN_CHECKBOXES_VERTICAL + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
     
     /*--------------------------------------------------------------------*/
-    /* ROWS 9-13: Checkbox rows (left-aligned)                           */
+    /* ROWS 9-13: Checkbox rows (left-aligned, some two-column)          */
     /*--------------------------------------------------------------------*/
     
-    /* ROW 9: Reverse Sort Checkbox */
-    ng.ng_LeftEdge = ADV_CONTENT_LEFT;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 26;
-    ng.ng_Height = button_height - 4;
-    ng.ng_GadgetText = "Reverse Sort (Z->A)";
-    ng.ng_GadgetID = GID_ADV_REVERSE_SORT;
-    ng.ng_Flags = PLACETEXT_RIGHT;
-    
-    adv_data->reverse_sort_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
-        GTCB_Checked, adv_data->reverse_sort_enabled,
-        TAG_END);
-    
-    if (!gad)
+    /* ROW 9: Reverse Sort (left) + Skip Hidden Folders (right) */
     {
-        CONSOLE_ERROR("Failed to create reverse sort checkbox\n");
-        return NULL;
-    }
-    
-    current_y += ADV_WINDOW_GAP_BETWEEN_CHECKBOXES_VERTICAL + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
-    
-    /* ROW 10: Optimize Column Widths Checkbox */
-    ng.ng_LeftEdge = ADV_CONTENT_LEFT;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 26;
-    ng.ng_Height = button_height - 4;
-    ng.ng_GadgetText = "Optimize Column Widths";
-    ng.ng_GadgetID = GID_ADV_OPTIMIZE_COLS;
-    ng.ng_Flags = PLACETEXT_RIGHT;
-    
-    adv_data->optimize_cols_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
-        GTCB_Checked, adv_data->optimize_cols_enabled,
-        TAG_END);
-    
-    if (!gad)
-    {
-        CONSOLE_ERROR("Failed to create optimize columns checkbox\n");
-        return NULL;
-    }
-    
-    current_y += ADV_WINDOW_GAP_BETWEEN_CHECKBOXES_VERTICAL + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
-    
-    /* ROW 11: Column Layout Checkbox */
-    ng.ng_LeftEdge = ADV_CONTENT_LEFT;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 26;
-    ng.ng_Height = button_height - 4;
-    ng.ng_GadgetText = "Column Layout (centered columns) ";
-    ng.ng_GadgetID = GID_ADV_COLUMN_LAYOUT;
-    ng.ng_Flags = PLACETEXT_RIGHT;
-    
-    adv_data->column_layout_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
-        GTCB_Checked, adv_data->column_layout_enabled,
-        TAG_END);
-    
-    if (!gad)
-    {
-        CONSOLE_ERROR("Failed to create column layout checkbox\n");
-        return NULL;
-    }
-    
-    current_y += ADV_WINDOW_GAP_BETWEEN_CHECKBOXES_VERTICAL + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
-    
-    /* ROW 12: Skip Hidden Folders Checkbox */
-    ng.ng_LeftEdge = ADV_CONTENT_LEFT;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 26;
-    ng.ng_Height = button_height - 4;
-    ng.ng_GadgetText = "Skip Hidden Folders";
-    ng.ng_GadgetID = GID_ADV_SKIP_HIDDEN;
-    ng.ng_Flags = PLACETEXT_RIGHT;
-    
-    adv_data->skip_hidden_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
-        GTCB_Checked, adv_data->skip_hidden_enabled,
-        TAG_END);
-    
-    if (!gad)
-    {
-        CONSOLE_ERROR("Failed to create skip hidden folders checkbox\n");
-        return NULL;
-    }
-    
-    current_y += ADV_WINDOW_GAP_BETWEEN_CHECKBOXES_VERTICAL + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
-    
-    /* ROW 13: Strip NewIcon Borders Checkbox */
-    ng.ng_LeftEdge = ADV_CONTENT_LEFT;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = 26;
-    ng.ng_Height = button_height - 4;
-    ng.ng_GadgetText = "Strip NewIcon Borders";
-    ng.ng_GadgetID = GID_ADV_STRIP_NEWICON_BORDERS;
-    ng.ng_Flags = PLACETEXT_RIGHT;
-    
-    /* Only enable if icon.library v44+ is available */
-    if (prefsWorkbench.iconLibraryVersion >= 44)
-    {
-        adv_data->strip_newicon_borders_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
-            GTCB_Checked, adv_data->strip_newicon_borders_enabled,
-            TAG_END);
-    }
-    else
-    {
-        /* Disabled checkbox for icon.library < v44 */
-        adv_data->strip_newicon_borders_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
-            GTCB_Checked, FALSE,
-            GA_Disabled, TRUE,
-            TAG_END);
-    }
-    
-    if (!gad)
-    {
-        CONSOLE_ERROR("Failed to create strip NewIcon borders checkbox\n");
-        return NULL;
-    }
-    
-
-    /*--------------------------------------------------------------------*/
-    /* ROW 14: Bottom buttons - Beta Options (left), OK/Cancel (right)   */
-    /*--------------------------------------------------------------------*/
-    {
-        /* Measure Beta Options button text for dynamic width */
-        WORD beta_text_width = TextLength(rp, "Beta Options...", 15);
-        WORD button_width_beta = beta_text_width + 20;  /* Text + padding */
-        WORD button_width_std = 80;
-        WORD button_gap = ADV_WINDOW_STANDARD_PADDING;
+        WORD label1_width = TextLength(rp, "Reverse Sort (Z->A)", 20);
+        WORD checkbox_width = 26;
+        WORD row_gap = 30;
         
-        /* OK and Cancel buttons - right-justified (calculate first) */
-        /* Cancel is rightmost, OK is before it */
-        WORD cancel_x = ADV_GROUPBOX_RIGHT_EDGE - button_width_std;
-        WORD ok_x = cancel_x - button_width_std - button_gap;
-        
-        /* Beta Options button - positioned to the left of OK button */
-        WORD beta_x = ok_x - button_width_beta - button_gap;
-        
-        ng.ng_LeftEdge = beta_x;
+        /* Left: Reverse Sort */
+        ng.ng_LeftEdge = ADV_CONTENT_LEFT;
         ng.ng_TopEdge = current_y;
-        ng.ng_Width = button_width_beta;
-        ng.ng_Height = button_height;
-        ng.ng_GadgetText = "Beta Options...";
-        ng.ng_GadgetID = GID_ADV_BETA_OPTIONS;
-        ng.ng_Flags = PLACETEXT_IN;
+        ng.ng_Width = checkbox_width;
+        ng.ng_Height = button_height - 4;
+        ng.ng_GadgetText = "Reverse Sort (Z->A)";
+        ng.ng_GadgetID = GID_ADV_REVERSE_SORT;
+        ng.ng_Flags = PLACETEXT_RIGHT;
         
-        adv_data->beta_options_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
+        adv_data->reverse_sort_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
+            GTCB_Checked, adv_data->reverse_sort_enabled,
             TAG_END);
         
         if (!gad)
         {
-            CONSOLE_ERROR("Failed to create Beta Options button\n");
+            CONSOLE_ERROR("Failed to create reverse sort checkbox\n");
             return NULL;
         }
+        
+        /* Right: Skip Hidden Folders */
+        WORD right_x = ADV_CONTENT_LEFT + checkbox_width + label1_width + row_gap;
+        
+        ng.ng_LeftEdge = right_x;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = checkbox_width;
+        ng.ng_Height = button_height - 4;
+        ng.ng_GadgetText = "Skip Hidden Folders";
+        ng.ng_GadgetID = GID_ADV_SKIP_HIDDEN;
+        ng.ng_Flags = PLACETEXT_RIGHT;
+        
+        adv_data->skip_hidden_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
+            GTCB_Checked, adv_data->skip_hidden_enabled,
+            TAG_END);
+        
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create skip hidden folders checkbox\n");
+            return NULL;
+        }
+    }
+    
+    current_y += ADV_WINDOW_GAP_BETWEEN_CHECKBOXES_VERTICAL + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
+    
+    /* ROW 10: Optimize Column Widths (left) + Strip NewIcon Borders (right) */
+    {
+        WORD label1_width = TextLength(rp, "Optimize Column Widths", 22);
+        WORD checkbox_width = 26;
+        WORD row_gap = 30;
+        
+        /* Left: Optimize Column Widths */
+        ng.ng_LeftEdge = ADV_CONTENT_LEFT;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = checkbox_width;
+        ng.ng_Height = button_height - 4;
+        ng.ng_GadgetText = "Optimize Column Widths";
+        ng.ng_GadgetID = GID_ADV_OPTIMIZE_COLS;
+        ng.ng_Flags = PLACETEXT_RIGHT;
+        
+        adv_data->optimize_cols_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
+            GTCB_Checked, adv_data->optimize_cols_enabled,
+            TAG_END);
+        
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create optimize columns checkbox\n");
+            return NULL;
+        }
+        
+        /* Right: Strip NewIcon Borders */
+        WORD right_x = ADV_CONTENT_LEFT + checkbox_width + label1_width + row_gap;
+        
+        ng.ng_LeftEdge = right_x;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = checkbox_width;
+        ng.ng_Height = button_height - 4;
+        ng.ng_GadgetText = "Strip NewIcon Borders";
+        ng.ng_GadgetID = GID_ADV_STRIP_NEWICON_BORDERS;
+        ng.ng_Flags = PLACETEXT_RIGHT;
+        
+        /* Only enable if icon.library v44+ is available */
+        if (prefsWorkbench.iconLibraryVersion >= 44)
+        {
+            adv_data->strip_newicon_borders_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
+                GTCB_Checked, adv_data->strip_newicon_borders_enabled,
+                TAG_END);
+        }
+        else
+        {
+            /* Disabled checkbox for icon.library < v44 */
+            adv_data->strip_newicon_borders_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
+                GTCB_Checked, FALSE,
+                GA_Disabled, TRUE,
+                TAG_END);
+        }
+        
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create strip NewIcon borders checkbox\n");
+            return NULL;
+        }
+    }
+    
+    current_y += ADV_WINDOW_GAP_BETWEEN_CHECKBOXES_VERTICAL + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
+    
+    /* ROW 11: Column Layout (left) + OK/Cancel buttons (right) */
+    {
+        WORD checkbox_width = 26;
+        WORD button_width_std = 80;
+        WORD button_gap = ADV_WINDOW_STANDARD_PADDING;
+        
+        /* Left: Column Layout checkbox */
+        ng.ng_LeftEdge = ADV_CONTENT_LEFT;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = checkbox_width;
+        ng.ng_Height = button_height - 4;
+        ng.ng_GadgetText = "Column layout";
+        ng.ng_GadgetID = GID_ADV_COLUMN_LAYOUT;
+        ng.ng_Flags = PLACETEXT_RIGHT;
+        
+        adv_data->column_layout_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
+            GTCB_Checked, adv_data->column_layout_enabled,
+            TAG_END);
+        
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create column layout checkbox\n");
+            return NULL;
+        }
+        
+        /* Right: OK and Cancel buttons - right-justified */
+        /* Cancel is rightmost, OK is before it */
+        WORD cancel_x = ADV_GROUPBOX_RIGHT_EDGE - button_width_std;
+        WORD ok_x = cancel_x - button_width_std - button_gap;
         
         /* OK button */
         ng.ng_LeftEdge = ok_x;
@@ -1197,41 +1185,6 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                             adv_data->column_layout_enabled = (BOOL)checked;
                             CONSOLE_DEBUG("Column Layout: %s\n", 
                                    adv_data->column_layout_enabled ? "ENABLED" : "DISABLED");
-                        }
-                        break;
-                    
-                    case GID_ADV_BETA_OPTIONS:
-                        /* Open Beta Options window */
-                        {
-                            struct iTidyBetaOptionsWindow beta_window;
-                            
-                            CONSOLE_DEBUG("Opening Beta Options window...\n");
-                            
-                            if (open_itidy_beta_options_window(&beta_window, adv_data->prefs))
-                            {
-                                /* Run the beta options event loop */
-                                while (handle_beta_options_window_events(&beta_window))
-                                {
-                                    WaitPort(beta_window.window->UserPort);
-                                }
-                                
-                                /* Close the beta options window */
-                                close_itidy_beta_options_window(&beta_window);
-                                
-                                /* Log result */
-                                if (beta_window.changes_accepted)
-                                {
-                                    CONSOLE_DEBUG("Beta options saved\n");
-                                }
-                                else
-                                {
-                                    CONSOLE_DEBUG("Beta options cancelled\n");
-                                }
-                            }
-                            else
-                            {
-                                CONSOLE_ERROR("Failed to open Beta Options window\n");
-                            }
                         }
                         break;
                         
