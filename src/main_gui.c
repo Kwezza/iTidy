@@ -22,8 +22,7 @@
 /* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
 #include <console_output.h>
 
-/* VBCC MIGRATION NOTE: Amiga-specific headers wrapped in guard */
-#ifdef __AMIGA__
+/* VBCC MIGRATION NOTE: Amiga-specific headers */
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <exec/execbase.h>
@@ -50,7 +49,6 @@
 #include <proto/utility.h>
 #include <proto/iffparse.h>
 #include <itidy_types.h>
-#endif
 
 /* VBCC MIGRATION NOTE: Project headers */
 #include "itidy_types.h"
@@ -68,10 +66,8 @@
 #include "file_directory_handling.h"
 #include "GUI/main_window.h"
 
-/* VBCC: Set stack size to 20KB at compile time */
-#ifdef __AMIGA__
+/* VBCC: Set stack size to 80KB at compile time */
 long __stack = 80000L;
-#endif
 
 /* Define global variables */
 struct Screen *screen = NULL;
@@ -108,11 +104,9 @@ static const char version_string[] ="$VER: iTidy " ITIDY_VERSION " (" __DATE__ "
 const char version[] = ITIDY_VERSION;
 
 /* External reference to SysBase (provided by VBCC runtime) */
-#ifdef __AMIGA__
 extern struct ExecBase *SysBase;
 /* VBCC's -lauto provides this global for Workbench startup */
 extern struct WBStartup *_WBenchMsg;
-#endif
 
 /*---------------------------------------------------------------------------*/
 /* Workbench Version Check System                                            */
@@ -135,15 +129,15 @@ extern struct WBStartup *_WBenchMsg;
  */
 static int RequireWB3OrBetter(void)
 {
-#ifdef __AMIGA__
     UWORD detected_version;
-    BPTR log_file;
+    /* BPTR log_file; */
     char version_msg[256];
     
     /* Get the exec.library version */
     detected_version = SysBase->LibNode.lib_Version;
     
-    /* Log version check to file (before logging system is initialized) */
+    /* NOTE: Diagnostic log file creation disabled - no longer needed for WB 3.0+ only target */
+    /*
     log_file = Open((STRPTR)"PROGDIR:version_check.log", MODE_NEWFILE);
     if (log_file)
     {
@@ -171,6 +165,7 @@ static int RequireWB3OrBetter(void)
         
         Close(log_file);
     }
+    */
     
     /* Exec v39 == Kickstart 3.0 (Workbench 3.0 era) */
     if (detected_version >= 39)
@@ -228,10 +223,6 @@ static int RequireWB3OrBetter(void)
     }
 
     return 0;
-#else
-    /* Non-Amiga builds always pass (for testing on host) */
-    return 1;
-#endif
 }
 
 /*---------------------------------------------------------------------------*/
@@ -480,7 +471,6 @@ UWORD get_tooltype_debug_level(void)
  */
 static const char *get_cpu_name(void)
 {
-#ifdef __AMIGA__
     ULONG flags = SysBase->AttnFlags;
 
     if (flags & AFF_68060) return "MC68060";
@@ -488,7 +478,6 @@ static const char *get_cpu_name(void)
     if (flags & AFF_68030) return "MC68030";
     if (flags & AFF_68020) return "MC68020";
     if (flags & AFF_68010) return "MC68010";
-#endif
     
     return "MC68000";
 }
@@ -498,7 +487,6 @@ static const char *get_cpu_name(void)
  */
 static void log_system_info(void)
 {
-#ifdef __AMIGA__
     ULONG chip_free_total, chip_free_largest;
     ULONG fast_free_total, fast_free_largest;
     ULONG chip_kb, fast_kb;
@@ -535,9 +523,6 @@ static void log_system_info(void)
     }
     log_info(LOG_GENERAL, "==========================\n");
     CONSOLE_DEBUG("DEBUG: System info logging complete\n");
-#else
-    CONSOLE_DEBUG("DEBUG: Not __AMIGA__, skipping system info\n");
-#endif
 }
 
 /* Function to add an icon file path to the error list */
@@ -636,7 +621,6 @@ int main(int argc, char **argv)
     CONSOLE_PRINTF("argc = %d\n", argc);
 
     /* Detect if launched from Workbench (argc == 0) */
-#ifdef __AMIGA__
     /* VBCC with -lauto: Use _WBenchMsg instead of manual message handling */
     if (argc == 0 && _WBenchMsg != NULL)
     {
@@ -652,7 +636,6 @@ int main(int argc, char **argv)
     {
         CONSOLE_PRINTF("Launched from CLI\n");
     }
-#endif
 
     /* GUI MIGRATION: Initialize default settings (previously set from CLI args) */
     user_folderViewMode = DDVM_BYICON;

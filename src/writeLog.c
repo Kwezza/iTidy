@@ -143,6 +143,8 @@ static BOOL ensure_logs_directory(void) {
     BPTR lock;
     BPTR parentLock;
     LONG error;
+    char pathWithoutSlash[256];
+    size_t len;
     
     /* First check if directory already exists */
     lock = Lock(g_logsDirectory, ACCESS_READ);
@@ -151,8 +153,18 @@ static BOOL ensure_logs_directory(void) {
         return TRUE;
     }
     
+    /* CreateDir() doesn't work with trailing slash - strip it if present */
+    strncpy(pathWithoutSlash, g_logsDirectory, sizeof(pathWithoutSlash) - 1);
+    pathWithoutSlash[sizeof(pathWithoutSlash) - 1] = '\0';
+    len = strlen(pathWithoutSlash);
+    if (len > 0 && (pathWithoutSlash[len - 1] == '/' || pathWithoutSlash[len - 1] == ':')) {
+        if (pathWithoutSlash[len - 1] == '/') {
+            pathWithoutSlash[len - 1] = '\0';
+        }
+    }
+    
     /* Try method 1: Direct CreateDir() */
-    lock = CreateDir(g_logsDirectory);
+    lock = CreateDir((CONST_STRPTR)pathWithoutSlash);
     if (lock) {
         UnLock(lock);
         return TRUE;
@@ -445,6 +457,10 @@ void log_message(LogCategory category, LogLevel level, const char *format, ...) 
         }
         *dst = '\0';
     }
+    
+    /* Ensure logs directory exists before attempting to write */
+    /* This handles cases where directory might have been deleted during runtime */
+    ensure_logs_directory();
     
     /* Open log file (create if doesn't exist, append if it does) */
     logFile = Open(g_logCategories[category].filename, MODE_READWRITE);

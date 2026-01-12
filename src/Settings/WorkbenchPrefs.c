@@ -7,9 +7,7 @@
 #include <prefs/workbench.h>
 #include <string.h>  // Include for memset
 
-#ifdef __AMIGA__
 extern struct ExecBase *SysBase;
-#endif
 
 #define PREFS_FILE "ENV:sys/Workbench.prefs"
 
@@ -105,7 +103,6 @@ void fetchWorkbenchSettings(struct WorkbenchSettings *settings) {
     /* Clear the structure to ensure no garbage values */
     memset(settings, 0, sizeof(struct WorkbenchSettings));
     
-#ifdef __AMIGA__
     /* Get Workbench/Kickstart version from SysBase */
     if (SysBase) {
         settings->workbenchVersion = SysBase->LibNode.lib_Version;
@@ -117,7 +114,6 @@ void fetchWorkbenchSettings(struct WorkbenchSettings *settings) {
         settings->iconLibraryVersion = IconBase->lib_Version;
         CloseLibrary(IconBase);
     }
-#endif
     
     file = Open(PREFS_FILE, MODE_OLDFILE);
     if (file) {

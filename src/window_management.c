@@ -9,11 +9,9 @@
 #include <string.h>
 #include <stdlib.h>
 
-#ifdef __AMIGA__
 #include <prefs/font.h>
 #include <libraries/iffparse.h>
 #include <proto/iffparse.h>
-#endif
 
 /* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
 #include <console_output.h>

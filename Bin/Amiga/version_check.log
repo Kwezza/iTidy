@@ -1,5 +1,0 @@
-iTidy Version Check
-===================
-SysBase->LibNode.lib_Version = 47
-Required: 39 (Kickstart/WB 3.0) or higher
-Result: OK - Version check passed

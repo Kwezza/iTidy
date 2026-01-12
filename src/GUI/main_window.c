@@ -1896,7 +1896,8 @@ static BOOL save_preferences_to_file(const char *filepath, const LayoutPreferenc
     file = Open((STRPTR)filepath, MODE_NEWFILE);
     if (!file)
     {
-        log_error(LOG_GUI, "save_preferences_to_file: Failed to create file: %s\n", filepath);
+        LONG error = IoErr();
+        log_error(LOG_GUI, "save_preferences_to_file: Failed to create file: %s (IoErr: %ld)\n", filepath, error);
         return FALSE;
     }
     
@@ -2098,6 +2099,155 @@ static void sync_gui_to_preferences(struct iTidyMainWindow *win_data, LayoutPref
 }
 
 /*------------------------------------------------------------------------*/
+/* Helper Functions for Menu Operations                                  */
+/*------------------------------------------------------------------------*/
+
+/**
+ * ensure_directory_exists - Create directory if it doesn't exist
+ * 
+ * Due to WinUAE shared folder bugs, Lock() may succeed for non-existent paths.
+ * Strategy: Always try CreateDir() first. If it fails with ERROR_OBJECT_EXISTS (203),
+ * then verify it's actually a directory using Lock() and Examine().
+ * Per AmigaDOS autodoc: CreateDir() fails with trailing '/' in path.
+ * 
+ * @param path Directory path to check/create
+ * @return TRUE if directory exists or was created, FALSE on error
+ */
+static BOOL ensure_directory_exists(const char *path)
+{
+    BPTR lock;
+    struct FileInfoBlock *fib = NULL;
+    BOOL isDirectory = FALSE;
+    char pathWithoutSlash[512];
+    size_t len;
+    LONG error;
+    
+    if (!path || path[0] == '\0')
+        return FALSE;
+    
+    /* Strip trailing slash before CreateDir (per AmigaDOS autodoc) */
+    strncpy(pathWithoutSlash, path, sizeof(pathWithoutSlash) - 1);
+    pathWithoutSlash[sizeof(pathWithoutSlash) - 1] = '\0';
+    len = strlen(pathWithoutSlash);
+    if (len > 0 && pathWithoutSlash[len - 1] == '/')
+    {
+        pathWithoutSlash[len - 1] = '\0';
+    }
+    
+    /* Try to create directory first (fast path for new directories) */
+    log_debug(LOG_GUI, "Attempting to create directory: %s\n", pathWithoutSlash);
+    lock = CreateDir((CONST_STRPTR)pathWithoutSlash);
+    if (lock)
+    {
+        UnLock(lock);
+        log_info(LOG_GUI, "Successfully created directory: %s\n", pathWithoutSlash);
+        return TRUE;
+    }
+    
+    /* CreateDir failed - check why */
+    error = IoErr();
+    log_debug(LOG_GUI, "CreateDir failed for: %s (IoErr: %ld)\n", pathWithoutSlash, error);
+    
+    /* ERROR_OBJECT_EXISTS (203) means something already exists at this path */
+    if (error == 203)
+    {
+        /* Verify it's actually a directory */
+        log_debug(LOG_GUI, "Object exists, verifying it's a directory: %s\n", path);
+        lock = Lock((CONST_STRPTR)path, ACCESS_READ);
+        if (lock)
+        {
+            fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
+            if (fib)
+            {
+                if (Examine(lock, fib))
+                {
+                    isDirectory = (fib->fib_DirEntryType > 0);
+                    log_debug(LOG_GUI, "Examine: fib_DirEntryType=%ld (isDir=%s)\n", 
+                             fib->fib_DirEntryType, isDirectory ? "YES" : "NO");
+                }
+                FreeDosObject(DOS_FIB, fib);
+            }
+            UnLock(lock);
+            
+            if (isDirectory)
+            {
+                log_debug(LOG_GUI, "Directory already exists: %s\n", path);
+                return TRUE;
+            }
+            else
+            {
+                log_error(LOG_GUI, "Path exists but is not a directory: %s\n", path);
+                return FALSE;
+            }
+        }
+    }
+    
+    log_error(LOG_GUI, "Failed to create or verify directory: %s (IoErr: %ld)\n", pathWithoutSlash, error);
+    return FALSE;
+}
+
+/**
+ * ensure_save_directories - Ensure userdata and Settings folders exist
+ * 
+ * Creates the userdata and userdata/Settings directory hierarchy if needed.
+ * This is called before any save operation.
+ * 
+ * IMPORTANT NOTE - WinUAE Shared Folder Quirk:
+ * WinUAE's shared folder filesystem caches directory state. If directories
+ * are deleted from the Windows host while WinUAE is running, the cache becomes
+ * stale and Lock()/Examine() may succeed for non-existent paths while Open()
+ * fails with ERROR_OBJECT_NOT_FOUND. This only affects development/testing
+ * when manually deleting directories from Windows. Normal users won't encounter
+ * this. Restarting WinUAE clears the cache and resolves the issue.
+ * 
+ * We use PROGDIR: relative paths (not absolute paths) as this works more
+ * reliably with WinUAE shared folders.
+ * 
+ * @return TRUE if directories exist or were created, FALSE on error
+ */
+static BOOL ensure_save_directories(void)
+{
+    BPTR lock;
+    
+    /* Create userdata directory using PROGDIR: relative path */
+    lock = CreateDir((CONST_STRPTR)"PROGDIR:userdata");
+    if (lock)
+    {
+        UnLock(lock);
+        log_info(LOG_GUI, "Created PROGDIR:userdata\n");
+    }
+    else
+    {
+        LONG error = IoErr();
+        if (error != 203)  /* 203 = ERROR_OBJECT_EXISTS (already exists, OK) */
+        {
+            log_error(LOG_GUI, "Failed to create userdata directory (IoErr: %ld)\n", error);
+            return FALSE;
+        }
+    }
+    
+    /* Create Settings subdirectory using PROGDIR: relative path */
+    lock = CreateDir((CONST_STRPTR)"PROGDIR:userdata/Settings");
+    if (lock)
+    {
+        UnLock(lock);
+        log_info(LOG_GUI, "Created PROGDIR:userdata/Settings\n");
+    }
+    else
+    {
+        LONG error = IoErr();
+        if (error != 203)  /* 203 = ERROR_OBJECT_EXISTS (already exists, OK) */
+        {
+            log_error(LOG_GUI, "Failed to create Settings directory (IoErr: %ld)\n", error);
+            return FALSE;
+        }
+    }
+    
+    log_debug(LOG_GUI, "Save directories verified/created successfully\n");
+    return TRUE;
+}
+
+/*------------------------------------------------------------------------*/
 /* Menu Handler Functions                                                */
 /*------------------------------------------------------------------------*/
 
@@ -2169,6 +2319,17 @@ static void handle_main_save_menu(struct iTidyMainWindow *win_data)
         return;
     }
     
+    /* Ensure save directories exist before saving */
+    if (!ensure_save_directories())
+    {
+        log_error(LOG_GUI, "Failed to create save directories\n");
+        ShowEasyRequest(win_data->window,
+            "Save Failed",
+            "Could not create required directories.\nCheck permissions and disk space.",
+            "OK");
+        return;
+    }
+    
     /* Update global preferences from current GUI state */
     sync_gui_to_preferences(win_data, prefs);
     UpdateGlobalPreferences(prefs);
@@ -2214,6 +2375,17 @@ static void handle_main_save_as_menu(struct iTidyMainWindow *win_data)
         ShowEasyRequest(win_data->window,
             "Error",
             "Failed to get preferences.",
+            "OK");
+        return;
+    }
+    
+    /* Ensure save directories exist before opening requester */
+    if (!ensure_save_directories())
+    {
+        log_error(LOG_GUI, "Failed to create save directories\n");
+        ShowEasyRequest(win_data->window,
+            "Save Failed",
+            "Could not create required directories.\nCheck permissions and disk space.",
             "OK");
         return;
     }

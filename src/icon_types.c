@@ -7,10 +7,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-#ifdef __AMIGA__
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
-#endif
 
 #include "itidy_types.h"
 #include "icon_management.h"
