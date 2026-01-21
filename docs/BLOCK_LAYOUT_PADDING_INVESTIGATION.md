@@ -207,7 +207,8 @@ Determine why block mode calculates content width as 285px when the actual visua
 
 **Root Cause Identified:**
 The issue was in the calculation of maxX in CalculateBlockLayout.
-The original code calculated ightEdge as icon->icon_x + icon->icon_max_width.
+The original code calculated 
+ightEdge as icon->icon_x + icon->icon_max_width.
 However, icon->icon_x represents the position of the **icon image**, not the text.
 When 	ext_width is larger than icon_width, the text is **centered** relative to the icon image.
 This means the text starts to the *left* of icon_x and extends to the right.
@@ -225,14 +226,16 @@ This accurately reflects the visual boundary of centered text, removing the ~33p
 
 **Secondary Issue Found:**
 Even after fixing the calculation in CalculateBlockLayout (src/layout_processor.c), the window width was still incorrect (too wide).
-Investigation revealed that esizeFolderToContents() in src/window_management.c re-calculates the content dimensions from the icon array before resizing the window, and it was still using the **old incorrect formula**:
+Investigation revealed that 
+esizeFolderToContents() in src/window_management.c re-calculates the content dimensions from the icon array before resizing the window, and it was still using the **old incorrect formula**:
 iconRight = icon_x + icon_max_width
 
 This reintroduced the error because it ignored the refined calculations done during the block layout phase and inflated the window width again.
 
 **The Complete Fix:**
 Applied the same fix to src/window_management.c:
-- Updated esizeFolderToContents() to use the visual right edge formula:
+- Updated 
+esizeFolderToContents() to use the visual right edge formula:
   RightEdge = icon_x + (icon_width + text_width) / 2 (when text is centered)
 
 This ensures consistent width calculation across both the layout engine and the window management system, finally eliminating the phantom padding.
