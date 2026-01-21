@@ -85,6 +85,19 @@ static STRPTR vertical_align_labels[] = {
     NULL
 };
 
+static STRPTR block_grouping_labels[] = {
+    "None",
+    "By Icon Type",
+    NULL
+};
+
+static STRPTR block_gap_labels[] = {
+    "Small",
+    "Medium",
+    "Large",
+    NULL
+};
+
 /*------------------------------------------------------------------------*/
 /* Aspect Ratio Preset Values (Fixed-Point: Scaled by 1000)             */
 /*------------------------------------------------------------------------*/
@@ -621,6 +634,66 @@ static struct Gadget *create_advanced_gadgets(struct iTidyAdvancedWindow *adv_da
             CONSOLE_ERROR("Failed to create column layout checkbox\n");
             return NULL;
         }
+    }
+    
+    current_y += ADV_WINDOW_GAP_BETWEEN_CHECKBOXES_VERTICAL + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
+    
+    /* ROW 12: Block Grouping controls */
+    {
+        WORD label_width = 80;
+        WORD cycle_width = 140;
+        WORD row_gap = 20;
+        WORD label2_width = 40;
+        
+        /* Left: Grouping label and cycle */
+        ng.ng_LeftEdge = ADV_CONTENT_LEFT;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = cycle_width;
+        ng.ng_Height = button_height;
+        ng.ng_GadgetText = "Grouping:";
+        ng.ng_GadgetID = GID_ADV_BLOCK_GROUPING;
+        ng.ng_Flags = PLACETEXT_LEFT;
+        
+        adv_data->block_grouping_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
+            GTCY_Labels, block_grouping_labels,
+            GTCY_Active, adv_data->block_grouping_selected,
+            TAG_END);
+        
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create block grouping cycle\n");
+            return NULL;
+        }
+        
+        /* Right: Gap label and cycle */
+        WORD gap_cycle_x = ADV_CONTENT_LEFT + label_width + cycle_width + row_gap;
+        
+        ng.ng_LeftEdge = gap_cycle_x;
+        ng.ng_TopEdge = current_y;
+        ng.ng_Width = cycle_width;
+        ng.ng_Height = button_height;
+        ng.ng_GadgetText = "Gap:";
+        ng.ng_GadgetID = GID_ADV_BLOCK_GAP;
+        ng.ng_Flags = PLACETEXT_LEFT;
+        
+        adv_data->block_gap_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
+            GTCY_Labels, block_gap_labels,
+            GTCY_Active, adv_data->block_gap_selected,
+            TAG_END);
+        
+        if (!gad)
+        {
+            CONSOLE_ERROR("Failed to create block gap cycle\n");
+            return NULL;
+        }
+    }
+    
+    current_y += ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL + ADV_WINDOW_GAP_BETWEEN_GADGETS_VERTICAL;
+    
+    /* ROW 13: OK and Cancel buttons */
+    {
+        WORD button_width_std = 80;
+        WORD button_gap = ADV_WINDOW_STANDARD_PADDING;
         
         /* Right: OK and Cancel buttons - right-justified */
         /* Cancel is rightmost, OK is before it */
@@ -706,6 +779,8 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
     adv_data->skip_hidden_enabled = prefs->skipHiddenFolders;  /* Load skip hidden folders setting */
     adv_data->column_layout_enabled = prefs->centerIconsInColumn;  /* Load column layout setting */
     adv_data->strip_newicon_borders_enabled = prefs->stripNewIconBorders;  /* Load strip NewIcon borders setting */
+    adv_data->block_grouping_selected = (UWORD)prefs->blockGroupMode;  /* Load block grouping mode */
+    adv_data->block_gap_selected = (UWORD)prefs->blockGapSize;  /* Load block gap size */
     
     log_debug(LOG_GUI, "Loading prefs into adv_data on window open:\n");
     log_debug(LOG_GUI, "  prefs->iconSpacingX = %hu\n", prefs->iconSpacingX);
@@ -918,6 +993,10 @@ void save_advanced_window_to_preferences(struct iTidyAdvancedWindow *adv_data)
     
     /* Save strip NewIcon borders setting */
     adv_data->prefs->stripNewIconBorders = adv_data->strip_newicon_borders_enabled;
+    
+    /* Save block grouping settings */
+    adv_data->prefs->blockGroupMode = (BlockGroupMode)adv_data->block_grouping_selected;
+    adv_data->prefs->blockGapSize = (BlockGapSize)adv_data->block_gap_selected;
     
     log_debug(LOG_GUI, "save_advanced_window_to_preferences() called:\n");
     log_debug(LOG_GUI, "  adv_data->max_width_pct_selected = %ld\n", (long)adv_data->max_width_pct_selected);
@@ -1187,6 +1266,20 @@ BOOL handle_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
                                    adv_data->column_layout_enabled ? "ENABLED" : "DISABLED");
                         }
                         break;
+                    
+                    case GID_ADV_BLOCK_GROUPING:
+                        /* Block grouping mode changed */
+                        adv_data->block_grouping_selected = msg_code;
+                        CONSOLE_DEBUG("Block Grouping changed to: %s\n",
+                               block_grouping_labels[adv_data->block_grouping_selected]);
+                        break;
+                    
+                    case GID_ADV_BLOCK_GAP:
+                        /* Block gap size changed */
+                        adv_data->block_gap_selected = msg_code;
+                        CONSOLE_DEBUG("Block Gap changed to: %s\n",
+                               block_gap_labels[adv_data->block_gap_selected]);
+                        break;
                         
                     case GID_ADV_SPACING_X:
                     case GID_ADV_SPACING_Y:
@@ -1289,6 +1382,16 @@ void load_preferences_to_advanced_window(struct iTidyAdvancedWindow *adv_data)
     /* Strip NewIcon borders checkbox */
     GT_SetGadgetAttrs(adv_data->strip_newicon_borders_check, adv_data->window, NULL,
         GTCB_Checked, adv_data->strip_newicon_borders_enabled,
+        TAG_END);
+    
+    /* Block grouping cycle */
+    GT_SetGadgetAttrs(adv_data->block_grouping_cycle, adv_data->window, NULL,
+        GTCY_Active, adv_data->block_grouping_selected,
+        TAG_END);
+    
+    /* Block gap cycle */
+    GT_SetGadgetAttrs(adv_data->block_gap_cycle, adv_data->window, NULL,
+        GTCY_Active, adv_data->block_gap_selected,
         TAG_END);
     
     /* Enable/disable max icons gadget based on Auto checkbox */

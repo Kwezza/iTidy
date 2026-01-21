@@ -189,7 +189,21 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray,
         /* Calculate content dimensions from icon positions */
         for (i = 0; i < iconArray->size; i++)
         {
-            int iconRight = iconArray->array[i].icon_x + iconArray->array[i].icon_max_width;
+            int iconRight;
+            
+            /* FIX: Handle case where text is wider than icon (centered text).
+             * In this case, icon_x is shifted right, so icon_x + max_width extends too far.
+             * Visual Right = icon_x + (icon_width + text_width) / 2
+             */
+            if (iconArray->array[i].text_width > iconArray->array[i].icon_width)
+            {
+                iconRight = iconArray->array[i].icon_x + (iconArray->array[i].icon_width + iconArray->array[i].text_width) / 2;
+            }
+            else
+            {
+                iconRight = iconArray->array[i].icon_x + iconArray->array[i].icon_max_width;
+            }
+            
             int iconBottom = iconArray->array[i].icon_y + iconArray->array[i].icon_max_height;
             
             maxWidth = MAX(maxWidth, iconRight);
@@ -566,8 +580,18 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
     }
     
     /* Add window chrome (borders, scrollbars, etc.) to width */
+    log_info(LOG_GUI, "  Adding window chrome to width:\n");
+    log_info(LOG_GUI, "    Content width: %d\n", winWidth);
+    log_info(LOG_GUI, "    + currentLeftBarWidth: %d\n", prefsIControl.currentLeftBarWidth);
+    log_info(LOG_GUI, "    + currentBarWidth (right): %d\n", prefsIControl.currentBarWidth);
+    log_info(LOG_GUI, "    + PADDING_WIDTH * 2: %d\n", PADDING_WIDTH * 2);
+    
     finalWidth = winWidth + prefsIControl.currentBarWidth + prefsIControl.currentLeftBarWidth + (PADDING_WIDTH * 2);
-    finalWidth += prefsIControl.currentBarWidth;  /* Add space for vertical scrollbar (same width as right border) */
+    
+    log_info(LOG_GUI, "    = Subtotal (without scrollbar): %d\n", finalWidth);
+    log_info(LOG_GUI, "    + currentBarWidth (scrollbar): %d\n", prefsIControl.currentBarWidth);
+    
+    finalWidth += prefsIControl.currentBarWidth;  /* Add space for vertical scrollbar (always present) */
     
     if (!prefsWorkbench.disableVolumeGauge && IsRootDirectorySimple(dirPath))
     {
@@ -581,7 +605,7 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
     
     /* Add window chrome (title bar, borders, scrollbars, etc.) to height */
     finalHeight = winHeight + prefsIControl.currentWindowBarHeight + prefsIControl.currentBarHeight + (PADDING_HEIGHT * 2);
-    finalHeight += prefsIControl.currentBarHeight;  /* Add space for horizontal scrollbar (same height as bottom border) */
+    finalHeight += prefsIControl.currentBarHeight;  /* Add space for horizontal scrollbar (always present) */
     
     log_info(LOG_GUI, "  Calculated window with chrome: %d×%d\n", finalWidth, finalHeight);
     

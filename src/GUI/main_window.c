@@ -127,7 +127,7 @@ static STRPTR order_labels[] = {
 
 static STRPTR sortby_labels[] = {
     "Name",
-    "Type",
+    "Extension",  /* Renamed from "Type" to avoid confusion with block grouping */
     "Date",
     "Size",
     NULL
@@ -999,7 +999,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
         }
         else
         {
-            strcpy(win_data->folder_path_buffer, "SYS:");
+            strcpy(win_data->folder_path_buffer, "PC:Programming/iTidy/Tests/multiIcon");
         }
     }
 

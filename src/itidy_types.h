@@ -70,6 +70,9 @@ typedef struct {
     /* Struct fields (12 bytes for DateStamp: 3 LONGs) */
     struct DateStamp file_date;
     
+    /* UBYTE fields (1 byte) - Workbench icon type */
+    UBYTE workbench_type;    /* WBDRAWER, WBTOOL, WBPROJECT, etc. */
+    
     /* BOOL fields (2 bytes each on Amiga) - grouped at end to minimize padding */
     BOOL is_folder;
     BOOL is_write_protected;

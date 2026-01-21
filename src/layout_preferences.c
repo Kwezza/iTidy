@@ -53,6 +53,10 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     prefs->useColumnWidthOptimization = DEFAULT_OPTIMIZE_COLUMNS;
     prefs->textAlignment = DEFAULT_TEXT_ALIGNMENT;
     
+    /* Block Grouping Settings */
+    prefs->blockGroupMode = BLOCK_GROUP_NONE;
+    prefs->blockGapSize = BLOCK_GAP_MEDIUM;
+    
     /* Window Management */
     prefs->resizeWindows = DEFAULT_RESIZE_WINDOWS;
     prefs->minIconsPerRow = DEFAULT_MIN_ICONS_PER_ROW;

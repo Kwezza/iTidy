@@ -72,6 +72,34 @@ typedef enum {
 } TextAlignment;
 
 /*========================================================================*/
+/* Block Grouping Mode Enumeration                                       */
+/*========================================================================*/
+/**
+ * @brief How icons are visually grouped in the layout
+ */
+typedef enum {
+    BLOCK_GROUP_NONE = 0,       /* Standard layout (no grouping) */
+    BLOCK_GROUP_BY_TYPE = 1     /* Group by WBDRAWER/WBTOOL/other */
+} BlockGroupMode;
+
+/*========================================================================*/
+/* Block Gap Size Enumeration                                            */
+/*========================================================================*/
+/**
+ * @brief Vertical spacing between grouped blocks
+ */
+typedef enum {
+    BLOCK_GAP_SMALL = 0,        /* 5 pixels */
+    BLOCK_GAP_MEDIUM = 1,       /* 10 pixels */
+    BLOCK_GAP_LARGE = 2         /* 15 pixels */
+} BlockGapSize;
+
+/* Pixel values for gap sizes */
+#define BLOCK_GAP_SMALL_PX   5
+#define BLOCK_GAP_MEDIUM_PX  10
+#define BLOCK_GAP_LARGE_PX   15
+
+/*========================================================================*/
 /* Window Overflow Mode Enumeration                                      */
 /*========================================================================*/
 /**
@@ -138,6 +166,10 @@ typedef struct {
     BOOL centerIconsInColumn;        /* Center icons between grid lines */
     BOOL useColumnWidthOptimization; /* Optimize per-column widths */
     TextAlignment textAlignment;     /* Vertical alignment of text labels in rows */
+    
+    /* Block Grouping Settings */
+    BlockGroupMode blockGroupMode;   /* BLOCK_GROUP_NONE or BLOCK_GROUP_BY_TYPE */
+    BlockGapSize blockGapSize;       /* SMALL, MEDIUM, or LARGE gap between blocks */
     
     /* Window Management */
     BOOL resizeWindows;              /* Auto-resize drawer windows */

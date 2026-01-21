@@ -564,6 +564,9 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                         newIcon.text_height = iconDetails.textSize.height;
                         newIcon.icon_max_width = iconDetails.totalDisplaySize.width;
                         newIcon.icon_max_height = iconDetails.totalDisplaySize.height;
+                        
+                        /* Capture Workbench icon type for block layout feature */
+                        newIcon.workbench_type = iconDetails.workbenchType;
 
 #ifdef DEBUG_MAX
                         append_to_log("Icons size x: %d, y: %d, current at pos x: %d, y: %d border size:%d\n", 
