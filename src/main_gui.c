@@ -64,6 +64,7 @@
 #include "Settings/get_fonts.h"
 #include "cli_utilities.h"
 #include "file_directory_handling.h"
+#include "layout_preferences.h"
 #include "GUI/main_window.h"
 
 /* VBCC: Set stack size to 80KB at compile time */
@@ -768,12 +769,35 @@ int main(int argc, char **argv)
     log_debug(LOG_GENERAL, "Workbench screen width %d, height %d\n", screenWidth, screenHight);
 #endif
 
+    /* Initialize global preferences with default values */
+    CONSOLE_STATUS("Initializing preferences with defaults...\n");
+    InitializeGlobalPreferences();
+
+    /* Initialize ReAction libraries (required for Workbench 3.2+ GUI) */
+    CONSOLE_STATUS("Initializing ReAction libraries...\n");
+    if (!init_reaction_libs())
+    {
+        CONSOLE_ERROR("Failed to initialize ReAction libraries\n");
+        CONSOLE_ERROR("iTidy requires Workbench 3.2 or later with ReAction classes\n");
+        /* Cleanup and exit */
+        CleanupWindow();
+        disposeTimer();
+        FreeIconErrorList(&iconsErrorTracker);
+        if (fontPrefs)
+        {
+            FreeVec(fontPrefs);
+            fontPrefs = NULL;
+        }
+        return RETURN_FAIL;
+    }
+
     /* GUI MIGRATION: Open the GUI window */
     CONSOLE_STATUS("Opening iTidy GUI window...\n");
     if (!open_itidy_main_window(&gui_window))
     {
         CONSOLE_ERROR("Failed to open GUI window\n");
         /* Cleanup and exit */
+        cleanup_reaction_libs();
         CleanupWindow();
         disposeTimer();
         FreeIconErrorList(&iconsErrorTracker);
@@ -808,6 +832,10 @@ int main(int argc, char **argv)
     /* GUI MIGRATION: Close the GUI window */
     CONSOLE_STATUS("\nClosing GUI window...\n");
     close_itidy_main_window(&gui_window);
+
+    /* Cleanup ReAction libraries */
+    CONSOLE_STATUS("Cleaning up ReAction libraries...\n");
+    cleanup_reaction_libs();
 
     /* KEEP: Cleanup window system */
 #ifdef DEBUG

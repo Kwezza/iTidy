@@ -1,132 +1,100 @@
 /*
  * main_window.c - iTidy Main Window Implementation
- * GadTools-based GUI for Workbench 3.0+
- * Based on iTidy_GUI_Feature_Design.md specification
+ * ReAction GUI for Workbench 3.2+
+ * 
+ * This is the ReAction version (v2.0+) of the main window.
+ * For the legacy GadTools version, see git tag v1.0-gadtools
  */
 
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
+#include <intuition/gadgetclass.h>
+#include <intuition/icclass.h>
 #include <libraries/gadtools.h>
 #include <libraries/asl.h>
+
 #include <proto/exec.h>
+#include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/gadtools.h>
 #include <proto/graphics.h>
+#include <proto/utility.h>
 #include <proto/asl.h>
+
+/* ReAction headers */
+#include <proto/window.h>
+#include <proto/layout.h>
+#include <proto/button.h>
+#include <proto/checkbox.h>
+#include <proto/chooser.h>
+#include <proto/getfile.h>
+#include <proto/label.h>
+
+#include <clib/alib_protos.h>
+#include <reaction/reaction.h>
+#include <reaction/reaction_macros.h>
+#include <classes/window.h>
+#include <gadgets/layout.h>
+#include <gadgets/button.h>
+#include <gadgets/checkbox.h>
+#include <gadgets/chooser.h>
+#include <gadgets/getfile.h>
+#include <images/label.h>
+
 #include <string.h>
 #include <stdio.h>
 
-/* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
+/* Console output abstraction */
 #include <console_output.h>
 
 #include "main_window.h"
+#include "main_window_reaction.h"
 #include "version_info.h"
 #include "advanced_window.h"
 #include "RestoreBackups/restore_window.h"
 #include "DefaultTools/tool_cache_window.h"
-#include "DefaultTools/default_tool_backup.h"
 #include "easy_request_helper.h"
 #include "layout_preferences.h"
-#include "icon_types.h"  /* For BuildPathSearchList() */
 #include "layout_processor.h"
-#include "folder_scanner.h"
 #include "writeLog.h"
-#include "window_enumerator.h"
-#include "gui_groupbox.h"
+#include "gui_utilities.h"
 #include "StatusWindows/main_progress_window.h"
-#include "../icon_types.h"
-#include "../path_utilities.h"
-#include "GUI/gui_utilities.h"
-#include "Settings/WorkbenchPrefs.h"
 #include "../backup_lha.h"
+#include "../icon_types.h"  /* For ToolCacheEntry and g_ToolCache extern */
 
 /*------------------------------------------------------------------------*/
-/* External Tool Cache Variables                                         */
+/* ReAction Library Bases                                                */
 /*------------------------------------------------------------------------*/
-extern ToolCacheEntry *g_ToolCache;
-extern int g_ToolCacheCount;
+struct Library *WindowBase = NULL;
+struct Library *LayoutBase = NULL;
+struct Library *ButtonBase = NULL;
+struct Library *CheckBoxBase = NULL;
+struct Library *ChooserBase = NULL;
+struct Library *GetFileBase = NULL;
+struct Library *LabelBase = NULL;
 
-/*------------------------------------------------------------------------*/
-/* External Default Tool Restore Functions                               */
-/*------------------------------------------------------------------------*/
-extern struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_manager);
-extern BOOL iTidy_HandleToolRestoreWindowEvent(struct Window *window, struct IntuiMessage *msg);
-
-/*------------------------------------------------------------------------*/
-/* External ToolType Access (from main_gui.c)                            */
-/*------------------------------------------------------------------------*/
-extern UWORD get_tooltype_debug_level(void);
-extern void iTidy_CloseToolRestoreWindow(struct Window *window);
+/* Local GadToolsBase for menus - prefixed to avoid collision with system global */
+static struct Library *iTidy_GadToolsBase = NULL;
 
 /*------------------------------------------------------------------------*/
 /* Window Constants                                                       */
 /*------------------------------------------------------------------------*/
-#define ITIDY_WINDOW_STANDARD_PADDING 15
 #define ITIDY_WINDOW_TITLE "iTidy v" ITIDY_VERSION " - Icon Cleanup Tool"
-#define ITIDY_WINDOW_WIDTH 625
-#define ITIDY_WINDOW_HEIGHT 350
-#define ITIDY_WINDOW_LEFT 50
-#define ITIDY_WINDOW_TOP 30
-#define ITIDY_WINDOW_GAP_BETWEEN_GROUPS 30
-#define ITIDY_WINDOW_LEFT_GROUP_GADETS 95
-#define ITIDY_WINDOW_LEFT_GROUP_GADETS_LABEL 30
-#define ITIDY_WINDOW_LEFT_GROUP_GADETS_COLUMN_2 356
-
-/* Groupbox alignment constants (shared by gadgets and groupboxes) */
-#define ITIDY_GROUPBOX_LEFT_EDGE 15    /* Left edge of all groupboxes */
-#define ITIDY_GROUPBOX_RIGHT_EDGE 610  /* Right edge of all groupboxes (WINDOW_WIDTH - 15) */
-#define ITIDY_GROUPBOX_USABLE_WIDTH 565 /* Inner width for button calculations (470 - 30 margins) */
 
 /*------------------------------------------------------------------------*/
-/* Menu Item IDs                                                          */
+/* Chooser Label String Arrays                                           */
 /*------------------------------------------------------------------------*/
-#define MENU_PROJECT_NEW        1001
-#define MENU_PROJECT_OPEN       1002
-#define MENU_PROJECT_SAVE       1003
-#define MENU_PROJECT_SAVE_AS    1004
-#define MENU_PROJECT_CLOSE      1005
-#define MENU_PROJECT_ABOUT      1006
-
-/*------------------------------------------------------------------------*/
-/* Menu System Global Variables                                          */
-/*------------------------------------------------------------------------*/
-static struct Screen *wb_screen_menu = NULL;     /* Workbench screen for menus */
-static struct DrawInfo *draw_info_menu = NULL;   /* Drawing info for menus */
-static APTR visual_info_menu = NULL;             /* Visual info for menus */
-static struct Menu *main_menu_strip = NULL;      /* Menu strip */
-
-/*------------------------------------------------------------------------*/
-/* Menu Template                                                          */
-/*------------------------------------------------------------------------*/
-static struct NewMenu main_window_menu_template[] = 
-{
-	{ NM_TITLE, "Project",      NULL, 0, 0, NULL },
-	{ NM_ITEM,  "New",          "N",  0, 0, (APTR)MENU_PROJECT_NEW },
-	{ NM_ITEM,  "Open...",      "O",  0, 0, (APTR)MENU_PROJECT_OPEN },
-	{ NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
-	{ NM_ITEM,  "Save",         "S",  0, 0, (APTR)MENU_PROJECT_SAVE },
-	{ NM_ITEM,  "Save as...",   "A",  0, 0, (APTR)MENU_PROJECT_SAVE_AS },
-	{ NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
-    { NM_ITEM,  "About...",     NULL, 0, 0, (APTR)MENU_PROJECT_ABOUT },
-    { NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
-	{ NM_ITEM,  "Close",        "C",  0, 0, (APTR)MENU_PROJECT_CLOSE },
-	{ NM_END,   NULL,           NULL, 0, 0, NULL }
-};
-
-/*------------------------------------------------------------------------*/
-/* Cycle Gadget Labels                                                   */
-/*------------------------------------------------------------------------*/
-static STRPTR order_labels[] = {
-    "Folders First",
-    "Files First",
+static STRPTR order_labels_str[] = {
+    "Folders first",
+    "Files first",
     "Mixed",
-    "Grouped by Type",
+    "Grouped by type",
     NULL
 };
 
-static STRPTR sortby_labels[] = {
+static STRPTR sortby_labels_str[] = {
     "Name",
     "Type",
     "Date",
@@ -134,1786 +102,777 @@ static STRPTR sortby_labels[] = {
     NULL
 };
 
-static STRPTR window_position_labels[] = {
-    "Center Screen",
-    "Keep Position",
-    "Near Parent",
-    "No Change",
+static STRPTR position_labels_str[] = {
+    "Center screen",
+    "Keep position",
+    "Near parent",
+    "No change",
     NULL
+};
+
+/*------------------------------------------------------------------------*/
+/* Menu Template                                                          */
+/*------------------------------------------------------------------------*/
+static struct NewMenu main_window_menu_template[] = 
+{
+    { NM_TITLE, "Project",      NULL, 0, 0, NULL },
+    { NM_ITEM,  "New",          "N",  0, 0, (APTR)MENU_PROJECT_NEW },
+    { NM_ITEM,  "Open...",      "O",  0, 0, (APTR)MENU_PROJECT_OPEN },
+    { NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
+    { NM_ITEM,  "Save",         "S",  0, 0, (APTR)MENU_PROJECT_SAVE },
+    { NM_ITEM,  "Save as...",   "A",  0, 0, (APTR)MENU_PROJECT_SAVE_AS },
+    { NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
+    { NM_ITEM,  "About...",     NULL, 0, 0, (APTR)MENU_PROJECT_ABOUT },
+    { NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
+    { NM_ITEM,  "Quit",         "Q",  0, 0, (APTR)MENU_PROJECT_CLOSE },
+    { NM_END,   NULL,           NULL, 0, 0, NULL }
 };
 
 /*------------------------------------------------------------------------*/
 /* Forward Declarations                                                   */
 /*------------------------------------------------------------------------*/
-static void draw_folder_path_box(struct iTidyMainWindow *win_data);
-static BOOL setup_main_window_menus(void);
-static void cleanup_main_window_menus(void);
-static BOOL handle_main_window_menu_selection(ULONG menu_number, struct iTidyMainWindow *win_data);
-static void handle_main_new_menu(struct iTidyMainWindow *win_data);
-static void handle_main_open_menu(struct iTidyMainWindow *win_data);
-static void handle_main_save_menu(struct iTidyMainWindow *win_data);
-static void handle_main_save_as_menu(struct iTidyMainWindow *win_data);
-static void handle_main_about_menu(struct iTidyMainWindow *win_data);
+static struct List *create_chooser_labels(STRPTR *strings);
+static void free_chooser_labels(struct List *list);
+static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win_data);
+static void handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWindow *win_data);
+
+/* Save/Load Preferences */
 static BOOL save_preferences_to_file(const char *filepath, const LayoutPreferences *prefs);
 static BOOL load_preferences_from_file(const char *filepath, LayoutPreferences *prefs);
 static void sync_gui_from_preferences(struct iTidyMainWindow *win_data, const LayoutPreferences *prefs);
 static void sync_gui_to_preferences(struct iTidyMainWindow *win_data, LayoutPreferences *prefs);
 
+/* Menu Handlers */
+static void handle_main_new_menu(struct iTidyMainWindow *win_data);
+static void handle_main_open_menu(struct iTidyMainWindow *win_data);
+static void handle_main_save_menu(struct iTidyMainWindow *win_data);
+static void handle_main_save_as_menu(struct iTidyMainWindow *win_data);
+
 /*------------------------------------------------------------------------*/
-/* Menu System Functions                                                  */
+/* ReAction Library Management                                           */
 /*------------------------------------------------------------------------*/
 
 /**
- * setup_main_window_menus - Initialize GadTools NewLook menu system
- * 
- * This function sets up GadTools menus with proper Workbench 3.x NewLook
- * appearance. The menus will automatically use system colors and modern
- * white background styling.
- *
- * Returns: TRUE if successful, FALSE on failure
+ * init_reaction_libs - Open all ReAction class libraries
  */
-static BOOL setup_main_window_menus(void)
+BOOL init_reaction_libs(void)
 {
-    /* Lock Workbench screen for menu system */
-    wb_screen_menu = LockPubScreen("Workbench");
-    if (!wb_screen_menu)
+    /* GadTools is needed for menus */
+    iTidy_GadToolsBase = OpenLibrary("gadtools.library", 39L);
+    if (!iTidy_GadToolsBase)
     {
-        log_error(LOG_GUI, "Error: Could not lock Workbench screen for menus\n");
+        log_error(LOG_GUI, "Failed to open gadtools.library v39\n");
         return FALSE;
     }
     
-    /* Get screen drawing information */
-    draw_info_menu = GetScreenDrawInfo(wb_screen_menu);
-    if (!draw_info_menu)
+    /* ReAction window class */
+    WindowBase = OpenLibrary("window.class", 0L);
+    if (!WindowBase)
     {
-        log_error(LOG_GUI, "Error: Could not get screen DrawInfo for menus\n");
-        UnlockPubScreen(NULL, wb_screen_menu);
-        wb_screen_menu = NULL;
+        log_error(LOG_GUI, "Failed to open window.class\n");
+        CloseLibrary(iTidy_GadToolsBase);
+        iTidy_GadToolsBase = NULL;
         return FALSE;
     }
     
-    /* Get visual information for GadTools */
-    visual_info_menu = GetVisualInfo(wb_screen_menu, TAG_END);
-    if (!visual_info_menu)
+    /* Layout gadget */
+    LayoutBase = OpenLibrary("gadgets/layout.gadget", 0L);
+    if (!LayoutBase)
     {
-        log_error(LOG_GUI, "Error: Could not get VisualInfo for menus\n");
-        FreeScreenDrawInfo(wb_screen_menu, draw_info_menu);
-        UnlockPubScreen(NULL, wb_screen_menu);
-        draw_info_menu = NULL;
-        wb_screen_menu = NULL;
+        log_error(LOG_GUI, "Failed to open gadgets/layout.gadget\n");
+        CloseLibrary(WindowBase);
+        CloseLibrary(iTidy_GadToolsBase);
+        WindowBase = NULL;
+        iTidy_GadToolsBase = NULL;
         return FALSE;
     }
     
-    /* Create menu strip from template */
-    main_menu_strip = CreateMenus(main_window_menu_template, TAG_END);
-    if (!main_menu_strip)
+    /* Button gadget */
+    ButtonBase = OpenLibrary("gadgets/button.gadget", 0L);
+    if (!ButtonBase)
     {
-        log_error(LOG_GUI, "Error: Could not create menu strip\n");
-        FreeVisualInfo(visual_info_menu);
-        FreeScreenDrawInfo(wb_screen_menu, draw_info_menu);
-        UnlockPubScreen(NULL, wb_screen_menu);
-        visual_info_menu = NULL;
-        draw_info_menu = NULL;
-        wb_screen_menu = NULL;
+        log_error(LOG_GUI, "Failed to open gadgets/button.gadget\n");
+        CloseLibrary(LayoutBase);
+        CloseLibrary(WindowBase);
+        CloseLibrary(iTidy_GadToolsBase);
+        LayoutBase = NULL;
+        WindowBase = NULL;
+        iTidy_GadToolsBase = NULL;
         return FALSE;
     }
     
-    /* Layout menus - use NewLook appearance on WB 3.0+ only */
-    /* On WB 2.x, GTMN_NewLookMenus is not available */
-    BOOL layout_success;
-    if (prefsWorkbench.workbenchVersion >= 39)
+    /* Checkbox gadget */
+    CheckBoxBase = OpenLibrary("gadgets/checkbox.gadget", 0L);
+    if (!CheckBoxBase)
     {
-        /* WB 3.0+ - Use NewLook menus */
-        layout_success = LayoutMenus(main_menu_strip, visual_info_menu, GTMN_NewLookMenus, TRUE, TAG_END);
-        log_info(LOG_GUI, "Using NewLook menus (WB 3.0+)\n");
-    }
-    else
-    {
-        /* WB 2.x - Use classic menu layout */
-        layout_success = LayoutMenus(main_menu_strip, visual_info_menu, TAG_END);
-        log_info(LOG_GUI, "Using classic menus (WB 2.x)\n");
-    }
-    
-    if (!layout_success)
-    {
-        log_error(LOG_GUI, "Error: Could not layout menus\n");
-        FreeMenus(main_menu_strip);
-        FreeVisualInfo(visual_info_menu);
-        FreeScreenDrawInfo(wb_screen_menu, draw_info_menu);
-        UnlockPubScreen(NULL, wb_screen_menu);
-        main_menu_strip = NULL;
-        visual_info_menu = NULL;
-        draw_info_menu = NULL;
-        wb_screen_menu = NULL;
+        log_error(LOG_GUI, "Failed to open gadgets/checkbox.gadget\n");
+        CloseLibrary(ButtonBase);
+        CloseLibrary(LayoutBase);
+        CloseLibrary(WindowBase);
+        CloseLibrary(iTidy_GadToolsBase);
+        ButtonBase = NULL;
+        LayoutBase = NULL;
+        WindowBase = NULL;
+        iTidy_GadToolsBase = NULL;
         return FALSE;
     }
     
-    log_info(LOG_GUI, "Main window menus initialized successfully\n");
+    /* Chooser gadget */
+    ChooserBase = OpenLibrary("gadgets/chooser.gadget", 0L);
+    if (!ChooserBase)
+    {
+        log_error(LOG_GUI, "Failed to open gadgets/chooser.gadget\n");
+        CloseLibrary(CheckBoxBase);
+        CloseLibrary(ButtonBase);
+        CloseLibrary(LayoutBase);
+        CloseLibrary(WindowBase);
+        CloseLibrary(iTidy_GadToolsBase);
+        CheckBoxBase = NULL;
+        ButtonBase = NULL;
+        LayoutBase = NULL;
+        WindowBase = NULL;
+        iTidy_GadToolsBase = NULL;
+        return FALSE;
+    }
+    
+    /* GetFile gadget */
+    GetFileBase = OpenLibrary("gadgets/getfile.gadget", 0L);
+    if (!GetFileBase)
+    {
+        log_error(LOG_GUI, "Failed to open gadgets/getfile.gadget\n");
+        CloseLibrary(ChooserBase);
+        CloseLibrary(CheckBoxBase);
+        CloseLibrary(ButtonBase);
+        CloseLibrary(LayoutBase);
+        CloseLibrary(WindowBase);
+        CloseLibrary(iTidy_GadToolsBase);
+        ChooserBase = NULL;
+        CheckBoxBase = NULL;
+        ButtonBase = NULL;
+        LayoutBase = NULL;
+        WindowBase = NULL;
+        iTidy_GadToolsBase = NULL;
+        return FALSE;
+    }
+    
+    /* Label image */
+    LabelBase = OpenLibrary("images/label.image", 0L);
+    if (!LabelBase)
+    {
+        log_error(LOG_GUI, "Failed to open images/label.image\n");
+        CloseLibrary(GetFileBase);
+        CloseLibrary(ChooserBase);
+        CloseLibrary(CheckBoxBase);
+        CloseLibrary(ButtonBase);
+        CloseLibrary(LayoutBase);
+        CloseLibrary(WindowBase);
+        CloseLibrary(iTidy_GadToolsBase);
+        GetFileBase = NULL;
+        ChooserBase = NULL;
+        CheckBoxBase = NULL;
+        ButtonBase = NULL;
+        LayoutBase = NULL;
+        WindowBase = NULL;
+        iTidy_GadToolsBase = NULL;
+        return FALSE;
+    }
+    
+    log_info(LOG_GUI, "ReAction libraries initialized successfully\n");
     return TRUE;
 }
 
 /**
- * cleanup_main_window_menus - Release all menu system resources
- * 
- * This function properly releases all resources allocated during
- * menu setup, following proper AmigaOS resource management.
+ * cleanup_reaction_libs - Close all ReAction class libraries
  */
-static void cleanup_main_window_menus(void)
+void cleanup_reaction_libs(void)
 {
-    if (main_menu_strip)
-    {
-        FreeMenus(main_menu_strip);
-        main_menu_strip = NULL;
-    }
+    if (LabelBase)     { CloseLibrary(LabelBase);     LabelBase = NULL; }
+    if (GetFileBase)   { CloseLibrary(GetFileBase);   GetFileBase = NULL; }
+    if (ChooserBase)   { CloseLibrary(ChooserBase);   ChooserBase = NULL; }
+    if (CheckBoxBase)  { CloseLibrary(CheckBoxBase);  CheckBoxBase = NULL; }
+    if (ButtonBase)    { CloseLibrary(ButtonBase);    ButtonBase = NULL; }
+    if (LayoutBase)    { CloseLibrary(LayoutBase);    LayoutBase = NULL; }
+    if (WindowBase)    { CloseLibrary(WindowBase);    WindowBase = NULL; }
+    if (iTidy_GadToolsBase)  { CloseLibrary(iTidy_GadToolsBase);  iTidy_GadToolsBase = NULL; }
     
-    if (visual_info_menu)
-    {
-        FreeVisualInfo(visual_info_menu);
-        visual_info_menu = NULL;
-    }
-    
-    if (draw_info_menu)
-    {
-        FreeScreenDrawInfo(wb_screen_menu, draw_info_menu);
-        draw_info_menu = NULL;
-    }
-    
-    if (wb_screen_menu)
-    {
-        UnlockPubScreen(NULL, wb_screen_menu);
-        wb_screen_menu = NULL;
-    }
-    
-    log_info(LOG_GUI, "Main window menus cleaned up\n");
+    log_info(LOG_GUI, "ReAction libraries cleaned up\n");
 }
 
+/*------------------------------------------------------------------------*/
+/* Chooser Label Helper Functions                                        */
+/*------------------------------------------------------------------------*/
+
 /**
- * handle_main_window_menu_selection - Process menu item selections
- * 
- * @param menu_number: The menu selection number from IDCMP_MENUPICK
- * @param win_data: Pointer to main window data structure
- * @return: TRUE to continue running, FALSE to close window
+ * create_chooser_labels - Create a Chooser label list from string array
  */
-static BOOL handle_main_window_menu_selection(ULONG menu_number, struct iTidyMainWindow *win_data)
+static struct List *create_chooser_labels(STRPTR *strings)
 {
-    struct MenuItem *menu_item = NULL;
-    ULONG item_id = 0;
-    BOOL continue_running = TRUE;
+    struct List *list;
+    struct Node *node;
     
-    while (menu_number != MENUNULL)
+    list = (struct List *)AllocMem(sizeof(struct List), MEMF_PUBLIC | MEMF_CLEAR);
+    if (!list)
+        return NULL;
+    
+    NewList(list);
+    
+    while (*strings)
     {
-        menu_item = ItemAddress(main_menu_strip, menu_number);
-        if (menu_item)
+        node = AllocChooserNode(CNA_Text, *strings, TAG_END);
+        if (node)
         {
-            item_id = (ULONG)GTMENUITEM_USERDATA(menu_item);
-            
-            /* Handle menu selections */
-            switch (item_id)
-            {
-                case MENU_PROJECT_NEW:
-                    handle_main_new_menu(win_data);
-                    break;
-                    
-                case MENU_PROJECT_OPEN:
-                    handle_main_open_menu(win_data);
-                    break;
-                    
-                case MENU_PROJECT_SAVE:
-                    handle_main_save_menu(win_data);
-                    break;
-                    
-                case MENU_PROJECT_SAVE_AS:
-                    handle_main_save_as_menu(win_data);
-                    break;
-                    
-                case MENU_PROJECT_CLOSE:
-                    continue_running = FALSE;  /* Close window */
-                    break;
-                    
-                case MENU_PROJECT_ABOUT:
-                    handle_main_about_menu(win_data);
-                    break;
-
-                default:
-                    log_warning(LOG_GUI, "Unknown menu item ID: %ld\n", item_id);
-                    break;
-            }
+            AddTail(list, node);
         }
-        
-        menu_number = menu_item->NextSelect;
+        strings++;
     }
     
-    return continue_running;
+    return list;
 }
 
-/*------------------------------------------------------------------------*/
 /**
- * @brief Print LayoutPreferences structure to console
- * 
- * Outputs all fields of the LayoutPreferences structure in a
- * human-readable format for debugging and verification.
- * 
- * @param prefs Pointer to LayoutPreferences structure to print
- * @param folder Folder path being processed
- * @param recursive Recursive processing flag
+ * free_chooser_labels - Free a Chooser label list
  */
-/*------------------------------------------------------------------------*/
-static void print_layout_preferences(const LayoutPreferences *prefs, 
-                                     const char *folder, 
-                                     BOOL recursive)
+static void free_chooser_labels(struct List *list)
 {
-    if (prefs == NULL)
-    {
-        append_to_log("ERROR: NULL preferences pointer\n");
+    struct Node *node;
+    struct Node *next;
+    
+    if (!list)
         return;
-    }
     
-    append_to_log("\n");
-    append_to_log("==================================================\n");
-    append_to_log("      iTidy Layout Preferences - Debug Output    \n");
-    append_to_log("==================================================\n");
-    append_to_log("\n");
-    
-    /* Folder Settings */
-    append_to_log("FOLDER SETTINGS:\n");
-    append_to_log("  Target Folder:    %s\n", folder ? folder : "(none)");
-    append_to_log("  Recursive:        %s\n", recursive ? "Yes" : "No");
-    append_to_log("\n");
-    
-    /* Layout Settings */
-    append_to_log("LAYOUT SETTINGS:\n");
-    append_to_log("  Layout Mode:      %s\n", 
-           prefs->layoutMode == LAYOUT_MODE_ROW ? "Row-major (Horizontal first)" : "Column-major (Vertical first)");
-    append_to_log("  Sort Order:       %s\n",
-           prefs->sortOrder == SORT_ORDER_HORIZONTAL ? "Horizontal (Left-to-right)" : "Vertical (Top-to-bottom)");
-    append_to_log("  Sort Priority:    ");
-    switch (prefs->sortPriority)
+    node = list->lh_Head;
+    while ((next = node->ln_Succ))
     {
-        case SORT_PRIORITY_FOLDERS_FIRST:
-            append_to_log("Folders First\n");
-            break;
-        case SORT_PRIORITY_FILES_FIRST:
-            append_to_log("Files First\n");
-            break;
-        case SORT_PRIORITY_MIXED:
-            append_to_log("Mixed (No priority)\n");
-            break;
-        default:
-            append_to_log("Unknown (%d)\n", prefs->sortPriority);
-            break;
+        FreeChooserNode(node);
+        node = next;
     }
-    append_to_log("  Sort By:          ");
-    switch (prefs->sortBy)
-    {
-        case SORT_BY_NAME:
-            append_to_log("Name\n");
-            break;
-        case SORT_BY_TYPE:
-            append_to_log("Type\n");
-            break;
-        case SORT_BY_DATE:
-            append_to_log("Date\n");
-            break;
-        case SORT_BY_SIZE:
-            append_to_log("Size\n");
-            break;
-        default:
-            append_to_log("Unknown (%d)\n", prefs->sortBy);
-            break;
-    }
-    append_to_log("  Reverse Sort:     %s\n", prefs->reverseSort ? "Yes" : "No");
-    append_to_log("\n");
     
-    /* Visual Settings */
-    append_to_log("VISUAL SETTINGS:\n");
-    append_to_log("  Center Icons:     %s\n", prefs->centerIconsInColumn ? "Yes" : "No");
-    append_to_log("  Optimize Columns: %s\n", prefs->useColumnWidthOptimization ? "Yes" : "No");
-    append_to_log("\n");
-    
-    /* Window Management */
-    append_to_log("WINDOW MANAGEMENT:\n");
-    append_to_log("  Resize Windows:   %s\n", prefs->resizeWindows ? "Yes" : "No");
-    append_to_log("  Max Icons/Row:    %u\n", prefs->maxIconsPerRow);
-    append_to_log("  Max Width:        %u%% of screen\n", prefs->maxWindowWidthPct);
-    append_to_log("  Aspect Ratio:     %.2f\n", prefs->aspectRatio);
-    append_to_log("\n");
-    
-    /* Advanced Settings */
-    append_to_log("ADVANCED SETTINGS:\n");
-    append_to_log("  Skip Hidden:      %s\n", prefs->skipHiddenFolders ? "Yes" : "No");
-    append_to_log("\n");
-    
-    /* Backup Settings */
-    append_to_log("BACKUP SETTINGS:\n");
-    append_to_log("  Enable Backup:    %s\n", prefs->backupPrefs.enableUndoBackup ? "Yes" : "No");
-    append_to_log("  Use LhA:          %s\n", prefs->backupPrefs.useLha ? "Yes" : "No");
-    append_to_log("  Backup Path:      %s\n", prefs->backupPrefs.backupRootPath);
-    append_to_log("  Max Backups:      %u per folder\n", prefs->backupPrefs.maxBackupsPerFolder);
-    append_to_log("\n");
-    append_to_log("==================================================\n");
-    append_to_log("\n");
+    FreeMem(list, sizeof(struct List));
 }
 
 /*------------------------------------------------------------------------*/
+/* Window Open/Close Functions                                           */
+/*------------------------------------------------------------------------*/
+
 /**
- * @brief Request a directory using ASL file requester
- *
- * Opens a standard Amiga ASL file requester configured to select
- * directories only. If the user selects a directory, it is copied
- * to the provided buffer.
- *
- * @param buffer Buffer to store the selected path
- * @param buffer_size Size of the buffer
- * @param initial_path Initial directory to display (can be NULL)
- * @return BOOL TRUE if user selected a directory, FALSE if cancelled
+ * open_itidy_main_window - Create and open the main iTidy window
  */
-/*------------------------------------------------------------------------*/
-static BOOL request_directory(char *buffer, ULONG buffer_size, const char *initial_path)
-{
-    struct FileRequester *freq;
-    BOOL result = FALSE;
-    char temp_buffer[256];
-    
-    /* Allocate file requester */
-    freq = (struct FileRequester *)AllocAslRequest(ASL_FileRequest, NULL);
-    if (freq == NULL)
-    {
-        CONSOLE_ERROR("Failed to allocate ASL file requester\n");
-        return FALSE;
-    }
-    
-    CONSOLE_STATUS("Opening directory requester...\n");
-    
-    /* Request a directory */
-    if (AslRequestTags(freq,
-        ASLFR_TitleText, "Select Folder to Process",
-        ASLFR_DrawersOnly, TRUE,
-        ASLFR_InitialDrawer, initial_path ? initial_path : "DH0:",
-        ASLFR_DoPatterns, FALSE,
-        TAG_END))
-    {
-        /* User selected a directory */
-        CONSOLE_STATUS("User selected: %s\n", freq->rf_Dir);
-        
-        /* Copy the directory path to temp buffer */
-        if (freq->rf_Dir && freq->rf_Dir[0])
-        {
-            strncpy(temp_buffer, freq->rf_Dir, sizeof(temp_buffer) - 1);
-            temp_buffer[sizeof(temp_buffer) - 1] = '\0';
-            
-            /* Copy to output buffer */
-            strncpy(buffer, temp_buffer, buffer_size - 1);
-            buffer[buffer_size - 1] = '\0';
-            
-            CONSOLE_STATUS("Selected folder: %s\n", buffer);
-            result = TRUE;
-        }
-    }
-    else
-    {
-        CONSOLE_STATUS("User cancelled directory selection\n");
-    }
-    
-    /* Free the requester */
-    FreeAslRequest(freq);
-    
-    return result;
-}
-
-/*------------------------------------------------------------------------*/
-/**
- * @brief Create all gadgets for the main window
- *
- * Creates the complete iTidy GUI using GadTools gadgets as specified
- * in the iTidy_GUI_Feature_Design.md document.
- *
- * @param win_data Pointer to window data structure
- * @param topborder Top border height for gadget positioning
- * @param out_window_height Pointer to store calculated window height
- * @return BOOL TRUE if successful, FALSE otherwise
- */
-/*------------------------------------------------------------------------*/
-static BOOL create_gadgets(struct iTidyMainWindow *win_data, WORD topborder, WORD *out_window_height)
-{
-    struct NewGadget ng;
-    struct Gadget *gad;
-    WORD current_y;
-    WORD font_height;
-    
-    /* Get font height for spacing */
-    font_height = win_data->screen->RastPort.TxHeight;
-    
-    /* Create gadget context */
-    gad = CreateContext(&win_data->glist);
-    if (!gad)
-    {
-        CONSOLE_ERROR("Failed to create gadget context\n");
-        return FALSE;
-    }
-    
-    /* Initialize NewGadget structure */
-    ng.ng_TextAttr = win_data->screen->Font;
-    ng.ng_VisualInfo = win_data->visual_info;
-    ng.ng_Flags = 0;
-    
-    /* Start below the title bar with moderate spacing */
-    current_y = topborder + 25;  /* 15px extra spacing for groupbox */
-    
-
-    /* *******************************************************/
-    /* Group Box for Folder Selection                        */
-    /*********************************************************/
-
-    /*====================================================================*/
-    /* BROWSE BUTTON - Calculate position from right edge FIRST          */
-    /*====================================================================*/
-    {
-        WORD browse_width = 90;
-        WORD browse_left = ITIDY_GROUPBOX_RIGHT_EDGE - ITIDY_WINDOW_STANDARD_PADDING - browse_width;
-        
-        ng.ng_LeftEdge = browse_left;
-        ng.ng_TopEdge = current_y;
-        ng.ng_Width = browse_width;
-        ng.ng_Height = font_height + 6;
-        ng.ng_GadgetText = "Browse...";
-        ng.ng_GadgetID = GID_BROWSE;
-        ng.ng_Flags = PLACETEXT_IN;
-        
-        win_data->browse_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
-        if (!gad)
-        {
-            CONSOLE_ERROR("Failed to create browse button\n");
-            return FALSE;
-        }
-        
-        /*====================================================================*/
-        /* FOLDER LABEL (TEXT GADGET)                                        */
-        /*====================================================================*/
-        ng.ng_LeftEdge = ITIDY_WINDOW_LEFT_GROUP_GADETS_LABEL;
-        ng.ng_TopEdge = current_y;
-        ng.ng_Width = ITIDY_WINDOW_LEFT_GROUP_GADETS-ITIDY_WINDOW_LEFT_GROUP_GADETS_LABEL-2;
-        ng.ng_Height = font_height + 4;
-        ng.ng_GadgetText = "Folder:";
-        ng.ng_GadgetID = 0;  /* No ID needed for static text */
-        ng.ng_Flags = PLACETEXT_IN;
-        
-        win_data->folder_label = gad = CreateGadget(TEXT_KIND, gad, &ng,
-            GTTX_Text, "",
-            GTTX_Border, FALSE,
-            TAG_END);
-        if (!gad)
-        {
-            CONSOLE_ERROR("Failed to create folder label\n");
-            return FALSE;
-        }
-        
-        /*====================================================================*/
-        /* FOLDER PATH DISPLAY BOX (Custom drawn recessed bevel)             */
-        /* Width dynamically calculated to fill space between label and      */
-        /* Browse button: browse_left - gap - label_right                    */
-        /*====================================================================*/
-        win_data->folder_box_left = ITIDY_WINDOW_LEFT_GROUP_GADETS;
-        win_data->folder_box_top = current_y;
-        win_data->folder_box_width = browse_left - ITIDY_WINDOW_LEFT_GROUP_GADETS - ITIDY_WINDOW_STANDARD_PADDING;
-        win_data->folder_box_height = font_height + 6;
-        
-        /* Note: Folder path will be drawn in refresh handler */
-        /* No gadget created - this is a custom drawn display area */
-        win_data->folder_path = gad;  /* Keep gadget chain intact */
-    }
-    
-    current_y += font_height + ITIDY_WINDOW_GAP_BETWEEN_GROUPS;
-    
-    /* *******************************************************/
-    /* Group Box for Tidy Options - Two Column Layout       */
-    /*********************************************************/
-    
-    /*====================================================================*/
-    /* Calculate two-column layout with measured label widths            */
-    /*====================================================================*/
-    {
-        struct RastPort *rp = &win_data->screen->RastPort;
-        WORD available_width;
-        WORD column_gap;
-        WORD column_width;
-        WORD left_col_gadget_x;
-        WORD right_col_gadget_x;
-        WORD left_cycle_width;
-        WORD right_cycle_width;
-        
-        /* Measure label widths using current font */
-        WORD order_label_width = TextLength(rp, "Order:", 6);
-        WORD by_label_width = TextLength(rp, "By:", 3);
-        WORD position_label_width = TextLength(rp, "Position:", 9);
-        
-        /* Find widest label in each column */
-        WORD left_label_width = (order_label_width > position_label_width) ? order_label_width : position_label_width;
-        WORD right_label_width = by_label_width;
-        
-        /* Calculate midpoint of usable area using bit shift (avoids division) */
-        available_width = ITIDY_GROUPBOX_RIGHT_EDGE - ITIDY_GROUPBOX_LEFT_EDGE - (2 * ITIDY_WINDOW_STANDARD_PADDING);
-        WORD content_left = ITIDY_GROUPBOX_LEFT_EDGE + ITIDY_WINDOW_STANDARD_PADDING;
-        WORD midpoint = content_left + (available_width >> 1);  /* Bit shift right = divide by 2 */
-        
-        /* Position left column gadgets (start after label + gap) */
-        left_col_gadget_x = content_left + left_label_width + 8;
-        
-        /* Position right column gadgets at midpoint (with small adjustment + label + gap) */
-        right_col_gadget_x = midpoint + 15 + right_label_width + 8;
-        
-        /* Calculate cycle widths to fill to edge/midpoint */
-        left_cycle_width = midpoint - left_col_gadget_x - 15;
-        right_cycle_width = ITIDY_GROUPBOX_RIGHT_EDGE - ITIDY_WINDOW_STANDARD_PADDING - right_col_gadget_x;
-        
-        /*====================================================================*/
-        /* ORDER CYCLE GADGET - Top row left with built-in label             */
-        /*====================================================================*/
-        ng.ng_LeftEdge = left_col_gadget_x;
-        ng.ng_TopEdge = current_y;
-        ng.ng_Width = left_cycle_width;
-        ng.ng_Height = font_height + 6;
-        ng.ng_GadgetText = "Order:";
-        ng.ng_GadgetID = GID_ORDER;
-        ng.ng_Flags = PLACETEXT_LEFT;  /* GadTools places label to left, right-justified */
-        
-        win_data->order_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
-            GTCY_Labels, order_labels,
-            GTCY_Active, 0,
-            TAG_END);
-        if (!gad)
-        {
-            CONSOLE_ERROR("Failed to create order cycle\n");
-            return FALSE;
-        }
-        
-        /*====================================================================*/
-        /* SORT BY CYCLE GADGET - Top row right with built-in label          */
-        /*====================================================================*/
-        ng.ng_LeftEdge = right_col_gadget_x;
-        ng.ng_TopEdge = current_y;
-        ng.ng_Width = right_cycle_width;
-        ng.ng_Height = font_height + 6;
-        ng.ng_GadgetText = "By:";
-        ng.ng_GadgetID = GID_SORTBY;
-        ng.ng_Flags = PLACETEXT_LEFT;  /* GadTools places label to left, right-justified */
-        
-        win_data->sortby_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
-            GTCY_Labels, sortby_labels,
-            GTCY_Active, 0,
-            TAG_END);
-        if (!gad)
-        {
-            CONSOLE_ERROR("Failed to create sortby cycle\n");
-            return FALSE;
-        }
-        
-        current_y += font_height + 10;
-        
-        /*====================================================================*/
-        /* RECURSIVE SUBFOLDERS CHECKBOX - Middle row left                   */
-        /*====================================================================*/
-        ng.ng_LeftEdge = left_col_gadget_x;
-        ng.ng_TopEdge = current_y;
-        ng.ng_Width = 26;
-        ng.ng_Height = font_height + 4;
-        ng.ng_GadgetText = "Cleanup subfolders";
-        ng.ng_GadgetID = GID_RECURSIVE;
-        ng.ng_Flags = PLACETEXT_RIGHT;
-        
-        win_data->recursive_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
-            GTCB_Checked, FALSE,
-            TAG_END);
-        if (!gad)
-        {
-            CONSOLE_ERROR("Failed to create recursive checkbox\n");
-            return FALSE;
-        }
-        
-        /*====================================================================*/
-        /* BACKUP (LHA) CHECKBOX - Middle row right                          */
-        /*====================================================================*/
-        ng.ng_LeftEdge = right_col_gadget_x;
-        ng.ng_TopEdge = current_y;
-        ng.ng_Width = 26;
-        ng.ng_Height = font_height + 4;
-        ng.ng_GadgetText = "Backup icons using LhA";
-        ng.ng_GadgetID = GID_BACKUP;
-        ng.ng_Flags = PLACETEXT_RIGHT;
-        
-        win_data->backup_check = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
-            GTCB_Checked, FALSE,
-            TAG_END);
-        if (!gad)
-        {
-            CONSOLE_ERROR("Failed to create backup checkbox\n");
-            return FALSE;
-        }
-        
-        current_y += font_height + 10;
-        
-        /*====================================================================*/
-        /* WINDOW POSITION CYCLE GADGET - Bottom row left with built-in label*/
-        /*====================================================================*/
-        ng.ng_LeftEdge = left_col_gadget_x;
-        ng.ng_TopEdge = current_y;
-        ng.ng_Width = left_cycle_width;
-        ng.ng_Height = font_height + 6;
-        ng.ng_GadgetText = "Position:";
-        ng.ng_GadgetID = GID_WINDOW_POSITION;
-        ng.ng_Flags = PLACETEXT_LEFT;  /* GadTools places label to left, right-justified */
-        
-        win_data->window_position_cycle = gad = CreateGadget(CYCLE_KIND, gad, &ng,
-            GTCY_Labels, window_position_labels,
-            GTCY_Active, 0,
-            TAG_END);
-        if (!gad)
-        {
-            CONSOLE_ERROR("Failed to create window position cycle\n");
-            return FALSE;
-        }
-        
-        /*====================================================================*/
-        /* WINDOW POSITION HELP BUTTON - Bottom row right                    */
-        /*====================================================================*/
-        ng.ng_LeftEdge = right_col_gadget_x;
-        ng.ng_TopEdge = current_y;
-        ng.ng_Width = 26;
-        ng.ng_Height = font_height + 6;
-        ng.ng_GadgetText = "?";
-        ng.ng_GadgetID = GID_WINDOW_POSITION_HELP;
-        ng.ng_Flags = PLACETEXT_IN;
-        
-        win_data->window_position_help_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
-            TAG_END);
-        if (!gad)
-        {
-            CONSOLE_ERROR("Failed to create window position help button\n");
-            return FALSE;
-        }
-    }
-    
-    current_y += font_height + ITIDY_WINDOW_GAP_BETWEEN_GROUPS;
-    
-    /*====================================================================*/
-    /* ADVANCED BUTTON (Row 1, Position 1) - Equal width buttons         */
-    /* Calculate button width dynamically:                               */
-    /* Inner content width = RIGHT_EDGE - LEFT_EDGE - 2*PADDING (for box borders) */
-    /* Space for 3 buttons with 2 gaps = (inner_width - 2*gap) / 3       */
-    /*====================================================================*/
-    {
-        WORD inner_width = ITIDY_GROUPBOX_RIGHT_EDGE - ITIDY_GROUPBOX_LEFT_EDGE - (2 * ITIDY_WINDOW_STANDARD_PADDING);
-        WORD button_width = (inner_width - (2 * ITIDY_WINDOW_STANDARD_PADDING)) / 3;
-        
-        ng.ng_LeftEdge = ITIDY_GROUPBOX_LEFT_EDGE + ITIDY_WINDOW_STANDARD_PADDING;
-        ng.ng_TopEdge = current_y;
-        ng.ng_Width = button_width;
-        ng.ng_Height = font_height + 8;
-        ng.ng_GadgetText = "Advanced...";
-        ng.ng_GadgetID = GID_ADVANCED;
-        ng.ng_Flags = PLACETEXT_IN;
-    
-        win_data->advanced_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
-            GA_Disabled, FALSE,  /* Enabled - Phase 5 complete */
-            TAG_END);
-        if (!gad)
-        {
-            CONSOLE_ERROR("Failed to create advanced button\n");
-            return FALSE;
-        }
-        
-        /*====================================================================*/
-        /* VIEW TOOL CACHE BUTTON (Row 1, Position 2) - Equal width          */
-        /*====================================================================*/
-        ng.ng_LeftEdge = ITIDY_GROUPBOX_LEFT_EDGE + ITIDY_WINDOW_STANDARD_PADDING + button_width + ITIDY_WINDOW_STANDARD_PADDING;
-        ng.ng_TopEdge = current_y;
-        ng.ng_Width = button_width;
-        ng.ng_Height = font_height + 8;
-        ng.ng_GadgetText = "Fix Default Tools...";
-        ng.ng_GadgetID = GID_VIEW_TOOL_CACHE;
-        ng.ng_Flags = PLACETEXT_IN;
-    
-        win_data->view_tool_cache_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
-        if (!gad)
-        {
-            CONSOLE_ERROR("Failed to create view tool cache button\n");
-            return FALSE;
-        }
-        
-        /*====================================================================*/
-        /* RESTORE BUTTON (Row 1, Position 3) - Equal width                  */
-        /*====================================================================*/
-        ng.ng_LeftEdge = ITIDY_GROUPBOX_LEFT_EDGE + ITIDY_WINDOW_STANDARD_PADDING + (button_width + ITIDY_WINDOW_STANDARD_PADDING) * 2;
-        ng.ng_TopEdge = current_y;
-        ng.ng_Width = button_width;
-        ng.ng_Height = font_height + 8;
-        ng.ng_GadgetText = "Restore Backups...";
-        ng.ng_GadgetID = GID_RESTORE;
-        ng.ng_Flags = PLACETEXT_IN;
-        
-        win_data->restore_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
-            GA_Disabled, FALSE,
-            TAG_END);
-        if (!gad)
-        {
-            CONSOLE_ERROR("Failed to create restore button\n");
-            return FALSE;
-        }
-    }
-    
-    current_y += font_height + 27;
-    
-    /*====================================================================*/
-    /* APPLY BUTTON (Row 2, Position 1) - Dynamic width calculation      */
-    /* These buttons exist outside group boxes, align with groupbox edges */
-    /* Total width = RIGHT_EDGE - LEFT_EDGE (align with group box borders) */
-    /* Space for 2 buttons with 1 gap = (total - gap) / 2                */
-    /*====================================================================*/
-    {
-        WORD total_width = ITIDY_GROUPBOX_RIGHT_EDGE - ITIDY_GROUPBOX_LEFT_EDGE;
-        WORD button_width = (total_width - ITIDY_WINDOW_STANDARD_PADDING) / 2;
-        
-        ng.ng_LeftEdge = ITIDY_GROUPBOX_LEFT_EDGE;
-        ng.ng_TopEdge = current_y;
-        ng.ng_Width = button_width;
-        ng.ng_Height = font_height + 8;
-        ng.ng_GadgetText = "Start";
-        ng.ng_GadgetID = GID_APPLY;
-        ng.ng_Flags = PLACETEXT_IN;
-        
-        win_data->apply_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
-        if (!gad)
-        {
-            CONSOLE_ERROR("Failed to create apply button\n");
-            return FALSE;
-        }
-        
-        log_debug(LOG_GUI, "Start button created: X=%d, Width=%d, RightEdge=%d\n", 
-                 ng.ng_LeftEdge, ng.ng_Width, ng.ng_LeftEdge + ng.ng_Width);
-        
-        /*====================================================================*/
-        /* CANCEL BUTTON (Row 2, Position 2) - Dynamic width calculation     */
-        /* Make this button extend to GROUPBOX_RIGHT_EDGE exactly            */
-        /* IMPORTANT: +3 pixels added to compensate for GadTools button      */
-        /* internal bevel rendering. The button gadget structure uses full   */
-        /* width, but the visible button face is drawn inset by ~3 pixels    */
-        /* from the gadget boundary. Without this adjustment, the visual     */
-        /* right edge appears 3 pixels short of the group box border.        */
-        /*====================================================================*/
-        ng.ng_LeftEdge = ITIDY_GROUPBOX_LEFT_EDGE + button_width + ITIDY_WINDOW_STANDARD_PADDING;
-        ng.ng_TopEdge = current_y;
-        ng.ng_Width = ITIDY_GROUPBOX_RIGHT_EDGE - ng.ng_LeftEdge + 3;  /* +3 compensates for button bevel inset */
-        ng.ng_Height = font_height + 8;
-        ng.ng_GadgetText = "Exit";
-        ng.ng_GadgetID = GID_CANCEL;
-        ng.ng_Flags = PLACETEXT_IN;
-        
-        log_debug(LOG_GUI, "Exit button calculation: total_width=%d, button_width=%d, LeftEdge=%d, Width=%d, Expected RightEdge=%d\n",
-                 total_width, button_width, ng.ng_LeftEdge, ng.ng_Width, ng.ng_LeftEdge + ng.ng_Width);
-        log_debug(LOG_GUI, "ITIDY_GROUPBOX_RIGHT_EDGE=%d, ITIDY_GROUPBOX_LEFT_EDGE=%d\n",
-                 ITIDY_GROUPBOX_RIGHT_EDGE, ITIDY_GROUPBOX_LEFT_EDGE);
-        
-        win_data->cancel_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_END);
-        if (!gad)
-        {
-            CONSOLE_ERROR("Failed to create cancel button\n");
-            return FALSE;
-        }
-        
-        log_debug(LOG_GUI, "Exit button created: X=%d, Width=%d, RightEdge=%d\n",
-                 ng.ng_LeftEdge, ng.ng_Width, ng.ng_LeftEdge + ng.ng_Width);
-        log_debug(LOG_GUI, "Exit button ACTUAL gadget: LeftEdge=%d, Width=%d, RightEdge=%d\n",
-                 gad->LeftEdge, gad->Width, gad->LeftEdge + gad->Width);
-    }
-
-    current_y += font_height + 10;
-    
-    /* Store calculated window height */
-    if (out_window_height != NULL)
-    {
-        *out_window_height = current_y + ITIDY_WINDOW_STANDARD_PADDING + 1;
-    }
-    
-    CONSOLE_STATUS("All gadgets created successfully\n");
-    return TRUE;
-}
-
-/*------------------------------------------------------------------------*/
-/**
- * @brief Open the iTidy main window with GadTools gadgets
- *
- * Creates a complete GUI interface with all controls specified in
- * iTidy_GUI_Feature_Design.md
- *
- * @param win_data Pointer to window data structure
- * @return BOOL TRUE if successful, FALSE otherwise
- */
-/*------------------------------------------------------------------------*/
 BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
 {
-    WORD topborder;
+    struct Screen *screen = NULL;
+    struct DrawInfo *draw_info = NULL;
     
-    /* Validate input */
-    if (win_data == NULL)
-    {
-        CONSOLE_ERROR("Invalid window data structure\n");
-        return FALSE;
-    }
-
-    /* Initialize global preferences on first window open */
-    InitializeGlobalPreferences();
-    
-    /* Apply tooltype settings to preferences (if any were found during startup) */
-    {
-        LayoutPreferences temp_prefs;
-        const LayoutPreferences *current_prefs = GetGlobalPreferences();
-        UWORD tooltype_log_level;
-        
-        /* Copy current preferences */
-        memcpy(&temp_prefs, current_prefs, sizeof(LayoutPreferences));
-        
-        /* Apply tooltype log level if it was set at startup */
-        tooltype_log_level = get_tooltype_debug_level();
-        temp_prefs.logLevel = tooltype_log_level;
-        
-        /* Update global preferences with tooltype-modified values */
-        UpdateGlobalPreferences(&temp_prefs);
-    }
-
-    /* Initialize structure */
+    /* Clear the structure */
     memset(win_data, 0, sizeof(struct iTidyMainWindow));
     
-    /* Load current global preferences into window controls */
+    /* Initialize default values */
+    win_data->order_selected = 0;
+    win_data->sortby_selected = 0;
+    win_data->recursive_subdirs = FALSE;
+    win_data->enable_backup = FALSE;
+    win_data->window_position_selected = 0;
+    strcpy(win_data->folder_path_buffer, "SYS:");
+    
+    /* Lock Workbench screen */
+    screen = LockPubScreen("Workbench");
+    if (!screen)
     {
-        const LayoutPreferences *prefs = GetGlobalPreferences();
-        
-        /* Map blockGroupMode to Order cycle selection */
-        if (prefs->blockGroupMode == BLOCK_GROUP_BY_TYPE)
-        {
-            win_data->order_selected = 3;  /* \"Grouped by Type\" */
-        }
-        else
-        {
-            win_data->order_selected = prefs->sortPriority;  /* 0=Folders First, 1=Files First, 2=Mixed */
-        }
-        
-        win_data->sortby_selected = prefs->sortBy;
-        win_data->recursive_subdirs = prefs->recursive_subdirs;
-        win_data->enable_backup = prefs->enable_backup;
-        win_data->window_position_selected = prefs->windowPositionMode;
-        
-        /* Copy folder path from prefs, or use default if empty */
-        if (prefs->folder_path[0] != '\0')
-        {
-            strncpy(win_data->folder_path_buffer, prefs->folder_path, sizeof(win_data->folder_path_buffer) - 1);
-            win_data->folder_path_buffer[sizeof(win_data->folder_path_buffer) - 1] = '\0';
-        }
-        else
-        {
-            strcpy(win_data->folder_path_buffer, "PC:Programming/iTidy/Tests/multiIcon");
-        }
-    }
-
-    /* Lock the Workbench screen */
-    win_data->screen = LockPubScreen(NULL);
-    if (win_data->screen == NULL)
-    {
-        CONSOLE_ERROR("Could not lock Workbench screen\n");
+        log_error(LOG_GUI, "Failed to lock Workbench screen\n");
         return FALSE;
     }
-
-    /* Get visual info for GadTools */
-    win_data->visual_info = GetVisualInfo(win_data->screen, TAG_END);
-    if (win_data->visual_info == NULL)
+    win_data->screen = screen;
+    
+    /* Get visual info for menus */
+    win_data->visual_info = GetVisualInfo(screen, TAG_END);
+    if (!win_data->visual_info)
     {
-        CONSOLE_ERROR("Could not get visual info\n");
-        UnlockPubScreen(NULL, win_data->screen);
+        log_error(LOG_GUI, "Failed to get visual info\n");
+        UnlockPubScreen(NULL, screen);
+        win_data->screen = NULL;
         return FALSE;
     }
-
-    CONSOLE_STATUS("Opening iTidy main window with GadTools gadgets...\n");
-
-    /* Calculate top border for gadget positioning */
-    topborder = win_data->screen->WBorTop + win_data->screen->RastPort.TxHeight + 1;
-
-    /* Create all gadgets and get calculated window height */
-    WORD calculated_height = ITIDY_WINDOW_HEIGHT;  /* Default fallback */
-    if (!create_gadgets(win_data, topborder, &calculated_height))
+    
+    /* Create application message port */
+    win_data->app_port = CreateMsgPort();
+    if (!win_data->app_port)
     {
-        CONSOLE_ERROR("Failed to create gadgets\n");
+        log_error(LOG_GUI, "Failed to create message port\n");
         FreeVisualInfo(win_data->visual_info);
-        UnlockPubScreen(NULL, win_data->screen);
+        UnlockPubScreen(NULL, screen);
+        win_data->visual_info = NULL;
+        win_data->screen = NULL;
         return FALSE;
     }
-
-    /* Setup menu system BEFORE opening window */
-    if (!setup_main_window_menus())
+    
+    /* Create Chooser label lists */
+    win_data->order_labels = create_chooser_labels(order_labels_str);
+    win_data->sortby_labels = create_chooser_labels(sortby_labels_str);
+    win_data->position_labels = create_chooser_labels(position_labels_str);
+    
+    if (!win_data->order_labels || !win_data->sortby_labels || !win_data->position_labels)
     {
-        CONSOLE_ERROR("ERROR: Could not setup menus\n");
-        FreeGadgets(win_data->glist);
+        log_error(LOG_GUI, "Failed to create chooser labels\n");
+        if (win_data->order_labels) free_chooser_labels(win_data->order_labels);
+        if (win_data->sortby_labels) free_chooser_labels(win_data->sortby_labels);
+        if (win_data->position_labels) free_chooser_labels(win_data->position_labels);
+        DeleteMsgPort(win_data->app_port);
         FreeVisualInfo(win_data->visual_info);
-        UnlockPubScreen(NULL, win_data->screen);
+        UnlockPubScreen(NULL, screen);
+        win_data->order_labels = NULL;
+        win_data->sortby_labels = NULL;
+        win_data->position_labels = NULL;
+        win_data->app_port = NULL;
+        win_data->visual_info = NULL;
+        win_data->screen = NULL;
         return FALSE;
     }
-
-    /* Open the window with calculated height based on font size */
-    /* WA_NewLookMenus is only available on WB 3.0+ (Intuition v39+) */
-    if (prefsWorkbench.workbenchVersion >= 39)
+    
+    /* Create menus */
+    win_data->menu_strip = CreateMenus(main_window_menu_template, TAG_END);
+    if (win_data->menu_strip)
     {
-        /* WB 3.0+ - Enable NewLook menus */
-        win_data->window = OpenWindowTags(NULL,
-            WA_Left, ITIDY_WINDOW_LEFT,
-            WA_Top, ITIDY_WINDOW_TOP,
-            WA_Width, ITIDY_WINDOW_WIDTH,
-            WA_Height, calculated_height,
-            WA_Title, ITIDY_WINDOW_TITLE,
-            WA_DragBar, TRUE,
-            WA_DepthGadget, TRUE,
-            WA_CloseGadget, TRUE,
-            WA_Activate, TRUE,
-            WA_PubScreen, win_data->screen,
-            WA_Gadgets, win_data->glist,
-            WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW | IDCMP_MENUPICK,
-            WA_NewLookMenus, TRUE,  /* Enable NewLook menus (WB 3.0+) */
+        LayoutMenus(win_data->menu_strip, win_data->visual_info,
+            GTMN_NewLookMenus, TRUE,
             TAG_END);
     }
-    else
+    
+    /* Create the ReAction window object */
+    win_data->window_obj = NewObject(WINDOW_GetClass(), NULL,
+        WA_Title, ITIDY_WINDOW_TITLE,
+        WA_Left, 50,
+        WA_Top, 30,
+        WA_Width, 400,
+        WA_Height, 250,
+        WA_MinWidth, 350,
+        WA_MinHeight, 200,
+        WA_MaxWidth, 8192,
+        WA_MaxHeight, 8192,
+        WA_PubScreen, screen,
+        WA_CloseGadget, TRUE,
+        WA_DepthGadget, TRUE,
+        WA_SizeGadget, TRUE,
+        WA_DragBar, TRUE,
+        WA_Activate, TRUE,
+        WA_NoCareRefresh, TRUE,
+        WINDOW_AppPort, win_data->app_port,
+        WINDOW_GadgetHelp, TRUE,
+        WINDOW_IconTitle, "iTidy",
+        WA_IDCMP, IDCMP_GADGETDOWN | IDCMP_GADGETUP | IDCMP_CLOSEWINDOW | 
+                  IDCMP_MENUPICK | IDCMP_NEWSIZE,
+        
+        WINDOW_ParentGroup, NewObject(LAYOUT_GetClass(), NULL,
+            LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+            LAYOUT_SpaceOuter, TRUE,
+            LAYOUT_DeferLayout, TRUE,
+            
+            /* Master layout container */
+            LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_MASTER_LAYOUT] = 
+                NewObject(LAYOUT_GetClass(), NULL,
+                GA_ID, ITIDY_GAID_MASTER_LAYOUT,
+                LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                LAYOUT_LeftSpacing, 2,
+                LAYOUT_RightSpacing, 2,
+                LAYOUT_TopSpacing, 2,
+                LAYOUT_BottomSpacing, 2,
+                
+                /* Folder selection group */
+                LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_FOLDER_LAYOUT] = 
+                    NewObject(LAYOUT_GetClass(), NULL,
+                    GA_ID, ITIDY_GAID_FOLDER_LAYOUT,
+                    LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
+                    LAYOUT_BevelStyle, BVS_THIN,
+                    LAYOUT_LeftSpacing, 2,
+                    LAYOUT_RightSpacing, 2,
+                    LAYOUT_TopSpacing, 3,
+                    LAYOUT_BottomSpacing, 4,
+                    
+                    LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_FOLDER_GETFILE] = 
+                        NewObject(GETFILE_GetClass(), NULL,
+                        GA_ID, ITIDY_GAID_FOLDER_GETFILE,
+                        GA_RelVerify, TRUE,
+                        GETFILE_TitleText, "Select folder to tidy",
+                        GETFILE_Drawer, win_data->folder_path_buffer,
+                        GETFILE_DoSaveMode, FALSE,
+                        GETFILE_DrawersOnly, TRUE,
+                        GETFILE_ReadOnly, TRUE,
+                    TAG_END),
+                    CHILD_Label, NewObject(LABEL_GetClass(), NULL,
+                        LABEL_Text, "Folder",
+                    TAG_END),
+                TAG_END),
+                
+                /* Options group */
+                LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_OPTIONS_LAYOUT] = 
+                    NewObject(LAYOUT_GetClass(), NULL,
+                    GA_ID, ITIDY_GAID_OPTIONS_LAYOUT,
+                    LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
+                    LAYOUT_BevelStyle, BVS_THIN,
+                    LAYOUT_LeftSpacing, 2,
+                    LAYOUT_RightSpacing, 2,
+                    LAYOUT_TopSpacing, 2,
+                    LAYOUT_BottomSpacing, 4,
+                    
+                    /* Left column */
+                    LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_LEFT_COLUMN] = 
+                        NewObject(LAYOUT_GetClass(), NULL,
+                        GA_ID, ITIDY_GAID_LEFT_COLUMN,
+                        LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                        LAYOUT_RightSpacing, 2,
+                        
+                        /* Order chooser */
+                        LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_ORDER_CHOOSER] = 
+                            NewObject(CHOOSER_GetClass(), NULL,
+                            GA_ID, ITIDY_GAID_ORDER_CHOOSER,
+                            GA_RelVerify, TRUE,
+                            GA_TabCycle, TRUE,
+                            CHOOSER_PopUp, TRUE,
+                            CHOOSER_Selected, win_data->order_selected,
+                            CHOOSER_Labels, win_data->order_labels,
+                        TAG_END),
+                        CHILD_Label, NewObject(LABEL_GetClass(), NULL,
+                            LABEL_Text, "Order",
+                        TAG_END),
+                        
+                        /* Recursive checkbox */
+                        LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_RECURSIVE_CHECKBOX] = 
+                            NewObject(CHECKBOX_GetClass(), NULL,
+                            GA_ID, ITIDY_GAID_RECURSIVE_CHECKBOX,
+                            GA_Text, "",
+                            GA_RelVerify, TRUE,
+                            GA_TabCycle, TRUE,
+                            GA_Selected, win_data->recursive_subdirs,
+                            CHECKBOX_TextPlace, PLACETEXT_RIGHT,
+                        TAG_END),
+                        CHILD_Label, NewObject(LABEL_GetClass(), NULL,
+                            LABEL_Text, "Cleanup subfolders",
+                        TAG_END),
+                        
+                        /* Position chooser */
+                        LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_POSITION_CHOOSER] = 
+                            NewObject(CHOOSER_GetClass(), NULL,
+                            GA_ID, ITIDY_GAID_POSITION_CHOOSER,
+                            GA_RelVerify, TRUE,
+                            GA_TabCycle, TRUE,
+                            CHOOSER_PopUp, TRUE,
+                            CHOOSER_Selected, win_data->window_position_selected,
+                            CHOOSER_Labels, win_data->position_labels,
+                        TAG_END),
+                        CHILD_Label, NewObject(LABEL_GetClass(), NULL,
+                            LABEL_Text, "Position",
+                        TAG_END),
+                    TAG_END),
+                    
+                    /* Right column */
+                    LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_RIGHT_COLUMN] = 
+                        NewObject(LAYOUT_GetClass(), NULL,
+                        GA_ID, ITIDY_GAID_RIGHT_COLUMN,
+                        LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                        LAYOUT_LeftSpacing, 2,
+                        
+                        /* Sort by chooser */
+                        LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_SORTBY_CHOOSER] = 
+                            NewObject(CHOOSER_GetClass(), NULL,
+                            GA_ID, ITIDY_GAID_SORTBY_CHOOSER,
+                            GA_RelVerify, TRUE,
+                            GA_TabCycle, TRUE,
+                            CHOOSER_PopUp, TRUE,
+                            CHOOSER_Selected, win_data->sortby_selected,
+                            CHOOSER_Labels, win_data->sortby_labels,
+                        TAG_END),
+                        CHILD_Label, NewObject(LABEL_GetClass(), NULL,
+                            LABEL_Text, "By",
+                        TAG_END),
+                        
+                        /* Backup checkbox */
+                        LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_BACKUP_CHECKBOX] = 
+                            NewObject(CHECKBOX_GetClass(), NULL,
+                            GA_ID, ITIDY_GAID_BACKUP_CHECKBOX,
+                            GA_Text, "",
+                            GA_RelVerify, TRUE,
+                            GA_TabCycle, TRUE,
+                            GA_Selected, win_data->enable_backup,
+                            CHECKBOX_TextPlace, PLACETEXT_RIGHT,
+                        TAG_END),
+                        CHILD_Label, NewObject(LABEL_GetClass(), NULL,
+                            LABEL_Text, "Backup icons",
+                        TAG_END),
+                        
+                        /* Help button */
+                        LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_HELP_BUTTON] = 
+                            NewObject(BUTTON_GetClass(), NULL,
+                            GA_ID, ITIDY_GAID_HELP_BUTTON,
+                            GA_Text, "?",
+                            GA_RelVerify, TRUE,
+                            GA_TabCycle, TRUE,
+                        TAG_END),
+                        CHILD_Label, NewObject(LABEL_GetClass(), NULL,
+                            LABEL_Text, "Help",
+                        TAG_END),
+                    TAG_END),
+                TAG_END),
+                
+                /* Tools button group */
+                LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_TOOLS_LAYOUT] = 
+                    NewObject(LAYOUT_GetClass(), NULL,
+                    GA_ID, ITIDY_GAID_TOOLS_LAYOUT,
+                    LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
+                    LAYOUT_BevelStyle, BVS_THIN,
+                    LAYOUT_LeftSpacing, 2,
+                    LAYOUT_RightSpacing, 2,
+                    LAYOUT_TopSpacing, 2,
+                    LAYOUT_BottomSpacing, 4,
+                    
+                    LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_ADVANCED_BUTTON] = 
+                        NewObject(BUTTON_GetClass(), NULL,
+                        GA_ID, ITIDY_GAID_ADVANCED_BUTTON,
+                        GA_Text, "Advanced",
+                        GA_RelVerify, TRUE,
+                        GA_TabCycle, TRUE,
+                    TAG_END),
+                    
+                    LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_DEFAULT_TOOLS_BUTTON] = 
+                        NewObject(BUTTON_GetClass(), NULL,
+                        GA_ID, ITIDY_GAID_DEFAULT_TOOLS_BUTTON,
+                        GA_Text, "Fix default tools...",
+                        GA_RelVerify, TRUE,
+                        GA_TabCycle, TRUE,
+                    TAG_END),
+                    
+                    LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_RESTORE_BUTTON] = 
+                        NewObject(BUTTON_GetClass(), NULL,
+                        GA_ID, ITIDY_GAID_RESTORE_BUTTON,
+                        GA_Text, "Restore backups",
+                        GA_RelVerify, TRUE,
+                        GA_TabCycle, TRUE,
+                    TAG_END),
+                TAG_END),
+                
+                /* Bottom buttons */
+                LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_BUTTONS_LAYOUT] = 
+                    NewObject(LAYOUT_GetClass(), NULL,
+                    GA_ID, ITIDY_GAID_BUTTONS_LAYOUT,
+                    LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
+                    
+                    LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_START_BUTTON] = 
+                        NewObject(BUTTON_GetClass(), NULL,
+                        GA_ID, ITIDY_GAID_START_BUTTON,
+                        GA_Text, "Start",
+                        GA_RelVerify, TRUE,
+                        GA_TabCycle, TRUE,
+                    TAG_END),
+                    
+                    LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_EXIT_BUTTON] = 
+                        NewObject(BUTTON_GetClass(), NULL,
+                        GA_ID, ITIDY_GAID_EXIT_BUTTON,
+                        GA_Text, "Exit",
+                        GA_RelVerify, TRUE,
+                        GA_TabCycle, TRUE,
+                    TAG_END),
+                TAG_END),
+            TAG_END),
+        TAG_END),
+    TAG_END);
+    
+    if (!win_data->window_obj)
     {
-        /* WB 2.x - Classic menus (no WA_NewLookMenus tag) */
-        win_data->window = OpenWindowTags(NULL,
-            WA_Left, ITIDY_WINDOW_LEFT,
-            WA_Top, ITIDY_WINDOW_TOP,
-            WA_Width, ITIDY_WINDOW_WIDTH,
-            WA_Height, calculated_height,
-            WA_Title, ITIDY_WINDOW_TITLE,
-            WA_DragBar, TRUE,
-            WA_DepthGadget, TRUE,
-            WA_CloseGadget, TRUE,
-            WA_Activate, TRUE,
-            WA_PubScreen, win_data->screen,
-            WA_Gadgets, win_data->glist,
-            WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW | IDCMP_MENUPICK,
-            TAG_END);
-    }
-
-    if (win_data->window == NULL)
-    {
-        CONSOLE_ERROR("Could not open window\n");
-        cleanup_main_window_menus();
-        FreeGadgets(win_data->glist);
+        log_error(LOG_GUI, "Failed to create window object\n");
+        if (win_data->menu_strip) FreeMenus(win_data->menu_strip);
+        free_chooser_labels(win_data->order_labels);
+        free_chooser_labels(win_data->sortby_labels);
+        free_chooser_labels(win_data->position_labels);
+        DeleteMsgPort(win_data->app_port);
         FreeVisualInfo(win_data->visual_info);
-        UnlockPubScreen(NULL, win_data->screen);
+        UnlockPubScreen(NULL, screen);
+        win_data->menu_strip = NULL;
+        win_data->order_labels = NULL;
+        win_data->sortby_labels = NULL;
+        win_data->position_labels = NULL;
+        win_data->app_port = NULL;
+        win_data->visual_info = NULL;
+        win_data->screen = NULL;
         return FALSE;
     }
-
-    /* Attach menu strip to window */
-    if (main_menu_strip)
+    
+    /* Open the window */
+    win_data->window = (struct Window *)RA_OpenWindow(win_data->window_obj);
+    if (!win_data->window)
     {
-        SetMenuStrip(win_data->window, main_menu_strip);
-        log_info(LOG_GUI, "Menu strip attached to main window\n");
-    }
-
-    /* Refresh gadgets */
-    GT_RefreshWindow(win_data->window, NULL);
-    
-    /* Calculate group box rectangles for visual grouping */
-    /* This must be done after window is open and gadgets have final geometry */
-    CONSOLE_DEBUG("Calculating folder group box...\n");
-    CalcGadgetGroupBoxRect(win_data->window,
-                          win_data->browse_btn,
-                          win_data->folder_label,  /* Gadgets are chained in creation order */
-                          &win_data->folder_group_box);
-    
-    /* Override MinX and MaxX to enforce alignment constants */
-    win_data->folder_group_box.MinX = ITIDY_GROUPBOX_LEFT_EDGE;
-    win_data->folder_group_box.MaxX = ITIDY_GROUPBOX_RIGHT_EDGE;
-    
-    CONSOLE_DEBUG("Folder group box calculated: (%d,%d) to (%d,%d)\n",
-           win_data->folder_group_box.MinX, win_data->folder_group_box.MinY,
-           win_data->folder_group_box.MaxX, win_data->folder_group_box.MaxY);
-    
-    CONSOLE_DEBUG("Calculating tidy options group box...\n");
-    CalcGadgetGroupBoxRect(win_data->window,
-                          win_data->order_cycle,
-                          win_data->backup_check,  /* Use backup check as end - Window Position controls added manually */
-                          &win_data->tidy_options_group_box);
-    
-    /* Check if calculation failed (MinY would be very small or negative) */
-    if (win_data->tidy_options_group_box.MinY < 50) {
-        CONSOLE_WARNING("Tidy options groupbox calculation may have failed. MinY=%d\n", 
-               win_data->tidy_options_group_box.MinY);
+        log_error(LOG_GUI, "Failed to open window\n");
+        DisposeObject(win_data->window_obj);
+        if (win_data->menu_strip) FreeMenus(win_data->menu_strip);
+        free_chooser_labels(win_data->order_labels);
+        free_chooser_labels(win_data->sortby_labels);
+        free_chooser_labels(win_data->position_labels);
+        DeleteMsgPort(win_data->app_port);
+        FreeVisualInfo(win_data->visual_info);
+        UnlockPubScreen(NULL, screen);
+        win_data->window_obj = NULL;
+        win_data->menu_strip = NULL;
+        win_data->order_labels = NULL;
+        win_data->sortby_labels = NULL;
+        win_data->position_labels = NULL;
+        win_data->app_port = NULL;
+        win_data->visual_info = NULL;
+        win_data->screen = NULL;
+        return FALSE;
     }
     
-    /* Extend the groupbox to include Window Position controls below */
-    /* Window Position controls are at current_y which is about 16px below backup checkbox */
-    /* Add approximately 30px to MaxY to encompass the Window Position row */
-    win_data->tidy_options_group_box.MaxY += 25;
+    /* Attach menus */
+    if (win_data->menu_strip)
+    {
+        SetMenuStrip(win_data->window, win_data->menu_strip);
+    }
     
-    /* Override MinX and MaxX to enforce alignment constants */
-    win_data->tidy_options_group_box.MinX = ITIDY_GROUPBOX_LEFT_EDGE;
-    win_data->tidy_options_group_box.MaxX = ITIDY_GROUPBOX_RIGHT_EDGE;
-    
-    CONSOLE_DEBUG("Tidy options group box calculated: (%d,%d) to (%d,%d)\n",
-           win_data->tidy_options_group_box.MinX, win_data->tidy_options_group_box.MinY,
-           win_data->tidy_options_group_box.MaxX, win_data->tidy_options_group_box.MaxY);
-    
-    CONSOLE_DEBUG("Calculating tools group box...\n");
-    CalcGadgetGroupBoxRect(win_data->window,
-                          win_data->advanced_btn,
-                          win_data->restore_btn,
-                          &win_data->tools_group_box);
-    
-    /* Override MinX and MaxX to enforce alignment constants */
-    win_data->tools_group_box.MinX = ITIDY_GROUPBOX_LEFT_EDGE;
-    win_data->tools_group_box.MaxX = ITIDY_GROUPBOX_RIGHT_EDGE;
-    
-    CONSOLE_DEBUG("Tools group box calculated: (%d,%d) to (%d,%d)\n",
-           win_data->tools_group_box.MinX, win_data->tools_group_box.MinY,
-           win_data->tools_group_box.MaxX, win_data->tools_group_box.MaxY);
-    
-    /* Draw the group boxes immediately after calculating */
-    CONSOLE_DEBUG("Drawing initial folder group box...\n");
-    DrawGroupBoxWithLabel(win_data->window,
-                         win_data->visual_info,
-                         &win_data->folder_group_box,
-                         "Folder");
-    CONSOLE_DEBUG("Initial folder group box drawing complete\n");
-    
-    CONSOLE_DEBUG("Drawing initial tidy options group box...\n");
-    DrawGroupBoxWithLabel(win_data->window,
-                         win_data->visual_info,
-                         &win_data->tidy_options_group_box,
-                         "Tidy options");
-    CONSOLE_DEBUG("Initial tidy options group box drawing complete\n");
-    
-    CONSOLE_DEBUG("Drawing initial tools group box...\n");
-    DrawGroupBoxWithLabel(win_data->window,
-                         win_data->visual_info,
-                         &win_data->tools_group_box,
-                         "Tools");
-    CONSOLE_DEBUG("Initial tools group box drawing complete\n");
-    
-    /* Draw the initial folder path display */
-    draw_folder_path_box(win_data);
-
-    /* Mark window as successfully opened */
     win_data->window_open = TRUE;
-
-    CONSOLE_STATUS("iTidy main window opened successfully\n");
-    CONSOLE_DEBUG("Window dimensions: %dx%d at position (%d,%d)\n",
-           ITIDY_WINDOW_WIDTH, ITIDY_WINDOW_HEIGHT,
-           ITIDY_WINDOW_LEFT, ITIDY_WINDOW_TOP);
-
-    /* Build PATH search list for default tool validation (deferred until after window opens) */
-    /* Show busy pointer while parsing S:Startup-Sequence and S:User-Startup */
-    CONSOLE_STATUS("Building system PATH list...\n");
-    safe_set_window_pointer(win_data->window, TRUE);
+    log_info(LOG_GUI, "Main window opened successfully\n");
     
-    log_info(LOG_GENERAL, "Building system PATH search list (deferred after window open)...\n");
-    if (!BuildPathSearchList())
-    {
-        log_warning(LOG_GENERAL, "Failed to build PATH search list - default tool validation may be limited\n");
-    }
-    else
-    {
-        log_info(LOG_GENERAL, "PATH search list built successfully\n");
-    }
-    
-    safe_set_window_pointer(win_data->window, FALSE);
-    CONSOLE_STATUS("Ready for user interaction.\n");
-
     return TRUE;
 }
 
-/*------------------------------------------------------------------------*/
 /**
- * @brief Close the iTidy main window and cleanup resources
- *
- * Properly closes the window and releases all GadTools resources.
- * Safe to call even if window was never opened.
- *
- * @param win_data Pointer to window data structure
+ * close_itidy_main_window - Close the main window and free resources
  */
-/*------------------------------------------------------------------------*/
 void close_itidy_main_window(struct iTidyMainWindow *win_data)
 {
-    if (win_data == NULL)
-    {
+    if (!win_data)
         return;
-    }
-
-    CONSOLE_STATUS("Closing iTidy main window...\n");
-
-    /* Close window if it's open */
-    if (win_data->window != NULL)
+    
+    /* Remove menus */
+    if (win_data->window && win_data->menu_strip)
     {
-        /* Clear menu strip before closing window */
-        if (main_menu_strip)
-        {
-            ClearMenuStrip(win_data->window);
-            log_info(LOG_GUI, "Menu strip cleared from main window\n");
-        }
-        
-        CloseWindow(win_data->window);
+        ClearMenuStrip(win_data->window);
+    }
+    
+    /* Dispose window object (this also closes the window) */
+    if (win_data->window_obj)
+    {
+        DisposeObject(win_data->window_obj);
+        win_data->window_obj = NULL;
         win_data->window = NULL;
-        win_data->window_open = FALSE;
-        CONSOLE_DEBUG("Window closed\n");
     }
-
-    /* Free gadgets */
-    if (win_data->glist != NULL)
+    
+    /* Free menus */
+    if (win_data->menu_strip)
     {
-        FreeGadgets(win_data->glist);
-        win_data->glist = NULL;
-        CONSOLE_DEBUG("Gadgets freed\n");
+        FreeMenus(win_data->menu_strip);
+        win_data->menu_strip = NULL;
     }
-
+    
+    /* Free chooser labels */
+    if (win_data->order_labels)
+    {
+        free_chooser_labels(win_data->order_labels);
+        win_data->order_labels = NULL;
+    }
+    if (win_data->sortby_labels)
+    {
+        free_chooser_labels(win_data->sortby_labels);
+        win_data->sortby_labels = NULL;
+    }
+    if (win_data->position_labels)
+    {
+        free_chooser_labels(win_data->position_labels);
+        win_data->position_labels = NULL;
+    }
+    
+    /* Delete message port */
+    if (win_data->app_port)
+    {
+        DeleteMsgPort(win_data->app_port);
+        win_data->app_port = NULL;
+    }
+    
     /* Free visual info */
-    if (win_data->visual_info != NULL)
+    if (win_data->visual_info)
     {
         FreeVisualInfo(win_data->visual_info);
         win_data->visual_info = NULL;
-        CONSOLE_DEBUG("Visual info freed\n");
     }
-
-    /* Clean up menu system */
-    cleanup_main_window_menus();
-
-    /* Unlock the Workbench screen */
-    if (win_data->screen != NULL)
+    
+    /* Unlock screen */
+    if (win_data->screen)
     {
         UnlockPubScreen(NULL, win_data->screen);
         win_data->screen = NULL;
-        CONSOLE_DEBUG("Screen unlocked\n");
     }
-
-    CONSOLE_STATUS("iTidy main window cleanup complete\n");
+    
+    win_data->window_open = FALSE;
+    log_info(LOG_GUI, "Main window closed\n");
 }
 
 /*------------------------------------------------------------------------*/
-/**
- * @brief Handle window events (main event loop)
- *
- * Processes Intuition and GadTools messages. Handles gadget events,
- * window refresh, and close requests.
- *
- * @param win_data Pointer to window data structure
- * @return BOOL TRUE to continue, FALSE to quit
- */
+/* Event Handling                                                        */
 /*------------------------------------------------------------------------*/
+
+/**
+ * handle_itidy_window_events - Main event loop
+ * 
+ * Returns TRUE to continue, FALSE to quit
+ */
 BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
 {
-    struct IntuiMessage *msg;
-    ULONG msg_class;
-    UWORD msg_code;
-    struct Gadget *gad;
+    ULONG signal = 0;
+    ULONG wait_signals;
+    ULONG result;
+    WORD code;
     BOOL continue_running = TRUE;
-
-    /* Validate input */
-    if (win_data == NULL || win_data->window == NULL)
+    
+    if (!win_data || !win_data->window_obj)
+        return FALSE;
+    
+    /* Get the window signal */
+    GetAttr(WINDOW_SigMask, win_data->window_obj, &signal);
+    
+    /* Wait for events */
+    wait_signals = Wait(signal | SIGBREAKF_CTRL_C);
+    
+    /* Check for Ctrl-C */
+    if (wait_signals & SIGBREAKF_CTRL_C)
     {
         return FALSE;
     }
-
-    /* Wait for a message */
-    WaitPort(win_data->window->UserPort);
-
-    /* Process all pending messages */
-    while ((msg = GT_GetIMsg(win_data->window->UserPort)))
+    
+    /* Handle window events */
+    while ((result = RA_HandleInput(win_data->window_obj, &code)) != WMHI_LASTMSG)
     {
-        /* Get message details before replying */
-        msg_class = msg->Class;
-        msg_code = msg->Code;
-        gad = (struct Gadget *)msg->IAddress;
-
-        /* Reply to the message */
-        GT_ReplyIMsg(msg);
-
-        /* Handle the message */
-        switch (msg_class)
+        switch (result & WMHI_CLASSMASK)
         {
-            case IDCMP_CLOSEWINDOW:
-                CONSOLE_STATUS("Close gadget clicked - shutting down\n");
+            case WMHI_CLOSEWINDOW:
                 continue_running = FALSE;
                 break;
-
-            case IDCMP_REFRESHWINDOW:
-                CONSOLE_DEBUG("REFRESHWINDOW event - drawing groupboxes\n");
-                GT_BeginRefresh(win_data->window);
-                
-                /* Draw group box around folder path and browse button */
-                CONSOLE_DEBUG("Drawing folder group box...\n");
-                DrawGroupBoxWithLabel(win_data->window,
-                                     win_data->visual_info,
-                                     &win_data->folder_group_box,
-                                     "Folder");
-                CONSOLE_DEBUG("Folder group box drawn\n");
-                
-                /* Draw custom folder path display box */
-                draw_folder_path_box(win_data);
-                
-                /* Draw group box around tidy options */
-                CONSOLE_DEBUG("Drawing tidy options group box...\n");
-                DrawGroupBoxWithLabel(win_data->window,
-                                     win_data->visual_info,
-                                     &win_data->tidy_options_group_box,
-                                     "Tidy options");
-                CONSOLE_DEBUG("Tidy options group box drawn\n");
-                
-                /* Draw group box around tool buttons */
-                CONSOLE_DEBUG("Drawing tools group box...\n");
-                DrawGroupBoxWithLabel(win_data->window,
-                                     win_data->visual_info,
-                                     &win_data->tools_group_box,
-                                     "Tools");
-                CONSOLE_DEBUG("Tools group box drawn\n");
-                
-                GT_EndRefresh(win_data->window, TRUE);
+            
+            case WMHI_MENUPICK:
+                continue_running = handle_menu_selection(code, win_data);
                 break;
-
-            case IDCMP_GADGETUP:
-                /* Handle gadget events */
-                switch (gad->GadgetID)
+            
+            case WMHI_GADGETUP:
+                handle_gadget_event(result & WMHI_GADGETMASK, code, win_data);
+                break;
+            
+            case WMHI_ICONIFY:
+                if (RA_Iconify(win_data->window_obj))
                 {
-                    case GID_BROWSE:
-                        CONSOLE_STATUS("Browse button clicked\n");
-                        /* Open ASL directory requester */
-                        if (request_directory(win_data->folder_path_buffer, 
-                                            sizeof(win_data->folder_path_buffer),
-                                            win_data->folder_path_buffer))
-                        {
-                            /* User selected a new directory - redraw the folder path display */
-                            draw_folder_path_box(win_data);
-                            CONSOLE_STATUS("Folder path updated to: %s\n", win_data->folder_path_buffer);
-                        }
-                        break;
-
-                    case GID_APPLY:
-                    {
-                        struct iTidyMainProgressWindow progress_window;
-                        LayoutPreferences *prefs;
-                        BOOL success;
-                        
-                        CONSOLE_NEWLINE();
-                        CONSOLE_SEPARATOR();
-                        CONSOLE_STATUS("Apply button clicked - Processing icons...\n");
-                        CONSOLE_SEPARATOR();
-                        CONSOLE_NEWLINE();
-                        
-                        /* Get mutable access to global preferences */
-                        prefs = (LayoutPreferences *)GetGlobalPreferences();
-                        
-                        /* Update only the fields controlled by main window gadgets */
-                        /* All other settings (aspect ratio, spacing, etc.) remain unchanged */
-                        
-                        /* Map Order cycle to both sortPriority and blockGroupMode */
-                        if (win_data->order_selected == 3)  /* \"Grouped by Type\" */
-                        {
-                            prefs->blockGroupMode = BLOCK_GROUP_BY_TYPE;
-                            prefs->sortPriority = SORT_PRIORITY_MIXED;  /* Block mode overrides sortPriority */
-                        }
-                        else
-                        {
-                            prefs->blockGroupMode = BLOCK_GROUP_NONE;
-                            prefs->sortPriority = win_data->order_selected;  /* 0=Folders First, 1=Files First, 2=Mixed */
-                        }
-                        
-                        prefs->sortBy = win_data->sortby_selected;
-                        prefs->recursive_subdirs = win_data->recursive_subdirs;
-                        prefs->enable_backup = win_data->enable_backup;
-                        prefs->windowPositionMode = (WindowPositionMode)win_data->window_position_selected;
-                        
-                        /* Update folder path from GUI */
-                        strncpy(prefs->folder_path, win_data->folder_path_buffer, sizeof(prefs->folder_path) - 1);
-                        prefs->folder_path[sizeof(prefs->folder_path) - 1] = '\0';
-                        
-                        /* Update backup preferences */
-                        prefs->backupPrefs.enableUndoBackup = win_data->enable_backup;
-                        
-                        /* Check if LHA is available when backup is enabled */
-                        if (prefs->enable_backup)
-                        {
-                            char lha_path[32];
-                            if (!CheckLhaAvailable(lha_path))
-                            {
-                                /* LHA not found - ask user if they want to continue */
-                                LONG result = ShowEasyRequest(win_data->window,
-                                    "LHA Not Found",
-                                    "LHA archiver not found in C:, SYS:C/, or SYS:Tools/.\n"
-                                    "Backups cannot be created without LHA.\n\n"
-                                    "Continue without backups?",
-                                    "Continue|Cancel");
-                                
-                                if (result == 0)
-                                {
-                                    /* User chose Cancel - abort operation */
-                                    CONSOLE_STATUS("Operation cancelled - LHA not available\n");
-                                    break;
-                                }
-                                else
-                                {
-                                    /* User chose Continue - disable backup */
-                                    CONSOLE_WARNING("Continuing without backups (LHA not found)\n");
-                                    prefs->enable_backup = FALSE;
-                                    prefs->backupPrefs.enableUndoBackup = FALSE;
-                                    win_data->enable_backup = FALSE;
-                                    
-                                    /* Update checkbox to reflect disabled backup */
-                                    if (win_data->backup_check)
-                                    {
-                                        GT_SetGadgetAttrs(win_data->backup_check, win_data->window, NULL,
-                                                         GTCB_Checked, FALSE,
-                                                         TAG_DONE);
-                                    }
-                                }
-                            }
-                        }
-                        
-                        /* Advanced settings (aspect ratio, spacing, etc.) are preserved */
-                        /* Beta settings are preserved */
-                        
-                        /* Print preferences for debugging */
-                        print_layout_preferences(prefs, 
-                                               prefs->folder_path,
-                                               prefs->recursive_subdirs);
-                        
-                        /* Open progress window */
-                        if (!itidy_main_progress_window_open(&progress_window))
-                        {
-                            CONSOLE_ERROR("Failed to open progress window\n");
-                            ShowEasyRequest(win_data->window,
-                                "Error",
-                                "Failed to open progress window",
-                                "OK");
-                            break;
-                        }
-                        
-                        /* Set busy pointer on main window */
-                        safe_set_window_pointer(win_data->window, TRUE);
-                        
-                        /* Disable main window input while processing */
-                        ModifyIDCMP(win_data->window, 0);
-                        
-                        /* Process the directory with progress window integration */
-                        CONSOLE_NEWLINE();
-                        CONSOLE_STATUS(">>> Starting icon processing...\n");
-                        CONSOLE_NEWLINE();
-                        success = ProcessDirectoryWithPreferencesAndProgress(&progress_window);
-                        
-                        /* Show result in progress window */
-                        itidy_main_progress_window_append_status(&progress_window, "");
-                        itidy_main_progress_window_append_status(&progress_window, 
-                            "===============================================");
-                        if (success)
-                        {
-                            CONSOLE_STATUS("Icon processing completed successfully!\n");
-                            itidy_main_progress_window_append_status(&progress_window, 
-                                "Icon processing completed successfully!");
-                            itidy_main_progress_window_append_status(&progress_window, 
-                                "Note you may need to restart your Amiga to see window updates.");
-                        }
-                        else
-                        {
-                            CONSOLE_WARNING("Icon processing failed or was incomplete\n");
-                            itidy_main_progress_window_append_status(&progress_window, 
-                                "Icon processing failed or was incomplete");
-                        }
-                        itidy_main_progress_window_append_status(&progress_window, 
-                            "===============================================");
-                        CONSOLE_SEPARATOR();
-                        CONSOLE_NEWLINE();
-                        
-                        /* Change Cancel button to Close now that processing is complete */
-                        itidy_main_progress_window_set_button_text(&progress_window, "Close");
-                        
-                        /* Re-enable main window */
-                        ModifyIDCMP(win_data->window, 
-                            IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_GADGETDOWN | IDCMP_REFRESHWINDOW | IDCMP_MENUPICK);
-                        safe_set_window_pointer(win_data->window, FALSE);
-                        
-                        /* Keep progress window open so user can review - wait for Cancel/Close */
-                        while (itidy_main_progress_window_handle_events(&progress_window))
-                        {
-                            WaitPort(progress_window.window->UserPort);
-                        }
-                        
-                        /* Close progress window */
-                        itidy_main_progress_window_close(&progress_window);
-                        
-                        break;
-                    }
-
-                    case GID_CANCEL:
-                        CONSOLE_STATUS("Cancel button clicked - closing window\n");
-                        continue_running = FALSE;
-                        break;
-
-                    case GID_RESTORE:
-                        {
-                            struct iTidyRestoreWindow restore_data;
-                            
-                            CONSOLE_STATUS("Restore Backups button clicked - opening Restore window\n");
-                            
-                            /* Set busy pointer on main window */
-                            safe_set_window_pointer(win_data->window, TRUE);
-                            
-                            /* Open restore window (modal) */
-                            if (open_restore_window(&restore_data))
-                            {
-                                /* Clear busy pointer - restore window is now open */
-                                safe_set_window_pointer(win_data->window, FALSE);
-                                
-                                /* Disable main window input while restore window is open */
-                                ModifyIDCMP(win_data->window, 0);
-                                
-                                /* Run restore window event loop */
-                                while (handle_restore_window_events(&restore_data))
-                                {
-                                    /* Wait for restore window events */
-                                    WaitPort(restore_data.window->UserPort);
-                                }
-                                
-                                /* Close restore window */
-                                close_restore_window(&restore_data);
-                                
-                                /* Re-enable main window input */
-                                ModifyIDCMP(win_data->window, 
-                                    IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW | IDCMP_MENUPICK);
-                                
-                                CONSOLE_DEBUG("Restore window closed\n");
-                            }
-                            else
-                            {
-                                /* Clear busy pointer on error */
-                                safe_set_window_pointer(win_data->window, FALSE);
-                                
-                                CONSOLE_ERROR("Failed to open Restore window\n");
-                            }
-                        }
-                        break;
-
-                    case GID_ADVANCED:
-                        {
-                            struct iTidyAdvancedWindow adv_data;
-                            LayoutPreferences temp_prefs;
-                            
-                            CONSOLE_STATUS("Advanced button clicked - opening Advanced Settings window\n");
-                            
-                            /* Get current global preferences (includes all current settings) */
-                            memcpy(&temp_prefs, GetGlobalPreferences(), sizeof(LayoutPreferences));
-                            
-                            /* Open advanced window (modal) */
-                            if (open_itidy_advanced_window(&adv_data, &temp_prefs))
-                            {
-                                /* Disable main window input while advanced window is open */
-                                ModifyIDCMP(win_data->window, 0);
-                                
-                                /* Run advanced window event loop */
-                                while (handle_advanced_window_events(&adv_data))
-                                {
-                                    /* Wait for advanced window events */
-                                    WaitPort(adv_data.window->UserPort);
-                                }
-                                
-                                /* Close advanced window */
-                                close_itidy_advanced_window(&adv_data);
-                                
-                                /* Re-enable main window input */
-                                ModifyIDCMP(win_data->window, 
-                                    IDCMP_CLOSEWINDOW | IDCMP_GADGETUP | IDCMP_REFRESHWINDOW | IDCMP_MENUPICK);
-                                
-                                /* If changes were accepted, update global preferences */
-                                if (adv_data.changes_accepted)
-                                {
-                                    CONSOLE_STATUS("Advanced settings accepted - updating global preferences\n");
-                                    CONSOLE_DEBUG("  Aspect Ratio: %lu\n", (unsigned long)temp_prefs.aspectRatio);
-                                    CONSOLE_DEBUG("  Overflow Mode: %d\n", temp_prefs.overflowMode);
-                                    CONSOLE_DEBUG("  Spacing: %hux%hu\n", 
-                                           temp_prefs.iconSpacingX,
-                                           temp_prefs.iconSpacingY);
-                                    
-                                    /* Update global preferences with advanced settings */
-                                    UpdateGlobalPreferences(&temp_prefs);
-                                    
-                                    CONSOLE_DEBUG("  (Settings will be applied when you click Apply button)\n");
-                                }
-                                else
-                                {
-                                    CONSOLE_DEBUG("Advanced settings cancelled\n");
-                                }
-                            }
-                            else
-                            {
-                                CONSOLE_ERROR("Failed to open Advanced Settings window\n");
-                            }
-                        }
-                        break;
-
-                    case GID_ORDER:
-                        /* Use msg_code which contains the new cycle gadget selection */
-                        win_data->order_selected = msg_code;
-                        CONSOLE_DEBUG("Order changed to: %s\n", order_labels[win_data->order_selected]);
-                        append_to_log("Order cycle changed to: %d (%s)\n", 
-                                    win_data->order_selected, 
-                                    order_labels[win_data->order_selected]);
-                        
-                        /* Disable the 'By' gadget when 'Grouped by Type' is selected (index 3) */
-                        if (win_data->sortby_cycle)
-                        {
-                            BOOL enable_sortby = (win_data->order_selected != 3);
-                            GT_SetGadgetAttrs(win_data->sortby_cycle, win_data->window, NULL,
-                                             GA_Disabled, !enable_sortby,
-                                             TAG_DONE);
-                            log_debug(LOG_GUI, "'By' gadget %s for order mode %d\n",
-                                     enable_sortby ? "enabled" : "disabled",
-                                     win_data->order_selected);
-                        }
-                        break;
-
-                    case GID_SORTBY:
-                        /* Use msg_code which contains the new cycle gadget selection */
-                        win_data->sortby_selected = msg_code;
-                        CONSOLE_DEBUG("Sort by changed to: %s\n", sortby_labels[win_data->sortby_selected]);
-                        break;
-
-                    case GID_WINDOW_POSITION:
-                        /* Use msg_code which contains the new cycle gadget selection */
-                        win_data->window_position_selected = msg_code;
-                        CONSOLE_DEBUG("Window position changed to: %s\n", window_position_labels[win_data->window_position_selected]);
-                        break;
-
-                    case GID_WINDOW_POSITION_HELP:
-                        {
-                            /* Display help text using EasyRequest */
-                            ShowEasyRequest(
-                                win_data->window,
-                                "Window Placement Options",
-                                "Center Screen - iTidy resizes the drawer window to fit\n"
-                                "the icons and centers it on the Workbench screen.\n"
-                                "\n"
-                                "Keep Position - iTidy resizes the drawer window to fit\n"
-                                "the icons but keeps its current position. If any part\n"
-                                "would go off-screen, the window is pulled fully back\n"
-                                "on-screen.\n"
-                                "\n"
-                                "Near Parent - iTidy resizes the drawer window to fit\n"
-                                "the icons and tries to place it just below and to the\n"
-                                "right of its parent drawer window. If there isn't\n"
-                                "enough room, it behaves like 'Keep Position'.\n"
-                                "\n"
-                                "No Change - iTidy does not move or resize the drawer\n"
-                                "window. Only the icons are rearranged.",
-                                "OK"
-                            );
-                        }
-                        break;
-
-                    case GID_RECURSIVE:
-                        {
-                            ULONG checked = 0;
-                            GT_GetGadgetAttrs(gad, win_data->window, NULL,
-                                GTCB_Checked, &checked,
-                                TAG_END);
-                            win_data->recursive_subdirs = (BOOL)checked;
-                            CONSOLE_DEBUG("Recursive subfolders: %s\n", win_data->recursive_subdirs ? "ON" : "OFF");
-                        }
-                        break;
-
-                    case GID_BACKUP:
-                        {
-                            ULONG checked = 0;
-                            GT_GetGadgetAttrs(gad, win_data->window, NULL,
-                                GTCB_Checked, &checked,
-                                TAG_END);
-                            win_data->enable_backup = (BOOL)checked;
-                            CONSOLE_DEBUG("Backup: %s\n", win_data->enable_backup ? "ON" : "OFF");
-                        }
-                        break;
-
-                    case GID_VIEW_TOOL_CACHE:
-                        {
-                            struct iTidyToolCacheWindow tool_window;
-                            LayoutPreferences *prefs;
-                            
-                            log_info(LOG_GUI, "View Tool Cache button clicked\n");
-                            log_info(LOG_GUI, "Opening tool cache window (cache has %d entries)\n", g_ToolCacheCount);
-                            
-                            /* Sync current GUI folder path and recursive mode to global preferences */
-                            /* This ensures Rebuild Cache works even if user hasn't clicked Apply yet */
-                            prefs = (LayoutPreferences *)GetGlobalPreferences();
-                            if (prefs)
-                            {
-                                strncpy(prefs->folder_path, win_data->folder_path_buffer, sizeof(prefs->folder_path) - 1);
-                                prefs->folder_path[sizeof(prefs->folder_path) - 1] = '\0';
-                                prefs->recursive_subdirs = win_data->recursive_subdirs;
-                                log_info(LOG_GUI, "Synced folder path to global prefs: %s (recursive: %s)\n",
-                                         prefs->folder_path,
-                                         prefs->recursive_subdirs ? "Yes" : "No");
-                            }
-                            
-                            /* Open tool cache window */
-                            if (open_tool_cache_window(&tool_window))
-                            {
-                                /* Event loop */
-                                while (handle_tool_cache_window_events(&tool_window))
-                                {
-                                    WaitPort(tool_window.window->UserPort);
-                                }
-                                
-                                /* Cleanup */
-                                close_tool_cache_window(&tool_window);
-                                log_info(LOG_GUI, "Tool cache window closed\n");
-                            }
-                            else
-                            {
-                                log_error(LOG_GUI, "Failed to open tool cache window\n");
-                                (void)ShowEasyRequest(
-                                    win_data->window,
-                                    "Error",
-                                    "Failed to open tool cache window.\n"
-                                    "Check the log for details.",
-                                    "OK");
-                            }
-                        }
-                        break;
-
-                    default:
-                        break;
+                    win_data->window = NULL;
                 }
                 break;
-
-            case IDCMP_MENUPICK:
-                /* Handle menu selections */
-                if (!handle_main_window_menu_selection(msg_code, win_data))
+            
+            case WMHI_UNICONIFY:
+                win_data->window = (struct Window *)RA_OpenWindow(win_data->window_obj);
+                if (win_data->window && win_data->menu_strip)
                 {
-                    return FALSE;  /* Menu requested window close */
+                    SetMenuStrip(win_data->window, win_data->menu_strip);
                 }
-                break;
-
-            default:
-                /* Unknown message - ignore */
                 break;
         }
     }
-
+    
     return continue_running;
-}
-
-/*------------------------------------------------------------------------*/
-/* Draw Folder Path Display Box                                          */
-/*------------------------------------------------------------------------*/
-static void draw_folder_path_box(struct iTidyMainWindow *win_data)
-{
-    struct RastPort *rp;
-    struct DrawInfo *dri;
-    WORD text_x, text_y;
-    
-    if (!win_data || !win_data->window)
-        return;
-    
-    rp = win_data->window->RPort;
-    dri = GetScreenDrawInfo(win_data->window->WScreen);
-    if (!dri)
-        return;
-    
-    /* Draw recessed bevel box */
-    DrawBevelBox(rp,
-                 win_data->folder_box_left,
-                 win_data->folder_box_top,
-                 win_data->folder_box_width,
-                 win_data->folder_box_height,
-                 GT_VisualInfo, win_data->visual_info,
-                 GTBB_Recessed, TRUE,
-                 TAG_END);
-    
-    /* Draw text inside box */
-    SetAPen(rp, dri->dri_Pens[TEXTPEN]);
-    SetBPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
-    SetDrMd(rp, JAM2);
-    
-    /* Position text with padding inside box */
-    text_x = win_data->folder_box_left + 4;
-    text_y = win_data->folder_box_top + rp->TxBaseline + 3; /* Moved down by 1px for better vertical centering */
-    
-    /* Clear background first */
-    SetAPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
-    RectFill(rp,
-             win_data->folder_box_left + 2,
-             win_data->folder_box_top + 2,
-             win_data->folder_box_left + win_data->folder_box_width - 3,
-             win_data->folder_box_top + win_data->folder_box_height - 3);
-    
-    /* Draw text with truncation if needed */
-    SetAPen(rp, dri->dri_Pens[TEXTPEN]);
-    Move(rp, text_x, text_y);
-    
-    {
-        char display_buffer[512];
-        const char *text_to_display = win_data->folder_path_buffer;
-        int text_len = strlen(text_to_display);
-        int available_width = win_data->folder_box_width - 8; /* Account for padding */
-        int text_width = TextLength(rp, text_to_display, text_len);
-        
-        /* Check if text fits */
-        if (text_width > available_width)
-        {
-            /* Text is too long - truncate with ellipsis */
-            const char *ellipsis = "...";
-            int ellipsis_width = TextLength(rp, ellipsis, 3);
-            int target_width = available_width - ellipsis_width;
-            
-            /* Binary search for maximum fitting length */
-            int low = 0, high = text_len;
-            int best_len = 0;
-            
-            while (low <= high)
-            {
-                int mid = (low + high) / 2;
-                int mid_width = TextLength(rp, text_to_display, mid);
-                
-                if (mid_width <= target_width)
-                {
-                    best_len = mid;
-                    low = mid + 1;
-                }
-                else
-                {
-                    high = mid - 1;
-                }
-            }
-            
-            /* Build truncated string with ellipsis */
-            if (best_len > 0 && best_len < sizeof(display_buffer) - 4)
-            {
-                strncpy(display_buffer, text_to_display, best_len);
-                strcpy(display_buffer + best_len, ellipsis);
-                text_to_display = display_buffer;
-                text_len = best_len + 3;
-            }
-        }
-        
-        Text(rp, text_to_display, text_len);
-    }
-    
-    FreeScreenDrawInfo(win_data->window->WScreen, dri);
 }
 
 /*------------------------------------------------------------------------*/
 /* Save/Load Preferences Functions                                        */
 /*------------------------------------------------------------------------*/
 
-/**
- * save_preferences_to_file - Save LayoutPreferences to binary file
- * 
- * Writes the LayoutPreferences structure to a binary file in a format
- * suitable for reloading. File format:
- *   - Header: "ITIDYPREFS" (10 bytes)
- *   - Version: ULONG (4 bytes) = 1
- *   - LayoutPreferences structure (binary)
- * 
- * @param filepath Full path to save file
- * @param prefs Pointer to LayoutPreferences to save
- * @return TRUE if successful, FALSE on error
- */
 static BOOL save_preferences_to_file(const char *filepath, const LayoutPreferences *prefs)
 {
     BPTR file;
@@ -1926,7 +885,6 @@ static BOOL save_preferences_to_file(const char *filepath, const LayoutPreferenc
         return FALSE;
     }
     
-    /* Open file for writing */
     file = Open((STRPTR)filepath, MODE_NEWFILE);
     if (!file)
     {
@@ -1937,7 +895,6 @@ static BOOL save_preferences_to_file(const char *filepath, const LayoutPreferenc
     
     log_info(LOG_GUI, "Saving preferences to: %s\n", filepath);
     
-    /* Write header */
     if (Write(file, (APTR)header, 10) != 10)
     {
         log_error(LOG_GUI, "Failed to write header\n");
@@ -1945,7 +902,6 @@ static BOOL save_preferences_to_file(const char *filepath, const LayoutPreferenc
         return FALSE;
     }
     
-    /* Write version */
     if (Write(file, (APTR)&version, sizeof(ULONG)) != sizeof(ULONG))
     {
         log_error(LOG_GUI, "Failed to write version\n");
@@ -1953,7 +909,6 @@ static BOOL save_preferences_to_file(const char *filepath, const LayoutPreferenc
         return FALSE;
     }
     
-    /* Write LayoutPreferences structure */
     if (Write(file, (APTR)prefs, sizeof(LayoutPreferences)) != sizeof(LayoutPreferences))
     {
         log_error(LOG_GUI, "Failed to write preferences structure\n");
@@ -1966,15 +921,6 @@ static BOOL save_preferences_to_file(const char *filepath, const LayoutPreferenc
     return TRUE;
 }
 
-/**
- * load_preferences_from_file - Load LayoutPreferences from binary file
- * 
- * Reads and validates a preferences file, then loads into provided structure.
- * 
- * @param filepath Full path to load file
- * @param prefs Pointer to LayoutPreferences to receive loaded data
- * @return TRUE if successful, FALSE on error
- */
 static BOOL load_preferences_from_file(const char *filepath, LayoutPreferences *prefs)
 {
     BPTR file;
@@ -1989,7 +935,6 @@ static BOOL load_preferences_from_file(const char *filepath, LayoutPreferences *
     
     log_info(LOG_GUI, "Loading preferences from: %s\n", filepath);
     
-    /* Open file for reading */
     file = Open((STRPTR)filepath, MODE_OLDFILE);
     if (!file)
     {
@@ -1997,7 +942,6 @@ static BOOL load_preferences_from_file(const char *filepath, LayoutPreferences *
         return FALSE;
     }
     
-    /* Read and validate header */
     memset(header, 0, sizeof(header));
     if (Read(file, (APTR)header, 10) != 10)
     {
@@ -2013,7 +957,6 @@ static BOOL load_preferences_from_file(const char *filepath, LayoutPreferences *
         return FALSE;
     }
     
-    /* Read version */
     if (Read(file, (APTR)&version, sizeof(ULONG)) != sizeof(ULONG))
     {
         log_error(LOG_GUI, "Failed to read version\n");
@@ -2028,7 +971,6 @@ static BOOL load_preferences_from_file(const char *filepath, LayoutPreferences *
         return FALSE;
     }
     
-    /* Read LayoutPreferences structure */
     if (Read(file, (APTR)prefs, sizeof(LayoutPreferences)) != sizeof(LayoutPreferences))
     {
         log_error(LOG_GUI, "Failed to read preferences structure\n");
@@ -2041,27 +983,18 @@ static BOOL load_preferences_from_file(const char *filepath, LayoutPreferences *
     return TRUE;
 }
 
-/**
- * sync_gui_from_preferences - Update all GUI gadgets from preferences
- * 
- * @param win_data Pointer to main window data
- * @param prefs Pointer to LayoutPreferences to sync from
- */
 static void sync_gui_from_preferences(struct iTidyMainWindow *win_data, const LayoutPreferences *prefs)
 {
     if (!win_data || !win_data->window || !prefs)
         return;
     
-    /* Update window data from preferences */
-    
-    /* Map blockGroupMode to Order cycle selection */
     if (prefs->blockGroupMode == BLOCK_GROUP_BY_TYPE)
     {
-        win_data->order_selected = 3;  /* "Grouped by Type" */
+        win_data->order_selected = 3;
     }
     else
     {
-        win_data->order_selected = prefs->sortPriority;  /* 0=Folders First, 1=Files First, 2=Mixed */
+        win_data->order_selected = prefs->sortPriority;
     }
     
     win_data->sortby_selected = prefs->sortBy;
@@ -2072,74 +1005,75 @@ static void sync_gui_from_preferences(struct iTidyMainWindow *win_data, const La
     strncpy(win_data->folder_path_buffer, prefs->folder_path, sizeof(win_data->folder_path_buffer) - 1);
     win_data->folder_path_buffer[sizeof(win_data->folder_path_buffer) - 1] = '\0';
     
-    /* Update gadgets */
-    if (win_data->order_cycle)
+    /* Update ReAction gadgets */
+    if (win_data->gadgets[ITIDY_GAD_IDX_ORDER_CHOOSER])
     {
-        GT_SetGadgetAttrs(win_data->order_cycle, win_data->window, NULL,
-                         GTCY_Active, win_data->order_selected,
-                         TAG_DONE);
+        SetGadgetAttrs((struct Gadget *)win_data->gadgets[ITIDY_GAD_IDX_ORDER_CHOOSER],
+                      win_data->window, NULL,
+                      CHOOSER_Selected, win_data->order_selected,
+                      TAG_END);
     }
     
-    if (win_data->sortby_cycle)
+    if (win_data->gadgets[ITIDY_GAD_IDX_SORTBY_CHOOSER])
     {
-        /* Disable 'By' gadget if 'Grouped by Type' is selected (index 3) */
         BOOL enable_sortby = (win_data->order_selected != 3);
-        GT_SetGadgetAttrs(win_data->sortby_cycle, win_data->window, NULL,
-                         GTCY_Active, win_data->sortby_selected,
-                         GA_Disabled, !enable_sortby,
-                         TAG_DONE);
+        SetGadgetAttrs((struct Gadget *)win_data->gadgets[ITIDY_GAD_IDX_SORTBY_CHOOSER],
+                      win_data->window, NULL,
+                      CHOOSER_Selected, win_data->sortby_selected,
+                      GA_Disabled, !enable_sortby,
+                      TAG_END);
     }
     
-    if (win_data->recursive_check)
+    if (win_data->gadgets[ITIDY_GAD_IDX_RECURSIVE_CHECKBOX])
     {
-        GT_SetGadgetAttrs(win_data->recursive_check, win_data->window, NULL,
-                         GTCB_Checked, win_data->recursive_subdirs,
-                         TAG_DONE);
+        SetGadgetAttrs((struct Gadget *)win_data->gadgets[ITIDY_GAD_IDX_RECURSIVE_CHECKBOX],
+                      win_data->window, NULL,
+                      GA_Selected, win_data->recursive_subdirs,
+                      TAG_END);
     }
     
-    if (win_data->backup_check)
+    if (win_data->gadgets[ITIDY_GAD_IDX_BACKUP_CHECKBOX])
     {
-        GT_SetGadgetAttrs(win_data->backup_check, win_data->window, NULL,
-                         GTCB_Checked, win_data->enable_backup,
-                         TAG_DONE);
+        SetGadgetAttrs((struct Gadget *)win_data->gadgets[ITIDY_GAD_IDX_BACKUP_CHECKBOX],
+                      win_data->window, NULL,
+                      GA_Selected, win_data->enable_backup,
+                      TAG_END);
     }
     
-    if (win_data->window_position_cycle)
+    if (win_data->gadgets[ITIDY_GAD_IDX_POSITION_CHOOSER])
     {
-        GT_SetGadgetAttrs(win_data->window_position_cycle, win_data->window, NULL,
-                         GTCY_Active, win_data->window_position_selected,
-                         TAG_DONE);
+        SetGadgetAttrs((struct Gadget *)win_data->gadgets[ITIDY_GAD_IDX_POSITION_CHOOSER],
+                      win_data->window, NULL,
+                      CHOOSER_Selected, win_data->window_position_selected,
+                      TAG_END);
     }
     
-    /* Redraw folder path */
-    draw_folder_path_box(win_data);
+    /* Update folder path display */
+    if (win_data->gadgets[ITIDY_GAD_IDX_FOLDER_GETFILE])
+    {
+        SetGadgetAttrs((struct Gadget *)win_data->gadgets[ITIDY_GAD_IDX_FOLDER_GETFILE],
+                      win_data->window, NULL,
+                      GETFILE_Drawer, win_data->folder_path_buffer,
+                      TAG_END);
+    }
     
     log_info(LOG_GUI, "GUI synchronized from loaded preferences\n");
 }
 
-/**
- * sync_gui_to_preferences - Update preferences from current GUI state
- * 
- * @param win_data Pointer to main window data
- * @param prefs Pointer to LayoutPreferences to update
- */
 static void sync_gui_to_preferences(struct iTidyMainWindow *win_data, LayoutPreferences *prefs)
 {
     if (!win_data || !prefs)
         return;
     
-    /* Update preferences from current GUI state */
-    
-    /* Map Order cycle to both sortPriority and blockGroupMode */
-    if (win_data->order_selected == 3)  /* "Grouped by Type" */
+    if (win_data->order_selected == 3)
     {
         prefs->blockGroupMode = BLOCK_GROUP_BY_TYPE;
-        prefs->sortPriority = SORT_PRIORITY_MIXED;  /* Block mode overrides sortPriority */
+        prefs->sortPriority = SORT_PRIORITY_MIXED;
     }
     else
     {
         prefs->blockGroupMode = BLOCK_GROUP_NONE;
-        prefs->sortPriority = win_data->order_selected;  /* 0=Folders First, 1=Files First, 2=Mixed */
+        prefs->sortPriority = win_data->order_selected;
     }
     
     prefs->sortBy = win_data->sortby_selected;
@@ -2147,176 +1081,18 @@ static void sync_gui_to_preferences(struct iTidyMainWindow *win_data, LayoutPref
     prefs->enable_backup = win_data->enable_backup;
     prefs->windowPositionMode = (WindowPositionMode)win_data->window_position_selected;
     
-    /* Update folder path from GUI buffer */
     strncpy(prefs->folder_path, win_data->folder_path_buffer, sizeof(prefs->folder_path) - 1);
     prefs->folder_path[sizeof(prefs->folder_path) - 1] = '\0';
     
-    /* Update backup preferences */
     prefs->backupPrefs.enableUndoBackup = win_data->enable_backup;
     
     log_debug(LOG_GUI, "Preferences updated from GUI state (folder: %s)\n", prefs->folder_path);
 }
 
 /*------------------------------------------------------------------------*/
-/* Helper Functions for Menu Operations                                  */
-/*------------------------------------------------------------------------*/
-
-/**
- * ensure_directory_exists - Create directory if it doesn't exist
- * 
- * Due to WinUAE shared folder bugs, Lock() may succeed for non-existent paths.
- * Strategy: Always try CreateDir() first. If it fails with ERROR_OBJECT_EXISTS (203),
- * then verify it's actually a directory using Lock() and Examine().
- * Per AmigaDOS autodoc: CreateDir() fails with trailing '/' in path.
- * 
- * @param path Directory path to check/create
- * @return TRUE if directory exists or was created, FALSE on error
- */
-static BOOL ensure_directory_exists(const char *path)
-{
-    BPTR lock;
-    struct FileInfoBlock *fib = NULL;
-    BOOL isDirectory = FALSE;
-    char pathWithoutSlash[512];
-    size_t len;
-    LONG error;
-    
-    if (!path || path[0] == '\0')
-        return FALSE;
-    
-    /* Strip trailing slash before CreateDir (per AmigaDOS autodoc) */
-    strncpy(pathWithoutSlash, path, sizeof(pathWithoutSlash) - 1);
-    pathWithoutSlash[sizeof(pathWithoutSlash) - 1] = '\0';
-    len = strlen(pathWithoutSlash);
-    if (len > 0 && pathWithoutSlash[len - 1] == '/')
-    {
-        pathWithoutSlash[len - 1] = '\0';
-    }
-    
-    /* Try to create directory first (fast path for new directories) */
-    log_debug(LOG_GUI, "Attempting to create directory: %s\n", pathWithoutSlash);
-    lock = CreateDir((CONST_STRPTR)pathWithoutSlash);
-    if (lock)
-    {
-        UnLock(lock);
-        log_info(LOG_GUI, "Successfully created directory: %s\n", pathWithoutSlash);
-        return TRUE;
-    }
-    
-    /* CreateDir failed - check why */
-    error = IoErr();
-    log_debug(LOG_GUI, "CreateDir failed for: %s (IoErr: %ld)\n", pathWithoutSlash, error);
-    
-    /* ERROR_OBJECT_EXISTS (203) means something already exists at this path */
-    if (error == 203)
-    {
-        /* Verify it's actually a directory */
-        log_debug(LOG_GUI, "Object exists, verifying it's a directory: %s\n", path);
-        lock = Lock((CONST_STRPTR)path, ACCESS_READ);
-        if (lock)
-        {
-            fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
-            if (fib)
-            {
-                if (Examine(lock, fib))
-                {
-                    isDirectory = (fib->fib_DirEntryType > 0);
-                    log_debug(LOG_GUI, "Examine: fib_DirEntryType=%ld (isDir=%s)\n", 
-                             fib->fib_DirEntryType, isDirectory ? "YES" : "NO");
-                }
-                FreeDosObject(DOS_FIB, fib);
-            }
-            UnLock(lock);
-            
-            if (isDirectory)
-            {
-                log_debug(LOG_GUI, "Directory already exists: %s\n", path);
-                return TRUE;
-            }
-            else
-            {
-                log_error(LOG_GUI, "Path exists but is not a directory: %s\n", path);
-                return FALSE;
-            }
-        }
-    }
-    
-    log_error(LOG_GUI, "Failed to create or verify directory: %s (IoErr: %ld)\n", pathWithoutSlash, error);
-    return FALSE;
-}
-
-/**
- * ensure_save_directories - Ensure userdata and Settings folders exist
- * 
- * Creates the userdata and userdata/Settings directory hierarchy if needed.
- * This is called before any save operation.
- * 
- * IMPORTANT NOTE - WinUAE Shared Folder Quirk:
- * WinUAE's shared folder filesystem caches directory state. If directories
- * are deleted from the Windows host while WinUAE is running, the cache becomes
- * stale and Lock()/Examine() may succeed for non-existent paths while Open()
- * fails with ERROR_OBJECT_NOT_FOUND. This only affects development/testing
- * when manually deleting directories from Windows. Normal users won't encounter
- * this. Restarting WinUAE clears the cache and resolves the issue.
- * 
- * We use PROGDIR: relative paths (not absolute paths) as this works more
- * reliably with WinUAE shared folders.
- * 
- * @return TRUE if directories exist or were created, FALSE on error
- */
-static BOOL ensure_save_directories(void)
-{
-    BPTR lock;
-    
-    /* Create userdata directory using PROGDIR: relative path */
-    lock = CreateDir((CONST_STRPTR)"PROGDIR:userdata");
-    if (lock)
-    {
-        UnLock(lock);
-        log_info(LOG_GUI, "Created PROGDIR:userdata\n");
-    }
-    else
-    {
-        LONG error = IoErr();
-        if (error != 203)  /* 203 = ERROR_OBJECT_EXISTS (already exists, OK) */
-        {
-            log_error(LOG_GUI, "Failed to create userdata directory (IoErr: %ld)\n", error);
-            return FALSE;
-        }
-    }
-    
-    /* Create Settings subdirectory using PROGDIR: relative path */
-    lock = CreateDir((CONST_STRPTR)"PROGDIR:userdata/Settings");
-    if (lock)
-    {
-        UnLock(lock);
-        log_info(LOG_GUI, "Created PROGDIR:userdata/Settings\n");
-    }
-    else
-    {
-        LONG error = IoErr();
-        if (error != 203)  /* 203 = ERROR_OBJECT_EXISTS (already exists, OK) */
-        {
-            log_error(LOG_GUI, "Failed to create Settings directory (IoErr: %ld)\n", error);
-            return FALSE;
-        }
-    }
-    
-    log_debug(LOG_GUI, "Save directories verified/created successfully\n");
-    return TRUE;
-}
-
-/*------------------------------------------------------------------------*/
 /* Menu Handler Functions                                                */
 /*------------------------------------------------------------------------*/
 
-/**
- * handle_main_new_menu - Handle "New" menu selection
- * 
- * Resets all preferences to defaults and updates GUI.
- * 
- * @param win_data Pointer to main window data
- */
 static void handle_main_new_menu(struct iTidyMainWindow *win_data)
 {
     LayoutPreferences default_prefs;
@@ -2326,32 +1102,15 @@ static void handle_main_new_menu(struct iTidyMainWindow *win_data)
     
     log_debug(LOG_GUI, "Menu: New clicked - resetting to defaults\n");
     
-    /* Initialize default preferences */
     InitLayoutPreferences(&default_prefs);
-    
-    /* Update global preferences */
     UpdateGlobalPreferences(&default_prefs);
-    
-    /* Sync GUI from new defaults */
     sync_gui_from_preferences(win_data, &default_prefs);
     
-    /* Clear last save path */
     win_data->last_save_path[0] = '\0';
-    
-    /* Refresh window */
-    GT_RefreshWindow(win_data->window, NULL);
     
     log_info(LOG_GUI, "Preferences reset to defaults\n");
 }
 
-/**
- * handle_main_save_menu - Handle "Save" menu selection
- * 
- * Saves preferences to last saved file path.
- * If no previous save path exists, calls handle_main_save_as_menu instead.
- * 
- * @param win_data Pointer to main window data
- */
 static void handle_main_save_menu(struct iTidyMainWindow *win_data)
 {
     LayoutPreferences *prefs;
@@ -2359,7 +1118,6 @@ static void handle_main_save_menu(struct iTidyMainWindow *win_data)
     if (!win_data || !win_data->window)
         return;
     
-    /* Get mutable access to global preferences */
     prefs = (LayoutPreferences *)GetGlobalPreferences();
     if (!prefs)
     {
@@ -2370,7 +1128,6 @@ static void handle_main_save_menu(struct iTidyMainWindow *win_data)
         return;
     }
     
-    /* If no last save path, call Save As instead */
     if (win_data->last_save_path[0] == '\0')
     {
         log_debug(LOG_GUI, "Menu: Save clicked but no previous save path - calling Save As\n");
@@ -2378,24 +1135,11 @@ static void handle_main_save_menu(struct iTidyMainWindow *win_data)
         return;
     }
     
-    /* Ensure save directories exist before saving */
-    if (!ensure_save_directories())
-    {
-        log_error(LOG_GUI, "Failed to create save directories\n");
-        ShowEasyRequest(win_data->window,
-            "Save Failed",
-            "Could not create required directories.\nCheck permissions and disk space.",
-            "OK");
-        return;
-    }
-    
-    /* Update global preferences from current GUI state */
     sync_gui_to_preferences(win_data, prefs);
     UpdateGlobalPreferences(prefs);
     
     log_info(LOG_GUI, "Menu: Save clicked - saving to %s\n", win_data->last_save_path);
     
-    /* Save the file */
     if (save_preferences_to_file(win_data->last_save_path, prefs))
     {
         log_info(LOG_GUI, "Preferences saved to: %s\n", win_data->last_save_path);
@@ -2409,25 +1153,16 @@ static void handle_main_save_menu(struct iTidyMainWindow *win_data)
     }
 }
 
-/**
- * handle_main_save_as_menu - Handle "Save as..." menu selection
- * 
- * Opens ASL file requester, checks for overwrite, and saves preferences.
- * 
- * @param win_data Pointer to main window data
- */
 static void handle_main_save_as_menu(struct iTidyMainWindow *win_data)
 {
     struct FileRequester *freq;
     char full_path[512];
-    char expanded_drawer[512];
     BPTR lock;
     LayoutPreferences *prefs;
     
     if (!win_data || !win_data->window)
         return;
     
-    /* Get mutable access to global preferences */
     prefs = (LayoutPreferences *)GetGlobalPreferences();
     if (!prefs)
     {
@@ -2438,34 +1173,9 @@ static void handle_main_save_as_menu(struct iTidyMainWindow *win_data)
         return;
     }
     
-    /* Ensure save directories exist before opening requester */
-    if (!ensure_save_directories())
-    {
-        log_error(LOG_GUI, "Failed to create save directories\n");
-        ShowEasyRequest(win_data->window,
-            "Save Failed",
-            "Could not create required directories.\nCheck permissions and disk space.",
-            "OK");
-        return;
-    }
-    
-    /* Update global preferences from current GUI state */
-    sync_gui_to_preferences(win_data, prefs);
-    UpdateGlobalPreferences(prefs);
-    
-    /* Expand PROGDIR: to actual path for ASL requester */
-    if (!ExpandProgDir("PROGDIR:userdata/Settings", expanded_drawer, sizeof(expanded_drawer)))
-    {
-        log_warning(LOG_GUI, "Could not expand PROGDIR:, using fallback path\n");
-        strcpy(expanded_drawer, "RAM:");
-    }
-    
-    log_debug(LOG_GUI, "Using initial drawer: %s\n", expanded_drawer);
-    
-    /* Allocate file requester */
     freq = (struct FileRequester *)AllocAslRequestTags(ASL_FileRequest,
         ASLFR_TitleText, "Save Preferences As...",
-        ASLFR_InitialDrawer, expanded_drawer,
+        ASLFR_InitialDrawer, "PROGDIR:userdata/Settings",
         ASLFR_InitialFile, "iTidy.prefs",
         ASLFR_DoSaveMode, TRUE,
         ASLFR_RejectIcons, TRUE,
@@ -2474,7 +1184,6 @@ static void handle_main_save_as_menu(struct iTidyMainWindow *win_data)
     
     if (!freq)
     {
-        log_error(LOG_GUI, "Failed to allocate file requester\n");
         ShowEasyRequest(win_data->window,
             "Error",
             "Could not open file requester.",
@@ -2482,14 +1191,11 @@ static void handle_main_save_as_menu(struct iTidyMainWindow *win_data)
         return;
     }
     
-    /* Display requester */
     if (AslRequest(freq, NULL))
     {
-        /* Build full path */
         strcpy(full_path, freq->fr_Drawer);
         if (!AddPart((STRPTR)full_path, (STRPTR)freq->fr_File, sizeof(full_path)))
         {
-            log_error(LOG_GUI, "Path too long: %s + %s\n", freq->fr_Drawer, freq->fr_File);
             FreeAslRequest(freq);
             ShowEasyRequest(win_data->window,
                 "Error",
@@ -2498,30 +1204,26 @@ static void handle_main_save_as_menu(struct iTidyMainWindow *win_data)
             return;
         }
         
-        log_info(LOG_GUI, "User selected save path: %s\n", full_path);
-        
-        /* Check if file exists */
         lock = Lock((STRPTR)full_path, ACCESS_READ);
         if (lock)
         {
             UnLock(lock);
             
-            /* File exists - ask for confirmation */
             if (!ShowEasyRequest(win_data->window,
                 "File Exists",
-                "File already exists.\\nDo you want to replace it?",
+                "File already exists.\nDo you want to replace it?",
                 "Replace|Cancel"))
             {
-                log_info(LOG_GUI, "User cancelled overwrite\n");
                 FreeAslRequest(freq);
                 return;
             }
         }
         
-        /* Save the file */
+        sync_gui_to_preferences(win_data, prefs);
+        UpdateGlobalPreferences(prefs);
+        
         if (save_preferences_to_file(full_path, prefs))
         {
-            /* Store the save path for future Save operations */
             strncpy(win_data->last_save_path, full_path, sizeof(win_data->last_save_path) - 1);
             win_data->last_save_path[sizeof(win_data->last_save_path) - 1] = '\0';
             
@@ -2539,47 +1241,23 @@ static void handle_main_save_as_menu(struct iTidyMainWindow *win_data)
                 "OK");
         }
     }
-    else
-    {
-        log_info(LOG_GUI, "User cancelled save operation\n");
-    }
     
     FreeAslRequest(freq);
 }
 
-/**
- * handle_main_open_menu - Handle "Open..." menu selection
- * 
- * Opens ASL file requester, loads preferences, updates GUI.
- * 
- * @param win_data Pointer to main window data
- */
 static void handle_main_open_menu(struct iTidyMainWindow *win_data)
 {
     struct FileRequester *freq;
     char full_path[512];
-    char expanded_drawer[512];
     BPTR lock;
     LayoutPreferences loaded_prefs;
     
     if (!win_data || !win_data->window)
         return;
     
-    log_debug(LOG_GUI, "Menu: Open... clicked\n");
-    
-    /* Expand PROGDIR: to actual path for ASL requester */
-    if (!ExpandProgDir("PROGDIR:userdata/Settings", expanded_drawer, sizeof(expanded_drawer)))
-    {
-        log_warning(LOG_GUI, "Could not expand PROGDIR:, using fallback path\n");
-        strcpy(expanded_drawer, "RAM:");
-    }
-    
-    log_debug(LOG_GUI, "Using initial drawer: %s\n", expanded_drawer);
-    
-    /* Allocate file requester */
     freq = (struct FileRequester *)AllocAslRequestTags(ASL_FileRequest,
         ASLFR_TitleText, "Open Preferences File...",
-        ASLFR_InitialDrawer, expanded_drawer,
+        ASLFR_InitialDrawer, "PROGDIR:userdata/Settings",
         ASLFR_InitialFile, "iTidy.prefs",
         ASLFR_DoSaveMode, FALSE,
         ASLFR_RejectIcons, TRUE,
@@ -2588,7 +1266,6 @@ static void handle_main_open_menu(struct iTidyMainWindow *win_data)
     
     if (!freq)
     {
-        log_error(LOG_GUI, "Failed to allocate file requester\n");
         ShowEasyRequest(win_data->window,
             "Error",
             "Could not open file requester.",
@@ -2596,14 +1273,11 @@ static void handle_main_open_menu(struct iTidyMainWindow *win_data)
         return;
     }
     
-    /* Display requester */
     if (AslRequest(freq, NULL))
     {
-        /* Build full path */
         strcpy(full_path, freq->fr_Drawer);
         if (!AddPart((STRPTR)full_path, (STRPTR)freq->fr_File, sizeof(full_path)))
         {
-            log_error(LOG_GUI, "Path too long: %s + %s\n", freq->fr_Drawer, freq->fr_File);
             FreeAslRequest(freq);
             ShowEasyRequest(win_data->window,
                 "Error",
@@ -2612,13 +1286,9 @@ static void handle_main_open_menu(struct iTidyMainWindow *win_data)
             return;
         }
         
-        log_info(LOG_GUI, "User selected file: %s\n", full_path);
-        
-        /* Check if file exists */
         lock = Lock((STRPTR)full_path, ACCESS_READ);
         if (!lock)
         {
-            log_error(LOG_GUI, "File does not exist: %s\n", full_path);
             FreeAslRequest(freq);
             ShowEasyRequest(win_data->window,
                 "File Not Found",
@@ -2628,16 +1298,11 @@ static void handle_main_open_menu(struct iTidyMainWindow *win_data)
         }
         UnLock(lock);
         
-        /* Load the file */
         if (load_preferences_from_file(full_path, &loaded_prefs))
         {
-            /* Update global preferences */
             UpdateGlobalPreferences(&loaded_prefs);
-            
-            /* Sync GUI from loaded preferences */
             sync_gui_from_preferences(win_data, &loaded_prefs);
             
-            /* Store as last save path */
             strncpy(win_data->last_save_path, full_path, sizeof(win_data->last_save_path) - 1);
             win_data->last_save_path[sizeof(win_data->last_save_path) - 1] = '\0';
             
@@ -2651,38 +1316,401 @@ static void handle_main_open_menu(struct iTidyMainWindow *win_data)
         {
             ShowEasyRequest(win_data->window,
                 "Load Failed",
-                "Failed to load preferences file.\\nFile may be corrupted or invalid.",
+                "Failed to load preferences file.\nFile may be corrupted or invalid.",
                 "OK");
         }
-    }
-    else
-    {
-        log_info(LOG_GUI, "User cancelled load operation\n");
     }
     
     FreeAslRequest(freq);
 }
 
-/**
- * handle_main_about_menu - Show About requester with version info
- *
- * Displays a simple EasyRequest box with the current version string.
- *
- * @param win_data Pointer to main window data
- */
-static void handle_main_about_menu(struct iTidyMainWindow *win_data)
+/*------------------------------------------------------------------------*/
+/* Menu Handling                                                         */
+/*------------------------------------------------------------------------*/
+
+static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win_data)
 {
-    char about_text[160];
-
-    if (!win_data || !win_data->window)
-        return;
-
-    snprintf(about_text, sizeof(about_text), "iTidy %s\n\nEnhanced Workbench icon cleanup tool.\nCompiled on %s at %s\n\nBy Kerry Thompson.\n", ITIDY_VERSION, __DATE__, __TIME__);
-
-    ShowEasyRequest(win_data->window,
-        "About iTidy",
-        about_text,
-        "OK");
+    struct MenuItem *item;
+    ULONG item_id;
+    BOOL continue_running = TRUE;
+    
+    while (menu_number != MENUNULL)
+    {
+        item = ItemAddress(win_data->menu_strip, menu_number);
+        if (item)
+        {
+            item_id = (ULONG)GTMENUITEM_USERDATA(item);
+            
+            switch (item_id)
+            {
+                case MENU_PROJECT_NEW:
+                    handle_main_new_menu(win_data);
+                    break;
+                
+                case MENU_PROJECT_OPEN:
+                    handle_main_open_menu(win_data);
+                    break;
+                
+                case MENU_PROJECT_SAVE:
+                    handle_main_save_menu(win_data);
+                    break;
+                
+                case MENU_PROJECT_SAVE_AS:
+                    handle_main_save_as_menu(win_data);
+                    break;
+                
+                case MENU_PROJECT_ABOUT:
+                    ShowEasyRequest(win_data->window,
+                        "About iTidy",
+                        "iTidy v" ITIDY_VERSION "\n\n"
+                        "Icon Cleanup Tool for AmigaOS\n"
+                        "ReAction GUI Version (WB 3.2+)\n\n"
+                        "Automatically arranges icon layouts\n"
+                        "and resizes folder windows.\n\n"
+                        "(c) 2025-2026",
+                        "OK");
+                    break;
+                
+                case MENU_PROJECT_CLOSE:
+                    continue_running = FALSE;
+                    break;
+            }
+            
+            menu_number = item->NextSelect;
+        }
+        else
+        {
+            break;
+        }
+    }
+    
+    return continue_running;
 }
 
-/* End of main_window.c */
+/*------------------------------------------------------------------------*/
+/* Gadget Event Handling                                                 */
+/*------------------------------------------------------------------------*/
+
+static void handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWindow *win_data)
+{
+    switch (gadget_id)
+    {
+        case ITIDY_GAID_FOLDER_GETFILE:
+            /* Get the selected path from the GetFile gadget */
+            {
+                STRPTR drawer = NULL;
+                GetAttr(GETFILE_Drawer, win_data->gadgets[ITIDY_GAD_IDX_FOLDER_GETFILE], 
+                       (ULONG *)&drawer);
+                if (drawer)
+                {
+                    strncpy(win_data->folder_path_buffer, drawer, 
+                           sizeof(win_data->folder_path_buffer) - 1);
+                    win_data->folder_path_buffer[sizeof(win_data->folder_path_buffer) - 1] = '\0';
+                    CONSOLE_STATUS("Folder selected: %s\n", win_data->folder_path_buffer);
+                }
+            }
+            break;
+        
+        case ITIDY_GAID_ORDER_CHOOSER:
+            win_data->order_selected = code;
+            CONSOLE_DEBUG("Order changed to: %s\n", order_labels_str[code]);
+            /* Disable Sort By when "Grouped by type" is selected */
+            if (win_data->gadgets[ITIDY_GAD_IDX_SORTBY_CHOOSER])
+            {
+                SetGadgetAttrs((struct Gadget *)win_data->gadgets[ITIDY_GAD_IDX_SORTBY_CHOOSER],
+                              win_data->window, NULL,
+                              GA_Disabled, (code == 3),
+                              TAG_END);
+            }
+            break;
+        
+        case ITIDY_GAID_SORTBY_CHOOSER:
+            win_data->sortby_selected = code;
+            CONSOLE_DEBUG("Sort by changed to: %s\n", sortby_labels_str[code]);
+            break;
+        
+        case ITIDY_GAID_RECURSIVE_CHECKBOX:
+            {
+                ULONG selected = 0;
+                GetAttr(GA_Selected, win_data->gadgets[ITIDY_GAD_IDX_RECURSIVE_CHECKBOX], &selected);
+                win_data->recursive_subdirs = (BOOL)selected;
+                CONSOLE_DEBUG("Recursive: %s\n", win_data->recursive_subdirs ? "ON" : "OFF");
+            }
+            break;
+        
+        case ITIDY_GAID_BACKUP_CHECKBOX:
+            {
+                ULONG selected = 0;
+                GetAttr(GA_Selected, win_data->gadgets[ITIDY_GAD_IDX_BACKUP_CHECKBOX], &selected);
+                win_data->enable_backup = (BOOL)selected;
+                CONSOLE_DEBUG("Backup: %s\n", win_data->enable_backup ? "ON" : "OFF");
+            }
+            break;
+        
+        case ITIDY_GAID_POSITION_CHOOSER:
+            win_data->window_position_selected = code;
+            CONSOLE_DEBUG("Position changed to: %s\n", position_labels_str[code]);
+            break;
+        
+        case ITIDY_GAID_HELP_BUTTON:
+            ShowEasyRequest(win_data->window,
+                "Window Placement Options",
+                "Center screen - Resizes window and centers it.\n\n"
+                "Keep position - Resizes but keeps current position.\n\n"
+                "Near parent - Places window near its parent drawer.\n\n"
+                "No change - Only rearranges icons, no window change.",
+                "OK");
+            break;
+        
+        case ITIDY_GAID_ADVANCED_BUTTON:
+            {
+                struct iTidyAdvancedWindow adv_data;
+                LayoutPreferences temp_prefs;
+                
+                CONSOLE_STATUS("Advanced button clicked - opening Advanced Settings window\n");
+                
+                /* Get current global preferences (includes all current settings) */
+                memcpy(&temp_prefs, GetGlobalPreferences(), sizeof(LayoutPreferences));
+                
+                /* Open advanced window (modal) */
+                if (open_itidy_advanced_window(&adv_data, &temp_prefs))
+                {
+                    /* Disable main window input while advanced window is open */
+                    /* ReAction: We can't use ModifyIDCMP on ReAction windows, so we just don't process events */
+                    
+                    /* Run advanced window event loop */
+                    while (handle_advanced_window_events(&adv_data))
+                    {
+                        /* Wait for advanced window events */
+                        WaitPort(adv_data.window->UserPort);
+                    }
+                    
+                    /* Close advanced window */
+                    close_itidy_advanced_window(&adv_data);
+                    
+                    /* If changes were accepted, update global preferences */
+                    if (adv_data.changes_accepted)
+                    {
+                        CONSOLE_STATUS("Advanced settings accepted - updating global preferences\n");
+                        
+                        /* Update global preferences with advanced settings */
+                        UpdateGlobalPreferences(&temp_prefs);
+                        
+                        CONSOLE_DEBUG("Settings will be applied when you click Start button\n");
+                    }
+                    else
+                    {
+                        CONSOLE_DEBUG("Advanced settings cancelled\n");
+                    }
+                }
+                else
+                {
+                    CONSOLE_ERROR("Failed to open Advanced Settings window\n");
+                }
+            }
+            break;
+        
+        case ITIDY_GAID_DEFAULT_TOOLS_BUTTON:
+            {
+                struct iTidyToolCacheWindow tool_window;
+                LayoutPreferences *prefs;
+                
+                CONSOLE_STATUS("Fix default tools button clicked\n");
+                log_info(LOG_GUI, "Opening tool cache window (cache has %d entries)\n", g_ToolCacheCount);
+                
+                /* Sync current GUI folder path and recursive mode to global preferences */
+                /* This ensures Rebuild Cache works even if user hasn't clicked Start yet */
+                prefs = (LayoutPreferences *)GetGlobalPreferences();
+                if (prefs)
+                {
+                    strncpy(prefs->folder_path, win_data->folder_path_buffer, sizeof(prefs->folder_path) - 1);
+                    prefs->folder_path[sizeof(prefs->folder_path) - 1] = '\0';
+                    prefs->recursive_subdirs = win_data->recursive_subdirs;
+                    log_info(LOG_GUI, "Synced folder path to global prefs: %s (recursive: %s)\n",
+                             prefs->folder_path,
+                             prefs->recursive_subdirs ? "Yes" : "No");
+                }
+                
+                /* Open tool cache window */
+                if (open_tool_cache_window(&tool_window))
+                {
+                    /* Event loop */
+                    while (handle_tool_cache_window_events(&tool_window))
+                    {
+                        WaitPort(tool_window.window->UserPort);
+                    }
+                    
+                    /* Cleanup */
+                    close_tool_cache_window(&tool_window);
+                    log_info(LOG_GUI, "Tool cache window closed\n");
+                }
+                else
+                {
+                    log_error(LOG_GUI, "Failed to open tool cache window\n");
+                    (void)ShowEasyRequest(
+                        win_data->window,
+                        "Error",
+                        "Failed to open tool cache window.\n"
+                        "Check the log for details.",
+                        "OK");
+                }
+            }
+            break;
+        
+        case ITIDY_GAID_RESTORE_BUTTON:
+            {
+                struct iTidyRestoreWindow restore_data;
+                
+                CONSOLE_STATUS("Restore backups button clicked - opening Restore window\n");
+                
+                /* Set busy pointer on main window */
+                safe_set_window_pointer(win_data->window, TRUE);
+                
+                /* Open restore window (modal) */
+                if (open_restore_window(&restore_data))
+                {
+                    /* Clear busy pointer - restore window is now open */
+                    safe_set_window_pointer(win_data->window, FALSE);
+                    
+                    /* Run restore window event loop */
+                    while (handle_restore_window_events(&restore_data))
+                    {
+                        /* Wait for restore window events */
+                        WaitPort(restore_data.window->UserPort);
+                    }
+                    
+                    /* Close restore window */
+                    close_restore_window(&restore_data);
+                    
+                    CONSOLE_DEBUG("Restore window closed\n");
+                }
+                else
+                {
+                    /* Clear busy pointer on error */
+                    safe_set_window_pointer(win_data->window, FALSE);
+                    
+                    CONSOLE_ERROR("Failed to open Restore window\n");
+                }
+            }
+            break;
+        
+        case ITIDY_GAID_START_BUTTON:
+            CONSOLE_STATUS("Start button clicked - Processing icons...\n");
+            {
+                struct iTidyMainProgressWindow progress_window;
+                LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
+                BOOL success;
+                
+                /* Update preferences from GUI state */
+                if (win_data->order_selected == 3)
+                {
+                    prefs->blockGroupMode = BLOCK_GROUP_BY_TYPE;
+                    prefs->sortPriority = SORT_PRIORITY_MIXED;
+                }
+                else
+                {
+                    prefs->blockGroupMode = BLOCK_GROUP_NONE;
+                    prefs->sortPriority = win_data->order_selected;
+                }
+                
+                prefs->sortBy = win_data->sortby_selected;
+                prefs->recursive_subdirs = win_data->recursive_subdirs;
+                prefs->enable_backup = win_data->enable_backup;
+                prefs->windowPositionMode = (WindowPositionMode)win_data->window_position_selected;
+                
+                strncpy(prefs->folder_path, win_data->folder_path_buffer, 
+                       sizeof(prefs->folder_path) - 1);
+                prefs->folder_path[sizeof(prefs->folder_path) - 1] = '\0';
+                
+                prefs->backupPrefs.enableUndoBackup = win_data->enable_backup;
+                
+                /* Check LHA availability if backup enabled */
+                if (prefs->enable_backup)
+                {
+                    char lha_path[32];
+                    if (!CheckLhaAvailable(lha_path))
+                    {
+                        LONG result = ShowEasyRequest(win_data->window,
+                            "LHA Not Found",
+                            "LHA archiver not found.\n"
+                            "Backups cannot be created.\n\n"
+                            "Continue without backups?",
+                            "Continue|Cancel");
+                        
+                        if (result == 0)
+                        {
+                            break;
+                        }
+                        prefs->enable_backup = FALSE;
+                        prefs->backupPrefs.enableUndoBackup = FALSE;
+                    }
+                }
+                
+                /* Open progress window */
+                if (!itidy_main_progress_window_open(&progress_window))
+                {
+                    CONSOLE_ERROR("Failed to open progress window\n");
+                    ShowEasyRequest(win_data->window,
+                        "Error",
+                        "Failed to open progress window",
+                        "OK");
+                    break;
+                }
+                
+                /* Set busy pointer on main window */
+                safe_set_window_pointer(win_data->window, TRUE);
+                
+                /* Process the directory with progress window integration */
+                CONSOLE_NEWLINE();
+                CONSOLE_STATUS(">>> Starting icon processing...\n");
+                CONSOLE_NEWLINE();
+                success = ProcessDirectoryWithPreferencesAndProgress(&progress_window);
+                
+                /* Show result in progress window */
+                itidy_main_progress_window_append_status(&progress_window, "");
+                itidy_main_progress_window_append_status(&progress_window, 
+                    "===============================================");
+                if (success)
+                {
+                    CONSOLE_STATUS("Icon processing completed successfully!\n");
+                    itidy_main_progress_window_append_status(&progress_window, 
+                        "Icon processing completed successfully!");
+                    itidy_main_progress_window_append_status(&progress_window, 
+                        "Note you may need to restart your Amiga to see window updates.");
+                }
+                else
+                {
+                    CONSOLE_WARNING("Icon processing failed or was incomplete\n");
+                    itidy_main_progress_window_append_status(&progress_window, 
+                        "Icon processing failed or was incomplete");
+                }
+                itidy_main_progress_window_append_status(&progress_window, 
+                    "===============================================");
+                CONSOLE_SEPARATOR();
+                CONSOLE_NEWLINE();
+                
+                /* Change Cancel button to Close now that processing is complete */
+                itidy_main_progress_window_set_button_text(&progress_window, "Close");
+                
+                /* Clear busy pointer */
+                safe_set_window_pointer(win_data->window, FALSE);
+                
+                /* Keep progress window open so user can review - wait for Cancel/Close */
+                while (itidy_main_progress_window_handle_events(&progress_window))
+                {
+                    WaitPort(progress_window.window->UserPort);
+                }
+                
+                /* Close progress window */
+                itidy_main_progress_window_close(&progress_window);
+            }
+            break;
+        
+        case ITIDY_GAID_EXIT_BUTTON:
+            /* Signal to close - will be handled in main loop */
+            /* Post a close window message */
+            CONSOLE_STATUS("Exit button clicked\n");
+            /* Use RA_HandleInput return to signal exit */
+            break;
+    }
+}
