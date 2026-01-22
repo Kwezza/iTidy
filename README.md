@@ -8,6 +8,13 @@
 
 iTidy is a Workbench utility that automatically arranges icon layouts and resizes folder windows across entire directory trees. Built specifically for AmigaOS 3.0/3.1 (Workbench 3.x), it solves the tedious problem of manually cleaning up hundreds or thousands of icons after large archive extractions, especially useful for WHDLoad collections, game libraries, and project directories.
 
+## 📦 Versions
+
+- **v2.x (Current Development)** - ReAction GUI for Workbench 3.2+ - Modern BOOPSI-based interface
+- **v1.0-gadtools** - GadTools GUI for Workbench 3.0/3.1 - Legacy stable version ([access here](https://github.com/Kwezza/iTidy/releases/tag/v1.0-gadtools))
+
+See [VERSION_HISTORY.md](VERSION_HISTORY.md) for details.
+
 ## Features
 
 ### Core Functionality

@@ -2,7 +2,11 @@
 
 ## Project Overview
 
-iTidy is an **AmigaOS Workbench 3.0/3.1 GUI application** that automatically tidies icon layouts and resizes folder windows. This is a **complete GUI rewrite** (no CLI version) of the original command-line tool. Written in **C89/C99** (VBCC-compatible) targeting **Workbench 3.0 (V39)** and **3.1 (V40)** on **68000/68020** systems.
+iTidy is an **AmigaOS Workbench 3.2+ GUI application** using the **ReAction** (BOOPSI) GUI system. This is **Version 2.x** with a modern ReAction interface. Written in **C89/C99** (VBCC-compatible) targeting **Workbench 3.2+** on **68000/68020** systems.
+
+**Version History:**
+- **v2.x (Current)**: ReAction GUI for Workbench 3.2+ - Active development
+- **v1.0-gadtools**: GadTools GUI for Workbench 3.0/3.1 - Frozen/Legacy (see git tag `v1.0-gadtools`)
 
 **Key Capabilities:**
 - Intelligent icon grid layout with configurable sorting (name, type, date, size)
@@ -126,56 +130,86 @@ void process_icons(const char *path)
 }
 ```
 
-## GUI Framework: Native Workbench 3.0 Only
+## GUI Framework: ReAction (Workbench 3.2+)
 
 ### What We Use:
-- **GadTools**: For gadgets (buttons, listviews, string gadgets, checkboxes, cycles)
-- **Intuition**: For windows and screens
+- **ReAction**: Modern BOOPSI-based GUI system
+  - `window.class` - Window management
+  - `layout.gadget` - Automatic layout
+  - `button.gadget` - Buttons
+  - `checkbox.gadget` - Checkboxes
+  - `chooser.gadget` - Popup choice gadgets
+  - `getfile.gadget` - File/directory requesters
+  - `label.image` - Text labels
+  - `listbrowser.gadget` - Advanced list displays (when needed)
+- **Intuition**: For windows and screens (base layer)
 - **Graphics**: For drawing and text
 - **Icon.library**: For icon manipulation
 - **DOS.library**: For file operations
 
 ### What We DON'T Use:
 - ❌ **NO MUI** (Magic User Interface)
-- ❌ **NO ReAction**
-- ❌ **NO third-party GUI libraries**
-- ❌ Only gadgets that shipped with **Workbench 3.0**
+- ❌ **NO GadTools** (legacy - see v1.0-gadtools tag for old version)
+- ❌ **NO third-party GUI libraries** (other than ReAction)
+
+### Legacy GadTools Version:
+The original GadTools version for Workbench 3.0/3.1 is preserved as `v1.0-gadtools`. Access it via:
+```bash
+git checkout v1.0-gadtools
+```
 
 ## Window Creation and GUI Development
 
-### **CRITICAL REQUIREMENT**: Always Consult Template Documentation
+### **CRITICAL REQUIREMENT**: ReAction Development Patterns
 
-**Before creating any new window or modifying existing windows, you MUST:**
+**ReAction GUI development differs significantly from GadTools:**
 
-1. **Read** `src/templates/AI_AGENT_GETTING_STARTED.md` - The authoritative entry point
-2. **Follow** the GadTools coordinate system rules (BorderTop calculation)
+1. **Read** `src/templates/AI_AGENT_GETTING_STARTED.md` - Entry point (10 min read)
+2. **Follow** `src/templates/AI_AGENT_LAYOUT_GUIDE.md` - Section 0 has CRITICAL patterns
 3. **Use** the canonical templates in `src/templates/` as examples
-4. **Verify** border calculations match actual window borders
+4. **Study** ReAction examples in `Tests/ReActon/` directory
 
 ### Fatal Mistakes to Avoid:
 
-❌ **DON'T** position gadgets at `ng_TopEdge = 0` (that's inside the title bar!)  
-❌ **DON'T** guess border heights (always calculate from screen metrics)  
+❌ **DON'T** use GadTools patterns (this is ReAction now!)  
+❌ **DON'T** manually calculate coordinates (layout.gadget does this)  
 ❌ **DON'T** use `goto` statements unless absolutely necessary (document why if used)  
-❌ **DON'T** ignore the template documentation - it contains hard-learned fixes
+❌ **DON'T** mix GadTools and ReAction in the same window
 
-### Correct BorderTop Calculation (MANDATORY):
+### ReAction Window Pattern (MANDATORY):
 
 ```c
-struct Screen *screen = LockPubScreen("Workbench");
+// ReAction uses BOOPSI objects, not coordinate positioning
+Object *window_obj = WindowObject,
+    WA_Title, "My Window",
+    WA_DragBar, TRUE,
+    WA_CloseGadget, TRUE,
+    WA_SizeGadget, TRUE,
+    WA_DepthGadget, TRUE,
+    WA_Activate, TRUE,
+    WINDOW_ParentGroup, VLayoutObject,
+        LAYOUT_SpaceOuter, TRUE,
+        LAYOUT_AddChild, ButtonObject,
+            GA_Text, "Click Me",
+            GA_ID, BUTTON_ID,
+        End,
+    End,
+End;
 
-// This is the ONLY correct formula
-WORD border_top = screen->WBorTop + screen->Font->ta_YSize + 1;
-WORD border_left = screen->WBorLeft;
-WORD border_right = screen->WBorRight;
-WORD border_bottom = screen->WBorBottom;
-
-UnlockPubScreen(NULL, screen);
-
-// Position gadgets BELOW the title bar
-WORD margin = 5;
-WORD current_y = border_top + margin;  // Start below title bar
-WORD current_x = border_left + margin;
+// Event handling via RA_HandleInput
+while ((result = RA_HandleInput(window_obj, &code)) != WMHI_LASTMSG)
+{
+    switch (result & WMHI_CLASSMASK)
+    {
+        case WMHI_CLOSEWINDOW:
+            done = TRUE;
+            break;
+        
+        case WMHI_GADGETUP:
+            // Handle gadget events
+            break;
+    }
+}
 ```
 
 ### Naming Convention for AmigaOS SDK Collision Avoidance
