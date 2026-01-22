@@ -33,7 +33,6 @@
 #define GID_ADV_COLUMN_LAYOUT     1018
 #define GID_ADV_ICONS_LABEL       1019
 #define GID_ADV_STRIP_NEWICON_BORDERS 1020
-#define GID_ADV_BLOCK_GROUPING    1021
 #define GID_ADV_BLOCK_GAP         1022
 #define GID_ADV_BETA_OPTIONS      1015
 #define GID_ADV_OK                1009
@@ -87,8 +86,7 @@ struct iTidyAdvancedWindow
     struct Gadget *skip_hidden_check;
     struct Gadget *column_layout_check;
     struct Gadget *strip_newicon_borders_check;
-    struct Gadget *block_grouping_cycle;
-    struct Gadget *block_gap_cycle;
+    struct Gadget *block_gap_cycle;  /* Gap size between blocks in Grouped by Type mode */
     struct Gadget *ok_btn;
     struct Gadget *cancel_btn;
     
@@ -109,8 +107,7 @@ struct iTidyAdvancedWindow
     BOOL skip_hidden_enabled;           /* TRUE if skip hidden folders enabled */
     BOOL column_layout_enabled;         /* TRUE if column layout (center icons) enabled */
     BOOL strip_newicon_borders_enabled; /* TRUE if strip NewIcon borders enabled */
-    UWORD block_grouping_selected;      /* Index: 0=None, 1=By Icon Type */
-    UWORD block_gap_selected;           /* Index: 0=Small, 1=Medium, 2=Large */
+    UWORD block_gap_selected;           /* Index: 0=Small, 1=Medium, 2=Large (for Grouped by Type mode) */
     
     /* Pointer to preferences to update */
     LayoutPreferences *prefs;

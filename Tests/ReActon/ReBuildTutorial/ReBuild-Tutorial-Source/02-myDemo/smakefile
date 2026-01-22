@@ -1,0 +1,8 @@
+OBJS= mydemo.o
+CFLAGS=	ICONS  OPTIMIZE OPTSIZE OPTLOOP PARMS=REGISTER VERBOSE
+main: $(OBJS)
+   sc link to myDemo with <<
+$(OBJS)
+<
+
+mydemo.o: mydemo.c

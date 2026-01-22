@@ -1,0 +1,8 @@
+OBJS= cbdemo.o
+CFLAGS=	ICONS  OPTIMIZE OPTSIZE OPTLOOP PARMS=REGISTER VERBOSE
+main: $(OBJS)
+   sc link to cbDemo with <<
+$(OBJS)
+<
+
+cbdemo.o: cbdemo.c

@@ -108,10 +108,13 @@ The main window is where you pick what to tidy and choose the basic options. It�
 
 ### Tidy Options Section
 
-- **Order:** Sets how icons are grouped and sorted in the window. The choices are Folders First, Files First, or Mixed.
+- **Order:** Sets how icons are grouped and sorted in the window. The choices are Folders First, Files First, Mixed, or Grouped by Type.
   - *Folders First:* Drawer icons are listed before file icons.
   - *Files First:* File icons are listed before drawer icons.
   - *Mixed:* Folders and files are sorted together by name.
+  - *Grouped by Type:* Creates three visual blocks - Drawers first, then Tools, then everything else. Each block is laid out independently with its own optimal column count, and blocks are separated by a configurable gap. The gap size can be adjusted in Advanced Settings. This mode is useful for organizing folders that contain a mix of folders, programs, and documents, as it keeps similar icon types together in distinct visual groups.  This grouping method was first suggested by Brielle Harrison in the Commodore Amiga group on facebook.
+  
+  **Note:** When "Grouped by Type" is selected, the **By** sort option is automatically disabled since the grouping order is fixed (Drawers → Tools → Other). Icons within each group are still sorted by name.
 
 - **Cleanup subfolders:** If enabled, iTidy will recurse through all subfolders under the selected path. This is the option you’d use for tidying a whole partition or a large folder tree in one pass. On classic hardware, very large trees can take a while, so it’s normal to start it and leave it running.
 
@@ -207,6 +210,18 @@ When enabled (default), iTidy skips folders that don’t have `.info` files when
 ### Strip NewIcon Borders
 
 Removes borders from NewIcons during processing. This requires icon.library v44+ (Workbench 3.5+). This change is permanent for the affected icons, so if you might want to go back to the original look later, enable icon backups first.
+
+### Gap between groups
+
+Controls the vertical spacing (in pixels) between icon blocks when using the **Grouped by Type** order mode. The choices are:
+
+- *Small:* 5 pixels between blocks
+- *Medium:* 10 pixels between blocks (default)
+- *Large:* 15 pixels between blocks
+
+This setting only applies when you've selected "Grouped by Type" in the main window's **Order** option. It determines how much visual separation appears between the three icon groups (Drawers, Tools, and Other).
+
+**Note:** If a group contains no icons (for example, a folder with no Tools), that group is skipped entirely and no gap is added.
 
 ---
 

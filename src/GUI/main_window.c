@@ -122,12 +122,13 @@ static STRPTR order_labels[] = {
     "Folders First",
     "Files First",
     "Mixed",
+    "Grouped by Type",
     NULL
 };
 
 static STRPTR sortby_labels[] = {
     "Name",
-    "Extension",  /* Renamed from "Type" to avoid confusion with block grouping */
+    "Type",
     "Date",
     "Size",
     NULL
@@ -985,7 +986,16 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     {
         const LayoutPreferences *prefs = GetGlobalPreferences();
         
-        win_data->order_selected = prefs->sortPriority;
+        /* Map blockGroupMode to Order cycle selection */
+        if (prefs->blockGroupMode == BLOCK_GROUP_BY_TYPE)
+        {
+            win_data->order_selected = 3;  /* \"Grouped by Type\" */
+        }
+        else
+        {
+            win_data->order_selected = prefs->sortPriority;  /* 0=Folders First, 1=Files First, 2=Mixed */
+        }
+        
         win_data->sortby_selected = prefs->sortBy;
         win_data->recursive_subdirs = prefs->recursive_subdirs;
         win_data->enable_backup = prefs->enable_backup;
@@ -1394,7 +1404,19 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         
                         /* Update only the fields controlled by main window gadgets */
                         /* All other settings (aspect ratio, spacing, etc.) remain unchanged */
-                        prefs->sortPriority = win_data->order_selected;
+                        
+                        /* Map Order cycle to both sortPriority and blockGroupMode */
+                        if (win_data->order_selected == 3)  /* \"Grouped by Type\" */
+                        {
+                            prefs->blockGroupMode = BLOCK_GROUP_BY_TYPE;
+                            prefs->sortPriority = SORT_PRIORITY_MIXED;  /* Block mode overrides sortPriority */
+                        }
+                        else
+                        {
+                            prefs->blockGroupMode = BLOCK_GROUP_NONE;
+                            prefs->sortPriority = win_data->order_selected;  /* 0=Folders First, 1=Files First, 2=Mixed */
+                        }
+                        
                         prefs->sortBy = win_data->sortby_selected;
                         prefs->recursive_subdirs = win_data->recursive_subdirs;
                         prefs->enable_backup = win_data->enable_backup;
@@ -1633,6 +1655,18 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                         append_to_log("Order cycle changed to: %d (%s)\n", 
                                     win_data->order_selected, 
                                     order_labels[win_data->order_selected]);
+                        
+                        /* Disable the 'By' gadget when 'Grouped by Type' is selected (index 3) */
+                        if (win_data->sortby_cycle)
+                        {
+                            BOOL enable_sortby = (win_data->order_selected != 3);
+                            GT_SetGadgetAttrs(win_data->sortby_cycle, win_data->window, NULL,
+                                             GA_Disabled, !enable_sortby,
+                                             TAG_DONE);
+                            log_debug(LOG_GUI, "'By' gadget %s for order mode %d\n",
+                                     enable_sortby ? "enabled" : "disabled",
+                                     win_data->order_selected);
+                        }
                         break;
 
                     case GID_SORTBY:
@@ -2019,7 +2053,17 @@ static void sync_gui_from_preferences(struct iTidyMainWindow *win_data, const La
         return;
     
     /* Update window data from preferences */
-    win_data->order_selected = prefs->sortPriority;
+    
+    /* Map blockGroupMode to Order cycle selection */
+    if (prefs->blockGroupMode == BLOCK_GROUP_BY_TYPE)
+    {
+        win_data->order_selected = 3;  /* "Grouped by Type" */
+    }
+    else
+    {
+        win_data->order_selected = prefs->sortPriority;  /* 0=Folders First, 1=Files First, 2=Mixed */
+    }
+    
     win_data->sortby_selected = prefs->sortBy;
     win_data->recursive_subdirs = prefs->recursive_subdirs;
     win_data->enable_backup = prefs->enable_backup;
@@ -2038,8 +2082,11 @@ static void sync_gui_from_preferences(struct iTidyMainWindow *win_data, const La
     
     if (win_data->sortby_cycle)
     {
+        /* Disable 'By' gadget if 'Grouped by Type' is selected (index 3) */
+        BOOL enable_sortby = (win_data->order_selected != 3);
         GT_SetGadgetAttrs(win_data->sortby_cycle, win_data->window, NULL,
                          GTCY_Active, win_data->sortby_selected,
+                         GA_Disabled, !enable_sortby,
                          TAG_DONE);
     }
     
@@ -2082,7 +2129,19 @@ static void sync_gui_to_preferences(struct iTidyMainWindow *win_data, LayoutPref
         return;
     
     /* Update preferences from current GUI state */
-    prefs->sortPriority = win_data->order_selected;
+    
+    /* Map Order cycle to both sortPriority and blockGroupMode */
+    if (win_data->order_selected == 3)  /* "Grouped by Type" */
+    {
+        prefs->blockGroupMode = BLOCK_GROUP_BY_TYPE;
+        prefs->sortPriority = SORT_PRIORITY_MIXED;  /* Block mode overrides sortPriority */
+    }
+    else
+    {
+        prefs->blockGroupMode = BLOCK_GROUP_NONE;
+        prefs->sortPriority = win_data->order_selected;  /* 0=Folders First, 1=Files First, 2=Mixed */
+    }
+    
     prefs->sortBy = win_data->sortby_selected;
     prefs->recursive_subdirs = win_data->recursive_subdirs;
     prefs->enable_backup = win_data->enable_backup;

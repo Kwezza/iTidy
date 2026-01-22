@@ -1,0 +1,8 @@
+OBJS= fmdemo.o
+CFLAGS=	ICONS  PARMS=REGISTER debug=symbol MAP MAPHUNK MAPSYMBOLS MAPLIB MAPFILE=fmdemo.map VERBOSE
+main: $(OBJS)
+   sc link to fmDemo.debug with <<
+$(OBJS)
+<
+
+fmdemo.o: fmdemo.c
