@@ -1899,9 +1899,14 @@ static BOOL ProcessSingleDirectory(const char *path,
     IconArray *iconArray = NULL;
     BOOL success = FALSE;
     
+    PROGRESS_STATUS("Debug: Entering ProcessSingleDirectory");
+    PROGRESS_STATUS("Debug: Path='%s'", path ? path : "NULL");
+
     /* Reset logging performance stats for this folder */
     reset_log_performance_stats();
     
+    PROGRESS_STATUS("Debug: Locking directory...");
+
 #ifdef DEBUG
     append_to_log("ProcessSingleDirectory: path='%s'\n", path);
 #endif
@@ -1911,6 +1916,7 @@ static BOOL ProcessSingleDirectory(const char *path,
     if (!lock)
     {
         LONG error = IoErr();
+        PROGRESS_STATUS("Debug: Lock failed! Error=%ld", error);
         CONSOLE_ERROR("Failed to lock directory: %s (error: %ld)\n", path, error);
 #ifdef DEBUG
         append_to_log("Failed to lock %s, error: %ld\n", path, error);
@@ -1918,6 +1924,8 @@ static BOOL ProcessSingleDirectory(const char *path,
         return FALSE;
     }
     
+    PROGRESS_STATUS("Debug: Lock successful. Creating IconArray...");
+
     /* Create icon array from directory */
     PROGRESS_STATUS("  Scanning for icons...");
 #ifdef DEBUG

@@ -4,6 +4,7 @@
 
 # Project name
 PROJECT = testcode
+PROJECT_LB = ListBrowser
 
 # Directories
 BUILD_DIR = build
@@ -18,15 +19,18 @@ CFLAGS = +aos68k -c99 -cpu=68000 -O2 -size -I. -DPLATFORM_AMIGA=1 -D__AMIGA__
 LDFLAGS = +aos68k -cpu=68000 -O2 -size -final -lamiga -lauto
 OUT_DIR = $(BUILD_DIR)/amiga
 BIN = $(BIN_DIR)/$(PROJECT)
+BIN_LB = $(BIN_DIR)/$(PROJECT_LB)
 
 ################################################################################
 # Source Files
 ################################################################################
 
 SRCS = testcode.c
+SRCS_LB = ListBrowser.c
 
 # Object files (in build directory)
 OBJS = $(OUT_DIR)/testcode.o
+OBJS_LB = $(OUT_DIR)/ListBrowser.o
 
 ################################################################################
 # Build Rules
@@ -35,7 +39,7 @@ OBJS = $(OUT_DIR)/testcode.o
 .PHONY: all clean help directories
 
 # Default target
-all: directories $(BIN)
+all: directories $(BIN) $(BIN_LB)
 
 # Create output directories
 directories:
@@ -48,6 +52,12 @@ $(BIN): $(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $^ 
 	@echo Build complete: $(BIN)
 	@echo ReAction test code compiled successfully
+
+# Link executable (ListBrowser)
+$(BIN_LB): $(OBJS_LB)
+	@echo Linking Amiga executable: $(BIN_LB)
+	$(CC) $(LDFLAGS) -o $@ $^ 
+	@echo Build complete: $(BIN_LB)
 
 # Compile source file
 $(OUT_DIR)/%.o: %.c
