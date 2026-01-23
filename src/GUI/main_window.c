@@ -458,7 +458,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
         WINDOW_GadgetHelp, TRUE,
         WINDOW_IconTitle, "iTidy",
         WA_IDCMP, IDCMP_GADGETDOWN | IDCMP_GADGETUP | IDCMP_CLOSEWINDOW | 
-                  IDCMP_MENUPICK | IDCMP_NEWSIZE,
+                  IDCMP_MENUPICK | IDCMP_NEWSIZE | IDCMP_IDCMPUPDATE,
         
         WINDOW_ParentGroup, NewObject(LAYOUT_GetClass(), NULL,
             LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
@@ -1396,17 +1396,22 @@ static void handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
     switch (gadget_id)
     {
         case ITIDY_GAID_FOLDER_GETFILE:
-            /* Get the selected path from the GetFile gadget */
+            /* Invoke the file requester using GFILE_REQUEST method */
+            if (DoMethod((Object *)win_data->gadgets[ITIDY_GAD_IDX_FOLDER_GETFILE],
+                         GFILE_REQUEST, win_data->window))
             {
+                /* Read the selected path */
                 STRPTR drawer = NULL;
+                
                 GetAttr(GETFILE_Drawer, win_data->gadgets[ITIDY_GAD_IDX_FOLDER_GETFILE], 
                        (ULONG *)&drawer);
-                if (drawer)
+                       
+                if (drawer && drawer[0])
                 {
                     strncpy(win_data->folder_path_buffer, drawer, 
                            sizeof(win_data->folder_path_buffer) - 1);
                     win_data->folder_path_buffer[sizeof(win_data->folder_path_buffer) - 1] = '\0';
-                    CONSOLE_STATUS("Folder selected: %s\n", win_data->folder_path_buffer);
+                    log_info(LOG_GUI, "Folder selected: %s\n", win_data->folder_path_buffer);
                 }
             }
             break;
