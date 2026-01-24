@@ -4,19 +4,21 @@
 
 ![AmigaOS](https://img.shields.io/badge/AmigaOS-3.x-blue.svg)
 ![License](https://img.shields.io/badge/license-See%20LICENSE-green.svg)
-![Version](https://img.shields.io/badge/version-2.0-orange.svg)
+![Version](https://img.shields.io/badge/version-1.0-orange.svg)
 
-iTidy is a Workbench utility that automatically arranges icon layouts and resizes folder windows across entire directory trees. Built specifically for AmigaOS 3.0/3.1 (Workbench 3.x), it solves the tedious problem of manually cleaning up hundreds or thousands of icons after large archive extractions, especially useful for WHDLoad collections, game libraries, and project directories.
+iTidy is a Workbench utility for AmigaOS that automatically arranges icon layouts and adjusts drawer window sizes across entire directory trees.
+
+It’s designed for anyone who actively works with their Workbench layout, whether that’s organising game libraries, maintaining project directories, tidying development trees, or cleaning up after large file operations. iTidy removes the repetitive manual work of repositioning icons and resizing windows, letting you bring order back to your Workbench in a consistent, repeatable way.
 
 ## Features
 
 ### Core Functionality
-- 🎯 **Automatic Icon Grid Layout** - Intelligent icon positioning with configurable spacing and sorting
-- 📐 **Smart Window Resizing** - Aspect ratio control with overflow handling for large directories
-- 🔄 **Recursive Processing** - Process entire directory trees in one operation
-- 💾 **LHA Backup System** - Create restore points before making changes
-- 🛠️ **Default Tool Validation** - Find and fix missing or invalid default tool paths
-- 📊 **Multiple Sort Options** - Folders First, Files First, Mixed, with reverse sorting
+- **Automatic Icon Grid Layout** - Intelligent icon positioning with configurable spacing and sorting
+- **Smart Window Resizing** - Aspect ratio control with overflow handling for large directories
+- **Recursive Processing** - Process entire directory trees in one operation
+- **LHA Backup System** - Create restore points before making changes
+- **Default Tool Validation** - Find and fix missing or invalid default tool paths
+- **Multiple Sort Options** - Folders First, Files First, Mixed, with reverse sorting
 
 ### Advanced Options
 - Configurable icon spacing (X/Y)
@@ -30,10 +32,10 @@ iTidy is a Workbench utility that automatically arranges icon layouts and resize
 - NewIcons border stripping (requires icon.library v44+)
 
 ### Supported Icon Formats
-- ✅ Classic/Standard icons (all AmigaOS versions)
-- ✅ NewIcons (extended color icons)
-- ✅ OS3.5/OS3.9 Color Icons
-- ✅ GlowIcons (both NewIcons-style and Color Icons versions)
+- Classic/Standard icons (all AmigaOS versions)
+- NewIcons (extended color icons)
+- OS3.5/OS3.9 Color Icons
+- GlowIcons (both NewIcons-style and Color Icons versions)
 
 ## Requirements
 
@@ -61,7 +63,7 @@ iTidy is a Workbench utility that automatically arranges icon layouts and resize
 4. **Click Start** - iTidy processes the folder(s) and arranges icons
 5. **Restore if Needed** - Use "Restore Backups..." to undo changes
 
-💡 **Tip**: Try iTidy on a small test folder first to see how the options work!
+**Tip**: Try iTidy on a small test folder first to see how the options work!
 
 ## Main Features Explained
 
@@ -143,7 +145,7 @@ iTidy/
 
 ## Safety & Disclaimer
 
-⚠️ **Important**: iTidy is hobby software provided as-is. While tested on real Amiga systems, bugs may exist.
+**Important**: iTidy is hobby software provided as-is. While tested on real Amiga systems, bugs may exist.
 
 - iTidy only modifies `.info` files and Workbench drawer/window layout information
 - Your data files are never touched
