@@ -262,6 +262,6 @@ This error means the icon's default tool path points to a program that doesn't e
 
 @{b}Credits & Version Info@{ub}
 
-@{b}Author:@{ub} Kerry Thompson@{b}Version:@{ub} 1.2@{b}Bug reports and improvement ideas welcome:@{ub} https://github.com/Kwezza/iTidy
+@{b}Author:@{ub} Kerry Thompson@{b}Version:@{ub} 1.0@{b}Bug reports and improvement ideas welcome:@{ub} https://github.com/Kwezza/iTidy
 @{i}For a full interactive manual, open @{ui}@{FG Shine}iTidy.guide@{FG Text}@{i} in AmigaGuide.@{ui}
 @ENDNODE
