@@ -171,21 +171,6 @@ Use the "Fix Default Tools..." feature to scan for and repair missing default to
 
 For more troubleshooting help, see the [user manual](docs/manual/README.md#tips--troubleshooting).
 
-## Version History
-
-**v2.0** - Complete GUI rewrite
-- Full Workbench GUI interface (no CLI version)
-- Advanced layout options with aspect ratio control
-- LHA-based backup and restore system
-- Default tool validation and repair
-- Recursive directory processing
-- Performance optimized for low-memory systems (A500/A600/A1200)
-
-## Credits
-
-**Author**: Kerry Thompson  
-**GitHub**: https://github.com/Kwezza/iTidy
-
 ## License
 
 See [LICENSE](LICENSE) file for details.
