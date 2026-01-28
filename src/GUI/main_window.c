@@ -1476,6 +1476,7 @@ static void handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                 
                 /* Get current global preferences (includes all current settings) */
                 memcpy(&temp_prefs, GetGlobalPreferences(), sizeof(LayoutPreferences));
+                memset(&adv_data, 0, sizeof(adv_data));
                 
                 /* Open advanced window (modal) */
                 if (open_itidy_advanced_window(&adv_data, &temp_prefs))
@@ -1483,12 +1484,8 @@ static void handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                     /* Disable main window input while advanced window is open */
                     /* ReAction: We can't use ModifyIDCMP on ReAction windows, so we just don't process events */
                     
-                    /* Run advanced window event loop */
-                    while (handle_advanced_window_events(&adv_data))
-                    {
-                        /* Wait for advanced window events */
-                        WaitPort(adv_data.window->UserPort);
-                    }
+                    /* Run advanced window event loop - blocks until done */
+                    handle_itidy_advanced_window_events(&adv_data);
                     
                     /* Close advanced window */
                     close_itidy_advanced_window(&adv_data);
