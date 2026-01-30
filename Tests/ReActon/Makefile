@@ -6,6 +6,7 @@
 PROJECT = testcode
 PROJECT_LB = ListBrowser
 PROJECT_RB = RestoreBackups
+PROJECT_LBT = listbrowser_tree
 
 # Directories
 BUILD_DIR = build
@@ -22,6 +23,7 @@ OUT_DIR = $(BUILD_DIR)/amiga
 BIN = $(BIN_DIR)/$(PROJECT)
 BIN_LB = $(BIN_DIR)/$(PROJECT_LB)
 BIN_RB = $(BIN_DIR)/$(PROJECT_RB)
+BIN_LBT = $(BIN_DIR)/$(PROJECT_LBT)
 
 ################################################################################
 # Source Files
@@ -30,11 +32,13 @@ BIN_RB = $(BIN_DIR)/$(PROJECT_RB)
 SRCS = testcode.c
 SRCS_LB = ListBrowser.c
 SRCS_RB = RestoreBackups.c
+SRCS_LBT = listbrowser_tree.c
 
 # Object files (in build directory)
 OBJS = $(OUT_DIR)/testcode.o
 OBJS_LB = $(OUT_DIR)/ListBrowser.o
-OBJS_RB = $(OUT_DIR)/RestoreBackups.o
+OBJS_RB =
+OBJS_LBT = $(OUT_DIR)/listbrowser_tree.o
 
 ################################################################################
 # Build Rules
@@ -43,13 +47,12 @@ OBJS_RB = $(OUT_DIR)/RestoreBackups.o
 .PHONY: all clean help directorie $(BIN_RB)s
 
 # Default target
-all: directories $(BIN) $(BIN_LB)
+all: directories $(BIN) $(BIN_LB) $(BIN_LBT)
 
 # Create output directories
 directories:
 	@if not exist "$(OUT_DIR)" mkdir "$(OUT_DIR)"
 	@if not exist "$(BIN_DIR)" mkdir "$(BIN_DIR)"
-
 # Link executable
 $(BIN): $(OBJS)
 	@echo Linking Amiga executable: $(BIN)
@@ -68,6 +71,12 @@ $(BIN_RB): $(OBJS_RB)
 	@echo Linking Amiga executable: $(BIN_RB)
 	$(CC) $(LDFLAGS) -o $@ $^ 
 	@echo Build complete: $(BIN_RB)
+
+# Link executable (ListBrowser Tree)
+$(BIN_LBT): $(OBJS_LBT)
+	@echo Linking Amiga executable: $(BIN_LBT)
+	$(CC) $(LDFLAGS) -o $@ $^
+	@echo Build complete: $(BIN_LBT)
 
 # Compile source file
 $(OUT_DIR)/%.o: %.c

@@ -17,6 +17,7 @@
 #define CheckBoxBase    iTidy_Restore_CheckBoxBase
 #define ListBrowserBase iTidy_Restore_ListBrowserBase
 #define LabelBase       iTidy_Restore_LabelBase
+#define RequesterBase   iTidy_Restore_RequesterBase
 
 #include "platform/platform.h"
 #include <exec/types.h>
@@ -48,7 +49,9 @@
 #include <proto/checkbox.h>
 #include <proto/listbrowser.h>
 #include <proto/label.h>
+#include <proto/requester.h>
 #include <classes/window.h>
+#include <classes/requester.h>
 #include <gadgets/layout.h>
 #include <gadgets/button.h>
 #include <gadgets/checkbox.h>
@@ -78,6 +81,7 @@ struct Library *iTidy_Restore_LayoutBase = NULL;
 struct Library *iTidy_Restore_ButtonBase = NULL;
 struct Library *iTidy_Restore_CheckBoxBase = NULL;
 struct Library *iTidy_Restore_ListBrowserBase = NULL;
+struct Library *iTidy_Restore_RequesterBase = NULL;
 struct Library *iTidy_Restore_LabelBase = NULL;
 
 /*------------------------------------------------------------------------*/
@@ -115,7 +119,8 @@ static struct ColumnInfo run_list_column_info[] = {
 };
 
 static struct ColumnInfo details_column_info[] = {
-    { 100, "", 0 },
+    { 30, "Field", 0 },
+    { 70, "Value", 0 },
     { -1, (STRPTR)~0, -1 }
 };
 
@@ -126,6 +131,11 @@ static BOOL open_reaction_classes(void);
 static void close_reaction_classes(void);
 static void free_listbrowser_list(struct List *list);
 static BOOL delete_directory_recursive(const char *path);
+static ULONG ShowReActionRequester(struct Window *parent_window,
+                                   CONST_STRPTR title,
+                                   CONST_STRPTR body,
+                                   CONST_STRPTR gadgets,
+                                   ULONG image_type);
 
 /*------------------------------------------------------------------------*/
 /**
@@ -559,8 +569,19 @@ void populate_run_list(struct iTidyRestoreWindow *restore_data,
 void update_details_panel(struct iTidyRestoreWindow *restore_data,
                           struct RestoreRunEntry *selected_entry)
 {
-    char line_buffer[7][256];
     struct Node *node;
+    char value_buffer[256];
+    
+    /* Label/Value pairs for the details panel */
+    static const char *labels[] = {
+        "Run Number",
+        "Date Created",
+        "Source Directory",
+        "Total Archives",
+        "Total Size",
+        "Status",
+        "Location"
+    };
     
     if (restore_data == NULL || restore_data->details_listbrowser_obj == NULL)
         return;
@@ -589,18 +610,26 @@ void update_details_panel(struct iTidyRestoreWindow *restore_data,
     
     if (selected_entry == NULL)
     {
-        strcpy(line_buffer[0], "(No run selected)");
-        node = AllocListBrowserNode(1,
+        /* No selection - show placeholder in both columns */
+        node = AllocListBrowserNode(2,
             LBNA_Column, 0,
                 LBNCA_CopyText, TRUE,
-                LBNCA_Text, line_buffer[0],
+                LBNCA_Text, "(No run selected)",
+            LBNA_Column, 1,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, "",
             TAG_DONE);
         if (node) AddTail(restore_data->details_list_nodes, node);
     }
     else
     {
+        const char *values[7];
+        char run_num_str[16];
+        char archives_str[16];
         char status_desc[64];
+        int i;
         
+        /* Determine status description */
         switch (selected_entry->statusCode)
         {
             case RESTORE_STATUS_COMPLETE:
@@ -620,22 +649,29 @@ void update_details_panel(struct iTidyRestoreWindow *restore_data,
                 break;
         }
         
-        /* Format each detail line */
-        sprintf(line_buffer[0], "Run Number:       %04u", selected_entry->runNumber);
-        sprintf(line_buffer[1], "Date Created:     %s", selected_entry->dateStr);
-        sprintf(line_buffer[2], "Source Directory: %s", selected_entry->sourceDirectory);
-        sprintf(line_buffer[3], "Total Archives:   %lu", selected_entry->folderCount);
-        sprintf(line_buffer[4], "Total Size:       %s", selected_entry->sizeStr);
-        sprintf(line_buffer[5], "Status:           %s", status_desc);
-        sprintf(line_buffer[6], "Location:         %s", selected_entry->fullPath);
+        /* Format numeric values to strings */
+        sprintf(run_num_str, "%04u", selected_entry->runNumber);
+        sprintf(archives_str, "%lu", selected_entry->folderCount);
         
-        /* Add each line as a node */
-        for (int i = 0; i < 7; i++)
+        /* Build values array */
+        values[0] = run_num_str;
+        values[1] = selected_entry->dateStr;
+        values[2] = selected_entry->sourceDirectory;
+        values[3] = archives_str;
+        values[4] = selected_entry->sizeStr;
+        values[5] = status_desc;
+        values[6] = selected_entry->fullPath;
+        
+        /* Add each row with 2 columns: label and value */
+        for (i = 0; i < 7; i++)
         {
-            node = AllocListBrowserNode(1,
+            node = AllocListBrowserNode(2,
                 LBNA_Column, 0,
                     LBNCA_CopyText, TRUE,
-                    LBNCA_Text, line_buffer[i],
+                    LBNCA_Text, (STRPTR)labels[i],
+                LBNA_Column, 1,
+                    LBNCA_CopyText, TRUE,
+                    LBNCA_Text, (STRPTR)values[i],
                 TAG_DONE);
             if (node) AddTail(restore_data->details_list_nodes, node);
         }
@@ -670,10 +706,13 @@ BOOL perform_restore_run(struct iTidyRestoreWindow *restore_data,
     
     sprintf(message, "Restore all folders from %s?", run_entry->runName);
     
-    if (!ShowEasyRequest(restore_data->window, 
-                         "Confirm Restore",
-                         message,
-                         "Restore|Cancel"))
+    /* Use ReAction requester with question mark icon */
+    /* Button returns: 1=Restore, 0=Cancel */
+    if (ShowReActionRequester(restore_data->window,
+                              "Confirm Restore",
+                              message,
+                              "_Restore|_Cancel",
+                              REQIMAGE_QUESTION) != 1)
     {
         log_info(LOG_BACKUP, "Restore cancelled by user\n");
         return FALSE;
@@ -690,10 +729,11 @@ BOOL perform_restore_run(struct iTidyRestoreWindow *restore_data,
         
         sprintf(message, "LHA executable not found!\nRestore requires LHA to be installed.");
         
-        ShowEasyRequest(restore_data->window,
-                       "Restore Failed",
-                       message,
-                       "OK");
+        ShowReActionRequester(restore_data->window,
+                              "Restore Failed",
+                              message,
+                              "_OK",
+                              REQIMAGE_ERROR);
         
         return FALSE;
     }
@@ -745,10 +785,11 @@ BOOL perform_restore_run(struct iTidyRestoreWindow *restore_data,
                 restoreCtx.stats.archivesRestored,
                 restoreCtx.stats.archivesFailed);
         
-        ShowEasyRequest(restore_data->window,
-                       "Restore Complete",
-                       message,
-                       "OK");
+        ShowReActionRequester(restore_data->window,
+                              "Restore Complete",
+                              message,
+                              "_OK",
+                              REQIMAGE_INFO);
         
         restore_data->restore_performed = TRUE;
     }
@@ -770,10 +811,11 @@ BOOL perform_restore_run(struct iTidyRestoreWindow *restore_data,
                     statusMsg);
         }
         
-        ShowEasyRequest(restore_data->window,
-                       "Restore Failed",
-                       message,
-                       "OK");
+        ShowReActionRequester(restore_data->window,
+                              "Restore Failed",
+                              message,
+                              "_OK",
+                              REQIMAGE_ERROR);
     }
     
     return (status == RESTORE_OK);
@@ -868,6 +910,69 @@ static BOOL delete_directory_recursive(const char *path)
 
 /*------------------------------------------------------------------------*/
 /**
+ * @brief Show a ReAction requester dialog
+ * 
+ * Uses requester.class for native ReAction look and feel.
+ * 
+ * @param parent_window  Parent window for requester positioning
+ * @param title          Title text for the requester
+ * @param body           Body text (supports ESC formatting codes)
+ * @param gadgets        Gadget text (e.g. "_Yes|_No" or "_OK")
+ * @param image_type     REQIMAGE_* constant (e.g. REQIMAGE_QUESTION)
+ * @return Button number selected (1,2,3...0) or 0 if failed/cancelled
+ */
+/*------------------------------------------------------------------------*/
+static ULONG ShowReActionRequester(struct Window *parent_window,
+                                   CONST_STRPTR title,
+                                   CONST_STRPTR body,
+                                   CONST_STRPTR gadgets,
+                                   ULONG image_type)
+{
+    Object *req_obj;
+    struct orRequest req_msg;
+    ULONG result = 0;
+    
+    if (!RequesterBase)
+    {
+        log_error(LOG_GUI, "RequesterBase is NULL, cannot show requester\n");
+        return 0;
+    }
+    
+    if (!parent_window)
+    {
+        log_error(LOG_GUI, "Parent window is NULL, cannot show requester\n");
+        return 0;
+    }
+    
+    req_obj = NewObject(REQUESTER_GetClass(), NULL,
+        REQ_Type, REQTYPE_INFO,
+        REQ_TitleText, title,
+        REQ_BodyText, body,
+        REQ_GadgetText, gadgets,
+        REQ_Image, image_type,
+        TAG_DONE);
+    
+    if (req_obj)
+    {
+        req_msg.MethodID = RM_OPENREQ;
+        req_msg.or_Attrs = NULL;
+        req_msg.or_Window = parent_window;
+        req_msg.or_Screen = NULL;
+        
+        result = DoMethodA(req_obj, (Msg)&req_msg);
+        
+        DisposeObject(req_obj);
+    }
+    else
+    {
+        log_error(LOG_GUI, "Failed to create requester object\n");
+    }
+    
+    return result;
+}
+
+/*------------------------------------------------------------------------*/
+/**
  * @brief Open ReAction class libraries
  */
 /*------------------------------------------------------------------------*/
@@ -879,9 +984,10 @@ static BOOL open_reaction_classes(void)
     if (!CheckBoxBase)    CheckBoxBase = OpenLibrary("gadgets/checkbox.gadget", 0);
     if (!ListBrowserBase) ListBrowserBase = OpenLibrary("gadgets/listbrowser.gadget", 0);
     if (!LabelBase)       LabelBase = OpenLibrary("images/label.image", 0);
+    if (!RequesterBase)   RequesterBase = OpenLibrary("requester.class", 0);
     
     if (!WindowBase || !LayoutBase || !ButtonBase || 
-        !CheckBoxBase || !ListBrowserBase || !LabelBase)
+        !CheckBoxBase || !ListBrowserBase || !LabelBase || !RequesterBase)
     {
         log_error(LOG_GUI, "Failed to open ReAction classes for restore window\n");
         return FALSE;
@@ -897,6 +1003,7 @@ static BOOL open_reaction_classes(void)
 /*------------------------------------------------------------------------*/
 static void close_reaction_classes(void)
 {
+    if (RequesterBase)   { CloseLibrary(RequesterBase);   RequesterBase = NULL; }
     if (LabelBase)       { CloseLibrary(LabelBase);       LabelBase = NULL; }
     if (ListBrowserBase) { CloseLibrary(ListBrowserBase); ListBrowserBase = NULL; }
     if (CheckBoxBase)    { CloseLibrary(CheckBoxBase);    CheckBoxBase = NULL; }
@@ -1328,10 +1435,13 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                                     selected_entry->runName,
                                     selected_entry->folderCount);
                             
-                            if (ShowEasyRequest(restore_data->window,
-                                               "Confirm Delete",
-                                               message,
-                                               "Delete|Cancel"))
+                            /* Use ReAction requester with question mark icon */
+                            /* Button returns: 1=Delete, 0=Cancel */
+                            if (ShowReActionRequester(restore_data->window,
+                                                      "Confirm Delete",
+                                                      message,
+                                                      "_Delete|_Cancel",
+                                                      REQIMAGE_QUESTION) == 1)
                             {
                                 char run_path[512];
                                 
@@ -1382,10 +1492,11 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                                     
                                     sprintf(message, "Backup run %s deleted successfully.", selected_entry->runName);
                                     
-                                    ShowEasyRequest(restore_data->window,
-                                                   "Delete Complete",
-                                                   message,
-                                                   "OK");
+                                    ShowReActionRequester(restore_data->window,
+                                                          "Delete Complete",
+                                                          message,
+                                                          "_OK",
+                                                          REQIMAGE_INFO);
                                 }
                                 else
                                 {
@@ -1393,10 +1504,11 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                                     
                                     sprintf(message, "Failed to delete backup run %s.\n\nThe directory may be in use or protected.\nCheck the log for details.", selected_entry->runName);
                                     
-                                    ShowEasyRequest(restore_data->window,
-                                                   "Delete Failed",
-                                                   message,
-                                                   "OK");
+                                    ShowReActionRequester(restore_data->window,
+                                                          "Delete Failed",
+                                                          message,
+                                                          "_OK",
+                                                          REQIMAGE_ERROR);
                                 }
                             }
                             else
