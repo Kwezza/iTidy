@@ -19,6 +19,7 @@
 #include <proto/button.h>
 #include <proto/checkbox.h>
 #include <proto/chooser.h>
+#include <proto/fuelgauge.h>
 #include <proto/getfile.h>
 #include <proto/integer.h>
 #include <proto/listbrowser.h>
@@ -37,6 +38,7 @@ void main_progress_window( void );
 void advanced_settings( void );
 void restore_backups( void );
 void restore_folders_view( void );
+void recursive_progress_window( void );
 
 struct Screen	*gScreen = NULL;
 struct DrawInfo	*gDrawInfo = NULL;
@@ -47,6 +49,7 @@ struct Library *WindowBase = NULL,
                *ButtonBase = NULL,
                *CheckBoxBase = NULL,
                *ChooserBase = NULL,
+               *FuelGaugeBase = NULL,
                *GetFileBase = NULL,
                *IntegerBase = NULL,
                *ListBrowserBase = NULL,
@@ -58,7 +61,7 @@ struct IntuitionBase *IntuitionBase = NULL;
 
 //window ids
 enum win { main_window_id = 4, main_progress_window_id = 53, advanced_settings_id = 59, 
-  restore_backups_id = 103, restore_folders_view_id = 118 };
+  restore_backups_id = 103, restore_folders_view_id = 118, recursive_progress_window_id = 123 };
 
 //main_window gadgets
 enum main_window_idx { master_layout, folder_layout, folder_name, itidy_options, left_column, 
@@ -86,6 +89,9 @@ enum restore_backups_idx { vert_105, backup_list_layout, backup_list, backup_det
   backup_restore_run, backup_view_folders, button_cancel };
 //restore_folders_view gadgets
 enum restore_folders_view_idx { vert_120, folder_browser, close_button };
+//recursive_progress_window gadgets
+enum recursive_progress_window_idx { vert_125, main_progress_bar, main_progress_label, sub_progress_bar, 
+  sub_process_label };
 
 void main_window( void )
 {
@@ -957,5 +963,88 @@ void restore_folders_view( void )
     TAG_END),
   TAG_END);  
   main_gadgets[3] = 0;
+}
+
+void recursive_progress_window( void )
+{
+  struct Gadget	*main_gadgets[ 6 ];
+  Object *window_object = NULL;
+  struct HintInfo hintInfo[] =
+  {
+    {vert_125,-1,"",0},
+    {main_progress_bar,-1,"",0},
+    {main_progress_label,-1,"",0},
+    {sub_progress_bar,-1,"",0},
+    {sub_process_label,-1,"",0},
+    {-1,-1,NULL,0}
+  };
+
+  window_object = NewObject( WINDOW_GetClass(), NULL, 
+    WA_Title, "Progress...",
+    WA_Left, 5,
+    WA_Top, 20,
+    WA_Width, 150,
+    WA_Height, 80,
+    WA_MinWidth, 250,
+    WA_MinHeight, 80,
+    WA_MaxWidth, 8192,
+    WA_MaxHeight, 8192,
+    WINDOW_HintInfo, hintInfo,
+    WINDOW_GadgetHelp, TRUE,
+    WINDOW_AppPort, gAppPort,
+    WA_DepthGadget, TRUE,
+    WA_SizeGadget, TRUE,
+    WA_DragBar, TRUE,
+    WA_Activate, TRUE,
+    WINDOW_IconTitle, "MyApp",
+    WA_NoCareRefresh, TRUE,
+    WA_IDCMP, IDCMP_GADGETDOWN | IDCMP_GADGETUP | IDCMP_CLOSEWINDOW,
+    WINDOW_ParentGroup, NewObject( LAYOUT_GetClass(), NULL,
+    LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+    LAYOUT_SpaceOuter, TRUE,
+    LAYOUT_DeferLayout, TRUE,
+      LAYOUT_AddChild, main_gadgets[vert_125] = NewObject( LAYOUT_GetClass(), NULL, 
+        GA_ID, vert_125,
+        LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+        LAYOUT_LeftSpacing, 2,
+        LAYOUT_RightSpacing, 2,
+        LAYOUT_TopSpacing, 2,
+        LAYOUT_BottomSpacing, 2,
+        LAYOUT_AddChild, main_gadgets[main_progress_bar] = NewObject( FUELGAUGE_GetClass(), NULL, 
+          GA_ID, main_progress_bar,
+          GA_RelVerify, TRUE,
+          GA_Text, 1087678444,
+          FUELGAUGE_Min, 0,
+          FUELGAUGE_Max, 0,
+          FUELGAUGE_Level, 0,
+          FUELGAUGE_Ticks, 0,
+          FUELGAUGE_Percent, FALSE,
+          FUELGAUGE_FillPen, FILLPEN,
+        TAG_END),
+        LAYOUT_AddImage, main_gadgets[main_progress_label] = NewObject( LABEL_GetClass(), NULL, 
+          GA_ID, main_progress_label,
+          LABEL_DrawInfo, gDrawInfo,
+          LABEL_Text, "Starting, one moment please...",
+        TAG_END),
+        LAYOUT_AddChild, main_gadgets[sub_progress_bar] = NewObject( FUELGAUGE_GetClass(), NULL, 
+          GA_ID, sub_progress_bar,
+          GA_RelVerify, TRUE,
+          GA_Text, 1088389420,
+          FUELGAUGE_Min, 0,
+          FUELGAUGE_Max, 0,
+          FUELGAUGE_Level, 0,
+          FUELGAUGE_Ticks, 0,
+          FUELGAUGE_Percent, FALSE,
+          FUELGAUGE_FillPen, FILLPEN,
+        TAG_END),
+        LAYOUT_AddImage, main_gadgets[sub_process_label] = NewObject( LABEL_GetClass(), NULL, 
+          GA_ID, sub_process_label,
+          LABEL_DrawInfo, gDrawInfo,
+          LABEL_Text, "Processing",
+        TAG_END),
+      TAG_END),
+    TAG_END),
+  TAG_END);  
+  main_gadgets[5] = 0;
 }
 

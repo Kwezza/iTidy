@@ -369,23 +369,8 @@ BOOL open_folder_view_window(struct iTidyFolderViewWindow *folder_data,
     folder_data->column_info[2].ci_Title = (STRPTR)~0;
     folder_data->column_info[2].ci_Flags = -1;
     
-    /* CRITICAL: Parse catalog and build tree BEFORE creating the gadget */
-    /* This is required for hierarchical ListBrowser to show disclosure triangles */
-    if (catalog_path != NULL)
-    {
-        log_info(LOG_GUI, "FolderView: Parsing catalog before creating window...\n");
-        if (!parse_catalog_and_build_tree(catalog_path, folder_data))
-        {
-            log_warning(LOG_GUI, "FolderView: Failed to parse catalog\n");
-            /* Continue anyway - show empty list */
-        }
-        
-        /* Hide all children to start collapsed - MUST be done before attaching to gadget */
-        /* This is the key step that makes disclosure triangles appear */
-        HideAllListBrowserChildren(folder_data->folder_list);
-    }
-    
-    /* Create the ReAction window object */
+    /* Create the ReAction window object with empty list first */
+    /* We'll populate it after the window opens for better user feedback */
     folder_data->window_obj = NewObject(WINDOW_GetClass(), NULL,
         WA_Title,           folder_data->window_title,
         WA_PubScreen,       folder_data->screen,
@@ -474,7 +459,38 @@ BOOL open_folder_view_window(struct iTidyFolderViewWindow *folder_data,
     folder_data->window_open = TRUE;
     log_info(LOG_GUI, "FolderView: Window opened at %p\n", folder_data->window);
     
-    /* Clear busy pointer */
+    /* Keep busy pointer while parsing catalog */
+    safe_set_window_pointer(folder_data->window, TRUE);
+    
+    /* Parse catalog and build tree AFTER window is visible */
+    if (catalog_path != NULL)
+    {
+        log_info(LOG_GUI, "FolderView: Parsing catalog...\n");
+        if (!parse_catalog_and_build_tree(catalog_path, folder_data))
+        {
+            log_warning(LOG_GUI, "FolderView: Failed to parse catalog\n");
+            /* Continue anyway - show empty list */
+        }
+        else
+        {
+            /* Hide all children to start collapsed */
+            /* This is the key step that makes disclosure triangles appear */
+            HideAllListBrowserChildren(folder_data->folder_list);
+            
+            /* Detach list, refresh it, and reattach to update display */
+            SetGadgetAttrs((struct Gadget *)folder_data->listbrowser_obj,
+                          folder_data->window, NULL,
+                          LISTBROWSER_Labels, ~0,
+                          TAG_DONE);
+            
+            SetGadgetAttrs((struct Gadget *)folder_data->listbrowser_obj,
+                          folder_data->window, NULL,
+                          LISTBROWSER_Labels, folder_data->folder_list,
+                          TAG_DONE);
+        }
+    }
+    
+    /* Clear busy pointer - window is now ready */
     safe_set_window_pointer(folder_data->window, FALSE);
     
     log_info(LOG_GUI, "FolderView: Window ready\n");

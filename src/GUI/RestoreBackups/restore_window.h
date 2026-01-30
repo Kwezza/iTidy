@@ -57,7 +57,6 @@ struct iTidyRestoreWindow
     Object *gadgets[16];                /* Gadget object array */
     Object *run_listbrowser_obj;        /* Run list ListBrowser */
     Object *details_listbrowser_obj;    /* Details ListBrowser */
-    Object *window_geom_chk;            /* Checkbox: restore window geometry */
     Object *restore_run_btn;            /* Restore Run button */
     Object *view_folders_btn;           /* View Folders button */
     Object *delete_run_btn;             /* Delete Run button */

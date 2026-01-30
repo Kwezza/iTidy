@@ -14,7 +14,6 @@
 #define WindowBase      iTidy_Restore_WindowBase
 #define LayoutBase      iTidy_Restore_LayoutBase
 #define ButtonBase      iTidy_Restore_ButtonBase
-#define CheckBoxBase    iTidy_Restore_CheckBoxBase
 #define ListBrowserBase iTidy_Restore_ListBrowserBase
 #define LabelBase       iTidy_Restore_LabelBase
 #define RequesterBase   iTidy_Restore_RequesterBase
@@ -46,7 +45,6 @@
 #include <proto/window.h>
 #include <proto/layout.h>
 #include <proto/button.h>
-#include <proto/checkbox.h>
 #include <proto/listbrowser.h>
 #include <proto/label.h>
 #include <proto/requester.h>
@@ -54,7 +52,6 @@
 #include <classes/requester.h>
 #include <gadgets/layout.h>
 #include <gadgets/button.h>
-#include <gadgets/checkbox.h>
 #include <gadgets/listbrowser.h>
 #include <images/label.h>
 
@@ -79,7 +76,6 @@ VOID NewList(struct List *list);
 struct Library *iTidy_Restore_WindowBase = NULL;
 struct Library *iTidy_Restore_LayoutBase = NULL;
 struct Library *iTidy_Restore_ButtonBase = NULL;
-struct Library *iTidy_Restore_CheckBoxBase = NULL;
 struct Library *iTidy_Restore_ListBrowserBase = NULL;
 struct Library *iTidy_Restore_RequesterBase = NULL;
 struct Library *iTidy_Restore_LabelBase = NULL;
@@ -102,8 +98,7 @@ enum {
     GID_RESTORE_DELETE_BUTTON,
     GID_RESTORE_RESTORE_BUTTON,
     GID_RESTORE_VIEW_BUTTON,
-    GID_RESTORE_CANCEL_BUTTON,
-    GID_RESTORE_GEOM_CHECKBOX
+    GID_RESTORE_CANCEL_BUTTON
 };
 
 /*------------------------------------------------------------------------*/
@@ -704,19 +699,27 @@ BOOL perform_restore_run(struct iTidyRestoreWindow *restore_data,
         return FALSE;
     }
     
-    sprintf(message, "Restore all folders from %s?", run_entry->runName);
+    sprintf(message, "Restore all folders from %s?\n\nChoose restore option:", run_entry->runName);
     
     /* Use ReAction requester with question mark icon */
-    /* Button returns: 1=Restore, 0=Cancel */
-    if (ShowReActionRequester(restore_data->window,
-                              "Confirm Restore",
-                              message,
-                              "_Restore|_Cancel",
-                              REQIMAGE_QUESTION) != 1)
+    /* Button returns: 1=With Windows, 2=Icons Only, 0=Cancel */
+    ULONG button_result = ShowReActionRequester(restore_data->window,
+                                                 "Confirm Restore",
+                                                 message,
+                                                 "With _Windows|_Icons Only|_Cancel",
+                                                 REQIMAGE_QUESTION);
+    
+    if (button_result == 0)
     {
         log_info(LOG_BACKUP, "Restore cancelled by user\n");
         return FALSE;
     }
+    
+    /* Set restore_window_geometry based on button selection */
+    /* Button 1 = With Windows (TRUE), Button 2 = Icons Only (FALSE) */
+    restore_data->restore_window_geometry = (button_result == 1) ? TRUE : FALSE;
+    log_info(LOG_BACKUP, "Window geometry restore: %s\n",
+             restore_data->restore_window_geometry ? "ENABLED (user selected 'With Windows')" : "DISABLED (user selected 'Icons Only')");
     
     log_info(LOG_BACKUP, "Starting restore of run %u from %s\n",
              run_entry->runNumber,
@@ -981,13 +984,12 @@ static BOOL open_reaction_classes(void)
     if (!WindowBase)      WindowBase = OpenLibrary("window.class", 0);
     if (!LayoutBase)      LayoutBase = OpenLibrary("gadgets/layout.gadget", 0);
     if (!ButtonBase)      ButtonBase = OpenLibrary("gadgets/button.gadget", 0);
-    if (!CheckBoxBase)    CheckBoxBase = OpenLibrary("gadgets/checkbox.gadget", 0);
     if (!ListBrowserBase) ListBrowserBase = OpenLibrary("gadgets/listbrowser.gadget", 0);
     if (!LabelBase)       LabelBase = OpenLibrary("images/label.image", 0);
     if (!RequesterBase)   RequesterBase = OpenLibrary("requester.class", 0);
     
     if (!WindowBase || !LayoutBase || !ButtonBase || 
-        !CheckBoxBase || !ListBrowserBase || !LabelBase || !RequesterBase)
+        !ListBrowserBase || !LabelBase || !RequesterBase)
     {
         log_error(LOG_GUI, "Failed to open ReAction classes for restore window\n");
         return FALSE;
@@ -1006,7 +1008,6 @@ static void close_reaction_classes(void)
     if (RequesterBase)   { CloseLibrary(RequesterBase);   RequesterBase = NULL; }
     if (LabelBase)       { CloseLibrary(LabelBase);       LabelBase = NULL; }
     if (ListBrowserBase) { CloseLibrary(ListBrowserBase); ListBrowserBase = NULL; }
-    if (CheckBoxBase)    { CloseLibrary(CheckBoxBase);    CheckBoxBase = NULL; }
     if (ButtonBase)      { CloseLibrary(ButtonBase);      ButtonBase = NULL; }
     if (LayoutBase)      { CloseLibrary(LayoutBase);      LayoutBase = NULL; }
     if (WindowBase)      { CloseLibrary(WindowBase);      WindowBase = NULL; }
@@ -1149,21 +1150,6 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
                     TAG_END),
                 TAG_END),
                 CHILD_WeightedHeight, 35,
-                
-                /* Checkbox row */
-                LAYOUT_AddChild, NewObject(LAYOUT_GetClass(), NULL,
-                    LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
-                    LAYOUT_TopSpacing, 4,
-                    
-                    LAYOUT_AddChild, restore_data->window_geom_chk = NewObject(CHECKBOX_GetClass(), NULL,
-                        GA_ID, GID_RESTORE_GEOM_CHECKBOX,
-                        GA_Text, "Restore window positions",
-                        GA_Selected, TRUE,
-                        GA_RelVerify, TRUE,
-                        GA_TabCycle, TRUE,
-                    TAG_END),
-                TAG_END),
-                CHILD_WeightedHeight, 0,
                 
                 /* Button row */
                 LAYOUT_AddChild, NewObject(LAYOUT_GetClass(), NULL,
@@ -1381,14 +1367,20 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                         case GID_RESTORE_RUN_LISTBROWSER:
                             {
                                 ULONG selected = ~0;
+                                ULONG rel_event = LBRE_NORMAL;
                                 
                                 GetAttr(LISTBROWSER_Selected, 
                                        restore_data->run_listbrowser_obj, 
                                        &selected);
                                 
+                                /* Check what type of event triggered this */
+                                GetAttr(LISTBROWSER_RelEvent,
+                                       restore_data->run_listbrowser_obj,
+                                       &rel_event);
+                                
                                 if (selected != ~0 && selected < restore_data->run_count)
                                 {
-                                    log_debug(LOG_GUI, "Selected run index: %lu\n", selected);
+                                    log_debug(LOG_GUI, "Selected run index: %lu (event type: %lu)\n", selected, rel_event);
                                     
                                     restore_data->selected_run_index = (LONG)selected;
                                     
@@ -1412,17 +1404,52 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                                                    restore_data->window, NULL,
                                                    GA_Disabled, !restore_data->run_entries[selected].hasCatalog,
                                                    TAG_DONE);
+                                    
+                                    /* Handle double-click - open folder view if catalog exists */
+                                    if (rel_event == LBRE_DOUBLECLICK && 
+                                        restore_data->run_entries[selected].hasCatalog)
+                                    {
+                                        struct RestoreRunEntry *selected_entry = 
+                                            &restore_data->run_entries[selected];
+                                        char catalog_path[512];
+                                        struct iTidyFolderViewWindow folder_view_data;
+                                        
+                                        sprintf(catalog_path, "%s/%s/catalog.txt",
+                                               restore_data->backup_root_path,
+                                               selected_entry->runName);
+                                        
+                                        log_debug(LOG_GUI, "Double-click detected - Opening folder view for: %s\n", catalog_path);
+                                        
+                                        /* Set busy pointer while opening folder view */
+                                        safe_set_window_pointer(restore_data->window, TRUE);
+                                        
+                                        memset(&folder_view_data, 0, sizeof(folder_view_data));
+                                        folder_view_data.screen = restore_data->screen;
+                                        
+                                        if (open_folder_view_window(&folder_view_data,
+                                                                   catalog_path,
+                                                                   selected_entry->runNumber,
+                                                                   selected_entry->dateStr,
+                                                                   selected_entry->folderCount))
+                                        {
+                                            while (handle_folder_view_window_events(&folder_view_data))
+                                            {
+                                                /* The event loop is now inside handle_folder_view_window_events */
+                                            }
+                                            
+                                            close_folder_view_window(&folder_view_data);
+                                            
+                                            /* Clear busy pointer after folder view closes */
+                                            safe_set_window_pointer(restore_data->window, FALSE);
+                                        }
+                                        else
+                                        {
+                                            log_error(LOG_GUI, "ERROR: Failed to open folder view window\n");
+                                            /* Clear busy pointer on error */
+                                            safe_set_window_pointer(restore_data->window, FALSE);
+                                        }
+                                    }
                                 }
-                            }
-                            break;
-                        
-                        case GID_RESTORE_GEOM_CHECKBOX:
-                            {
-                                ULONG checked = 0;
-                                GetAttr(GA_Selected, restore_data->window_geom_chk, &checked);
-                                restore_data->restore_window_geometry = (BOOL)checked;
-                                log_debug(LOG_GUI, "Window geometry restore: %s\n", 
-                                         restore_data->restore_window_geometry ? "ENABLED" : "DISABLED");
                             }
                             break;
                         
@@ -1545,6 +1572,9 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                                 
                                 log_debug(LOG_GUI, "Opening folder view for: %s\n", catalog_path);
                                 
+                                /* Set busy pointer while opening folder view */
+                                safe_set_window_pointer(restore_data->window, TRUE);
+                                
                                 memset(&folder_view_data, 0, sizeof(folder_view_data));
                                 folder_view_data.screen = restore_data->screen;
                                 
@@ -1560,10 +1590,15 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                                     }
                                     
                                     close_folder_view_window(&folder_view_data);
+                                    
+                                    /* Clear busy pointer after folder view closes */
+                                    safe_set_window_pointer(restore_data->window, FALSE);
                                 }
                                 else
                                 {
                                     log_error(LOG_GUI, "ERROR: Failed to open folder view window\n");
+                                    /* Clear busy pointer on error */
+                                    safe_set_window_pointer(restore_data->window, FALSE);
                                 }
                             }
                             break;
