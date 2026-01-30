@@ -11,7 +11,7 @@
 #include "backup_lha.h"
 #include "backup_paths.h"
 #include "file_directory_handling.h"
-#include "GUI/StatusWindows/progress_window.h"
+#include "GUI/StatusWindows/recursive_progress.h"
 
 /* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
 #include <console_output.h>
@@ -70,9 +70,9 @@ static BOOL RestoreCatalogEntryCallback(const BackupArchiveEntry *entry, void *u
     
     /* Update progress window if available */
     if (rctx->userData) {
-        struct iTidy_ProgressWindow *progress_window = (struct iTidy_ProgressWindow*)rctx->userData;
-        snprintf(statusText, sizeof(statusText), "Restoring: %s", entry->originalPath);
-        iTidy_UpdateProgress(progress_window, iterData->currentFolderIndex, statusText);
+        struct iTidy_RecursiveProgressWindow *progress_window = (struct iTidy_RecursiveProgressWindow*)rctx->userData;
+        /* Update folder progress (main bar) - shows path and progress */
+        iTidy_UpdateFolderProgress(progress_window, iterData->currentFolderIndex, entry->originalPath, 0);
     }
     
     /* Build full archive path */

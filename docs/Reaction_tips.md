@@ -7,8 +7,9 @@ This document captures hard-won lessons from implementing ReAction GUI component
 ## Table of Contents
 1. [Event Loop Patterns](#event-loop-patterns)
 2. [ListBrowser Hierarchical Tree View](#listbrowser-hierarchical-tree-view)
-3. [General ReAction Gotchas](#general-reaction-gotchas)
-4. [Memory and Type Safety](#memory-and-type-safety)
+3. [Dynamic Text Labels](#dynamic-text-labels)
+4. [General ReAction Gotchas](#general-reaction-gotchas)
+5. [Memory and Type Safety](#memory-and-type-safety)
 
 ---
 
@@ -431,6 +432,94 @@ RA_OpenWindow(window);
 
 ---
 
+## Dynamic Text Labels
+
+### ⚠️ CRITICAL: Label Images Don't Support Runtime Text Updates
+
+**Problem:** ReAction `label.image` class creates **static labels** that cannot be updated after creation. Calling `SetGadgetAttrs()` with `LABEL_Text` has no effect.
+
+**Symptom:** Label text stays stuck on initial value (e.g., "Starting...") even though `SetGadgetAttrs()` is called. Progress bars update correctly, but text never changes.
+
+**Wrong Approach:**
+```c
+/* Create label image */
+Object *label = NewObject(LABEL_GetClass(), NULL,
+    LABEL_Text, "Starting...",
+    TAG_DONE);
+
+/* Try to update later - DOESN'T WORK! */
+SetGadgetAttrs((struct Gadget *)label, window, NULL,
+    LABEL_Text, "Processing: Work:Games (5/63)",  /* ❌ No effect */
+    TAG_DONE);
+```
+
+**Correct Solution: Use Button Gadgets with GA_ReadOnly**
+
+Button gadgets support dynamic `GA_Text` updates. Configure them to look like labels:
+
+```c
+/* Create button as updateable label */
+Object *label = NewObject(BUTTON_GetClass(), NULL,
+    GA_ID,                GID_STATUS_LABEL,
+    GA_ReadOnly,          TRUE,              /* Makes it non-interactive */
+    GA_Text,              "Starting...",
+    BUTTON_BevelStyle,    BVS_NONE,         /* No button border */
+    BUTTON_Transparent,   TRUE,             /* Background shows through */
+    BUTTON_Justification, BCJ_LEFT,         /* Left-aligned text */
+    TAG_DONE);
+
+/* Update text dynamically - WORKS! */
+SetGadgetAttrs((struct Gadget *)label, window, NULL,
+    GA_Text, "Processing: Work:Games (5/63)",  /* ✅ Updates correctly */
+    TAG_DONE);
+```
+
+**Key Points:**
+- Use `BUTTON_GetClass()` instead of `LABEL_GetClass()`
+- `GA_ReadOnly, TRUE` prevents user interaction
+- `BUTTON_BevelStyle, BVS_NONE` removes button appearance
+- `BUTTON_Transparent, TRUE` makes background transparent (window texture shows through)
+- Update with `GA_Text` (not `LABEL_Text`)
+- No need to call `RethinkLayout()` or `RefreshGadgets()`
+
+**Visual Appearance:**
+With the above settings, the button is indistinguishable from a label but fully updateable.
+
+**Example Use Cases:**
+- Progress window status labels ("Processing: [folder name]")
+- Status bars showing current operation
+- Dynamic count displays ("Files: 15/63")
+- Any label text that needs to change at runtime
+
+**Pattern Used In:**
+- `src/GUI/StatusWindows/recursive_progress.c` - Folder progress labels
+- `src/GUI/StatusWindows/main_progress_window.c` - Main operation status
+
+---
+
+### ❌ Don't Use label.image or string.gadget for Dynamic Text
+
+**Wrong Alternatives:**
+
+1. **label.image** - Static only, cannot be updated at runtime
+   - `SetGadgetAttrs()` with `LABEL_Text` has no effect
+   - Text stays frozen on initial value
+
+2. **string.gadget** - Designed for text input, not labels
+   - Always looks like an editable text field (beveled border)
+   - No simple transparency support (requires complex GA_BackFill hook)
+   - Maintains unnecessary edit buffers (STRINGA_Buffer, WorkBuffer, UndoBuffer)
+   - Even with `GA_ReadOnly`, visually inappropriate for status display
+
+**Correct Choice: button.gadget with GA_ReadOnly**
+- Native `BUTTON_Transparent` support (no hooks needed)
+- `BUTTON_BevelStyle = BVS_NONE` removes all visual chrome
+- Designed for read-only display with `GA_ReadOnly`
+- Lightweight, no unnecessary edit infrastructure
+- Standard ReAction pattern for updateable labels
+
+---
+
 ## General ReAction Gotchas
 
 ### Don't Use Custom Tree Images Unless Necessary
@@ -548,6 +637,10 @@ If flags are correct but no triangles appear, the list wasn't set up before gadg
 
 ## Version History
 
+- **2026-01-30:** Added dynamic text labels section
+  - CRITICAL: Label images don't support runtime text updates
+  - Solution: Use Button gadgets with GA_ReadOnly, BVS_NONE, BUTTON_Transparent
+  - Pattern for creating updateable labels that look like static labels
 - **2026-01-30:** Added event loop patterns section
   - CRITICAL: Never double-wait in event loops (Wait() inside handler, not in caller)
   - Don't check signal mask after Wait()

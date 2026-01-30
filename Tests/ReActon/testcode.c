@@ -24,6 +24,8 @@
 #include <proto/integer.h>
 #include <proto/listbrowser.h>
 #include <proto/label.h>
+#include <gadgets/listview.h>
+#include <pragmas/listview_pragmas.h>
 
 #include <libraries/gadtools.h>
 #include <reaction/reaction.h>
@@ -39,6 +41,7 @@ void advanced_settings( void );
 void restore_backups( void );
 void restore_folders_view( void );
 void recursive_progress_window( void );
+void default_tool_analysis( void );
 
 struct Screen	*gScreen = NULL;
 struct DrawInfo	*gDrawInfo = NULL;
@@ -54,6 +57,7 @@ struct Library *WindowBase = NULL,
                *IntegerBase = NULL,
                *ListBrowserBase = NULL,
                *LabelBase = NULL,
+               *ListViewBase = NULL,
                *GadToolsBase = NULL,
                *LayoutBase = NULL,
                *IconBase = NULL;
@@ -61,7 +65,8 @@ struct IntuitionBase *IntuitionBase = NULL;
 
 //window ids
 enum win { main_window_id = 4, main_progress_window_id = 53, advanced_settings_id = 59, 
-  restore_backups_id = 103, restore_folders_view_id = 118, recursive_progress_window_id = 123 };
+  restore_backups_id = 103, restore_folders_view_id = 118, recursive_progress_window_id = 123, 
+  default_tool_analysis_id = 132 };
 
 //main_window gadgets
 enum main_window_idx { master_layout, folder_layout, folder_name, itidy_options, left_column, 
@@ -92,6 +97,12 @@ enum restore_folders_view_idx { vert_120, folder_browser, close_button };
 //recursive_progress_window gadgets
 enum recursive_progress_window_idx { vert_125, main_progress_bar, main_progress_label, sub_progress_bar, 
   sub_process_label };
+//default_tool_analysis gadgets
+enum default_tool_analysis_idx { vert_134, tool_folder_location, tools_folder_name, scan_button, 
+  tool_details_layout, tools_filter, tool_status_list, tool_status_layout, 
+  tool_status_listview, tool_status_buttons, tool_status_layout_col1, 
+  replace_tool_batch, resore_default_tools_backup, tool_status_layout_col2, 
+  replace_tool_single, tools_close_button };
 
 void main_window( void )
 {
@@ -1046,5 +1057,201 @@ void recursive_progress_window( void )
     TAG_END),
   TAG_END);  
   main_gadgets[5] = 0;
+}
+
+void default_tool_analysis( void )
+{
+  struct Gadget	*main_gadgets[ 17 ];
+  Object *window_object = NULL;
+  struct HintInfo hintInfo[] =
+  {
+    {vert_134,-1,"",0},
+    {tool_folder_location,-1,"",0},
+    {tools_folder_name,-1,"",0},
+    {scan_button,-1,"",0},
+    {tool_details_layout,-1,"",0},
+    {tools_filter,-1,"",0},
+    {tool_status_list,-1,"",0},
+    {tool_status_layout,-1,"",0},
+    {tool_status_listview,-1,"",0},
+    {tool_status_buttons,-1,"",0},
+    {tool_status_layout_col1,-1,"",0},
+    {replace_tool_batch,-1,"",0},
+    {resore_default_tools_backup,-1,"",0},
+    {tool_status_layout_col2,-1,"",0},
+    {replace_tool_single,-1,"",0},
+    {tools_close_button,-1,"",0},
+    {-1,-1,NULL,0}
+  };
+  struct List *labels141;
+  UBYTE *labels141_str[] = { "Show all", "show valid only", "Show missing only",  NULL };
+  struct List *labels142;
+  UBYTE *labels142_str[] = { NULL };
+  struct List *labels143;
+  UBYTE *labels143_str[] = { NULL };
+  struct ColumnInfo ListBrowser142_ci[] =
+  {
+    { 1, "", 0 },
+    { -1, (STRPTR)~0, -1 }
+  };
+
+  labels141 = ChooserLabelsA( labels141_str );
+  labels142 = BrowserNodesA( labels142_str, 1 );
+  labels143 = ListViewLabelsA( labels143_str );
+
+  window_object = NewObject( WINDOW_GetClass(), NULL, 
+    WA_Title, "iTidy - default tool analysis",
+    WA_Left, 5,
+    WA_Top, 20,
+    WA_Width, 150,
+    WA_Height, 80,
+    WA_MinWidth, 150,
+    WA_MinHeight, 80,
+    WA_MaxWidth, 8192,
+    WA_MaxHeight, 8192,
+    WINDOW_HintInfo, hintInfo,
+    WINDOW_GadgetHelp, TRUE,
+    WINDOW_AppPort, gAppPort,
+    WA_CloseGadget, TRUE,
+    WA_DepthGadget, TRUE,
+    WA_SizeGadget, TRUE,
+    WA_DragBar, TRUE,
+    WA_Activate, TRUE,
+    WINDOW_IconTitle, "MyApp",
+    WA_NoCareRefresh, TRUE,
+    WA_IDCMP, IDCMP_GADGETDOWN | IDCMP_GADGETUP | IDCMP_CLOSEWINDOW | IDCMP_NEWSIZE,
+    WINDOW_ParentGroup, NewObject( LAYOUT_GetClass(), NULL,
+    LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+    LAYOUT_SpaceOuter, TRUE,
+    LAYOUT_DeferLayout, TRUE,
+      LAYOUT_AddChild, main_gadgets[vert_134] = NewObject( LAYOUT_GetClass(), NULL, 
+        GA_ID, vert_134,
+        LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+        LAYOUT_LeftSpacing, 2,
+        LAYOUT_RightSpacing, 2,
+        LAYOUT_TopSpacing, 2,
+        LAYOUT_BottomSpacing, 2,
+        LAYOUT_AddChild, main_gadgets[tool_folder_location] = NewObject( LAYOUT_GetClass(), NULL, 
+          GA_ID, tool_folder_location,
+          LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
+          LAYOUT_AddChild, main_gadgets[tools_folder_name] = NewObject( GETFILE_GetClass(), NULL, 
+            GA_ID, tools_folder_name,
+            GA_RelVerify, TRUE,
+            GETFILE_TitleText, "Select a file",
+            GETFILE_Drawer, "folder_name_string",
+            GETFILE_FullFile, "Sys:",
+            GETFILE_FilterDrawers, TRUE,
+            GETFILE_ReadOnly, TRUE,
+          TAG_END),
+          CHILD_Label, NewObject( LABEL_GetClass(), NULL, 
+            LABEL_Text, "Folder",
+          TAG_END),
+          CHILD_WeightedWidth, 70,
+          LAYOUT_AddChild, main_gadgets[scan_button] = NewObject( BUTTON_GetClass(), NULL, 
+            GA_ID, scan_button,
+            GA_Text, "Scan",
+            GA_RelVerify, TRUE,
+            GA_TabCycle, TRUE,
+            BUTTON_TextPen, 1,
+            BUTTON_BackgroundPen, 0,
+            BUTTON_FillTextPen, 1,
+            BUTTON_FillPen, 3,
+          TAG_END),
+          CHILD_WeightedWidth, 30,
+        TAG_END),
+        CHILD_WeightedHeight, 5,
+        LAYOUT_AddChild, main_gadgets[tool_details_layout] = NewObject( LAYOUT_GetClass(), NULL, 
+          GA_ID, tool_details_layout,
+          LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+          LAYOUT_AddChild, main_gadgets[tools_filter] = NewObject( CHOOSER_GetClass(), NULL, 
+            GA_ID, tools_filter,
+            GA_RelVerify, TRUE,
+            GA_TabCycle, TRUE,
+            CHOOSER_PopUp, TRUE,
+            CHOOSER_Selected, 0,
+            CHOOSER_Labels, labels141,
+          TAG_END),
+          LAYOUT_AddChild, main_gadgets[tool_status_list] = NewObject( LISTBROWSER_GetClass(), NULL, 
+            GA_ID, tool_status_list,
+            GA_RelVerify, TRUE,
+            GA_TabCycle, TRUE,
+            LISTBROWSER_Position, 0,
+            LISTBROWSER_ColumnInfo, &ListBrowser142_ci,
+            LISTBROWSER_ColumnTitles, TRUE,
+            LISTBROWSER_AutoFit, TRUE,
+          TAG_END),
+        TAG_END),
+        CHILD_WeightedHeight, 50,
+        LAYOUT_AddChild, main_gadgets[tool_status_layout] = NewObject( LAYOUT_GetClass(), NULL, 
+          GA_ID, tool_status_layout,
+          LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+          LAYOUT_TopSpacing, 2,
+          LAYOUT_ShrinkWrap, TRUE,
+          LAYOUT_AddChild, main_gadgets[tool_status_listview] = NewObject( LISTVIEW_GetClass(), NULL, 
+            GA_ID, tool_status_listview,
+            GA_RelVerify, TRUE,
+            GA_TabCycle, TRUE,
+            LISTVIEW_Labels, labels143,
+          TAG_END),
+        TAG_END),
+        CHILD_WeightedHeight, 30,
+        LAYOUT_AddChild, main_gadgets[tool_status_buttons] = NewObject( LAYOUT_GetClass(), NULL, 
+          GA_ID, tool_status_buttons,
+          LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
+          LAYOUT_AddChild, main_gadgets[tool_status_layout_col1] = NewObject( LAYOUT_GetClass(), NULL, 
+            GA_ID, tool_status_layout_col1,
+            LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+            LAYOUT_AddChild, main_gadgets[replace_tool_batch] = NewObject( BUTTON_GetClass(), NULL, 
+              GA_ID, replace_tool_batch,
+              GA_Text, "Replace tool (batch)",
+              GA_RelVerify, TRUE,
+              GA_TabCycle, TRUE,
+              BUTTON_TextPen, 1,
+              BUTTON_BackgroundPen, 0,
+              BUTTON_FillTextPen, 1,
+              BUTTON_FillPen, 3,
+            TAG_END),
+            LAYOUT_AddChild, main_gadgets[resore_default_tools_backup] = NewObject( BUTTON_GetClass(), NULL, 
+              GA_ID, resore_default_tools_backup,
+              GA_Text, "Restore default tools backup",
+              GA_RelVerify, TRUE,
+              GA_TabCycle, TRUE,
+              BUTTON_TextPen, 1,
+              BUTTON_BackgroundPen, 0,
+              BUTTON_FillTextPen, 1,
+              BUTTON_FillPen, 3,
+            TAG_END),
+          TAG_END),
+          LAYOUT_AddChild, main_gadgets[tool_status_layout_col2] = NewObject( LAYOUT_GetClass(), NULL, 
+            GA_ID, tool_status_layout_col2,
+            LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+            LAYOUT_HorizAlignment, LALIGN_RIGHT,
+            LAYOUT_AddChild, main_gadgets[replace_tool_single] = NewObject( BUTTON_GetClass(), NULL, 
+              GA_ID, replace_tool_single,
+              GA_Text, "Replace tool (single)",
+              GA_RelVerify, TRUE,
+              GA_TabCycle, TRUE,
+              BUTTON_TextPen, 1,
+              BUTTON_BackgroundPen, 0,
+              BUTTON_FillTextPen, 1,
+              BUTTON_FillPen, 3,
+            TAG_END),
+            LAYOUT_AddChild, main_gadgets[tools_close_button] = NewObject( BUTTON_GetClass(), NULL, 
+              GA_ID, tools_close_button,
+              GA_Text, "Close",
+              GA_RelVerify, TRUE,
+              GA_TabCycle, TRUE,
+              BUTTON_TextPen, 1,
+              BUTTON_BackgroundPen, 0,
+              BUTTON_FillTextPen, 1,
+              BUTTON_FillPen, 3,
+            TAG_END),
+          TAG_END),
+        TAG_END),
+        CHILD_WeightedHeight, 10,
+      TAG_END),
+    TAG_END),
+  TAG_END);  
+  main_gadgets[16] = 0;
 }
 

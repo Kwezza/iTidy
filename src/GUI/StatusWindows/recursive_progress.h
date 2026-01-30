@@ -106,7 +106,8 @@ struct iTidy_RecursiveScanResult* iTidy_PrescanRecursive(
 struct iTidy_RecursiveProgressWindow* iTidy_OpenRecursiveProgress(
     struct Screen *screen,
     const char *task_label,
-    const struct iTidy_RecursiveScanResult *scan
+    const struct iTidy_RecursiveScanResult *scan,
+    BOOL show_sub_progress  /* TRUE to show sub progress bar/label (for icon operations) */
 );
 
 /*

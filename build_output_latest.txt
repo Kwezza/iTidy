@@ -118,18 +118,8 @@ warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
 	included from file "src\GUI\StatusWindows\progress_window.c":8
 Compiling [build/amiga/GUI/StatusWindows/recursive_progress.o] from src/GUI/StatusWindows/recursive_progress.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/GUI/StatusWindows/recursive_progress.c -o build/amiga/GUI/StatusWindows/recursive_progress.o
->    UBYTE ic_HoverSlugishness : 
-warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
-	included from file "src/Settings\IControlPrefs.h":15
-	included from file "src\GUI\StatusWindows\recursive_progress.c":8
->    UBYTE ic_HoverFlags : 
-warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
-	included from file "src/Settings\IControlPrefs.h":15
-	included from file "src\GUI\StatusWindows\recursive_progress.c":8
->    struct TagItem ie_Tags[0]
-warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
-	included from file "src/Settings\IControlPrefs.h":15
-	included from file "src\GUI\StatusWindows\recursive_progress.c":8
+>                    Stricmp(&fib->fib_FileName[name_len - 5], ".info") == 0)
+warning 161 in line 213 of "src\GUI\StatusWindows\recursive_progress.c": implicit declaration of function <Stricmp>
 Compiling [build/amiga/GUI/StatusWindows/main_progress_window.o] from src/GUI/StatusWindows/main_progress_window.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/GUI/StatusWindows/main_progress_window.c -o build/amiga/GUI/StatusWindows/main_progress_window.o
 Compiling [build/amiga/GUI/DefaultTools/tool_cache_window.o] from src/GUI/DefaultTools/tool_cache_window.c

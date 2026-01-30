@@ -56,7 +56,7 @@
 #include <images/label.h>
 
 #include "restore_window.h"
-#include "GUI/StatusWindows/progress_window.h"
+#include "GUI/StatusWindows/recursive_progress.h"
 #include "backup_restore.h"
 #include "writeLog.h"
 #include "folder_view_window.h"
@@ -751,11 +751,29 @@ BOOL perform_restore_run(struct iTidyRestoreWindow *restore_data,
     log_info(LOG_BACKUP, "Restoring from: %s\n", runPath);
     log_info(LOG_BACKUP, "Restoring %lu folder(s)...\n", run_entry->folderCount);
     
-    struct iTidy_ProgressWindow *progress_window = NULL;
+    /* Create prescan result for recursive progress window */
+    iTidy_RecursiveScanResult *scan_result = NULL;
+    scan_result = (iTidy_RecursiveScanResult *)AllocMem(sizeof(iTidy_RecursiveScanResult), MEMF_CLEAR);
+    if (scan_result)
+    {
+        /* For restore, we already know the folder count from the backup run entry */
+        scan_result->totalFolders = run_entry->folderCount;
+        scan_result->totalIcons = 0;  /* Not tracking individual icons during restore */
+        scan_result->folderPaths = NULL;  /* Not needed for restore progress */
+        scan_result->iconCounts = NULL;
+        scan_result->allocated = 0;
+    }
+    
+    struct iTidy_RecursiveProgressWindow *progress_window = NULL;
     sprintf(message, "Restoring %s", run_entry->runName);
-    progress_window = iTidy_OpenProgressWindow(restore_data->screen, 
-                                                message,
-                                                (UWORD)run_entry->folderCount);
+    if (scan_result)
+    {
+        progress_window = iTidy_OpenRecursiveProgress(restore_data->screen, 
+                                                       message,
+                                                       scan_result,
+                                                       FALSE);  /* Don't show sub progress for restore */
+    }
+    
     if (!progress_window)
     {
         log_warning(LOG_GUI, "WARNING: Failed to open progress window, continuing without progress display\n");
@@ -767,8 +785,15 @@ BOOL perform_restore_run(struct iTidyRestoreWindow *restore_data,
     
     if (progress_window)
     {
-        iTidy_CloseProgressWindow(progress_window);
+        iTidy_CloseRecursiveProgress(progress_window);
         progress_window = NULL;
+    }
+    
+    /* Free scan result */
+    if (scan_result)
+    {
+        FreeMem(scan_result, sizeof(iTidy_RecursiveScanResult));
+        scan_result = NULL;
     }
     
     log_info(LOG_BACKUP, "Restore completed with status: %s\n", GetRestoreStatusMessage(status));
