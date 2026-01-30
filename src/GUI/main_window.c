@@ -1536,10 +1536,10 @@ static void handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                 /* Open tool cache window */
                 if (open_tool_cache_window(&tool_window))
                 {
-                    /* Event loop */
+                    /* Event loop - handler does the Wait(), no wait here */
                     while (handle_tool_cache_window_events(&tool_window))
                     {
-                        WaitPort(tool_window.window->UserPort);
+                        /* No wait here - handler does the waiting */
                     }
                     
                     /* Cleanup */

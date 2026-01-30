@@ -8,8 +8,9 @@ This document captures hard-won lessons from implementing ReAction GUI component
 1. [Event Loop Patterns](#event-loop-patterns)
 2. [ListBrowser Hierarchical Tree View](#listbrowser-hierarchical-tree-view)
 3. [Dynamic Text Labels](#dynamic-text-labels)
-4. [General ReAction Gotchas](#general-reaction-gotchas)
-5. [Memory and Type Safety](#memory-and-type-safety)
+4. [GetFile Gadget (File/Folder Selection)](#getfile-gadget-filefolder-selection)
+5. [General ReAction Gotchas](#general-reaction-gotchas)
+6. [Memory and Type Safety](#memory-and-type-safety)
 
 ---
 
@@ -562,6 +563,88 @@ SetAttrs(listbrowser, LISTBROWSER_Labels, ~0, TAG_DONE);
 FreeListBrowserList(list);
 FreeVec(list);
 ```
+
+---
+
+## GetFile Gadget (File/Folder Selection)
+
+### ⚠️ CRITICAL: GetFile Gadget Does NOT Auto-Open Requester
+
+**Problem:** Unlike ASL requesters called directly, the `getfile.gadget` does NOT automatically open a file/folder requester when clicked. Clicking the gadget sends a `GADGETUP` event, but nothing visible happens.
+
+**Symptom:** User clicks the folder/file selection button and nothing happens. No requester appears.
+
+**Wrong Pattern:**
+```c
+/* Event handler - WRONG! */
+case GID_FOLDER_GETFILE:
+{
+    /* ❌ Just reading the attribute - requester never opened */
+    char *folder_path = NULL;
+    GetAttr(GETFILE_Drawer, folder_getfile_obj, (ULONG *)&folder_path);
+    if (folder_path && folder_path[0])
+    {
+        strncpy(buffer, folder_path, sizeof(buffer) - 1);
+    }
+    break;
+}
+```
+
+**Correct Pattern:**
+```c
+/* Event handler - CORRECT */
+case GID_FOLDER_GETFILE:
+{
+    /* ✅ Manually invoke the requester with GFILE_REQUEST */
+    if (DoMethod((Object *)folder_getfile_obj, GFILE_REQUEST, window))
+    {
+        /* Requester closed with selection - now get the path */
+        char *folder_path = NULL;
+        GetAttr(GETFILE_Drawer, folder_getfile_obj, (ULONG *)&folder_path);
+        if (folder_path && folder_path[0])
+        {
+            strncpy(buffer, folder_path, sizeof(buffer) - 1);
+            buffer[sizeof(buffer) - 1] = '\0';
+        }
+    }
+    /* If DoMethod returns 0, user cancelled - do nothing */
+    break;
+}
+```
+
+### GetFile Gadget Creation (Folder Mode)
+
+```c
+LAYOUT_AddChild, folder_getfile_obj = NewObject(GETFILE_GetClass(), NULL,
+    GA_ID, GID_FOLDER_GETFILE,
+    GA_RelVerify, TRUE,              /* Critical - enables GADGETUP event */
+    GETFILE_TitleText, "Select Folder",
+    GETFILE_Drawer, initial_path,    /* Initial folder path */
+    GETFILE_DrawersOnly, TRUE,       /* Folders only, no files */
+    GETFILE_ReadOnly, FALSE,         /* Allow editing the path text */
+TAG_END),
+```
+
+### GetFile Gadget Creation (File Mode)
+
+```c
+LAYOUT_AddChild, file_getfile_obj = NewObject(GETFILE_GetClass(), NULL,
+    GA_ID, GID_FILE_GETFILE,
+    GA_RelVerify, TRUE,
+    GETFILE_TitleText, "Select File",
+    GETFILE_FullFile, initial_file,  /* Use FullFile for files */
+    GETFILE_DoSaveMode, FALSE,       /* FALSE=Open, TRUE=Save */
+    GETFILE_ReadOnly, FALSE,
+TAG_END),
+```
+
+### Key Points
+
+1. **Always use `DoMethod(..., GFILE_REQUEST, window)`** to manually open the requester
+2. **Use `DoMethod`, NOT `DoGadgetMethod`** - the latter crashes with ReAction
+3. **Check return value** - `DoMethod` returns 0 if user cancelled
+4. **Use `GETFILE_Drawer`** for folders, **`GETFILE_FullFile`** for files
+5. **Set `GA_RelVerify, TRUE`** or you won't get `GADGETUP` events
 
 ---
 
