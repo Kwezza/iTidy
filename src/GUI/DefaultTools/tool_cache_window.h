@@ -127,6 +127,10 @@ struct iTidyToolCacheWindow
     LONG selected_details_index;        /* Selected index in details panel (-1 = none) */
     struct List details_list;           /* Legacy list for details (internal) */
     
+    /* Sorting tracking */
+    ULONG last_sort_column;             /* Last sorted column */
+    ULONG sort_direction;               /* Current sort direction (LBMSORT_FORWARD or LBMSORT_REVERSE) */
+    
     /* Folder path */
     char folder_path_buffer[256];       /* Current folder path */
     char last_save_path[512];           /* Last saved file path for Save menu */

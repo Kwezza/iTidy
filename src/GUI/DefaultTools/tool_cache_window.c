@@ -107,17 +107,51 @@ extern void iTidy_CloseToolRestoreWindow(struct Window *window);
 /* Column Configuration for Tool ListBrowser                             */
 /* Replaces the "fake columns" approach with real ListBrowser columns    */
 /*------------------------------------------------------------------------*/
-static struct ColumnInfo tool_list_column_info[] = {
-    { 55, "Tool",   0 },  /* Tool name/path (truncated with /../) */
-    { 12, "Files",  0 },  /* Number of files using this tool */
-    { 15, "Status", 0 },  /* EXISTS or MISSING */
-    { -1, (STRPTR)~0, -1 }
-};
+static struct ColumnInfo *tool_list_column_info = NULL;  /* Allocated dynamically */
 
 static struct ColumnInfo details_column_info[] = {
     { 100, "File Path", 0 },  /* Full path to referencing file */
     { -1, (STRPTR)~0, -1 }
 };
+
+/*------------------------------------------------------------------------*/
+/* Initialize Column Info with Sorting and Resizing                      */
+/*------------------------------------------------------------------------*/
+static BOOL init_column_info(void)
+{
+    log_debug(LOG_GUI, "*** Allocating and initializing column info ***\n");
+    
+    /* Allocate column info with 3 columns */
+    tool_list_column_info = AllocLBColumnInfo(3,
+        LBCIA_Column, 0,
+            LBCIA_Title, "Tool",
+            LBCIA_Weight, 55,
+            LBCIA_Sortable, TRUE,
+            LBCIA_SortArrow, TRUE,
+            LBCIA_Flags, CIF_SORTABLE | CIF_DRAGGABLE,
+        LBCIA_Column, 1,
+            LBCIA_Title, "Files",
+            LBCIA_Weight, 12,
+            LBCIA_Sortable, TRUE,
+            LBCIA_SortArrow, TRUE,
+            LBCIA_Flags, CIF_SORTABLE | CIF_DRAGGABLE,
+        LBCIA_Column, 2,
+            LBCIA_Title, "Status",
+            LBCIA_Weight, 15,
+            LBCIA_Sortable, TRUE,
+            LBCIA_SortArrow, TRUE,
+            LBCIA_Flags, CIF_SORTABLE | CIF_DRAGGABLE,
+        TAG_DONE);
+    
+    if (tool_list_column_info == NULL)
+    {
+        log_error(LOG_GUI, "*** ERROR: Failed to allocate column info! ***\n");
+        return FALSE;
+    }
+    
+    log_debug(LOG_GUI, "*** Column info allocated successfully ***\n");
+    return TRUE;
+}
 
 /*------------------------------------------------------------------------*/
 /* Forward Declarations                                                   */
@@ -1703,6 +1737,8 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     tool_data->current_filter = TOOL_FILTER_ALL;
     tool_data->selected_index = -1;
     tool_data->selected_details_index = -1;
+    tool_data->last_sort_column = 0;
+    tool_data->sort_direction = LBMSORT_FORWARD;
     
     /* Initialize folder path from global preferences */
     {
@@ -1722,6 +1758,14 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     if (!open_reaction_classes())
     {
         log_error(LOG_GUI, "Failed to open ReAction classes\n");
+        return FALSE;
+    }
+    
+    /* Initialize column info with sorting attributes */
+    if (!init_column_info())
+    {
+        log_error(LOG_GUI, "Failed to initialize column info\n");
+        close_reaction_classes();
         return FALSE;
     }
     
@@ -1834,6 +1878,8 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
                     LISTBROWSER_ColumnTitles, TRUE,
                     LISTBROWSER_ShowSelected, TRUE,
                     LISTBROWSER_AutoFit, TRUE,
+                    LISTBROWSER_TitleClickable, TRUE,
+                    LISTBROWSER_SortColumn, 0,
                 TAG_END),
                 CHILD_WeightedHeight, 45,
                 
@@ -1926,6 +1972,26 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     
     tool_data->window_open = TRUE;
     log_info(LOG_GUI, "Tool cache window opened successfully\n");
+    
+    /* Set LISTBROWSER_TitleClickable after window is opened */
+    if (tool_data->tool_listbrowser_obj && tool_data->window)
+    {
+        log_debug(LOG_GUI, "*** Setting LISTBROWSER_TitleClickable to TRUE ***\n");
+        SetGadgetAttrs((struct Gadget *)tool_data->tool_listbrowser_obj,
+                       tool_data->window, NULL,
+                       LISTBROWSER_TitleClickable, TRUE,
+                       TAG_DONE);
+    }
+    
+    /* Debug: Verify listbrowser TitleClickable attribute */
+    if (tool_data->tool_listbrowser_obj)
+    {
+        ULONG clickable = 0;
+        ULONG sort_col = 0;
+        GetAttr(LISTBROWSER_TitleClickable, tool_data->tool_listbrowser_obj, &clickable);
+        GetAttr(LISTBROWSER_SortColumn, tool_data->tool_listbrowser_obj, &sort_col);
+        log_debug(LOG_GUI, "*** LISTBROWSER: TitleClickable=%lu, SortColumn=%lu ***\n", clickable, sort_col);
+    }
     
     /* Build display list from global cache (if any) */
     if (build_tool_cache_display_list(tool_data))
@@ -2021,6 +2087,13 @@ void close_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
     /* Free tool entries */
     free_tool_cache_entries(tool_data);
     
+    /* Free column info */
+    if (tool_list_column_info != NULL)
+    {
+        FreeLBColumnInfo(tool_list_column_info);
+        tool_list_column_info = NULL;
+    }
+    
     /* Unlock screen */
     if (tool_data->screen != NULL)
     {
@@ -2064,6 +2137,12 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
     /* Handle window events */
     while ((result = RA_HandleInput(tool_data->window_obj, &code)) != WMHI_LASTMSG)
     {
+        /* Log ALL events received */
+        log_debug(LOG_GUI, "==> RAW EVENT: result=0x%08lx, CLASSMASK=0x%08lx, GADGETMASK=0x%08lx, code=%u\n",
+                  result, (result & WMHI_CLASSMASK), (result & WMHI_GADGETMASK), code);
+        log_debug(LOG_GUI, "    WMHI_CLOSEWINDOW=0x%08lx, WMHI_GADGETUP=0x%08lx, WMHI_GADGETDOWN=0x%08lx\n",
+                  WMHI_CLOSEWINDOW, WMHI_GADGETUP, WMHI_GADGETDOWN);
+        
         switch (result & WMHI_CLASSMASK)
         {
             case WMHI_CLOSEWINDOW:
@@ -2121,11 +2200,54 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                             GetAttr(LISTBROWSER_Selected, tool_data->tool_listbrowser_obj, &selected);
                             GetAttr(LISTBROWSER_RelEvent, tool_data->tool_listbrowser_obj, &rel_event);
                             
-                            if (selected != ~0)
+                            /* Handle column title click for sorting */
+                            if (rel_event == LBRE_TITLECLICK)
+                            {
+                                ULONG sort_column = code;
+                                ULONG direction;
+                                
+                                /* Toggle direction if same column, otherwise use forward */
+                                if (sort_column == tool_data->last_sort_column)
+                                {
+                                    direction = (tool_data->sort_direction == LBMSORT_FORWARD) 
+                                                ? LBMSORT_REVERSE : LBMSORT_FORWARD;
+                                }
+                                else
+                                {
+                                    direction = LBMSORT_FORWARD;
+                                }
+                                
+                                /* Store sort state */
+                                tool_data->last_sort_column = sort_column;
+                                tool_data->sort_direction = direction;
+                                
+                                /* Invoke sort method */
+                                DoGadgetMethod((struct Gadget *)tool_data->tool_listbrowser_obj,
+                                              tool_data->window, NULL,
+                                              LBM_SORT, tool_data->tool_list_nodes, sort_column, direction, NULL);
+                                
+                                /* Update display to show sort arrow */
+                                SetGadgetAttrs((struct Gadget *)tool_data->tool_listbrowser_obj,
+                                               tool_data->window, NULL,
+                                               LISTBROWSER_SortColumn, sort_column,
+                                               TAG_DONE);
+                                
+                                RefreshGadgets((struct Gadget *)tool_data->tool_listbrowser_obj,
+                                              tool_data->window, NULL);
+                            }
+                            else if (rel_event == LBRE_COLUMNADJUST)
+                            {
+                                /* Column resizing - handled automatically by gadget, no action needed */
+                            }
+                            else if (selected != ~0)
                             {
                                 log_debug(LOG_GUI, "Tool selected: %lu (event: %lu)\n", selected, rel_event);
                                 tool_data->selected_index = (LONG)selected;
                                 update_tool_details(tool_data, (LONG)selected);
+                            }
+                            else
+                            {
+                                log_debug(LOG_GUI, "Unhandled event type: %lu\n", rel_event);
                             }
                         }
                         break;

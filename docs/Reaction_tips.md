@@ -7,10 +7,12 @@ This document captures hard-won lessons from implementing ReAction GUI component
 ## Table of Contents
 1. [Event Loop Patterns](#event-loop-patterns)
 2. [ListBrowser Hierarchical Tree View](#listbrowser-hierarchical-tree-view)
-3. [Dynamic Text Labels](#dynamic-text-labels)
-4. [GetFile Gadget (File/Folder Selection)](#getfile-gadget-filefolder-selection)
-5. [General ReAction Gotchas](#general-reaction-gotchas)
-6. [Memory and Type Safety](#memory-and-type-safety)
+3. [ListBrowser Column Sorting](#listbrowser-column-sorting)
+4. [ListBrowser Column Resizing](#listbrowser-column-resizing)
+5. [Dynamic Text Labels](#dynamic-text-labels)
+6. [GetFile Gadget (File/Folder Selection)](#getfile-gadget-filefolder-selection)
+7. [General ReAction Gotchas](#general-reaction-gotchas)
+8. [Memory and Type Safety](#memory-and-type-safety)
 
 ---
 
@@ -433,6 +435,417 @@ RA_OpenWindow(window);
 
 ---
 
+## ListBrowser Column Sorting
+
+### ⚠️ CRITICAL: Getting Column Sorting to Work
+
+Implementing clickable column sorting in ListBrowser requires several specific steps that are easy to get wrong. Missing any of these will result in no events, no sorting, or sort arrows in the wrong column.
+
+### Issue 1: LISTBROWSER_TitleClickable Must Be Set AFTER Window Opens
+
+**Problem:** Setting `LISTBROWSER_TitleClickable, TRUE` in `NewObject()` during gadget creation is **silently ignored**. Clicking column headers generates no events.
+
+**Symptom:** No events when clicking column headers. Log shows `TitleClickable=0` even though you set it to TRUE.
+
+**Wrong:**
+```c
+/* During window creation - IGNORED! */
+tool_listbrowser_obj = NewObject(LISTBROWSER_GetClass(), NULL,
+    GA_ID, GID_TOOL_LIST,
+    LISTBROWSER_ColumnInfo, column_info,
+    LISTBROWSER_ColumnTitles, TRUE,
+    LISTBROWSER_TitleClickable, TRUE,  /* ❌ This is IGNORED */
+TAG_END),
+```
+
+**Correct:**
+```c
+/* During window creation - omit TitleClickable */
+tool_listbrowser_obj = NewObject(LISTBROWSER_GetClass(), NULL,
+    GA_ID, GID_TOOL_LIST,
+    LISTBROWSER_ColumnInfo, column_info,
+    LISTBROWSER_ColumnTitles, TRUE,
+TAG_END),
+
+/* AFTER window is opened with RA_OpenWindow() */
+window = (struct Window *)RA_OpenWindow(window_obj);
+
+/* NOW set TitleClickable with SetGadgetAttrs */
+SetGadgetAttrs((struct Gadget *)tool_listbrowser_obj,
+               window, NULL,
+               LISTBROWSER_TitleClickable, TRUE,
+               TAG_DONE);
+```
+
+**Why:** ReAction needs the window to be fully realized before certain attributes can be set. This is a quirk of the listbrowser.gadget implementation in Workbench 3.2.
+
+### Issue 2: Use AllocLBColumnInfo, Not Static Arrays
+
+**Problem:** Using static `struct ColumnInfo` arrays and trying to modify them with `SetLBColumnInfoAttrs()` produces garbage values. The Get/Set functions don't work correctly on static arrays.
+
+**Symptom:** `GetLBColumnInfoAttrs()` returns huge garbage numbers like 1100959492 instead of TRUE/FALSE values.
+
+**Wrong:**
+```c
+/* Static array - SetLBColumnInfoAttrs doesn't work! */
+static struct ColumnInfo column_info[] = {
+    { 55, "Tool",   0 },
+    { 12, "Files",  0 },
+    { 15, "Status", 0 },
+    { -1, (STRPTR)~0, -1 }
+};
+
+/* This produces garbage values */
+SetLBColumnInfoAttrs(column_info,
+    LBCIA_Column, 0,
+    LBCIA_Sortable, TRUE,  /* Doesn't work! */
+TAG_DONE);
+```
+
+**Correct:**
+```c
+/* Dynamically allocate with AllocLBColumnInfo */
+struct ColumnInfo *column_info = NULL;
+
+column_info = AllocLBColumnInfo(3,
+    LBCIA_Column, 0,
+        LBCIA_Title, "Tool",
+        LBCIA_Weight, 55,
+        LBCIA_Sortable, TRUE,
+        LBCIA_SortArrow, TRUE,
+    LBCIA_Column, 1,
+        LBCIA_Title, "Files",
+        LBCIA_Weight, 12,
+        LBCIA_Sortable, TRUE,
+        LBCIA_SortArrow, TRUE,
+    LBCIA_Column, 2,
+        LBCIA_Title, "Status",
+        LBCIA_Weight, 15,
+        LBCIA_Sortable, TRUE,
+        LBCIA_SortArrow, TRUE,
+    TAG_DONE);
+
+/* Don't forget to free when done */
+FreeLBColumnInfo(column_info);
+```
+
+**Why:** `AllocLBColumnInfo()` creates a properly structured internal representation that the Get/Set functions expect. Static arrays don't have this internal structure.
+
+### Issue 3: List Must Be ATTACHED When Calling LBM_SORT
+
+**Problem:** If you detach the list (set `LISTBROWSER_Labels, ~0`) before calling `LBM_SORT`, the sort method returns -1 (failure) and nothing gets sorted.
+
+**Symptom:** `DoGadgetMethod(..., LBM_SORT, ...)` returns -1. Clicking columns does nothing visible. List doesn't reorder.
+
+**Wrong:**
+```c
+/* Detach list - WRONG! */
+SetGadgetAttrs((struct Gadget *)listbrowser_obj,
+               window, NULL,
+               LISTBROWSER_Labels, ~0,
+               TAG_DONE);
+
+/* Sort fails because list is detached */
+DoGadgetMethod((struct Gadget *)listbrowser_obj,
+              window, NULL,
+              LBM_SORT, list, column, direction, NULL);  /* ❌ Returns -1 */
+
+/* Re-attach list */
+SetGadgetAttrs((struct Gadget *)listbrowser_obj,
+               window, NULL,
+               LISTBROWSER_Labels, list,
+               TAG_DONE);
+```
+
+**Correct:**
+```c
+/* List MUST be attached when calling LBM_SORT */
+/* DoGadgetMethod signature: 
+   DoGadgetMethod(gadget, window, requester, LBM_SORT, list, column, direction, hook) */
+result = DoGadgetMethod((struct Gadget *)listbrowser_obj,
+                       window, NULL,
+                       LBM_SORT, list, column, direction, NULL);  /* ✅ Returns 0 */
+
+/* Update sort arrow indicator */
+SetGadgetAttrs((struct Gadget *)listbrowser_obj,
+               window, NULL,
+               LISTBROWSER_SortColumn, column,
+               TAG_DONE);
+
+/* Refresh to show changes */
+RefreshGadgets((struct Gadget *)listbrowser_obj, window, NULL);
+```
+
+**Why:** `LBM_SORT` operates on the attached list and needs to notify the gadget of changes. Detaching breaks this connection.
+
+### Issue 4: The 'code' Parameter Contains Clicked Column Number
+
+**Problem:** Using `GetAttr(LISTBROWSER_SortColumn)` to determine which column was clicked returns the **currently sorted column**, not the column that was just clicked. This causes the sort arrow to stay in the wrong column.
+
+**Symptom:** Clicking different columns sorts correctly, but the sort arrow stays in column 0. Log shows `Sort column = 0` regardless of which column was clicked.
+
+**Wrong:**
+```c
+/* In WMHI_GADGETUP handler for listbrowser */
+case GID_TOOL_LIST_LISTBROWSER:
+{
+    ULONG rel_event = LBRE_NORMAL;
+    
+    GetAttr(LISTBROWSER_RelEvent, listbrowser_obj, &rel_event);
+    
+    if (rel_event == LBRE_TITLECLICK)
+    {
+        ULONG sort_column = 0;
+        
+        /* WRONG - returns OLD sorted column */
+        GetAttr(LISTBROWSER_SortColumn, listbrowser_obj, &sort_column);  /* ❌ Always 0 */
+        
+        DoGadgetMethod(..., LBM_SORT, list, sort_column, ...);
+    }
+}
+```
+
+**Correct:**
+```c
+/* In event loop where RA_HandleInput is called */
+UWORD code;
+
+while ((result = RA_HandleInput(window_obj, &code)) != WMHI_LASTMSG)
+{
+    switch (result & WMHI_CLASSMASK)
+    {
+        case WMHI_GADGETUP:
+            switch (result & WMHI_GADGETMASK)
+            {
+                case GID_TOOL_LIST_LISTBROWSER:
+                {
+                    ULONG rel_event = LBRE_NORMAL;
+                    
+                    GetAttr(LISTBROWSER_RelEvent, listbrowser_obj, &rel_event);
+                    
+                    if (rel_event == LBRE_TITLECLICK)
+                    {
+                        /* CORRECT - 'code' parameter contains clicked column */
+                        ULONG sort_column = code;  /* ✅ Column 0, 1, 2, etc. */
+                        
+                        DoGadgetMethod(..., LBM_SORT, list, sort_column, ...);
+                        
+                        /* Update sort arrow to clicked column */
+                        SetGadgetAttrs((struct Gadget *)listbrowser_obj,
+                                       window, NULL,
+                                       LISTBROWSER_SortColumn, sort_column,
+                                       TAG_DONE);
+                    }
+                }
+            }
+    }
+}
+```
+
+**Why:** When `LBRE_TITLECLICK` is the event type, ReAction stores the clicked column number in the `code` parameter that `RA_HandleInput()` fills in. This is the standard Intuition pattern for communicating additional event details.
+
+### Complete Working Pattern
+
+```c
+/* 1. Allocate column info with sorting enabled */
+struct ColumnInfo *column_info = AllocLBColumnInfo(3,
+    LBCIA_Column, 0,
+        LBCIA_Title, "Name",
+        LBCIA_Sortable, TRUE,
+        LBCIA_SortArrow, TRUE,
+    LBCIA_Column, 1,
+        LBCIA_Title, "Count",
+        LBCIA_Sortable, TRUE,
+        LBCIA_SortArrow, TRUE,
+    LBCIA_Column, 2,
+        LBCIA_Title, "Status",
+        LBCIA_Sortable, TRUE,
+        LBCIA_SortArrow, TRUE,
+    TAG_DONE);
+
+/* 2. Create listbrowser WITHOUT TitleClickable */
+listbrowser_obj = NewObject(LISTBROWSER_GetClass(), NULL,
+    GA_ID, GID_LISTBROWSER,
+    GA_RelVerify, TRUE,
+    LISTBROWSER_ColumnInfo, column_info,
+    LISTBROWSER_ColumnTitles, TRUE,
+    LISTBROWSER_Labels, &list,
+TAG_END);
+
+/* 3. Open window */
+window = (struct Window *)RA_OpenWindow(window_obj);
+
+/* 4. Enable TitleClickable AFTER window opens */
+SetGadgetAttrs((struct Gadget *)listbrowser_obj,
+               window, NULL,
+               LISTBROWSER_TitleClickable, TRUE,
+               TAG_DONE);
+
+/* 5. In event loop, handle LBRE_TITLECLICK */
+UWORD code;
+while ((result = RA_HandleInput(window_obj, &code)) != WMHI_LASTMSG)
+{
+    switch (result & WMHI_CLASSMASK)
+    {
+        case WMHI_GADGETUP:
+            switch (result & WMHI_GADGETMASK)
+            {
+                case GID_LISTBROWSER:
+                {
+                    ULONG rel_event;
+                    GetAttr(LISTBROWSER_RelEvent, listbrowser_obj, &rel_event);
+                    
+                    if (rel_event == LBRE_TITLECLICK)
+                    {
+                        ULONG column = code;  /* Column number from code parameter */
+                        ULONG direction = LBMSORT_FORWARD;  /* Or toggle based on state */
+                        
+                        /* Sort with list attached */
+                        DoGadgetMethod((struct Gadget *)listbrowser_obj,
+                                      window, NULL,
+                                      LBM_SORT, &list, column, direction, NULL);
+                        
+                        /* Update sort arrow */
+                        SetGadgetAttrs((struct Gadget *)listbrowser_obj,
+                                       window, NULL,
+                                       LISTBROWSER_SortColumn, column,
+                                       TAG_DONE);
+                        
+                        RefreshGadgets((struct Gadget *)listbrowser_obj, window, NULL);
+                    }
+                }
+            }
+    }
+}
+
+/* 6. Cleanup */
+FreeLBColumnInfo(column_info);
+```
+
+### Key Takeaways
+
+1. **TitleClickable:** Set with `SetGadgetAttrs()` AFTER window opens, not in `NewObject()`
+2. **Column Info:** Use `AllocLBColumnInfo()`, not static arrays
+3. **Sorting:** List must be ATTACHED when calling `LBM_SORT`
+4. **Column Number:** Use the `code` parameter, not `GetAttr(LISTBROWSER_SortColumn)`
+5. **Sort Arrow:** Update with `SetGadgetAttrs(..., LISTBROWSER_SortColumn, column, ...)`
+
+### Reference Implementation
+
+See `src/GUI/DefaultTools/tool_cache_window.c` for a complete working example.
+
+---
+
+## ListBrowser Column Resizing
+
+### ⚠️ CRITICAL: CIF_SORTABLE and CIF_DRAGGABLE Must Be Combined with Bitwise OR
+
+**Problem:** When enabling both column sorting AND column resizing, setting `LBCIA_Flags` to only `CIF_DRAGGABLE` will make resizing work but **sorting stops working completely**. The flags are bitfields that must be combined.
+
+**Symptom:** 
+- Column resizing works (dragging separators resizes columns)
+- Column sorting stops working (clicking headers does nothing)
+- Log shows `LBRE_COLUMNADJUST` events (256) but no `LBRE_TITLECLICK` events (128)
+- User clicks on column titles but list doesn't sort
+
+**Wrong:**
+```c
+/* Only CIF_DRAGGABLE - breaks sorting! */
+column_info = AllocLBColumnInfo(3,
+    LBCIA_Column, 0,
+        LBCIA_Title, "Tool",
+        LBCIA_Sortable, TRUE,      /* ← These are ignored! */
+        LBCIA_SortArrow, TRUE,     /* ← These are ignored! */
+        LBCIA_Flags, CIF_DRAGGABLE,  /* ❌ Only resizing works */
+    LBCIA_Column, 1,
+        LBCIA_Title, "Files",
+        LBCIA_Sortable, TRUE,
+        LBCIA_SortArrow, TRUE,
+        LBCIA_Flags, CIF_DRAGGABLE,  /* ❌ Only resizing works */
+    TAG_DONE);
+```
+
+**Correct:**
+```c
+/* Combine flags with bitwise OR */
+column_info = AllocLBColumnInfo(3,
+    LBCIA_Column, 0,
+        LBCIA_Title, "Tool",
+        LBCIA_Sortable, TRUE,
+        LBCIA_SortArrow, TRUE,
+        LBCIA_Flags, CIF_SORTABLE | CIF_DRAGGABLE,  /* ✅ Both work! */
+    LBCIA_Column, 1,
+        LBCIA_Title, "Files",
+        LBCIA_Sortable, TRUE,
+        LBCIA_SortArrow, TRUE,
+        LBCIA_Flags, CIF_SORTABLE | CIF_DRAGGABLE,  /* ✅ Both work! */
+    LBCIA_Column, 2,
+        LBCIA_Title, "Status",
+        LBCIA_Sortable, TRUE,
+        LBCIA_SortArrow, TRUE,
+        LBCIA_Flags, CIF_SORTABLE | CIF_DRAGGABLE,  /* ✅ Both work! */
+    TAG_DONE);
+```
+
+**Why:** The `LBCIA_Flags` field contains bitfield flags. `CIF_SORTABLE` and `CIF_DRAGGABLE` are different bits that need to be OR'd together:
+- `CIF_SORTABLE` enables title clicking for sorting
+- `CIF_DRAGGABLE` enables separator dragging for resizing
+- Setting only one flag disables the other feature
+
+The `LBCIA_Sortable` and `LBCIA_SortArrow` tags are convenience tags that internally set the `CIF_SORTABLE` flag bit. But if you then set `LBCIA_Flags` to ONLY `CIF_DRAGGABLE`, you overwrite the flag field and lose the sortable bit.
+
+### Handling LBRE_COLUMNADJUST Events
+
+When column resizing is enabled, the listbrowser generates `LBRE_COLUMNADJUST` events (value 256) when the user drags a separator. These should be acknowledged in your event handler to prevent "Unhandled event" warnings.
+
+**Event Handler Pattern:**
+```c
+case GID_LISTBROWSER:
+{
+    ULONG rel_event;
+    GetAttr(LISTBROWSER_RelEvent, listbrowser_obj, &rel_event);
+    
+    if (rel_event == LBRE_TITLECLICK)
+    {
+        /* Handle sorting (column number in 'code' parameter) */
+        ULONG column = code;
+        DoGadgetMethod(..., LBM_SORT, list, column, direction, NULL);
+    }
+    else if (rel_event == LBRE_COLUMNADJUST)
+    {
+        /* Column resizing - handled automatically by gadget */
+        /* No action needed, but acknowledge to prevent warnings */
+    }
+    else if (selected != ~0)
+    {
+        /* Handle normal row selection */
+    }
+}
+```
+
+### Key Takeaways
+
+1. **Always combine flags:** Use `CIF_SORTABLE | CIF_DRAGGABLE` for both features
+2. **Flag types matter:** These are bitfield flags, not boolean options
+3. **Convenience tags:** `LBCIA_Sortable` and `LBCIA_SortArrow` set `CIF_SORTABLE` internally
+4. **Manual flags override:** Setting `LBCIA_Flags` explicitly replaces all flags, so use `|` to combine
+5. **Handle both events:** Check for both `LBRE_TITLECLICK` (sorting) and `LBRE_COLUMNADJUST` (resizing)
+
+### Available Column Flags
+
+From `listbrowser_gc.doc`:
+- `CIF_WEIGHTED` - Weighted width column (default)
+- `CIF_FIXED` - Fixed pixel width specified in ci_Width
+- `CIF_DRAGGABLE` - Separator is user-draggable (enables resizing)
+- `CIF_NOSEPARATORS` - No separator on this column
+- `CIF_SORTABLE` - Column is sortable (enabled by LBCIA_Sortable tag)
+- `CIF_CENTER` - Column title is centered (V47)
+- `CIF_RIGHT` - Column title is right-justified (V47)
+
+Multiple flags can be combined with bitwise OR (`|`) as needed.
+
+---
+
 ## Dynamic Text Labels
 
 ### ⚠️ CRITICAL: Label Images Don't Support Runtime Text Updates
@@ -720,6 +1133,20 @@ If flags are correct but no triangles appear, the list wasn't set up before gadg
 
 ## Version History
 
+- **2026-01-30:** Added ListBrowser column resizing section
+  - CRITICAL: CIF_SORTABLE and CIF_DRAGGABLE must be combined with bitwise OR (`|`)
+  - Setting only CIF_DRAGGABLE breaks sorting completely
+  - These are bitfield flags, not boolean options
+  - LBCIA_Sortable/LBCIA_SortArrow convenience tags set CIF_SORTABLE internally
+  - LBCIA_Flags explicitly replaces all flags, so use `CIF_SORTABLE | CIF_DRAGGABLE`
+  - Handle LBRE_COLUMNADJUST (256) events in addition to LBRE_TITLECLICK (128)
+  - List of all available column flags (CIF_WEIGHTED, CIF_FIXED, CIF_DRAGGABLE, etc.)
+- **2026-01-30:** Added ListBrowser column sorting section
+  - CRITICAL: LISTBROWSER_TitleClickable must be set with SetGadgetAttrs AFTER window opens
+  - CRITICAL: Use AllocLBColumnInfo(), not static arrays for sortable columns
+  - CRITICAL: List must be ATTACHED when calling LBM_SORT
+  - CRITICAL: Use 'code' parameter for clicked column number, not GetAttr(LISTBROWSER_SortColumn)
+  - Complete working pattern for clickable column sorting with sort arrow indicators
 - **2026-01-30:** Added dynamic text labels section
   - CRITICAL: Label images don't support runtime text updates
   - Solution: Use Button gadgets with GA_ReadOnly, BVS_NONE, BUTTON_Transparent
