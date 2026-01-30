@@ -1345,225 +1345,237 @@ void close_restore_window(struct iTidyRestoreWindow *restore_data)
 /*------------------------------------------------------------------------*/
 BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
 {
-    ULONG result, code;
+    ULONG signals, signal_mask;
+    ULONG result;
+    UWORD code;
     BOOL continue_running = TRUE;
     
     if (restore_data == NULL || restore_data->window_obj == NULL)
         return FALSE;
-    
-    /* Wait for input */
-    Wait(1L << restore_data->window->UserPort->mp_SigBit);
-    
-    while ((result = RA_HandleInput(restore_data->window_obj, &code)) != WMHI_LASTMSG)
+
+    // Get the ReAction window's signal mask
+    GetAttr(WINDOW_SigMask, restore_data->window_obj, &signal_mask);
+
+    // Wait for events using the correct signal mask
+    signals = Wait(signal_mask | SIGBREAKF_CTRL_C);
+
+    if (signals & SIGBREAKF_CTRL_C)
     {
-        switch (result & WMHI_CLASSMASK)
+        log_debug(LOG_GUI, "Ctrl+C detected, closing window.\n");
+        return FALSE;
+    }
+
+    // Handle window events (no need to check signal_mask - RA_HandleInput handles it)
+    while ((result = RA_HandleInput(restore_data->window_obj, &code)) != WMHI_LASTMSG)
         {
-            case WMHI_CLOSEWINDOW:
-                log_debug(LOG_GUI, "Close gadget clicked\n");
-                continue_running = FALSE;
-                break;
-            
-            case WMHI_GADGETUP:
-                switch (result & WMHI_GADGETMASK)
-                {
-                    case GID_RESTORE_RUN_LISTBROWSER:
-                        {
-                            ULONG selected = ~0;
-                            
-                            GetAttr(LISTBROWSER_Selected, 
-                                   restore_data->run_listbrowser_obj, 
-                                   &selected);
-                            
-                            if (selected != ~0 && selected < restore_data->run_count)
+            switch (result & WMHI_CLASSMASK)
+            {
+                case WMHI_CLOSEWINDOW:
+                    log_debug(LOG_GUI, "Close gadget clicked\n");
+                    continue_running = FALSE;
+                    break;
+                
+                case WMHI_GADGETUP:
+                    switch (result & WMHI_GADGETMASK)
+                    {
+                        case GID_RESTORE_RUN_LISTBROWSER:
                             {
-                                log_debug(LOG_GUI, "Selected run index: %lu\n", selected);
+                                ULONG selected = ~0;
                                 
-                                restore_data->selected_run_index = (LONG)selected;
+                                GetAttr(LISTBROWSER_Selected, 
+                                       restore_data->run_listbrowser_obj, 
+                                       &selected);
                                 
-                                /* Update details panel */
-                                update_details_panel(restore_data,
-                                                    &restore_data->run_entries[selected]);
-                                
-                                /* Enable buttons */
-                                SetGadgetAttrs((struct Gadget *)restore_data->restore_run_btn,
-                                               restore_data->window, NULL,
-                                               GA_Disabled, FALSE,
-                                               TAG_DONE);
-                                
-                                SetGadgetAttrs((struct Gadget *)restore_data->delete_run_btn,
-                                               restore_data->window, NULL,
-                                               GA_Disabled, FALSE,
-                                               TAG_DONE);
-                                
-                                /* Enable view folders if catalog exists */
-                                SetGadgetAttrs((struct Gadget *)restore_data->view_folders_btn,
-                                               restore_data->window, NULL,
-                                               GA_Disabled, !restore_data->run_entries[selected].hasCatalog,
-                                               TAG_DONE);
-                            }
-                        }
-                        break;
-                    
-                    case GID_RESTORE_GEOM_CHECKBOX:
-                        {
-                            ULONG checked = 0;
-                            GetAttr(GA_Selected, restore_data->window_geom_chk, &checked);
-                            restore_data->restore_window_geometry = (BOOL)checked;
-                            log_debug(LOG_GUI, "Window geometry restore: %s\n", 
-                                     restore_data->restore_window_geometry ? "ENABLED" : "DISABLED");
-                        }
-                        break;
-                    
-                    case GID_RESTORE_RESTORE_BUTTON:
-                        if (restore_data->selected_run_index >= 0 &&
-                            restore_data->selected_run_index < (LONG)restore_data->run_count)
-                        {
-                            perform_restore_run(restore_data,
-                                &restore_data->run_entries[restore_data->selected_run_index]);
-                        }
-                        break;
-                    
-                    case GID_RESTORE_DELETE_BUTTON:
-                        if (restore_data->selected_run_index >= 0 &&
-                            restore_data->selected_run_index < (LONG)restore_data->run_count)
-                        {
-                            struct RestoreRunEntry *selected_entry = 
-                                &restore_data->run_entries[restore_data->selected_run_index];
-                            char message[512];
-                            
-                            sprintf(message, "Delete backup run %s?\n\nThis will permanently delete:\n- %lu folder archive(s)\n- Catalog file\n- Run directory\n\nThis action cannot be undone!",
-                                    selected_entry->runName,
-                                    selected_entry->folderCount);
-                            
-                            /* Use ReAction requester with question mark icon */
-                            /* Button returns: 1=Delete, 0=Cancel */
-                            if (ShowReActionRequester(restore_data->window,
-                                                      "Confirm Delete",
-                                                      message,
-                                                      "_Delete|_Cancel",
-                                                      REQIMAGE_QUESTION) == 1)
-                            {
-                                char run_path[512];
-                                
-                                sprintf(run_path, "%s/%s", restore_data->backup_root_path, selected_entry->runName);
-                                
-                                log_info(LOG_BACKUP, "Deleting backup run: %s\n", run_path);
-                                
-                                if (delete_directory_recursive(run_path))
+                                if (selected != ~0 && selected < restore_data->run_count)
                                 {
-                                    log_info(LOG_BACKUP, "Successfully deleted run: %s\n", selected_entry->runName);
+                                    log_debug(LOG_GUI, "Selected run index: %lu\n", selected);
                                     
-                                    /* Rescan backup directory */
-                                    if (restore_data->run_entries != NULL)
+                                    restore_data->selected_run_index = (LONG)selected;
+                                    
+                                    /* Update details panel */
+                                    update_details_panel(restore_data,
+                                                        &restore_data->run_entries[selected]);
+                                    
+                                    /* Enable buttons */
+                                    SetGadgetAttrs((struct Gadget *)restore_data->restore_run_btn,
+                                                   restore_data->window, NULL,
+                                                   GA_Disabled, FALSE,
+                                                   TAG_DONE);
+                                    
+                                    SetGadgetAttrs((struct Gadget *)restore_data->delete_run_btn,
+                                                   restore_data->window, NULL,
+                                                   GA_Disabled, FALSE,
+                                                   TAG_DONE);
+                                    
+                                    /* Enable view folders if catalog exists */
+                                    SetGadgetAttrs((struct Gadget *)restore_data->view_folders_btn,
+                                                   restore_data->window, NULL,
+                                                   GA_Disabled, !restore_data->run_entries[selected].hasCatalog,
+                                                   TAG_DONE);
+                                }
+                            }
+                            break;
+                        
+                        case GID_RESTORE_GEOM_CHECKBOX:
+                            {
+                                ULONG checked = 0;
+                                GetAttr(GA_Selected, restore_data->window_geom_chk, &checked);
+                                restore_data->restore_window_geometry = (BOOL)checked;
+                                log_debug(LOG_GUI, "Window geometry restore: %s\n", 
+                                         restore_data->restore_window_geometry ? "ENABLED" : "DISABLED");
+                            }
+                            break;
+                        
+                        case GID_RESTORE_RESTORE_BUTTON:
+                            if (restore_data->selected_run_index >= 0 &&
+                                restore_data->selected_run_index < (LONG)restore_data->run_count)
+                            {
+                                perform_restore_run(restore_data,
+                                    &restore_data->run_entries[restore_data->selected_run_index]);
+                            }
+                            break;
+                        
+                        case GID_RESTORE_DELETE_BUTTON:
+                            if (restore_data->selected_run_index >= 0 &&
+                                restore_data->selected_run_index < (LONG)restore_data->run_count)
+                            {
+                                struct RestoreRunEntry *selected_entry = 
+                                    &restore_data->run_entries[restore_data->selected_run_index];
+                                char message[512];
+                                
+                                sprintf(message, "Delete backup run %s?\n\nThis will permanently delete:\n- %lu folder archive(s)\n- Catalog file\n- Run directory\n\nThis action cannot be undone!",
+                                        selected_entry->runName,
+                                        selected_entry->folderCount);
+                                
+                                /* Use ReAction requester with question mark icon */
+                                /* Button returns: 1=Delete, 0=Cancel */
+                                if (ShowReActionRequester(restore_data->window,
+                                                          "Confirm Delete",
+                                                          message,
+                                                          "_Delete|_Cancel",
+                                                          REQIMAGE_QUESTION) == 1)
+                                {
+                                    char run_path[512];
+                                    
+                                    sprintf(run_path, "%s/%s", restore_data->backup_root_path, selected_entry->runName);
+                                    
+                                    log_info(LOG_BACKUP, "Deleting backup run: %s\n", run_path);
+                                    
+                                    if (delete_directory_recursive(run_path))
                                     {
-                                        whd_free(restore_data->run_entries);
-                                        restore_data->run_entries = NULL;
-                                    }
-                                    
-                                    restore_data->run_count = scan_backup_runs(
-                                        restore_data->backup_root_path,
-                                        &restore_data->run_entries);
-                                    
-                                    if (restore_data->run_count > 0)
-                                    {
-                                        populate_run_list(restore_data,
-                                                         restore_data->run_entries,
-                                                         restore_data->run_count,
-                                                         0);
+                                        log_info(LOG_BACKUP, "Successfully deleted run: %s\n", selected_entry->runName);
+                                        
+                                        /* Rescan backup directory */
+                                        if (restore_data->run_entries != NULL)
+                                        {
+                                            whd_free(restore_data->run_entries);
+                                            restore_data->run_entries = NULL;
+                                        }
+                                        
+                                        restore_data->run_count = scan_backup_runs(
+                                            restore_data->backup_root_path,
+                                            &restore_data->run_entries);
+                                        
+                                        if (restore_data->run_count > 0)
+                                        {
+                                            populate_run_list(restore_data,
+                                                             restore_data->run_entries,
+                                                             restore_data->run_count,
+                                                             0);
+                                        }
+                                        else
+                                        {
+                                            /* No runs left */
+                                            update_details_panel(restore_data, NULL);
+                                            
+                                            SetGadgetAttrs((struct Gadget *)restore_data->restore_run_btn,
+                                                           restore_data->window, NULL,
+                                                           GA_Disabled, TRUE,
+                                                           TAG_DONE);
+                                            SetGadgetAttrs((struct Gadget *)restore_data->delete_run_btn,
+                                                           restore_data->window, NULL,
+                                                           GA_Disabled, TRUE,
+                                                           TAG_DONE);
+                                            SetGadgetAttrs((struct Gadget *)restore_data->view_folders_btn,
+                                                           restore_data->window, NULL,
+                                                           GA_Disabled, TRUE,
+                                                           TAG_DONE);
+                                        }
+                                        
+                                        sprintf(message, "Backup run %s deleted successfully.", selected_entry->runName);
+                                        
+                                        ShowReActionRequester(restore_data->window,
+                                                              "Delete Complete",
+                                                              message,
+                                                              "_OK",
+                                                              REQIMAGE_INFO);
                                     }
                                     else
                                     {
-                                        /* No runs left */
-                                        update_details_panel(restore_data, NULL);
+                                        log_error(LOG_BACKUP, "ERROR: Failed to delete run: %s\n", run_path);
                                         
-                                        SetGadgetAttrs((struct Gadget *)restore_data->restore_run_btn,
-                                                       restore_data->window, NULL,
-                                                       GA_Disabled, TRUE,
-                                                       TAG_DONE);
-                                        SetGadgetAttrs((struct Gadget *)restore_data->delete_run_btn,
-                                                       restore_data->window, NULL,
-                                                       GA_Disabled, TRUE,
-                                                       TAG_DONE);
-                                        SetGadgetAttrs((struct Gadget *)restore_data->view_folders_btn,
-                                                       restore_data->window, NULL,
-                                                       GA_Disabled, TRUE,
-                                                       TAG_DONE);
+                                        sprintf(message, "Failed to delete backup run %s.\n\nThe directory may be in use or protected.\nCheck the log for details.", selected_entry->runName);
+                                        
+                                        ShowReActionRequester(restore_data->window,
+                                                              "Delete Failed",
+                                                              message,
+                                                              "_OK",
+                                                              REQIMAGE_ERROR);
                                     }
-                                    
-                                    sprintf(message, "Backup run %s deleted successfully.", selected_entry->runName);
-                                    
-                                    ShowReActionRequester(restore_data->window,
-                                                          "Delete Complete",
-                                                          message,
-                                                          "_OK",
-                                                          REQIMAGE_INFO);
                                 }
                                 else
                                 {
-                                    log_error(LOG_BACKUP, "ERROR: Failed to delete run: %s\n", run_path);
-                                    
-                                    sprintf(message, "Failed to delete backup run %s.\n\nThe directory may be in use or protected.\nCheck the log for details.", selected_entry->runName);
-                                    
-                                    ShowReActionRequester(restore_data->window,
-                                                          "Delete Failed",
-                                                          message,
-                                                          "_OK",
-                                                          REQIMAGE_ERROR);
+                                    log_debug(LOG_BACKUP, "Delete cancelled by user\n");
                                 }
                             }
-                            else
+                            break;
+                        
+                        case GID_RESTORE_VIEW_BUTTON:
+                            if (restore_data->selected_run_index >= 0 &&
+                                restore_data->selected_run_index < (LONG)restore_data->run_count)
                             {
-                                log_debug(LOG_BACKUP, "Delete cancelled by user\n");
-                            }
-                        }
-                        break;
-                    
-                    case GID_RESTORE_VIEW_BUTTON:
-                        if (restore_data->selected_run_index >= 0 &&
-                            restore_data->selected_run_index < (LONG)restore_data->run_count)
-                        {
-                            struct RestoreRunEntry *selected_entry = 
-                                &restore_data->run_entries[restore_data->selected_run_index];
-                            char catalog_path[512];
-                            struct iTidyFolderViewWindow folder_view_data;
-                            
-                            sprintf(catalog_path, "%s/%s/catalog.txt",
-                                   restore_data->backup_root_path,
-                                   selected_entry->runName);
-                            
-                            log_debug(LOG_GUI, "Opening folder view for: %s\n", catalog_path);
-                            
-                            memset(&folder_view_data, 0, sizeof(folder_view_data));
-                            folder_view_data.screen = restore_data->screen;
-                            
-                            if (open_folder_view_window(&folder_view_data,
-                                                       catalog_path,
-                                                       selected_entry->runNumber,
-                                                       selected_entry->dateStr,
-                                                       selected_entry->folderCount))
-                            {
-                                while (handle_folder_view_window_events(&folder_view_data))
-                                {
-                                    WaitPort(folder_view_data.window->UserPort);
-                                }
+                                struct RestoreRunEntry *selected_entry = 
+                                    &restore_data->run_entries[restore_data->selected_run_index];
+                                char catalog_path[512];
+                                struct iTidyFolderViewWindow folder_view_data;
                                 
-                                close_folder_view_window(&folder_view_data);
+                                sprintf(catalog_path, "%s/%s/catalog.txt",
+                                       restore_data->backup_root_path,
+                                       selected_entry->runName);
+                                
+                                log_debug(LOG_GUI, "Opening folder view for: %s\n", catalog_path);
+                                
+                                memset(&folder_view_data, 0, sizeof(folder_view_data));
+                                folder_view_data.screen = restore_data->screen;
+                                
+                                if (open_folder_view_window(&folder_view_data,
+                                                           catalog_path,
+                                                           selected_entry->runNumber,
+                                                           selected_entry->dateStr,
+                                                           selected_entry->folderCount))
+                                {
+                                    while (handle_folder_view_window_events(&folder_view_data))
+                                    {
+                                        /* The event loop is now inside handle_folder_view_window_events */
+                                    }
+                                    
+                                    close_folder_view_window(&folder_view_data);
+                                }
+                                else
+                                {
+                                    log_error(LOG_GUI, "ERROR: Failed to open folder view window\n");
+                                }
                             }
-                            else
-                            {
-                                log_error(LOG_GUI, "ERROR: Failed to open folder view window\n");
-                            }
-                        }
-                        break;
-                    
-                    case GID_RESTORE_CANCEL_BUTTON:
-                        log_debug(LOG_GUI, "Cancel button clicked\n");
-                        continue_running = FALSE;
-                        break;
-                }
-                break;
+                            break;
+                        
+                        case GID_RESTORE_CANCEL_BUTTON:
+                            log_debug(LOG_GUI, "Cancel button clicked\n");
+                            continue_running = FALSE;
+                            break;
+                    }
+                    break;
+            }
         }
-    }
     
     return continue_running;
 }

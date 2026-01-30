@@ -1574,11 +1574,10 @@ static void handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                     /* Clear busy pointer - restore window is now open */
                     safe_set_window_pointer(win_data->window, FALSE);
                     
-                    /* Run restore window event loop */
+                    /* Run restore window event loop (Wait is inside handler) */
                     while (handle_restore_window_events(&restore_data))
                     {
-                        /* Wait for restore window events */
-                        WaitPort(restore_data.window->UserPort);
+                        /* Event handler includes Wait() - no need to wait here */
                     }
                     
                     /* Close restore window */

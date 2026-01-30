@@ -5,9 +5,205 @@ This document captures hard-won lessons from implementing ReAction GUI component
 ---
 
 ## Table of Contents
-1. [ListBrowser Hierarchical Tree View](#listbrowser-hierarchical-tree-view)
-2. [General ReAction Gotchas](#general-reaction-gotchas)
-3. [Memory and Type Safety](#memory-and-type-safety)
+1. [Event Loop Patterns](#event-loop-patterns)
+2. [ListBrowser Hierarchical Tree View](#listbrowser-hierarchical-tree-view)
+3. [General ReAction Gotchas](#general-reaction-gotchas)
+4. [Memory and Type Safety](#memory-and-type-safety)
+
+---
+
+## Event Loop Patterns
+
+### ⚠️ CRITICAL: Never Double-Wait in Event Loops
+
+**Problem:** ReAction event handlers should contain the `Wait()` call INSIDE the handler function. Calling `Wait()` or `WaitPort()` in BOTH the handler and the caller creates a "one message behind" bug.
+
+**Symptom:** First click on any gadget does nothing. Second click processes the FIRST click's event. Window close gadget requires two clicks. Child windows that close cause events to repeat.
+
+**Wrong Pattern (Double-Wait):**
+```c
+/* In event handler function */
+BOOL handle_window_events(WindowData *data) {
+    ULONG signal_mask;
+    
+    GetAttr(WINDOW_SigMask, data->window_obj, &signal_mask);
+    
+    /* First wait here */
+    signals = Wait(signal_mask | SIGBREAKF_CTRL_C);
+    
+    /* Process events */
+    while ((result = RA_HandleInput(data->window_obj, &code)) != WMHI_LASTMSG) {
+        /* Handle events */
+    }
+    
+    return continue_running;
+}
+
+/* In caller - WRONG! */
+while (handle_window_events(&data)) {
+    WaitPort(data.window->UserPort);  /* ❌ Second wait causes "one behind" bug */
+}
+```
+
+**Correct Pattern:**
+```c
+/* In event handler function */
+BOOL handle_window_events(WindowData *data) {
+    ULONG signal_mask;
+    
+    GetAttr(WINDOW_SigMask, data->window_obj, &signal_mask);
+    
+    /* Wait inside the handler */
+    signals = Wait(signal_mask | SIGBREAKF_CTRL_C);
+    
+    if (signals & SIGBREAKF_CTRL_C) {
+        return FALSE;
+    }
+    
+    /* Process all pending events */
+    while ((result = RA_HandleInput(data->window_obj, &code)) != WMHI_LASTMSG) {
+        /* Handle events */
+    }
+    
+    return continue_running;
+}
+
+/* In caller - CORRECT */
+while (handle_window_events(&data)) {
+    /* ✅ No wait here - handler does the waiting */
+}
+```
+
+**Why This Happens:**
+1. User clicks gadget → signal sent
+2. Inner `Wait()` in handler returns and processes events
+3. Handler returns to caller
+4. **Outer `WaitPort()` blocks waiting for NEXT event** ← Bug is here
+5. Second click triggers outer wait
+6. Now processes the FIRST click's queued event
+7. Creates perpetual "one event behind" behavior
+
+**Key Principle:** Either the event handler OR the caller should wait, never both. ReAction best practice is to have the handler do the waiting.
+
+---
+
+### Don't Check Signal Mask After Wait()
+
+**Problem:** After calling `Wait()`, don't check if the signal mask is set before calling `RA_HandleInput()`.
+
+**Wrong:**
+```c
+signals = Wait(signal_mask | SIGBREAKF_CTRL_C);
+
+if (signals & SIGBREAKF_CTRL_C)
+    return FALSE;
+
+if (signals & signal_mask) {  /* ❌ Unnecessary check */
+    while ((result = RA_HandleInput(...)) != WMHI_LASTMSG) {
+        /* Handle events */
+    }
+}
+```
+
+**Correct:**
+```c
+signals = Wait(signal_mask | SIGBREAKF_CTRL_C);
+
+if (signals & SIGBREAKF_CTRL_C)
+    return FALSE;
+
+/* ✅ RA_HandleInput checks for pending events internally */
+while ((result = RA_HandleInput(...)) != WMHI_LASTMSG) {
+    /* Handle events */
+}
+```
+
+**Why:** `RA_HandleInput()` internally checks if there are pending messages. The `if (signals & signal_mask)` wrapper can cause events to be skipped if the signal was consumed by the `Wait()` call.
+
+---
+
+### Standard ReAction Event Loop Template
+
+```c
+BOOL handle_window_events(struct WindowData *data)
+{
+    ULONG signal_mask;
+    ULONG signals;
+    ULONG result;
+    UWORD code;
+    BOOL continue_running = TRUE;
+    
+    if (!data || !data->window_obj)
+        return FALSE;
+    
+    /* Get window signal mask */
+    GetAttr(WINDOW_SigMask, data->window_obj, &signal_mask);
+    
+    /* Wait for signals (inside the handler) */
+    signals = Wait(signal_mask | SIGBREAKF_CTRL_C);
+    
+    /* Check for Ctrl-C */
+    if (signals & SIGBREAKF_CTRL_C) {
+        return FALSE;
+    }
+    
+    /* Process all pending window events */
+    while ((result = RA_HandleInput(data->window_obj, &code)) != WMHI_LASTMSG)
+    {
+        switch (result & WMHI_CLASSMASK)
+        {
+            case WMHI_CLOSEWINDOW:
+                continue_running = FALSE;
+                break;
+                
+            case WMHI_GADGETUP:
+                /* Handle gadget events */
+                break;
+        }
+    }
+    
+    return continue_running;
+}
+
+/* Caller just calls handler in a loop */
+while (handle_window_events(&window_data)) {
+    /* No waiting here! */
+}
+```
+
+---
+
+### Modal Child Window Pattern
+
+When opening a modal child window from a parent window:
+
+```c
+/* In parent window's gadget handler */
+case GID_OPEN_CHILD_WINDOW:
+    {
+        struct ChildWindowData child_data;
+        
+        /* Open child window */
+        if (open_child_window(&child_data))
+        {
+            /* Run child window event loop */
+            while (handle_child_window_events(&child_data))
+            {
+                /* Event handler includes Wait() - no WaitPort() here! */
+            }
+            
+            /* Close child window */
+            close_child_window(&child_data);
+        }
+    }
+    break;
+```
+
+**Key Points:**
+- Child window's event handler contains `Wait()`
+- Parent's loop just calls the handler repeatedly
+- No `WaitPort()` in the parent's loop
+- This prevents the "one behind" bug
 
 ---
 
@@ -352,6 +548,11 @@ If flags are correct but no triangles appear, the list wasn't set up before gadg
 
 ## Version History
 
+- **2026-01-30:** Added event loop patterns section
+  - CRITICAL: Never double-wait in event loops (Wait() inside handler, not in caller)
+  - Don't check signal mask after Wait()
+  - Standard ReAction event loop template
+  - Modal child window pattern
 - **2026-01-30:** Initial document created after debugging hierarchical ListBrowser issues
   - ULONG vs WORD bug for GetListBrowserNodeAttrs
   - List population order (before gadget creation)

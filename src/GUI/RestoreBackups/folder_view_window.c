@@ -260,11 +260,6 @@ static struct Node *create_listbrowser_node(const char *name, const char *info,
         flags = LBFLG_HASCHILDREN;
     }
     
-    /* DEBUG: Log node creation */
-    log_info(LOG_GUI, "CREATE_NODE: name='%s' gen=%d has_children=%s flags=0x%08lx\n",
-             name ? name : "(null)", (int)generation, 
-             has_children ? "TRUE" : "FALSE", (unsigned long)flags);
-    
     /* Allocate the node with 2 columns */
     /* CRITICAL: LBNCA_CopyText MUST come BEFORE LBNCA_Text for proper operation */
     node = AllocListBrowserNode(2,
@@ -278,11 +273,6 @@ static struct Node *create_listbrowser_node(const char *name, const char *info,
             LBNCA_CopyText, TRUE,
             LBNCA_Text, info ? info : "",
         TAG_END);
-    
-    if (!node)
-    {
-        log_error(LOG_GUI, "CREATE_NODE: AllocListBrowserNode FAILED!\n");
-    }
     
     return node;
 }
@@ -392,34 +382,7 @@ BOOL open_folder_view_window(struct iTidyFolderViewWindow *folder_data,
         
         /* Hide all children to start collapsed - MUST be done before attaching to gadget */
         /* This is the key step that makes disclosure triangles appear */
-        log_info(LOG_GUI, "=== BEFORE HideAllListBrowserChildren ===\n");
         HideAllListBrowserChildren(folder_data->folder_list);
-        log_info(LOG_GUI, "=== AFTER HideAllListBrowserChildren ===\n");
-        
-        /* DEBUG: Dump final state of all nodes */
-        {
-            struct Node *node;
-            int idx = 0;
-            log_info(LOG_GUI, "=== FINAL NODE STATE DUMP ===\n");
-            node = folder_data->folder_list->lh_Head;
-            while (node->ln_Succ)
-            {
-                ULONG gen = 0;
-                ULONG flags = 0;
-                GetListBrowserNodeAttrs(node,
-                    LBNA_Generation, &gen,
-                    LBNA_Flags, &flags,
-                    TAG_END);
-                log_info(LOG_GUI, "FINAL[%d]: gen=%d flags=0x%08lx (HASCHILDREN=%s HIDDEN=%s SHOWCHILDREN=%s)\n",
-                         idx, (int)gen, (unsigned long)flags,
-                         (flags & LBFLG_HASCHILDREN) ? "YES" : "no",
-                         (flags & LBFLG_HIDDEN) ? "YES" : "no",
-                         (flags & LBFLG_SHOWCHILDREN) ? "YES" : "no");
-                idx++;
-                node = node->ln_Succ;
-            }
-            log_info(LOG_GUI, "=== END DUMP (%d nodes) ===\n", idx);
-        }
     }
     
     /* Create the ReAction window object */
@@ -673,11 +636,9 @@ BOOL parse_catalog_and_build_tree(const char *catalog_path,
     
     /* Post-process: Mark nodes that have children with LBFLG_HASCHILDREN */
     /* A node has children if the next node has a higher generation number */
-    log_info(LOG_GUI, "=== POST-PROCESS: Marking parent nodes ===");
     {
         struct Node *curr_node;
         struct Node *next_node;
-        int node_index = 0;
         
         curr_node = folder_data->folder_list->lh_Head;
         while (curr_node->ln_Succ)
@@ -701,29 +662,20 @@ BOOL parse_catalog_and_build_tree(const char *catalog_path,
                     LBNA_Generation, &next_gen,
                     TAG_END);
                 
-                log_info(LOG_GUI, "POST[%d]: curr_gen=%d next_gen=%d curr_flags=0x%08lx\n",
-                         node_index, (int)curr_gen, (int)next_gen, (unsigned long)curr_flags);
-                
                 /* If next node has higher generation, current is a parent */
                 if (next_gen > curr_gen)
                 {
-                    ULONG new_flags = curr_flags | LBFLG_HASCHILDREN;
                     /* Set only HASCHILDREN flag for parent nodes */
                     /* HideAllListBrowserChildren() will be called after to collapse */
                     SetListBrowserNodeAttrs(curr_node,
-                        LBNA_Flags, new_flags,
+                        LBNA_Flags, curr_flags | LBFLG_HASCHILDREN,
                         TAG_END);
-                    
-                    log_info(LOG_GUI, "POST[%d]: MARKED AS PARENT - new_flags=0x%08lx\n",
-                             node_index, (unsigned long)new_flags);
                 }
             }
             
-            node_index++;
             curr_node = next_node;
         }
     }
-    log_info(LOG_GUI, "=== POST-PROCESS: Complete ===");
     
     return success;
 }
