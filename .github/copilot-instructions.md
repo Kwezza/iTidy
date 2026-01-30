@@ -1,12 +1,12 @@
-# iTidy - GitHub Copilot Instructions
+# iTidy - GitHub Copilot Instructions (v2.0 - ReAction)
 
 ## Project Overview
 
-iTidy is an **AmigaOS Workbench 3.2+ GUI application** using the **ReAction** (BOOPSI) GUI system. This is **Version 2.x** with a modern ReAction interface. Written in **C89/C99** (VBCC-compatible) targeting **Workbench 3.2+** on **68000/68020** systems.
+iTidy is an **AmigaOS Workbench 3.2 GUI application** that automatically tidies icon layouts and resizes folder windows. Written in **C89/C99** (VBCC-compatible) targeting **Workbench 3.2 (V47+)** on **68020+** systems.
 
 **Version History:**
-- **v2.x (Current)**: ReAction GUI for Workbench 3.2+ - Active development
-- **v1.0-gadtools**: GadTools GUI for Workbench 3.0/3.1 - Frozen/Legacy (see git tag `v1.0-gadtools`)
+- **v1.0**: GadTools-based GUI (Workbench 3.0/3.1 compatible) - **COMPLETED**
+- **v2.0**: ReAction-based GUI (Workbench 3.2+ only) - **CURRENT DEVELOPMENT**
 
 **Key Capabilities:**
 - Intelligent icon grid layout with configurable sorting (name, type, date, size)
@@ -14,7 +14,7 @@ iTidy is an **AmigaOS Workbench 3.2+ GUI application** using the **ReAction** (B
 - LHA-based backup system with restore capability
 - Recursive directory processing with hidden folder filtering
 - Default tool validation and upgrade system
-- Performance-optimized for low-memory Amigas (A500/A600/A1200)
+- Performance-optimized for Amigas with 68020+ and Fast RAM
 
 ---
 
@@ -22,24 +22,44 @@ iTidy is an **AmigaOS Workbench 3.2+ GUI application** using the **ReAction** (B
 
 **STOP AND READ THESE FIRST:**
 
-1. **`src/templates/AI_AGENT_GETTING_STARTED.md`** - Entry point (10 min read)
-2. **`src/templates/AI_AGENT_LAYOUT_GUIDE.md`** - Section 0 has CRITICAL patterns
+1. **`src/templates/AI_AGENT_GETTING_STARTED.md`** - Entry point for ReAction patterns
+2. **`src/templates/AI_AGENT_REACTION_GUIDE.md`** - ReAction-specific implementation guide
+
+> **Note:** The archived GadTools documentation is available in `src/templates/GadTools_*.md` for reference but should NOT be used for new code.
 
 **These documents contain hard-learned lessons from actual bugs.**  
-Any section marked **CRITICAL** or **⚠️** is a **show-stopper issue** that:
-- Has caused system crashes in production
-- Is easy to overlook
-- Must be implemented exactly as documented
+Any section marked **CRITICAL** or **⚠️** is a **show-stopper issue**.
 
-**Do NOT skip sections marked CRITICAL.** They prevent Guru meditations, memory corruption, and non-functional UI elements.
+---
 
-**Examples of CRITICAL issues documented:**
-- `IDCMP_GADGETDOWN` required for ListView scroll buttons (forgot this = buttons don't work)
-- BorderTop calculation formula (wrong = gadgets overlap title bar)
-- ListView cleanup order (wrong = system crash on window close)
-- Checkbox data type for `GT_GetGadgetAttrs()` (wrong = features don't activate)
+## GUI Framework: ReAction (Workbench 3.2+)
 
-**If you encounter a bug, check if it's already documented in the CRITICAL sections before debugging.**
+### What We Use (v2.0):
+- **ReAction**: For all gadgets (buttons, listviews, string gadgets, checkboxes, choosers)
+- **reaction.library**: Core ReAction support
+- **window.class**: Window management with automatic layout
+- **layout.gadget**: Automatic gadget arrangement
+- **button.gadget**: Push buttons, toggle buttons
+- **listbrowser.gadget**: Advanced list displays (replaces GadTools ListView)
+- **string.gadget**: Text input fields
+- **checkbox.gadget**: Boolean toggles
+- **chooser.gadget**: Dropdown selections (replaces GadTools Cycle)
+- **Intuition**: For screens and base window operations
+- **Graphics**: For drawing and text
+- **Icon.library**: For icon manipulation
+- **DOS.library**: For file operations
+
+### What We DON'T Use:
+- ❌ **NO MUI** (Magic User Interface) - third-party, not bundled
+- ❌ **NO GadTools** (deprecated in v2.0, see archived templates)
+- ❌ **NO manual BorderTop calculations** (ReAction handles layout automatically)
+- ❌ **NO hardcoded gadget coordinates** (use layout.gadget instead)
+
+### Archived v1.0 Templates (GadTools):
+The following files are preserved for reference but should NOT be used for v2.0 development:
+- `.github/copilot-instructions-v1-GadTools.md`
+- `src/templates/GadTools_AI_AGENT_*.md`
+- `src/templates/GadTools_amiga_window_*.c`
 
 ---
 
@@ -48,14 +68,14 @@ Any section marked **CRITICAL** or **⚠️** is a **show-stopper issue** that:
 ### Host System (PC)
 - **Development Platform**: Windows PC
 - **Build System**: VBCC cross-compiler (`vbcc v0.9x`)
-- **Target SDK**: Amiga SDK 3.2 (supports Workbench 3.0)
+- **Target SDK**: NDK 3.2 (includes ReAction classes)
 - **Shared Build Directory**: `build\amiga` is shared as a drive within WinUAE emulator
 
 ### Target System (Amiga)
 - **Emulator**: WinUAE
-- **OS Version**: Workbench 3.2 (targeting 3.0 compatibility)
+- **OS Version**: Workbench 3.2 (minimum required)
 - **Mounted Device**: Host's `build\amiga` directory mounted as a shared drive
-- **Architecture**: 68000/68020 (no FPU, no MMU assumed)
+- **Architecture**: 68020+ (ReAction requires 68020 minimum)
 
 ### Build Process
 1. Code is written on the PC host
@@ -91,7 +111,9 @@ make TARGET=host
 1. Check `build_output_latest.txt` for compiler output
 2. VBCC warnings 51 (bitfield) and 61 (array size) from system headers are **expected** and cannot be suppressed
 3. Memory tracking adds ~32 bytes overhead per allocation - disable for performance testing
-4. Stack size is set to 80KB in `main_gui.c` (line 71): `long __stack = 80000L;`
+4. Stack size is set to 80KB in `main_gui.c`: `long __stack = 80000L;`
+
+---
 
 ## Language and Coding Standards
 
@@ -130,126 +152,314 @@ void process_icons(const char *path)
 }
 ```
 
-## GUI Framework: ReAction (Workbench 3.2+)
+---
 
-### What We Use:
-- **ReAction**: Modern BOOPSI-based GUI system
-  - `window.class` - Window management
-  - `layout.gadget` - Automatic layout
-  - `button.gadget` - Buttons
-  - `checkbox.gadget` - Checkboxes
-  - `chooser.gadget` - Popup choice gadgets
-  - `getfile.gadget` - File/directory requesters
-  - `label.image` - Text labels
-  - `listbrowser.gadget` - Advanced list displays (when needed)
-- **Intuition**: For windows and screens (base layer)
-- **Graphics**: For drawing and text
-- **Icon.library**: For icon manipulation
-- **DOS.library**: For file operations
+## ReAction Window Creation (v2.0 Pattern)
 
-### What We DON'T Use:
-- ❌ **NO MUI** (Magic User Interface)
-- ❌ **NO GadTools** (legacy - see v1.0-gadtools tag for old version)
-- ❌ **NO third-party GUI libraries** (other than ReAction)
+### Key Differences from GadTools:
+1. **No manual BorderTop calculation** - ReAction layout engine handles positioning
+2. **No manual gadget coordinates** - Use `LAYOUT_ADDCHILD` with layout objects
+3. **Object-oriented approach** - Create objects with `NewObject()`, dispose with `DisposeObject()`
+4. **Automatic resizing** - Layout gadgets resize children automatically
 
-### Legacy GadTools Version:
-The original GadTools version for Workbench 3.0/3.1 is preserved as `v1.0-gadtools`. Access it via:
-```bash
-git checkout v1.0-gadtools
-```
-
-## Window Creation and GUI Development
-
-### **CRITICAL REQUIREMENT**: ReAction Development Patterns
-
-**ReAction GUI development differs significantly from GadTools:**
-
-1. **Read** `src/templates/AI_AGENT_GETTING_STARTED.md` - Entry point (10 min read)
-2. **Follow** `src/templates/AI_AGENT_LAYOUT_GUIDE.md` - Section 0 has CRITICAL patterns
-3. **Use** the canonical templates in `src/templates/` as examples
-4. **Study** ReAction examples in `Tests/ReActon/` directory
-
-### Fatal Mistakes to Avoid:
-
-❌ **DON'T** use GadTools patterns (this is ReAction now!)  
-❌ **DON'T** manually calculate coordinates (layout.gadget does this)  
-❌ **DON'T** use `goto` statements unless absolutely necessary (document why if used)  
-❌ **DON'T** mix GadTools and ReAction in the same window
-
-### ReAction Window Pattern (MANDATORY):
+### Basic ReAction Window Structure:
 
 ```c
-// ReAction uses BOOPSI objects, not coordinate positioning
-Object *window_obj = WindowObject,
-    WA_Title, "My Window",
-    WA_DragBar, TRUE,
-    WA_CloseGadget, TRUE,
-    WA_SizeGadget, TRUE,
-    WA_DepthGadget, TRUE,
-    WA_Activate, TRUE,
-    WINDOW_ParentGroup, VLayoutObject,
-        LAYOUT_SpaceOuter, TRUE,
-        LAYOUT_AddChild, ButtonObject,
-            GA_Text, "Click Me",
-            GA_ID, BUTTON_ID,
-        End,
-    End,
-End;
+#include <classes/window.h>
+#include <gadgets/layout.h>
+#include <gadgets/button.h>
+#include <proto/intuition.h>
+#include <proto/window.h>
+#include <proto/layout.h>
+#include <proto/button.h>
 
-// Event handling via RA_HandleInput
-while ((result = RA_HandleInput(window_obj, &code)) != WMHI_LASTMSG)
+/* Library bases (must be opened) */
+struct Library *WindowBase = NULL;
+struct Library *LayoutBase = NULL;
+struct Library *ButtonBase = NULL;
+
+/* Class pointers */
+Class *WindowClass = NULL;
+Class *LayoutClass = NULL;
+Class *ButtonClass = NULL;
+
+/* Window and gadget objects */
+Object *window_obj = NULL;
+Object *layout_obj = NULL;
+Object *button_obj = NULL;
+
+BOOL open_reaction_window(void)
 {
-    switch (result & WMHI_CLASSMASK)
+    /* Open required classes */
+    WindowBase = OpenLibrary("window.class", 0);
+    LayoutBase = OpenLibrary("gadgets/layout.gadget", 0);
+    ButtonBase = OpenLibrary("gadgets/button.gadget", 0);
+    
+    if (!WindowBase || !LayoutBase || !ButtonBase)
     {
-        case WMHI_CLOSEWINDOW:
-            done = TRUE;
-            break;
+        return FALSE;
+    }
+    
+    /* Get class pointers */
+    WindowClass = WINDOW_GetClass();
+    LayoutClass = LAYOUT_GetClass();
+    ButtonClass = BUTTON_GetClass();
+    
+    /* Create button gadget */
+    button_obj = NewObject(ButtonClass, NULL,
+        GA_ID, GID_APPLY,
+        GA_Text, "Apply",
+        GA_RelVerify, TRUE,
+        TAG_DONE);
+    
+    /* Create layout gadget (contains button) */
+    layout_obj = NewObject(LayoutClass, NULL,
+        LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+        LAYOUT_AddChild, button_obj,
+        TAG_DONE);
+    
+    /* Create window object */
+    window_obj = NewObject(WindowClass, NULL,
+        WA_Title, "iTidy",
+        WA_Activate, TRUE,
+        WA_DepthGadget, TRUE,
+        WA_DragBar, TRUE,
+        WA_CloseGadget, TRUE,
+        WA_SizeGadget, TRUE,
+        WINDOW_Position, WPOS_CENTERSCREEN,
+        WINDOW_Layout, layout_obj,
+        TAG_DONE);
+    
+    if (window_obj == NULL)
+    {
+        return FALSE;
+    }
+    
+    /* Open the window */
+    struct Window *window = (struct Window *)RA_OpenWindow(window_obj);
+    if (window == NULL)
+    {
+        DisposeObject(window_obj);
+        window_obj = NULL;
+        return FALSE;
+    }
+    
+    return TRUE;
+}
+
+void close_reaction_window(void)
+{
+    if (window_obj)
+    {
+        DisposeObject(window_obj);  /* Disposes all child objects too */
+        window_obj = NULL;
+    }
+    
+    /* Close class libraries */
+    if (ButtonBase) CloseLibrary(ButtonBase);
+    if (LayoutBase) CloseLibrary(LayoutBase);
+    if (WindowBase) CloseLibrary(WindowBase);
+}
+```
+
+### ReAction Event Loop Pattern:
+
+```c
+void handle_reaction_events(Object *window_obj)
+{
+    struct Window *window = NULL;
+    ULONG signal_mask, signals;
+    ULONG result;
+    UWORD code;
+    BOOL done = FALSE;
+    
+    /* Get window pointer and signal */
+    GetAttr(WINDOW_Window, window_obj, (ULONG *)&window);
+    GetAttr(WINDOW_SigMask, window_obj, &signal_mask);
+    
+    while (!done)
+    {
+        signals = Wait(signal_mask | SIGBREAKF_CTRL_C);
         
-        case WMHI_GADGETUP:
-            // Handle gadget events
-            break;
+        if (signals & SIGBREAKF_CTRL_C)
+        {
+            done = TRUE;
+            continue;
+        }
+        
+        while ((result = RA_HandleInput(window_obj, &code)) != WMHI_LASTMSG)
+        {
+            switch (result & WMHI_CLASSMASK)
+            {
+                case WMHI_CLOSEWINDOW:
+                    done = TRUE;
+                    break;
+                    
+                case WMHI_GADGETUP:
+                    switch (result & WMHI_GADGETMASK)
+                    {
+                        case GID_APPLY:
+                            /* Handle Apply button */
+                            break;
+                    }
+                    break;
+            }
+        }
     }
 }
 ```
 
-### Naming Convention for AmigaOS SDK Collision Avoidance
+### CRITICAL: ReAction Cleanup Order
+
+```c
+/* CORRECT cleanup order for ReAction */
+void cleanup_reaction_window(Object *window_obj)
+{
+    /* 1. Close window first (if open) */
+    RA_CloseWindow(window_obj);
+    
+    /* 2. Dispose top-level object (disposes children automatically) */
+    DisposeObject(window_obj);
+    
+    /* 3. Close class libraries last */
+    CloseLibrary(ButtonBase);
+    CloseLibrary(LayoutBase);
+    CloseLibrary(WindowBase);
+}
+
+/* WRONG: Do NOT manually dispose child objects! */
+void bad_cleanup(Object *window_obj, Object *layout_obj, Object *button_obj)
+{
+    DisposeObject(button_obj);  /* WRONG: double-free! */
+    DisposeObject(layout_obj);  /* WRONG: double-free! */
+    DisposeObject(window_obj);  /* This already disposed children */
+}
+```
+
+---
+
+## ReAction Gadget Reference (TODO: Expand with patterns)
+
+### Common Gadget Classes:
+
+| Class | Purpose | Key Tags |
+|-------|---------|----------|
+| `button.gadget` | Push buttons | `GA_Text`, `GA_RelVerify` |
+| `checkbox.gadget` | Boolean toggles | `GA_Selected`, `GA_Text` |
+| `string.gadget` | Text input | `STRINGA_TextVal`, `STRINGA_MaxChars` |
+| `integer.gadget` | Numeric input | `INTEGER_Number`, `INTEGER_Minimum`, `INTEGER_Maximum` |
+| `chooser.gadget` | Dropdown selection | `CHOOSER_Labels`, `CHOOSER_Selected` |
+| `listbrowser.gadget` | List display | `LISTBROWSER_Labels`, `LISTBROWSER_Selected` |
+| `layout.gadget` | Automatic arrangement | `LAYOUT_Orientation`, `LAYOUT_AddChild` |
+| `scroller.gadget` | Scrollbars | `SCROLLER_Total`, `SCROLLER_Visible`, `SCROLLER_Top` |
+| `requester.class` | Modal dialogs | `REQ_Type`, `REQ_TitleText`, `REQ_BodyText`, `REQ_GadgetText` |
+
+### Layout Gadget Orientations:
+- `LAYOUT_ORIENT_HORIZ` - Arrange children horizontally
+- `LAYOUT_ORIENT_VERT` - Arrange children vertically
+
+---
+
+## ReAction Requesters (Use Instead of EasyRequest)
+
+**IMPORTANT**: For v2.0 ReAction applications, use `requester.class` instead of the old `EasyRequest()` function.
+
+`requester.class` is a BOOPSI class introduced in **Workbench 3.2** that provides native, layout-driven requesters with:
+- Consistent ReAction look and feel
+- Support for embedded gadgets (string input, integer input, choosers)
+- Rich text formatting (bold, italic, underline, colors, fonts)
+- Built-in image types (info, question, warning, error, insert disk)
+- Proper keyboard shortcuts with `_` underscores in button text
+
+### Basic Requester Pattern:
+
+```c
+#include <classes/requester.h>
+#include <proto/requester.h>
+
+struct Library *RequesterBase = NULL;
+Class *RequesterClass = NULL;
+
+BOOL show_info_requester(struct Window *parent, const char *title, const char *message)
+{
+    Object *req_obj;
+    ULONG result;
+    
+    RequesterBase = OpenLibrary("requester.class", 0);
+    if (!RequesterBase)
+        return FALSE;
+    
+    RequesterClass = REQUESTER_GetClass();
+    
+    req_obj = NewObject(RequesterClass, NULL,
+        REQ_Type, REQTYPE_INFO,
+        REQ_TitleText, title,
+        REQ_BodyText, message,
+        REQ_GadgetText, "_Ok",
+        REQ_Image, REQIMAGE_INFO,
+        TAG_DONE);
+    
+    if (req_obj)
+    {
+        struct orRequest req_msg;
+        req_msg.MethodID = RM_OPENREQ;
+        req_msg.or_Attrs = NULL;
+        req_msg.or_Window = parent;
+        req_msg.or_Screen = NULL;
+        
+        result = DoMethodA(req_obj, (Msg)&req_msg);
+        DisposeObject(req_obj);
+    }
+    
+    CloseLibrary(RequesterBase);
+    return (result != 0);
+}
+```
+
+### Requester Types:
+| Type | Purpose |
+|------|---------|  
+| `REQTYPE_INFO` | Simple information/confirmation dialog |
+| `REQTYPE_INTEGER` | Get numeric input from user |
+| `REQTYPE_STRING` | Get text input from user |
+
+### Built-in Images:
+- `REQIMAGE_DEFAULT` - Auto-selects based on button count
+- `REQIMAGE_INFO` - Information ("!" sign)
+- `REQIMAGE_QUESTION` - Question ("?" sign)  
+- `REQIMAGE_WARNING` - Warning triangle
+- `REQIMAGE_ERROR` - Error sign
+- `REQIMAGE_INSERTDISK` - Insert disk sign
+
+### Body Text Formatting:
+```c
+/* Bold, italic, underline */
+"\33bBold\33n \33iItalic\33n \33uUnderline\33n"
+
+/* Centered text */
+"\33cThis text is centered"
+
+/* Custom font */
+"\33f[topaz.font/8]This uses Topaz 8"
+```
+
+---
+
+## Naming Convention for AmigaOS SDK Collision Avoidance
 
 **CRITICAL**: AmigaOS headers define many short common identifiers. To avoid collisions:
 
-#### Prefix ALL Project Symbols:
+### Prefix ALL Project Symbols:
 - **Types**: `iTidy_` prefix → `iTidy_ProgressWindow`, `iTidy_IconArray`
 - **Functions**: Use `snake_case` → `itidy_open_progress_window()`, `itidy_update_progress()`
 - **Constants/Macros**: `ITIDY_` prefix (ALL CAPS) → `ITIDY_BAR_HEIGHT`, `ITIDY_DEFAULT_WIDTH`
 - **Struct fields**: Use `snake_case` → `shine_pen`, `shadow_pen`, `fill_pen`
 
-#### Parameter Naming:
+### Parameter Naming:
 - **Geometry**: Use `left, top, width, height` (NOT `x, y, w, h`)
 - **Naming style**: **snake_case** for everything → `shine_pen` not `shinePen`
 
-#### Avoid These SDK Identifiers:
-- Pen macros: `SHINEPEN`, `SHADOWPEN`, `BACKGROUNDPEN`, `FILLPEN`, `TEXTPEN`
-- Common tags and enums from GadTools/Intuition
-
-#### Example:
-```c
-/* BAD - Risk of collision and wrong naming style */
-typedef struct {
-    ULONG shinePen;
-    ULONG shadowPen;
-} ProgressPens;
-
-/* GOOD - Properly namespaced with snake_case */
-typedef struct {
-    ULONG shine_pen;
-    ULONG shadow_pen;
-    ULONG fill_pen;
-} iTidy_ProgressPens;
-
-void itidy_progress_draw_bevel_box(struct RastPort *rp,
-                                    WORD left, WORD top, WORD width, WORD height,
-                                    ULONG shine_pen, ULONG shadow_pen,
-                                    BOOL recessed);
-```
+---
 
 ## Memory Management System
 
@@ -278,11 +488,7 @@ whd_memory_report();
 **CRITICAL**: All iTidy production code MUST use `whd_malloc()`/`whd_free()` for general-purpose allocations. Only use standard `malloc()`/`free()` in standalone test programs in `src\tests\`.
 
 **Fast RAM Optimization (CRITICAL for Performance)**:
-`whd_malloc()` uses `AllocVec(size, MEMF_ANY | MEMF_CLEAR)` on Amiga, which prefers Fast RAM when available. This provides **15x performance improvement** on systems with Fast RAM expansion (A500/A600/A1200 with 8MB):
-- Chip RAM: ~0.250 seconds/operation
-- Fast RAM: ~0.017 seconds/operation (59x faster!)
-- Standard `malloc()` only allocates from Chip RAM, leaving Fast RAM unused
-- See `docs/DEVELOPMENT_LOG.md` (November 20, 2025 entry) for benchmarks
+`whd_malloc()` uses `AllocVec(size, MEMF_ANY | MEMF_CLEAR)` on Amiga, which prefers Fast RAM when available. This provides **15x performance improvement** on systems with Fast RAM.
 
 #### AmigaOS-Specific Memory:
 ```c
@@ -309,8 +515,11 @@ FreeMem(ptr, size);
    - `AllocVec()` → `FreeVec()`
    - `AllocDosObject()` → `FreeDosObject()`
    - `whd_malloc()` → `whd_free()`
+   - `NewObject()` → `DisposeObject()` (ReAction)
 4. **Free in reverse order** of allocation when possible
 5. **Unlock before returning** on error paths
+
+---
 
 ## Logging System
 
@@ -340,6 +549,8 @@ log_error(LOG_BACKUP, "Backup failed: %s\n", reason);
 - `Bin\Amiga\logs\backup_YYYY-MM-DD_HH-MM-SS.log`
 - `Bin\Amiga\logs\errors_YYYY-MM-DD_HH-MM-SS.log` (consolidated errors)
 
+---
+
 ## AmigaOS-Specific Types
 
 ### Use These Types:
@@ -362,6 +573,12 @@ struct Window *window;
 struct Screen *screen;
 struct RastPort *rastPort;
 struct TextFont *font;
+
+/* ReAction objects */
+Object *window_obj;
+Object *layout_obj;
+Object *button_obj;
+Class *WindowClass;
 ```
 
 ### Boolean Values:
@@ -375,10 +592,10 @@ BOOL flag = FALSE;    // NOT false
 ```c
 // CORRECT: Group fields by size to minimize padding
 typedef struct {
-    // 4-byte fields first (int, pointers, ULONG)
+    // 4-byte fields first (int, pointers, ULONG, Object*)
     int icon_x, icon_y, icon_width, icon_height;
     char *icon_text;
-    char *icon_full_path;
+    Object *window_obj;
     ULONG file_size;
     
     // struct fields (DateStamp = 12 bytes)
@@ -388,14 +605,9 @@ typedef struct {
     BOOL is_folder;
     BOOL is_write_protected;
 } FullIconDetails;
-
-// WRONG: Mixing sizes causes padding/corruption
-typedef struct {
-    char *ptr;      // 4 bytes
-    BOOL flag;      // 2 bytes -> compiler adds 2 bytes padding!
-    int value;      // 4 bytes
-} BadAlignment;  // This will cause memory corruption on 68k!
 ```
+
+---
 
 ## File Operations (AmigaOS DOS)
 
@@ -452,35 +664,7 @@ while (ExNext(lock, fib))
 }
 ```
 
-### Pattern Matching with AnchorPath (CRITICAL):
-```c
-// CORRECT: Manual allocation for AmigaOS 3.x compatibility
-// AllocDosObject(DOS_ANCHORPATH) with tags is NOT supported in WB 3.0/3.1!
-AnchorPath *ap = (AnchorPath *)AllocVec(
-    sizeof(AnchorPath) + 1024 - 1,  // -1 because AnchorPath includes 1 byte
-    MEMF_CLEAR
-);
-
-if (ap) {
-    ap->ap_Strlen = 1024;  // Manually set buffer size
-    ap->ap_BreakBits = 0;
-    ap->ap_Flags = 0;
-    
-    // Use with MatchFirst/MatchNext
-    if (MatchFirst(pattern, ap) == 0) {
-        do {
-            // Process ap->ap_Info (FileInfoBlock)
-        } while (MatchNext(ap) == 0);
-        MatchEnd(ap);
-    }
-    
-    // Cleanup with FreeVec (NOT FreeDosObject!)
-    FreeVec(ap);
-}
-
-// WRONG: Using AllocDosObject with tags (AmigaOS 4 only)
-AnchorPath *ap = AllocDosObject(DOS_ANCHORPATH, tags);  // Fails on WB 3.x!
-```
+---
 
 ## Icon Operations
 
@@ -517,59 +701,15 @@ if (dobj != NULL)
 CloseLibrary(IconBase);
 ```
 
-## Window and Gadget Cleanup Order
-
-### CRITICAL: Proper Cleanup Sequence
-```c
-// CORRECT cleanup order (reverse of creation)
-void cleanup_window(WindowData *wd)
-{
-    // 1. Detach lists from ListView gadgets FIRST
-    if (wd->session_list) {
-        GT_SetGadgetAttrs(wd->session_gadget, wd->window, NULL,
-                         GTLV_Labels, ~0,  // Detach list
-                         TAG_DONE);
-    }
-    
-    // 2. Close window BEFORE freeing gadgets
-    if (wd->window) {
-        CloseWindow(wd->window);
-        wd->window = NULL;
-    }
-    
-    // 3. Free gadgets after window is closed
-    if (wd->gadget_list) {
-        FreeGadgets(wd->gadget_list);
-        wd->gadget_list = NULL;
-    }
-    
-    // 4. Free visual info
-    if (wd->vi) {
-        FreeVisualInfo(wd->vi);
-        wd->vi = NULL;
-    }
-    
-    // 5. Free lists and data last
-    if (wd->session_list) {
-        free_session_list(wd->session_list);
-        wd->session_list = NULL;
-    }
-}
-
-// WRONG: Closing window after freeing gadgets causes crashes!
-void bad_cleanup(WindowData *wd)
-{
-    FreeGadgets(wd->gadget_list);  // WRONG: Frees gadgets first
-    CloseWindow(wd->window);        // CRASH: Window still references freed gadgets!
-}
-```
+---
 
 ## Project Structure
 
 ```
 iTidy/
 ├── .github/
-│   └── copilot-instructions.md  (this file)
+│   ├── copilot-instructions.md        (this file - v2.0 ReAction)
+│   └── copilot-instructions-v1-GadTools.md  (archived v1.0)
 ├── Bin/Amiga/               # Compiled executables
 │   └── logs/                # Runtime logs
 ├── build/amiga/             # Shared with WinUAE (build artifacts)
@@ -587,47 +727,35 @@ iTidy/
 │   ├── backup_*.c/h        # Backup system modules
 │   ├── layout_*.c/h        # Layout system modules
 │   ├── DOS/                # DOS-related utilities
-│   ├── GUI/                # GUI window modules
+│   ├── GUI/                # GUI window modules (to be updated for ReAction)
 │   ├── Settings/           # Preferences handling
-   ├── platform/           # Platform abstraction
-   ├── templates/          # AI-friendly window templates
-   │   └── AI_AGENT_GETTING_STARTED.md  # **MUST READ for window creation**
-   └── tests/              # Test code (GCC host testing only, NOT production)
+│   ├── platform/           # Platform abstraction
+│   ├── templates/          # AI-friendly window templates
+│   │   ├── AI_AGENT_GETTING_STARTED.md     # ReAction entry point (TODO)
+│   │   ├── AI_AGENT_REACTION_GUIDE.md      # ReAction patterns (TODO)
+│   │   ├── GadTools_AI_AGENT_*.md          # Archived v1.0 docs
+│   │   └── GadTools_amiga_window_*.c       # Archived v1.0 templates
+│   └── tests/              # Test code (GCC host testing only)
 └── Makefile                # VBCC build configuration
 ```
+
+---
 
 ## Global Structures and Settings
 
 ### System Preferences (Loaded at Startup)
 
-iTidy loads two critical system preference structures at startup that are used throughout the application:
+iTidy loads two critical system preference structures at startup:
 
 #### 1. **IControlPrefs** - Interface Control Settings
 - **Header**: `src/Settings/IControlPrefs.h`
 - **Global Variable**: `prefsIControl` (type: `struct IControlPrefsDetails`)
-- **Loaded By**: `fetchIControlSettings(&prefsIControl)` in `main_gui.c`
 - **Purpose**: Contains system-wide UI settings from Workbench preferences
-- **Key Fields**:
-  - Font information: `systemFontName`, `systemFontSize`, `systemFontCharWidth`
-  - Icon text font: `iconTextFontName`, `iconTextFontSize`, `iconTextFontCharWidth`
-  - Screen metrics: `currentTitleBarHeight`, `currentWindowBarHeight`, `currentBarWidth`
-  - UI flags: `coerceColors`, `menuSnap`, `correctRatio`, `offScrnWin`
-- **Usage**: Access anywhere via `extern struct IControlPrefsDetails prefsIControl;`
 
 #### 2. **WorkbenchPrefs** - Workbench Settings
 - **Header**: `src/Settings/WorkbenchPrefs.h`
 - **Global Variable**: `prefsWorkbench` (type: `struct WorkbenchSettings`)
-- **Loaded By**: `fetchWorkbenchSettings(&prefsWorkbench)` in `main_gui.c`
 - **Purpose**: Contains Workbench-specific settings and icon support flags
-- **Key Fields**:
-  - `borderless` - Borderless icon support
-  - `newIconsSupport` - NewIcons format support
-  - `colorIconSupport` - Color icon support (OS 3.5+)
-  - `maxNameLength` - Maximum icon text length
-  - `embossRectangleSize` - Icon emboss size
-- **Usage**: Access anywhere via `extern struct WorkbenchSettings prefsWorkbench;`
-
-**Important**: These structures are populated once at startup and remain read-only during execution. They provide system-level defaults that iTidy respects when processing icons.
 
 ### Application Preferences (User Settings)
 
@@ -635,118 +763,13 @@ iTidy loads two critical system preference structures at startup that are used t
 - **Header**: `src/layout_preferences.h`
 - **Global Accessor**: `GetGlobalPreferences()` (returns const pointer)
 - **Updater**: `UpdateGlobalPreferences(const LayoutPreferences *newPrefs)`
-- **Purpose**: Master configuration for all iTidy operations (layout, sorting, backup, etc.)
-- **Key Field Categories**:
-  - **Folder Settings**: `folder_path`, `recursive_subdirs`, `skipHiddenFolders`
-  - **Layout Settings**: `layoutMode`, `sortOrder`, `sortPriority`, `sortBy`, `reverseSort`
-  - **Visual Settings**: `centerIconsInColumn`, `useColumnWidthOptimization`, `textAlignment`
-  - **Window Settings**: `resizeWindows`, `aspectRatio`, `maxWindowWidthPct`, `overflowMode`
-  - **Spacing**: `iconSpacingX`, `iconSpacingY`
-  - **Features**: `enable_backup`, `enable_icon_upgrade`, `validate_default_tools`
-  - **Beta Features**: `beta_openFoldersAfterProcessing`, `beta_FindWindowOnWorkbenchAndUpdate`
-  - **Logging**: `logLevel`, `memoryLoggingEnabled`, `enable_performance_logging`
-  - **Backup Settings**: `backupPrefs` (embedded `BackupPreferences` struct)
+- **Purpose**: Master configuration for all iTidy operations
 
-**Important**: This is the single source of truth for all user-configurable settings. Always use the global accessors rather than creating local copies.
-
-## Main Code Paths
-
-### Primary Execution Flow: User Clicks "Apply" Button
-
-When the user clicks the **Apply** button in the main iTidy window, the following code path executes:
-
-#### 1. **Event Handler** (`src/GUI/main_window.c`)
-```
-handle_itidy_window_events()
-  └─ Case: IDCMP_GADGETUP, Gadget ID: win_data->apply_btn
-      ├─ Get global preferences: prefs = GetGlobalPreferences()
-      ├─ Apply selected preset: ApplyPreset(prefs, win_data->preset_selected)
-      ├─ Map GUI values to prefs: MapGuiToPreferences(...)
-      ├─ Copy folder path: strcpy(prefs->folder_path, win_data->folder_path_buffer)
-      ├─ Set recursive mode: prefs->recursive_subdirs = win_data->recursive_subdirs
-      ├─ Set backup/upgrade flags: prefs->enable_backup, prefs->enable_icon_upgrade
-      ├─ Update global: UpdateGlobalPreferences(prefs)
-      └─ Execute processing: ProcessDirectoryWithPreferences()
-```
-
-**File**: `src/GUI/main_window.c`, lines ~970-1030
-**Key Function**: `handle_itidy_window_events()` - Main event loop for iTidy window
-
-#### 2. **Processing Entry Point** (`src/layout_processor.c`)
-```
-ProcessDirectoryWithPreferences()
-  ├─ Get global prefs: prefs = GetGlobalPreferences()
-  ├─ Validate folder path: SanitizeFolderPath()
-  ├─ Initialize backup context (if enabled): CreateBackupSession()
-  ├─ Build window tracker: BuildFolderWindowList()
-  ├─ Set global validation flag: g_ValidateDefaultTools = prefs->validate_default_tools
-  ├─ Choose processing mode:
-  │   ├─ If recursive: ProcessDirectoryRecursive(path, prefs, 0, &windowTracker)
-  │   └─ Else: ProcessSingleDirectory(path, prefs, &windowTracker)
-  ├─ Finalize backup (if enabled): FinalizeBackupSession()
-  └─ Return success/failure
-```
-
-**File**: `src/layout_processor.c`, lines ~150-250
-**Key Function**: `ProcessDirectoryWithPreferences()` - Main processing orchestrator
-
-#### 3. **Single Directory Processing** (`src/layout_processor.c`)
-```
-ProcessSingleDirectory(path, prefs, windowTracker)
-  ├─ Create backup (if enabled): BackupFolder(path, g_backupContext)
-  ├─ Scan directory: ScanDirectoryForIcons(path) → returns IconArray
-  ├─ Sort icons: SortIconArrayWithPreferences(iconArray, prefs)
-  ├─ Calculate layout:
-  │   ├─ If centerIconsInColumn: CalculateLayoutPositionsWithColumnCentering()
-  │   └─ Else: CalculateLayoutPositions()
-  ├─ Apply positions: SaveIconPositions(iconArray)
-  ├─ Resize window (if enabled): ResizeDrawerWindow()
-  ├─ Update Workbench window (if beta feature enabled): UpdateWorkbenchWindow()
-  ├─ Free icon array: FreeIconArray(iconArray)
-  └─ Filesystem delay (if enabled): Delay(FILESYSTEM_LOCK_DELAY_TICKS)
-```
-
-**File**: `src/layout_processor.c`, lines ~600-800
-**Key Function**: `ProcessSingleDirectory()` - Processes one folder
-
-#### 4. **Recursive Processing** (`src/layout_processor.c`)
-```
-ProcessDirectoryRecursive(path, prefs, level, windowTracker)
-  ├─ Process current directory: ProcessSingleDirectory(path, prefs, windowTracker)
-  ├─ Scan for subdirectories: Lock() → ExNext() loop
-  ├─ For each subdirectory:
-  │   ├─ Check if hidden (no .info): Skip if prefs->skipHiddenFolders
-  │   ├─ Build subdir path: CombinePaths()
-  │   └─ Recurse: ProcessDirectoryRecursive(subdir_path, prefs, level+1, windowTracker)
-  └─ Unlock directory
-```
-
-**File**: `src/layout_processor.c`, lines ~900-1100
-**Key Function**: `ProcessDirectoryRecursive()` - Handles recursive subdirectory processing
-
-### Summary of Key Files in Apply Flow
-
-1. **GUI Layer**: `src/GUI/main_window.c` - Captures user input, validates, calls processor
-2. **Processing Layer**: `src/layout_processor.c` - Orchestrates backup, scanning, sorting, layout
-3. **Icon Operations**: `src/icon_management.c` - Low-level icon loading/saving via icon.library
-4. **Layout Engine**: `src/aspect_ratio_layout.c` - Calculates optimal icon positions and window size
-5. **Backup System**: `src/backup_session.c`, `src/backup_catalog.c` - Creates LHA backups (if enabled)
-6. **Window Tracking**: `src/window_enumerator.c` - Finds open Workbench windows (for beta features)
-
-### Quick Reference: Where to Look
-
-- **User clicks Apply button**: `src/GUI/main_window.c:974` (IDCMP_GADGETUP handler)
-- **Main processing entry**: `src/layout_processor.c:ProcessDirectoryWithPreferences()`
-- **Icon scanning**: `src/folder_scanner.c:ScanDirectoryForIcons()`
-- **Icon sorting**: `src/layout_processor.c:SortIconArrayWithPreferences()`
-- **Layout calculation**: `src/aspect_ratio_layout.c:CalculateOptimalLayout()`
-- **Icon saving**: `src/icon_management.c:SaveIconPositions()`
-- **Window resizing**: `src/window_management.c:ResizeDrawerWindow()`
-- **Backup creation**: `src/backup_session.c:BackupFolder()`
+---
 
 ## Common Patterns
 
-### Error Handling Pattern (Avoid goto unless absolutely necessary):
+### Error Handling Pattern:
 ```c
 BOOL process_file(const char *path)
 {
@@ -779,9 +802,6 @@ BOOL process_file(const char *path)
     
     return success;
 }
-
-// NOTE: Only use goto for cleanup if you have 3+ resources to manage
-// and the cleanup logic is complex. Always document why goto is used.
 ```
 
 ### String Handling:
@@ -791,12 +811,14 @@ char buffer[256];
 strncpy(buffer, source, sizeof(buffer) - 1);
 buffer[sizeof(buffer) - 1] = '\0';
 
-// Use STRPTR for AmigaOS string parameters, snake_case for function names
+// Use STRPTR for AmigaOS string parameters
 void process_path(STRPTR path)
 {
     // ...
 }
 ```
+
+---
 
 ## Testing Workflow
 
@@ -815,39 +837,7 @@ void process_path(STRPTR path)
 4. **Validate logic** before porting to VBCC/Amiga
 5. **NEVER** merge host-specific code into production files
 
-## ListView and GadTools Patterns
-
-### Fast Window Opening Pattern:
-```c
-// Open window with empty list FIRST (appears instantly)
-window = OpenWindowTags(NULL, ...)
-
-// Set busy pointer AFTER window is visible
-SetWindowPointer(window, WA_BusyPointer, TRUE, TAG_DONE);
-
-// Parse data and populate list (user sees progress)
-data = parse_data();
-
-// Update ListView with data
-GT_SetGadgetAttrs(list_gadget, window, NULL,
-                 GTLV_Labels, data,
-                 TAG_DONE);
-
-// Clear busy pointer
-SetWindowPointer(window, WA_BusyPointer, FALSE, TAG_DONE);
-```
-
-### ListView Character Width Calculation:
-```c
-// CRITICAL: ListViews need CHARACTER width, not pixel width
-struct TextFont *font = open_system_font();
-WORD char_width = font_width_pixels / font->tf_XSize;  // Convert pixels to chars
-
-ng.ng_Width = char_width;  // Use character count, NOT pixels!
-
-// WRONG: Using pixel width causes blank ListView
-ng.ng_Width = 584;  // This is pixels - ListView will show nothing!
-```
+---
 
 ## Important Notes for AI Agents
 
@@ -855,20 +845,18 @@ ng.ng_Width = 584;  // This is pixels - ListView will show nothing!
 2. **snake_case naming** - All functions, variables use snake_case
 3. **Use AmigaOS types** - BOOL, STRPTR, BPTR, LONG, ULONG, etc.
 4. **Prefix project symbols** - iTidy_/ITIDY_ for types/constants
-5. **Use whd_malloc/whd_free** - ALWAYS use memory wrappers in iTidy modules (NOT malloc/free!)
+5. **Use whd_malloc/whd_free** - ALWAYS use memory wrappers in iTidy modules
 6. **Check all allocations** - Every allocation must be checked for NULL
-7. **Always cleanup** - Match every Lock with UnLock, every Alloc with Free
+7. **Always cleanup** - Match every Lock with UnLock, every NewObject with DisposeObject
 8. **Avoid goto** - Only use if absolutely necessary and document why
 9. **Log appropriately** - Use category-specific logging functions
 10. **Test on target** - Code must run on real Amiga/WinUAE, not just compile
-11. **Workbench 3.0/3.1 compatibility** - Target WB 3.0 and 3.1 only
-12. **Read template docs FIRST** - Before any window work, read `src/templates/AI_AGENT_GETTING_STARTED.md`
-13. **Calculate BorderTop correctly** - Use the formula: `screen->WBorTop + screen->Font->ta_YSize + 1`
-14. **Host testing allowed** - GCC can be used for testing in `src\tests\`, but keep host code separate from production
-15. **Structure alignment matters** - Group fields by size (4-byte, then 2-byte) to avoid padding on 68k
-16. **AnchorPath manual allocation** - Use `AllocVec()` with manual `ap_Strlen`, not `AllocDosObject()` with tags
-17. **Window cleanup order** - Always: detach lists → close window → free gadgets → free visual info
-18. **Fast window opening** - Open window first, populate lists after (deferred loading pattern)
+11. **Workbench 3.2+ required** - Target WB 3.2 only for v2.0
+12. **Use ReAction classes** - No GadTools for v2.0 development
+13. **Layout automatically** - Let layout.gadget handle positioning
+14. **DisposeObject disposes children** - Never manually dispose child objects
+
+---
 
 ## Development Log and Change History
 
@@ -879,85 +867,120 @@ ng.ng_Width = 584;  // This is pixels - ListView will show nothing!
 - Known issues and workarounds
 - Recent changes (check latest entries first)
 
-**Before implementing any change**, search the development log for related issues or prior work. Many bugs have been encountered and solved before.
+**Before implementing any change**, search the development log for related issues or prior work.
 
-**Recent critical fixes documented**:
-- RAM disk crash on fast emulators (filesystem lock timing)
-- Fast RAM allocation 15x performance breakthrough
-- PATH search list from startup scripts
-- Default tool validation improvements
-- Emergency out-of-memory handler
+---
 
-## Additional Resources (Read in this order)
+## Additional Resources
 
-1. **`src/templates/AI_AGENT_GETTING_STARTED.md`** - **REQUIRED READING** for any window/GUI work
-2. **`docs/DEVELOPMENT_LOG.md`** - Complete history of bugs, fixes, and architectural decisions
-3. `docs/AI_AGENT_GUIDE_embedded.md` - Window template usage patterns
-4. `docs/MEMORY_TRACKING_QUICKSTART.md` - Memory debugging guide
-5. `docs/MEMORY_TRACKING_SYSTEM.md` - Detailed tracking system info
-6. `src/templates/` - Canonical code templates (use as reference)
-7. `Makefile` - Build configuration and flags
+### Official AmigaOS AutoDocs Reference:
+The `docs/AutoDocs/` folder contains the **official Commodore/Hyperion AutoDocs** for all AmigaOS libraries and ReAction classes. **Use these as the authoritative reference** when implementing ReAction code.
+
+**Key ReAction AutoDocs for v2.0:**
+| File | Description |
+|------|-------------|
+| `window_cl.doc` | window.class - Window management, WM_OPEN, WM_CLOSE, WM_HANDLEINPUT |
+| `layout_gc.doc` | layout.gadget - Automatic GUI layout arrangement |
+| `button_gc.doc` | button.gadget - Push buttons, toggle buttons |
+| `listbrowser_gc.doc` | listbrowser.gadget - Advanced list display (replaces ListView) |
+| `chooser_gc.doc` | chooser.gadget - Dropdown selection (replaces Cycle) |
+| `checkbox_gc.doc` | checkbox.gadget - Boolean toggles |
+| `string_gc.doc` | string.gadget - Text input fields |
+| `integer_gc.doc` | integer.gadget - Numeric input |
+| `getfile_gc.doc` | getfile.gadget - File requester |
+| `getfont_gc.doc` | getfont.gadget - Font requester |
+| `scroller_gc.doc` | scroller.gadget - Scrollbars |
+| `slider_gc.doc` | slider.gadget - Slider controls |
+| `label_ic.doc` | label.image - Text labels |
+| `bevel_ic.doc` | bevel.image - Beveled borders |
+| `requester_cl.doc` | requester.class - Modal dialogs (replaces EasyRequest) |
+
+**Other useful AutoDocs:**
+| File | Description |
+|------|-------------|
+| `intuition.doc` | Core Intuition functions |
+| `dos.doc` | DOS library functions |
+| `icon.doc` | Icon library functions |
+| `exec.doc` | Exec library functions |
+| `utility.doc` | Utility library (tag handling, hooks) |
+
+**Usage:** When unsure about a ReAction tag, method, or attribute, search the relevant `.doc` file for the exact specification.
+
+### v2.0 ReAction Documentation (TODO: Create these):
+1. **`src/templates/AI_AGENT_GETTING_STARTED.md`** - ReAction entry point
+2. **`src/templates/AI_AGENT_REACTION_GUIDE.md`** - ReAction patterns and rules
+
+### Archived v1.0 GadTools Documentation:
+3. `.github/copilot-instructions-v1-GadTools.md` - Original GadTools instructions
+4. `src/templates/GadTools_AI_AGENT_GETTING_STARTED.md` - GadTools entry point
+5. `src/templates/GadTools_AI_AGENT_LAYOUT_GUIDE.md` - GadTools layout patterns
+6. `src/templates/GadTools_amiga_window_template.c` - GadTools window template
+
+### General Documentation:
+7. `docs/DEVELOPMENT_LOG.md` - Complete history of bugs, fixes, and decisions
+8. `docs/MEMORY_TRACKING_QUICKSTART.md` - Memory debugging guide
+9. `Makefile` - Build configuration and flags
+
+---
 
 ## Version Information
 
-- **iTidy Version**: 2.0 (Complete GUI rewrite)
-- **Target**: AmigaOS 3.x (Workbench 3.0 and 3.1 only)
+- **iTidy Version**: 2.0 (ReAction GUI rewrite)
+- **Target**: AmigaOS / Workbench 3.2+ (V47+)
 - **Compiler**: VBCC v0.9x (with C99 support)
-- **SDK**: Amiga SDK 3.2
+- **SDK**: NDK 3.2
 - **Language**: C89/C99 hybrid
-- **GUI**: GadTools (Workbench 3.0 native gadgets only)
+- **GUI**: ReAction (window.class, layout.gadget, etc.)
+- **Minimum CPU**: 68020
 
 ---
 
 ## Critical Checklist When Suggesting Code Changes
 
-**Before writing any window/GUI code:**
-- [ ] ⚠️ **MANDATORY**: Have you read `src/templates/AI_AGENT_GETTING_STARTED.md` completely?
-- [ ] ⚠️ **MANDATORY**: Have you read ALL sections marked CRITICAL in `src/templates/AI_AGENT_LAYOUT_GUIDE.md`?
-- [ ] ⚠️ **CRITICAL**: Are you calculating BorderTop with the correct formula (`screen->WBorTop + screen->Font->ta_YSize + 1`)?
-- [ ] ⚠️ **CRITICAL**: Are gadgets positioned with `border_top + margin`, not just `margin`?
-- [ ] ⚠️ **CRITICAL**: If using ListView, have you added `IDCMP_GADGETDOWN` to IDCMP flags?
-- [ ] ⚠️ **CRITICAL**: If using ListView, have you added `case IDCMP_GADGETDOWN:` event handler?
+**Before writing any window/GUI code (v2.0):**
+- [ ] ⚠️ Are you using ReAction classes (NOT GadTools)?
+- [ ] ⚠️ Are you using layout.gadget for automatic positioning?
+- [ ] ⚠️ Are you using `NewObject()` / `DisposeObject()` correctly?
+- [ ] ⚠️ Are you only disposing the top-level window object (not children)?
 - [ ] Are you using snake_case for all identifiers?
-- [ ] Are you avoiding goto unless absolutely necessary?
 - [ ] Have you checked all allocations for NULL?
-- [ ] Have you matched all Lock/UnLock, Alloc/Free pairs?
-- [ ] Does the code target Workbench 3.0/3.1 only?
-- [ ] Are you using only GadTools gadgets (no MUI/ReAction)?
+- [ ] Have you matched all Lock/UnLock, NewObject/DisposeObject pairs?
+- [ ] Does the code target Workbench 3.2+?
 - [ ] Will this compile with VBCC for 68k Amiga?
 
-**When modifying existing windows:**
-- [ ] Have you verified BorderTop calculations match actual window borders?
-- [ ] Have you checked the template documentation for similar patterns?
-- [ ] Are you following the same patterns as existing working code?
-
-**When creating test code:**
-- [ ] Is the test file in `src\tests\` directory?
-- [ ] Does it use GCC/host-specific features only for testing?
-- [ ] Are you keeping host-specific code completely separate from production code?
-- [ ] Will the final algorithm port cleanly to VBCC/Amiga?
+**When working with ReAction:**
+- [ ] Have you opened all required class libraries?
+- [ ] Have you obtained class pointers with `*_GetClass()`?
+- [ ] Are you using `RA_HandleInput()` for the event loop?
+- [ ] Are you using `GetAttr()` / `SetAttrs()` for gadget values?
+- [ ] Are you closing class libraries in reverse order?
 
 **When working with structures:**
 - [ ] Are fields grouped by size (4-byte fields first, then 2-byte BOOL fields last)?
-- [ ] Have you avoided mixing pointer/int fields with BOOL fields?
 - [ ] Are you aware that BOOL is 2 bytes on Amiga (not 1 or 4)?
-
-**When using pattern matching:**
-- [ ] Are you using manual `AllocVec()` allocation for AnchorPath?
-- [ ] Have you set `ap_Strlen` manually to the buffer size?
-- [ ] Are you using `FreeVec()` (not `FreeDosObject()`) for cleanup?
-- [ ] Is the buffer at least 512 bytes (preferably 1024) for deep paths?
 
 **When updating the development log (docs\DEVELOPMENT_LOG.md):**
 - [ ] Have you documented the change with date, author, and description?
 - [ ] Is the update brief but informative?
 - [ ] **CRITICAL**: Do NOT include code snippets in development log entries
 - [ ] Focus on describing WHAT changed, WHY it changed, and the IMPACT
-- [ ] Keep entries concise - link to detailed bug fix docs for technical details
 
-** When updating the development log (docs\DEVELOPMENT_LOG.md)):**
-- [ ] Have you documented the change with date, author, and description?
-- [ ] Is the update brief but informative?
-- [ ] **CRITICAL**: Do NOT include code snippets in development log entries
-- [ ] Focus on describing WHAT changed, WHY it changed, and the IMPACT
-- [ ] Keep entries concise - link to detailed bug fix docs for technical details
+---
+
+## TODO: ReAction Migration Tasks
+
+The following documentation and code needs to be created for v2.0:
+
+1. [ ] **`src/templates/AI_AGENT_GETTING_STARTED.md`** - Update for ReAction patterns
+2. [ ] **`src/templates/AI_AGENT_REACTION_GUIDE.md`** - New ReAction-specific guide
+3. [ ] **`src/templates/reaction_window_template.c`** - Canonical ReAction window template
+4. [ ] **Update `src/GUI/*.c`** - Convert existing windows from GadTools to ReAction
+5. [ ] **Update `Makefile`** - Add ReAction class library linking if needed
+6. [ ] **Test all windows** - Verify ReAction migration works on WB 3.2
+
+### Key ReAction Classes to Learn:
+- `window.class` - Main window management
+- `layout.gadget` - Automatic gadget arrangement
+- `listbrowser.gadget` - Replaces GadTools ListView
+- `chooser.gadget` - Replaces GadTools Cycle
+- `getfile.gadget` / `getfont.gadget` - File/font requesters

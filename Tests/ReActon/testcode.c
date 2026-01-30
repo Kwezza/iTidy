@@ -23,6 +23,8 @@
 #include <proto/integer.h>
 #include <proto/listbrowser.h>
 #include <proto/label.h>
+#include <gadgets/listview.h>
+#include <pragmas/listview_pragmas.h>
 
 #include <libraries/gadtools.h>
 #include <reaction/reaction.h>
@@ -35,6 +37,7 @@
 void main_window( void );
 void main_progress_window( void );
 void advanced_settings( void );
+void restore_backups( void );
 
 struct Screen	*gScreen = NULL;
 struct DrawInfo	*gDrawInfo = NULL;
@@ -49,13 +52,15 @@ struct Library *WindowBase = NULL,
                *IntegerBase = NULL,
                *ListBrowserBase = NULL,
                *LabelBase = NULL,
+               *ListViewBase = NULL,
                *GadToolsBase = NULL,
                *LayoutBase = NULL,
                *IconBase = NULL;
 struct IntuitionBase *IntuitionBase = NULL;
 
 //window ids
-enum win { main_window_id = 4, main_progress_window_id = 53, advanced_settings_id = 59 };
+enum win { main_window_id = 4, main_progress_window_id = 53, advanced_settings_id = 59, 
+  restore_backups_id = 103 };
 
 //main_window gadgets
 enum main_window_idx { master_layout, folder_layout, folder_name, itidy_options, left_column, 
@@ -77,6 +82,10 @@ enum advanced_settings_idx { vert_61, advanced_icons_per_row_details, layout_asp
   advanced_layout_strip_newicon_borders, advanced_layout_grouping, 
   advanced_layout_gap_between_groups, advanced_layout_main_buttons, 
   advanced_layout_ok, advanced_layout_button_cancel };
+//restore_backups gadgets
+enum restore_backups_idx { vert_105, backup_list_layout, backup_list, backup_details_layout, 
+  backup_details, backup_buttons_row1_layout, backup_delete_run, 
+  backup_restore_run, backup_view_folders, button_cancel };
 
 void main_window( void )
 {
@@ -738,5 +747,147 @@ void advanced_settings( void )
     TAG_END),
   TAG_END);  
   main_gadgets[28] = 0;
+}
+
+void restore_backups( void )
+{
+  struct Gadget	*main_gadgets[ 11 ];
+  Object *window_object = NULL;
+  struct HintInfo hintInfo[] =
+  {
+    {vert_105,-1,"",0},
+    {backup_list_layout,-1,"",0},
+    {backup_list,-1,"",0},
+    {backup_details_layout,-1,"",0},
+    {backup_details,-1,"",0},
+    {backup_buttons_row1_layout,-1,"",0},
+    {backup_delete_run,-1,"",0},
+    {backup_restore_run,-1,"",0},
+    {backup_view_folders,-1,"",0},
+    {button_cancel,-1,"",0},
+    {-1,-1,NULL,0}
+  };
+  struct List *labels107;
+  UBYTE *labels107_str[] = { NULL };
+  struct List *labels109;
+  UBYTE *labels109_str[] = { NULL };
+  struct ColumnInfo ListBrowser107_ci[] =
+  {
+    { 1, "", 0 },
+    { -1, (STRPTR)~0, -1 }
+  };
+
+  labels107 = BrowserNodesA( labels107_str, 1 );
+  labels109 = ListViewLabelsA( labels109_str );
+
+  window_object = NewObject( WINDOW_GetClass(), NULL, 
+    WA_Title, "iTidy - Restore backups",
+    WA_Left, 5,
+    WA_Top, 20,
+    WA_Width, 150,
+    WA_Height, 80,
+    WA_MinWidth, 150,
+    WA_MinHeight, 80,
+    WA_MaxWidth, 8192,
+    WA_MaxHeight, 8192,
+    WINDOW_HintInfo, hintInfo,
+    WINDOW_GadgetHelp, TRUE,
+    WINDOW_AppPort, gAppPort,
+    WA_CloseGadget, TRUE,
+    WA_DepthGadget, TRUE,
+    WA_SizeGadget, TRUE,
+    WA_DragBar, TRUE,
+    WA_Activate, TRUE,
+    WINDOW_IconTitle, "MyApp",
+    WA_NoCareRefresh, TRUE,
+    WA_IDCMP, IDCMP_GADGETDOWN | IDCMP_GADGETUP | IDCMP_CLOSEWINDOW | IDCMP_NEWSIZE,
+    WINDOW_ParentGroup, NewObject( LAYOUT_GetClass(), NULL,
+    LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+    LAYOUT_SpaceOuter, TRUE,
+    LAYOUT_DeferLayout, TRUE,
+      LAYOUT_AddChild, main_gadgets[vert_105] = NewObject( LAYOUT_GetClass(), NULL, 
+        GA_ID, vert_105,
+        LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+        LAYOUT_AddChild, main_gadgets[backup_list_layout] = NewObject( LAYOUT_GetClass(), NULL, 
+          GA_ID, backup_list_layout,
+          LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+          LAYOUT_LeftSpacing, 2,
+          LAYOUT_RightSpacing, 2,
+          LAYOUT_TopSpacing, 2,
+          LAYOUT_BottomSpacing, 2,
+          LAYOUT_AddChild, main_gadgets[backup_list] = NewObject( LISTBROWSER_GetClass(), NULL, 
+            GA_ID, backup_list,
+            GA_RelVerify, TRUE,
+            GA_TabCycle, TRUE,
+            LISTBROWSER_Position, 0,
+            LISTBROWSER_ColumnInfo, &ListBrowser107_ci,
+            LISTBROWSER_ColumnTitles, TRUE,
+          TAG_END),
+        TAG_END),
+        CHILD_WeightedHeight, 45,
+        LAYOUT_AddChild, main_gadgets[backup_details_layout] = NewObject( LAYOUT_GetClass(), NULL, 
+          GA_ID, backup_details_layout,
+          LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+          LAYOUT_LeftSpacing, 2,
+          LAYOUT_RightSpacing, 2,
+          LAYOUT_TopSpacing, 2,
+          LAYOUT_BottomSpacing, 2,
+          LAYOUT_AddChild, main_gadgets[backup_details] = NewObject( LISTVIEW_GetClass(), NULL, 
+            GA_ID, backup_details,
+            GA_RelVerify, TRUE,
+            GA_TabCycle, TRUE,
+            LISTVIEW_Labels, labels109,
+          TAG_END),
+        TAG_END),
+        CHILD_WeightedHeight, 45,
+        LAYOUT_AddChild, main_gadgets[backup_buttons_row1_layout] = NewObject( LAYOUT_GetClass(), NULL, 
+          GA_ID, backup_buttons_row1_layout,
+          LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
+          LAYOUT_AddChild, main_gadgets[backup_delete_run] = NewObject( BUTTON_GetClass(), NULL, 
+            GA_ID, backup_delete_run,
+            GA_Text, "Delete run",
+            GA_RelVerify, TRUE,
+            GA_TabCycle, TRUE,
+            BUTTON_TextPen, 1,
+            BUTTON_BackgroundPen, 0,
+            BUTTON_FillTextPen, 1,
+            BUTTON_FillPen, 3,
+          TAG_END),
+          LAYOUT_AddChild, main_gadgets[backup_restore_run] = NewObject( BUTTON_GetClass(), NULL, 
+            GA_ID, backup_restore_run,
+            GA_Text, "Restore run",
+            GA_RelVerify, TRUE,
+            GA_TabCycle, TRUE,
+            BUTTON_TextPen, 1,
+            BUTTON_BackgroundPen, 0,
+            BUTTON_FillTextPen, 1,
+            BUTTON_FillPen, 3,
+          TAG_END),
+          LAYOUT_AddChild, main_gadgets[backup_view_folders] = NewObject( BUTTON_GetClass(), NULL, 
+            GA_ID, backup_view_folders,
+            GA_Text, "View folders",
+            GA_RelVerify, TRUE,
+            GA_TabCycle, TRUE,
+            BUTTON_TextPen, 1,
+            BUTTON_BackgroundPen, 0,
+            BUTTON_FillTextPen, 1,
+            BUTTON_FillPen, 3,
+          TAG_END),
+          LAYOUT_AddChild, main_gadgets[button_cancel] = NewObject( BUTTON_GetClass(), NULL, 
+            GA_ID, button_cancel,
+            GA_Text, "Cancel",
+            GA_RelVerify, TRUE,
+            GA_TabCycle, TRUE,
+            BUTTON_TextPen, 1,
+            BUTTON_BackgroundPen, 0,
+            BUTTON_FillTextPen, 1,
+            BUTTON_FillPen, 3,
+          TAG_END),
+        TAG_END),
+        CHILD_WeightedHeight, 10,
+      TAG_END),
+    TAG_END),
+  TAG_END);  
+  main_gadgets[10] = 0;
 }
 

@@ -5,6 +5,7 @@
 # Project name
 PROJECT = testcode
 PROJECT_LB = ListBrowser
+PROJECT_RB = RestoreBackups
 
 # Directories
 BUILD_DIR = build
@@ -20,6 +21,7 @@ LDFLAGS = +aos68k -cpu=68000 -O2 -size -final -lamiga -lauto
 OUT_DIR = $(BUILD_DIR)/amiga
 BIN = $(BIN_DIR)/$(PROJECT)
 BIN_LB = $(BIN_DIR)/$(PROJECT_LB)
+BIN_RB = $(BIN_DIR)/$(PROJECT_RB)
 
 ################################################################################
 # Source Files
@@ -27,16 +29,18 @@ BIN_LB = $(BIN_DIR)/$(PROJECT_LB)
 
 SRCS = testcode.c
 SRCS_LB = ListBrowser.c
+SRCS_RB = RestoreBackups.c
 
 # Object files (in build directory)
 OBJS = $(OUT_DIR)/testcode.o
 OBJS_LB = $(OUT_DIR)/ListBrowser.o
+OBJS_RB = $(OUT_DIR)/RestoreBackups.o
 
 ################################################################################
 # Build Rules
 ################################################################################
 
-.PHONY: all clean help directories
+.PHONY: all clean help directorie $(BIN_RB)s
 
 # Default target
 all: directories $(BIN) $(BIN_LB)
@@ -58,6 +62,12 @@ $(BIN_LB): $(OBJS_LB)
 	@echo Linking Amiga executable: $(BIN_LB)
 	$(CC) $(LDFLAGS) -o $@ $^ 
 	@echo Build complete: $(BIN_LB)
+
+# Link executable (RestoreBackups)
+$(BIN_RB): $(OBJS_RB)
+	@echo Linking Amiga executable: $(BIN_RB)
+	$(CC) $(LDFLAGS) -o $@ $^ 
+	@echo Build complete: $(BIN_RB)
 
 # Compile source file
 $(OUT_DIR)/%.o: %.c
