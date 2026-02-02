@@ -1,0 +1,95 @@
+NAME
+LBM_SORT
+Sort attached list on specified column. (V42)
+
+SYNOPSIS
+ULONG result = IDoMethodA(APTR obj, struct lbSort * msg);
+
+FUNCTION
+Sorts the list currently attached to the listbrowser. If rendering information is available then any necessary refreshing will take place. You do not need to detach your list first.
+
+The sort is stable which means it preserves the order of equal rows.
+
+Use DoGadgetMethodA() to provide rendering information when invoking this method.
+
+This method takes the following message structure:
+
+struct lbSort
+{
+ULONG MethodID; // LBM_SORT
+struct GadgetInfo *lbs_GInfo; // to provide rendering info
+ULONG lbs_Column; // Column to sort by
+ULONG lbs_Direction; // Sort direction
+struct Hook * lbs_CompareHook; // Optional hook to compare items
+};
+
+The lbs_Column specifies the column to sort the list by. Only one column may be sorted on at a time. The column must also be sortable (see LBCIA_Sortable tag) or an error will be returned.
+
+Setting lbm_Direction to LBMSORT_FORWARD will sort the list in the normal manner (increasing values from top to bottom) while setting it to LBMSORT_REVERSE will sort the list in reverse order.
+
+Nodes are always sorted first by their Node.ln_Pri fields (see LBNA_Priority tag). If the Node.ln_Pri fields are equal the lbs_CompareHook field is used to determine which Node comes first. If lbs_CompareHook is NULL the list will use be sorted depending on the type. Stricmp() is used for LBNCA_Text types. LBNCA_Integer types are compared as integers. Any other types are not sorted by default.
+
+If lbs_CompareHook points to an initialized Hook structure. The hook function is called as follows:
+
+LONG Compare(struct Hook *hook, APTR obj, struct LBSortMsg *msg);
+
+The hook parameter points to the user supplied hook passed in the lbs_CompareHook field.
+
+The obj parameter points to the listbrowser object itself.
+
+The msg parameter points to the following message structure:
+
+struct LBSortMsg
+{
+ULONG lbsm_TypeA;
+union
+{
+LONG Integer;
+CONST_STRPTR Text;
+} lbsm_DataA;
+
+APTR lbsm_UserDataA;
+
+ULONG lbsm_TypeB;
+union
+{
+LONG Integer;
+CONST_STRPTR Text;
+} lbsm_DataB;
+
+APTR lbsm_UserDataB;
+
+WORD lbsm_Column; // (V47 and V53.18)
+ULONG lbsm_Direction; // (V47 and V53.18)
+};
+
+The sorting routine fills in this structure depending on what types are being used in the rows. The lbsm_TypeA and lbsm_TypeB fields are set to 1 for LBNCA_Text, 2 for LBNCA_Integer or 0 for custom types.
+
+The lbsm_DataA and lbsm_DataB unions contain the appropriate values depending on the corresponding lbsm_TypeA and lbsm_TypeB fields. These fields will be initialized to zero for custom types.
+
+The lbsm_UserDataA and lbsm_UserDataB fields contain a copy of the corresponding lbn_UserData fields from the nodes. These fields may, for example, provide additional information to enable your own custom sorting of LBNCA_Image rows.
+
+The lbsm_Column and lbsm_Direction fields are provided for more complex sorts and are available with V53.18 and higher only.
+
+The lbsm_CheckedA and lbsm_CheckedB fields are only valid if the nodes contain a checkbox. In this case the fields reflect the state of the nodes checkbox, i.e. TRUE if selected, FALSE otherwise. This fields are only available with V53.41 and higher.
+
+The Compare() function returns a LONG as follows:
+
+-1 if A < B
+0 if A = B
+1 if A > B
+
+Starting with V53.71 this method does proper sorting of hierarchical lists. Earlier versions would separate child nodes from their parents and generate a giant mess when attempting to sort such a list. V47 sorting still results in a mess.
+
+INPUTS
+obj
+listbrowser object pointer
+
+msg
+pointer to fully initialized struct lbSortNode (see gadgets/listbrowser.h)
+
+RESULT
+Returns zero if successful, 1 if sorted but not rendered or ~0 (-1) on error.
+
+SEE ALSO
+intuition.library/DoGadgetMethodA(), utility.library/Stricmp()

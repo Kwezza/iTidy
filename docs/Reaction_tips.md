@@ -736,6 +736,117 @@ See `src/GUI/DefaultTools/tool_cache_window.c` for a complete working example.
 
 ---
 
+### ⚠️ CRITICAL: Selection Index Breaks After Sorting
+
+**Problem:** When using ListBrowser sorting with column titles, if you maintain a separate "filtered list" or background list structure and use the selection index to look up items in that background list, **the indices become mismatched after sorting**. The ListBrowser nodes are reordered visually, but your background list remains in the original order.
+
+**Symptom:** 
+- Before sorting: Click item → correct details shown
+- Click column header to sort
+- After sorting: Click item → WRONG details shown (details from different item)
+- The wrong item shown corresponds to the same position in the unsorted list
+
+**Root Cause:** When `LBM_SORT` is called, the ListBrowser's node list is physically reordered. However, if you're using a parallel data structure (like `filtered_entries` or a cache array indexed by list position), that structure is NOT sorted. Using the selection index to walk the unsorted structure gives you the wrong item.
+
+**Wrong Pattern:**
+```c
+/* When populating ListBrowser, store cache index in UserData */
+for (node = filtered_entries.lh_Head; node->ln_Succ != NULL; node = node->ln_Succ)
+{
+    struct CacheEntry *entry = GET_ENTRY_FROM_NODE(node);
+    
+    lb_node = AllocListBrowserNode(3,
+        LBNA_Column, 0,
+            LBNCA_Text, entry->name,
+        LBNA_UserData, (APTR)(ULONG)entry->cache_index,  /* Store for later */
+        TAG_DONE);
+    
+    AddTail(&listbrowser_list, lb_node);
+}
+
+/* WRONG: Walk unsorted background list using selection index */
+void handle_selection(LONG selected_index)
+{
+    struct Node *node;
+    LONG index = 0;
+    int cache_index = -1;
+    
+    /* ❌ This walks the UNSORTED filtered_entries list */
+    for (node = filtered_entries.lh_Head; 
+         node->ln_Succ != NULL; 
+         node = node->ln_Succ, index++)
+    {
+        if (index == selected_index)
+        {
+            struct CacheEntry *entry = GET_ENTRY_FROM_NODE(node);
+            cache_index = entry->cache_index;  /* WRONG after sorting! */
+            break;
+        }
+    }
+    
+    /* Use cache_index to show details - MISMATCHED! */
+    show_details(cache_index);
+}
+```
+
+**Correct Pattern:**
+```c
+/* When populating ListBrowser, store cache index in UserData */
+for (node = filtered_entries.lh_Head; node->ln_Succ != NULL; node = node->ln_Succ)
+{
+    struct CacheEntry *entry = GET_ENTRY_FROM_NODE(node);
+    
+    lb_node = AllocListBrowserNode(3,
+        LBNA_Column, 0,
+            LBNCA_Text, entry->name,
+        LBNA_UserData, (APTR)(ULONG)entry->cache_index,  /* ✅ Store cache index */
+        TAG_DONE);
+    
+    AddTail(&listbrowser_list, lb_node);
+}
+
+/* CORRECT: Walk the sorted ListBrowser list and extract UserData */
+void handle_selection(LONG selected_index)
+{
+    struct Node *selected_node = NULL;
+    LONG index = 0;
+    int cache_index = -1;
+    
+    /* ✅ Walk the SORTED listbrowser_list that matches visual order */
+    for (selected_node = listbrowser_list.lh_Head;
+         selected_node->ln_Succ != NULL;
+         selected_node = selected_node->ln_Succ, index++)
+    {
+        if (index == selected_index)
+        {
+            /* Extract cache_index from the node's UserData */
+            GetListBrowserNodeAttrs(selected_node,
+                                   LBNA_UserData, &cache_index,
+                                   TAG_DONE);
+            break;
+        }
+    }
+    
+    /* Use cache_index to show details - CORRECT! */
+    show_details(cache_index);
+}
+```
+
+**Why This Works:**
+1. During population, the cache index (or other lookup key) is stored in each ListBrowser node's `LBNA_UserData` field
+2. When `LBM_SORT` is called, the ListBrowser physically reorders the nodes in the list
+3. The `UserData` travels with the node - it's part of the node, not a separate array
+4. Walking the sorted `listbrowser_list` gives nodes in visual order with correct UserData
+5. Extracting `UserData` gives the correct cache index regardless of sort order
+
+**Key Principle:** Never use a selection index to look up data in a separate unsorted structure after the ListBrowser has been sorted. Always extract the lookup key from the selected node's `LBNA_UserData` instead.
+
+**Alternative Solution:** If you need to maintain a parallel sorted array for performance reasons, you must re-sort that array using the same compare function and direction as the ListBrowser sort. However, using `LBNA_UserData` is simpler and more reliable.
+
+**Reference:** See `src/GUI/DefaultTools/tool_cache_window.c` function `update_tool_details()` for the fixed implementation.
+
+---
+
 ## ListBrowser Column Resizing
 
 ### ⚠️ CRITICAL: CIF_SORTABLE and CIF_DRAGGABLE Must Be Combined with Bitwise OR
@@ -843,6 +954,338 @@ From `listbrowser_gc.doc`:
 - `CIF_RIGHT` - Column title is right-justified (V47)
 
 Multiple flags can be combined with bitwise OR (`|`) as needed.
+
+---
+
+### ⚠️ CRITICAL: Numeric Column Sorting - Use LBNCA_Integer
+
+**Problem:** By default, ListBrowser sorts ALL columns as strings, even columns containing numeric values. This causes incorrect sort order like "1, 10, 2, 20, 3" instead of "1, 2, 3, 10, 20".
+
+**Symptom:** A column displaying numbers (like file counts) sorts alphabetically:
+- Before sort: 5, 12, 3, 100, 8
+- After clicking column header: 100, 12, 3, 5, 8 (string sort)
+- Expected: 3, 5, 8, 12, 100 (numeric sort)
+
+**Root Cause:** Numeric data was being passed as text strings using `LBNCA_Text`, causing alphabetic sorting.
+
+---
+
+### Solution 1: Use LBNCA_Integer (RECOMMENDED) ✅
+
+**The proper approach** is to use `LBNCA_Integer` to store numeric values, which provides native numeric sorting and display:
+
+**CRITICAL: LBNCA_Integer expects a POINTER to LONG, not the value itself!**
+
+**CRITICAL: LBNCA_Integer expects a POINTER to LONG, not the value itself!**
+
+```c
+/* CORRECT: Pass a pointer to the integer field */
+struct ToolCacheDisplayEntry
+{
+    struct Node node;
+    char *tool_name;
+    int file_count;         /* Embedded integer that persists with the structure */
+    BOOL exists;
+    /* ... other fields ... */
+};
+
+/* Create ListBrowser node with integer column */
+lb_node = AllocListBrowserNode(3,
+    LBNA_Column, 0,
+        LBNCA_CopyText, TRUE,
+        LBNCA_Text, entry->tool_name,
+    LBNA_Column, 1,
+        LBNCA_Integer, &entry->file_count,  /* ✅ Pass POINTER to integer */
+        LBNCA_Justification, LCJ_RIGHT,
+    LBNA_Column, 2,
+        LBNCA_Text, status_str,
+    TAG_DONE);
+
+/* Sort normally - integer columns sort numerically automatically! */
+DoGadgetMethod((struct Gadget *)listbrowser_obj,
+              window, NULL,
+              LBM_SORT, list, column, direction, NULL);
+```
+
+**Common Mistake - Passing Value Instead of Pointer:**
+
+```c
+/* WRONG: Passing the value directly */
+LBNCA_Integer, entry->file_count,  /* ❌ Treats value as memory address! */
+
+/* If file_count = 64, ListBrowser tries to read from address 0x40 */
+/* Result: Displays huge garbage numbers like -1576994805 */
+```
+
+**Why This Happens:**
+- `LBNCA_Integer` expects a `LONG *` (pointer type)
+- When you pass an integer value (e.g., `64`), it's interpreted as a memory address
+- ListBrowser tries to dereference that "address" and reads garbage data
+- Result: Displays random huge negative or positive numbers
+
+**Requirements:**
+1. The integer must be embedded in a persistent structure (not a local variable)
+2. The structure must remain valid for the lifetime of the ListBrowser node
+3. Use `&` to pass the address of the integer field
+
+**Advantages:**
+- ✅ Native numeric sorting without hooks
+- ✅ No format limitations (displays full range of LONG)
+- ✅ Clean display without leading zeros
+- ✅ Simple and reliable
+- ✅ No custom hooks needed
+
+**Best for:** Any numeric column (file counts, sizes, IDs, dates as timestamps, etc.)
+
+---
+
+### Solution 2: Format Numbers with Leading Zeros (Alternative)
+
+If you cannot guarantee the data structure will persist, or need backward compatibility with older OS versions, format numeric values with leading zeros:
+
+**Advantages:**
+- ✅ Simple and reliable
+- ✅ No complex hook calling conventions
+- ✅ Works with all compiler versions
+- ✅ No risk of crashes or corruption
+- ✅ Right-justified display looks correct
+
+**Limitations:**
+- Column width determined by format (e.g., `%04d` = max 9999)
+- Display shows leading zeros (usually acceptable for counts)
+
+**Best for:** Any numeric column (file counts, sizes, IDs, dates as timestamps, etc.)
+
+---
+
+### Solution 2: Format Numbers with Leading Zeros (Alternative)
+
+If you cannot guarantee the data structure will persist, or need backward compatibility with older OS versions, format numeric values with leading zeros:
+
+```c
+/* Format file count with leading zeros (supports up to 9999) */
+char file_count_str[16];
+sprintf(file_count_str, "%04d", entry->file_count);
+
+/* Create ListBrowser node */
+lb_node = AllocListBrowserNode(3,
+    LBNA_Column, 0,
+        LBNCA_Text, tool_name,
+    LBNA_Column, 1,
+        LBNCA_CopyText, TRUE,
+        LBNCA_Text, file_count_str,  /* "0003", "0012", "0100" */
+        LBNCA_Justification, LCJ_RIGHT,
+    TAG_DONE);
+```
+
+**Advantages:**
+- ✅ Simple and reliable
+- ✅ Works with all compiler versions
+- ✅ No pointer lifetime concerns
+- ✅ Right-justified display looks correct
+
+**Limitations:**
+- Column width determined by format (e.g., `%04d` = max 9999)
+- Display shows leading zeros
+
+**Best for:** Temporary data or when structure lifetime cannot be guaranteed
+
+---
+
+### Solution 3: Custom Compare Hook (NOT RECOMMENDED)
+
+**WARNING:** Custom compare hooks are complex and the calling convention varies between OS versions and compilers. Use Solution 1 unless you absolutely need it.
+
+The official AutoDoc states the hook receives `struct LBSortMsg`, but the actual implementation and calling convention is unreliable. Hook functions require precise register assignments (`__a0`, `__a1`, `__a2`) and the structure layout may not match documentation.
+
+**Known Issues:**
+- Structure field offsets don't match between doc and implementation
+- Register calling conventions vary by compiler
+- Easy to cause crashes with incorrect signatures
+- Type fields return garbage values in practice
+
+**If you must use a hook:**
+1. Test extensively on your target OS version
+2. Use leading zeros format as a fallback
+3. Verify with actual Amiga hardware, not just emulation
+4. Check AutoDocs specific to your OS version
+
+**Reference:** See `docs/AutoDocs/LBM_SORT.doc` for official documentation, but be aware the structure definition may not match the actual implementation.
+
+---
+
+### Comparison of Approaches
+
+| Approach | Complexity | Reliability | Display | Pointer Required | Recommended |
+|----------|-----------|-------------|---------|------------------|-------------|
+| **LBNCA_Integer** | Low | High | Clean | Yes (persistent) | ✅ **PRIMARY** |
+| Leading zeros format | Low | High | Shows zeros | No | ✅ Alternative |
+| Custom hook | Very High | Low | Clean | N/A | ❌ Avoid |
+
+---
+
+### Complete Working Example (LBNCA_Integer)
+
+Based on `src/GUI/DefaultTools/tool_cache_window.c`:
+
+### Complete Working Example (LBNCA_Integer)
+
+Based on `src/GUI/DefaultTools/tool_cache_window.c`:
+
+```c
+/* Data structure with embedded integer (persists with entries) */
+struct ToolCacheDisplayEntry
+{
+    struct Node node;
+    struct Node filter_node;
+    char *tool_name;
+    int file_count;         /* This integer persists with the structure */
+    BOOL exists;
+    int cache_index;
+};
+
+/* In populate function */
+static void populate_tool_listbrowser(struct iTidyToolCacheWindow *tool_data)
+{
+    struct ToolCacheDisplayEntry *entry;
+    struct Node *node;
+    struct Node *lb_node;
+    char truncated_name[64];
+    const char *status_str;
+    
+    /* Clear existing nodes */
+    SetGadgetAttrs((struct Gadget *)tool_data->tool_listbrowser_obj,
+                   tool_data->window, NULL,
+                   LISTBROWSER_Labels, ~0,
+                   TAG_DONE);
+    
+    /* Free old nodes */
+    FreeListBrowserList(tool_data->tool_list_nodes);
+    NewList(tool_data->tool_list_nodes);
+    
+    /* Add rows from filtered list */
+    for (node = tool_data->filtered_entries.lh_Head; 
+         node->ln_Succ != NULL; 
+         node = node->ln_Succ)
+    {
+        entry = (struct ToolCacheDisplayEntry *)((char *)node - sizeof(struct Node));
+        
+        /* Truncate tool name if needed */
+        iTidy_ShortenPathWithParentDir(entry->tool_name, truncated_name, 50);
+        
+        status_str = entry->exists ? "EXISTS" : "MISSING";
+        
+        /* Create node with integer column - PASS POINTER! */
+        lb_node = AllocListBrowserNode(3,
+            LBNA_Column, 0,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, truncated_name,
+            LBNA_Column, 1,
+                LBNCA_Integer, &entry->file_count,  /* ✅ Pointer to persistent field */
+                LBNCA_Justification, LCJ_RIGHT,
+            LBNA_Column, 2,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, (STRPTR)status_str,
+            LBNA_UserData, (APTR)(ULONG)entry->cache_index,
+            TAG_DONE);
+        
+        if (lb_node)
+        {
+            AddTail(tool_data->tool_list_nodes, lb_node);
+        }
+    }
+    
+    /* Reattach list to gadget */
+    SetGadgetAttrs((struct Gadget *)tool_data->tool_listbrowser_obj,
+                   tool_data->window, NULL,
+                   LISTBROWSER_Labels, tool_data->tool_list_nodes,
+                   LISTBROWSER_AutoFit, TRUE,
+                   TAG_DONE);
+}
+
+/* In event handler - default sort works for integer columns! */
+if (rel_event == LBRE_TITLECLICK)
+{
+    ULONG column = code;
+    ULONG direction = LBMSORT_FORWARD;
+    
+    /* Default sort handles integer columns automatically */
+    DoGadgetMethod((struct Gadget *)tool_data->tool_listbrowser_obj,
+                  tool_data->window, NULL,
+                  LBM_SORT, tool_data->tool_list_nodes, column, direction, NULL);
+    
+    SetGadgetAttrs((struct Gadget *)tool_data->tool_listbrowser_obj,
+                   tool_data->window, NULL,
+                   LISTBROWSER_SortColumn, column,
+                   TAG_DONE);
+}
+```
+
+**Result:** Files column displays clean numbers (3, 5, 8, 12, 100) and sorts numerically without any custom hooks!
+
+---
+
+### Complete Working Example (Leading Zeros - Alternative)
+
+```c
+/* In populate function */
+char file_count_str[16];
+
+/* Format with leading zeros for proper sorting */
+sprintf(file_count_str, "%04d", entry->file_count);
+
+/* Create node with formatted number */
+lb_node = AllocListBrowserNode(3,
+    LBNA_Column, 0,
+        LBNCA_Text, "Tool Name",
+    LBNA_Column, 1,
+        LBNCA_CopyText, TRUE,
+        LBNCA_Text, file_count_str,  /* Right-justified with leading zeros */
+        LBNCA_Justification, LCJ_RIGHT,
+    LBNA_Column, 2,
+        LBNCA_Text, "Status",
+    TAG_DONE);
+```
+
+**Result:** Files column sorts numerically: 0001, 0002, 0003, ..., 0100, 1000
+
+---
+
+### Historical Note (Custom Hook Attempts)
+
+Previous attempts to implement custom compare hooks using the documented `struct LBSortMsg` interface failed due to:
+1. Type fields (`lbsm_TypeA`, `lbsm_TypeB`) returning garbage values instead of expected 1/2/0
+2. Data union fields not containing valid pointers
+3. Register calling convention mismatches between documentation and implementation
+
+The leading zeros approach proved to be the reliable, maintainable solution.
+
+**DEPRECATED Implementation Pattern:**
+
+**DEPRECATED Implementation Pattern:**
+
+```c
+/* This approach is unreliable - use leading zeros instead! */
+#include <utility/hooks.h>
+#include <gadgets/listbrowser.h>
+#include <stdlib.h>
+
+static LONG numeric_compare_hook_func(struct Hook *hook, APTR obj, struct LBSortMsg *msg)
+{
+    /* WARNING: msg structure fields don't match documentation in practice */
+    /* Type fields return garbage, data pointers are invalid */
+    /* This code is here for reference only - DO NOT USE */
+    return 0;
+}
+```
+
+**Why This Fails:**
+- `lbsm_TypeA` and `lbsm_TypeB` return garbage values (not 1/2/0 as documented)
+- Data union pointers are invalid or NULL
+- Register calling conventions vary unpredictably
+- Structure layout doesn't match AutoDoc specification
+
+**Conclusion:** Use Solution 1 (leading zeros format) for all numeric columns.
 
 ---
 

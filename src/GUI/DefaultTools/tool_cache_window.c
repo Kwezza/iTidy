@@ -41,8 +41,10 @@
 #include <proto/utility.h>
 #include <proto/asl.h>
 #include <proto/gadtools.h>
+#include <utility/hooks.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 /* ReAction headers - MUST come before exec_list_compat.h to avoid macro conflict */
 #include <clib/alib_protos.h>
@@ -236,6 +238,11 @@ static ULONG ShowReActionRequester(struct Window *parent_window,
                                    CONST_STRPTR body,
                                    CONST_STRPTR gadgets,
                                    ULONG image_type);
+
+/*------------------------------------------------------------------------*/
+/* Numeric Sort Compare Hook - Not Used (see below for simpler solution) */
+/* Instead, we'll format the numbers with leading zeros for string sorting */
+/*------------------------------------------------------------------------*/
 
 /*------------------------------------------------------------------------*/
 /**
@@ -1165,7 +1172,6 @@ static void populate_tool_listbrowser(struct iTidyToolCacheWindow *tool_data)
     struct Node *node;
     struct Node *lb_node;
     char truncated_name[64];
-    char file_count_str[16];
     const char *status_str;
     
     if (tool_data == NULL || tool_data->tool_listbrowser_obj == NULL)
@@ -1211,20 +1217,17 @@ static void populate_tool_listbrowser(struct iTidyToolCacheWindow *tool_data)
             truncated_name[50] = '\0';
         }
         
-        /* Format file count */
-        sprintf(file_count_str, "%d", entry->file_count);
-        
         /* Status string */
         status_str = entry->exists ? "EXISTS" : "MISSING";
         
         /* Create ListBrowser node with 3 columns */
+        /* Column 1 uses LBNCA_Integer for native numeric sorting */
         lb_node = AllocListBrowserNode(3,
             LBNA_Column, 0,
                 LBNCA_CopyText, TRUE,
                 LBNCA_Text, truncated_name,
             LBNA_Column, 1,
-                LBNCA_CopyText, TRUE,
-                LBNCA_Text, file_count_str,
+                LBNCA_Integer, &entry->file_count,  /* Pass pointer for integer display/sorting */
                 LBNCA_Justification, LCJ_RIGHT,
             LBNA_Column, 2,
                 LBNCA_CopyText, TRUE,
@@ -1308,20 +1311,23 @@ void update_tool_details(struct iTidyToolCacheWindow *tool_data, LONG selected_i
         goto attach_list;
     }
     
-    /* Find selected entry by walking filtered list */
+    /* Get cache_index from the selected ListBrowser node's UserData */
+    /* This works correctly even after sorting, unlike walking filtered_entries */
     {
-        struct Node *node;
+        struct Node *selected_node = NULL;
         LONG index = 0;
         
-        for (node = tool_data->filtered_entries.lh_Head; 
-             node->ln_Succ != NULL; 
-             node = node->ln_Succ, index++)
+        /* Walk the ListBrowser's actual node list to find the selected node */
+        for (selected_node = tool_data->tool_list_nodes->lh_Head;
+             selected_node->ln_Succ != NULL;
+             selected_node = selected_node->ln_Succ, index++)
         {
             if (index == selected_index)
             {
-                struct ToolCacheDisplayEntry *entry;
-                entry = (struct ToolCacheDisplayEntry *)((char *)node - sizeof(struct Node));
-                cache_index = entry->cache_index;
+                /* Extract cache_index from UserData */
+                GetListBrowserNodeAttrs(selected_node,
+                                       LBNA_UserData, &cache_index,
+                                       TAG_DONE);
                 break;
             }
         }
@@ -2935,10 +2941,22 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data)
                                 tool_data->last_sort_column = sort_column;
                                 tool_data->sort_direction = direction;
                                 
-                                /* Invoke sort method */
-                                DoGadgetMethod((struct Gadget *)tool_data->tool_listbrowser_obj,
-                                              tool_data->window, NULL,
-                                              LBM_SORT, tool_data->tool_list_nodes, sort_column, direction, NULL);
+                                log_debug(LOG_GUI, "*** Column sort requested: column=%lu, direction=%s ***\n",
+                                          sort_column, (direction == LBMSORT_FORWARD) ? "FORWARD" : "REVERSE");
+                                
+                                /* Use default string sort for all columns */
+                                /* NOTE: Column 1 (Files) uses leading zeros format for numeric sorting */
+                                {
+                                    LONG sort_result;
+                                    
+                                    log_debug(LOG_GUI, "*** Using DEFAULT string compare for column %lu ***\n", sort_column);
+                                    
+                                    sort_result = DoGadgetMethod((struct Gadget *)tool_data->tool_listbrowser_obj,
+                                                  tool_data->window, NULL,
+                                                  LBM_SORT, tool_data->tool_list_nodes, sort_column, direction, NULL);
+                                    
+                                    log_debug(LOG_GUI, "*** DoGadgetMethod(LBM_SORT) returned: %ld ***\n", sort_result);
+                                }
                                 
                                 /* Update display to show sort arrow */
                                 SetGadgetAttrs((struct Gadget *)tool_data->tool_listbrowser_obj,
