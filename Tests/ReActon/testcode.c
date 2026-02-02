@@ -1061,6 +1061,25 @@ void recursive_progress_window( void )
 
 void default_tool_analysis( void )
 {
+  struct NewMenu menuData[] =
+  {
+    { NM_TITLE, "Project", 0, 0, 0, NULL },
+    { NM_ITEM, "New", "N", 0, 126, NULL },
+    { NM_ITEM, "Open", "O", 0, 125, NULL },
+    { NM_ITEM, NM_BARLABEL, 0, 0, 123, NULL },
+    { NM_ITEM, "Save", "S", 0, 119, NULL },
+    { NM_ITEM, "Save as...", "A", 0, 111, NULL },
+    { NM_ITEM, NM_BARLABEL, 0, 0, 95, NULL },
+    { NM_ITEM, "Close", 0, 0, 63, NULL },
+    { NM_TITLE, "File", 0, 0, 0, NULL },
+    { NM_ITEM, "Export list of tools", "T", 0, 2, NULL },
+    { NM_ITEM, "Export list of files and tools", "F", 0, 1, NULL },
+    { NM_TITLE, "View", 0, 0, 0, NULL },
+    { NM_ITEM, "System PATH", "P", 0, 0, NULL },
+    { NM_END, NULL, 0, 0, 0, (APTR)0 }
+  };
+
+  struct Menu	*menu_strip = NULL;
   struct Gadget	*main_gadgets[ 17 ];
   Object *window_object = NULL;
   struct HintInfo hintInfo[] =
@@ -1094,6 +1113,11 @@ void default_tool_analysis( void )
     { 1, "", 0 },
     { -1, (STRPTR)~0, -1 }
   };
+
+  menu_strip = CreateMenusA( menuData, TAG_END );
+  LayoutMenus( menu_strip, gVisinfo,
+    GTMN_NewLookMenus, TRUE,
+    TAG_DONE );
 
   labels141 = ChooserLabelsA( labels141_str );
   labels142 = BrowserNodesA( labels142_str, 1 );
