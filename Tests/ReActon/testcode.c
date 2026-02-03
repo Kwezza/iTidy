@@ -42,6 +42,7 @@ void restore_backups( void );
 void restore_folders_view( void );
 void recursive_progress_window( void );
 void default_tool_analysis( void );
+void default_tool_update( void );
 
 struct Screen	*gScreen = NULL;
 struct DrawInfo	*gDrawInfo = NULL;
@@ -66,7 +67,7 @@ struct IntuitionBase *IntuitionBase = NULL;
 //window ids
 enum win { main_window_id = 4, main_progress_window_id = 53, advanced_settings_id = 59, 
   restore_backups_id = 103, restore_folders_view_id = 118, recursive_progress_window_id = 123, 
-  default_tool_analysis_id = 132 };
+  default_tool_analysis_id = 132, default_tool_update_id = 152 };
 
 //main_window gadgets
 enum main_window_idx { master_layout, folder_layout, folder_name, itidy_options, left_column, 
@@ -103,6 +104,11 @@ enum default_tool_analysis_idx { vert_134, tool_folder_location, tools_folder_na
   tool_status_listview, tool_status_buttons, tool_status_layout_col1, 
   replace_tool_batch, resore_default_tools_backup, tool_status_layout_col2, 
   replace_tool_single, tools_close_button };
+//default_tool_update gadgets
+enum default_tool_update_idx { vert_154, current_tool_layout, label_current_tool, mode_layout, 
+  mode_text, change_to_layout, default_tool_new_tool, update_progress_listview, 
+  update_progress_label, listview_update_progress, default_tool_buttons, 
+  default_tool_update_button, update_tool_close };
 
 void main_window( void )
 {
@@ -1277,5 +1283,159 @@ void default_tool_analysis( void )
     TAG_END),
   TAG_END);  
   main_gadgets[16] = 0;
+}
+
+void default_tool_update( void )
+{
+  struct Gadget	*main_gadgets[ 14 ];
+  Object *window_object = NULL;
+  struct HintInfo hintInfo[] =
+  {
+    {vert_154,-1,"",0},
+    {current_tool_layout,-1,"",0},
+    {label_current_tool,-1,"",0},
+    {mode_layout,-1,"",0},
+    {mode_text,-1,"",0},
+    {change_to_layout,-1,"",0},
+    {default_tool_new_tool,-1,"",0},
+    {update_progress_listview,-1,"",0},
+    {update_progress_label,-1,"",0},
+    {listview_update_progress,-1,"",0},
+    {default_tool_buttons,-1,"",0},
+    {default_tool_update_button,-1,"",0},
+    {update_tool_close,-1,"",0},
+    {-1,-1,NULL,0}
+  };
+  struct List *labels165;
+  UBYTE *labels165_str[] = { NULL };
+  labels165 = ListViewLabelsA( labels165_str );
+
+  window_object = NewObject( WINDOW_GetClass(), NULL, 
+    WA_Title, "iTidy - Replace default tool",
+    WA_Left, 5,
+    WA_Top, 20,
+    WA_Width, 150,
+    WA_Height, 80,
+    WA_MinWidth, 150,
+    WA_MinHeight, 80,
+    WA_MaxWidth, 8192,
+    WA_MaxHeight, 8192,
+    WINDOW_HintInfo, hintInfo,
+    WINDOW_GadgetHelp, TRUE,
+    WINDOW_AppPort, gAppPort,
+    WA_CloseGadget, TRUE,
+    WA_DepthGadget, TRUE,
+    WA_SizeGadget, TRUE,
+    WA_DragBar, TRUE,
+    WA_Activate, TRUE,
+    WINDOW_IconTitle, "MyApp",
+    WA_NoCareRefresh, TRUE,
+    WA_IDCMP, IDCMP_GADGETDOWN | IDCMP_GADGETUP | IDCMP_CLOSEWINDOW | IDCMP_NEWSIZE,
+    WINDOW_ParentGroup, NewObject( LAYOUT_GetClass(), NULL,
+    LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+    LAYOUT_SpaceOuter, TRUE,
+    LAYOUT_DeferLayout, TRUE,
+      LAYOUT_AddChild, main_gadgets[vert_154] = NewObject( LAYOUT_GetClass(), NULL, 
+        GA_ID, vert_154,
+        LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+        LAYOUT_AddChild, main_gadgets[current_tool_layout] = NewObject( LAYOUT_GetClass(), NULL, 
+          GA_ID, current_tool_layout,
+          LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+          LAYOUT_LeftSpacing, 2,
+          LAYOUT_RightSpacing, 2,
+          LAYOUT_TopSpacing, 2,
+          LAYOUT_BottomSpacing, 2,
+          LAYOUT_AddImage, main_gadgets[label_current_tool] = NewObject( LABEL_GetClass(), NULL, 
+            GA_ID, label_current_tool,
+            LABEL_DrawInfo, gDrawInfo,
+            LABEL_Text, "Current tool:",
+          TAG_END),
+        TAG_END),
+        CHILD_WeightedHeight, 5,
+        LAYOUT_AddChild, main_gadgets[mode_layout] = NewObject( LAYOUT_GetClass(), NULL, 
+          GA_ID, mode_layout,
+          LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+          LAYOUT_LeftSpacing, 2,
+          LAYOUT_RightSpacing, 2,
+          LAYOUT_BottomSpacing, 2,
+          LAYOUT_AddImage, main_gadgets[mode_text] = NewObject( LABEL_GetClass(), NULL, 
+            GA_ID, mode_text,
+            LABEL_DrawInfo, gDrawInfo,
+            LABEL_Text, "mode",
+          TAG_END),
+        TAG_END),
+        CHILD_WeightedHeight, 5,
+        LAYOUT_AddChild, main_gadgets[change_to_layout] = NewObject( LAYOUT_GetClass(), NULL, 
+          GA_ID, change_to_layout,
+          LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+          LAYOUT_LeftSpacing, 2,
+          LAYOUT_RightSpacing, 2,
+          LAYOUT_BottomSpacing, 2,
+          LAYOUT_AddChild, main_gadgets[default_tool_new_tool] = NewObject( GETFILE_GetClass(), NULL, 
+            GA_ID, default_tool_new_tool,
+            GA_RelVerify, TRUE,
+            GETFILE_TitleText, "Select a file",
+            GETFILE_ReadOnly, TRUE,
+          TAG_END),
+          CHILD_Label, NewObject( LABEL_GetClass(), NULL, 
+            LABEL_Text, "Change to:",
+          TAG_END),
+        TAG_END),
+        CHILD_WeightedHeight, 5,
+        LAYOUT_AddChild, main_gadgets[update_progress_listview] = NewObject( LAYOUT_GetClass(), NULL, 
+          GA_ID, update_progress_listview,
+          LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+          LAYOUT_HorizAlignment, LALIGN_CENTER,
+          LAYOUT_LeftSpacing, 2,
+          LAYOUT_RightSpacing, 2,
+          LAYOUT_BottomSpacing, 2,
+          LAYOUT_AddImage, main_gadgets[update_progress_label] = NewObject( LABEL_GetClass(), NULL, 
+            GA_ID, update_progress_label,
+            LABEL_DrawInfo, gDrawInfo,
+            LABEL_Text, "Update progress",
+            LABEL_Justification, LJ_CENTER,
+          TAG_END),
+          CHILD_WeightedHeight, 5,
+          LAYOUT_AddChild, main_gadgets[listview_update_progress] = NewObject( LISTVIEW_GetClass(), NULL, 
+            GA_ID, listview_update_progress,
+            GA_RelVerify, TRUE,
+            GA_TabCycle, TRUE,
+            LISTVIEW_Labels, labels165,
+          TAG_END),
+          CHILD_WeightedHeight, 95,
+        TAG_END),
+        CHILD_WeightedHeight, 80,
+        LAYOUT_AddChild, main_gadgets[default_tool_buttons] = NewObject( LAYOUT_GetClass(), NULL, 
+          GA_ID, default_tool_buttons,
+          LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
+          LAYOUT_LeftSpacing, 2,
+          LAYOUT_RightSpacing, 2,
+          LAYOUT_BottomSpacing, 2,
+          LAYOUT_AddChild, main_gadgets[default_tool_update_button] = NewObject( BUTTON_GetClass(), NULL, 
+            GA_ID, default_tool_update_button,
+            GA_Text, "Update default tool",
+            GA_RelVerify, TRUE,
+            GA_TabCycle, TRUE,
+            BUTTON_TextPen, 1,
+            BUTTON_BackgroundPen, 0,
+            BUTTON_FillTextPen, 1,
+            BUTTON_FillPen, 3,
+          TAG_END),
+          LAYOUT_AddChild, main_gadgets[update_tool_close] = NewObject( BUTTON_GetClass(), NULL, 
+            GA_ID, update_tool_close,
+            GA_Text, "Close",
+            GA_RelVerify, TRUE,
+            GA_TabCycle, TRUE,
+            BUTTON_TextPen, 1,
+            BUTTON_BackgroundPen, 0,
+            BUTTON_FillTextPen, 1,
+            BUTTON_FillPen, 3,
+          TAG_END),
+        TAG_END),
+        CHILD_WeightedHeight, 5,
+      TAG_END),
+    TAG_END),
+  TAG_END);  
+  main_gadgets[13] = 0;
 }
 

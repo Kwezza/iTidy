@@ -93,7 +93,7 @@ GUI_SRCS = \
 DEFAULT_TOOLS_SRCS = \
 	$(SRC_DIR)/GUI/DefaultTools/tool_cache_window.c \
 	$(SRC_DIR)/GUI/DefaultTools/tool_cache_reports.c \
-	$(SRC_DIR)/GUI/DefaultTools/default_tool_update_window.c \
+	$(SRC_DIR)/GUI/DefaultTools/default_tool_update_window_reaction.c \
 	$(SRC_DIR)/GUI/DefaultTools/default_tool_backup.c \
 	$(SRC_DIR)/GUI/DefaultTools/default_tool_restore_window.c
 

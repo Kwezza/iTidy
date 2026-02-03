@@ -54,7 +54,7 @@
 /* Project headers (include after system headers) */
 #include "tool_cache_window.h"
 #include "tool_cache_reports.h"
-#include "default_tool_update_window.h"
+#include "default_tool_update_window_reaction.h"
 #include "GUI/RestoreBackups/restore_window.h"
 #include "default_tool_backup.h"
 #include "../easy_request_helper.h"
@@ -2069,7 +2069,7 @@ static void handle_replace_batch_button(struct iTidyToolCacheWindow *tool_data)
     struct Node *node;
     LONG index = 0;
     int i, j;
-    struct iTidy_DefaultToolUpdateWindow *update_window;
+    struct iTidy_DefaultToolUpdateWindow_ReAction *update_window;
     struct iTidy_DefaultToolUpdateContext update_ctx;
     char **icon_paths_array = NULL;
     int cache_index = -1;
@@ -2087,7 +2087,7 @@ static void handle_replace_batch_button(struct iTidyToolCacheWindow *tool_data)
     }
     
     /* Allocate window structure on heap */
-    update_window = (struct iTidy_DefaultToolUpdateWindow *)whd_malloc(sizeof(struct iTidy_DefaultToolUpdateWindow));
+    update_window = (struct iTidy_DefaultToolUpdateWindow_ReAction *)whd_malloc(sizeof(struct iTidy_DefaultToolUpdateWindow_ReAction));
     if (update_window == NULL)
     {
         ShowReActionRequester(tool_data->window,
@@ -2145,15 +2145,15 @@ static void handle_replace_batch_button(struct iTidyToolCacheWindow *tool_data)
     
     log_info(LOG_GUI, "Opening batch update window for %d icons\n", update_ctx.icon_count);
     
-    memset(update_window, 0, sizeof(struct iTidy_DefaultToolUpdateWindow));
+    memset(update_window, 0, sizeof(struct iTidy_DefaultToolUpdateWindow_ReAction));
     
-    if (iTidy_OpenDefaultToolUpdateWindow(update_window, &update_ctx))
+    if (iTidy_OpenDefaultToolUpdateWindow_ReAction((struct iTidy_DefaultToolUpdateWindow_ReAction *)update_window, &update_ctx))
     {
-        while (iTidy_HandleDefaultToolUpdateEvents(update_window))
+        while (iTidy_HandleDefaultToolUpdateEvents_ReAction((struct iTidy_DefaultToolUpdateWindow_ReAction *)update_window))
         {
             /* Keep processing events */
         }
-        iTidy_CloseDefaultToolUpdateWindow(update_window);
+        iTidy_CloseDefaultToolUpdateWindow_ReAction((struct iTidy_DefaultToolUpdateWindow_ReAction *)update_window);
     }
     
     whd_free(update_window);
@@ -2177,7 +2177,7 @@ static void handle_replace_single_button(struct iTidyToolCacheWindow *tool_data)
     LONG index = 0;
     int cache_index = -1;
     int file_index;
-    struct iTidy_DefaultToolUpdateWindow *update_window;
+    struct iTidy_DefaultToolUpdateWindow_ReAction *update_window;
     struct iTidy_DefaultToolUpdateContext update_ctx;
     
     log_info(LOG_GUI, "Replace Tool (Single) button clicked\n");
@@ -2232,7 +2232,7 @@ static void handle_replace_single_button(struct iTidyToolCacheWindow *tool_data)
     }
     
     /* Allocate window structure */
-    update_window = (struct iTidy_DefaultToolUpdateWindow *)whd_malloc(sizeof(struct iTidy_DefaultToolUpdateWindow));
+    update_window = (struct iTidy_DefaultToolUpdateWindow_ReAction *)whd_malloc(sizeof(struct iTidy_DefaultToolUpdateWindow_ReAction));
     if (update_window == NULL)
     {
         ShowReActionRequester(tool_data->window,
@@ -2253,15 +2253,15 @@ static void handle_replace_single_button(struct iTidyToolCacheWindow *tool_data)
     log_info(LOG_GUI, "Opening single update window for file [%d]: %s\n",
                  file_index, update_ctx.single_info_path);
     
-    memset(update_window, 0, sizeof(struct iTidy_DefaultToolUpdateWindow));
+    memset(update_window, 0, sizeof(struct iTidy_DefaultToolUpdateWindow_ReAction));
     
-    if (iTidy_OpenDefaultToolUpdateWindow(update_window, &update_ctx))
+    if (iTidy_OpenDefaultToolUpdateWindow_ReAction((struct iTidy_DefaultToolUpdateWindow_ReAction *)update_window, &update_ctx))
     {
-        while (iTidy_HandleDefaultToolUpdateEvents(update_window))
+        while (iTidy_HandleDefaultToolUpdateEvents_ReAction((struct iTidy_DefaultToolUpdateWindow_ReAction *)update_window))
         {
             /* Keep processing events */
         }
-        iTidy_CloseDefaultToolUpdateWindow(update_window);
+        iTidy_CloseDefaultToolUpdateWindow_ReAction((struct iTidy_DefaultToolUpdateWindow_ReAction *)update_window);
     }
     
     whd_free(update_window);
@@ -2558,9 +2558,6 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
                     CHOOSER_PopUp, TRUE,
                     CHOOSER_Selected, 0,
                     CHOOSER_Labels, tool_data->filter_labels,
-                TAG_END),
-                CHILD_Label, NewObject(LABEL_GetClass(), NULL,
-                    LABEL_Text, "Filter",
                 TAG_END),
                 CHILD_WeightedHeight, 0,
                 
