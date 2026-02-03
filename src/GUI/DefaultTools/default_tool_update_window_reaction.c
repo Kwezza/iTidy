@@ -37,6 +37,7 @@ extern struct Library *ListBrowserBase;
 #include <intuition/gadgetclass.h>
 #include <intuition/icclass.h>
 #include <classes/window.h>
+#include <classes/requester.h>
 #include <gadgets/layout.h>
 #include <gadgets/button.h>
 #include <gadgets/getfile.h>
@@ -48,6 +49,7 @@ extern struct Library *ListBrowserBase;
 #include <proto/dos.h>
 #include <proto/utility.h>
 #include <proto/icon.h>
+#include <proto/requester.h>
 
 /* ReAction proto headers */
 #include <proto/window.h>
@@ -172,6 +174,17 @@ static void iTidy_FreeStatusEntries(struct iTidy_DefaultToolUpdateWindow_ReActio
     while ((node = RemHead(&data->status_list)) != NULL)
     {
         FreeListBrowserNode(node);
+    }
+    
+    /* Re-attach empty list and refresh display */
+    if (data->window && data->listbrowser_progress_obj)
+    {
+        SetGadgetAttrs((struct Gadget *)data->listbrowser_progress_obj, data->window, NULL,
+            LISTBROWSER_Labels, &data->status_list,
+            TAG_END);
+        
+        /* Force complete window refresh */
+        RefreshWindowFrame(data->window);
     }
 }
 
@@ -455,7 +468,45 @@ static BOOL perform_tool_update(struct iTidy_DefaultToolUpdateWindow_ReAction *d
                     success_count, (success_count == 1) ? "" : "s");
         }
         
-        ShowEasyRequest(data->window, "Default Tool Update", msg_buffer, "OK");
+        /* Show completion message using ReAction requester */
+        {
+            Object *req_obj;
+            struct Library *RequesterBase;
+            Class *RequesterClass;
+            
+            RequesterBase = OpenLibrary("requester.class", 0);
+            if (RequesterBase)
+            {
+                RequesterClass = REQUESTER_GetClass();
+                req_obj = NewObject(RequesterClass, NULL,
+                    REQ_Type, REQTYPE_INFO,
+                    REQ_TitleText, "Default Tool Update",
+                    REQ_BodyText, msg_buffer,
+                    REQ_GadgetText, "_Ok",
+                    REQ_Image, REQIMAGE_INFO,
+                    TAG_DONE);
+                
+                if (req_obj)
+                {
+                    struct orRequest req_msg;
+                    req_msg.MethodID = RM_OPENREQ;
+                    req_msg.or_Attrs = NULL;
+                    req_msg.or_Window = data->window;
+                    req_msg.or_Screen = NULL;
+                    
+                    DoMethodA(req_obj, (Msg)&req_msg);
+                    DisposeObject(req_obj);
+                }
+                
+                CloseLibrary(RequesterBase);
+            }
+            
+            /* Refresh window after requester closes */
+            if (data->window)
+            {
+                RefreshWindowFrame(data->window);
+            }
+        }
     }
     
     return (success_count > 0);
@@ -553,63 +604,84 @@ BOOL iTidy_OpenDefaultToolUpdateWindow_ReAction(struct iTidy_DefaultToolUpdateWi
         WINDOW_ParentGroup, data->main_layout_obj = VLayoutObject,
             LAYOUT_SpaceOuter, TRUE,
             LAYOUT_DeferLayout, TRUE,
-            
-            /* Current tool label */
-            LAYOUT_AddChild, data->current_tool_layout_obj = VLayoutObject,
-                GA_ID, GID_TOOL_UPDATE_CURRENT_TOOL_LAYOUT,
-                LAYOUT_LeftSpacing, 2,
+                            LAYOUT_LeftSpacing, 2,
                 LAYOUT_RightSpacing, 2,
                 LAYOUT_TopSpacing, 2,
-                LAYOUT_BottomSpacing, 2,
-                LAYOUT_AddImage, data->label_current_tool_obj = LabelObject,
-                    GA_ID, GID_TOOL_UPDATE_LABEL_CURRENT_TOOL,
-                    LABEL_DrawInfo, draw_info,
-                    LABEL_Text, data->current_tool_label,
-                LabelEnd,
-            LayoutEnd,
-            CHILD_WeightedHeight, 0,
+
             
-            /* Mode label */
-            LAYOUT_AddChild, data->mode_layout_obj = VLayoutObject,
-                GA_ID, GID_TOOL_UPDATE_MODE_LAYOUT,
+            /* Horizontal two-column layout with bevel for Current Tool / Mode / Change To */
+            LAYOUT_AddChild, data->horizontal_layout_obj = HLayoutObject,
+                GA_ID, GID_TOOL_UPDATE_CURRENT_TOOL_LAYOUT,
+                LAYOUT_BevelStyle, BVS_STANDARD,
                 LAYOUT_LeftSpacing, 2,
                 LAYOUT_RightSpacing, 2,
-                LAYOUT_BottomSpacing, 2,
-                LAYOUT_AddImage, data->mode_text_obj = LabelObject,
-                    GA_ID, GID_TOOL_UPDATE_MODE_TEXT,
-                    LABEL_DrawInfo, draw_info,
-                    LABEL_Text, data->mode_label,
-                LabelEnd,
+                LAYOUT_TopSpacing, 4,
+                LAYOUT_BottomSpacing, 4,
+                
+                /* Left column: labels (right-aligned) */
+                LAYOUT_AddChild, data->left_column_obj = VLayoutObject,
+                    LAYOUT_HorizAlignment, LALIGN_RIGHT,
+                    LAYOUT_AddChild, data->label_current_tool_obj = ButtonObject,
+                        GA_ID, GID_TOOL_UPDATE_LABEL_CURRENT_TOOL,
+                        GA_Text, "Current tool:",
+                        GA_ReadOnly, TRUE,
+                        BUTTON_Transparent, TRUE,
+                        BUTTON_BevelStyle, BVS_NONE,
+                        BUTTON_Justification, BCJ_RIGHT,
+                    ButtonEnd,
+                    LAYOUT_AddChild, data->label_mode_obj = ButtonObject,
+                        GA_ID, GID_TOOL_UPDATE_MODE_TEXT,
+                        GA_Text, "Mode:",
+                        GA_ReadOnly, TRUE,
+                        BUTTON_Transparent, TRUE,
+                        BUTTON_BevelStyle, BVS_NONE,
+                        BUTTON_Justification, BCJ_RIGHT,
+                    ButtonEnd,
+                    LAYOUT_AddChild, data->label_change_to_obj = ButtonObject,
+                        GA_Text, "Change to:",
+                        GA_ReadOnly, TRUE,
+                        BUTTON_Transparent, TRUE,
+                        BUTTON_BevelStyle, BVS_NONE,
+                        BUTTON_Justification, BCJ_RIGHT,
+                    ButtonEnd,
+                LayoutEnd,
+                CHILD_WeightedWidth, 20,
+                
+                /* Right column: values (left-aligned) */
+                LAYOUT_AddChild, data->right_column_obj = VLayoutObject,
+                    LAYOUT_AddChild, data->current_tool_text_obj = ButtonObject,
+                        GA_Text, data->current_tool_label,
+                        GA_ReadOnly, TRUE,
+                        BUTTON_Transparent, TRUE,
+                        BUTTON_BevelStyle, BVS_NONE,
+                        BUTTON_Justification, BCJ_LEFT,
+                    ButtonEnd,
+                    LAYOUT_AddChild, data->mode_text_obj = ButtonObject,
+                        GA_Text, data->mode_label,
+                        GA_ReadOnly, TRUE,
+                        BUTTON_Transparent, TRUE,
+                        BUTTON_BevelStyle, BVS_NONE,
+                        BUTTON_Justification, BCJ_LEFT,
+                    ButtonEnd,
+                    LAYOUT_AddChild, data->new_tool_getfile_obj = GetFileObject,
+                        GA_ID, GID_TOOL_UPDATE_NEW_TOOL_GETFILE,
+                        GA_RelVerify, TRUE,
+                        GETFILE_TitleText, "Select Default Tool Program",
+                        GETFILE_Drawer, "C:",
+                        GETFILE_ReadOnly, TRUE,
+                        GETFILE_RejectIcons, TRUE,
+                        GETFILE_DoPatterns, FALSE,
+                    GetFileEnd,
+                LayoutEnd,
+                CHILD_WeightedWidth, 80,
             LayoutEnd,
-            CHILD_WeightedHeight, 0,
-            
-            /* GetFile gadget for "Change to:" */
-            LAYOUT_AddChild, data->change_to_layout_obj = VLayoutObject,
-                GA_ID, GID_TOOL_UPDATE_CHANGE_TO_LAYOUT,
-                LAYOUT_LeftSpacing, 2,
-                LAYOUT_RightSpacing, 2,
-                LAYOUT_BottomSpacing, 2,
-                LAYOUT_AddChild, data->new_tool_getfile_obj = GetFileObject,
-                    GA_ID, GID_TOOL_UPDATE_NEW_TOOL_GETFILE,
-                    GA_RelVerify, TRUE,
-                    GETFILE_TitleText, "Select Default Tool Program",
-                    GETFILE_Drawer, "C:",
-                    GETFILE_ReadOnly, TRUE,
-                    GETFILE_RejectIcons, TRUE,
-                    GETFILE_DoPatterns, FALSE,
-                GetFileEnd,
-                CHILD_Label, LabelObject,
-                    LABEL_Text, "Change to:",
-                LabelEnd,
-            LayoutEnd,
-            CHILD_WeightedHeight, 0,
+            CHILD_WeightedHeight, 5,
             
             /* Update progress listview */
             LAYOUT_AddChild, data->update_progress_layout_obj = VLayoutObject,
                 GA_ID, GID_TOOL_UPDATE_PROGRESS_LAYOUT,
                 LAYOUT_HorizAlignment, LALIGN_CENTER,
-                LAYOUT_LeftSpacing, 2,
-                LAYOUT_RightSpacing, 2,
+                LAYOUT_TopSpacing, 2,
                 LAYOUT_BottomSpacing, 2,
                 LAYOUT_AddImage, data->update_progress_label_obj = LabelObject,
                     GA_ID, GID_TOOL_UPDATE_PROGRESS_LABEL,
@@ -617,7 +689,7 @@ BOOL iTidy_OpenDefaultToolUpdateWindow_ReAction(struct iTidy_DefaultToolUpdateWi
                     LABEL_Text, "Update progress",
                     LABEL_Justification, LJ_CENTER,
                 LabelEnd,
-                CHILD_WeightedHeight, 0,
+                CHILD_WeightedHeight, 5,
                 LAYOUT_AddChild, data->listbrowser_progress_obj = ListBrowserObject,
                     GA_ID, GID_TOOL_UPDATE_LISTVIEW_PROGRESS,
                     GA_RelVerify, TRUE,
@@ -625,17 +697,15 @@ BOOL iTidy_OpenDefaultToolUpdateWindow_ReAction(struct iTidy_DefaultToolUpdateWi
                     LISTBROWSER_Labels, &data->status_list,
                     LISTBROWSER_ColumnInfo, NULL,  /* Will set after creating column info */
                     LISTBROWSER_ColumnTitles, TRUE,
-                    LISTBROWSER_ShowSelected, TRUE,
                 End,
-                CHILD_WeightedHeight, 100,
             LayoutEnd,
-            CHILD_WeightedHeight, 100,
+            CHILD_WeightedHeight, 80,
             
             /* Buttons */
             LAYOUT_AddChild, data->buttons_layout_obj = HLayoutObject,
                 GA_ID, GID_TOOL_UPDATE_BUTTONS_LAYOUT,
-                LAYOUT_LeftSpacing, 2,
-                LAYOUT_RightSpacing, 2,
+                LAYOUT_LeftSpacing, 0,
+                LAYOUT_RightSpacing, 0,
                 LAYOUT_BottomSpacing, 2,
                 LAYOUT_AddChild, data->update_button_obj = ButtonObject,
                     GA_ID, GID_TOOL_UPDATE_UPDATE_BUTTON,
@@ -650,7 +720,7 @@ BOOL iTidy_OpenDefaultToolUpdateWindow_ReAction(struct iTidy_DefaultToolUpdateWi
                     GA_TabCycle, TRUE,
                 ButtonEnd,
             LayoutEnd,
-            CHILD_WeightedHeight, 0,
+            CHILD_WeightedHeight, 5,
             
         LayoutEnd,
     WindowEnd;

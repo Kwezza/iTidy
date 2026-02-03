@@ -76,11 +76,14 @@ struct iTidy_DefaultToolUpdateWindow_ReAction {
     
     /* ReAction gadget objects */
     Object *main_layout_obj;
-    Object *current_tool_layout_obj;
-    Object *label_current_tool_obj;  /* Label image (can be updated with RefreshSetGadgetAttrs) */
-    Object *mode_layout_obj;
-    Object *mode_text_obj;           /* Label image (can be updated with RefreshSetGadgetAttrs) */
-    Object *change_to_layout_obj;
+    Object *horizontal_layout_obj;   /* Horizontal container with bevel for current tool/mode/change to */
+    Object *left_column_obj;         /* Left column (labels, right-aligned) */
+    Object *right_column_obj;        /* Right column (values, left-aligned) */
+    Object *label_current_tool_obj;  /* Transparent button label "Current tool:" */
+    Object *current_tool_text_obj;   /* Transparent button showing current tool value */
+    Object *label_mode_obj;          /* Transparent button label "Mode:" */
+    Object *mode_text_obj;           /* Transparent button showing mode value */
+    Object *label_change_to_obj;     /* Transparent button label "Change to:" */
     Object *new_tool_getfile_obj;    /* GetFile gadget for tool selection */
     Object *update_progress_layout_obj;
     Object *update_progress_label_obj;
