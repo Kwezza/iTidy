@@ -2309,20 +2309,12 @@ static void handle_restore_tools_button(struct iTidyToolCacheWindow *tool_data)
     
     safe_set_window_pointer(tool_data->window, FALSE);
     
-    /* Run restore window event loop */
+    /* Run restore window event loop (ReAction-style) */
     keep_running = TRUE;
     while (keep_running)
     {
-        WaitPort(restore_window->UserPort);
-        
-        while ((restore_msg = GT_GetIMsg(restore_window->UserPort)))
-        {
-            keep_running = iTidy_HandleToolRestoreWindowEvent(restore_window, restore_msg);
-            GT_ReplyIMsg(restore_msg);
-            
-            if (!keep_running)
-                break;
-        }
+        /* For ReAction windows, pass NULL message - handler uses RA_HandleInput internally */
+        keep_running = iTidy_HandleToolRestoreWindowEvent(restore_window, NULL);
     }
     
     /* Check if any restore operations were performed */

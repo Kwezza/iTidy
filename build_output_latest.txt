@@ -1,7 +1,197 @@
+Compiling [build/amiga/main_gui.o] from src/main_gui.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/main_gui.c -o build/amiga/main_gui.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main_gui.c":55
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main_gui.c":55
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main_gui.c":55
+Compiling [build/amiga/icon_types.o] from src/icon_types.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/icon_types.c -o build/amiga/icon_types.o
+Compiling [build/amiga/icon_misc.o] from src/icon_misc.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/icon_misc.c -o build/amiga/icon_misc.o
+Compiling [build/amiga/icon_management.o] from src/icon_management.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/icon_management.c -o build/amiga/icon_management.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\icon_management.c":27
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\icon_management.c":27
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\icon_management.c":27
+Compiling [build/amiga/file_directory_handling.o] from src/file_directory_handling.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/file_directory_handling.c -o build/amiga/file_directory_handling.o
+Compiling [build/amiga/window_management.o] from src/window_management.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/window_management.c -o build/amiga/window_management.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\window_management.c":21
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\window_management.c":21
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\window_management.c":21
+Compiling [build/amiga/utilities.o] from src/utilities.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/utilities.c -o build/amiga/utilities.o
+Compiling [build/amiga/path_utilities.o] from src/path_utilities.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/path_utilities.c -o build/amiga/path_utilities.o
+Compiling [build/amiga/spinner.o] from src/spinner.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/spinner.c -o build/amiga/spinner.o
+Compiling [build/amiga/writeLog.o] from src/writeLog.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/writeLog.c -o build/amiga/writeLog.o
+Compiling [build/amiga/cli_utilities.o] from src/cli_utilities.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/cli_utilities.c -o build/amiga/cli_utilities.o
+Compiling [build/amiga/layout_preferences.o] from src/layout_preferences.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/layout_preferences.c -o build/amiga/layout_preferences.o
+Compiling [build/amiga/layout_processor.o] from src/layout_processor.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/layout_processor.c -o build/amiga/layout_processor.o
+Compiling [build/amiga/aspect_ratio_layout.o] from src/aspect_ratio_layout.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/aspect_ratio_layout.c -o build/amiga/aspect_ratio_layout.o
+Compiling [build/amiga/folder_scanner.o] from src/folder_scanner.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/folder_scanner.c -o build/amiga/folder_scanner.o
+Compiling [build/amiga/string_functions.o] from src/string_functions.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/string_functions.c -o build/amiga/string_functions.o
+Compiling [build/amiga/backup_catalog.o] from src/backup_catalog.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/backup_catalog.c -o build/amiga/backup_catalog.o
+Compiling [build/amiga/backup_lha.o] from src/backup_lha.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/backup_lha.c -o build/amiga/backup_lha.o
+Compiling [build/amiga/backup_marker.o] from src/backup_marker.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/backup_marker.c -o build/amiga/backup_marker.o
+Compiling [build/amiga/backup_paths.o] from src/backup_paths.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/backup_paths.c -o build/amiga/backup_paths.o
+Compiling [build/amiga/backup_runs.o] from src/backup_runs.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/backup_runs.c -o build/amiga/backup_runs.o
+Compiling [build/amiga/backup_session.o] from src/backup_session.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/backup_session.c -o build/amiga/backup_session.o
+Compiling [build/amiga/backup_restore.o] from src/backup_restore.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/backup_restore.c -o build/amiga/backup_restore.o
+Compiling [build/amiga/helpers/listview_simple_columns.o] from src/helpers/listview_simple_columns.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/helpers/listview_simple_columns.c -o build/amiga/helpers/listview_simple_columns.o
+Compiling [build/amiga/helpers/list_formatter.o] from src/helpers/list_formatter.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/helpers/list_formatter.c -o build/amiga/helpers/list_formatter.o
+Compiling [build/amiga/GUI/main_window.o] from src/GUI/main_window.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/GUI/main_window.c -o build/amiga/GUI/main_window.o
+Compiling [build/amiga/GUI/advanced_window.o] from src/GUI/advanced_window.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/GUI/advanced_window.c -o build/amiga/GUI/advanced_window.o
+Compiling [build/amiga/GUI/beta_options_window.o] from src/GUI/beta_options_window.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/GUI/beta_options_window.c -o build/amiga/GUI/beta_options_window.o
+Compiling [build/amiga/GUI/easy_request_helper.o] from src/GUI/easy_request_helper.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/GUI/easy_request_helper.c -o build/amiga/GUI/easy_request_helper.o
+Compiling [build/amiga/GUI/window_enumerator.o] from src/GUI/window_enumerator.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/GUI/window_enumerator.c -o build/amiga/GUI/window_enumerator.o
+Compiling [build/amiga/GUI/wb_classify.o] from src/GUI/wb_classify.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/GUI/wb_classify.c -o build/amiga/GUI/wb_classify.o
+Compiling [build/amiga/GUI/gui_groupbox.o] from src/GUI/gui_groupbox.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/GUI/gui_groupbox.c -o build/amiga/GUI/gui_groupbox.o
+Compiling [build/amiga/GUI/gui_utilities.o] from src/GUI/gui_utilities.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/GUI/gui_utilities.c -o build/amiga/GUI/gui_utilities.o
+Compiling [build/amiga/GUI/StatusWindows/progress_common.o] from src/GUI/StatusWindows/progress_common.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/GUI/StatusWindows/progress_common.c -o build/amiga/GUI/StatusWindows/progress_common.o
+Compiling [build/amiga/GUI/StatusWindows/progress_window.o] from src/GUI/StatusWindows/progress_window.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/GUI/StatusWindows/progress_window.c -o build/amiga/GUI/StatusWindows/progress_window.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src\GUI\StatusWindows\progress_window.c":8
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src\GUI\StatusWindows\progress_window.c":8
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src\GUI\StatusWindows\progress_window.c":8
+Compiling [build/amiga/GUI/StatusWindows/recursive_progress.o] from src/GUI/StatusWindows/recursive_progress.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/GUI/StatusWindows/recursive_progress.c -o build/amiga/GUI/StatusWindows/recursive_progress.o
+Compiling [build/amiga/GUI/StatusWindows/main_progress_window.o] from src/GUI/StatusWindows/main_progress_window.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/GUI/StatusWindows/main_progress_window.c -o build/amiga/GUI/StatusWindows/main_progress_window.o
+Compiling [build/amiga/GUI/DefaultTools/tool_cache_window.o] from src/GUI/DefaultTools/tool_cache_window.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/GUI/DefaultTools/tool_cache_window.c -o build/amiga/GUI/DefaultTools/tool_cache_window.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src\GUI\DefaultTools\tool_cache_window.c":66
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src\GUI\DefaultTools\tool_cache_window.c":66
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src\GUI\DefaultTools\tool_cache_window.c":66
+Compiling [build/amiga/GUI/DefaultTools/tool_cache_reports.o] from src/GUI/DefaultTools/tool_cache_reports.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/GUI/DefaultTools/tool_cache_reports.c -o build/amiga/GUI/DefaultTools/tool_cache_reports.o
 Compiling [build/amiga/GUI/DefaultTools/default_tool_update_window_reaction.o] from src/GUI/DefaultTools/default_tool_update_window_reaction.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/GUI/DefaultTools/default_tool_update_window_reaction.c -o build/amiga/GUI/DefaultTools/default_tool_update_window_reaction.o
+>                    DoMethodA(req_obj, (Msg)&req_msg);
+warning 161 in line 497 of "src\GUI\DefaultTools\default_tool_update_window_reaction.c": implicit declaration of function <DoMethodA>
 >    data->window = (struct Window *)RA_OpenWindow(data->window_obj);
-warning 161 in line 671 of "src\GUI\DefaultTools\default_tool_update_window_reaction.c": implicit declaration of function <DoMethod>
+warning 161 in line 741 of "src\GUI\DefaultTools\default_tool_update_window_reaction.c": implicit declaration of function <DoMethod>
+Compiling [build/amiga/GUI/DefaultTools/default_tool_backup.o] from src/GUI/DefaultTools/default_tool_backup.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/GUI/DefaultTools/default_tool_backup.c -o build/amiga/GUI/DefaultTools/default_tool_backup.o
+Compiling [build/amiga/GUI/DefaultTools/default_tool_restore_window.o] from src/GUI/DefaultTools/default_tool_restore_window.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/GUI/DefaultTools/default_tool_restore_window.c -o build/amiga/GUI/DefaultTools/default_tool_restore_window.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src\GUI\DefaultTools\default_tool_restore_window.c":53
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src\GUI\DefaultTools\default_tool_restore_window.c":53
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src\GUI\DefaultTools\default_tool_restore_window.c":53
+Compiling [build/amiga/GUI/RestoreBackups/restore_window.o] from src/GUI/RestoreBackups/restore_window.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/GUI/RestoreBackups/restore_window.c -o build/amiga/GUI/RestoreBackups/restore_window.o
+Compiling [build/amiga/GUI/RestoreBackups/folder_view_window.o] from src/GUI/RestoreBackups/folder_view_window.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/GUI/RestoreBackups/folder_view_window.c -o build/amiga/GUI/RestoreBackups/folder_view_window.o
+Compiling [build/amiga/DOS/getDiskDetails.o] from src/DOS/getDiskDetails.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/DOS/getDiskDetails.c -o build/amiga/DOS/getDiskDetails.o
+Compiling [build/amiga/Settings/IControlPrefs.o] from src/Settings/IControlPrefs.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/Settings/IControlPrefs.c -o build/amiga/Settings/IControlPrefs.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\Settings\IControlPrefs.c":3
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\Settings\IControlPrefs.c":3
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\Settings\IControlPrefs.c":3
+Compiling [build/amiga/Settings/WorkbenchPrefs.o] from src/Settings/WorkbenchPrefs.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/Settings/WorkbenchPrefs.c -o build/amiga/Settings/WorkbenchPrefs.o
+>	TEXT whdp_Name[0]
+warning 61 in line 59 of "prefs\workbench.h": array of size <=0 (set to 1)
+	included from file "src\Settings\WorkbenchPrefs.c":7
+>	TEXT wtfp_Format[0]
+warning 61 in line 67 of "prefs\workbench.h": array of size <=0 (set to 1)
+	included from file "src\Settings\WorkbenchPrefs.c":7
+Compiling [build/amiga/Settings/get_fonts.o] from src/Settings/get_fonts.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/Settings/get_fonts.c -o build/amiga/Settings/get_fonts.o
+Compiling [build/amiga/platform/amiga_platform.o] from src/platform/amiga_platform.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/platform/amiga_platform.c -o build/amiga/platform/amiga_platform.o
+Compiling memory tracking: build/amiga/platform_memory.o
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/platform/platform.c -o build/amiga/platform_memory.o
 Linking Amiga executable: Bin/Amiga/iTidy
 vc +aos68k -cpu=68000 -O2 -size -final -lamiga -lauto -o Bin/Amiga/iTidy build/amiga/main_gui.o build/amiga/icon_types.o build/amiga/icon_misc.o build/amiga/icon_management.o build/amiga/file_directory_handling.o build/amiga/window_management.o build/amiga/utilities.o build/amiga/path_utilities.o build/amiga/spinner.o build/amiga/writeLog.o build/amiga/cli_utilities.o build/amiga/layout_preferences.o build/amiga/layout_processor.o build/amiga/aspect_ratio_layout.o build/amiga/folder_scanner.o build/amiga/string_functions.o build/amiga/backup_catalog.o build/amiga/backup_lha.o build/amiga/backup_marker.o build/amiga/backup_paths.o build/amiga/backup_runs.o build/amiga/backup_session.o build/amiga/backup_restore.o build/amiga/helpers/listview_simple_columns.o build/amiga/helpers/list_formatter.o build/amiga/GUI/main_window.o build/amiga/GUI/advanced_window.o build/amiga/GUI/beta_options_window.o build/amiga/GUI/easy_request_helper.o build/amiga/GUI/window_enumerator.o build/amiga/GUI/wb_classify.o build/amiga/GUI/gui_groupbox.o build/amiga/GUI/gui_utilities.o build/amiga/GUI/StatusWindows/progress_common.o build/amiga/GUI/StatusWindows/progress_window.o build/amiga/GUI/StatusWindows/recursive_progress.o build/amiga/GUI/StatusWindows/main_progress_window.o build/amiga/GUI/DefaultTools/tool_cache_window.o build/amiga/GUI/DefaultTools/tool_cache_reports.o build/amiga/GUI/DefaultTools/default_tool_update_window_reaction.o build/amiga/GUI/DefaultTools/default_tool_backup.o build/amiga/GUI/DefaultTools/default_tool_restore_window.o build/amiga/GUI/RestoreBackups/restore_window.o build/amiga/GUI/RestoreBackups/folder_view_window.o build/amiga/DOS/getDiskDetails.o build/amiga/Settings/IControlPrefs.o build/amiga/Settings/WorkbenchPrefs.o build/amiga/Settings/get_fonts.o build/amiga/platform/amiga_platform.o build/amiga/platform_memory.o 
 Build complete: Bin/Amiga/iTidy
