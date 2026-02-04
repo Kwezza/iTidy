@@ -4,7 +4,10 @@
  * 
  * Two-ListBrowser architecture with real columns:
  * 1. Sessions ListBrowser: Shows backup sessions from PROGDIR:Backups/tools/ (4 columns)
- * 2. Changes ListBrowser: Shows tool changes in selected session (3 columns)
+ * 2. Changes ListBrowser: Shows tool changes in label/value format (2 columns, 3 rows per change)
+ *    - Row 1: "Old tool:" | <old_tool_path>
+ *    - Row 2: "New tool:" | <new_tool_path>
+ *    - Row 3: "Icons:" | <icon_count>
  * 
  * Migrated from GadTools to ReAction for Workbench 3.2+
  * Uses ListBrowser gadgets with real columns (replacing "fake columns" approach)
@@ -257,19 +260,15 @@ static BOOL init_column_info(void)
         return FALSE;
     }
     
-    /* Changes ListBrowser: Old Tool | New Tool | Icons */
-    changes_column_info = AllocLBColumnInfo(3,
+    /* Changes ListBrowser: Label | Value (3 rows per change) */
+    changes_column_info = AllocLBColumnInfo(2,
         LBCIA_Column, 0,
-            LBCIA_Title, "Old Tool",
-            LBCIA_Weight, 40,
+            LBCIA_Title, "",
+            LBCIA_Weight, 25,
             LBCIA_Sortable, FALSE,
         LBCIA_Column, 1,
-            LBCIA_Title, "New Tool",
-            LBCIA_Weight, 40,
-            LBCIA_Sortable, FALSE,
-        LBCIA_Column, 2,
-            LBCIA_Title, "Icons",
-            LBCIA_Weight, 20,
+            LBCIA_Title, "",
+            LBCIA_Weight, 75,
             LBCIA_Sortable, FALSE,
         TAG_DONE);
     
@@ -589,20 +588,51 @@ static void populate_changes_listbrowser(iTidy_ToolRestoreData *data)
         old_tool_display = (change->old_tool[0] != '\0') ? change->old_tool : "(none)";
         new_tool_display = (change->new_tool[0] != '\0') ? change->new_tool : "(none)";
         
-        /* Create ListBrowser node: Old Tool | New Tool | Icons */
-        lb_node = AllocListBrowserNode(3,
+        /* Create 3 rows per change: Label | Value format */
+        
+        /* Row 1: Old tool */
+        lb_node = AllocListBrowserNode(2,
             LBNA_Column, 0,
                 LBNCA_CopyText, TRUE,
+                LBNCA_Text, (STRPTR)"Old tool:",
+                LBNCA_Justification, LCJ_RIGHT,
+            LBNA_Column, 1,
+                LBNCA_CopyText, TRUE,
                 LBNCA_Text, (STRPTR)old_tool_display,
+            LBNA_UserData, (APTR)change,
+            TAG_DONE);
+        if (lb_node)
+        {
+            AddTail(data->changes_nodes, lb_node);
+        }
+        
+        /* Row 2: New tool */
+        lb_node = AllocListBrowserNode(2,
+            LBNA_Column, 0,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, (STRPTR)"New tool:",
+                LBNCA_Justification, LCJ_RIGHT,
             LBNA_Column, 1,
                 LBNCA_CopyText, TRUE,
                 LBNCA_Text, (STRPTR)new_tool_display,
-            LBNA_Column, 2,
+            LBNA_UserData, (APTR)change,
+            TAG_DONE);
+        if (lb_node)
+        {
+            AddTail(data->changes_nodes, lb_node);
+        }
+        
+        /* Row 3: Icons count */
+        lb_node = AllocListBrowserNode(2,
+            LBNA_Column, 0,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, (STRPTR)"Icons:",
+                LBNCA_Justification, LCJ_RIGHT,
+            LBNA_Column, 1,
                 LBNCA_CopyText, TRUE,
                 LBNCA_Text, icons_str,
-                LBNCA_Justification, LCJ_RIGHT,
+            LBNA_UserData, (APTR)change,
             TAG_DONE);
-        
         if (lb_node)
         {
             AddTail(data->changes_nodes, lb_node);
@@ -937,7 +967,7 @@ struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_
                         LISTBROWSER_AutoFit, TRUE,
                         TAG_DONE),
                     TAG_DONE),
-                CHILD_WeightedHeight, 50,
+                CHILD_WeightedHeight, 60,
                 
                 /* Changes list layout */
                 LAYOUT_AddChild, NewObject(LAYOUT_GetClass(), NULL,
@@ -958,11 +988,11 @@ struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_
                         GA_TabCycle, TRUE,
                         LISTBROWSER_Position, 0,
                         LISTBROWSER_ColumnInfo, changes_column_info,
-                        LISTBROWSER_ColumnTitles, TRUE,
+                        LISTBROWSER_ColumnTitles, FALSE,
                         LISTBROWSER_AutoFit, TRUE,
                         TAG_DONE),
                     TAG_DONE),
-                CHILD_WeightedHeight, 40,
+                CHILD_WeightedHeight, 35,
                 
                 /* Button layout */
                 LAYOUT_AddChild, NewObject(LAYOUT_GetClass(), NULL,
@@ -1007,7 +1037,7 @@ struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_
                         BUTTON_FillPen, 3,
                         TAG_DONE),
                     TAG_DONE),
-                CHILD_WeightedHeight, 10,
+                CHILD_WeightedHeight, 5,
                 TAG_DONE),
             TAG_DONE),
         TAG_DONE);

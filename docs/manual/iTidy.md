@@ -152,78 +152,71 @@ This is handy if you want one setup for general Workbench use and another for th
 
 ## Advanced Settings
 
-You can open this window via **Advanced...** on the main window. These options are there if you want a bit more control over how icons are laid out and how drawer windows are sized.
+Open this window using **Advanced...** on the main window. These options are split into tabs so related settings stay together.
 
-### Layout Aspect Ratio
+### Layout tab
 
-Sets the target width-to-height “shape” for drawer windows.
+**Layout aspect**  
+Sets the target width-to-height shape for drawer windows.
 
-- *Tall (0.75):* Very tall, narrow windows
+- *Tall (0.75):* Tall, narrow windows
 - *Square (1.0):* Roughly square windows
 - *Compact (1.3):* Slightly wider than tall
-- *Classic (1.6):* More traditional Workbench proportions
-- *Wide (2.0):* Wider windows (default)
-- *Ultrawide (2.4):* Very wide windows
+- *Classic (1.0):* Classic Workbench-like proportions
+- *Wide (2.0):* Wider windows
 
-### Overflow Strategy
+**When full**  
+Choose what iTidy does when a drawer has more icons than fit comfortably on screen.
 
-Controls what iTidy does when a drawer has more icons than comfortably fit on screen.
+- *Expand horizontally:* Adds more columns (you will scroll left/right)
+- *Expand vertically:* Adds more rows (you will scroll up/down)
+- *Expand both ways:* Balances expansion in both directions
 
-- *Expand Horizontally:* Adds more columns (you’ll scroll left/right) (default)
-- *Expand Vertically:* Adds more rows (you’ll scroll up/down)
-- *Expand Both:* Tries to balance expansion in both directions
+**Vertical alignment**  
+Sets how icons are aligned vertically when a row contains icons of different heights: *Top*, *Middle*, or *Bottom*.
 
-### Icon Spacing (X and Y)
+### Density tab
 
-Sets the horizontal and vertical gap between icons (0–20 pixels). The default is 8 pixels in both directions. Lower values pack icons tighter; higher values give things more breathing room.
+**Spacing (X and Y)**  
+Sets the horizontal and vertical gap between icons (in pixels). Lower values pack icons tighter; higher values give icons more breathing room.
 
-### Icons per Row (Min/Max)
+### Limits tab
 
-- **Min:** The minimum number of columns (default: 2). This stops drawers turning into a single long vertical list.
-- **Max:** The maximum number of columns (only used when Auto Max is disabled).
-- **Auto Max Icons:** When enabled (default), iTidy works out a sensible maximum column count based on your screen width.
+**Icons per row (Min)**  
+Minimum columns. Prevents drawers becoming one long vertical list.
 
-### Max Window Width
+**Auto-calc max icons / Max**  
+When **Auto-calc max icons** is enabled, iTidy automatically chooses the maximum columns based on the window width.  
+If you turn it off, you can set **Max** manually.
 
-Limits how wide drawer windows are allowed to become, as a percentage of the screen width (Auto, 30%, 50%, 70%, 90%, 100%). This only applies when **Auto Max Icons** is enabled.
+**Max window width**  
+Limits how wide drawer windows may become (percentage of screen width): *Auto*, *30%*, *50%*, *70%*, *90%*, *100%*.
 
-### Align Icons Vertically
+### Columns & groups tab
 
-Sets how icons are vertically aligned when a row contains icons of different heights: *Top*, *Middle* (default), or *Bottom*.
+**Column layout**  
+When enabled, iTidy uses a column-based layout rather than a free-flow placement.
 
-### Reverse Sort (Z→A)
+**Auto-fit columns**  
+When enabled, each column is sized to its widest icon instead of forcing all columns to the same width.
 
-Reverses the current sort direction (for example Z→A, newest-first, or largest-first depending on the sort mode).
+**Gap between groups**  
+Controls spacing between icon groups when using the **Grouped by Type** order mode. The choices are *Small*, *Medium*, and *Large*.
 
-### Optimize Column Widths
+Note: If a group contains no icons (for example, a folder with no Tools), that group is skipped and no gap is added.
 
-When enabled (default), each column is sized based on the widest icon in that column rather than forcing every column to use the same width.
+### Filters & misc tab
 
-### Column Layout (centered)
+**Skip hidden folders**  
+When enabled, iTidy skips folders without `.info` files during recursive processing. This helps avoid pointless work when processing large trees.
 
-When enabled (default), icons are centered within their column rather than being left-aligned.
+**Strip NewIcons borders**  
+Strips NewIcons borders during processing (requires `icon.library` v44+). This permanently modifies those icons. If you might want to restore the original look later, enable icon backups first.
 
-### Skip Hidden Folders
+**Reverse sort order**  
+Reverses the current sort direction (for example Z->A, newest-first, or largest-first depending on the sort mode).
 
-When enabled (default), iTidy skips folders that don’t have `.info` files when doing recursive processing. This helps avoid pointless work when you’re running across large trees.
 
-### Strip NewIcon Borders
-
-Removes borders from NewIcons during processing. This requires icon.library v44+ (Workbench 3.5+). This change is permanent for the affected icons, so if you might want to go back to the original look later, enable icon backups first.
-
-### Gap between groups
-
-Controls the vertical spacing (in pixels) between icon blocks when using the **Grouped by Type** order mode. The choices are:
-
-- *Small:* 5 pixels between blocks
-- *Medium:* 10 pixels between blocks (default)
-- *Large:* 15 pixels between blocks
-
-This setting only applies when you've selected "Grouped by Type" in the main window's **Order** option. It determines how much visual separation appears between the three icon groups (Drawers, Tools, and Other).
-
-**Note:** If a group contains no icons (for example, a folder with no Tools), that group is skipped entirely and no gap is added.
-
----
 
 ## Default Tool Analysis
 

@@ -47,7 +47,11 @@ extern struct Library *ButtonBase;
 
 void itidy_main_progress_clear_heartbeat(struct iTidyMainProgressWindow *window_data)
 {
-    itidy_main_progress_update_heartbeat(window_data, "Ready", 0, 0);
+    if (!window_data || !window_data->status_label_obj) return;
+    
+    SetGadgetAttrs((struct Gadget *)window_data->status_label_obj, window_data->window, NULL,
+        GA_Text, "",
+        TAG_DONE);
 }
 
 BOOL itidy_main_progress_window_open(struct iTidyMainProgressWindow *window_data)
@@ -135,45 +139,67 @@ BOOL itidy_main_progress_window_open(struct iTidyMainProgressWindow *window_data
             LAYOUT_DeferLayout, TRUE,
             
             LAYOUT_AddChild, NewObject(LAYOUT_GetClass(), NULL,
+                GA_ID, 1, /* status_container */
                 LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
                 LAYOUT_LeftSpacing, 2,
                 LAYOUT_RightSpacing,2,
                 LAYOUT_TopSpacing,  2,
                 LAYOUT_BottomSpacing,2,
                 
-                /* ListBrowser */
-                LAYOUT_AddChild, window_data->listbrowser_obj = NewObject(LISTBROWSER_GetClass(), NULL,
-                    GA_ID,                ITIDY_MAIN_PROGRESS_GID_HISTORY,
-                    GA_RelVerify,         TRUE,
-                    GA_TabCycle,          TRUE,
-                    LISTBROWSER_Labels,   window_data->history_list, /* Attach initial empty list */
-                    LISTBROWSER_ShowSelected, TRUE,
-                    LISTBROWSER_AutoFit,  TRUE,
+                /* ListBrowser Container */
+                LAYOUT_AddChild, NewObject(LAYOUT_GetClass(), NULL,
+                    GA_ID, 2, /* status_list_container */
+                    LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                    LAYOUT_AddChild, window_data->listbrowser_obj = NewObject(LISTBROWSER_GetClass(), NULL,
+                        GA_ID,                ITIDY_MAIN_PROGRESS_GID_HISTORY,
+                        GA_RelVerify,         TRUE,
+                        GA_TabCycle,          TRUE,
+                        LISTBROWSER_Labels,   window_data->history_list, /* Attach initial empty list */
+                        LISTBROWSER_ShowSelected, TRUE,
+                        LISTBROWSER_AutoFit,  TRUE,
+                        LISTBROWSER_Position, 0,
+                    TAG_END),
                 TAG_END),
+                CHILD_WeightedHeight, 90,
                 
-                /* Status Label (Using Button for updateable text) */
-                LAYOUT_AddChild, window_data->status_label_obj = NewObject(BUTTON_GetClass(), NULL,
-                    GA_ID,                0,
-                    GA_ReadOnly,          TRUE,
-                    GA_Text,              "Status...",
-                    BUTTON_BevelStyle,    BVS_NONE,
-                    BUTTON_Justification, BCJ_LEFT,
+                /* Status Text Container */
+                LAYOUT_AddChild, NewObject(LAYOUT_GetClass(), NULL,
+                    GA_ID, 4, /* status_sub_text */
+                    LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                    LAYOUT_AddChild, window_data->status_label_obj = NewObject(BUTTON_GetClass(), NULL,
+                        GA_ID,                0, /* slow_progress_text */
+                        GA_Text,              "Starting, one moment please...",
+                        GA_RelVerify,         TRUE,
+                        GA_TabCycle,          TRUE,
+                        BUTTON_Transparent,   TRUE,
+                        BUTTON_TextPen,       1,
+                        BUTTON_BackgroundPen, 0,
+                        BUTTON_FillTextPen,   1,
+                        BUTTON_FillPen,       3,
+                        BUTTON_BevelStyle,    BVS_NONE,
+                        BUTTON_Justification, BCJ_LEFT,
+                    TAG_END),
                 TAG_END),
+                CHILD_WeightedHeight, 5,
                 
-                /* Cancel Button */
-                LAYOUT_AddChild, window_data->cancel_button_obj = NewObject(BUTTON_GetClass(), NULL,
-                    GA_ID,                ITIDY_MAIN_PROGRESS_GID_CANCEL,
-                    GA_Text,              window_data->cancel_button_text,
-                    GA_RelVerify,         TRUE,
-                    GA_TabCycle,          TRUE,
-                    BUTTON_TextPen,       1,
-                    BUTTON_BackgroundPen, 0,
-                    BUTTON_FillTextPen,   1,
-                    BUTTON_FillPen,       3,
+                /* Cancel Button Container */
+                LAYOUT_AddChild, NewObject(LAYOUT_GetClass(), NULL,
+                    GA_ID, 6, /* status_buttons_layout */
+                    LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                    LAYOUT_AddChild, window_data->cancel_button_obj = NewObject(BUTTON_GetClass(), NULL,
+                        GA_ID,                ITIDY_MAIN_PROGRESS_GID_CANCEL,
+                        GA_Text,              window_data->cancel_button_text,
+                        GA_RelVerify,         TRUE,
+                        GA_TabCycle,          TRUE,
+                        BUTTON_TextPen,       1,
+                        BUTTON_BackgroundPen, 0,
+                        BUTTON_FillTextPen,   1,
+                        BUTTON_FillPen,       3,
+                    TAG_END),
+                    CHILD_MinHeight,      16,
+                    CHILD_MaxHeight,      28,
                 TAG_END),
-                
-                CHILD_MinHeight,      16,
-                CHILD_MaxHeight,      28,
+                CHILD_WeightedHeight, 5,
             TAG_END),
         TAG_END),
     TAG_END);

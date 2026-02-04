@@ -436,13 +436,38 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
             TAG_END);
     }
     
+    /* Define hint info for gadget help (static so it persists) */
+    static struct HintInfo hintInfo[] =
+    {
+        {ITIDY_GAID_MASTER_LAYOUT, -1, "", 0},
+        {ITIDY_GAID_FOLDER_LAYOUT, -1, "", 0},
+        {ITIDY_GAID_FOLDER_GETFILE, -1, "Select the folder for iTidy to clean up. To cleanup subfolders,\nmake sure you select 'Cleanup subfolders' below.", 0},
+        {ITIDY_GAID_OPTIONS_LAYOUT, -1, "", 0},
+        {ITIDY_GAID_LEFT_COLUMN, -1, "", 0},
+        {ITIDY_GAID_ORDER_CHOOSER, -1, "Sets how icons are grouped and sorted in the window. The choices\nare Folders First, Files First, Mixed, or Grouped by Type.", 0},
+        {ITIDY_GAID_RECURSIVE_CHECKBOX, -1, "If enabled, iTidy will recurse through all subfolders under the selected path.", 0},
+        {ITIDY_GAID_POSITION_CHOOSER, -1, "Controls where drawer windows end up after iTidy resizes them.", 0},
+        {ITIDY_GAID_RIGHT_COLUMN, -1, "", 0},
+        {ITIDY_GAID_SORTBY_CHOOSER, -1, "Controls what is selected for the sort order.", 0},
+        {ITIDY_GAID_BACKUP_CHECKBOX, -1, "If enabled, iTidy creates an LhA archive of the relevant `.info` files\nbefore making changes. This requires LhA to be available in `C:`", 0},
+        {ITIDY_GAID_HELP_BUTTON, -1, "", 0},
+        {ITIDY_GAID_TOOLS_LAYOUT, -1, "", 0},
+        {ITIDY_GAID_ADVANCED_BUTTON, -1, "Opens the Advanced Settings window for more detailed control.", 0},
+        {ITIDY_GAID_DEFAULT_TOOLS_BUTTON, -1, "Use this area to scan icons for their default tools. Designed to\nhelp you find (and fix) default tools that no longer exist. Also allows mass updating\nfrom one tooltype to another.", 0},
+        {ITIDY_GAID_RESTORE_BUTTON, -1, "This area restores icon positions and drawer/window layout information\nfrom the LhA backup archives that iTidy created. This is only available if you previously\nran iTidy with backups enabled.", 0},
+        {ITIDY_GAID_BUTTONS_LAYOUT, -1, "", 0},
+        {ITIDY_GAID_START_BUTTON, -1, "Click 'Start' to begin the iTidy sweep once you have selected the folder\nand any other setting required.", 0},
+        {ITIDY_GAID_EXIT_BUTTON, -1, "Exits iTidy.", 0},
+        {-1, -1, NULL, 0}
+    };
+    
     /* Create the ReAction window object */
     win_data->window_obj = NewObject(WINDOW_GetClass(), NULL,
         WA_Title, ITIDY_WINDOW_TITLE,
         WA_Left, 50,
         WA_Top, 30,
-        WA_Width, 400,
-        WA_Height, 250,
+        WA_Width, 20,
+        WA_Height, 20,
         WA_MinWidth, 350,
         WA_MinHeight, 200,
         WA_MaxWidth, 8192,
@@ -454,11 +479,12 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
         WA_DragBar, TRUE,
         WA_Activate, TRUE,
         WA_NoCareRefresh, TRUE,
+        WINDOW_HintInfo, hintInfo,
         WINDOW_AppPort, win_data->app_port,
         WINDOW_GadgetHelp, TRUE,
         WINDOW_IconTitle, "iTidy",
         WA_IDCMP, IDCMP_GADGETDOWN | IDCMP_GADGETUP | IDCMP_CLOSEWINDOW | 
-                  IDCMP_MENUPICK | IDCMP_NEWSIZE | IDCMP_IDCMPUPDATE,
+                  IDCMP_MENUPICK | IDCMP_MENUHELP | IDCMP_NEWSIZE | IDCMP_IDCMPUPDATE,
         
         WINDOW_ParentGroup, NewObject(LAYOUT_GetClass(), NULL,
             LAYOUT_Orientation, LAYOUT_ORIENT_VERT,

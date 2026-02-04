@@ -11,8 +11,10 @@ This document captures hard-won lessons from implementing ReAction GUI component
 4. [ListBrowser Column Resizing](#listbrowser-column-resizing)
 5. [Dynamic Text Labels](#dynamic-text-labels)
 6. [GetFile Gadget (File/Folder Selection)](#getfile-gadget-filefolder-selection)
-7. [General ReAction Gotchas](#general-reaction-gotchas)
-8. [Memory and Type Safety](#memory-and-type-safety)
+7. [ClickTab Gadget (Tabbed Interface)](#clicktab-gadget-tabbed-interface)
+8. [Gadget Tooltips (HintInfo)](#gadget-tooltips-hintinfo)
+9. [General ReAction Gotchas](#general-reaction-gotchas)
+10. [Memory and Type Safety](#memory-and-type-safety)
 
 ---
 
@@ -1504,6 +1506,251 @@ TAG_END),
 
 ---
 
+## ClickTab Gadget (Tabbed Interface)
+
+### ⚠️ CRITICAL: Each Tab Node Must Have Unique TNA_Number
+
+**Problem:** When using `clicktab.gadget` with `CLICKTAB_PageGroup`, clicking any tab always shows the same page (usually the first one). All tab clicks are treated as clicking tab 0.
+
+**Cause:** When creating ClickTab nodes with `AllocClickTabNode()`, each node must have a unique `TNA_Number` attribute that corresponds to its page index in the PageGroup. If all nodes have `TNA_Number, 0` (or the same value), the ClickTab will always tell the PageGroup to show page 0.
+
+**Symptom:** Tabs respond to clicks (you see the tab selection change visually), but the page content never changes. The first tab's content is always displayed.
+
+**Wrong Pattern:**
+```c
+static struct List *make_clicktab_list(STRPTR *labels)
+{
+    struct List *list = AllocVec(sizeof(struct List), MEMF_CLEAR);
+    if (list)
+    {
+        NewList(list);
+        while (*labels)
+        {
+            /* ❌ WRONG: All tabs get TNA_Number = 0 */
+            struct Node *node = AllocClickTabNode(
+                TNA_Text, *labels,
+                TNA_Number, 0,    /* All tabs have same number! */
+                TAG_END);
+            if (node)
+                AddTail(list, node);
+            labels++;
+        }
+    }
+    return list;
+}
+```
+
+**Correct Pattern:**
+```c
+static struct List *make_clicktab_list(STRPTR *labels)
+{
+    struct List *list = AllocVec(sizeof(struct List), MEMF_CLEAR);
+    if (list)
+    {
+        WORD tab_number = 0;  /* Counter for tab numbers */
+        NewList(list);
+        while (*labels)
+        {
+            /* ✅ CORRECT: Each tab gets unique number */
+            struct Node *node = AllocClickTabNode(
+                TNA_Text, *labels,
+                TNA_Number, tab_number,  /* Unique number for each tab */
+                TAG_END);
+            if (node)
+                AddTail(list, node);
+            labels++;
+            tab_number++;  /* Increment for next tab */
+        }
+    }
+    return list;
+}
+```
+
+**How It Works:**
+- Tab 0 "Layout" → `TNA_Number = 0` → Shows `PAGE_Current = 0`
+- Tab 1 "Density" → `TNA_Number = 1` → Shows `PAGE_Current = 1`
+- Tab 2 "Limits" → `TNA_Number = 2` → Shows `PAGE_Current = 2`
+- Tab 3 "Options" → `TNA_Number = 3` → Shows `PAGE_Current = 3`
+
+When a tab is clicked, the ClickTab gadget reads that node's `TNA_Number` and automatically sets the PageGroup's `PAGE_Current` attribute to that value (when `CLICKTAB_PageGroup` is specified during window creation).
+
+**Key Points:**
+1. `TNA_Number` must start at 0 and increment sequentially
+2. The numbers must match the order of `PAGE_Add` calls in the PageGroup
+3. Tab switching is automatic when `CLICKTAB_PageGroup` is used - no manual event handling needed
+4. The page order in PageObject must match the tab order in ClickTab labels
+
+**References:**
+- AutoDocs: `docs/AutoDocs/clicktab_gc.doc` - See `TNA_Number` attribute
+- AutoDocs: `docs/AutoDocs/layout_gc.doc` - See `PAGE_Current` attribute and PageObject
+
+---
+
+## Gadget Tooltips (HintInfo)
+
+### ⚠️ CRITICAL: HintInfo Array Must Be Static
+
+**Problem:** Tooltips don't appear when hovering over gadgets, even though `WINDOW_GadgetHelp` is set to TRUE.
+
+**Cause:** The `HintInfo` array is declared on the stack and becomes invalid after the window creation function returns.
+
+**Symptom:** No tooltips appear when hovering. No crash, just silent failure.
+
+### Required Components for Tooltips
+
+To enable tooltips in ReAction windows, you need **THREE** things:
+
+1. **Static HintInfo array** with gadget hints
+2. **WINDOW_HintInfo tag** in window creation
+3. **IDCMP_MENUHELP flag** in IDCMP flags
+4. **WINDOW_GadgetHelp, TRUE** (enables the system)
+
+### Wrong Pattern (Non-Static Array)
+
+```c
+BOOL open_window(struct WindowData *win_data)
+{
+    /* ❌ WRONG: Local array disappears after function returns */
+    struct HintInfo hintInfo[] =
+    {
+        {GID_BUTTON1, -1, "Click to do something", 0},
+        {GID_BUTTON2, -1, "Click to cancel", 0},
+        {-1, -1, NULL, 0}
+    };
+    
+    win_data->window_obj = NewObject(WINDOW_GetClass(), NULL,
+        WA_Title, "My Window",
+        WINDOW_HintInfo, hintInfo,  /* ❌ Points to stack memory! */
+        WINDOW_GadgetHelp, TRUE,
+        WA_IDCMP, IDCMP_GADGETUP | IDCMP_MENUHELP,  /* MENUHELP is correct */
+    TAG_END);
+    
+    /* Array 'hintInfo' is destroyed here when function returns */
+    return TRUE;
+}
+```
+
+### Correct Pattern (Static Array)
+
+```c
+BOOL open_window(struct WindowData *win_data)
+{
+    /* ✅ CORRECT: Static array persists after function returns */
+    static struct HintInfo hintInfo[] =
+    {
+        {GID_MASTER_LAYOUT, -1, "", 0},  /* Empty hint for layout containers */
+        {GID_FOLDER_GETFILE, -1, "Select the folder to process.", 0},
+        {GID_ORDER_CHOOSER, -1, "Sets how icons are grouped and sorted.", 0},
+        {GID_RECURSIVE_CHECKBOX, -1, "If enabled, processes subfolders.", 0},
+        {GID_BACKUP_CHECKBOX, -1, "If enabled, creates LhA backup.", 0},
+        {GID_START_BUTTON, -1, "Click to begin processing.", 0},
+        {GID_EXIT_BUTTON, -1, "Exits the application.", 0},
+        {-1, -1, NULL, 0}  /* Terminator */
+    };
+    
+    win_data->window_obj = NewObject(WINDOW_GetClass(), NULL,
+        WA_Title, "My Window",
+        /* ... other window tags ... */
+        WINDOW_HintInfo, hintInfo,      /* ✅ Points to static memory */
+        WINDOW_GadgetHelp, TRUE,        /* ✅ Enables gadget help */
+        WA_IDCMP, IDCMP_GADGETUP | IDCMP_GADGETDOWN | 
+                  IDCMP_CLOSEWINDOW | IDCMP_MENUHELP,  /* ✅ MENUHELP required */
+    TAG_END);
+    
+    return TRUE;
+}
+```
+
+### HintInfo Structure Format
+
+```c
+struct HintInfo {
+    LONG   hintID;    /* Gadget GA_ID value */
+    LONG   hintCol;   /* Column number (-1 for single-column hints) */
+    STRPTR hintText;  /* Tooltip text (can be NULL or "") */
+    LONG   hintFlags; /* Reserved, set to 0 */
+};
+```
+
+### Key Points
+
+1. **Always declare HintInfo array as `static`** - it must persist after the function returns
+2. **Always include `IDCMP_MENUHELP`** in the IDCMP flags - tooltips won't work without it
+3. **Set `WINDOW_GadgetHelp, TRUE`** - enables the system
+4. **Empty hints are OK** - use `""` for layout containers that don't need tooltips
+5. **Use `\n` for multi-line tooltips** - improves readability for long descriptions
+6. **Terminate array with `{-1, -1, NULL, 0}`** - signals end of hints list
+7. **Use actual GA_ID values** - not array indices
+
+### Multi-Line Tooltip Example
+
+```c
+static struct HintInfo hintInfo[] =
+{
+    {GID_ADVANCED_BUTTON, -1, 
+     "Opens the Advanced Settings window for more\ndetailed control over layout options.", 0},
+    {GID_RESTORE_BUTTON, -1, 
+     "Restores icon positions and drawer layout from LhA\nbackup archives. Only available if you previously\nran with backups enabled.", 0},
+    {-1, -1, NULL, 0}
+};
+```
+
+### Why This Is Easy to Miss
+
+1. **No compiler warning** - the address is valid at window creation time
+2. **No crash** - the memory is just stale, not necessarily overwritten immediately
+3. **Silent failure** - tooltips simply don't appear
+4. **Testing may work initially** - stack memory may contain valid data temporarily
+
+### Complete Working Example
+
+```c
+/* From iTidy main_window.c */
+BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
+{
+    /* ... setup code ... */
+    
+    /* ✅ Static array persists */
+    static struct HintInfo hintInfo[] =
+    {
+        {ITIDY_GAID_MASTER_LAYOUT, -1, "", 0},
+        {ITIDY_GAID_FOLDER_GETFILE, -1, 
+         "Select the folder for iTidy to clean up. To cleanup subfolders,\n"
+         "make sure you select 'Cleanup subfolders' below.", 0},
+        {ITIDY_GAID_ORDER_CHOOSER, -1, 
+         "Sets how icons are grouped and sorted in the window. The choices\n"
+         "are Folders First, Files First, Mixed, or Grouped by Type.", 0},
+        {ITIDY_GAID_RECURSIVE_CHECKBOX, -1, 
+         "If enabled, iTidy will recurse through all subfolders under the selected path.", 0},
+        {ITIDY_GAID_START_BUTTON, -1, 
+         "Click 'Start' to begin the iTidy sweep once you have selected the folder\n"
+         "and any other setting required.", 0},
+        {ITIDY_GAID_EXIT_BUTTON, -1, "Exits iTidy.", 0},
+        {-1, -1, NULL, 0}
+    };
+    
+    win_data->window_obj = NewObject(WINDOW_GetClass(), NULL,
+        WA_Title, ITIDY_WINDOW_TITLE,
+        WA_Left, 50,
+        WA_Top, 30,
+        WA_MinWidth, 350,
+        WA_MinHeight, 200,
+        WA_CloseGadget, TRUE,
+        WA_DragBar, TRUE,
+        WA_Activate, TRUE,
+        WINDOW_HintInfo, hintInfo,     /* ✅ */
+        WINDOW_GadgetHelp, TRUE,       /* ✅ */
+        WA_IDCMP, IDCMP_GADGETDOWN | IDCMP_GADGETUP | 
+                  IDCMP_CLOSEWINDOW | IDCMP_MENUHELP,  /* ✅ MENUHELP! */
+        WINDOW_ParentGroup, /* ... gadgets ... */
+    TAG_END);
+    
+    return TRUE;
+}
+```
+
+---
+
 ## Memory and Type Safety
 
 ### All Tag Values Are ULONG
@@ -1576,6 +1823,12 @@ If flags are correct but no triangles appear, the list wasn't set up before gadg
 
 ## Version History
 
+- **2026-02-03:** Added gadget tooltips (HintInfo) section
+  - CRITICAL: HintInfo array must be declared `static` or tooltips won't work
+  - Must include IDCMP_MENUHELP flag in addition to WINDOW_GadgetHelp, TRUE
+  - HintInfo structure format and proper usage
+  - Multi-line tooltip examples
+  - Complete working example from main_window.c
 - **2026-01-30:** Added ListBrowser column resizing section
   - CRITICAL: CIF_SORTABLE and CIF_DRAGGABLE must be combined with bitwise OR (`|`)
   - Setting only CIF_DRAGGABLE breaks sorting completely

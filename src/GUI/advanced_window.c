@@ -14,6 +14,8 @@
 #define ChooserBase iTidy_ChooserBase
 #define IntegerBase iTidy_IntegerBase
 #define LabelBase iTidy_LabelBase
+#define ClickTabBase iTidy_ClickTabBase
+#define SpaceBase iTidy_SpaceBase
 
 #include "advanced_window.h"
 
@@ -39,12 +41,16 @@
 #include <proto/chooser.h>
 #include <proto/integer.h>
 #include <proto/label.h>
+#include <proto/clicktab.h>
+#include <proto/space.h>
 #include <classes/window.h>
 #include <gadgets/layout.h>
 #include <gadgets/button.h>
 #include <gadgets/checkbox.h>
 #include <gadgets/chooser.h>
 #include <gadgets/integer.h>
+#include <gadgets/clicktab.h>
+#include <gadgets/space.h>
 #include <images/label.h>
 
 #include "writeLog.h"
@@ -67,6 +73,8 @@ struct Library *iTidy_CheckBoxBase = NULL;
 struct Library *iTidy_ChooserBase = NULL;
 struct Library *iTidy_IntegerBase = NULL;
 struct Library *iTidy_LabelBase = NULL;
+struct Library *iTidy_ClickTabBase = NULL;
+struct Library *iTidy_SpaceBase = NULL;
 
 /*------------------------------------------------------------------------*/
 /* Internal Helper Prototypes                                             */
@@ -75,15 +83,18 @@ static BOOL open_reaction_classes(void);
 static void close_reaction_classes(void);
 static struct List *make_chooser_list(STRPTR *labels);
 static void free_chooser_list(struct List *list);
+static struct List *make_clicktab_list(STRPTR *labels);
+static void free_clicktab_list(struct List *list);
 static void update_gadget_states(struct iTidyAdvancedWindow *adv_data);
 static void save_settings_from_gadgets(struct iTidyAdvancedWindow *adv_data);
 
-/* Labels for Choosers (Static const) */
+/* Labels for Choosers and ClickTabs (Static const) */
 static STRPTR aspect_labels_str[] = { "Tall (0.75)", "Square (1.0)", "Compact (1.3)", "Classic (1)", "Wide (2.0)", NULL };
 static STRPTR overflow_labels_str[] = { "Expand horizontally", "Expand vertically", "Expand both", NULL };
 static STRPTR width_labels_str[] = { "Auto", "30%", "50%", "70%", "90%", "100%", NULL };
 static STRPTR align_labels_str[] = { "Top", "Middle", "Bottom", NULL };
 static STRPTR gap_labels_str[] = { "Small", "Medium", "Large", NULL };
+static STRPTR tab_labels_str[] = { "Layout", "Density", "Limits", "Columns & groups", "Filters & misc", NULL };
 
 /*------------------------------------------------------------------------*/
 /* Implementation                                                         */
@@ -117,6 +128,7 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
     adv_data->width_labels = make_chooser_list(width_labels_str);
     adv_data->align_labels = make_chooser_list(align_labels_str);
     adv_data->gap_labels = make_chooser_list(gap_labels_str);
+    adv_data->tab_labels = make_clicktab_list(tab_labels_str);
 
     /* Construct Window Object */
     /* MAPPING NOTE: We match the layout from Test/ReActon/testcode.c */
@@ -159,15 +171,51 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
     else if (prefs->maxWindowWidthPct <= 90) width_idx = 4;
     else width_idx = 5;
 
+    /* Define hint info for gadget help (static so it persists) */
+    static struct HintInfo hintInfo[] =
+    {
+        {ITIDY_ADV_GAID_ROOT_LAYOUT, -1, "", 0},
+        {ITIDY_ADV_GAID_CLICKTAB, -1, "", 0},
+        {ITIDY_ADV_GAID_TAB_LAYOUT, -1, "Overall layout behaviour: window shape, what happens when full, and vertical alignment.", 0},
+        {ITIDY_ADV_GAID_ASPECT_CHOOSER, -1, "Sets the target width-to-height shape for drawer windows.", 0},
+        {ITIDY_ADV_GAID_OVERFLOW_CHOOSER, -1, "Sets the target width-to-height shape for drawer windows.", 0},
+        {ITIDY_ADV_GAID_VERT_ALIGN_CHOOSER, -1, "Sets how icons are aligned vertically when a row contains icons of different heights.", 0},
+        {ITIDY_ADV_GAID_TAB_DENSITY, -1, "Controls icon spacing and how tightly icons are packed.", 0},
+        {ITIDY_ADV_GAID_SPACING_X, -1, "Sets the horizontal gap between icons (in pixels).", 0},
+        {ITIDY_ADV_GAID_SPACING_Y, -1, "Sets the vertical gap between icons (in pixels).", 0},
+        {ITIDY_ADV_GAID_SPACE_DENSITY, -1, "", 0},
+        {ITIDY_ADV_GAID_TAB_LIMITS, -1, "Sets minimum/maximum columns and limits how wide drawer windows may become.", 0},
+        {ITIDY_ADV_GAID_MIN_ICONS_ROW, -1, "Minimum columns. Prevents drawers becoming one long vertical list.", 0},
+        {ITIDY_ADV_GAID_AUTO_MAX_CHECK, -1, "When enabled (default), iTidy automatically chooses the maximum columns based on the window width.", 0},
+        {ITIDY_ADV_GAID_MAX_ICONS_ROW, -1, "Maximum columns (used only when Auto-calc max icons is disabled).", 0},
+        {ITIDY_ADV_GAID_MAX_WIDTH_CHOOSER, -1, "Limits how wide drawer windows may become (percentage of screen width).", 0},
+        {ITIDY_ADV_GAID_TAB_COLUMNS_GROUPS, -1, "Column mode options, auto-fit behaviour, and spacing between grouped icon blocks.", 0},
+        {ITIDY_ADV_GAID_COLUMN_LAYOUT_CHECK, -1, "When enabled, iTidy uses a column-based layout rather than free-flow positioning.", 0},
+        {ITIDY_ADV_GAID_BLOCK_GAP_CHOOSER, -1, "Controls spacing between icon groups when using the 'Grouped by Type' order mode.", 0},
+        {ITIDY_ADV_GAID_SPACE_COLUMNS, -1, "", 0},
+        {ITIDY_ADV_GAID_TAB_FILTERS_MISC, -1, "Optional processing rules and compatibility tweaks (hidden folders, NewIcons borders, reverse sort).", 0},
+        {ITIDY_ADV_GAID_SKIP_HIDDEN_CHECK, -1, "When enabled (default), iTidy skips folders without .info files during recursive processing.", 0},
+        {ITIDY_ADV_GAID_STRIP_BORDERS_CHECK, -1, "Strips NewIcons borders during processing (requires icon.library v44+). This permanently modifies those icons.", 0},
+        {ITIDY_ADV_GAID_REVERSE_SORT_CHECK, -1, "Reverses the current sort direction (Z->A, newest-first, or largest-first depending on sort mode).", 0},
+        {ITIDY_ADV_GAID_OPTIMIZE_COLS_CHECK, -1, "When enabled (default), each column is sized to its widest icon instead of forcing all columns to the same width.", 0},
+        {ITIDY_ADV_GAID_BUTTON_LAYOUT, -1, "", 0},
+        {ITIDY_ADV_GAID_BUTTON_COL1, -1, "", 0},
+        {ITIDY_ADV_GAID_BUTTON_COL2, -1, "", 0},
+        {ITIDY_ADV_GAID_DEFAULTS_BUTTON, -1, "Resets these settings to defaults.", 0},
+        {ITIDY_ADV_GAID_CANCEL_BUTTON, -1, "Discards changes and returns to the main window.", 0},
+        {ITIDY_ADV_GAID_OK_BUTTON, -1, "Accepts changes and closes this window. Use the main window's \"Save\" menu item to write settings to disk.", 0},
+        {-1, -1, NULL, 0}
+    };
+
     adv_data->window_obj = NewObject(WINDOW_GetClass(), NULL,
-        WA_Title, "iTidy - Advanced Settings",
-        WA_ScreenTitle, "iTidy - Advanced Settings",
+        WA_Title, "iTidy - Advanced settings",
+        WA_ScreenTitle, "iTidy - Advanced settings",
         WA_CustomScreen, adv_data->screen,
         WA_Left, 5,
         WA_Top, 20,
-        WA_Width, 300,
-        WA_Height, 200,
-        WA_MinWidth, 150,
+        WA_Width, 400,
+        WA_Height, 100,
+        WA_MinWidth, 100,
         WA_MinHeight, 80,
         WA_MaxWidth, 8192,
         WA_MaxHeight, 8192,
@@ -176,7 +224,9 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
         WA_SizeGadget, TRUE,
         WA_DragBar, TRUE,
         WA_Activate, TRUE,
-        WA_IDCMP, IDCMP_GADGETDOWN | IDCMP_GADGETUP | IDCMP_CLOSEWINDOW | IDCMP_NEWSIZE | IDCMP_RAWKEY,
+        WINDOW_HintInfo, hintInfo,
+        WINDOW_GadgetHelp, TRUE,
+        WA_IDCMP, IDCMP_GADGETDOWN | IDCMP_GADGETUP | IDCMP_CLOSEWINDOW | IDCMP_MENUHELP | IDCMP_NEWSIZE | IDCMP_RAWKEY,
         WINDOW_Position, WPOS_CENTERWINDOW,
         WINDOW_ParentGroup, NewObject(LAYOUT_GetClass(), NULL,
             LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
@@ -185,243 +235,291 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
 
             /* Root vertical layout */
             LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_ROOT_LAYOUT] = NewObject(LAYOUT_GetClass(), NULL,
-                GA_ID, ITIDY_ADV_ROOT_LAYOUT,
+                GA_ID, ITIDY_ADV_GAID_ROOT_LAYOUT,
                 LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
                 
-                /* Layout Aspect & Overflow (Row 1) */
-                LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_ROW_DETAILS] = NewObject(LAYOUT_GetClass(), NULL,
-                    GA_ID, ITIDY_ADV_ROW_DETAILS,
-                    LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
-                    LAYOUT_TopSpacing, 4,
-                    
-                    /* Aspect Ratio Chooser */
-                    LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_ASPECT_GROUP] = NewObject(LAYOUT_GetClass(), NULL,
-                        GA_ID, ITIDY_ADV_ASPECT_GROUP,
-                        LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
-                        LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_ASPECT_CHOOSER] = NewObject(CHOOSER_GetClass(), NULL,
-                            GA_ID, ITIDY_ADV_ASPECT_CHOOSER,
-                            GA_RelVerify, TRUE,
-                            GA_TabCycle, TRUE,
-                            CHOOSER_PopUp, TRUE,
-                            CHOOSER_Selected, aspect_idx,
-                            CHOOSER_Labels, adv_data->aspect_labels,
-                        TAG_END),
-                        CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Layout aspect", TAG_END),
+                /* ClickTab Gadget */
+                LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_CLICKTAB] = NewObject(CLICKTAB_GetClass(), NULL,
+                    GA_ID, ITIDY_ADV_GAID_CLICKTAB,
+                    GA_RelVerify, TRUE,
+                    GA_TabCycle, TRUE,
+                    CLICKTAB_Labels, adv_data->tab_labels,
+                    CLICKTAB_PageGroup, PageObject,
+                        LAYOUT_DeferLayout, TRUE,
                         
-                        /* Overflow Mode */
-                        LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_OVERFLOW_CHOOSER] = NewObject(CHOOSER_GetClass(), NULL,
-                            GA_ID, ITIDY_ADV_OVERFLOW_CHOOSER,
-                            GA_RelVerify, TRUE,
-                            GA_TabCycle, TRUE,
-                            CHOOSER_PopUp, TRUE,
-                            CHOOSER_Selected, overflow_idx,
-                            CHOOSER_Labels, adv_data->overflow_labels,
+                        /* Tab 1: Layout */
+                        PAGE_Add, adv_data->gadgets[ITIDY_ADV_TAB_LAYOUT] = NewObject(LAYOUT_GetClass(), NULL,
+                            GA_ID, ITIDY_ADV_GAID_TAB_LAYOUT,
+                            LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                            LAYOUT_LeftSpacing, 2,
+                            LAYOUT_RightSpacing, 2,
+                            LAYOUT_TopSpacing, 2,
+                            LAYOUT_BottomSpacing, 2,
+                            
+                            LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_ASPECT_CHOOSER] = NewObject(CHOOSER_GetClass(), NULL,
+                                GA_ID, ITIDY_ADV_GAID_ASPECT_CHOOSER,
+                                GA_RelVerify, TRUE,
+                                GA_TabCycle, TRUE,
+                                CHOOSER_PopUp, TRUE,
+                                CHOOSER_Selected, aspect_idx,
+                                CHOOSER_AutoFit, TRUE,
+                                CHOOSER_Labels, adv_data->aspect_labels,
+                            TAG_END),
+                            CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Layout aspect", TAG_END),
+                            
+                            LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_OVERFLOW_CHOOSER] = NewObject(CHOOSER_GetClass(), NULL,
+                                GA_ID, ITIDY_ADV_GAID_OVERFLOW_CHOOSER,
+                                GA_RelVerify, TRUE,
+                                GA_TabCycle, TRUE,
+                                CHOOSER_PopUp, TRUE,
+                                CHOOSER_Selected, overflow_idx,
+                                CHOOSER_Labels, adv_data->overflow_labels,
+                            TAG_END),
+                            CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "When full", TAG_END),
+                            
+                            LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_VERT_ALIGN_CHOOSER] = NewObject(CHOOSER_GetClass(), NULL,
+                                GA_ID, ITIDY_ADV_GAID_VERT_ALIGN_CHOOSER,
+                                GA_RelVerify, TRUE,
+                                GA_TabCycle, TRUE,
+                                CHOOSER_PopUp, TRUE,
+                                CHOOSER_Selected, prefs->textAlignment,
+                                CHOOSER_Labels, adv_data->align_labels,
+                            TAG_END),
+                            CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Align vertically", TAG_END),
                         TAG_END),
-                        CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "When full:", TAG_END),
-                    TAG_END),
-                    
-                    /* Icon Spacing Group */
-                    LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_SPACING_GROUP] = NewObject(LAYOUT_GetClass(), NULL,
-                        GA_ID, ITIDY_ADV_SPACING_GROUP,
-                        LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
-                        LAYOUT_Label, "Icon spacing",
                         
-                        /* Spacing X */
-                        LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_SPACING_X] = NewObject(INTEGER_GetClass(), NULL,
-                            GA_ID, ITIDY_ADV_SPACING_X,
-                            GA_RelVerify, TRUE,
-                            GA_TabCycle, TRUE,
-                            INTEGER_Minimum, 0,
-                            INTEGER_Maximum, 20, /* Check constraints */
-                            INTEGER_Number, prefs->iconSpacingX,
+                        /* Tab 2: Density */
+                        PAGE_Add, adv_data->gadgets[ITIDY_ADV_TAB_DENSITY] = NewObject(LAYOUT_GetClass(), NULL,
+                            GA_ID, ITIDY_ADV_GAID_TAB_DENSITY,
+                            LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                            LAYOUT_LeftSpacing, 2,
+                            LAYOUT_RightSpacing, 2,
+                            LAYOUT_TopSpacing, 2,
+                            LAYOUT_BottomSpacing, 2,
+                            
+                            LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_SPACING_X] = NewObject(INTEGER_GetClass(), NULL,
+                                GA_ID, ITIDY_ADV_GAID_SPACING_X,
+                                GA_RelVerify, TRUE,
+                                GA_TabCycle, TRUE,
+                                INTEGER_Minimum, 0,
+                                INTEGER_Maximum, 20,
+                                INTEGER_Number, prefs->iconSpacingX,
+                                INTEGER_MinVisible, 10,
+                            TAG_END),
+                            CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Horizontal spacing", TAG_END),
+                            CHILD_NominalSize, TRUE,
+                            
+                            LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_SPACING_Y] = NewObject(INTEGER_GetClass(), NULL,
+                                GA_ID, ITIDY_ADV_GAID_SPACING_Y,
+                                GA_RelVerify, TRUE,
+                                GA_TabCycle, TRUE,
+                                INTEGER_MaxChars, 2,
+                                INTEGER_Minimum, 0,
+                                INTEGER_Maximum, 20,
+                                INTEGER_Number, prefs->iconSpacingY,
+                                INTEGER_MinVisible, 2,
+                            TAG_END),
+                            CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Vertical spacing", TAG_END),
+                            
+                            LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_SPACE_DENSITY] = NewObject(SPACE_GetClass(), NULL,
+                                GA_ID, ITIDY_ADV_GAID_SPACE_DENSITY,
+                            TAG_END),
                         TAG_END),
-                        CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Spacing: X", TAG_END),
-
-                        /* Spacing Y */
-                        LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_SPACING_Y] = NewObject(INTEGER_GetClass(), NULL,
-                            GA_ID, ITIDY_ADV_SPACING_Y,
-                            GA_RelVerify, TRUE,
-                            GA_TabCycle, TRUE,
-                            INTEGER_Minimum, 0,
-                            INTEGER_Maximum, 20,
-                            INTEGER_Number, prefs->iconSpacingY,
+                        
+                        /* Tab 3: Limits */
+                        PAGE_Add, adv_data->gadgets[ITIDY_ADV_TAB_LIMITS] = NewObject(LAYOUT_GetClass(), NULL,
+                            GA_ID, ITIDY_ADV_GAID_TAB_LIMITS,
+                            LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                            LAYOUT_LeftSpacing, 2,
+                            LAYOUT_RightSpacing, 2,
+                            LAYOUT_TopSpacing, 2,
+                            LAYOUT_BottomSpacing, 2,
+                            
+                            LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_MIN_ICONS_ROW] = NewObject(INTEGER_GetClass(), NULL,
+                                GA_ID, ITIDY_ADV_GAID_MIN_ICONS_ROW,
+                                GA_RelVerify, TRUE,
+                                GA_TabCycle, TRUE,
+                                INTEGER_Minimum, 0,
+                                INTEGER_Maximum, 30,
+                                INTEGER_Number, initial_min_icons,
+                            TAG_END),
+                            CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Icons per row: Min", TAG_END),
+                            
+                            LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_AUTO_MAX_CHECK] = NewObject(CHECKBOX_GetClass(), NULL,
+                                GA_ID, ITIDY_ADV_GAID_AUTO_MAX_CHECK,
+                                GA_Text, "",
+                                GA_RelVerify, TRUE,
+                                GA_TabCycle, TRUE,
+                                GA_Selected, auto_max,
+                                CHECKBOX_TextPlace, PLACETEXT_RIGHT,
+                            TAG_END),
+                            CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Auto-calc max icons", TAG_END),
+                            
+                            LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_MAX_ICONS_ROW] = NewObject(INTEGER_GetClass(), NULL,
+                                GA_ID, ITIDY_ADV_GAID_MAX_ICONS_ROW,
+                                GA_RelVerify, TRUE,
+                                GA_TabCycle, TRUE,
+                                GA_Disabled, auto_max,
+                                INTEGER_Minimum, 2,
+                                INTEGER_Maximum, 40,
+                                INTEGER_Number, initial_max_icons,
+                                INTEGER_Arrows, FALSE,
+                            TAG_END),
+                            CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Max", TAG_END),
+                            
+                            LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_MAX_WIDTH_CHOOSER] = NewObject(CHOOSER_GetClass(), NULL,
+                                GA_ID, ITIDY_ADV_GAID_MAX_WIDTH_CHOOSER,
+                                GA_RelVerify, TRUE,
+                                GA_TabCycle, TRUE,
+                                CHOOSER_PopUp, TRUE,
+                                CHOOSER_Selected, width_idx,
+                                CHOOSER_Labels, adv_data->width_labels,
+                            TAG_END),
+                            CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Max window width", TAG_END),
                         TAG_END),
-                        CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Y", TAG_END),
-                    TAG_END),
-                TAG_END), // End Row 1
+                        
+                        /* Tab 4: Columns & groups */
+                        PAGE_Add, adv_data->gadgets[ITIDY_ADV_TAB_COLUMNS_GROUPS] = NewObject(LAYOUT_GetClass(), NULL,
+                            GA_ID, ITIDY_ADV_GAID_TAB_COLUMNS_GROUPS,
+                            LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                            LAYOUT_LeftSpacing, 2,
+                            LAYOUT_RightSpacing, 2,
+                            LAYOUT_TopSpacing, 2,
+                            LAYOUT_BottomSpacing, 2,
+                            
+                            LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_COLUMN_LAYOUT_CHECK] = NewObject(CHECKBOX_GetClass(), NULL,
+                                GA_ID, ITIDY_ADV_GAID_COLUMN_LAYOUT_CHECK,
+                                GA_Text, "",
+                                GA_RelVerify, TRUE,
+                                GA_TabCycle, TRUE,
+                                GA_Selected, column_layout,
+                                CHECKBOX_TextPlace, PLACETEXT_RIGHT,
+                            TAG_END),
+                            CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Column layout", TAG_END),
+                            
+                            LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_BLOCK_GAP_CHOOSER] = NewObject(CHOOSER_GetClass(), NULL,
+                                GA_ID, ITIDY_ADV_GAID_BLOCK_GAP_CHOOSER,
+                                GA_RelVerify, TRUE,
+                                GA_TabCycle, TRUE,
+                                CHOOSER_PopUp, TRUE,
+                                CHOOSER_Selected, prefs->blockGapSize,
+                                CHOOSER_Labels, adv_data->gap_labels,
+                            TAG_END),
+                            CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Gap between groups", TAG_END),
+                            
+                            LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_SPACE_COLUMNS] = NewObject(SPACE_GetClass(), NULL,
+                                GA_ID, ITIDY_ADV_GAID_SPACE_COLUMNS,
+                            TAG_END),
+                        TAG_END),
+                        
+                        /* Tab 5: Filters & misc */
+                        PAGE_Add, adv_data->gadgets[ITIDY_ADV_TAB_FILTERS_MISC] = NewObject(LAYOUT_GetClass(), NULL,
+                            GA_ID, ITIDY_ADV_GAID_TAB_FILTERS_MISC,
+                            LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                            LAYOUT_LeftSpacing, 2,
+                            LAYOUT_RightSpacing, 2,
+                            LAYOUT_TopSpacing, 2,
+                            LAYOUT_BottomSpacing, 2,
+                            
+                            LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_SKIP_HIDDEN_CHECK] = NewObject(CHECKBOX_GetClass(), NULL,
+                                GA_ID, ITIDY_ADV_GAID_SKIP_HIDDEN_CHECK,
+                                GA_Text, "",
+                                GA_RelVerify, TRUE,
+                                GA_TabCycle, TRUE,
+                                GA_Selected, prefs->skipHiddenFolders,
+                                CHECKBOX_TextPlace, PLACETEXT_RIGHT,
+                            TAG_END),
+                            CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Skip hidden folders", TAG_END),
+                            
+                            LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_STRIP_BORDERS_CHECK] = NewObject(CHECKBOX_GetClass(), NULL,
+                                GA_ID, ITIDY_ADV_GAID_STRIP_BORDERS_CHECK,
+                                GA_Text, "",
+                                GA_RelVerify, TRUE,
+                                GA_TabCycle, TRUE,
+                                GA_Selected, prefs->stripNewIconBorders,
+                                CHECKBOX_TextPlace, PLACETEXT_RIGHT,
+                            TAG_END),
+                            CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Strip NewIcons borders (permanent)", TAG_END),
+                            
+                            LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_REVERSE_SORT_CHECK] = NewObject(CHECKBOX_GetClass(), NULL,
+                                GA_ID, ITIDY_ADV_GAID_REVERSE_SORT_CHECK,
+                                GA_Text, "",
+                                GA_RelVerify, TRUE,
+                                GA_TabCycle, TRUE,
+                                GA_Selected, prefs->reverseSort,
+                                CHECKBOX_TextPlace, PLACETEXT_RIGHT,
+                            TAG_END),
+                            CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Reverse sort order", TAG_END),
+                            
+                            LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_OPTIMIZE_COLS_CHECK] = NewObject(CHECKBOX_GetClass(), NULL,
+                                GA_ID, ITIDY_ADV_GAID_OPTIMIZE_COLS_CHECK,
+                                GA_Text, "",
+                                GA_RelVerify, TRUE,
+                                GA_TabCycle, TRUE,
+                                GA_Selected, prefs->useColumnWidthOptimization,
+                                CHECKBOX_TextPlace, PLACETEXT_RIGHT,
+                            TAG_END),
+                            CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Auto-fit columns", TAG_END),
+                        TAG_END),
+                    PageEnd,
+                TAG_END),
+                CHILD_WeightedHeight, 95,
                 
-                /* Row 2: Icons Per Row Configuration */
-                LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_ICONS_ROW_GROUP] = NewObject(LAYOUT_GetClass(), NULL,
-                    GA_ID, ITIDY_ADV_ICONS_ROW_GROUP,
-                    LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
-                    LAYOUT_TopSpacing, 4,
-                    
-                    /* Min Icons Check */
-                    LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_MIN_ICONS_ROW] = NewObject(INTEGER_GetClass(), NULL,
-                        GA_ID, ITIDY_ADV_MIN_ICONS_ROW,
-                        GA_RelVerify, TRUE,
-                        GA_TabCycle, TRUE,
-                        INTEGER_Minimum, 1,
-                        INTEGER_Maximum, 20,
-                        INTEGER_Number, initial_min_icons,
-                    TAG_END),
-                    CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Icons per row: Min:", TAG_END),
-
-                    /* Auto Max Checkbox */
-                    LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_AUTO_MAX_CHECK] = NewObject(CHECKBOX_GetClass(), NULL,
-                        GA_ID, ITIDY_ADV_AUTO_MAX_CHECK,
-                        GA_Text, "Auto max icons",
-                        GA_RelVerify, TRUE,
-                        GA_TabCycle, TRUE,
-                        GA_Selected, auto_max,
-                        CHECKBOX_TextPlace, PLACETEXT_LEFT,
-                    TAG_END),
-                    
-                    /* Max Icons Check (Disabled if Auto) */
-                    LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_MAX_ICONS_ROW] = NewObject(INTEGER_GetClass(), NULL,
-                        GA_ID, ITIDY_ADV_MAX_ICONS_ROW,
-                        GA_RelVerify, TRUE,
-                        GA_TabCycle, TRUE,
-                        GA_Disabled, auto_max,
-                        INTEGER_Minimum, 1,
-                        INTEGER_Maximum, 20,
-                        INTEGER_Number, initial_max_icons,
-                    TAG_END),
-                    CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Max", TAG_END),
-                TAG_END),
-
-                /* Row 3: Width & Vertical Align */
-                LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_WIDTH_VERT_GROUP] = NewObject(LAYOUT_GetClass(), NULL,
-                    GA_ID, ITIDY_ADV_WIDTH_VERT_GROUP,
-                    LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
-                    LAYOUT_TopSpacing, 4,
-                    
-                    /* Max Window Width */
-                    LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_MAX_WIDTH_CHOOSER] = NewObject(CHOOSER_GetClass(), NULL,
-                        GA_ID, ITIDY_ADV_MAX_WIDTH_CHOOSER,
-                        GA_RelVerify, TRUE,
-                        GA_TabCycle, TRUE,
-                        CHOOSER_PopUp, TRUE,
-                        CHOOSER_Selected, width_idx,
-                        CHOOSER_Labels, adv_data->width_labels,
-                    TAG_END),
-                    CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Max window width", TAG_END),
-
-                    /* Vertical Align */
-                    LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_VERT_ALIGN_CHOOSER] = NewObject(CHOOSER_GetClass(), NULL,
-                        GA_ID, ITIDY_ADV_VERT_ALIGN_CHOOSER,
-                        GA_RelVerify, TRUE,
-                        GA_TabCycle, TRUE,
-                        CHOOSER_PopUp, TRUE,
-                        CHOOSER_Selected, prefs->textAlignment,
-                        CHOOSER_Labels, adv_data->align_labels,
-                    TAG_END),
-                    CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Align icons vertically", TAG_END),
-                TAG_END),
-
-                /* Row 4: Checkbox Columns */
-                LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_CHECKBOX_GROUP] = NewObject(LAYOUT_GetClass(), NULL,
-                    GA_ID, ITIDY_ADV_CHECKBOX_GROUP,
-                    LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
-                    LAYOUT_TopSpacing, 4,
-                    
-                    /* Column 1 */
-                    LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_CHECKBOX_COL1] = NewObject(LAYOUT_GetClass(), NULL,
-                        GA_ID, ITIDY_ADV_CHECKBOX_COL1,
-                        LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
-                        
-                        LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_REVERSE_SORT_CHECK] = NewObject(CHECKBOX_GetClass(), NULL,
-                            GA_ID, ITIDY_ADV_REVERSE_SORT_CHECK,
-                            GA_Text, "Reverse Sort (Z->A)",
-                            GA_RelVerify, TRUE,
-                            GA_Selected, prefs->reverseSort,
-                            CHECKBOX_TextPlace, PLACETEXT_RIGHT,
-                        TAG_END),
-
-                        LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_OPTIMIZE_COLS_CHECK] = NewObject(CHECKBOX_GetClass(), NULL,
-                            GA_ID, ITIDY_ADV_OPTIMIZE_COLS_CHECK,
-                            GA_Text, "Optimize column widths",
-                            GA_RelVerify, TRUE,
-                            GA_Selected, prefs->useColumnWidthOptimization,
-                            CHECKBOX_TextPlace, PLACETEXT_RIGHT,
-                        TAG_END),
-                        
-                        LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_COLUMN_LAYOUT_CHECK] = NewObject(CHECKBOX_GetClass(), NULL,
-                            GA_ID, ITIDY_ADV_COLUMN_LAYOUT_CHECK,
-                            GA_Text, "Column Layout",
-                            GA_RelVerify, TRUE,
-                            GA_Selected, column_layout,
-                            CHECKBOX_TextPlace, PLACETEXT_RIGHT,
-                        TAG_END),
-                    TAG_END),
-
-                    /* Column 2 */
-                    LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_CHECKBOX_COL2] = NewObject(LAYOUT_GetClass(), NULL,
-                        GA_ID, ITIDY_ADV_CHECKBOX_COL2,
-                        LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
-
-                        LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_SKIP_HIDDEN_CHECK] = NewObject(CHECKBOX_GetClass(), NULL,
-                            GA_ID, ITIDY_ADV_SKIP_HIDDEN_CHECK,
-                            GA_Text, "Skip hidden folders",
-                            GA_RelVerify, TRUE,
-                            GA_Selected, prefs->skipHiddenFolders,
-                            CHECKBOX_TextPlace, PLACETEXT_RIGHT,
-                        TAG_END),
-
-                        LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_STRIP_BORDERS_CHECK] = NewObject(CHECKBOX_GetClass(), NULL,
-                            GA_ID, ITIDY_ADV_STRIP_BORDERS_CHECK,
-                            GA_Text, "Strip new icon borders",
-                            GA_RelVerify, TRUE,
-                            GA_Selected, prefs->stripNewIconBorders,
-                            CHECKBOX_TextPlace, PLACETEXT_RIGHT,
-                        TAG_END),
-                    TAG_END),
-                TAG_END),
-
-                /* Row 5: Grouping Options */
-                LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_GROUPING_LAYOUT] = NewObject(LAYOUT_GetClass(), NULL,
-                    GA_ID, ITIDY_ADV_GROUPING_LAYOUT,
-                    LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
-                    LAYOUT_TopSpacing, 4,
-                    
-                    LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_BLOCK_GAP_CHOOSER] = NewObject(CHOOSER_GetClass(), NULL,
-                        GA_ID, ITIDY_ADV_BLOCK_GAP_CHOOSER,
-                        GA_RelVerify, TRUE,
-                        GA_TabCycle, TRUE,
-                        CHOOSER_PopUp, TRUE,
-                        CHOOSER_Selected, prefs->blockGapSize,
-                        CHOOSER_Labels, adv_data->gap_labels,
-                    TAG_END),
-                    CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Gap between groups", TAG_END),
-                TAG_END),
-
                 /* Buttons (Bottom) */
                 LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_BUTTON_LAYOUT] = NewObject(LAYOUT_GetClass(), NULL,
-                    GA_ID, ITIDY_ADV_BUTTON_LAYOUT,
+                    GA_ID, ITIDY_ADV_GAID_BUTTON_LAYOUT,
                     LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
-                    LAYOUT_TopSpacing, 8,
+                    LAYOUT_LeftSpacing, 2,
+                    LAYOUT_RightSpacing, 2,
+                    LAYOUT_TopSpacing, 4,
+                    LAYOUT_BottomSpacing, 2,
                     
-                    LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_OK_BUTTON] = NewObject(BUTTON_GetClass(), NULL,
-                        GA_ID, ITIDY_ADV_OK_BUTTON,
-                        GA_Text, "_OK",
-                        GA_RelVerify, TRUE,
-                        BUTTON_TextPen, 1,
-                        BUTTON_BackgroundPen, 0,
-                        BUTTON_FillTextPen, 1,
-                        BUTTON_FillPen, 3,
+                    LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_BUTTON_COL1] = NewObject(LAYOUT_GetClass(), NULL,
+                        GA_ID, ITIDY_ADV_GAID_BUTTON_COL1,
+                        LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
                     TAG_END),
+                    CHILD_WeightedWidth, 50,
                     
-                    LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_CANCEL_BUTTON] = NewObject(BUTTON_GetClass(), NULL,
-                        GA_ID, ITIDY_ADV_CANCEL_BUTTON,
-                        GA_Text, "_Cancel",
-                        GA_RelVerify, TRUE,
-                        BUTTON_TextPen, 1,
-                        BUTTON_BackgroundPen, 0,
-                        BUTTON_FillTextPen, 1,
-                        BUTTON_FillPen, 3,
+                    LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_BUTTON_COL2] = NewObject(LAYOUT_GetClass(), NULL,
+                        GA_ID, ITIDY_ADV_GAID_BUTTON_COL2,
+                        LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
+                        
+                        LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_DEFAULTS_BUTTON] = NewObject(BUTTON_GetClass(), NULL,
+                            GA_ID, ITIDY_ADV_GAID_DEFAULTS_BUTTON,
+                            GA_Text, "Defaults",
+                            GA_RelVerify, TRUE,
+                            GA_TabCycle, TRUE,
+                            BUTTON_TextPen, 1,
+                            BUTTON_BackgroundPen, 0,
+                            BUTTON_FillTextPen, 1,
+                            BUTTON_FillPen, 3,
+                        TAG_END),
+                        
+                        LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_CANCEL_BUTTON] = NewObject(BUTTON_GetClass(), NULL,
+                            GA_ID, ITIDY_ADV_GAID_CANCEL_BUTTON,
+                            GA_Text, "Cancel",
+                            GA_RelVerify, TRUE,
+                            GA_TabCycle, TRUE,
+                            BUTTON_TextPen, 1,
+                            BUTTON_BackgroundPen, 0,
+                            BUTTON_FillTextPen, 1,
+                            BUTTON_FillPen, 3,
+                        TAG_END),
+                        
+                        LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_OK_BUTTON] = NewObject(BUTTON_GetClass(), NULL,
+                            GA_ID, ITIDY_ADV_GAID_OK_BUTTON,
+                            GA_Text, "OK",
+                            GA_RelVerify, TRUE,
+                            GA_TabCycle, TRUE,
+                            BUTTON_TextPen, 1,
+                            BUTTON_BackgroundPen, 0,
+                            BUTTON_FillTextPen, 1,
+                            BUTTON_FillPen, 3,
+                        TAG_END),
                     TAG_END),
+                    CHILD_WeightedWidth, 50,
                 TAG_END),
-
+                CHILD_WeightedHeight, 5,
             TAG_END), // End Root Layout
         TAG_END), // End Parent Group
     TAG_END);
@@ -460,6 +558,7 @@ void close_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data)
     if (adv_data->width_labels) { free_chooser_list(adv_data->width_labels); adv_data->width_labels = NULL; }
     if (adv_data->align_labels) { free_chooser_list(adv_data->align_labels); adv_data->align_labels = NULL; }
     if (adv_data->gap_labels) { free_chooser_list(adv_data->gap_labels); adv_data->gap_labels = NULL; }
+    if (adv_data->tab_labels) { free_clicktab_list(adv_data->tab_labels); adv_data->tab_labels = NULL; }
 
     close_reaction_classes();
 }
@@ -476,44 +575,55 @@ void handle_itidy_advanced_window_events(struct iTidyAdvancedWindow *adv_data)
 
     while (!done)
     {
-        /* Wait for input */
-        result = RA_HandleInput(adv_data->window_obj, &code);
-
-        switch (result & WMHI_CLASSMASK)
+        /* Wait for input - RA_HandleInput returns WMHI_LASTMSG when queue is empty */
+        while ((result = RA_HandleInput(adv_data->window_obj, &code)) != WMHI_LASTMSG)
         {
-            case WMHI_CLOSEWINDOW:
-                adv_data->changes_accepted = FALSE;
-                done = TRUE;
-                break;
-
-            case WMHI_GADGETUP:
-                switch (result & WMHI_GADGETMASK)
-                {
-                    case ITIDY_ADV_OK_BUTTON:
-                        save_settings_from_gadgets(adv_data);
-                        adv_data->changes_accepted = TRUE;
-                        done = TRUE;
-                        break;
-
-                    case ITIDY_ADV_CANCEL_BUTTON:
-                        adv_data->changes_accepted = FALSE;
-                        done = TRUE;
-                        break;
-                        
-                    case ITIDY_ADV_AUTO_MAX_CHECK:
-                        /* Toggle the enabled state of the Max Icons gadget */
-                        update_gadget_states(adv_data);
-                        break;
-                }
-                break;
-                
-            case WMHI_RAWKEY:
-                if (code == 0x45) // ESC key
-                {
+            switch (result & WMHI_CLASSMASK)
+            {
+                case WMHI_CLOSEWINDOW:
                     adv_data->changes_accepted = FALSE;
                     done = TRUE;
-                }
-                break;
+                    break;
+
+                case WMHI_GADGETUP:
+                    switch (result & WMHI_GADGETMASK)
+                    {
+                        case ITIDY_ADV_GAID_OK_BUTTON:
+                            save_settings_from_gadgets(adv_data);
+                            adv_data->changes_accepted = TRUE;
+                            done = TRUE;
+                            break;
+
+                        case ITIDY_ADV_GAID_CANCEL_BUTTON:
+                            adv_data->changes_accepted = FALSE;
+                            done = TRUE;
+                            break;
+                            
+                        case ITIDY_ADV_GAID_DEFAULTS_BUTTON:
+                            /* TODO: Reset all settings to defaults */
+                            /* This would require reloading default preferences and updating all gadgets */
+                            log_info(LOG_GUI, "Defaults button clicked (not yet implemented)\n");
+                            break;
+                            
+                        case ITIDY_ADV_GAID_CLICKTAB:
+                            /* Tab switching is handled automatically by CLICKTAB_PageGroup */
+                            break;
+                            
+                        case ITIDY_ADV_GAID_AUTO_MAX_CHECK:
+                            /* Toggle the enabled state of the Max Icons gadget */
+                            update_gadget_states(adv_data);
+                            break;
+                    }
+                    break;
+                    
+                case WMHI_RAWKEY:
+                    if (code == 0x45) // ESC key
+                    {
+                        adv_data->changes_accepted = FALSE;
+                        done = TRUE;
+                    }
+                    break;
+            }
         }
     }
 }
@@ -634,13 +744,18 @@ static BOOL open_reaction_classes(void)
     if (!ChooserBase) ChooserBase = OpenLibrary("gadgets/chooser.gadget", 0);
     if (!IntegerBase) IntegerBase = OpenLibrary("gadgets/integer.gadget", 0);
     if (!LabelBase) LabelBase = OpenLibrary("images/label.image", 0);
+    if (!ClickTabBase) ClickTabBase = OpenLibrary("gadgets/clicktab.gadget", 0);
+    if (!SpaceBase) SpaceBase = OpenLibrary("gadgets/space.gadget", 0);
 
     return (WindowBase && LayoutBase && ButtonBase && 
-            CheckBoxBase && ChooserBase && IntegerBase && LabelBase);
+            CheckBoxBase && ChooserBase && IntegerBase && LabelBase &&
+            ClickTabBase && SpaceBase);
 }
 
 static void close_reaction_classes(void)
 {
+    if (SpaceBase) { CloseLibrary(SpaceBase); SpaceBase = NULL; }
+    if (ClickTabBase) { CloseLibrary(ClickTabBase); ClickTabBase = NULL; }
     if (LabelBase) { CloseLibrary(LabelBase); LabelBase = NULL; }
     if (IntegerBase) { CloseLibrary(IntegerBase); IntegerBase = NULL; }
     if (ChooserBase) { CloseLibrary(ChooserBase); ChooserBase = NULL; }
@@ -678,6 +793,42 @@ static void free_chooser_list(struct List *list)
         while ((next = node->ln_Succ))
         {
             FreeChooserNode(node);
+            node = next;
+        }
+        whd_free(list);
+    }
+}
+
+static struct List *make_clicktab_list(STRPTR *labels)
+{
+    struct List *list = (struct List *)whd_malloc(sizeof(struct List));
+    if (list)
+    {
+        WORD tab_number = 0;
+        NewList(list);
+        while (*labels)
+        {
+            struct Node *node = AllocClickTabNode(TNA_Text, *labels, TNA_Number, tab_number, TAG_END);
+            if (node)
+            {
+                AddTail(list, node);
+            }
+            labels++;
+            tab_number++;
+        }
+    }
+    return list;
+}
+
+static void free_clicktab_list(struct List *list)
+{
+    if (list)
+    {
+        struct Node *node, *next;
+        node = list->lh_Head;
+        while ((next = node->ln_Succ))
+        {
+            FreeClickTabNode(node);
             node = next;
         }
         whd_free(list);
