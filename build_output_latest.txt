@@ -149,15 +149,15 @@ vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBU
 >    UBYTE ic_HoverSlugishness : 
 warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
 	included from file "src/Settings\IControlPrefs.h":15
-	included from file "src\GUI\DefaultTools\default_tool_restore_window.c":53
+	included from file "src\GUI\DefaultTools\default_tool_restore_window.c":56
 >    UBYTE ic_HoverFlags : 
 warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
 	included from file "src/Settings\IControlPrefs.h":15
-	included from file "src\GUI\DefaultTools\default_tool_restore_window.c":53
+	included from file "src\GUI\DefaultTools\default_tool_restore_window.c":56
 >    struct TagItem ie_Tags[0]
 warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
 	included from file "src/Settings\IControlPrefs.h":15
-	included from file "src\GUI\DefaultTools\default_tool_restore_window.c":53
+	included from file "src\GUI\DefaultTools\default_tool_restore_window.c":56
 Compiling [build/amiga/GUI/RestoreBackups/restore_window.o] from src/GUI/RestoreBackups/restore_window.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG -DENABLE_CONSOLE -c src/GUI/RestoreBackups/restore_window.c -o build/amiga/GUI/RestoreBackups/restore_window.o
 Compiling [build/amiga/GUI/RestoreBackups/folder_view_window.o] from src/GUI/RestoreBackups/folder_view_window.c

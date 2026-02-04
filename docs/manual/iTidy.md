@@ -80,17 +80,17 @@ To get started with iTidy:
 
 1. Double-click the iTidy icon on your Workbench desktop to launch it.
 
-2. In the main window, click **Browse...** and choose the folder (or whole partition) you want to tidy. The selected location will appear in the Folder Path display.
+2. In the main window, select the **Folder** gadget and choose the folder (or whole partition) you want to tidy. The selected location will appear in the Folder Path display.
 
 3. Pick how you want icons ordered using the **Order** cycle gadget (Folders First, Files First, or Mixed).
 
 4. If you want iTidy to process everything underneath the chosen folder as well, enable **Cleanup subfolders**.
 
-5. If you want more control over layout, window shape, and spacing, click **Advanced...** to open the Advanced Settings window.
+5. If you want more control over layout, window shape, and spacing, click **Advanced** to open the Advanced Settings window.
 
 6. When you’re ready, click **Start**. iTidy will process the selected folder (and any subfolders, if enabled), arrange the icons, and resize drawer windows using your chosen settings.
 
-7. If backups are enabled, iTidy will create a restore point before making changes. You can roll back later using **Restore Backups...**.
+7. If backups are enabled, iTidy will create a restore point before making changes. You can roll back later using **Restore backups**.
 
 **Tip:** For your first run, try a small test folder so you can see what the options do without touching a whole partition. If you’ve enabled backups, you can always restore afterwards if you want to undo the changes.
 
@@ -98,41 +98,47 @@ To get started with iTidy:
 
 ## Main Window
 
-The main window is where you pick what to tidy and choose the basic options. It’s meant to make the common “tidy this folder” job quick, without getting in the way.
+The main window is where you choose what to tidy and set the basic options. It’s designed to make the common “tidy this folder” job quick, without getting in the way.
 
-### Folder Section
+### Folder
 
-- **Folder Path:** Shows the Amiga path of the folder that will be processed (for example `SYS:`, `Work:Projects`, or `DH0:Games`). It’s read-only and updates when you select a new folder.
+- **Folder:** Select the drawer (folder) you want iTidy to process. Clicking the gadget opens a requester that shows drawers only (not files). The selected path is shown in the field and is read-only.
 
-- **Browse... Button:** Opens a file requester so you can choose the folder you want to tidy. The requester only shows drawers (folders), not files. If you prefer, you can also type a path directly. The last selected path is remembered for the current session.
+### Tidy options
 
-### Tidy Options Section
+- **Order:** Sets how icons are grouped before sorting.
+  - *Folders first:* Drawer icons are laid out before file icons.
+  - *Files first:* File icons are laid out before drawer icons.
+  - *Mixed:* Folders and files are sorted together.
+  - *Grouped by type:* Icons are arranged in visual groups (Drawers → Tools → Other). Each group is laid out independently and separated by a configurable gap (see Advanced Settings).
 
-- **Order:** Sets how icons are grouped and sorted in the window. The choices are Folders First, Files First, Mixed, or Grouped by Type.
-  - *Folders First:* Drawer icons are listed before file icons.
-  - *Files First:* File icons are listed before drawer icons.
-  - *Mixed:* Folders and files are sorted together by name.
-  - *Grouped by Type:* Creates three visual blocks - Drawers first, then Tools, then everything else. Each block is laid out independently with its own optimal column count, and blocks are separated by a configurable gap. The gap size can be adjusted in Advanced Settings. This mode is useful for organizing folders that contain a mix of folders, programs, and documents, as it keeps similar icon types together in distinct visual groups.  This grouping method was first suggested by Brielle Harrison in the Commodore Amiga group on facebook.
-  
-  **Note:** When "Grouped by Type" is selected, the **By** sort option is automatically disabled since the grouping order is fixed (Drawers → Tools → Other). Icons within each group are still sorted by name.
+  **Note:** When “Grouped by type” is selected, the **By** sort option may be disabled because the group order is fixed. Icons within each group are still sorted by name.
 
-- **Cleanup subfolders:** If enabled, iTidy will recurse through all subfolders under the selected path. This is the option you’d use for tidying a whole partition or a large folder tree in one pass. On classic hardware, very large trees can take a while, so it’s normal to start it and leave it running.
+- **By:** Selects the sort key used within the chosen order mode (Name, Type/Kind, Date, or Size).
 
-- **Backup icons:** If enabled, iTidy creates an LhA archive of the relevant `.info` files before making changes. That gives you something to roll back to later using **Restore Backups...** from the main window. This requires LhA to be available in `C:`. (This backup is about icon/layout changes; Default Tool backups are handled separately when fixing default tools.)
+- **Cleanup subfolders:** When enabled, iTidy also processes all subfolders under the selected folder. This is the option you’d use for tidying a whole partition or a large folder tree in one pass. On classic hardware, very large trees can take a while.
 
-- **Position:** Controls where drawer windows end up after iTidy resizes them.
-  - *Center Screen:* Centres the window on the Workbench screen (default).
-  - *Keep Position:* Keeps the window at its current location.
-  - *Near Parent:* Places the window slightly down and right of the parent window (similar to how Workbench tends to cascade windows).
-  - *No Change:* Resizes the window but doesn’t try to move it.
+- **Backup icons:** When enabled, iTidy creates an LhA backup of the folder’s `.info` files before making changes. This gives you something to roll back to later using **Restore backups**. Requires LhA to be available in `C:`.
 
-### Other Controls
+- **Position:** Controls where drawer windows are placed after iTidy resizes them.
+  - *Center screen:* Centres the window on the Workbench screen.
+  - *Keep position:* Keeps the window at its current location.
+  - *Near parent:* Places the window slightly down and right of the parent window (cascading style).
+  - *No change:* Resizes the window but doesn’t try to move it.
 
-- **Start Button:** Begins processing using the current settings.
+### Tools
 
-- **Advanced...:** Opens the Advanced Settings window for more detailed control.
+- **Advanced:** Opens the Advanced Settings window for finer control over layout and sizing.
+- **Fix default tools...:** Scans icons for missing or invalid default tools, and lets you batch-replace tooltypes.
+- **Restore backups:** Restores icon positions and window snapshots from iTidy backups (only available if you previously enabled **Backup icons**).
 
-### Menu Options
+### Other controls
+
+- **Start:** Begins processing using the current settings.
+- **Help (?)** Shows help for gadgets when Gadget Help is enabled.
+- **Exit:** Closes iTidy.
+
+### Menu options
 
 The menu lets you save and load your settings:
 
@@ -143,12 +149,10 @@ This is handy if you want one setup for general Workbench use and another for th
 
 ### Tips
 
-- The main window is meant for quick “point it at a folder and tidy it” runs. If you need more control over layout and window sizing, use **Advanced...**.
+- The main window is intended for quick “point it at a folder and tidy it” runs. If you need more control over layout and window sizing, use **Advanced**.
 - All changes apply to the selected folder and (if enabled) everything underneath it.
 - If you’re experimenting, enable backups and start with a small test folder first.
 
-
----
 
 ## Advanced Settings
 
@@ -261,7 +265,7 @@ When validating tools, iTidy checks absolute paths directly. For simple tool nam
 
 ## Restoring Backups
 
-You can open this window via **Restore Backups...** on the main window. It restores icon positions and drawer/window layout information from the LhA backup archives that iTidy created. This is only available if you previously ran iTidy with **Backup icons** enabled.
+You can open this window via **Restore backups** on the main window. It restores icon positions and drawer/window layout information from the LhA backup archives that iTidy created. This is only available if you previously ran iTidy with **Backup icons** enabled.
 
 Note: this restores icon/layout backups only. If you’re trying to undo default tool changes, use **Restore Default Tools Backups...** in the Fix Default Tools window instead.
 

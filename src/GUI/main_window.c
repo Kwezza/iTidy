@@ -31,11 +31,13 @@
 #include <proto/chooser.h>
 #include <proto/getfile.h>
 #include <proto/label.h>
+#include <proto/requester.h>
 
 #include <clib/alib_protos.h>
 #include <reaction/reaction.h>
 #include <reaction/reaction_macros.h>
 #include <classes/window.h>
+#include <classes/requester.h>
 #include <gadgets/layout.h>
 #include <gadgets/button.h>
 #include <gadgets/checkbox.h>
@@ -74,6 +76,7 @@ struct Library *CheckBoxBase = NULL;
 struct Library *ChooserBase = NULL;
 struct Library *GetFileBase = NULL;
 struct Library *LabelBase = NULL;
+struct Library *RequesterBase = NULL;
 
 /* Local GadToolsBase for menus - prefixed to avoid collision with system global */
 static struct Library *iTidy_GadToolsBase = NULL;
@@ -277,6 +280,30 @@ BOOL init_reaction_libs(void)
         return FALSE;
     }
     
+    /* Requester class */
+    RequesterBase = OpenLibrary("requester.class", 0L);
+    if (!RequesterBase)
+    {
+        log_error(LOG_GUI, "Failed to open requester.class\n");
+        CloseLibrary(LabelBase);
+        CloseLibrary(GetFileBase);
+        CloseLibrary(ChooserBase);
+        CloseLibrary(CheckBoxBase);
+        CloseLibrary(ButtonBase);
+        CloseLibrary(LayoutBase);
+        CloseLibrary(WindowBase);
+        CloseLibrary(iTidy_GadToolsBase);
+        LabelBase = NULL;
+        GetFileBase = NULL;
+        ChooserBase = NULL;
+        CheckBoxBase = NULL;
+        ButtonBase = NULL;
+        LayoutBase = NULL;
+        WindowBase = NULL;
+        iTidy_GadToolsBase = NULL;
+        return FALSE;
+    }
+    
     log_info(LOG_GUI, "ReAction libraries initialized successfully\n");
     return TRUE;
 }
@@ -286,6 +313,7 @@ BOOL init_reaction_libs(void)
  */
 void cleanup_reaction_libs(void)
 {
+    if (RequesterBase) { CloseLibrary(RequesterBase); RequesterBase = NULL; }
     if (LabelBase)     { CloseLibrary(LabelBase);     LabelBase = NULL; }
     if (GetFileBase)   { CloseLibrary(GetFileBase);   GetFileBase = NULL; }
     if (ChooserBase)   { CloseLibrary(ChooserBase);   ChooserBase = NULL; }
@@ -441,23 +469,23 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     {
         {ITIDY_GAID_MASTER_LAYOUT, -1, "", 0},
         {ITIDY_GAID_FOLDER_LAYOUT, -1, "", 0},
-        {ITIDY_GAID_FOLDER_GETFILE, -1, "Select the folder for iTidy to clean up. To cleanup subfolders,\nmake sure you select 'Cleanup subfolders' below.", 0},
+        {ITIDY_GAID_FOLDER_GETFILE, -1, "Select the folder you want to tidy. To include subfolders, enable 'Include subfolders' below.", 0},
         {ITIDY_GAID_OPTIONS_LAYOUT, -1, "", 0},
         {ITIDY_GAID_LEFT_COLUMN, -1, "", 0},
-        {ITIDY_GAID_ORDER_CHOOSER, -1, "Sets how icons are grouped and sorted in the window. The choices\nare Folders First, Files First, Mixed, or Grouped by Type.", 0},
-        {ITIDY_GAID_RECURSIVE_CHECKBOX, -1, "If enabled, iTidy will recurse through all subfolders under the selected path.", 0},
-        {ITIDY_GAID_POSITION_CHOOSER, -1, "Controls where drawer windows end up after iTidy resizes them.", 0},
+        {ITIDY_GAID_ORDER_CHOOSER, -1, "Sets how icons are grouped before sorting. Folders first, files first, mixed, or grouped by type.", 0},
+        {ITIDY_GAID_RECURSIVE_CHECKBOX, -1, "When enabled, iTidy also processes all subfolders under the selected folder.", 0},
+        {ITIDY_GAID_POSITION_CHOOSER, -1, "Controls where drawer windows are placed after resizing. (Only affects windows iTidy changes.)", 0},
         {ITIDY_GAID_RIGHT_COLUMN, -1, "", 0},
-        {ITIDY_GAID_SORTBY_CHOOSER, -1, "Controls what is selected for the sort order.", 0},
-        {ITIDY_GAID_BACKUP_CHECKBOX, -1, "If enabled, iTidy creates an LhA archive of the relevant `.info` files\nbefore making changes. This requires LhA to be available in `C:`", 0},
+        {ITIDY_GAID_SORTBY_CHOOSER, -1, "Selects the field used for sorting: name, kind, date, or size.", 0},
+        {ITIDY_GAID_BACKUP_CHECKBOX, -1, "Creates an LhA backup of the folder's .info files before changes. Requires LhA in C: (or on your PATH).", 0},
         {ITIDY_GAID_HELP_BUTTON, -1, "", 0},
         {ITIDY_GAID_TOOLS_LAYOUT, -1, "", 0},
-        {ITIDY_GAID_ADVANCED_BUTTON, -1, "Opens the Advanced Settings window for more detailed control.", 0},
-        {ITIDY_GAID_DEFAULT_TOOLS_BUTTON, -1, "Use this area to scan icons for their default tools. Designed to\nhelp you find (and fix) default tools that no longer exist. Also allows mass updating\nfrom one tooltype to another.", 0},
-        {ITIDY_GAID_RESTORE_BUTTON, -1, "This area restores icon positions and drawer/window layout information\nfrom the LhA backup archives that iTidy created. This is only available if you previously\nran iTidy with backups enabled.", 0},
+        {ITIDY_GAID_ADVANCED_BUTTON, -1, "Opens Advanced Settings for finer control over layout and sizing.", 0},
+        {ITIDY_GAID_DEFAULT_TOOLS_BUTTON, -1, "Scans icons for missing or invalid default tools. Lets you fix them, or batch-replace one tool with another", 0},
+        {ITIDY_GAID_RESTORE_BUTTON, -1, "Restores icon positions and window snapshots from iTidy backups. Only available if you previously enabled backups.", 0},
         {ITIDY_GAID_BUTTONS_LAYOUT, -1, "", 0},
-        {ITIDY_GAID_START_BUTTON, -1, "Click 'Start' to begin the iTidy sweep once you have selected the folder\nand any other setting required.", 0},
-        {ITIDY_GAID_EXIT_BUTTON, -1, "Exits iTidy.", 0},
+        {ITIDY_GAID_START_BUTTON, -1, "Starts tidying the selected folder using the current settings.", 0},
+        {ITIDY_GAID_EXIT_BUTTON, -1, "Closes iTidy.", 0},
         {-1, -1, NULL, 0}
     };
     
@@ -523,7 +551,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                         GETFILE_ReadOnly, TRUE,
                     TAG_END),
                     CHILD_Label, NewObject(LABEL_GetClass(), NULL,
-                        LABEL_Text, "Folder",
+                        LABEL_Text, "Folder to tidy",
                     TAG_END),
                 TAG_END),
                 
@@ -556,7 +584,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                             CHOOSER_Labels, win_data->order_labels,
                         TAG_END),
                         CHILD_Label, NewObject(LABEL_GetClass(), NULL,
-                            LABEL_Text, "Order",
+                            LABEL_Text, "Grouping",
                         TAG_END),
                         
                         /* Recursive checkbox */
@@ -570,7 +598,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                             CHECKBOX_TextPlace, PLACETEXT_RIGHT,
                         TAG_END),
                         CHILD_Label, NewObject(LABEL_GetClass(), NULL,
-                            LABEL_Text, "Cleanup subfolders",
+                            LABEL_Text, "Include subfolders",
                         TAG_END),
                         
                         /* Position chooser */
@@ -584,7 +612,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                             CHOOSER_Labels, win_data->position_labels,
                         TAG_END),
                         CHILD_Label, NewObject(LABEL_GetClass(), NULL,
-                            LABEL_Text, "Position",
+                            LABEL_Text, "Window position",
                         TAG_END),
                     TAG_END),
                     
@@ -606,7 +634,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                             CHOOSER_Labels, win_data->sortby_labels,
                         TAG_END),
                         CHILD_Label, NewObject(LABEL_GetClass(), NULL,
-                            LABEL_Text, "By",
+                            LABEL_Text, "Sort by",
                         TAG_END),
                         
                         /* Backup checkbox */
@@ -620,7 +648,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                             CHECKBOX_TextPlace, PLACETEXT_RIGHT,
                         TAG_END),
                         CHILD_Label, NewObject(LABEL_GetClass(), NULL,
-                            LABEL_Text, "Backup icons",
+                            LABEL_Text, "Backup layouts",
                         TAG_END),
                         
                         /* Help button */
@@ -632,7 +660,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                             GA_TabCycle, TRUE,
                         TAG_END),
                         CHILD_Label, NewObject(LABEL_GetClass(), NULL,
-                            LABEL_Text, "Help",
+                            LABEL_Text, "Hints",
                         TAG_END),
                     TAG_END),
                 TAG_END),
@@ -651,7 +679,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                     LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_ADVANCED_BUTTON] = 
                         NewObject(BUTTON_GetClass(), NULL,
                         GA_ID, ITIDY_GAID_ADVANCED_BUTTON,
-                        GA_Text, "Advanced",
+                        GA_Text, "Advanced...",
                         GA_RelVerify, TRUE,
                         GA_TabCycle, TRUE,
                     TAG_END),
@@ -667,7 +695,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                     LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_RESTORE_BUTTON] = 
                         NewObject(BUTTON_GetClass(), NULL,
                         GA_ID, ITIDY_GAID_RESTORE_BUTTON,
-                        GA_Text, "Restore backups",
+                        GA_Text, "Restore backups...",
                         GA_RelVerify, TRUE,
                         GA_TabCycle, TRUE,
                     TAG_END),
@@ -1386,15 +1414,51 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                     break;
                 
                 case MENU_PROJECT_ABOUT:
-                    ShowEasyRequest(win_data->window,
-                        "About iTidy",
-                        "iTidy v" ITIDY_VERSION "\n\n"
-                        "Icon Cleanup Tool for AmigaOS\n"
-                        "ReAction GUI Version (WB 3.2+)\n\n"
-                        "Automatically arranges icon layouts\n"
-                        "and resizes folder windows.\n\n"
-                        "(c) 2025-2026",
-                        "OK");
+                    {
+                        Object *req_obj;
+                        struct orRequest req_msg;
+                        
+                        if (RequesterBase)
+                        {
+                            req_obj = NewObject(REQUESTER_GetClass(), NULL,
+                                REQ_Type, REQTYPE_INFO,
+                                REQ_TitleText, "About iTidy",
+                                REQ_BodyText,
+                                    "iTidy v" ITIDY_VERSION "\n\n"
+                                    "Icon Cleanup Tool for AmigaOS\n"
+                                    "ReAction GUI Version (WB 3.2+)\n\n"
+                                    "Automatically arranges icon layouts\n"
+                                    "and resizes folder windows.\n\n"
+                                    "(c) 2025-2026",
+                                REQ_GadgetText, "_Ok",
+                                REQ_Image, REQIMAGE_INFO,
+                                TAG_DONE);
+                            
+                            if (req_obj)
+                            {
+                                req_msg.MethodID = RM_OPENREQ;
+                                req_msg.or_Attrs = NULL;
+                                req_msg.or_Window = win_data->window;
+                                req_msg.or_Screen = NULL;
+                                
+                                DoMethodA(req_obj, (Msg)&req_msg);
+                                DisposeObject(req_obj);
+                            }
+                        }
+                        else
+                        {
+                            /* Fallback to old EasyRequest if RequesterBase failed to open */
+                            ShowEasyRequest(win_data->window,
+                                "About iTidy",
+                                "iTidy v" ITIDY_VERSION "\n\n"
+                                "Icon Cleanup Tool for AmigaOS\n"
+                                "ReAction GUI Version (WB 3.2+)\n\n"
+                                "Automatically arranges icon layouts\n"
+                                "and resizes folder windows.\n\n"
+                                "(c) 2025-2026",
+                                "OK");
+                        }
+                    }
                     break;
                 
                 case MENU_PROJECT_CLOSE:
@@ -1484,13 +1548,47 @@ static void handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
             break;
         
         case ITIDY_GAID_HELP_BUTTON:
-            ShowEasyRequest(win_data->window,
-                "Window Placement Options",
-                "Center screen - Resizes window and centers it.\n\n"
-                "Keep position - Resizes but keeps current position.\n\n"
-                "Near parent - Places window near its parent drawer.\n\n"
-                "No change - Only rearranges icons, no window change.",
-                "OK");
+            {
+                Object *req_obj;
+                struct orRequest req_msg;
+                
+                if (RequesterBase)
+                {
+                    req_obj = NewObject(REQUESTER_GetClass(), NULL,
+                        REQ_Type, REQTYPE_INFO,
+                        REQ_TitleText, "Window Placement Options",
+                        REQ_BodyText,
+                            "Center screen - Resizes window and centers it.\n\n"
+                            "Keep position - Resizes but keeps current position.\n\n"
+                            "Near parent - Places window near its parent drawer.\n\n"
+                            "No change - Only rearranges icons, no window change.",
+                        REQ_GadgetText, "_Ok",
+                        REQ_Image, REQIMAGE_INFO,
+                        TAG_DONE);
+                    
+                    if (req_obj)
+                    {
+                        req_msg.MethodID = RM_OPENREQ;
+                        req_msg.or_Attrs = NULL;
+                        req_msg.or_Window = win_data->window;
+                        req_msg.or_Screen = NULL;
+                        
+                        DoMethodA(req_obj, (Msg)&req_msg);
+                        DisposeObject(req_obj);
+                    }
+                }
+                else
+                {
+                    /* Fallback to old EasyRequest if RequesterBase failed to open */
+                    ShowEasyRequest(win_data->window,
+                        "Window Placement Options",
+                        "Center screen - Resizes window and centers it.\n\n"
+                        "Keep position - Resizes but keeps current position.\n\n"
+                        "Near parent - Places window near its parent drawer.\n\n"
+                        "No change - Only rearranges icons, no window change.",
+                        "OK");
+                }
+            }
             break;
         
         case ITIDY_GAID_ADVANCED_BUTTON:
