@@ -36,5 +36,7 @@ char* convertWBVersionWithDot(int number);
 int endsWithInfo(const char *filePath);
 char *removeTextFromStartOfString(const char *str, const char *prefix);
 BOOL ExpandProgDir(const char *path, char *expanded, size_t maxLen);
+BOOL CreateDirectoryForFile(const char *filepath);
+BOOL CreateDirectoryPath(const char *dirpath);
 
 #endif /* utilities_h */

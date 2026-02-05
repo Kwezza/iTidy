@@ -62,6 +62,7 @@
 #include "layout_processor.h"
 #include "writeLog.h"
 #include "gui_utilities.h"
+#include "../utilities.h"
 #include "StatusWindows/main_progress_window.h"
 #include "../backup_lha.h"
 #include "../icon_types.h"  /* For ToolCacheEntry and g_ToolCache extern */
@@ -939,6 +940,13 @@ static BOOL save_preferences_to_file(const char *filepath, const LayoutPreferenc
         return FALSE;
     }
     
+    /* Ensure the directory path exists before creating the file */
+    if (!CreateDirectoryForFile(filepath))
+    {
+        log_error(LOG_GUI, "save_preferences_to_file: Failed to create directory path for: %s\n", filepath);
+        return FALSE;
+    }
+    
     file = Open((STRPTR)filepath, MODE_NEWFILE);
     if (!file)
     {
@@ -1211,6 +1219,7 @@ static void handle_main_save_as_menu(struct iTidyMainWindow *win_data)
 {
     struct FileRequester *freq;
     char full_path[512];
+    char initial_drawer[512];
     BPTR lock;
     LayoutPreferences *prefs;
     
@@ -1227,9 +1236,30 @@ static void handle_main_save_as_menu(struct iTidyMainWindow *win_data)
         return;
     }
     
+    /* Expand PROGDIR: to actual path for file requester */
+    if (!ExpandProgDir("PROGDIR:userdata/Settings", initial_drawer, sizeof(initial_drawer)))
+    {
+        log_warning(LOG_GUI, "Failed to expand PROGDIR, using literal path\n");
+        strcpy(initial_drawer, "PROGDIR:userdata/Settings");
+    }
+    
+    log_info(LOG_GUI, "Save As: Initial drawer path: '%s'\n", initial_drawer);
+    
+    /* Create the directory structure BEFORE opening the file requester */
+    /* This prevents AmigaOS from showing its own "Create Drawer?" requester */
+    log_info(LOG_GUI, "Save As: Pre-creating directory structure...\n");
+    if (!CreateDirectoryPath(initial_drawer))
+    {
+        log_warning(LOG_GUI, "Save As: Failed to pre-create directory, continuing anyway...\n");
+    }
+    else
+    {
+        log_info(LOG_GUI, "Save As: Directory structure created successfully\n");
+    }
+    
     freq = (struct FileRequester *)AllocAslRequestTags(ASL_FileRequest,
         ASLFR_TitleText, "Save Preferences As...",
-        ASLFR_InitialDrawer, "PROGDIR:userdata/Settings",
+        ASLFR_InitialDrawer, initial_drawer,
         ASLFR_InitialFile, "iTidy.prefs",
         ASLFR_DoSaveMode, TRUE,
         ASLFR_RejectIcons, TRUE,
@@ -1303,15 +1333,36 @@ static void handle_main_open_menu(struct iTidyMainWindow *win_data)
 {
     struct FileRequester *freq;
     char full_path[512];
+    char initial_drawer[512];
     BPTR lock;
     LayoutPreferences loaded_prefs;
     
     if (!win_data || !win_data->window)
         return;
     
+    /* Expand PROGDIR: to actual path for file requester */
+    if (!ExpandProgDir("PROGDIR:userdata/Settings", initial_drawer, sizeof(initial_drawer)))
+    {
+        log_warning(LOG_GUI, "Failed to expand PROGDIR, using literal path\n");
+        strcpy(initial_drawer, "PROGDIR:userdata/Settings");
+    }
+    
+    log_info(LOG_GUI, "Load: Initial drawer path: '%s'\n", initial_drawer);
+    
+    /* Create the directory structure BEFORE opening the file requester */
+    log_info(LOG_GUI, "Load: Pre-creating directory structure...\n");
+    if (!CreateDirectoryPath(initial_drawer))
+    {
+        log_warning(LOG_GUI, "Load: Failed to pre-create directory, continuing anyway...\n");
+    }
+    else
+    {
+        log_info(LOG_GUI, "Load: Directory structure created successfully\n");
+    }
+    
     freq = (struct FileRequester *)AllocAslRequestTags(ASL_FileRequest,
         ASLFR_TitleText, "Open Preferences File...",
-        ASLFR_InitialDrawer, "PROGDIR:userdata/Settings",
+        ASLFR_InitialDrawer, initial_drawer,
         ASLFR_InitialFile, "iTidy.prefs",
         ASLFR_DoSaveMode, FALSE,
         ASLFR_RejectIcons, TRUE,

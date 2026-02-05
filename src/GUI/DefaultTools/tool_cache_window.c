@@ -732,7 +732,18 @@ static void handle_save_as_menu(struct iTidyToolCacheWindow *tool_data)
         strcpy(expanded_drawer, "RAM:");
     }
     
-    log_debug(LOG_GUI, "Using initial drawer: %s\n", expanded_drawer);
+    log_info(LOG_GUI, "Save As: Initial drawer path: '%s'\n", expanded_drawer);
+    
+    /* Create the directory structure BEFORE opening the file requester */
+    log_info(LOG_GUI, "Save As: Pre-creating directory structure...\n");
+    if (!CreateDirectoryPath(expanded_drawer))
+    {
+        log_warning(LOG_GUI, "Save As: Failed to pre-create directory, continuing anyway...\n");
+    }
+    else
+    {
+        log_info(LOG_GUI, "Save As: Directory structure created successfully\n");
+    }
     
     freq = (struct FileRequester *)AllocAslRequestTags(ASL_FileRequest,
         ASLFR_TitleText, "Save Tool Cache As...",
@@ -921,7 +932,18 @@ static void handle_open_menu(struct iTidyToolCacheWindow *tool_data)
         strcpy(expanded_drawer, "RAM:");
     }
     
-    log_debug(LOG_GUI, "Using initial drawer: %s\n", expanded_drawer);
+    log_info(LOG_GUI, "Open: Initial drawer path: '%s'\n", expanded_drawer);
+    
+    /* Create the directory structure BEFORE opening the file requester */
+    log_info(LOG_GUI, "Open: Pre-creating directory structure...\n");
+    if (!CreateDirectoryPath(expanded_drawer))
+    {
+        log_warning(LOG_GUI, "Open: Failed to pre-create directory, continuing anyway...\n");
+    }
+    else
+    {
+        log_info(LOG_GUI, "Open: Directory structure created successfully\n");
+    }
     
     freq = (struct FileRequester *)AllocAslRequestTags(ASL_FileRequest,
         ASLFR_TitleText, "Open Tool Cache File...",

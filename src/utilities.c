@@ -568,3 +568,195 @@ BOOL ExpandProgDir(const char *path, char *expanded, size_t maxLen) {
     return TRUE;
 #endif
 }
+/**
+ * @brief Check if a path exists and is a directory
+ * @param path Directory path to check
+ * @return TRUE if exists and is a directory, FALSE otherwise
+ */
+static BOOL DirectoryExists(const char *path)
+{
+#if PLATFORM_AMIGA
+    BPTR lock;
+    struct FileInfoBlock *fib;
+    BOOL is_dir = FALSE;
+    
+    if (!path || path[0] == '\0')
+        return FALSE;
+    
+    lock = Lock((STRPTR)path, ACCESS_READ);
+    if (!lock)
+        return FALSE;
+    
+    fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
+    if (fib)
+    {
+        if (Examine(lock, fib))
+        {
+            is_dir = (fib->fib_DirEntryType > 0);
+        }
+        FreeDosObject(DOS_FIB, fib);
+    }
+    
+    UnLock(lock);
+    return is_dir;
+#else
+    struct stat st;
+    if (!path || path[0] == '\0')
+        return FALSE;
+    if (stat(path, &st) == 0)
+        return (st.st_mode & S_IFDIR) != 0;
+    return FALSE;
+#endif
+}
+
+/**
+ * @brief Create directory path recursively, creating all parent directories as needed
+ * @param dirpath Directory path to create (must be expanded, no PROGDIR:)
+ * @return TRUE if directory exists or was created successfully, FALSE on error
+ * 
+ * This function creates all necessary parent directories recursively.
+ * Example: CreateDirectoryPath("Work:Projects/MyApp/Data") will create
+ * Projects, then MyApp, then Data if they don't exist.
+ */
+BOOL CreateDirectoryPath(const char *dirpath)
+{
+#if PLATFORM_AMIGA
+    char path_copy[512];
+    char *last_sep;
+    char *colon;
+    BPTR lock;
+    
+    if (!dirpath || dirpath[0] == '\0')
+    {
+        log_error(LOG_GENERAL, "CreateDirectoryPath: Invalid directory path\n");
+        return FALSE;
+    }
+    
+    /* Check if already exists */
+    if (DirectoryExists(dirpath))
+    {
+        log_debug(LOG_GENERAL, "CreateDirectoryPath: Directory already exists: '%s'\n", dirpath);
+        return TRUE;
+    }
+    
+    /* Make a copy we can modify */
+    strncpy(path_copy, dirpath, sizeof(path_copy) - 1);
+    path_copy[sizeof(path_copy) - 1] = '\0';
+    
+    log_debug(LOG_GENERAL, "CreateDirectoryPath: Creating directory: '%s'\n", path_copy);
+    
+    /* Find last separator */
+    last_sep = strrchr(path_copy, '/');
+    if (!last_sep)
+        last_sep = strrchr(path_copy, '\\');
+    
+    /* Find colon (volume separator) */
+    colon = strchr(path_copy, ':');
+    
+    /* If there's a parent path, create it first recursively */
+    if (last_sep && last_sep > colon)
+    {
+        *last_sep = '\0';
+        log_debug(LOG_GENERAL, "CreateDirectoryPath: Creating parent first: '%s'\n", path_copy);
+        if (!CreateDirectoryPath(path_copy))
+        {
+            log_error(LOG_GENERAL, "CreateDirectoryPath: Failed to create parent: '%s'\n", path_copy);
+            return FALSE;
+        }
+        *last_sep = '/';
+    }
+    
+    /* Now create this directory */
+    log_debug(LOG_GENERAL, "CreateDirectoryPath: Creating directory: '%s'\n", path_copy);
+    lock = CreateDir((STRPTR)path_copy);
+    if (lock)
+    {
+        UnLock(lock);
+        log_info(LOG_GENERAL, "CreateDirectoryPath: Successfully created: '%s'\n", path_copy);
+        return TRUE;
+    }
+    
+    /* CreateDir failed - check if it's because it already exists */
+    if (DirectoryExists(path_copy))
+    {
+        log_debug(LOG_GENERAL, "CreateDirectoryPath: Directory already exists (after CreateDir): '%s'\n", path_copy);
+        return TRUE;
+    }
+    
+    log_error(LOG_GENERAL, "CreateDirectoryPath: Failed to create directory: '%s' (IoErr: %ld)\n", 
+             path_copy, (long)IoErr());
+    return FALSE;
+#else
+    /* Host platform stub */
+    log_debug(LOG_GENERAL, "CreateDirectoryPath: Host platform, assuming success\n");
+    return TRUE;
+#endif
+}
+
+/**
+ * @brief Create directory path needed for a file, extracting directory from filepath
+ * @param filepath Full file path (e.g., "Work:Dev/App/file.txt" or "PROGDIR:data/config.dat")
+ * @return TRUE if directory exists or was created successfully, FALSE on error
+ * 
+ * This function extracts the directory portion from a file path and creates
+ * all necessary parent directories. It automatically expands PROGDIR: assignments.
+ * 
+ * Examples:
+ *   CreateDirectoryForFile("PROGDIR:userdata/Settings/iTidy.prefs")
+ *     -> Expands to "Work:iTidy/userdata/Settings/iTidy.prefs"
+ *     -> Creates "Work:iTidy/userdata" then "Settings"
+ * 
+ *   CreateDirectoryForFile("SYS:Prefs/Env-Archive/iTidy.config")
+ *     -> Creates "SYS:Prefs/Env-Archive" if needed
+ */
+BOOL CreateDirectoryForFile(const char *filepath)
+{
+    char expanded_path[512];
+    char dir_path[512];
+    char *last_sep;
+    char *colon;
+    
+    if (!filepath || filepath[0] == '\0')
+    {
+        log_error(LOG_GENERAL, "CreateDirectoryForFile: Invalid filepath\n");
+        return FALSE;
+    }
+    
+    log_debug(LOG_GENERAL, "CreateDirectoryForFile: Input filepath: '%s'\n", filepath);
+    
+    /* Expand PROGDIR: to actual path if needed */
+    if (!ExpandProgDir(filepath, expanded_path, sizeof(expanded_path)))
+    {
+        log_error(LOG_GENERAL, "CreateDirectoryForFile: Failed to expand PROGDIR\n");
+        return FALSE;
+    }
+    
+    log_debug(LOG_GENERAL, "CreateDirectoryForFile: Expanded path: '%s'\n", expanded_path);
+    
+    /* Copy to working buffer */
+    strncpy(dir_path, expanded_path, sizeof(dir_path) - 1);
+    dir_path[sizeof(dir_path) - 1] = '\0';
+    
+    /* Find last separator to extract directory path */
+    last_sep = strrchr(dir_path, '/');
+    if (!last_sep)
+        last_sep = strrchr(dir_path, '\\');
+    if (!last_sep)
+        last_sep = strrchr(dir_path, ':');
+    
+    /* Check if this is just a volume root or has no directory component */
+    colon = strchr(dir_path, ':');
+    if (!last_sep || last_sep == colon)
+    {
+        log_debug(LOG_GENERAL, "CreateDirectoryForFile: No directory component to create\n");
+        return TRUE;
+    }
+    
+    /* Terminate at last separator to get directory path */
+    *last_sep = '\0';
+    
+    log_info(LOG_GENERAL, "CreateDirectoryForFile: Directory path to create: '%s'\n", dir_path);
+    
+    /* Create the directory path */
+    return CreateDirectoryPath(dir_path);
+}
