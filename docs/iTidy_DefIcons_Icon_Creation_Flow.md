@@ -179,7 +179,6 @@ Writing `.info` files is invasive. Provide guardrails:
 - Exclude system assigns or selected paths (for example SYS:, C:, S:).
 - Only create icons under user selected roots.
 - Never overwrite existing `.info`.
-- Check free space first?
 
 ## Fallback rules
 
@@ -196,3 +195,18 @@ Also include cycle protection:
 
 - Make it explicit in the UI that this feature **writes `.info` files** next to iconless files.
 - Keep it silent: no Workbench windows need to be opened, so the only UI should be your progress bar.
+
+## Project reference files
+
+For this project, working examples and format documentation already exist in the repo:
+
+- `Tests\DefIcons\deficontree.c`  
+  **Type hierarchy tree viewer** (shows parent-child relationships).  
+  This is a working example of parsing `deficons.prefs` and is the recommended starting point for building the in-memory type list (`token -> parent` map).
+
+- `Tests\DefIcons\DEFICONS_FORMAT.md`  
+  Complete breakdown of how the `deficons.prefs` **binary format** is laid out (useful if you need to extend or re-check the parser).
+
+- Other files in `Tests\DefIcons\`  
+  Additional helpers and experiments that can be referenced as needed.
+
