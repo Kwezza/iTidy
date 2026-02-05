@@ -8,7 +8,9 @@
  */
 
 #include <string.h>
+#include <stdio.h>
 #include "layout_preferences.h"
+#include "deficons_parser.h"
 
 /*========================================================================*/
 /* Global Preferences Singleton                                          */
@@ -86,6 +88,12 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     /* Beta/Experimental Features */
     prefs->beta_openFoldersAfterProcessing = DEFAULT_BETA_OPEN_FOLDERS_AFTER_PROCESSING;
     prefs->beta_FindWindowOnWorkbenchAndUpdate = DEFAULT_BETA_FIND_WINDOW_ON_WORKBENCH_AND_UPDATE;
+    
+    /* DefIcons Icon Creation Settings */
+    prefs->enable_deficons_icon_creation = DEFAULT_ENABLE_DEFICONS_ICON_CREATION;
+    strcpy(prefs->deficons_disabled_types, DEFAULT_DEFICONS_DISABLED_TYPES);
+    prefs->deficons_folder_icon_mode = DEFAULT_DEFICONS_FOLDER_ICON_MODE;
+    prefs->deficons_skip_system_assigns = DEFAULT_DEFICONS_SKIP_SYSTEM_ASSIGNS;
     
     /* Logging and Debug Settings */
     prefs->logLevel = DEFAULT_LOG_LEVEL;
@@ -352,4 +360,175 @@ void SetGlobalSkipHiddenFolders(BOOL skip)
     g_AppPreferences.skipHiddenFolders = skip;
 }
 
+/*========================================================================*/
+/**
+ * @brief Check if a DefIcons type is enabled
+ * 
+ * Checks whether automatic icon creation is enabled for a specific
+ * DefIcons type by looking in the disabled types list.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ * @param type_name Type name to check (e.g., "tool", "music", "picture")
+ * 
+ * @return TRUE if type is enabled, FALSE if disabled
+ * 
+ * @note Returns FALSE if deficons_disabled_types contains type_name
+ * @note Returns TRUE if enable_deficons_icon_creation is FALSE (feature disabled)
+ */
+/*========================================================================*/
+BOOL is_deficon_type_enabled(const LayoutPreferences *prefs, const char *type_name)
+{
+    char *ptr;
+    char temp_buffer[256];
+    char search_token[MAX_DEFICONS_TYPE_NAME + 3];  /* ", type_name," */
+    
+    if (prefs == NULL || type_name == NULL || type_name[0] == '\0')
+        return FALSE;
+    
+    /* If feature is disabled, consider all types enabled (no filtering) */
+    if (!prefs->enable_deficons_icon_creation)
+        return TRUE;
+    
+    /* If no disabled types, all are enabled */
+    if (prefs->deficons_disabled_types[0] == '\0')
+        return TRUE;
+    
+    /* Build search token: ",type_name," to avoid partial matches */
+    /* Example: ",tool," won't match ",tooltip," */
+    sprintf(search_token, ",%s,", type_name);
+    
+    /* Build searchable string: ",type1,type2,type3," */
+    sprintf(temp_buffer, ",%s,", prefs->deficons_disabled_types);
+    
+    /* Search for token */
+    ptr = strstr(temp_buffer, search_token);
+    
+    return (ptr == NULL);  /* TRUE if NOT found in disabled list */
+}
+
+/*========================================================================*/
+/**
+ * @brief Add a type to the disabled types list
+ * 
+ * Adds a DefIcons type to the disabled list, preventing automatic
+ * icon creation for that category.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ * @param type_name Type name to disable (e.g., "tool", "font")
+ * 
+ * @return TRUE if added successfully, FALSE on error
+ * 
+ * @note Does nothing if type is already in the list
+ * @note Fails silently if list is full
+ */
+/*========================================================================*/
+BOOL add_disabled_deficon_type(LayoutPreferences *prefs, const char *type_name)
+{
+    char temp_buffer[256];
+    
+    if (prefs == NULL || type_name == NULL || type_name[0] == '\0')
+        return FALSE;
+    
+    /* Check if already in list */
+    if (!is_deficon_type_enabled(prefs, type_name))
+        return TRUE;  /* Already disabled */
+    
+    /* Add to list */
+    if (prefs->deficons_disabled_types[0] == '\0')
+    {
+        /* First entry */
+        strncpy(prefs->deficons_disabled_types, type_name, sizeof(prefs->deficons_disabled_types) - 1);
+        prefs->deficons_disabled_types[sizeof(prefs->deficons_disabled_types) - 1] = '\0';
+    }
+    else
+    {
+        /* Append with comma */
+        snprintf(temp_buffer, sizeof(temp_buffer), "%s,%s", prefs->deficons_disabled_types, type_name);
+        strncpy(prefs->deficons_disabled_types, temp_buffer, sizeof(prefs->deficons_disabled_types) - 1);
+        prefs->deficons_disabled_types[sizeof(prefs->deficons_disabled_types) - 1] = '\0';
+    }
+    
+    return TRUE;
+}
+
+/*========================================================================*/
+/**
+ * @brief Remove a type from the disabled types list
+ * 
+ * Removes a DefIcons type from the disabled list, re-enabling automatic
+ * icon creation for that category.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ * @param type_name Type name to enable (e.g., "tool", "font")
+ * 
+ * @return TRUE if removed successfully, FALSE on error
+ * 
+ * @note Does nothing if type is not in the list
+ */
+/*========================================================================*/
+BOOL remove_disabled_deficon_type(LayoutPreferences *prefs, const char *type_name)
+{
+    char temp_buffer[256];
+    char *tokens[64];
+    int token_count = 0;
+    char *token;
+    char *context = NULL;
+    int i;
+    
+    if (prefs == NULL || type_name == NULL || type_name[0] == '\0')
+        return FALSE;
+    
+    /* Check if in list */
+    if (is_deficon_type_enabled(prefs, type_name))
+        return TRUE;  /* Already enabled */
+    
+    /* Copy to temp buffer for tokenization */
+    strncpy(temp_buffer, prefs->deficons_disabled_types, sizeof(temp_buffer) - 1);
+    temp_buffer[sizeof(temp_buffer) - 1] = '\0';
+    
+    /* Tokenize by comma */
+    token = strtok(temp_buffer, ",");
+    while (token != NULL && token_count < 64)
+    {
+        /* Skip the type we want to remove */
+        if (strcmp(token, type_name) != 0)
+        {
+            tokens[token_count++] = token;
+        }
+        token = strtok(NULL, ",");
+    }
+    
+    /* Rebuild disabled types string */
+    prefs->deficons_disabled_types[0] = '\0';
+    for (i = 0; i < token_count; i++)
+    {
+        if (i > 0)
+        {
+            strncat(prefs->deficons_disabled_types, ",", sizeof(prefs->deficons_disabled_types) - strlen(prefs->deficons_disabled_types) - 1);
+        }
+        strncat(prefs->deficons_disabled_types, tokens[i], sizeof(prefs->deficons_disabled_types) - strlen(prefs->deficons_disabled_types) - 1);
+    }
+    
+    return TRUE;
+}
+
+/*========================================================================*/
+/**
+ * @brief Clear all disabled types (enable all)
+ * 
+ * Clears the disabled types list, enabling automatic icon creation
+ * for all DefIcons categories.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ */
+/*========================================================================*/
+void clear_disabled_deficon_types(LayoutPreferences *prefs)
+{
+    if (prefs == NULL)
+        return;
+    
+    prefs->deficons_disabled_types[0] = '\0';
+}
+
 /* End of layout_preferences.c */
+

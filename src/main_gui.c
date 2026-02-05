@@ -66,6 +66,7 @@
 #include "file_directory_handling.h"
 #include "layout_preferences.h"
 #include "GUI/main_window.h"
+#include "deficons_parser.h"
 
 /* VBCC: Set stack size to 80KB at compile time */
 long __stack = 80000L;
@@ -98,6 +99,11 @@ int count_icon_corrupted = 0;
 BOOL user_folderViewMode;
 BOOL user_folderFlags;
 BOOL user_stripIconPosition;
+
+/* DefIcons type tree cache (parsed once at startup, accessible globally) */
+DeficonTypeTreeNode *g_cached_deficons_tree = NULL;
+int g_cached_deficons_count = 0;
+
 BOOL user_forceStandardIcons;
 
 //#define VERSION_STRING "$VER: iTidy 2.0 (20.10.2025)"
@@ -773,6 +779,91 @@ int main(int argc, char **argv)
     CONSOLE_STATUS("Initializing preferences with defaults...\n");
     InitializeGlobalPreferences();
 
+    /* Initialize DefIcons cache (non-fatal if fails) */
+    CONSOLE_STATUS("Loading DefIcons type tree cache...\n");
+    if (parse_deficons_prefs(&g_cached_deficons_tree, &g_cached_deficons_count))
+    {
+        log_info(LOG_GUI, "DefIcons cache loaded successfully: %d types\n", g_cached_deficons_count);
+        CONSOLE_STATUS("DefIcons cache loaded: %d types\n", g_cached_deficons_count);
+        
+#ifdef DEBUG
+        /* Dump DefIcons tree structure for debugging */
+        {
+            int i, j;
+            int root_count = 0;
+            int child_count = 0;
+            int grandchild_count = 0;
+            
+            log_debug(LOG_GUI, "\n=== DefIcons Type Tree Structure ===\n");
+            
+            /* Count nodes by generation */
+            for (i = 0; i < g_cached_deficons_count; i++)
+            {
+                if (g_cached_deficons_tree[i].generation == 1)
+                    root_count++;
+                else if (g_cached_deficons_tree[i].generation == 2)
+                    child_count++;
+                else if (g_cached_deficons_tree[i].generation == 3)
+                    grandchild_count++;
+            }
+            
+            log_debug(LOG_GUI, "Total types: %d (Roots: %d, Children: %d, Grandchildren: %d)\n",
+                     g_cached_deficons_count, root_count, child_count, grandchild_count);
+            log_debug(LOG_GUI, "\n");
+            
+            /* Dump hierarchical tree */
+            for (i = 0; i < g_cached_deficons_count; i++)
+            {
+                DeficonTypeTreeNode *node = &g_cached_deficons_tree[i];
+                
+                /* Print indentation based on generation */
+                for (j = 0; j < node->generation; j++)
+                {
+                    log_debug(LOG_GUI, "  ");
+                }
+                
+                /* Print node info */
+                if (node->has_children)
+                {
+                    log_debug(LOG_GUI, "%s%s (gen=%d, has_children=YES, parent_idx=%d)\n",
+                             (node->generation == 1) ? "▼ " : "├─ ",
+                             node->type_name,
+                             node->generation,
+                             node->parent_index);
+                }
+                else
+                {
+                    log_debug(LOG_GUI, "%s%s (gen=%d, parent_idx=%d)\n",
+                             (node->generation == 1) ? "• " : "└─ ",
+                             node->type_name,
+                             node->generation,
+                             node->parent_index);
+                }
+            }
+            
+            log_debug(LOG_GUI, "\n=== End DefIcons Tree ===\n\n");
+            
+            /* Sample query: Find parent of a known type */
+            if (g_cached_deficons_count > 0)
+            {
+                const char *sample_type = "mod";  /* Music module type */
+                const char *parent = get_parent_type_name(g_cached_deficons_tree, 
+                                                          g_cached_deficons_count, 
+                                                          sample_type);
+                if (parent)
+                {
+                    log_debug(LOG_GUI, "Sample query: Parent of '%s' is '%s'\n", sample_type, parent);
+                }
+            }
+        }
+#endif
+    }
+    else
+    {
+        log_warning(LOG_GUI, "DefIcons not available (ENV:Sys/deficons.prefs not found)\n");
+        CONSOLE_STATUS("DefIcons not available (requires Workbench 3.2+)\n");
+    }
+
     /* Initialize ReAction libraries (required for Workbench 3.2+ GUI) */
     CONSOLE_STATUS("Initializing ReAction libraries...\n");
     if (!init_reaction_libs())
@@ -836,6 +927,16 @@ int main(int argc, char **argv)
     /* Cleanup ReAction libraries */
     CONSOLE_STATUS("Cleaning up ReAction libraries...\n");
     cleanup_reaction_libs();
+
+    /* Cleanup DefIcons cache */
+    CONSOLE_STATUS("Cleaning up DefIcons cache...\n");
+    if (g_cached_deficons_tree)
+    {
+        log_debug(LOG_GUI, "Freeing DefIcons cache (%d types)\n", g_cached_deficons_count);
+        free_deficons_type_tree(g_cached_deficons_tree);
+        g_cached_deficons_tree = NULL;
+        g_cached_deficons_count = 0;
+    }
 
     /* KEEP: Cleanup window system */
 #ifdef DEBUG

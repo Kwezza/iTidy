@@ -57,7 +57,8 @@ CORE_SRCS = \
 	$(SRC_DIR)/layout_processor.c \
 	$(SRC_DIR)/aspect_ratio_layout.c \
 	$(SRC_DIR)/folder_scanner.c \
-	$(SRC_DIR)/string_functions.c
+	$(SRC_DIR)/string_functions.c \
+	$(SRC_DIR)/deficons_parser.c
 
 # Backup system source files
 BACKUP_SRCS = \
@@ -79,6 +80,7 @@ GUI_SRCS = \
 	$(SRC_DIR)/GUI/main_window.c \
 	$(SRC_DIR)/GUI/advanced_window.c \
 	$(SRC_DIR)/GUI/beta_options_window.c \
+	$(SRC_DIR)/GUI/deficons_settings_window.c \
 	$(SRC_DIR)/GUI/easy_request_helper.c \
 	$(SRC_DIR)/GUI/window_enumerator.c \
 	$(SRC_DIR)/GUI/wb_classify.c \

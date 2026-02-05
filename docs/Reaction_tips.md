@@ -313,28 +313,28 @@ RA_OpenWindow(window);
 
 ---
 
-### Generation Numbers Are 0-Based
+### Generation Numbers Are 1-Based (Autodoc)
 
-**Problem:** LBNA_Generation uses 0 for root level, 1 for first children, etc.
+**Problem:** The ListBrowser autodoc states generations start at 1. Using 0 for root can result in empty trees.
 
 **Wrong:**
 ```c
-generation = depth + 1;  /* Root becomes 1 - WRONG */
+generation = depth;  /* Root becomes 0 - WRONG for ListBrowser */
 ```
 
 **Correct:**
 ```c
-generation = depth;  /* Root is 0, children are 1, 2, etc. */
+generation = depth + 1;  /* Root is 1, children are 2, 3, etc. */
 ```
 
 **Example tree structure:**
 ```
-AmigaOS (generation 0)
-├── Workbench 1.x (generation 1)
-├── Workbench 3.x (generation 1)
-│   ├── Version 3.1 (generation 2)
-│   └── Version 3.2 (generation 2)
-│       └── 3.2.1 (generation 3)
+AmigaOS (generation 1)
+├── Workbench 1.x (generation 2)
+├── Workbench 3.x (generation 2)
+│   ├── Version 3.1 (generation 3)
+│   └── Version 3.2 (generation 3)
+│       └── 3.2.1 (generation 4)
 ```
 
 ---
@@ -383,6 +383,65 @@ column_info[2].ci_Flags = -1;
 
 ---
 
+### Treeview Checkboxes (LBNA_CheckBox)
+
+**Problem:** Setting `LBNA_Selected` only highlights a row; it does not render a checkbox.
+
+**Correct pattern (checkbox row):**
+```c
+node = AllocListBrowserNode(1,
+    LBNA_Column, 0,
+        LBNCA_CopyText, TRUE,
+        LBNCA_Text, label,
+    LBNA_Generation, generation,
+    LBNA_Flags, flags,
+    LBNA_CheckBox, TRUE,
+    LBNA_Checked, initial_checked,
+    TAG_DONE);
+```
+
+**Notes:**
+- Use `LBNA_Checked` to toggle checkbox state.
+- Use `LISTBROWSER_SelectedNode` + `LBNA_Checked` to read current state.
+- Do not rely on `LBNA_Selected` for checkbox state.
+
+---
+
+### Checkbox Persistence Pitfall (Prefs Flag vs Disabled List)
+
+**Symptom:** Checkbox state resets when reopening the window, even though OK was pressed and state was saved.
+
+**Cause:** The UI used a helper that returns **TRUE when a feature flag disables filtering**, which forces all checkboxes to appear checked.
+
+**Fix:** Drive checkbox state directly from the stored disabled list, ignoring the feature flag in the UI layer.
+
+**Correct pattern (UI check):**
+```c
+static BOOL is_type_checked_for_ui(const LayoutPreferences *prefs, const char *type_name)
+{
+    if (prefs->deficons_disabled_types[0] == '\0')
+        return TRUE;
+    sprintf(search_token, ",%s,", type_name);
+    sprintf(temp_buffer, ",%s,", prefs->deficons_disabled_types);
+    return (strstr(temp_buffer, search_token) == NULL);
+}
+```
+
+**Why:** UI should reflect the saved list **as-is**, not the runtime filtering behavior.
+
+---
+
+### Prefer HideAllListBrowserChildren()
+
+**Problem:** Manually setting `LBFLG_HIDDEN` can hide the entire tree if the flag value differs by SDK/version.
+
+**Correct:**
+```c
+HideAllListBrowserChildren(list);  /* Use API instead of LBFLG_HIDDEN */
+```
+
+---
+
 ### Complete Working Example Pattern
 
 Based on the working `Tests/ReActon/listbrowser_tree.c`:
@@ -405,7 +464,7 @@ for (i = 0; data[i].name != NULL; i++) {
     
     struct Node *node = AllocListBrowserNode(1,
         LBNCA_Text, data[i].name,
-        LBNA_Generation, data[i].generation,  /* 0-based! */
+        LBNA_Generation, data[i].generation,  /* 1-based! */
         LBNA_Flags, flags,
         TAG_DONE);
     

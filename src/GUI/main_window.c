@@ -57,6 +57,7 @@
 #include "advanced_window.h"
 #include "RestoreBackups/restore_window.h"
 #include "DefaultTools/tool_cache_window.h"
+#include "deficons_settings_window.h"
 #include "easy_request_helper.h"
 #include "layout_preferences.h"
 #include "layout_processor.h"
@@ -125,6 +126,8 @@ static struct NewMenu main_window_menu_template[] =
     { NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
     { NM_ITEM,  "Save",         "S",  0, 0, (APTR)MENU_PROJECT_SAVE },
     { NM_ITEM,  "Save as...",   "A",  0, 0, (APTR)MENU_PROJECT_SAVE_AS },
+    { NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
+    { NM_ITEM,  "DefIcons Settings...", "D",  0, 0, (APTR)MENU_PROJECT_DEFICONS },
     { NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
     { NM_ITEM,  "About...",     NULL, 0, 0, (APTR)MENU_PROJECT_ABOUT },
     { NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
@@ -1462,6 +1465,28 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                 
                 case MENU_PROJECT_SAVE_AS:
                     handle_main_save_as_menu(win_data);
+                    break;
+                
+                case MENU_PROJECT_DEFICONS:
+                    {
+                        LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
+                        LayoutPreferences working_copy;
+                        
+                        /* Make working copy of preferences */
+                        memcpy(&working_copy, prefs, sizeof(LayoutPreferences));
+                        
+                        /* Open DefIcons settings window */
+                        if (open_itidy_deficons_settings_window(&working_copy))
+                        {
+                            /* User clicked OK - update global preferences */
+                            UpdateGlobalPreferences(&working_copy);
+                            log_info(LOG_GUI, "DefIcons preferences updated\n");
+                        }
+                        else
+                        {
+                            log_debug(LOG_GUI, "DefIcons settings cancelled\n");
+                        }
+                    }
                     break;
                 
                 case MENU_PROJECT_ABOUT:

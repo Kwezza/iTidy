@@ -97,5 +97,6 @@ typedef enum {
 #define MENU_PROJECT_SAVE_AS      1004
 #define MENU_PROJECT_CLOSE        1005
 #define MENU_PROJECT_ABOUT        1006
+#define MENU_PROJECT_DEFICONS     1007
 
 #endif /* ITIDY_MAIN_WINDOW_REACTION_H */

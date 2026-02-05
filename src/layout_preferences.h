@@ -201,6 +201,12 @@ typedef struct {
     BOOL beta_openFoldersAfterProcessing;      /* Auto-open folders via Workbench during processing */
     BOOL beta_FindWindowOnWorkbenchAndUpdate;  /* Find open folder windows and move/resize them to match saved geometry */
     
+    /* DefIcons Icon Creation Settings (Workbench 3.2+) */
+    BOOL enable_deficons_icon_creation;        /* Master enable/disable for automatic icon creation */
+    char deficons_disabled_types[256];         /* Comma-separated list of disabled root type names (e.g., "tool,font") */
+    UWORD deficons_folder_icon_mode;           /* 0=Smart (create if visible), 1=Always, 2=Never */
+    BOOL deficons_skip_system_assigns;         /* TRUE = skip SYS:, C:, S:, DEVS:, LIBS:, etc. */
+    
     /* Logging and Debug Settings */
     UWORD logLevel;                            /* Log level: 0=DEBUG, 1=INFO, 2=WARN, 3=ERROR */
     BOOL memoryLoggingEnabled;                 /* Enable memory allocation logging (creates memory_*.log) */
@@ -255,6 +261,12 @@ typedef struct {
 /* Beta/Experimental Feature Defaults */
 #define DEFAULT_BETA_OPEN_FOLDERS_AFTER_PROCESSING         FALSE   /* Enable for testing */
 #define DEFAULT_BETA_FIND_WINDOW_ON_WORKBENCH_AND_UPDATE   FALSE   /* Enable for testing */
+
+/* DefIcons Feature Defaults (Workbench 3.2+) */
+#define DEFAULT_ENABLE_DEFICONS_ICON_CREATION              FALSE   /* Disabled by default (opt-in feature) */
+#define DEFAULT_DEFICONS_DISABLED_TYPES                    ""      /* Empty string = all types enabled */
+#define DEFAULT_DEFICONS_FOLDER_ICON_MODE                  0       /* 0=Smart (create if visible), 1=Always, 2=Never */
+#define DEFAULT_DEFICONS_SKIP_SYSTEM_ASSIGNS               TRUE    /* Skip system directories by default */
 
 /* Logging and Debug Defaults */
 #define DEFAULT_LOG_LEVEL                                  3       /* Default: ERROR level (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR) */
@@ -358,6 +370,69 @@ void SetGlobalScanPath(const char *path);
  * @param recursive TRUE to enable recursive scanning, FALSE to disable
  */
 void SetGlobalRecursiveMode(BOOL recursive);
+
+/**
+ * @brief Set skip hidden folders mode in global preferences
+ * 
+ * Convenience setter for controlling whether hidden folders (those
+ * without .info files) are processed.
+ * 
+ * @param skip TRUE to skip hidden folders, FALSE to process them
+ */
+void SetGlobalSkipHiddenFolders(BOOL skip);
+
+/*========================================================================*/
+/* DefIcons Preferences Helper Functions                                 */
+/*========================================================================*/
+
+/**
+ * @brief Check if a DefIcons type is enabled for icon creation
+ * 
+ * Checks whether automatic icon creation is enabled for a specific
+ * DefIcons type by looking in the disabled types list.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ * @param type_name Type name to check (e.g., "tool", "music", "picture")
+ * 
+ * @return TRUE if type is enabled, FALSE if disabled
+ */
+BOOL is_deficon_type_enabled(const LayoutPreferences *prefs, const char *type_name);
+
+/**
+ * @brief Add a type to the disabled types list
+ * 
+ * Adds a DefIcons type to the disabled list, preventing automatic
+ * icon creation for that category.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ * @param type_name Type name to disable (e.g., "tool", "font")
+ * 
+ * @return TRUE if added successfully, FALSE on error
+ */
+BOOL add_disabled_deficon_type(LayoutPreferences *prefs, const char *type_name);
+
+/**
+ * @brief Remove a type from the disabled types list
+ * 
+ * Removes a DefIcons type from the disabled list, re-enabling automatic
+ * icon creation for that category.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ * @param type_name Type name to enable (e.g., "tool", "font")
+ * 
+ * @return TRUE if removed successfully, FALSE on error
+ */
+BOOL remove_disabled_deficon_type(LayoutPreferences *prefs, const char *type_name);
+
+/**
+ * @brief Clear all disabled types (enable all)
+ * 
+ * Clears the disabled types list, enabling automatic icon creation
+ * for all DefIcons categories.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ */
+void clear_disabled_deficon_types(LayoutPreferences *prefs);
 
 /**
  * @brief Set skip hidden folders mode in global preferences
