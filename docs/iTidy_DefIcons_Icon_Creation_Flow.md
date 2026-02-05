@@ -6,12 +6,12 @@ This note captures the recommended implementation flow for creating real `.info`
 
 - Optional pre-pass that **writes real `.info` files** for iconless entries so later tidy and snapshot behaviour persists.
 - Use DefIcons classification so improvements in Workbench 3.2 DefIcons rules automatically benefit iTidy over time.
-- Keep the run fast on large folder trees by caching and minimizing ARexx calls.
+- Keep the run fast on large folder trees by caching and minimizing ARexx overhead.
 
 ## What is already assumed
 
 - You can parse `deficons.prefs` and extract **child -> parent** type relationships into memory.
-- You can call DefIcons `Identify` via ARexx and get a leaf token such as `mod` or `ascii`.
+- You can call DefIcons `Identify` and get a leaf token such as `mod` or `ascii`.
 - You have a directory of default icon templates like `def_music.info`, `def_ascii.info`, etc.
 
 ## Core idea
@@ -33,12 +33,13 @@ Given an identified token (example `mod`):
 2. Extract and store only what you need:
    - `parent_of[token] = parent_token`
 3. Scan template locations and build a set of available templates:
-   - `ENV:Sys/def_<token>.info`
-   - `ENVARC:Sys/def_<token>.info`
-   - Optional: an iTidy override directory for user custom templates (recommended as a future enhancement).
+   - `ENV:Sys/def_<type>.info`
+   - `ENVARC:Sys/def_<type>.info` (typically stored on disk under `Workbench:Prefs/Env-Archive/Sys/`)
+   - Naming convention: `def_` + `<type>` + `.info` (for example `def_music.info`, `def_ascii.info`)
+   - Optional: an iTidy override directory for user custom templates (future enhancement).
 4. Initialize caches:
-   - `resolved_template_for_token[token] = resolved_token_or_path`
-   - Optional: `extension_cache[.ext] = resolved_token_or_path` for speed on big trees.
+   - `resolved_template_for_token[token] = resolved_type_or_path`
+   - Optional: `extension_cache[.ext] = resolved_type_or_path` for speed on large trees.
 
 ### During an iTidy run (optional phase)
 
@@ -49,10 +50,9 @@ For each folder:
 1. Enumerate directory entries (files and drawers).
 2. For each entry:
    - If `entry.info` already exists: **skip** (never overwrite user icons).
-   - If entry is a drawer and you choose to support drawer icon creation:
-     - Use a drawer template (often `def_drawer.info`) and continue.
+   - If entry is a drawer and drawer icon creation is enabled: handle using the folder mode logic (see preferences below).
    - Otherwise classify:
-     - Call DefIcons `Identify` via ARexx to get a token.
+     - Call DefIcons `Identify` to get a token.
      - Use caches to avoid repeated Identify calls for common types.
 3. Resolve token to a template:
    - Try direct match: `def_<token>.info`.
@@ -61,14 +61,14 @@ For each folder:
    - Cache the resolved result per token.
 4. Apply user filtering preferences:
    - Example preference: "Do not create icons for tools".
-   - Apply filtering against the **final resolved category** rather than the raw leaf token where possible.
+   - Prefer applying filtering against the **final resolved category** rather than the raw leaf token.
 5. Create the real icon:
    - Copy the chosen template `.info` to `entry.info`.
    - After this, your existing tidy and snapshot logic should persist reliably.
 
 ## Performance recommendations
 
-### Avoid ARexx calls where cheap heuristics suffice
+### Avoid Identify calls where cheap heuristics suffice
 
 - If the entry is a drawer, do not call Identify.
 - If `entry.info` exists, do not call Identify.
@@ -76,10 +76,10 @@ For each folder:
 
 ### Cache at two levels
 
-1. **Token cache**
-   - If you want, cache identification results by extension or other inexpensive key.
-2. **Resolved template cache**
+1. **Resolved template cache**
    - Cache final resolution: `mod -> music -> def_music.info` so resolution is done once per token.
+2. Optional **token cache**
+   - Cache identification results by extension (or another cheap key) to reduce Identify calls further.
 
 ## Calling DefIcons from C (Option B: direct ARexx message)
 
@@ -133,7 +133,6 @@ Pseudo-outline:
   - `token -> resolved template` (after walking parent chain)
   - optional `extension -> resolved template` for extra speed
 
-
 ## Preferences to add
 
 ### Main switch
@@ -143,14 +142,14 @@ Pseudo-outline:
 
 ### Folder (drawer) icon creation mode (recommended)
 
-Folder icon creation can be **independently** controlled, since some users prefer not to generate drawer `.info` files.
+Folder icon creation can be independently controlled, since some users prefer not to generate drawer `.info` files.
 
 Suggested setting: **Create folder icons** (tri-state)
 
 - **No**: Never create drawer icons (`def_drawer.info`), even if the drawer is iconless.
 - **Always**: Create drawer icons for any iconless drawer encountered.
 - **Smart**: Only create a drawer icon if at least one of the following is true:
-  - the drawer already contains **any** real `.info` file (it already “participates” in icon layout), or
+  - the drawer already contains **any** real `.info` file (it already participates in icon layout), or
   - the drawer contains at least one file for which iTidy will create an icon in this run (based on your category filters and resolution), or
   - the drawer contains at least one sub-drawer that already has an icon (or will get one in this run), so creating the parent drawer icon improves consistency.
 
@@ -202,11 +201,14 @@ For this project, working examples and format documentation already exist in the
 
 - `Tests\DefIcons\deficontree.c`  
   **Type hierarchy tree viewer** (shows parent-child relationships).  
-  This is a working example of parsing `deficons.prefs` and is the recommended starting point for building the in-memory type list (`token -> parent` map).
+  Working example of parsing `deficons.prefs` and a good starting point for building the in-memory type list (`token -> parent` map).
+
+- `Tests\DefIcons\Test2\deficons_creator.c`  
+  Tested working implementation of the DefIcons icon creation flow, and explicitly implements **Option B: direct ARexx message** from this document.  
+  This contains proven, reusable functions that can be used as the foundation for integrating DefIcons-based icon creation into the main iTidy codebase.
 
 - `Tests\DefIcons\DEFICONS_FORMAT.md`  
-  Complete breakdown of how the `deficons.prefs` **binary format** is laid out (useful if you need to extend or re-check the parser).
+  Complete breakdown of how the `deficons.prefs` binary format is laid out (useful if you need to extend or re-check the parser).
 
 - Other files in `Tests\DefIcons\`  
   Additional helpers and experiments that can be referenced as needed.
-

@@ -72,6 +72,7 @@ static struct MsgPort *deficons_port = NULL;
 static int icons_created = 0;
 static int icons_skipped = 0;
 static int icons_failed = 0;
+static int icons_filtered = 0;
 
 /* Stack size for this program */
 #ifdef __VBCC__
@@ -85,7 +86,9 @@ static const char* get_parent_type(const char *type_name);
 static BOOL query_deficons(const char *filepath, char *result, int result_size);
 static BOOL find_icon_template(const char *type_token, char *template_path, int path_size, BOOL *is_exact);
 static BOOL copy_icon_file(const char *source, const char *dest);
-static BOOL create_icon_for_file(const char *filepath);
+static BOOL should_create_icon_for_type(const char *type_token);
+static BOOL identify_file_type(const char *filepath, char *type_token, int token_size);
+static BOOL create_icon_with_type(const char *filepath, const char *type_token);
 static void process_directory(const char *path);
 static void print_usage(void);
 
@@ -482,13 +485,44 @@ static BOOL copy_icon_file(const char *source, const char *dest)
 }
 
 /*
- * Create icon for a single file
- * Returns TRUE if icon created, FALSE if skipped or failed
+ * Check if icon should be created for this file type
+ * Returns TRUE if type is allowed by user preferences
+ * 
+ * TODO: In iTidy, this would read from user preferences structure
+ * For now, implements simple blacklist for demonstration
  */
-static BOOL create_icon_for_file(const char *filepath)
+static BOOL should_create_icon_for_type(const char *type_token)
+{
+    /* Blacklist: Skip tool-related types (common in SYS:C) */
+    if (strcmp(type_token, "tool") == 0) return FALSE;
+    if (strcmp(type_token, "device") == 0) return FALSE;
+    if (strcmp(type_token, "filesystem") == 0) return FALSE;
+    if (strcmp(type_token, "handler") == 0) return FALSE;
+    if (strcmp(type_token, "library") == 0) return FALSE;
+    if (strcmp(type_token, "loadmodule") == 0) return FALSE;
+    if (strcmp(type_token, "rexx") == 0) return FALSE;
+    /* Whitelist: Allow everything else */
+    return TRUE;
+}
+
+/*
+ * Stage 1: Identify file type using DefIcons
+ * Returns TRUE and fills type_token on success
+ * This function queries DefIcons ONCE to get the file type
+ */
+static BOOL identify_file_type(const char *filepath, char *type_token, int token_size)
+{
+    return query_deficons(filepath, type_token, token_size);
+}
+
+/*
+ * Stage 2: Create icon using pre-determined type token
+ * Returns TRUE if icon created, FALSE if skipped or failed
+ * This function does NOT query DefIcons - it uses the provided type
+ */
+static BOOL create_icon_with_type(const char *filepath, const char *type_token)
 {
     char icon_path[512];
-    char type_token[128];
     char template_path[512];
     BOOL is_exact;
     BPTR lock;
@@ -504,13 +538,7 @@ static BOOL create_icon_for_file(const char *filepath)
         return FALSE;  /* Already has icon */
     }
     
-    /* Query DefIcons for file type */
-    if (!query_deficons(filepath, type_token, sizeof(type_token))) {
-        icons_failed++;
-        return FALSE;  /* Cannot identify file type */
-    }
-    
-    /* Find icon template */
+    /* Find icon template (uses type hierarchy, no DefIcons query) */
     if (!find_icon_template(type_token, template_path, sizeof(template_path), &is_exact)) {
         icons_failed++;
         printf("  SKIP: %s (no template for '%s')\n", filepath, type_token);
@@ -569,6 +597,8 @@ static void process_directory(const char *path)
     
     /* Process entries */
     while (ExNext(lock, fib)) {
+        char type_token[128];
+        
         /* Build full path */
         snprintf(fullpath, sizeof(fullpath), "%s/%s", path, fib->fib_FileName);
         
@@ -583,8 +613,26 @@ static void process_directory(const char *path)
             continue;
         }
         
-        /* Try to create icon */
-        create_icon_for_file(fullpath);
+        /* OPTIMIZED FLOW: Query DefIcons only ONCE per file */
+        
+        /* Stage 1: Identify file type (DefIcons query happens here) */
+        if (!identify_file_type(fullpath, type_token, sizeof(type_token))) {
+            icons_failed++;
+            files_processed++;
+            continue;  /* Cannot identify type */
+        }
+        
+        /* Stage 2: Check user preferences (cheap string comparison) */
+        if (!should_create_icon_for_type(type_token)) {
+            icons_filtered++;
+            printf("  FILTERED: %s (type '%s' excluded by preferences)\n", 
+                   fib->fib_FileName, type_token);
+            files_processed++;
+            continue;  /* User doesn't want icons for this type */
+        }
+        
+        /* Stage 3: Create icon using pre-determined type (no DefIcons query) */
+        create_icon_with_type(fullpath, type_token);
         files_processed++;
     }
     
@@ -596,8 +644,11 @@ static void process_directory(const char *path)
     printf("Files processed: %d\n", files_processed);
     printf("Icons created:   %d\n", icons_created);
     printf("Icons skipped:   %d (already exist)\n", icons_skipped);
+    printf("Icons filtered:  %d (type excluded by preferences)\n", icons_filtered);
     printf("Icons failed:    %d\n", icons_failed);
     printf("================================================================================\n");
+    printf("\nPerformance: Each file queried DefIcons only ONCE\n");
+    printf("Type filtering done via cheap string comparison\n");
 }
 
 /*
