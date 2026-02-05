@@ -35,18 +35,18 @@
 #define ACT_END              0
 #define ACT_MATCH            1
 #define ACT_SEARCH           2
-#define ACT_NAMEPATTERN      3
+#define ACT_SEARCHSKIPSPACES 3
 #define ACT_FILESIZE         4
-#define ACT_PROTECTION       5
-#define ACT_OR               6
-#define ACT_ISASCII          7
-#define ACT_MACROCLASS       8
-#define ACT_SEARCHSKIPSPACES 9
+#define ACT_NAMEPATTERN      5
+#define ACT_PROTECTION       6
+#define ACT_OR               7
+#define ACT_ISASCII          8
+#define ACT_MACROCLASS       20
 
 /* Hierarchy codes */
-#define TYPE_DOWN_LEVEL 253
-#define TYPE_UP_LEVEL   254
-#define TYPE_END        255
+#define TYPE_DOWN_LEVEL 1
+#define TYPE_UP_LEVEL   2
+#define TYPE_END        0
 
 /* Type node structure */
 typedef struct TypeNode {
@@ -199,7 +199,10 @@ static BOOL parse_deficons_prefs(void)
         }
         type_name[name_len] = '\0';
         
-        if (name_len == 0) break;  /* Empty name means end */
+        if (name_len == 0) {
+            /* Empty name (null byte as first char) means TYPE_END - end of database */
+            break;
+        }
         
         /* Copy to node structure and set parent from current stack position */
         strncpy(type_nodes[type_node_count].name, type_name, MAX_TYPE_NAME - 1);
@@ -259,11 +262,13 @@ static BOOL parse_deficons_prefs(void)
                 stack_ptr--;
                 current_level--;
             }
+            /* Continue to read next entry - might be another UP_LEVEL or new type */
         } else if (hierarchy == TYPE_END) {
             /* End of type definitions */
             break;
         } else {
-            /* Must be start of next type name - put byte back */
+            /* Not a recognized hierarchy code - must be start of next type name */
+            /* Put byte back so it can be read as first char of type name */
             buffer_pos--;
         }
     }
