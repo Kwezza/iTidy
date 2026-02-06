@@ -475,7 +475,8 @@ BOOL ProcessDirectoryWithPreferences(void)
                 }
             }
             
-            /* Cleanup DefIcons modules */
+            /* Cleanup DefIcons modules (templates first, then ARexx) */
+            deficons_cleanup_templates();
             deficons_cleanup_arexx();
         }
         

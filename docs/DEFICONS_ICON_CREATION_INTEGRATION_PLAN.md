@@ -2,7 +2,7 @@
 
 **Date:** February 6, 2026  
 **Author:** AI Assistant (GitHub Copilot)  
-**Status:** Phase 2 COMPLETE - Template Resolution Issue Under Investigation  
+**Status:** Phase 2 COMPLETE - Template Resolution Bug FIXED and Verified  
 **Target:** iTidy v2.0 (ReAction GUI)
 
 ---
@@ -25,68 +25,51 @@
 - Successfully compiled (338,172 bytes executable)
 - DefIcons feature executes when "Create new icons" checkbox enabled
 
-**🔧 CURRENT ISSUE: Template Resolution Failing (February 6, 2026 - 13:35)**
+**✅ RESOLVED: Template Resolution Cache Poisoning Bug (February 6, 2026 - 13:52)**
 
 ### Problem Description:
-DefIcons icon creation feature runs when enabled, but ALL template resolutions fail with `"(unresolved)"` paths. Icon creation logs show copy errors but NO diagnostic output from identification or resolution steps.
+DefIcons icon creation feature ran when enabled, but ALL template resolutions failed with `"(unresolved)"` paths. Icon creation logs showed copy errors but NO diagnostic output from identification or resolution steps.
 
-### Investigation Findings:
+### Root Cause: Cache Poisoning in `deficons_get_resolved_category()`
 
-1. **Templates Confirmed Present:**
-   - Location: `ENVARC:Sys/` (maps to `Workbench:Prefs/Env-Archive/Sys/`)
-   - 36 template files confirmed present (def_music.info, def_project.info, etc.)
-   - All have proper read permissions and timestamps
+The call sequence in `CreateMissingIconsInDirectory()` was:
+1. `deficons_should_create_icon()` called **before** `deficons_resolve_template()`
+2. `deficons_should_create_icon()` → `deficons_get_resolved_category(type_token)`
+3. `deficons_get_resolved_category()` didn't find the token in cache, so it called:
+   `add_to_template_cache(type_token, "(unresolved)", category, FALSE)` — **poisoning the cache**
+4. When `deficons_resolve_template()` subsequently ran for the same token, it found the
+   poisoned entry via `lookup_template_cache()` → returned `"(unresolved)"` as the template path
+5. `deficons_copy_icon_file("(unresolved)", dest)` tried to open a literal file named
+   `(unresolved)` → every single copy failed
 
-2. **Template Search Paths Updated:**
-   - Prioritized `ENVARC:Sys/def_%s.info` (permanent storage)
-   - Added `SYS:Prefs/Env-Archive/Sys/def_%s.info` (explicit path)
-   - Moved `ENV:Sys/` to fallback (RAM disk - wastes memory)
+### Fix Applied (3 changes, February 6, 2026 - 13:52):
 
-3. **WinUAE Executable Caching Issue:**
-   - **CRITICAL:** WinUAE aggressively caches executables
-   - Old binary (compiled 13:12:39) kept running despite fresh builds (13:33:22)
-   - Shared folder (`build\amiga`) not refreshing properly
-   - Created `iTidy_diagnostic` with unique name to bypass cache
+1. **`deficons_templates.c` — `deficons_get_resolved_category()`**: Replaced the
+   cache-poisoning code. Now calls `deficons_resolve_template()` to populate the cache
+   with a real template path, then reads back the category. If resolution fails, uses
+   `find_root_category()` with a static buffer instead of inserting a bogus cache entry.
 
-4. **Diagnostic Logging Added:**
-   - Added comprehensive logging to `deficons_identify_file()`:
-     - Shows what type token DefIcons returns for each file
-     - Example: `"DefIcons identified: filename.mod → type 'mod'"`
-   
-   - Added verbose logging to `deficons_resolve_template()`:
-     - Prefix: `>>> RESOLVE:` for easy identification
-     - Shows: cache hits, direct matches, parent chain walking
-     - Example: `">>> RESOLVE: Trying parent: 'mod' → 'music'"`
-   
-   - Added logging to `find_template_file()`:
-     - Shows each path being checked
-     - Example: `"Checking template: ENVARC:Sys/def_mod.info"`
-     - Reports when template found
+2. **`deficons_templates.c` — `lookup_template_cache()`**: Added a safety check to reject
+   cache entries where `template_path` starts with `(` or equals `"(unresolved)"`, logging
+   a debug message and forcing re-resolution.
 
-### Next Steps:
+3. **`layout_processor.c` — cleanup path**: Added missing `deficons_cleanup_templates()`
+   call before `deficons_cleanup_arexx()` to prevent memory leaks. Templates are cleaned
+   up first since they may depend on ARexx still being available for logging.
 
-1. **Run `iTidy_diagnostic` binary** (bypasses WinUAE cache)
-   - Located in: `Bin\Amiga\iTidy_diagnostic`
-   - Will show full diagnostic output
+### Verification (February 6, 2026 - 13:53):
+- **Test:** `Work:Music/` folder containing 35 MOD music files + 1 ARexx script
+- **Result:** All 35 `.mod` files identified as type `mod`, parent chain resolved to `music`,
+  `def_music.info` template copied successfully. The `.rexx` file resolved to `def_rexx.info`.
+- **Total:** 35 icons created, 0 errors
+- **Functional test:** Double-clicking created icons opens the correct application
+- **Subsequent tidying:** All 35 newly-created icons included in layout pass and tidied correctly
 
-2. **Analyze Logs:**
-   - Check `Bin/Amiga/logs/icons_*.log` for:
-     - What type token DefIcons returns (e.g., "mod", "music", "music/mod")
-     - Which template paths are being checked
-     - Where parent chain resolution fails
-   
-3. **Possible Root Causes:**
-   - DefIcons returning token that doesn't match template names
-   - Parent chain not walking correctly (g_cached_deficons_tree issue)
-   - File locking or permission issues on ENVARC:
-   - Template file format/corruption
-
-### Test Environment:
-- **Target Files:** 35+ MOD music files in `Work:Music/`
-- **DefIcons Status:** Running and responding to ARexx
-- **Template Files:** Confirmed present in `ENVARC:Sys/`
-- **iTidy Version:** Compiled Feb 06 2026 at 13:33:22
-- **Test Binary:** `iTidy_diagnostic` (unique name to bypass cache)
+### Lessons Learned:
+- Cache structures shared between filter and resolution functions must not insert placeholder
+  entries — any function that populates a cache must insert valid, usable data only
+- WinUAE aggressively caches executables from shared folders; use unique binary names or
+  flush caches when testing incremental builds
 
 ---
 

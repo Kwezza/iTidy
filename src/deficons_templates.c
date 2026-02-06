@@ -215,6 +215,15 @@ static BOOL lookup_template_cache(const char *type_token, char *template_path, i
     {
         if (strcmp(g_template_cache[i].type_token, type_token) == 0)
         {
+            /* Safety: reject cache entries with invalid/placeholder paths */
+            if (g_template_cache[i].template_path[0] == '(' ||
+                strcmp(g_template_cache[i].template_path, "(unresolved)") == 0)
+            {
+                log_debug(LOG_ICONS, "Template cache hit REJECTED (invalid path): %s → %s\n",
+                         type_token, g_template_cache[i].template_path);
+                return FALSE;  /* Force re-resolution */
+            }
+            
             /* Found - copy path and update hit count */
             strncpy(template_path, g_template_cache[i].template_path, path_size - 1);
             template_path[path_size - 1] = '\0';
@@ -536,15 +545,40 @@ const char* deficons_get_resolved_category(const char *type_token)
         }
     }
     
-    /* Not in cache - try to resolve on the fly */
+    /* Not in cache yet - resolve category without polluting the template cache.
+     * CRITICAL: We must NOT add an "(unresolved)" entry to the template cache
+     * here, because deficons_resolve_template() checks the same cache and would
+     * return the bogus path as a cache hit, causing all icon copies to fail.
+     * Instead, do a full template resolve which will populate the cache properly.
+     */
     {
-        char category[DEFICONS_MAX_CATEGORY_LEN];
-        if (find_root_category(type_token, category, sizeof(category)))
+        char temp_path[DEFICONS_MAX_PATH_LEN];
+        if (deficons_resolve_template(type_token, temp_path, sizeof(temp_path)))
         {
-            /* Add to cache for future lookups */
-            /* Note: We don't have template_path yet, so mark as incomplete */
-            add_to_template_cache(type_token, "(unresolved)", category, FALSE);
-            return g_template_cache[g_template_cache_count - 1].root_category;
+            /* Now the cache is populated with the real template path.
+             * Look up the cache entry we just created to return the category.
+             */
+            int j;
+            for (j = 0; j < g_template_cache_count; j++)
+            {
+                if (strcmp(g_template_cache[j].type_token, type_token) == 0)
+                {
+                    return g_template_cache[j].root_category;
+                }
+            }
+        }
+        else
+        {
+            /* Template resolution failed - try category lookup only */
+            char category[DEFICONS_MAX_CATEGORY_LEN];
+            if (find_root_category(type_token, category, sizeof(category)))
+            {
+                /* Return a static buffer for the category name */
+                static char s_category_result[DEFICONS_MAX_CATEGORY_LEN];
+                strncpy(s_category_result, category, DEFICONS_MAX_CATEGORY_LEN - 1);
+                s_category_result[DEFICONS_MAX_CATEGORY_LEN - 1] = '\0';
+                return s_category_result;
+            }
         }
     }
     
