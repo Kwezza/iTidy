@@ -58,6 +58,7 @@ struct iTidyMainWindow
     WORD sortby_selected;               /* Sort by chooser selection */
     BOOL recursive_subdirs;             /* Cleanup subfolders checkbox */
     BOOL enable_backup;                 /* Backup icons checkbox */
+    BOOL create_new_icons;              /* Create new icons checkbox */
     WORD window_position_selected;      /* Window position chooser selection */
     
     /* Folder path buffer */

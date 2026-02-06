@@ -31,7 +31,7 @@ typedef enum {
     ITIDY_GAD_IDX_RIGHT_COLUMN,           /* Right options column */
     ITIDY_GAD_IDX_SORTBY_CHOOSER,         /* Sort by chooser (Name, Type, etc.) */
     ITIDY_GAD_IDX_BACKUP_CHECKBOX,        /* Backup icons checkbox */
-    ITIDY_GAD_IDX_HELP_BUTTON,            /* "?" help button */
+    ITIDY_GAD_IDX_CREATE_NEW_ICONS,       /* Create new icons checkbox */
     ITIDY_GAD_IDX_TOOLS_LAYOUT,           /* Tools button group */
     ITIDY_GAD_IDX_ADVANCED_BUTTON,        /* Advanced settings button */
     ITIDY_GAD_IDX_DEFAULT_TOOLS_BUTTON,   /* Fix default tools button */
@@ -58,7 +58,7 @@ typedef enum {
 #define ITIDY_GAID_RIGHT_COLUMN           34
 #define ITIDY_GAID_SORTBY_CHOOSER         38
 #define ITIDY_GAID_BACKUP_CHECKBOX        39
-#define ITIDY_GAID_HELP_BUTTON            40
+#define ITIDY_GAID_CREATE_NEW_ICONS       40
 #define ITIDY_GAID_TOOLS_LAYOUT           45
 #define ITIDY_GAID_ADVANCED_BUTTON        46
 #define ITIDY_GAID_DEFAULT_TOOLS_BUTTON   47
@@ -85,7 +85,6 @@ typedef enum {
 #define GID_RESTORE               ITIDY_GAID_RESTORE_BUTTON
 #define GID_VIEW_TOOL_CACHE       ITIDY_GAID_DEFAULT_TOOLS_BUTTON
 #define GID_WINDOW_POSITION       ITIDY_GAID_POSITION_CHOOSER
-#define GID_WINDOW_POSITION_HELP  ITIDY_GAID_HELP_BUTTON
 
 /*------------------------------------------------------------------------*/
 /* Menu Item IDs (unchanged from GadTools version)                        */

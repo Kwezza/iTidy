@@ -192,6 +192,7 @@ typedef struct {
     /* Backup and Icon Upgrade Settings */
     BOOL enable_backup;              /* Create backup before processing */
     BOOL enable_icon_upgrade;        /* Upgrade icon formats during processing */
+    BOOL create_new_icons;           /* Create new icons for files without .info files */
     BOOL stripNewIconBorders;        /* Strip borders from NewIcons (one-way, requires icon.library v44+) */
     
     /* Advanced Settings */

@@ -402,6 +402,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     win_data->sortby_selected = 0;
     win_data->recursive_subdirs = FALSE;
     win_data->enable_backup = FALSE;
+    win_data->create_new_icons = FALSE;
     win_data->window_position_selected = 0;
     strcpy(win_data->folder_path_buffer, "SYS:");
     
@@ -482,7 +483,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
         {ITIDY_GAID_RIGHT_COLUMN, -1, "", 0},
         {ITIDY_GAID_SORTBY_CHOOSER, -1, "Selects the field used for sorting: name, kind, date, or size.", 0},
         {ITIDY_GAID_BACKUP_CHECKBOX, -1, "Creates an LhA backup of the folder's .info files before changes. Requires LhA in C: (or on your PATH).", 0},
-        {ITIDY_GAID_HELP_BUTTON, -1, "", 0},
+        {ITIDY_GAID_CREATE_NEW_ICONS, -1, "", 0},
         {ITIDY_GAID_TOOLS_LAYOUT, -1, "", 0},
         {ITIDY_GAID_ADVANCED_BUTTON, -1, "Opens Advanced Settings for finer control over layout and sizing.", 0},
         {ITIDY_GAID_DEFAULT_TOOLS_BUTTON, -1, "Scans icons for missing or invalid default tools. Lets you fix them, or batch-replace one tool with another", 0},
@@ -655,16 +656,18 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                             LABEL_Text, "Backup layouts",
                         TAG_END),
                         
-                        /* Help button */
-                        LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_HELP_BUTTON] = 
-                            NewObject(BUTTON_GetClass(), NULL,
-                            GA_ID, ITIDY_GAID_HELP_BUTTON,
-                            GA_Text, "?",
+                        /* Create new icons checkbox */
+                        LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_CREATE_NEW_ICONS] = 
+                            NewObject(CHECKBOX_GetClass(), NULL,
+                            GA_ID, ITIDY_GAID_CREATE_NEW_ICONS,
+                            GA_Text, "",
                             GA_RelVerify, TRUE,
                             GA_TabCycle, TRUE,
+                            GA_Selected, win_data->create_new_icons,
+                            CHECKBOX_TextPlace, PLACETEXT_RIGHT,
                         TAG_END),
                         CHILD_Label, NewObject(LABEL_GetClass(), NULL,
-                            LABEL_Text, "Hints",
+                            LABEL_Text, "Create new icons",
                         TAG_END),
                     TAG_END),
                 TAG_END),
@@ -1065,6 +1068,7 @@ static void sync_gui_from_preferences(struct iTidyMainWindow *win_data, const La
     win_data->sortby_selected = prefs->sortBy;
     win_data->recursive_subdirs = prefs->recursive_subdirs;
     win_data->enable_backup = prefs->enable_backup;
+    win_data->create_new_icons = prefs->create_new_icons;
     win_data->window_position_selected = prefs->windowPositionMode;
     
     strncpy(win_data->folder_path_buffer, prefs->folder_path, sizeof(win_data->folder_path_buffer) - 1);
@@ -1105,6 +1109,14 @@ static void sync_gui_from_preferences(struct iTidyMainWindow *win_data, const La
                       TAG_END);
     }
     
+    if (win_data->gadgets[ITIDY_GAD_IDX_CREATE_NEW_ICONS])
+    {
+        SetGadgetAttrs((struct Gadget *)win_data->gadgets[ITIDY_GAD_IDX_CREATE_NEW_ICONS],
+                      win_data->window, NULL,
+                      GA_Selected, win_data->create_new_icons,
+                      TAG_END);
+    }
+    
     if (win_data->gadgets[ITIDY_GAD_IDX_POSITION_CHOOSER])
     {
         SetGadgetAttrs((struct Gadget *)win_data->gadgets[ITIDY_GAD_IDX_POSITION_CHOOSER],
@@ -1120,6 +1132,12 @@ static void sync_gui_from_preferences(struct iTidyMainWindow *win_data, const La
                       win_data->window, NULL,
                       GETFILE_Drawer, win_data->folder_path_buffer,
                       TAG_END);
+    }
+    
+    /* Force window refresh to update all gadget visuals */
+    if (win_data->window)
+    {
+        RefreshGList((struct Gadget *)win_data->window->FirstGadget, win_data->window, NULL, -1);
     }
     
     log_info(LOG_GUI, "GUI synchronized from loaded preferences\n");
@@ -1144,6 +1162,7 @@ static void sync_gui_to_preferences(struct iTidyMainWindow *win_data, LayoutPref
     prefs->sortBy = win_data->sortby_selected;
     prefs->recursive_subdirs = win_data->recursive_subdirs;
     prefs->enable_backup = win_data->enable_backup;
+    prefs->create_new_icons = win_data->create_new_icons;
     prefs->windowPositionMode = (WindowPositionMode)win_data->window_position_selected;
     
     strncpy(prefs->folder_path, win_data->folder_path_buffer, sizeof(prefs->folder_path) - 1);
@@ -1623,47 +1642,12 @@ static void handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
             CONSOLE_DEBUG("Position changed to: %s\n", position_labels_str[code]);
             break;
         
-        case ITIDY_GAID_HELP_BUTTON:
+        case ITIDY_GAID_CREATE_NEW_ICONS:
             {
-                Object *req_obj;
-                struct orRequest req_msg;
-                
-                if (RequesterBase)
-                {
-                    req_obj = NewObject(REQUESTER_GetClass(), NULL,
-                        REQ_Type, REQTYPE_INFO,
-                        REQ_TitleText, "Window Placement Options",
-                        REQ_BodyText,
-                            "Center screen - Resizes window and centers it.\n\n"
-                            "Keep position - Resizes but keeps current position.\n\n"
-                            "Near parent - Places window near its parent drawer.\n\n"
-                            "No change - Only rearranges icons, no window change.",
-                        REQ_GadgetText, "_Ok",
-                        REQ_Image, REQIMAGE_INFO,
-                        TAG_DONE);
-                    
-                    if (req_obj)
-                    {
-                        req_msg.MethodID = RM_OPENREQ;
-                        req_msg.or_Attrs = NULL;
-                        req_msg.or_Window = win_data->window;
-                        req_msg.or_Screen = NULL;
-                        
-                        DoMethodA(req_obj, (Msg)&req_msg);
-                        DisposeObject(req_obj);
-                    }
-                }
-                else
-                {
-                    /* Fallback to old EasyRequest if RequesterBase failed to open */
-                    ShowEasyRequest(win_data->window,
-                        "Window Placement Options",
-                        "Center screen - Resizes window and centers it.\n\n"
-                        "Keep position - Resizes but keeps current position.\n\n"
-                        "Near parent - Places window near its parent drawer.\n\n"
-                        "No change - Only rearranges icons, no window change.",
-                        "OK");
-                }
+                ULONG selected = 0;
+                GetAttr(GA_Selected, win_data->gadgets[ITIDY_GAD_IDX_CREATE_NEW_ICONS], &selected);
+                win_data->create_new_icons = (BOOL)selected;
+                CONSOLE_DEBUG("Create new icons: %s\n", win_data->create_new_icons ? "ON" : "OFF");
             }
             break;
         

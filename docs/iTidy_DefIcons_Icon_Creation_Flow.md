@@ -346,9 +346,14 @@ Remaining work:
 Completed:
 - DefIcons Settings window accessible from main GUI
 - Progress feedback ready (iTidy already has progress window system)
+- Main GUI checkbox: "Create new icons" added to right column of main window options
+  - Positioned below "Backup layouts" checkbox
+  - Checkbox ID: `ITIDY_GAID_CREATE_NEW_ICONS` (GA_ID: 40)
+  - State tracked in `iTidyMainWindow.create_new_icons` and `LayoutPreferences.create_new_icons`
+  - Persists to/from preferences files (Save/Load functionality working)
+  - Syncs correctly with GUI refresh on preference load
 
 Remaining work:
-- Add main GUI checkbox: "Create icons for iconless files" (enable feature)
 - Show icon creation count in progress window
 - Add statistics: "Created 47 icons (23 pictures, 12 music, 8 archives, 4 documents)"
 - Optional: Preview mode showing which icons would be created
