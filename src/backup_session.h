@@ -69,6 +69,50 @@ BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath, UWORD icon
 void CloseBackupSession(BackupContext *ctx);
 
 /*========================================================================*/
+/* Created Icons Manifest (DefIcons Integration)                          */
+/*========================================================================*/
+
+/**
+ * Open the created_icons.txt manifest file in the run directory.
+ * 
+ * This file records every .info file that DefIcons creates during the run,
+ * so that a restore can delete these files to return the folder to its
+ * exact pre-iTidy state.
+ * 
+ * @param ctx Active backup context (from InitBackupSession)
+ * @return TRUE on success, FALSE on failure
+ * 
+ * @note Call CloseCreatedIconsManifest() when done.
+ */
+BOOL OpenCreatedIconsManifest(BackupContext *ctx);
+
+/**
+ * Log a single created .info file path to the manifest.
+ * 
+ * Appends the path immediately and flushes for crash safety.
+ * Also increments ctx->iconsCreated.
+ * 
+ * @param ctx Active backup context with open manifest
+ * @param info_path Full path to the created .info file
+ */
+void LogCreatedIconToManifest(BackupContext *ctx, const char *info_path);
+
+/**
+ * Close the created_icons.txt manifest file.
+ * 
+ * @param ctx Active backup context
+ */
+void CloseCreatedIconsManifest(BackupContext *ctx);
+
+/**
+ * Read the created_icons.txt manifest and return count of entries.
+ * 
+ * @param run_directory Path to run directory (e.g., "PROGDIR:Backups/Run_0001")
+ * @return Number of entries in manifest, or 0 if not found
+ */
+ULONG CountCreatedIconsInManifest(const char *run_directory);
+
+/*========================================================================*/
 /* Utility Functions                                                      */
 /*========================================================================*/
 

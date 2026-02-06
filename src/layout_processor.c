@@ -676,6 +676,15 @@ BOOL ProcessDirectoryWithPreferences(void)
                 OpenIconCreationLog();
             }
             
+            /* Open created icons manifest in backup run (for restore to delete these) */
+            if (g_backupContext != NULL && g_backupContext->sessionActive)
+            {
+                if (!OpenCreatedIconsManifest(g_backupContext))
+                {
+                    log_warning(LOG_BACKUP, "Failed to open created icons manifest - restore may leave extra icons\n");
+                }
+            }
+            
             /* Create icons recursively or single folder */
             if (prefs->recursive_subdirs)
             {
@@ -860,12 +869,20 @@ BOOL ProcessDirectoryWithPreferences(void)
         PROGRESS_STATUS("Backup session completed successfully");
         PROGRESS_STATUS("  Folders backed up: %u", g_backupContext->foldersBackedUp);
         PROGRESS_STATUS("  Total bytes archived: %lu", (unsigned long)g_backupContext->totalBytesArchived);
+        if (g_backupContext->iconsCreated > 0)
+        {
+            PROGRESS_STATUS("  Icons created (DefIcons): %lu", g_backupContext->iconsCreated);
+        }
         PROGRESS_STATUS("  Location: %s", g_backupContext->runDirectory);
 
         log_info(LOG_GENERAL, "\n*** Backup session completed ***\n");
         append_to_log("  Folders backed up: %u\n", g_backupContext->foldersBackedUp);
         append_to_log("  Failed backups: %u\n", g_backupContext->failedBackups);
         append_to_log("  Total bytes: %lu\n", (unsigned long)g_backupContext->totalBytesArchived);
+        if (g_backupContext->iconsCreated > 0)
+        {
+            append_to_log("  Icons created (DefIcons): %lu\n", g_backupContext->iconsCreated);
+        }
         append_to_log("  Location: %s\n", g_backupContext->runDirectory);
         
         g_backupContext = NULL;
@@ -3004,6 +3021,12 @@ static BOOL CreateMissingIconsInDirectory(const char *path,
                 {
                     LogCreatedIcon(info_path);
                 }
+            }
+            
+            /* Log to backup manifest (for restore to delete these) */
+            if (g_backupContext != NULL && g_backupContext->createdIconsOpen)
+            {
+                LogCreatedIconToManifest(g_backupContext, info_path);
             }
             
             /* Track category statistics (Phase 3) */

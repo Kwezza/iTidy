@@ -63,6 +63,7 @@
 #include "GUI/gui_utilities.h"
 #include "backup_runs.h"
 #include "backup_catalog.h"
+#include "backup_session.h"
 #include "string_functions.h"
 #include "../easy_request_helper.h"
 
@@ -106,10 +107,11 @@ enum {
 /*------------------------------------------------------------------------*/
 static struct ColumnInfo run_list_column_info[] = {
     { 8,  "Run",       0 },
-    { 20, "Date/Time", 0 },
-    { 10, "Folders",   0 },
-    { 10, "Size",      0 },
-    { 12, "Status",    0 },
+    { 18, "Date/Time", 0 },
+    { 8,  "Folders",   0 },
+    { 8,  "Size",      0 },
+    { 8,  "Icons+",    0 },
+    { 10, "Status",    0 },
     { -1, (STRPTR)~0, -1 }
 };
 
@@ -393,6 +395,30 @@ ULONG scan_backup_runs(const char *backup_root,
             {
                 strcpy(entry->sourceDirectory, "(Unknown)");
             }
+            
+            /* Read DefIcons created icon count from manifest */
+            entry->iconsCreated = CountCreatedIconsInManifest(run_path);
+            
+            /* Fallback: read from catalog footer if manifest not found */
+            if (entry->iconsCreated == 0)
+            {
+                BPTR cat_file = Open((STRPTR)catalog_path, MODE_OLDFILE);
+                if (cat_file)
+                {
+                    char cat_line[512];
+                    while (FGets(cat_file, cat_line, sizeof(cat_line)))
+                    {
+                        if (strncmp(cat_line, "Icons Created: ", 15) == 0)
+                        {
+                            ULONG val = 0;
+                            sscanf(cat_line + 15, "%lu", &val);
+                            entry->iconsCreated = val;
+                            break;
+                        }
+                    }
+                    Close(cat_file);
+                }
+            }
         }
         else
         {
@@ -490,8 +516,18 @@ void populate_run_list(struct iTidyRestoreWindow *restore_data,
             }
         }
         
-        /* Create ListBrowser node with 5 columns */
-        node = AllocListBrowserNode(5,
+        /* Create ListBrowser node with 6 columns (including Icons Created) */
+        char icons_created_str[16];
+        if (entries[i].iconsCreated > 0)
+        {
+            sprintf(icons_created_str, "%lu", entries[i].iconsCreated);
+        }
+        else
+        {
+            strcpy(icons_created_str, "-");
+        }
+        
+        node = AllocListBrowserNode(6,
             LBNA_Column, 0,
                 LBNCA_CopyText, TRUE,
                 LBNCA_Text, run_num_str,
@@ -508,6 +544,10 @@ void populate_run_list(struct iTidyRestoreWindow *restore_data,
                 LBNCA_Text, entries[i].sizeStr,
                 LBNCA_Justification, LCJ_RIGHT,
             LBNA_Column, 4,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, icons_created_str,
+                LBNCA_Justification, LCJ_RIGHT,
+            LBNA_Column, 5,
                 LBNCA_CopyText, TRUE,
                 LBNCA_Text, entries[i].statusStr,
             TAG_DONE);
@@ -574,6 +614,7 @@ void update_details_panel(struct iTidyRestoreWindow *restore_data,
         "Source Directory",
         "Total Archives",
         "Total Size",
+        "Icons Created",
         "Status",
         "Location"
     };
@@ -618,9 +659,10 @@ void update_details_panel(struct iTidyRestoreWindow *restore_data,
     }
     else
     {
-        const char *values[7];
+        const char *values[8];
         char run_num_str[16];
         char archives_str[16];
+        char icons_created_str[16];
         char status_desc[64];
         int i;
         
@@ -648,17 +690,27 @@ void update_details_panel(struct iTidyRestoreWindow *restore_data,
         sprintf(run_num_str, "%04u", selected_entry->runNumber);
         sprintf(archives_str, "%lu", selected_entry->folderCount);
         
+        if (selected_entry->iconsCreated > 0)
+        {
+            sprintf(icons_created_str, "%lu", selected_entry->iconsCreated);
+        }
+        else
+        {
+            strcpy(icons_created_str, "0");
+        }
+        
         /* Build values array */
         values[0] = run_num_str;
         values[1] = selected_entry->dateStr;
         values[2] = selected_entry->sourceDirectory;
         values[3] = archives_str;
         values[4] = selected_entry->sizeStr;
-        values[5] = status_desc;
-        values[6] = selected_entry->fullPath;
+        values[5] = icons_created_str;
+        values[6] = status_desc;
+        values[7] = selected_entry->fullPath;
         
         /* Add each row with 2 columns: label and value */
-        for (i = 0; i < 7; i++)
+        for (i = 0; i < 8; i++)
         {
             node = AllocListBrowserNode(2,
                 LBNA_Column, 0,
@@ -688,7 +740,7 @@ BOOL perform_restore_run(struct iTidyRestoreWindow *restore_data,
                         struct RestoreRunEntry *run_entry)
 {
     RestoreStatus status;
-    char message[256];
+    char message[512];
     
     if (restore_data == NULL || run_entry == NULL)
         return FALSE;
@@ -699,7 +751,32 @@ BOOL perform_restore_run(struct iTidyRestoreWindow *restore_data,
         return FALSE;
     }
     
-    sprintf(message, "Restore all folders from %s?\n\nChoose restore option:", run_entry->runName);
+    /* Build warning message with DefIcons info if applicable */
+    if (run_entry->iconsCreated > 0)
+    {
+        snprintf(message, sizeof(message),
+                 "\33bWarning:\33n Restoring %s will overwrite\n"
+                 "current .info files with backup versions.\n\n"
+                 "Changes made after the backup will be lost,\n"
+                 "including icon positions, ToolTypes, and\n"
+                 "default tool settings.\n\n"
+                 "%lu icon(s) created by DefIcons during this\n"
+                 "run will also be removed.\n\n"
+                 "Choose restore option:",
+                 run_entry->runName,
+                 run_entry->iconsCreated);
+    }
+    else
+    {
+        snprintf(message, sizeof(message),
+                 "\33bWarning:\33n Restoring %s will overwrite\n"
+                 "current .info files with backup versions.\n\n"
+                 "Changes made after the backup will be lost,\n"
+                 "including icon positions, ToolTypes, and\n"
+                 "default tool settings.\n\n"
+                 "Choose restore option:",
+                 run_entry->runName);
+    }
     
     /* Use ReAction requester with question mark icon */
     /* Button returns: 1=With Windows, 2=Icons Only, 0=Cancel */

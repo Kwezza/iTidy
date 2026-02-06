@@ -118,10 +118,10 @@ void CloseBackupSession(BackupContext *ctx) {
         return;
     }
     
-    /* DEBUG_LOG("Closing backup session..."); */
-    /* DEBUG_LOG("  Folders backed up: %d", ctx->foldersBackedUp); */
-    /* DEBUG_LOG("  Failed backups: %d", ctx->failedBackups); */
-    /* DEBUG_LOG("  Total bytes: %lu", ctx->totalBytesArchived); */
+    /* Close created icons manifest if open */
+    if (ctx->createdIconsOpen) {
+        CloseCreatedIconsManifest(ctx);
+    }
     
     /* Close catalog (writes footer with statistics) */
     if (ctx->catalogOpen) {
@@ -131,8 +131,6 @@ void CloseBackupSession(BackupContext *ctx) {
     /* Mark session inactive */
     ctx->sessionActive = FALSE;
     ctx->catalogOpen = FALSE;
-    
-    /* DEBUG_LOG("Backup session closed"); */
 }
 
 BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath, UWORD iconCount) {
@@ -323,6 +321,128 @@ BackupStatus BackupFolder(BackupContext *ctx, const char *folderPath, UWORD icon
     
     /* DEBUG_LOG("Folder backed up successfully"); */
     return BACKUP_OK;
+}
+
+/*========================================================================*/
+/* Created Icons Manifest (DefIcons Integration)                         */
+/*========================================================================*/
+
+BOOL OpenCreatedIconsManifest(BackupContext *ctx)
+{
+    char manifestPath[MAX_BACKUP_PATH];
+    
+    if (!ctx || !ctx->sessionActive)
+    {
+        return FALSE;
+    }
+    
+    /* Already open? */
+    if (ctx->createdIconsOpen)
+    {
+        return TRUE;
+    }
+    
+    /* Build path: Run_NNNN/created_icons.txt */
+    snprintf(manifestPath, sizeof(manifestPath), "%s/%s",
+             ctx->runDirectory, CREATED_ICONS_FILENAME);
+    
+    ctx->createdIconsFile = Open((STRPTR)manifestPath, MODE_NEWFILE);
+    if (ctx->createdIconsFile == 0)
+    {
+        append_to_log("[BACKUP] ERROR: Failed to create created_icons.txt: %s\n", manifestPath);
+        return FALSE;
+    }
+    
+    ctx->createdIconsOpen = TRUE;
+    ctx->iconsCreated = 0;
+    
+    /* Write header comment */
+    {
+        const char *header = "; iTidy Created Icons Manifest\n"
+                            "; One .info file path per line\n"
+                            "; These files were created by DefIcons during this run\n"
+                            "; Restore will delete these files to return folders to pre-iTidy state\n"
+                            ";\n";
+        Write(ctx->createdIconsFile, (APTR)header, strlen(header));
+        Flush(ctx->createdIconsFile);
+    }
+    
+    append_to_log("[BACKUP] Created icons manifest opened: %s\n", manifestPath);
+    return TRUE;
+}
+
+void LogCreatedIconToManifest(BackupContext *ctx, const char *info_path)
+{
+    if (!ctx || !ctx->createdIconsOpen || ctx->createdIconsFile == 0)
+    {
+        return;
+    }
+    
+    if (!info_path || info_path[0] == '\0')
+    {
+        return;
+    }
+    
+    /* Write path + newline */
+    Write(ctx->createdIconsFile, (APTR)info_path, strlen(info_path));
+    Write(ctx->createdIconsFile, (APTR)"\n", 1);
+    
+    /* Flush immediately for crash safety */
+    Flush(ctx->createdIconsFile);
+    
+    ctx->iconsCreated++;
+}
+
+void CloseCreatedIconsManifest(BackupContext *ctx)
+{
+    if (!ctx)
+    {
+        return;
+    }
+    
+    if (ctx->createdIconsFile != 0)
+    {
+        Close(ctx->createdIconsFile);
+        ctx->createdIconsFile = 0;
+        ctx->createdIconsOpen = FALSE;
+        append_to_log("[BACKUP] Created icons manifest closed (%lu icons recorded)\n",
+                     ctx->iconsCreated);
+    }
+}
+
+ULONG CountCreatedIconsInManifest(const char *run_directory)
+{
+    char manifestPath[MAX_BACKUP_PATH];
+    BPTR file;
+    char line[512];
+    ULONG count = 0;
+    
+    if (!run_directory || run_directory[0] == '\0')
+    {
+        return 0;
+    }
+    
+    snprintf(manifestPath, sizeof(manifestPath), "%s/%s",
+             run_directory, CREATED_ICONS_FILENAME);
+    
+    file = Open((STRPTR)manifestPath, MODE_OLDFILE);
+    if (!file)
+    {
+        return 0;  /* No manifest = no created icons */
+    }
+    
+    while (FGets(file, line, sizeof(line)))
+    {
+        /* Skip comments and empty lines */
+        if (line[0] == ';' || line[0] == '\n' || line[0] == '\r' || line[0] == '\0')
+        {
+            continue;
+        }
+        count++;
+    }
+    
+    Close(file);
+    return count;
 }
 
 /*========================================================================*/

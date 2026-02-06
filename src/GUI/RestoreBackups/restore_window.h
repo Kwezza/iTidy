@@ -41,6 +41,7 @@ struct RestoreRunEntry
     char statusStr[16];                 /* "Complete" text */
     char fullPath[256];                 /* Full path to run directory */
     BOOL hasCatalog;                    /* TRUE if catalog.txt exists */
+    ULONG iconsCreated;                 /* Number of .info files DefIcons created during run */
 };
 
 /*------------------------------------------------------------------------*/

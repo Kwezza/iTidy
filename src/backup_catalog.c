@@ -263,6 +263,13 @@ BOOL CloseCatalog(BackupContext *ctx) {
     snprintf(line, sizeof(line), "Total Size: %s", totalSize);
     WriteLineToFile(ctx->catalogFile, line);
     
+    /* Write icons created count (DefIcons integration) */
+    if (ctx->iconsCreated > 0)
+    {
+        snprintf(line, sizeof(line), "Icons Created: %lu", ctx->iconsCreated);
+        WriteLineToFile(ctx->catalogFile, line);
+    }
+    
     WriteLineToFile(ctx->catalogFile, CATALOG_SEPARATOR);
     
     /* Close file */

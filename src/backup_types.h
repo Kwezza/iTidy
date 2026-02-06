@@ -37,6 +37,7 @@
 #define CATALOG_FILENAME        "catalog.txt"
 #define PATH_MARKER_FILENAME    "_PATH.txt"
 #define BACKUP_LOG_FILENAME     "iTidyBackup.log"
+#define CREATED_ICONS_FILENAME  "created_icons.txt"
 
 /* Backup directory structure */
 #define BACKUP_RUN_PREFIX       "Run_"
@@ -110,6 +111,11 @@ typedef struct {
     UWORD foldersBackedUp;              /* Count of successfully backed-up folders */
     UWORD failedBackups;                /* Count of failed backup attempts */
     ULONG totalBytesArchived;           /* Total size of all archives created */
+    ULONG iconsCreated;                 /* Count of DefIcons .info files created during run */
+    
+    /* Created icons manifest */
+    BPTR createdIconsFile;              /* AmigaDOS file handle for created_icons.txt */
+    BOOL createdIconsOpen;              /* TRUE if created_icons.txt is open for writing */
     
     /* Flags */
     BOOL lhaAvailable;                  /* TRUE if LhA was found and is usable */

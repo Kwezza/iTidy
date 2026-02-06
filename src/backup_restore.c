@@ -10,7 +10,9 @@
 #include "backup_marker.h"
 #include "backup_lha.h"
 #include "backup_paths.h"
+#include "backup_types.h"
 #include "file_directory_handling.h"
+#include "writeLog.h"
 #include "GUI/StatusWindows/recursive_progress.h"
 
 /* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
@@ -44,6 +46,7 @@ static BOOL CreateDirectoryRecursive(const char *path);
 static void RecordError(RestoreContext *ctx, const char *error);
 static void UpdateStatistics(RestoreContext *ctx, BOOL success, ULONG bytes);
 static BOOL RestoreWindowGeometry(const char *folderPath, const BackupArchiveEntry *entry);
+static ULONG DeleteCreatedIconsFromManifest(const char *runDirectory);
 
 /* Context for catalog iteration during full run restore */
 typedef struct {
@@ -133,6 +136,109 @@ static BOOL RestoreCatalogEntryCallback(const BackupArchiveEntry *entry, void *u
     CONSOLE_STATUS("  -> Restored successfully\n");
     
     return TRUE;  /* Continue parsing */
+}
+
+/* ========================================================================
+ * HELPER FUNCTIONS - Created Icons Manifest Cleanup
+ * ======================================================================== */
+
+/**
+ * @brief Delete .info files listed in the created_icons.txt manifest
+ * 
+ * Reads the manifest file and deletes each listed .info file.
+ * Missing files are silently ignored (safe and idempotent).
+ * This must be called BEFORE extracting backup archives to ensure
+ * restored layouts are not polluted by DefIcons-created icons.
+ * 
+ * @param runDirectory Path to run directory containing created_icons.txt
+ * @return Number of files successfully deleted
+ */
+static ULONG DeleteCreatedIconsFromManifest(const char *runDirectory)
+{
+    char manifestPath[MAX_RESTORE_PATH];
+    char line[512];
+    ULONG deleted = 0;
+    ULONG skipped = 0;
+#ifdef PLATFORM_AMIGA
+    BPTR file;
+#endif
+    
+    if (!runDirectory || runDirectory[0] == '\0')
+    {
+        return 0;
+    }
+    
+    snprintf(manifestPath, sizeof(manifestPath), "%s/%s",
+             runDirectory, CREATED_ICONS_FILENAME);
+    
+    /* Check if manifest exists */
+    if (!FileExists(manifestPath))
+    {
+        return 0;
+    }
+    
+#ifdef PLATFORM_AMIGA
+    file = Open((STRPTR)manifestPath, MODE_OLDFILE);
+    if (!file)
+    {
+        log_error(LOG_BACKUP, "Could not open created_icons.txt manifest: %s\n", manifestPath);
+        return 0;
+    }
+    
+    while (FGets(file, line, sizeof(line)))
+    {
+        /* Strip trailing newline/carriage return */
+        ULONG len = strlen(line);
+        while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r'))
+        {
+            line[len - 1] = '\0';
+            len--;
+        }
+        
+        /* Skip comments and empty lines */
+        if (line[0] == ';' || line[0] == '\0')
+        {
+            continue;
+        }
+        
+        /* Try to delete the file */
+        {
+            BPTR lock = Lock((STRPTR)line, ACCESS_READ);
+            if (lock)
+            {
+                UnLock(lock);
+                if (DeleteFile((STRPTR)line))
+                {
+                    deleted++;
+                }
+                else
+                {
+                    skipped++;
+                    log_warning(LOG_BACKUP, "Failed to delete created icon: %s (IoErr=%ld)\n", line, (long)IoErr());
+                }
+            }
+            else
+            {
+                /* File doesn't exist - that's fine, just skip */
+                skipped++;
+            }
+        }
+    }
+    
+    Close(file);
+    
+    if (deleted > 0 || skipped > 0)
+    {
+        log_info(LOG_BACKUP, "DefIcons cleanup: %lu deleted, %lu skipped\n", deleted, skipped);
+    }
+#else
+    /* Host platform - no-op */
+    (void)manifestPath;
+    (void)line;
+    (void)skipped;
+#endif
+    
+    return deleted;
 }
 
 /* ========================================================================
@@ -484,6 +590,19 @@ RestoreStatus RestoreFullRun(RestoreContext *ctx, const char *runDirectory) {
     if (!ParseCatalog(catalogPath, RestoreCatalogEntryCallback, &iterCtx)) {
         RecordError(ctx, "Failed to parse catalog file");
         return RESTORE_CATALOG_READ_FAILED;
+    }
+    
+    /* Delete DefIcons-created icons AFTER restoring archives.
+     * The LhA archives contain ALL .info files that existed at backup time,
+     * including DefIcons-created icons (since DefIcons runs before backup).
+     * We must extract first, then remove the DefIcons icons, so the final
+     * state has only the original user icons with restored positions. */
+    {
+        ULONG icons_deleted = DeleteCreatedIconsFromManifest(runDirectory);
+        if (icons_deleted > 0)
+        {
+            log_info(LOG_BACKUP, "Removed %lu DefIcons-created icon(s) after archive extraction\n", icons_deleted);
+        }
     }
     
     /* Print summary */
