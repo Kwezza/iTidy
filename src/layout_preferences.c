@@ -95,6 +95,7 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     strcpy(prefs->deficons_disabled_types, DEFAULT_DEFICONS_DISABLED_TYPES);
     prefs->deficons_folder_icon_mode = DEFAULT_DEFICONS_FOLDER_ICON_MODE;
     prefs->deficons_skip_system_assigns = DEFAULT_DEFICONS_SKIP_SYSTEM_ASSIGNS;
+    prefs->deficons_log_created_icons = DEFAULT_DEFICONS_LOG_CREATED_ICONS;
     
     /* Logging and Debug Settings */
     prefs->logLevel = DEFAULT_LOG_LEVEL;

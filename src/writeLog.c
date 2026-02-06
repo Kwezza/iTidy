@@ -134,8 +134,15 @@ static void get_entry_timestamp(char *buffer, int bufferSize) {
     }
 }
 
+/*---------------------------------------------------------------------------*//* Public Accessor for Timestamp                                             */
 /*---------------------------------------------------------------------------*/
-/* Directory Management                                                      */
+
+/* Get the current log timestamp string */
+const char* get_log_timestamp(void) {
+    return g_logTimestamp;
+}
+
+/*---------------------------------------------------------------------------*//* Directory Management                                                      */
 /*---------------------------------------------------------------------------*/
 
 /* Create logs directory if it doesn't exist */

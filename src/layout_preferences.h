@@ -207,6 +207,7 @@ typedef struct {
     char deficons_disabled_types[256];         /* Comma-separated list of disabled root type names (e.g., "tool,font") */
     UWORD deficons_folder_icon_mode;           /* 0=Smart (create if visible), 1=Always, 2=Never */
     BOOL deficons_skip_system_assigns;         /* TRUE = skip SYS:, C:, S:, DEVS:, LIBS:, etc. */
+    BOOL deficons_log_created_icons;           /* TRUE = log all created .info files to dedicated log (for testing/delete scripts) */
     
     /* Logging and Debug Settings */
     UWORD logLevel;                            /* Log level: 0=DEBUG, 1=INFO, 2=WARN, 3=ERROR */
@@ -268,6 +269,7 @@ typedef struct {
 #define DEFAULT_DEFICONS_DISABLED_TYPES                    ""      /* Empty string = all types enabled */
 #define DEFAULT_DEFICONS_FOLDER_ICON_MODE                  0       /* 0=Smart (create if visible), 1=Always, 2=Never */
 #define DEFAULT_DEFICONS_SKIP_SYSTEM_ASSIGNS               TRUE    /* Skip system directories by default */
+#define DEFAULT_DEFICONS_LOG_CREATED_ICONS                 TRUE    /* Log created icons to separate file (useful for testing) */
 
 /* Logging and Debug Defaults */
 #define DEFAULT_LOG_LEVEL                                  3       /* Default: ERROR level (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR) */

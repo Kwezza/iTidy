@@ -133,6 +133,18 @@ static ULONG g_iconsProcessed = 0;
 static struct DateStamp g_startTime;
 static struct DateStamp g_endTime;
 
+/* DefIcons icon creation statistics tracking (Phase 3) */
+#define MAX_DEFICON_CATEGORIES 15
+
+typedef struct {
+    char category_name[64];
+    ULONG count;
+} IconCreationStats;
+
+static IconCreationStats g_iconCreationStats[MAX_DEFICON_CATEGORIES];
+static int g_iconCreationStatCount = 0;
+static ULONG g_iconsCreatedTotal = 0;
+
 /* Helper macro for dual output (console + progress window) */
 #define PROGRESS_STATUS(...) \
     do { \
@@ -165,6 +177,216 @@ static struct DateStamp g_endTime;
             } \
         } \
     } while (0)
+
+/*========================================================================*/
+/* DefIcons Icon Creation Statistics Functions (Phase 3)                 */
+/*========================================================================*/
+
+/**
+ * @brief Initialize icon creation statistics tracking
+ * 
+ * Resets all counters for a new processing session.
+ */
+static void InitIconCreationStats(void)
+{
+    int i;
+    g_iconCreationStatCount = 0;
+    g_iconsCreatedTotal = 0;
+    
+    for (i = 0; i < MAX_DEFICON_CATEGORIES; i++)
+    {
+        g_iconCreationStats[i].category_name[0] = '\0';
+        g_iconCreationStats[i].count = 0;
+    }
+}
+
+/**
+ * @brief Increment icon creation count for a specific category
+ * 
+ * @param category Category name (e.g., "picture", "music", "archive")
+ */
+static void IncrementCategoryStats(const char *category)
+{
+    int i;
+    
+    if (!category || category[0] == '\0')
+        return;
+    
+    /* Search for existing category */
+    for (i = 0; i < g_iconCreationStatCount; i++)
+    {
+        if (strcmp(g_iconCreationStats[i].category_name, category) == 0)
+        {
+            g_iconCreationStats[i].count++;
+            g_iconsCreatedTotal++;
+            return;
+        }
+    }
+    
+    /* Add new category if space available */
+    if (g_iconCreationStatCount < MAX_DEFICON_CATEGORIES)
+    {
+        strncpy(g_iconCreationStats[g_iconCreationStatCount].category_name, 
+                category, 
+                sizeof(g_iconCreationStats[0].category_name) - 1);
+        g_iconCreationStats[g_iconCreationStatCount].category_name[
+            sizeof(g_iconCreationStats[0].category_name) - 1] = '\0';
+        g_iconCreationStats[g_iconCreationStatCount].count = 1;
+        g_iconCreationStatCount++;
+        g_iconsCreatedTotal++;
+    }
+    else
+    {
+        log_warning(LOG_ICONS, "Category limit reached (%d), cannot track: %s\n",
+                   MAX_DEFICON_CATEGORIES, category);
+        g_iconsCreatedTotal++;
+    }
+}
+
+/**
+ * @brief Get icon creation count for a specific category
+ * 
+ * @param category Category name to look up
+ * @return Icon count for category, or 0 if not found
+ */
+static ULONG GetCategoryCount(const char *category)
+{
+    int i;
+    
+    if (!category || category[0] == '\0')
+        return 0;
+    
+    for (i = 0; i < g_iconCreationStatCount; i++)
+    {
+        if (strcmp(g_iconCreationStats[i].category_name, category) == 0)
+        {
+            return g_iconCreationStats[i].count;
+        }
+    }
+    
+    return 0;
+}
+
+/**
+ * @brief Display icon creation statistics in progress window
+ * 
+ * Shows total icons created and breakdown by category.
+ */
+static void DisplayCategoryStats(void)
+{
+    int i;
+    
+    if (g_iconsCreatedTotal == 0)
+        return;
+    
+    PROGRESS_STATUS("  Icons created: %lu", g_iconsCreatedTotal);
+    
+    /* Display breakdown by category */
+    if (g_iconCreationStatCount > 0)
+    {
+        for (i = 0; i < g_iconCreationStatCount; i++)
+        {
+            PROGRESS_STATUS("    %s: %lu", 
+                          g_iconCreationStats[i].category_name,
+                          g_iconCreationStats[i].count);
+        }
+    }
+}
+
+/*========================================================================*/
+/* Icon Creation Dedicated Log File Functions                            */
+/*========================================================================*/
+
+/* Icon creation log file handle (file scope) */
+static BPTR g_iconCreationLogFile = 0;
+
+/**
+ * @brief Open dedicated log file for tracking created icons
+ * 
+ * Creates PROGDIR:logs/IconsCreated/ folder if needed and opens log file.
+ * Log file format: One .info path per line for easy script generation.
+ * Works independently of main logging system.
+ * 
+ * @return TRUE if successful, FALSE on error
+ */
+static BOOL OpenIconCreationLog(void)
+{
+    const char *timestamp;
+    char logPath[512];
+    char dirPath[256];
+    
+    /* Already open? */
+    if (g_iconCreationLogFile != 0)
+        return TRUE;
+    
+    /* Create logs/IconsCreated directory (with trailing slash) */
+    snprintf(dirPath, sizeof(dirPath), "PROGDIR:logs/IconsCreated/");
+    if (!CreateDirectoryPath(dirPath))
+    {
+        log_warning(LOG_ICONS, "Failed to create IconsCreated directory: %s\n", dirPath);
+        return FALSE;
+    }
+    
+    /* Get timestamp from logging system */
+    timestamp = get_log_timestamp();
+    
+    /* Build log file path */
+    snprintf(logPath, sizeof(logPath), "%screated_%s.txt", dirPath, timestamp);
+    
+    /* Open file for writing */
+    g_iconCreationLogFile = Open((CONST_STRPTR)logPath, MODE_NEWFILE);
+    if (g_iconCreationLogFile == 0)
+    {
+        log_error(LOG_ICONS, "Failed to create icon creation log: %s\n", logPath);
+        return FALSE;
+    }
+    
+    /* Write header comment */
+    {
+        const char *header = "; iTidy Icon Creation Log\n"
+                            "; One .info file path per line\n"
+                            "; Use this to generate delete scripts for testing\n"
+                            ";\n";
+        Write(g_iconCreationLogFile, (APTR)header, strlen(header));
+    }
+    
+    log_info(LOG_ICONS, "Icon creation log opened: %s\n", logPath);
+    return TRUE;
+}
+
+/**
+ * @brief Log a created icon path to dedicated log file
+ * 
+ * @param info_path Full path to created .info file (e.g., "Work:Test/file.mod.info")
+ */
+static void LogCreatedIcon(const char *info_path)
+{
+    if (g_iconCreationLogFile == 0)
+        return;
+    
+    if (!info_path || info_path[0] == '\0')
+        return;
+    
+    /* Write path + newline */
+    Write(g_iconCreationLogFile, (APTR)info_path, strlen(info_path));
+    Write(g_iconCreationLogFile, (APTR)"\n", 1);
+    
+    /* Flush immediately for crash safety */
+    Flush(g_iconCreationLogFile);
+}
+
+/**
+ * @brief Close icon creation log file
+ */
+static void CloseIconCreationLog(void)
+{
+    if (g_iconCreationLogFile != 0)
+    {
+        Close(g_iconCreationLogFile);
+        g_iconCreationLogFile = 0;
+        log_info(LOG_ICONS, "Icon creation log closed\n");
+    }
+}
 
 /* Forward declarations for helper functions */
 static int CompareIconsWithPreferences(const void *a, const void *b, 
@@ -269,6 +491,7 @@ BOOL ProcessDirectoryWithPreferences(void)
     /* Initialize statistics tracking and start timer FIRST */
     g_foldersProcessed = 0;
     g_iconsProcessed = 0;
+    InitIconCreationStats();
     
     /* Get start time */
     DateStamp(&g_startTime);
@@ -447,6 +670,12 @@ BOOL ProcessDirectoryWithPreferences(void)
         }
         else
         {
+            /* Open icon creation log if enabled */
+            if (prefs->deficons_log_created_icons)
+            {
+                OpenIconCreationLog();
+            }
+            
             /* Create icons recursively or single folder */
             if (prefs->recursive_subdirs)
             {
@@ -574,6 +803,9 @@ BOOL ProcessDirectoryWithPreferences(void)
         PROGRESS_STATUS("  Folders processed: %lu", g_foldersProcessed);
         PROGRESS_STATUS("  Icons processed: %lu", g_iconsProcessed);
         
+        /* Display icon creation statistics if any were created */
+        DisplayCategoryStats();
+        
         /* Display default tool validation statistics if enabled */
         if (g_ValidateDefaultTools && g_ToolCache && g_ToolCacheCount > 0)
         {
@@ -611,6 +843,12 @@ BOOL ProcessDirectoryWithPreferences(void)
         log_info(LOG_GENERAL, "Freeing PATH search list\n");
         FreePathSearchList();
         g_ValidateDefaultTools = FALSE;
+    }
+    
+    /* Close icon creation log if open */
+    if (prefs->deficons_log_created_icons)
+    {
+        CloseIconCreationLog();
     }
     
     /* End backup session if one was started */
@@ -2753,9 +2991,28 @@ static BOOL CreateMissingIconsInDirectory(const char *path,
         /* Copy template to create .info */
         if (deficons_copy_icon_file(template_path, info_path))
         {
+            const char *category;
+            
             local_created++;
             PROGRESS_STATUS("  Created icon: %s (%s)", fib->fib_FileName, type_token);
             log_info(LOG_ICONS, "Created icon: %s → %s\n", template_path, info_path);
+            
+            /* Log to dedicated icon creation file (for testing/delete scripts) */
+            {
+                const LayoutPreferences *log_prefs = GetGlobalPreferences();
+                if (log_prefs && log_prefs->deficons_log_created_icons)
+                {
+                    LogCreatedIcon(info_path);
+                }
+            }
+            
+            /* Track category statistics (Phase 3) */
+            category = deficons_get_resolved_category(type_token);
+            if (category && category[0] != '\0')
+            {
+                IncrementCategoryStats(category);
+                log_debug(LOG_ICONS, "Category tracked: %s (type: %s)\n", category, type_token);
+            }
             
             /* Update heartbeat for progress feedback */
             if (g_progressWindow)
