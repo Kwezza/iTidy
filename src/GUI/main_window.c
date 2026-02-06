@@ -1047,6 +1047,16 @@ static BOOL load_preferences_from_file(const char *filepath, LayoutPreferences *
     }
     
     Close(file);
+    
+    /* Sync DefIcons fields after loading from file */
+    /* If either field is set, enable both to maintain consistency */
+    if (prefs->create_new_icons || prefs->enable_deficons_icon_creation)
+    {
+        prefs->create_new_icons = TRUE;
+        prefs->enable_deficons_icon_creation = TRUE;
+        log_info(LOG_GUI, "Post-load sync: DefIcons icon creation enabled\n");
+    }
+    
     log_info(LOG_GUI, "Successfully loaded preferences from: %s\n", filepath);
     return TRUE;
 }
@@ -1068,7 +1078,8 @@ static void sync_gui_from_preferences(struct iTidyMainWindow *win_data, const La
     win_data->sortby_selected = prefs->sortBy;
     win_data->recursive_subdirs = prefs->recursive_subdirs;
     win_data->enable_backup = prefs->enable_backup;
-    win_data->create_new_icons = prefs->create_new_icons;
+    /* Sync both checkbox fields - prefer enable_deficons_icon_creation if set */
+    win_data->create_new_icons = prefs->enable_deficons_icon_creation ? TRUE : prefs->create_new_icons;
     win_data->window_position_selected = prefs->windowPositionMode;
     
     strncpy(win_data->folder_path_buffer, prefs->folder_path, sizeof(win_data->folder_path_buffer) - 1);
@@ -1163,6 +1174,7 @@ static void sync_gui_to_preferences(struct iTidyMainWindow *win_data, LayoutPref
     prefs->recursive_subdirs = win_data->recursive_subdirs;
     prefs->enable_backup = win_data->enable_backup;
     prefs->create_new_icons = win_data->create_new_icons;
+    prefs->enable_deficons_icon_creation = win_data->create_new_icons;  /* Wire checkbox to DefIcons feature */
     prefs->windowPositionMode = (WindowPositionMode)win_data->window_position_selected;
     
     strncpy(prefs->folder_path, win_data->folder_path_buffer, sizeof(prefs->folder_path) - 1);

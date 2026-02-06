@@ -99,6 +99,11 @@
 #include "path_utilities.h"
 #include "GUI/window_enumerator.h"
 
+/* DefIcons icon creation system */
+#include "deficons_identify.h"
+#include "deficons_templates.h"
+#include "deficons_filters.h"
+
 /* Progress window integration */
 #include "GUI/StatusWindows/main_progress_window.h"
 
@@ -173,6 +178,15 @@ static BOOL ProcessDirectoryRecursive(const char *path,
                                      const LayoutPreferences *prefs, 
                                      int recursion_level,
                                      FolderWindowTracker *windowTracker);
+
+/* DefIcons icon creation functions (Phase 2) */
+static BOOL CreateMissingIconsInDirectory(const char *path, 
+                                         const LayoutPreferences *prefs, 
+                                         ULONG *icons_created);
+static BOOL CreateMissingIconsRecursive(const char *path, 
+                                       const LayoutPreferences *prefs, 
+                                       int recursion_level,
+                                       ULONG *total_icons_created);
 
 /* Forward declarations for tool scanning (Phase 1: Rebuild Cache) */
 static BOOL ScanSingleDirectoryForTools(const char *path);
@@ -334,6 +348,41 @@ BOOL ProcessDirectoryWithPreferences(void)
         g_ValidateDefaultTools = FALSE;
     }
     
+    /* ===================================================================== */
+    /* DUMP CURRENT PREFERENCES FOR DIAGNOSTICS                             */
+    /* ===================================================================== */
+    CONSOLE_STATUS("=== Current Preferences Settings ===");
+    log_info(LOG_GENERAL, "\n*** Current Preferences Settings ***\n");
+    log_info(LOG_GENERAL, "Target Path: %s\n", sanitizedPath);
+    CONSOLE_STATUS("Target Path: %s", sanitizedPath);
+    log_info(LOG_GENERAL, "Recursive Mode: %s\n", prefs->recursive_subdirs ? "YES" : "NO");
+    CONSOLE_STATUS("Recursive Mode: %s", prefs->recursive_subdirs ? "YES" : "NO");
+    log_info(LOG_GENERAL, "Skip Hidden Folders: %s\n", prefs->skipHiddenFolders ? "YES" : "NO");
+    log_info(LOG_GENERAL, "Sort By: %d (%s)\n", prefs->sortBy, 
+             prefs->sortBy == 0 ? "Name" : 
+             prefs->sortBy == 1 ? "Type" : 
+             prefs->sortBy == 2 ? "Date" : 
+             prefs->sortBy == 3 ? "Size" : "Unknown");
+    CONSOLE_STATUS("Sort By: %d", prefs->sortBy);
+    log_info(LOG_GENERAL, "Reverse Sort: %s\n", prefs->reverseSort ? "YES" : "NO");
+    log_info(LOG_GENERAL, "Backup Enabled: %s\n", prefs->backupPrefs.enableUndoBackup ? "YES" : "NO");
+    CONSOLE_STATUS("Backup Enabled: %s", prefs->backupPrefs.enableUndoBackup ? "YES" : "NO");
+    log_info(LOG_GENERAL, "Default Tool Validation: %s\n", prefs->validate_default_tools ? "YES" : "NO");
+    log_info(LOG_GENERAL, "\n--- DefIcons Icon Creation Settings ---\n");
+    CONSOLE_STATUS("--- DefIcons Settings ---");
+    log_info(LOG_GENERAL, "create_new_icons (checkbox): %s\n", prefs->create_new_icons ? "YES" : "NO");
+    CONSOLE_STATUS("create_new_icons: %s", prefs->create_new_icons ? "YES" : "NO");
+    log_info(LOG_GENERAL, "enable_deficons_icon_creation (feature): %s\n", prefs->enable_deficons_icon_creation ? "YES" : "NO");
+    CONSOLE_STATUS("enable_deficons_icon_creation: %s", prefs->enable_deficons_icon_creation ? "YES" : "NO");
+    log_info(LOG_GENERAL, "Disabled Types: '%s'\n", prefs->deficons_disabled_types);
+    log_info(LOG_GENERAL, "Folder Icon Mode: %u (%s)\n", prefs->deficons_folder_icon_mode,
+             prefs->deficons_folder_icon_mode == 0 ? "Smart" :
+             prefs->deficons_folder_icon_mode == 1 ? "Always" :
+             prefs->deficons_folder_icon_mode == 2 ? "Never" : "Unknown");
+    log_info(LOG_GENERAL, "Skip System Assigns: %s\n", prefs->deficons_skip_system_assigns ? "YES" : "NO");
+    log_info(LOG_GENERAL, "========================================\n\n");
+    CONSOLE_STATUS("===================================");
+    
     /* Initialize backup session if backup is enabled */
     if (prefs->backupPrefs.enableUndoBackup)
     {
@@ -374,6 +423,68 @@ BOOL ProcessDirectoryWithPreferences(void)
     
     PROGRESS_STATUS("Processing: %s", sanitizedPath);
     PROGRESS_STATUS("Recursive: %s", prefs->recursive_subdirs ? "Yes" : "No");
+    
+    /* Phase: Icon Creation (DefIcons integration) */
+    /* This runs BEFORE icon tidying to ensure all files have icons */
+    if (prefs->enable_deficons_icon_creation)
+    {
+        ULONG icons_created = 0;
+        
+        log_info(LOG_ICONS, "\n*** Starting DefIcons Icon Creation Phase ***\n");
+        PROGRESS_STATUS("Creating missing icons using DefIcons...");
+        
+        /* Initialize DefIcons modules */
+        if (!deficons_initialize_arexx())
+        {
+            log_error(LOG_ICONS, "Failed to initialize DefIcons ARexx - icon creation disabled\n");
+            PROGRESS_STATUS("Warning: DefIcons not available, skipping icon creation");
+        }
+        else if (!deficons_initialize_templates())
+        {
+            log_error(LOG_ICONS, "Failed to initialize DefIcons templates - icon creation disabled\n");
+            PROGRESS_STATUS("Warning: DefIcons templates not loaded, skipping icon creation");
+            deficons_cleanup_arexx();
+        }
+        else
+        {
+            /* Create icons recursively or single folder */
+            if (prefs->recursive_subdirs)
+            {
+                if (CreateMissingIconsRecursive(sanitizedPath, prefs, 0, &icons_created))
+                {
+                    log_info(LOG_ICONS, "Icon creation complete: %lu icon(s) created\n", icons_created);
+                    PROGRESS_STATUS("Created %lu icon(s) recursively", icons_created);
+                }
+                else
+                {
+                    log_warning(LOG_ICONS, "Icon creation incomplete (errors occurred)\n");
+                    PROGRESS_STATUS("Warning: Icon creation had errors (%lu created)", icons_created);
+                }
+            }
+            else
+            {
+                if (CreateMissingIconsInDirectory(sanitizedPath, prefs, &icons_created))
+                {
+                    log_info(LOG_ICONS, "Icon creation complete: %lu icon(s) created\n", icons_created);
+                    PROGRESS_STATUS("Created %lu icon(s) in current folder", icons_created);
+                }
+                else
+                {
+                    log_warning(LOG_ICONS, "Icon creation incomplete (errors occurred)\n");
+                    PROGRESS_STATUS("Warning: Icon creation had errors (%lu created)", icons_created);
+                }
+            }
+            
+            /* Cleanup DefIcons modules */
+            deficons_cleanup_arexx();
+        }
+        
+        /* Update progress heartbeat after icon creation */
+        if (g_progressWindow && icons_created > 0)
+        {
+            itidy_main_progress_update_heartbeat(g_progressWindow, "Icons created", icons_created, icons_created);
+        }
+    }
     
     /* Pre-scan disabled - not currently used */
     /* NOTE: Pre-scan functionality exists but is disabled to improve performance.
@@ -2489,4 +2600,294 @@ static int CompareIconsWithPreferences(const void *a, const void *b,
     }
     
     return result;
+}
+
+/*========================================================================*/
+/* DefIcons Icon Creation Functions (Phase 2)                            */
+/*========================================================================*/
+
+/**
+ * @brief Create missing icons in a single directory (non-recursive)
+ * 
+ * Scans directory entries and creates .info files for iconless files
+ * using DefIcons type identification and template resolution.
+ * 
+ * @param path Directory path to process
+ * @param prefs Layout preferences (contains DefIcons settings)
+ * @param icons_created Pointer to counter (incremented for each icon created)
+ * @return TRUE if scan completed (even if no icons created), FALSE on fatal error
+ */
+static BOOL CreateMissingIconsInDirectory(const char *path, 
+                                          const LayoutPreferences *prefs, 
+                                          ULONG *icons_created)
+{
+    BPTR lock = 0;
+    struct FileInfoBlock *fib = NULL;
+    BOOL success = FALSE;
+    BOOL has_visible_contents = FALSE;
+    char fullpath[512];
+    char info_path[520];
+    char type_token[64];
+    char template_path[256];
+    ULONG local_created = 0;
+    
+    if (!path || !prefs || !icons_created)
+    {
+        log_error(LOG_ICONS, "Invalid parameters to CreateMissingIconsInDirectory\n");
+        return FALSE;
+    }
+    
+    /* Check if system path - skip if exclusion enabled */
+    if (deficons_is_system_path(path, prefs))
+    {
+        log_info(LOG_ICONS, "Skipping system path: %s\n", path);
+        PROGRESS_STATUS("  Skipping system path: %s", path);
+        return TRUE;  /* Not an error - just skipped */
+    }
+    
+    /* Lock directory */
+    lock = Lock((STRPTR)path, ACCESS_READ);
+    if (!lock)
+    {
+        log_error(LOG_ICONS, "Failed to lock directory for icon creation: %s\n", path);
+        return FALSE;
+    }
+    
+    /* Allocate FIB */
+    fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
+    if (!fib)
+    {
+        log_error(LOG_ICONS, "Failed to allocate FIB\n");
+        UnLock(lock);
+        return FALSE;
+    }
+    
+    /* Examine directory */
+    if (!Examine(lock, fib))
+    {
+        log_error(LOG_ICONS, "Failed to examine directory: %s\n", path);
+        FreeDosObject(DOS_FIB, fib);
+        UnLock(lock);
+        return FALSE;
+    }
+    
+    /* Check for Smart folder mode - detect if any .info files exist */
+    if (prefs->deficons_folder_icon_mode == 0)  /* Smart mode */
+    {
+        has_visible_contents = deficons_folder_has_info_files(path);
+        if (has_visible_contents)
+        {
+            log_debug(LOG_ICONS, "Folder has existing .info files: %s\n", path);
+        }
+    }
+    
+    /* Process directory entries */
+    while (ExNext(lock, fib))
+    {
+        CHECK_CANCEL();
+        
+        /* Build full path */
+        snprintf(fullpath, sizeof(fullpath), "%s/%s", path, fib->fib_FileName);
+        
+        /* Skip .info files themselves */
+        if (strstr(fib->fib_FileName, ".info"))
+            continue;
+        
+        /* Build .info path */
+        snprintf(info_path, sizeof(info_path), "%s.info", fullpath);
+        
+        /* Skip if .info already exists (never overwrite user icons) */
+        {
+            BPTR info_lock = Lock((STRPTR)info_path, ACCESS_READ);
+            if (info_lock)
+            {
+                UnLock(info_lock);
+                log_debug(LOG_ICONS, "Icon already exists, skipping: %s\n", fib->fib_FileName);
+                continue;
+            }
+        }
+        
+        /* Handle drawers (directories) */
+        if (fib->fib_DirEntryType > 0)
+        {
+            /* Check if we should create folder icon */
+            if (!deficons_should_create_folder_icon(fullpath, has_visible_contents, prefs))
+            {
+                log_debug(LOG_ICONS, "Folder icon not needed: %s\n", fib->fib_FileName);
+                continue;
+            }
+            
+            strcpy(type_token, "drawer");
+        }
+        else
+        {
+            /* Identify file type via DefIcons */
+            if (!deficons_identify_file(fullpath, type_token, sizeof(type_token)))
+            {
+                log_debug(LOG_ICONS, "Cannot identify type: %s\n", fib->fib_FileName);
+                continue;
+            }
+            
+            log_info(LOG_ICONS, "DefIcons identified: %s → type '%s'\n", fib->fib_FileName, type_token);
+            
+            /* Apply type filters */
+            if (!deficons_should_create_icon(type_token, prefs))
+            {
+                log_debug(LOG_ICONS, "Type filtered: %s (%s)\n", fib->fib_FileName, type_token);
+                continue;
+            }
+        }
+        
+        /* Resolve template */
+        log_info(LOG_ICONS, "Resolving template for type '%s'...\n", type_token);
+        if (!deficons_resolve_template(type_token, template_path, sizeof(template_path)))
+        {
+            log_warning(LOG_ICONS, "No template for type: %s (file: %s)\n", 
+                       type_token, fib->fib_FileName);
+            continue;
+        }
+        
+        log_info(LOG_ICONS, "Template resolved: %s → %s\n", type_token, template_path);
+        
+        /* Copy template to create .info */
+        if (deficons_copy_icon_file(template_path, info_path))
+        {
+            local_created++;
+            PROGRESS_STATUS("  Created icon: %s (%s)", fib->fib_FileName, type_token);
+            log_info(LOG_ICONS, "Created icon: %s → %s\n", template_path, info_path);
+            
+            /* Update heartbeat for progress feedback */
+            if (g_progressWindow)
+            {
+                itidy_main_progress_update_heartbeat(g_progressWindow, "Creating", local_created, 0);
+            }
+        }
+        else
+        {
+            log_error(LOG_ICONS, "Failed to copy icon template: %s → %s\n", 
+                     template_path, info_path);
+        }
+    }
+    
+    success = TRUE;
+    *icons_created += local_created;
+    
+    if (local_created > 0)
+    {
+        log_info(LOG_ICONS, "Created %lu icon(s) in: %s\n", local_created, path);
+    }
+    
+    /* Cleanup */
+    FreeDosObject(DOS_FIB, fib);
+    UnLock(lock);
+    
+    return success;
+}
+
+/**
+ * @brief Create missing icons recursively through directory tree
+ * 
+ * @param path Root directory path
+ * @param prefs Layout preferences
+ * @param recursion_level Current depth (for logging and cycle detection)
+ * @param total_icons_created Running total counter
+ * @return TRUE if successful, FALSE on fatal error
+ */
+static BOOL CreateMissingIconsRecursive(const char *path, 
+                                        const LayoutPreferences *prefs, 
+                                        int recursion_level,
+                                        ULONG *total_icons_created)
+{
+    BPTR lock = 0;
+    struct FileInfoBlock *fib = NULL;
+    char subdir[512];
+    ULONG icons_this_folder = 0;
+    
+    if (!path || !prefs || !total_icons_created)
+    {
+        log_error(LOG_ICONS, "Invalid parameters to CreateMissingIconsRecursive\n");
+        return FALSE;
+    }
+    
+    /* Recursion depth check */
+    if (recursion_level > 100)
+    {
+        log_error(LOG_ICONS, "Maximum recursion depth exceeded: %s\n", path);
+        return FALSE;
+    }
+    
+    CHECK_CANCEL();
+    
+    /* Process current directory */
+    log_debug(LOG_ICONS, "Icon creation: %s (level %d)\n", path, recursion_level);
+    if (!CreateMissingIconsInDirectory(path, prefs, &icons_this_folder))
+    {
+        log_warning(LOG_ICONS, "Failed to process directory: %s\n", path);
+        /* Continue with subdirectories even if current fails */
+    }
+    
+    *total_icons_created += icons_this_folder;
+    
+    /* Lock directory for subdirectory enumeration */
+    lock = Lock((STRPTR)path, ACCESS_READ);
+    if (!lock)
+    {
+        log_error(LOG_ICONS, "Cannot lock directory for subdirs: %s\n", path);
+        return FALSE;
+    }
+    
+    fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
+    if (!fib)
+    {
+        log_error(LOG_ICONS, "Cannot allocate FIB for subdirs\n");
+        UnLock(lock);
+        return FALSE;
+    }
+    
+    if (!Examine(lock, fib))
+    {
+        log_error(LOG_ICONS, "Cannot examine directory for subdirs: %s\n", path);
+        FreeDosObject(DOS_FIB, fib);
+        UnLock(lock);
+        return FALSE;
+    }
+    
+    /* Process subdirectories */
+    while (ExNext(lock, fib))
+    {
+        CHECK_CANCEL();
+        
+        /* Skip files - only process directories */
+        if (fib->fib_DirEntryType <= 0)
+            continue;
+        
+        /* Build subdirectory path */
+        snprintf(subdir, sizeof(subdir), "%s/%s", path, fib->fib_FileName);
+        
+        /* Apply skipHiddenFolders logic if enabled */
+        if (prefs->skipHiddenFolders)
+        {
+            char info_path[520];
+            BPTR info_lock;
+            
+            snprintf(info_path, sizeof(info_path), "%s.info", subdir);
+            info_lock = Lock((STRPTR)info_path, ACCESS_READ);
+            
+            if (!info_lock)
+            {
+                log_debug(LOG_ICONS, "Skipping hidden folder: %s\n", fib->fib_FileName);
+                continue;
+            }
+            UnLock(info_lock);
+        }
+        
+        /* Recurse into subdirectory */
+        CreateMissingIconsRecursive(subdir, prefs, recursion_level + 1, total_icons_created);
+    }
+    
+    /* Cleanup */
+    FreeDosObject(DOS_FIB, fib);
+    UnLock(lock);
+    
+    return TRUE;
 }

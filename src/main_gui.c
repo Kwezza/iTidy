@@ -786,8 +786,8 @@ int main(int argc, char **argv)
         log_info(LOG_GUI, "DefIcons cache loaded successfully: %d types\n", g_cached_deficons_count);
         CONSOLE_STATUS("DefIcons cache loaded: %d types\n", g_cached_deficons_count);
         
-#ifdef DEBUG
-        /* Dump DefIcons tree structure for debugging */
+#ifdef DEBUG_DEFICONS_TREE_DUMP
+        /* Dump DefIcons tree structure for debugging (disabled by default to avoid log flooding) */
         {
             int i, j;
             int root_count = 0;

@@ -3,8 +3,8 @@
 ################################################################################
 
 # Console output: Set CONSOLE=1 to enable printf output (opens console window)
-# Default: ENABLED for debugging Workbench launch issues
-CONSOLE ?= 1
+# Default: DISABLED for release builds
+CONSOLE ?= 0
 
 # Project name
 PROJECT = iTidy
@@ -58,7 +58,10 @@ CORE_SRCS = \
 	$(SRC_DIR)/aspect_ratio_layout.c \
 	$(SRC_DIR)/folder_scanner.c \
 	$(SRC_DIR)/string_functions.c \
-	$(SRC_DIR)/deficons_parser.c
+	$(SRC_DIR)/deficons_parser.c \
+	$(SRC_DIR)/deficons_identify.c \
+	$(SRC_DIR)/deficons_templates.c \
+	$(SRC_DIR)/deficons_filters.c
 
 # Backup system source files
 BACKUP_SRCS = \
