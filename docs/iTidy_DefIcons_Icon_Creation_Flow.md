@@ -212,3 +212,196 @@ For this project, working examples and format documentation already exist in the
 
 - Other files in `Tests\DefIcons\`  
   Additional helpers and experiments that can be referenced as needed.
+
+---
+
+## Implementation Progress Report
+
+### ✅ Completed Components (as of February 2026)
+
+#### 1. DefIcons Preferences Parser (`src/deficons_parser.c`)
+**Status: Complete and integrated**
+
+Implementation notes:
+- Parses `ENV:Sys/deficons.prefs` binary format successfully
+- Falls back to `ENVARC:Sys/deficons.prefs` if ENV: version unavailable
+- Builds hierarchical tree structure with parent-child relationships
+- Caches parsed tree globally (`g_cached_deficons_tree` in `main_gui.c`)
+- Called once at startup to populate cache for GUI and runtime use
+
+**Amendment to original plan:**
+- Tree structure uses `DeficonTypeTreeNode` with fields: `name[64]`, `parent_index`, `generation`
+- Generation field is 1-based (root=1, children=2, grandchildren=3+) per ListBrowser API requirements
+- Total of 124 type nodes loaded from standard Workbench 3.2 DefIcons configuration
+- Tree includes 1 root ("Type"), 14 second-level categories (sound, picture, archive, etc.), and 108+ leaf types
+
+#### 2. DefIcons Settings Window GUI (`src/GUI/deficons_settings_window.c`)
+**Status: Complete and working**
+
+Implementation notes:
+- Full ReAction-based GUI using ListBrowser hierarchical tree display
+- Displays all 124 DefIcons types in collapsible tree structure
+- Checkboxes on second-level nodes (generation 2) allow enabling/disabling entire categories
+- "Select All" / "Select None" buttons for bulk operations
+- Folder icon creation mode chooser (tri-state: Smart/Always/Never)
+- OK/Cancel buttons with working copy pattern (changes only saved on OK)
+- State persists to `LayoutPreferences.deficons_disabled_types` (CSV string format)
+
+**Amendment to original plan:**
+- Category filters implemented as **checkboxes on parent categories** rather than separate UI panel
+- Users can disable categories like "sound", "picture", "archive" directly in the tree
+- Leaf types inherit enabled/disabled state from their parent category
+- This provides better user experience than abstract category checkboxes
+
+**Technical lessons learned:**
+- ListBrowser generations MUST be 1-based (not 0-based) per autodoc
+- Use `HideAllListBrowserChildren()` API for collapsing tree nodes
+- Checkbox events handled via `LISTBROWSER_RelEvent` (LBRE_CHECKED/LBRE_UNCHECKED)
+- UI state check must ignore `enable_deficons_icon_creation` master flag to show correct checkbox states
+
+#### 3. Preferences Storage Integration
+**Status: Complete**
+
+Implementation notes:
+- `LayoutPreferences.deficons_disabled_types[256]` stores comma-separated list of disabled categories
+- Example: `"sound,ascii,font"` means these three types are disabled
+- Empty string means all types enabled
+- Helper functions in `src/layout_preferences.c`:
+  - `add_disabled_deficon_type()` - Adds type to CSV list
+  - `remove_disabled_deficon_type()` - Removes type from CSV list
+  - `clear_disabled_deficon_types()` - Clears entire list
+  - `is_deficon_type_enabled()` - Runtime check (respects master enable flag)
+  - `is_deficon_type_checked_for_ui()` - UI check (ignores master flag, shows actual selection)
+
+**Amendment to original plan:**
+- Master enable/disable flag: `LayoutPreferences.enable_deficons_icon_creation`
+- Folder icon mode: `LayoutPreferences.deficons_folder_icon_mode` (0=Smart, 1=Always, 2=Never)
+- System path exclusion: `LayoutPreferences.deficons_skip_system_assigns` (TRUE = skip SYS:, C:, etc.)
+
+### 🚧 Pending Components
+
+#### 4. DefIcons ARexx Integration (Icon Creation Runtime)
+**Status: Not yet implemented**
+
+Remaining work:
+- Implement direct ARexx messaging to `DEFICONS` port (Option B from plan)
+- Create functions to:
+  - `FindPort("DEFICONS")` at startup
+  - Send `Identify "<path>"` commands via RexxMsg
+  - Cache results by token and/or extension
+  - Handle missing DefIcons gracefully (disable feature)
+- Integration point: New module `src/deficons_identify.c` (suggested)
+
+Reference implementation:
+- `Tests\DefIcons\Test2\deficons_creator.c` contains working ARexx messaging code
+- Can be adapted for iTidy's memory management system (whd_malloc/whd_free)
+
+#### 5. Template Icon Resolution and Caching
+**Status: Not yet implemented**
+
+Remaining work:
+- Scan template locations at startup:
+  - `ENV:Sys/def_<type>.info`
+  - `ENVARC:Sys/def_<type>.info`
+- Build cache: `resolved_template_for_token[token] = path`
+- Implement parent chain walking:
+  - If `def_<token>.info` missing, try `def_<parent>.info`
+  - Continue until match found or root reached
+- Fallback logic:
+  - Executables → `def_tool.info`
+  - Others → `def_project.info`
+- Integration point: New module `src/deficons_templates.c` (suggested)
+
+#### 6. Icon Creation Main Loop
+**Status: Not yet implemented**
+
+Remaining work:
+- Add optional pre-pass before icon layout processing
+- For each folder entry:
+  - Skip if `.info` already exists (never overwrite)
+  - Skip if type is disabled in preferences
+  - For drawers: apply folder mode logic (Smart/Always/Never)
+  - For files: Call Identify, resolve template, copy `.info` file
+- Performance optimizations:
+  - Cache Identify results by extension
+  - Batch process files in same folder
+  - Use Fast RAM allocations (already available via whd_malloc)
+- Integration point: Add to `src/layout_processor.c` as optional pre-pass
+
+#### 7. Safety and Filtering Logic
+**Status: Partially implemented**
+
+Completed:
+- `deficons_skip_system_assigns` preference flag exists
+- Category filtering via `deficons_disabled_types`
+
+Remaining work:
+- Implement system path exclusion check (SYS:, C:, S:, DEVS:, LIBS:)
+- Add user path inclusion/exclusion list (optional future enhancement)
+- Cycle protection during parent chain walking
+
+#### 8. User Experience and UI Integration
+**Status: Partially implemented**
+
+Completed:
+- DefIcons Settings window accessible from main GUI
+- Progress feedback ready (iTidy already has progress window system)
+
+Remaining work:
+- Add main GUI checkbox: "Create icons for iconless files" (enable feature)
+- Show icon creation count in progress window
+- Add statistics: "Created 47 icons (23 pictures, 12 music, 8 archives, 4 documents)"
+- Optional: Preview mode showing which icons would be created
+
+### 📋 Next Steps (Recommended Implementation Order)
+
+1. **DefIcons ARexx Integration** (`src/deficons_identify.c`)
+   - Port working code from `Test2/deficons_creator.c`
+   - Add startup check for `DEFICONS` port availability
+   - Implement token caching system
+
+2. **Template Resolution** (`src/deficons_templates.c`)
+   - Scan ENV:/ENVARC: for available templates at startup
+   - Build resolution cache with parent chain walking
+   - Add fallback logic
+
+3. **Icon Creation Loop** (integrate into `src/layout_processor.c`)
+   - Add pre-pass option before layout processing
+   - Apply filtering logic (disabled types, system paths)
+   - Implement folder mode logic (Smart/Always/Never)
+   - Copy template `.info` files to target entries
+
+4. **Main GUI Integration**
+   - Add "Create icons first" checkbox to main window
+   - Wire checkbox to `enable_deficons_icon_creation` preference
+   - Update progress window to show icon creation statistics
+
+5. **Testing and Refinement**
+   - Test on large folder trees (performance validation)
+   - Test with missing DefIcons port (graceful degradation)
+   - Test with custom DefIcons configurations
+   - Validate folder mode "Smart" logic
+
+### 📝 Documentation Status
+
+- ✅ DefIcons Settings GUI documented in code comments
+- ✅ ReAction patterns documented in `docs/Reaction_tips.md`
+- ✅ Memory management patterns documented
+- 🚧 End-user documentation pending (iTidy.guide update needed)
+- 🚧 Developer integration guide pending
+
+### 🎯 Current State Summary
+
+**What works now:**
+- Users can open DefIcons Settings window
+- Users can enable/disable entire file type categories (sound, picture, etc.)
+- Settings persist between sessions
+- Tree displays all 124 DefIcons types with correct hierarchy
+
+**What's still needed:**
+- Runtime icon creation (ARexx integration)
+- Template scanning and resolution
+- Main execution loop integration
+- Performance optimization and caching
+
+**Estimated completion:** Icon creation runtime is approximately 40% complete. GUI and preferences system (critical foundation) is 100% complete. Remaining work focuses on ARexx integration and template resolution logic, both of which have working reference implementations in `Tests/DefIcons/`.

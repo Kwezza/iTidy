@@ -184,6 +184,40 @@ static void hide_all_listbrowser_children(struct List *list)
 }
 
 /*
+ * Expand generation 1 nodes to show generation 2 (the checkbox level)
+ * This makes the checkboxes visible on window open.
+ */
+static void expand_root_nodes(struct List *list)
+{
+    struct Node *node;
+    
+    if (list == NULL)
+    {
+        return;
+    }
+    
+    /* Find all generation 1 nodes (root level) and show their children */
+    for (node = list->lh_Head; node->ln_Succ; node = node->ln_Succ)
+    {
+        ULONG generation = 0;
+        ULONG flags = 0;
+        
+        GetListBrowserNodeAttrs(node,
+            LBNA_Generation, &generation,
+            LBNA_Flags, &flags,
+            TAG_DONE);
+        
+        /* If this is a generation 1 node with children, show them */
+        if (generation == 1 && (flags & LBFLG_HASCHILDREN))
+        {
+            /* Show only next generation (depth = 1) */
+            ShowListBrowserNodeChildren(node, 1);
+            log_debug(LOG_GUI, "Expanded root node to show generation 2 checkboxes\n");
+        }
+    }
+}
+
+/*
  * Build hierarchical ListBrowser node list from DefIcons cache
  */
 static BOOL is_deficon_type_checked_for_ui(const LayoutPreferences *prefs, const char *type_name)
@@ -506,6 +540,17 @@ static BOOL create_window(DefIconsSettingsWindow *win)
     SetGadgetAttrs((struct Gadget *)win->tree_listbrowser, win->window, NULL,
         LISTBROWSER_Labels, win->tree_list,
         LISTBROWSER_ColumnInfo, win->column_info,
+        TAG_DONE);
+    
+    /* Expand root nodes to show generation 2 checkboxes on open */
+    expand_root_nodes(win->tree_list);
+    
+    /* Refresh the gadget to show the expanded tree */
+    SetGadgetAttrs((struct Gadget *)win->tree_listbrowser, win->window, NULL,
+        LISTBROWSER_Labels, ~0,  /* Detach */
+        TAG_DONE);
+    SetGadgetAttrs((struct Gadget *)win->tree_listbrowser, win->window, NULL,
+        LISTBROWSER_Labels, win->tree_list,  /* Reattach */
         TAG_DONE);
     
     {
