@@ -644,7 +644,7 @@ BOOL deficons_copy_icon_file(const char *source_path, const char *dest_path)
     }
     
     success = TRUE;
-    log_debug(LOG_ICONS, "Icon copied: %s → %s\n", source_path, dest_path);
+    log_debug(LOG_ICONS, "Icon copied: %s -> %s\n", source_path, dest_path);
     
 cleanup:
     if (dest_file) Close(dest_file);

@@ -145,12 +145,13 @@ static IconCreationStats g_iconCreationStats[MAX_DEFICON_CATEGORIES];
 static int g_iconCreationStatCount = 0;
 static ULONG g_iconsCreatedTotal = 0;
 
-/* Helper macro for dual output (console + progress window) */
+/* Helper macro for triple output (console + progress window + log file) */
 #define PROGRESS_STATUS(...) \
     do { \
         char _buf[256]; \
         snprintf(_buf, sizeof(_buf), __VA_ARGS__); \
         CONSOLE_STATUS("%s\n", _buf); \
+        log_info(LOG_GENERAL, "%s\n", _buf); \
         if (g_progressWindow) { \
             itidy_main_progress_window_append_status(g_progressWindow, _buf); \
             itidy_main_progress_window_handle_events(g_progressWindow); \
@@ -593,10 +594,8 @@ BOOL ProcessDirectoryWithPreferences(void)
     log_info(LOG_GENERAL, "Default Tool Validation: %s\n", prefs->validate_default_tools ? "YES" : "NO");
     log_info(LOG_GENERAL, "\n--- DefIcons Icon Creation Settings ---\n");
     CONSOLE_STATUS("--- DefIcons Settings ---");
-    log_info(LOG_GENERAL, "create_new_icons (checkbox): %s\n", prefs->create_new_icons ? "YES" : "NO");
-    CONSOLE_STATUS("create_new_icons: %s", prefs->create_new_icons ? "YES" : "NO");
-    log_info(LOG_GENERAL, "enable_deficons_icon_creation (feature): %s\n", prefs->enable_deficons_icon_creation ? "YES" : "NO");
-    CONSOLE_STATUS("enable_deficons_icon_creation: %s", prefs->enable_deficons_icon_creation ? "YES" : "NO");
+    log_info(LOG_GENERAL, "DefIcons icon creation: %s\n", prefs->enable_deficons_icon_creation ? "YES" : "NO");
+    CONSOLE_STATUS("DefIcons icon creation: %s", prefs->enable_deficons_icon_creation ? "YES" : "NO");
     log_info(LOG_GENERAL, "Disabled Types: '%s'\n", prefs->deficons_disabled_types);
     log_info(LOG_GENERAL, "Folder Icon Mode: %u (%s)\n", prefs->deficons_folder_icon_mode,
              prefs->deficons_folder_icon_mode == 0 ? "Smart" :
@@ -2942,8 +2941,14 @@ static BOOL CreateMissingIconsInDirectory(const char *path,
     {
         CHECK_CANCEL();
         
-        /* Build full path */
-        snprintf(fullpath, sizeof(fullpath), "%s/%s", path, fib->fib_FileName);
+        /* Build full path using AddPart() for proper Amiga path handling */
+        strncpy(fullpath, path, sizeof(fullpath) - 1);
+        fullpath[sizeof(fullpath) - 1] = '\0';
+        if (!AddPart(fullpath, fib->fib_FileName, sizeof(fullpath)))
+        {
+            log_error(LOG_ICONS, "Path too long for: %s", fib->fib_FileName);
+            continue;
+        }
         
         /* Skip .info files themselves */
         if (strstr(fib->fib_FileName, ".info"))
@@ -2984,7 +2989,7 @@ static BOOL CreateMissingIconsInDirectory(const char *path,
                 continue;
             }
             
-            log_info(LOG_ICONS, "DefIcons identified: %s → type '%s'\n", fib->fib_FileName, type_token);
+            log_info(LOG_ICONS, "DefIcons identified: %s -> type '%s'\n", fib->fib_FileName, type_token);
             
             /* Apply type filters */
             if (!deficons_should_create_icon(type_token, prefs))
@@ -3003,7 +3008,7 @@ static BOOL CreateMissingIconsInDirectory(const char *path,
             continue;
         }
         
-        log_info(LOG_ICONS, "Template resolved: %s → %s\n", type_token, template_path);
+        log_info(LOG_ICONS, "Template resolved: %s -> %s\n", type_token, template_path);
         
         /* Copy template to create .info */
         if (deficons_copy_icon_file(template_path, info_path))
@@ -3012,7 +3017,7 @@ static BOOL CreateMissingIconsInDirectory(const char *path,
             
             local_created++;
             PROGRESS_STATUS("  Created icon: %s (%s)", fib->fib_FileName, type_token);
-            log_info(LOG_ICONS, "Created icon: %s → %s\n", template_path, info_path);
+            log_info(LOG_ICONS, "Created icon: %s -> %s\n", template_path, info_path);
             
             /* Log to dedicated icon creation file (for testing/delete scripts) */
             {
@@ -3045,7 +3050,7 @@ static BOOL CreateMissingIconsInDirectory(const char *path,
         }
         else
         {
-            log_error(LOG_ICONS, "Failed to copy icon template: %s → %s\n", 
+            log_error(LOG_ICONS, "Failed to copy icon template: %s -> %s\n", 
                      template_path, info_path);
         }
     }
@@ -3142,8 +3147,14 @@ static BOOL CreateMissingIconsRecursive(const char *path,
         if (fib->fib_DirEntryType <= 0)
             continue;
         
-        /* Build subdirectory path */
-        snprintf(subdir, sizeof(subdir), "%s/%s", path, fib->fib_FileName);
+        /* Build subdirectory path using AddPart() for proper Amiga path handling */
+        strncpy(subdir, path, sizeof(subdir) - 1);
+        subdir[sizeof(subdir) - 1] = '\0';
+        if (!AddPart(subdir, fib->fib_FileName, sizeof(subdir)))
+        {
+            log_error(LOG_ICONS, "Path too long for subdir: %s", fib->fib_FileName);
+            continue;
+        }
         
         /* Apply skipHiddenFolders logic if enabled */
         if (prefs->skipHiddenFolders)

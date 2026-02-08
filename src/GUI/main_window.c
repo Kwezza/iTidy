@@ -402,7 +402,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     win_data->sortby_selected = 0;
     win_data->recursive_subdirs = FALSE;
     win_data->enable_backup = FALSE;
-    win_data->create_new_icons = FALSE;
+    win_data->enable_deficons_icon_creation = FALSE;
     win_data->window_position_selected = 0;
     strcpy(win_data->folder_path_buffer, "SYS:");
     
@@ -663,7 +663,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                             GA_Text, "",
                             GA_RelVerify, TRUE,
                             GA_TabCycle, TRUE,
-                            GA_Selected, win_data->create_new_icons,
+                            GA_Selected, win_data->enable_deficons_icon_creation,
                             CHECKBOX_TextPlace, PLACETEXT_RIGHT,
                         TAG_END),
                         CHILD_Label, NewObject(LABEL_GetClass(), NULL,
@@ -1048,13 +1048,10 @@ static BOOL load_preferences_from_file(const char *filepath, LayoutPreferences *
     
     Close(file);
     
-    /* Sync DefIcons fields after loading from file */
-    /* If either field is set, enable both to maintain consistency */
-    if (prefs->create_new_icons || prefs->enable_deficons_icon_creation)
+    /* DefIcons icon creation setting loaded from file */
+    if (prefs->enable_deficons_icon_creation)
     {
-        prefs->create_new_icons = TRUE;
-        prefs->enable_deficons_icon_creation = TRUE;
-        log_info(LOG_GUI, "Post-load sync: DefIcons icon creation enabled\n");
+        log_info(LOG_GUI, "Post-load: DefIcons icon creation enabled\n");
     }
     
     log_info(LOG_GUI, "Successfully loaded preferences from: %s\n", filepath);
@@ -1078,8 +1075,7 @@ static void sync_gui_from_preferences(struct iTidyMainWindow *win_data, const La
     win_data->sortby_selected = prefs->sortBy;
     win_data->recursive_subdirs = prefs->recursive_subdirs;
     win_data->enable_backup = prefs->enable_backup;
-    /* Sync both checkbox fields - prefer enable_deficons_icon_creation if set */
-    win_data->create_new_icons = prefs->enable_deficons_icon_creation ? TRUE : prefs->create_new_icons;
+    win_data->enable_deficons_icon_creation = prefs->enable_deficons_icon_creation;
     win_data->window_position_selected = prefs->windowPositionMode;
     
     strncpy(win_data->folder_path_buffer, prefs->folder_path, sizeof(win_data->folder_path_buffer) - 1);
@@ -1124,7 +1120,7 @@ static void sync_gui_from_preferences(struct iTidyMainWindow *win_data, const La
     {
         SetGadgetAttrs((struct Gadget *)win_data->gadgets[ITIDY_GAD_IDX_CREATE_NEW_ICONS],
                       win_data->window, NULL,
-                      GA_Selected, win_data->create_new_icons,
+                      GA_Selected, win_data->enable_deficons_icon_creation,
                       TAG_END);
     }
     
@@ -1173,8 +1169,7 @@ static void sync_gui_to_preferences(struct iTidyMainWindow *win_data, LayoutPref
     prefs->sortBy = win_data->sortby_selected;
     prefs->recursive_subdirs = win_data->recursive_subdirs;
     prefs->enable_backup = win_data->enable_backup;
-    prefs->create_new_icons = win_data->create_new_icons;
-    prefs->enable_deficons_icon_creation = win_data->create_new_icons;  /* Wire checkbox to DefIcons feature */
+    prefs->enable_deficons_icon_creation = win_data->enable_deficons_icon_creation;
     prefs->windowPositionMode = (WindowPositionMode)win_data->window_position_selected;
     
     strncpy(prefs->folder_path, win_data->folder_path_buffer, sizeof(prefs->folder_path) - 1);
@@ -1658,8 +1653,8 @@ static void handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
             {
                 ULONG selected = 0;
                 GetAttr(GA_Selected, win_data->gadgets[ITIDY_GAD_IDX_CREATE_NEW_ICONS], &selected);
-                win_data->create_new_icons = (BOOL)selected;
-                CONSOLE_DEBUG("Create new icons: %s\n", win_data->create_new_icons ? "ON" : "OFF");
+                win_data->enable_deficons_icon_creation = (BOOL)selected;
+                CONSOLE_DEBUG("Create new icons: %s\n", win_data->enable_deficons_icon_creation ? "ON" : "OFF");
             }
             break;
         

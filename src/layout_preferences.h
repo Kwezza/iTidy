@@ -192,7 +192,6 @@ typedef struct {
     /* Backup and Icon Upgrade Settings */
     BOOL enable_backup;              /* Create backup before processing */
     BOOL enable_icon_upgrade;        /* Upgrade icon formats during processing */
-    BOOL create_new_icons;           /* Create new icons for files without .info files */
     BOOL stripNewIconBorders;        /* Strip borders from NewIcons (one-way, requires icon.library v44+) */
     
     /* Advanced Settings */
@@ -272,7 +271,7 @@ typedef struct {
 #define DEFAULT_DEFICONS_LOG_CREATED_ICONS                 TRUE    /* Log created icons to separate file (useful for testing) */
 
 /* Logging and Debug Defaults */
-#define DEFAULT_LOG_LEVEL                                  3       /* Default: ERROR level (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR) */
+#define DEFAULT_LOG_LEVEL                                  1       /* Default: INFO level (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR) */
 #define DEFAULT_MEMORY_LOGGING_ENABLED                     FALSE   /* Default: Disabled (can be very verbose) */
 #define DEFAULT_PERFORMANCE_LOGGING_ENABLED                FALSE   /* Default: Disabled (performance timing logs) */
 

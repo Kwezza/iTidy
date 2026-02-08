@@ -1,3 +1,539 @@
+Compiling [build/amiga/main_gui.o] from src/main_gui.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/main_gui.c -o build/amiga/main_gui.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main_gui.c":55
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main_gui.c":55
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\main_gui.c":55
+>    CONSOLE_DEBUG("DEBUG: parse_program_tooltypes() called\n");
+warning 153 in line 303 of "src\main_gui.c": statement has no effect
+>        CONSOLE_DEBUG("DEBUG: wb_startup is NULL - launched from CLI\n");
+warning 153 in line 313 of "src\main_gui.c": statement has no effect
+>    CONSOLE_DEBUG("DEBUG: Launched from Workbench, wb_startup=0x%08lx\n", (unsi
+warning 153 in line 318 of "src\main_gui.c": statement has no effect
+>    CONSOLE_DEBUG("DEBUG: wb_startup->sm_NumArgs = %ld\n", (long)wb_startup->sm
+warning 153 in line 319 of "src\main_gui.c": statement has no effect
+>        CONSOLE_ERROR("ERROR: Failed to open icon.library!\n");
+warning 153 in line 325 of "src\main_gui.c": statement has no effect
+>    CONSOLE_DEBUG("DEBUG: icon.library opened successfully\n");
+warning 153 in line 330 of "src\main_gui.c": statement has no effect
+>        CONSOLE_DEBUG("DEBUG: Program name: %s\n", wb_startup->sm_ArgList[0].wa
+warning 153 in line 335 of "src\main_gui.c": statement has no effect
+>        CONSOLE_DEBUG("DEBUG: Changed to program directory\n");
+warning 153 in line 339 of "src\main_gui.c": statement has no effect
+>            CONSOLE_DEBUG("DEBUG: Got DiskObject successfully\n");
+warning 153 in line 346 of "src\main_gui.c": statement has no effect
+>                CONSOLE_DEBUG("DEBUG: ToolTypes array exists\n");
+warning 153 in line 353 of "src\main_gui.c": statement has no effect
+>                    CONSOLE_DEBUG("DEBUG: Found DEBUGLEVEL tooltype: %s\n", too
+warning 153 in line 359 of "src\main_gui.c": statement has no effect
+>                        CONSOLE_DEBUG("DEBUG: Set debug level to %d\n", value);
+warning 153 in line 366 of "src\main_gui.c": statement has no effect
+>                        CONSOLE_WARNING("WARNING: DEBUGLEVEL=%d out of range (0
+warning 153 in line 371 of "src\main_gui.c": statement has no effect
+>                    CONSOLE_DEBUG("DEBUG: No DEBUGLEVEL tooltype found\n");
+warning 153 in line 376 of "src\main_gui.c": statement has no effect
+>                CONSOLE_DEBUG("DEBUG: ToolTypes loaded successfully\n");
+warning 153 in line 386 of "src\main_gui.c": statement has no effect
+>                CONSOLE_WARNING("WARNING: ToolTypes array is NULL\n");
+warning 153 in line 391 of "src\main_gui.c": statement has no effect
+>            CONSOLE_DEBUG("DEBUG: DiskObject freed\n");
+warning 153 in line 396 of "src\main_gui.c": statement has no effect
+>            CONSOLE_ERROR("ERROR: GetDiskObject() returned NULL!\n");
+warning 153 in line 400 of "src\main_gui.c": statement has no effect
+>    CONSOLE_DEBUG("DEBUG: log_system_info() called\n");
+warning 153 in line 502 of "src\main_gui.c": statement has no effect
+>    CONSOLE_DEBUG("DEBUG: CPU name: %s\n", cpu_name);
+warning 153 in line 505 of "src\main_gui.c": statement has no effect
+>    CONSOLE_DEBUG("DEBUG: Chip=%lu, Fast=%lu\n", chip_free_total, fast_free_tot
+warning 153 in line 513 of "src\main_gui.c": statement has no effect
+>    CONSOLE_DEBUG("DEBUG: About to log system info...\n");
+warning 153 in line 519 of "src\main_gui.c": statement has no effect
+>    CONSOLE_DEBUG("DEBUG: System info logging complete\n");
+warning 153 in line 532 of "src\main_gui.c": statement has no effect
+>            CONSOLE_ERROR("Error reallocating memory for icon error list\n");
+warning 153 in line 549 of "src\main_gui.c": statement has no effect
+>        CONSOLE_ERROR("Error allocating memory for icon file path\n");
+warning 153 in line 578 of "src\main_gui.c": statement has no effect
+>    CONSOLE_PRINTF("\n*** iTidy starting up ***\n");
+warning 153 in line 627 of "src\main_gui.c": statement has no effect
+>    CONSOLE_PRINTF("argc = %d\n", argc);
+warning 153 in line 628 of "src\main_gui.c": statement has no effect
+>        CONSOLE_PRINTF("Detected Workbench launch via _WBenchMsg\n");
+warning 153 in line 634 of "src\main_gui.c": statement has no effect
+>        CONSOLE_PRINTF("WBStartup message: 0x%08lx\n", (unsigned long)wb_startu
+warning 153 in line 636 of "src\main_gui.c": statement has no effect
+>        CONSOLE_PRINTF("ERROR: argc==0 but _WBenchMsg is NULL!\n");
+warning 153 in line 640 of "src\main_gui.c": statement has no effect
+>        CONSOLE_PRINTF("Launched from CLI\n");
+warning 153 in line 644 of "src\main_gui.c": statement has no effect
+>    CONSOLE_NEWLINE();
+warning 153 in line 653 of "src\main_gui.c": statement has no effect
+>        CONSOLE_ERROR("Failed to setup timer\n");
+warning 153 in line 658 of "src\main_gui.c": statement has no effect
+>        CONSOLE_ERROR("Error: Failed to allocate memory for fontPrefs\n");
+warning 153 in line 666 of "src\main_gui.c": statement has no effect
+>        CONSOLE_ERROR("Error allocating memory for icon error list\n");
+warning 153 in line 678 of "src\main_gui.c": statement has no effect
+>    CONSOLE_SEPARATOR();
+warning 153 in line 683 of "src\main_gui.c": statement has no effect
+>    CONSOLE_BANNER("   iTidy GUI V%s - Amiga Workbench Icon Tidier\n", VERSION)
+warning 153 in line 684 of "src\main_gui.c": statement has no effect
+>    CONSOLE_SEPARATOR();
+warning 153 in line 685 of "src\main_gui.c": statement has no effect
+>    CONSOLE_NEWLINE();
+warning 153 in line 686 of "src\main_gui.c": statement has no effect
+>    CONSOLE_BANNER("   by Kerry Thompson\n");
+warning 153 in line 687 of "src\main_gui.c": statement has no effect
+>    CONSOLE_BANNER("   compiled: %s at %s\n\n", __DATE__, __TIME__);
+warning 153 in line 688 of "src\main_gui.c": statement has no effect
+>        CONSOLE_ERROR("This program requires Workbench 3.0 or higher.\n");
+warning 153 in line 740 of "src\main_gui.c": statement has no effect
+>    CONSOLE_STATUS("Initializing preferences with defaults...\n");
+warning 153 in line 779 of "src\main_gui.c": statement has no effect
+>    CONSOLE_STATUS("Loading DefIcons type tree cache...\n");
+warning 153 in line 783 of "src\main_gui.c": statement has no effect
+>        CONSOLE_STATUS("DefIcons cache loaded: %d types\n", g_cached_deficons_c
+warning 153 in line 787 of "src\main_gui.c": statement has no effect
+>        CONSOLE_STATUS("DefIcons not available (requires Workbench 3.2+)\n");
+warning 153 in line 864 of "src\main_gui.c": statement has no effect
+>    CONSOLE_STATUS("Initializing ReAction libraries...\n");
+warning 153 in line 868 of "src\main_gui.c": statement has no effect
+>        CONSOLE_ERROR("Failed to initialize ReAction libraries\n");
+warning 153 in line 871 of "src\main_gui.c": statement has no effect
+>        CONSOLE_ERROR("iTidy requires Workbench 3.2 or later with ReAction clas
+warning 153 in line 872 of "src\main_gui.c": statement has no effect
+>    CONSOLE_STATUS("Opening iTidy GUI window...\n");
+warning 153 in line 886 of "src\main_gui.c": statement has no effect
+>        CONSOLE_ERROR("Failed to open GUI window\n");
+warning 153 in line 889 of "src\main_gui.c": statement has no effect
+>    CONSOLE_STATUS("GUI window opened successfully.\n");
+warning 153 in line 903 of "src\main_gui.c": statement has no effect
+>    CONSOLE_STATUS("Click the close gadget to exit.\n\n");
+warning 153 in line 904 of "src\main_gui.c": statement has no effect
+>    CONSOLE_DEBUG("DEBUG: About to call log_system_info()...\n");
+warning 153 in line 907 of "src\main_gui.c": statement has no effect
+>    CONSOLE_DEBUG("DEBUG: log_system_info() completed\n");
+warning 153 in line 909 of "src\main_gui.c": statement has no effect
+>    CONSOLE_STATUS("\nClosing GUI window...\n");
+warning 153 in line 924 of "src\main_gui.c": statement has no effect
+>    CONSOLE_STATUS("Cleaning up ReAction libraries...\n");
+warning 153 in line 928 of "src\main_gui.c": statement has no effect
+>    CONSOLE_STATUS("Cleaning up DefIcons cache...\n");
+warning 153 in line 932 of "src\main_gui.c": statement has no effect
+>    CONSOLE_STATUS("\niTidy GUI shutdown complete\n\n");
+warning 153 in line 1007 of "src\main_gui.c": statement has no effect
+Compiling [build/amiga/icon_types.o] from src/icon_types.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_types.c -o build/amiga/icon_types.o
+>        CONSOLE_ERROR("Invalid filePath or newIconSize pointer.\n");
+warning 153 in line 37 of "src\icon_types.c": statement has no effect
+>        CONSOLE_ERROR("Memory allocation failed.\n");
+warning 153 in line 46 of "src\icon_types.c": statement has no effect
+>        CONSOLE_ERROR("Failed to get DiskObject for the file: %s\n", filePathCo
+warning 153 in line 71 of "src\icon_types.c": statement has no effect
+>        CONSOLE_WARNING("Invalid or missing ToolTypes in DiskObject.\n");
+warning 153 in line 79 of "src\icon_types.c": statement has no effect
+>        CONSOLE_ERROR("Failed to allocate memory for path copy.\n");
+warning 153 in line 231 of "src\icon_types.c": statement has no effect
+>        CONSOLE_ERROR("Unable to load icon. Corrupted or unknown format: %s.inf
+warning 153 in line 252 of "src\icon_types.c": statement has no effect
+>        CONSOLE_ERROR("Error opening file: %s\n", filename);
+warning 153 in line 379 of "src\icon_types.c": statement has no effect
+>        CONSOLE_ERROR("Error opening file: %s\n", filename);
+warning 153 in line 438 of "src\icon_types.c": statement has no effect
+>        CONSOLE_ERROR("Error reading file: %s\n", filename);
+warning 153 in line 537 of "src\icon_types.c": statement has no effect
+>        CONSOLE_ERROR("Error opening file: %s\n", filename);
+warning 153 in line 610 of "src\icon_types.c": statement has no effect
+Compiling [build/amiga/icon_misc.o] from src/icon_misc.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_misc.c -o build/amiga/icon_misc.o
+>            CONSOLE_WARNING("Device name truncated to fit buffer.\n");
+warning 153 in line 37 of "src\icon_misc.c": statement has no effect
+>        CONSOLE_ERROR("No colon found in the provided path: %s\n", path);
+warning 153 in line 40 of "src\icon_misc.c": statement has no effect
+>        CONSOLE_ERROR("Could not determine device name for path: %s\n", file_pa
+warning 153 in line 58 of "src\icon_misc.c": statement has no effect
+>        CONSOLE_ERROR("Backdrop path too long.\n");
+warning 153 in line 68 of "src\icon_misc.c": statement has no effect
+Compiling [build/amiga/icon_management.o] from src/icon_management.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_management.c -o build/amiga/icon_management.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\icon_management.c":27
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\icon_management.c":27
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\icon_management.c":27
+>        CONSOLE_ERROR("Failed to create icon array.\n");
+warning 153 in line 181 of "src\icon_management.c": statement has no effect
+>        CONSOLE_ERROR("Failed to allocate AnchorPath for pattern matching.\n");
+warning 153 in line 238 of "src\icon_management.c": statement has no effect
+>                            CONSOLE_ERROR("Failed to allocate memory for icon f
+warning 153 in line 646 of "src\icon_management.c": statement has no effect
+>                            CONSOLE_ERROR("Failed to allocate memory for icon t
+warning 153 in line 672 of "src\icon_management.c": statement has no effect
+>                            CONSOLE_ERROR("Failed to add icon to array.\n");
+warning 153 in line 705 of "src\icon_management.c": statement has no effect
+>                   elapsedMillis, elapsedMicros % 1000, (unsigned long)iconArra
+warning 153 in line 860 of "src\icon_management.c": statement has no effect
+>        CONSOLE_ERROR("Memory allocation failed\n");
+warning 153 in line 919 of "src\icon_management.c": statement has no effect
+>        CONSOLE_ERROR("Failed to open icon.library\n");
+warning 153 in line 933 of "src\icon_management.c": statement has no effect
+>        CONSOLE_ERROR("Failed to retrieve frame information; error code: %ld\n"
+warning 153 in line 986 of "src\icon_management.c": statement has no effect
+Compiling [build/amiga/file_directory_handling.o] from src/file_directory_handling.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/file_directory_handling.c -o build/amiga/file_directory_handling.o
+>            CONSOLE_ERROR("Invalid icon: %s\n", currentIcon->icon_full_path);
+warning 153 in line 298 of "src\file_directory_handling.c": statement has no effect
+>               elapsedMillis, elapsedMicros % 1000, iconArraySize);
+warning 153 in line 337 of "src\file_directory_handling.c": statement has no effect
+>        CONSOLE_ERROR("Unable to allocate FileInfoBlock.\n");
+warning 153 in line 916 of "src\file_directory_handling.c": statement has no effect
+>            CONSOLE_ERROR("Unable to allocate memory for pathWithoutInfo.\n");
+warning 153 in line 927 of "src\file_directory_handling.c": statement has no effect
+>            CONSOLE_ERROR("Unable to allocate memory for pathWithoutInfo.\n");
+warning 153 in line 942 of "src\file_directory_handling.c": statement has no effect
+>        CONSOLE_ERROR("Examine() failed.\n");
+warning 153 in line 975 of "src\file_directory_handling.c": statement has no effect
+Compiling [build/amiga/window_management.o] from src/window_management.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/window_management.c -o build/amiga/window_management.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\window_management.c":21
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\window_management.c":21
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\window_management.c":21
+>        CONSOLE_ERROR("Failed to allocate IFF parser.\n");
+warning 153 in line 315 of "src\window_management.c": statement has no effect
+>        CONSOLE_WARNING("Failed to open ENV:sys/font.prefs. Using default: %s, 
+warning 153 in line 323 of "src\window_management.c": statement has no effect
+>        CONSOLE_ERROR("Failed to open IFF structure.\n");
+warning 153 in line 333 of "src\window_management.c": statement has no effect
+>    CONSOLE_DEBUG("Workbench Icon Font: %s, Size: %d\n", fontName, *fontSize);
+warning 153 in line 365 of "src\window_management.c": statement has no effect
+>               fontPrefs->name, (int)fontPrefs->size);
+warning 153 in line 402 of "src\window_management.c": statement has no effect
+>        CONSOLE_WARNING("Failed to load Workbench Icon Font, using default scre
+warning 153 in line 406 of "src\window_management.c": statement has no effect
+>        CONSOLE_ERROR("Failed to lock Workbench screen.\n");
+warning 153 in line 424 of "src\window_management.c": statement has no effect
+>        CONSOLE_ERROR("Failed to open window.\n");
+warning 153 in line 445 of "src\window_management.c": statement has no effect
+>        CONSOLE_ERROR("RastPort failed to create.\n");
+warning 153 in line 453 of "src\window_management.c": statement has no effect
+Compiling [build/amiga/utilities.o] from src/utilities.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/utilities.c -o build/amiga/utilities.o
+>        CONSOLE_ERROR("RastPort is not initialized.\n");
+warning 153 in line 222 of "src\utilities.c": statement has no effect
+Compiling [build/amiga/path_utilities.o] from src/path_utilities.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/path_utilities.c -o build/amiga/path_utilities.o
+Compiling [build/amiga/spinner.o] from src/spinner.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/spinner.c -o build/amiga/spinner.o
+>        CONSOLE_STATUS("\r  %c\r", cursorChars[currentCursor]);
+warning 153 in line 39 of "src\spinner.c": statement has no effect
+>    CONSOLE_STATUS("\r  \r");
+warning 153 in line 45 of "src\spinner.c": statement has no effect
+>        CONSOLE_ERROR("Failed to open timer.device\n");
+warning 153 in line 52 of "src\spinner.c": statement has no effect
+Compiling [build/amiga/writeLog.o] from src/writeLog.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/writeLog.c -o build/amiga/writeLog.o
+Compiling [build/amiga/cli_utilities.o] from src/cli_utilities.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/cli_utilities.c -o build/amiga/cli_utilities.o
+>        CONSOLE_DEBUG("i=%d", i);
+warning 153 in line 82 of "src\cli_utilities.c": statement has no effect
+>            CONSOLE_DEBUG(" bold on ");
+warning 153 in line 91 of "src\cli_utilities.c": statement has no effect
+>            CONSOLE_DEBUG("new i=%d\n", i);
+warning 153 in line 92 of "src\cli_utilities.c": statement has no effect
+>            CONSOLE_DEBUG("i=%d\n", i);
+warning 153 in line 98 of "src\cli_utilities.c": statement has no effect
+>            CONSOLE_DEBUG(" bold off ");
+warning 153 in line 103 of "src\cli_utilities.c": statement has no effect
+>            CONSOLE_DEBUG("new i=%d\n", i);
+warning 153 in line 104 of "src\cli_utilities.c": statement has no effect
+>            CONSOLE_DEBUG("c=%c;", c);
+warning 153 in line 123 of "src\cli_utilities.c": statement has no effect
+>                        CONSOLE_STATUS("Press any key to continue...");
+warning 153 in line 149 of "src\cli_utilities.c": statement has no effect
+>                        CONSOLE_STATUS("\r                           \r");
+warning 153 in line 154 of "src\cli_utilities.c": statement has no effect
+>                        CONSOLE_STATUS("Press any key to continue...");
+warning 153 in line 179 of "src\cli_utilities.c": statement has no effect
+>                        CONSOLE_STATUS("\r                           \r");
+warning 153 in line 182 of "src\cli_utilities.c": statement has no effect
+>        CONSOLE_DEBUG("[ Print left over ]");
+warning 153 in line 205 of "src\cli_utilities.c": statement has no effect
+>            CONSOLE_STATUS("Press any key to continue...");
+warning 153 in line 215 of "src\cli_utilities.c": statement has no effect
+>            CONSOLE_STATUS("\r                           \r");
+warning 153 in line 218 of "src\cli_utilities.c": statement has no effect
+>        CONSOLE_DEBUG(" [Step 1] ");
+warning 153 in line 264 of "src\cli_utilities.c": statement has no effect
+>        CONSOLE_DEBUG(" [Step 2] ");
+warning 153 in line 266 of "src\cli_utilities.c": statement has no effect
+>        CONSOLE_DEBUG(" [Step 3] ");
+warning 153 in line 269 of "src\cli_utilities.c": statement has no effect
+>        CONSOLE_DEBUG(" [no p found] ");
+warning 153 in line 274 of "src\cli_utilities.c": statement has no effect
+Compiling [build/amiga/layout_preferences.o] from src/layout_preferences.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/layout_preferences.c -o build/amiga/layout_preferences.o
+Compiling [build/amiga/layout_processor.o] from src/layout_processor.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/layout_processor.c -o build/amiga/layout_processor.o
+>    PROGRESS_STATUS("  Icons created: %lu", g_iconsCreatedTotal)
+warning 153 in line 283 of "src\layout_processor.c": statement has no effect
+>                          g_iconCreationStats[i].count)
+warning 153 in line 290 of "src\layout_processor.c": statement has no effect
+>        CONSOLE_ERROR("Error: NULL progress window pointer\n");
+warning 153 in line 451 of "src\layout_processor.c": statement has no effect
+>        CONSOLE_ERROR("Error: Failed to get global preferences\n");
+warning 153 in line 481 of "src\layout_processor.c": statement has no effect
+>        CONSOLE_ERROR("Error: No folder path set in preferences\n");
+warning 153 in line 488 of "src\layout_processor.c": statement has no effect
+>    CONSOLE_STATUS("=== Current Preferences Settings ===");
+warning 153 in line 578 of "src\layout_processor.c": statement has no effect
+>    CONSOLE_STATUS("Target Path: %s", sanitizedPath);
+warning 153 in line 581 of "src\layout_processor.c": statement has no effect
+>    CONSOLE_STATUS("Recursive Mode: %s", prefs->recursive_subdirs ? "YES" : "NO
+warning 153 in line 583 of "src\layout_processor.c": statement has no effect
+>    CONSOLE_STATUS("Sort By: %d", prefs->sortBy);
+warning 153 in line 590 of "src\layout_processor.c": statement has no effect
+>    CONSOLE_STATUS("Backup Enabled: %s", prefs->backupPrefs.enableUndoBackup ? 
+warning 153 in line 593 of "src\layout_processor.c": statement has no effect
+>    CONSOLE_STATUS("--- DefIcons Settings ---");
+warning 153 in line 596 of "src\layout_processor.c": statement has no effect
+>    CONSOLE_STATUS("DefIcons icon creation: %s", prefs->enable_deficons_icon_cr
+warning 153 in line 598 of "src\layout_processor.c": statement has no effect
+>    CONSOLE_STATUS("===================================");
+warning 153 in line 606 of "src\layout_processor.c": statement has no effect
+>        CONSOLE_STATUS("\n*** Backup enabled - creating backup session ***\n");
+warning 153 in line 611 of "src\layout_processor.c": statement has no effect
+>        CONSOLE_STATUS("Backup location: %s\n", prefs->backupPrefs.backupRootPa
+warning 153 in line 612 of "src\layout_processor.c": statement has no effect
+>            CONSOLE_STATUS("Backup session started successfully (Run #%u)\n", l
+warning 153 in line 624 of "src\layout_processor.c": statement has no effect
+>            CONSOLE_STATUS("Backup directory: %s\n", localContext.runDirectory)
+warning 153 in line 625 of "src\layout_processor.c": statement has no effect
+>            CONSOLE_STATUS("Source directory: %s\n", sanitizedPath);
+warning 153 in line 626 of "src\layout_processor.c": statement has no effect
+>            CONSOLE_WARNING("Warning: Failed to start backup session - continui
+warning 153 in line 632 of "src\layout_processor.c": statement has no effect
+>        CONSOLE_STATUS("\n*** Backup disabled - no backup will be created ***\n
+warning 153 in line 639 of "src\layout_processor.c": statement has no effect
+>    PROGRESS_STATUS("Processing: %s", sanitizedPath)
+warning 153 in line 646 of "src\layout_processor.c": statement has no effect
+>    PROGRESS_STATUS("Recursive: %s", prefs->recursive_subdirs ? "Yes" : "No")
+warning 153 in line 647 of "src\layout_processor.c": statement has no effect
+>        PROGRESS_STATUS("Creating missing icons using DefIcons...")
+warning 153 in line 656 of "src\layout_processor.c": statement has no effect
+>            PROGRESS_STATUS("Warning: DefIcons not available, skipping icon cre
+warning 153 in line 662 of "src\layout_processor.c": statement has no effect
+>            PROGRESS_STATUS("Warning: DefIcons templates not loaded, skipping i
+warning 153 in line 667 of "src\layout_processor.c": statement has no effect
+>                    PROGRESS_STATUS("Created %lu icon(s) recursively", icons_cr
+warning 153 in line 693 of "src\layout_processor.c": statement has no effect
+>                    PROGRESS_STATUS("Warning: Icon creation had errors (%lu cre
+warning 153 in line 698 of "src\layout_processor.c": statement has no effect
+>                    PROGRESS_STATUS("Created %lu icon(s) in current folder", ic
+warning 153 in line 706 of "src\layout_processor.c": statement has no effect
+>                    PROGRESS_STATUS("Warning: Icon creation had errors (%lu cre
+warning 153 in line 711 of "src\layout_processor.c": statement has no effect
+>    CHECK_CANCEL()
+warning 153 in line 758 of "src\layout_processor.c": statement has no effect
+>        PROGRESS_STATUS("")
+warning 153 in line 809 of "src\layout_processor.c": statement has no effect
+>        PROGRESS_STATUS("=== Processing Statistics ===")
+warning 153 in line 810 of "src\layout_processor.c": statement has no effect
+>        PROGRESS_STATUS("  Folders processed: %lu", g_foldersProcessed)
+warning 153 in line 811 of "src\layout_processor.c": statement has no effect
+>        PROGRESS_STATUS("  Icons processed: %lu", g_iconsProcessed)
+warning 153 in line 812 of "src\layout_processor.c": statement has no effect
+>            PROGRESS_STATUS("  Default tools: %d valid, %d missing", validTools
+warning 153 in line 833 of "src\layout_processor.c": statement has no effect
+>            PROGRESS_STATUS("  Total time: %ld min %ld sec", minutes, seconds)
+warning 153 in line 837 of "src\layout_processor.c": statement has no effect
+>            PROGRESS_STATUS("  Total time: %ld seconds", seconds)
+warning 153 in line 839 of "src\layout_processor.c": statement has no effect
+>        PROGRESS_STATUS("")
+warning 153 in line 865 of "src\layout_processor.c": statement has no effect
+>        PROGRESS_STATUS("*** Finalizing backup session ***")
+warning 153 in line 866 of "src\layout_processor.c": statement has no effect
+>        PROGRESS_STATUS("Backup session completed successfully")
+warning 153 in line 868 of "src\layout_processor.c": statement has no effect
+>        PROGRESS_STATUS("  Folders backed up: %u", g_backupContext->foldersBack
+warning 153 in line 869 of "src\layout_processor.c": statement has no effect
+>        PROGRESS_STATUS("  Total bytes archived: %lu", (unsigned long)g_backupC
+warning 153 in line 870 of "src\layout_processor.c": statement has no effect
+>            PROGRESS_STATUS("  Icons created (DefIcons): %lu", g_backupContext-
+warning 153 in line 873 of "src\layout_processor.c": statement has no effect
+>        PROGRESS_STATUS("  Location: %s", g_backupContext->runDirectory)
+warning 153 in line 875 of "src\layout_processor.c": statement has no effect
+>        PROGRESS_STATUS("*** Building PATH search list for default tool scannin
+warning 153 in line 972 of "src\layout_processor.c": statement has no effect
+>            PROGRESS_STATUS("WARNING: Failed to build PATH search list - valida
+warning 153 in line 976 of "src\layout_processor.c": statement has no effect
+>        PROGRESS_STATUS("*** Using PATH search list (already loaded at startup)
+warning 153 in line 981 of "src\layout_processor.c": statement has no effect
+>    PROGRESS_STATUS("Default tool validation enabled")
+warning 153 in line 986 of "src\layout_processor.c": statement has no effect
+>    PROGRESS_STATUS("")
+warning 153 in line 998 of "src\layout_processor.c": statement has no effect
+>    PROGRESS_STATUS("Scanning for default tools: %s", sanitizedPath)
+warning 153 in line 999 of "src\layout_processor.c": statement has no effect
+>    PROGRESS_STATUS("Recursive: %s", prefs->recursive_subdirs ? "Yes" : "No")
+warning 153 in line 1000 of "src\layout_processor.c": statement has no effect
+>    PROGRESS_STATUS("Mode: SCAN TOOLS ONLY (no tidying)")
+warning 153 in line 1001 of "src\layout_processor.c": statement has no effect
+>    PROGRESS_STATUS("")
+warning 153 in line 1002 of "src\layout_processor.c": statement has no effect
+>    CHECK_CANCEL()
+warning 153 in line 1004 of "src\layout_processor.c": statement has no effect
+>    PROGRESS_STATUS("")
+warning 153 in line 1017 of "src\layout_processor.c": statement has no effect
+>    PROGRESS_STATUS("*** Tool scanning complete ***")
+warning 153 in line 1018 of "src\layout_processor.c": statement has no effect
+>    PROGRESS_STATUS("Tool cache retained for viewing")
+warning 153 in line 1022 of "src\layout_processor.c": statement has no effect
+>    PROGRESS_STATUS("  Scanning: %s", path)
+warning 153 in line 1040 of "src\layout_processor.c": statement has no effect
+>    CHECK_CANCEL()
+warning 153 in line 1041 of "src\layout_processor.c": statement has no effect
+>        PROGRESS_STATUS("  No icons found or error reading directory")
+warning 153 in line 1057 of "src\layout_processor.c": statement has no effect
+>    PROGRESS_STATUS("  Found %lu icons (tools validated)", (unsigned long)iconA
+warning 153 in line 1062 of "src\layout_processor.c": statement has no effect
+>                PROGRESS_STATUS("")
+warning 153 in line 1149 of "src\layout_processor.c": statement has no effect
+>                PROGRESS_STATUS("Entering: %s", subdir)
+warning 153 in line 1150 of "src\layout_processor.c": statement has no effect
+>    PROGRESS_STATUS("Debug: Entering ProcessSingleDirectory")
+warning 153 in line 2268 of "src\layout_processor.c": statement has no effect
+>    PROGRESS_STATUS("Debug: Path='%s'", path ? path : "NULL")
+warning 153 in line 2269 of "src\layout_processor.c": statement has no effect
+>    PROGRESS_STATUS("Debug: Locking directory...")
+warning 153 in line 2274 of "src\layout_processor.c": statement has no effect
+>        PROGRESS_STATUS("Debug: Lock failed! Error=%ld", error)
+warning 153 in line 2285 of "src\layout_processor.c": statement has no effect
+>        CONSOLE_ERROR("Failed to lock directory: %s (error: %ld)\n", path, erro
+warning 153 in line 2286 of "src\layout_processor.c": statement has no effect
+>    PROGRESS_STATUS("Debug: Lock successful. Creating IconArray...")
+warning 153 in line 2293 of "src\layout_processor.c": statement has no effect
+>    PROGRESS_STATUS("  Scanning for icons...")
+warning 153 in line 2296 of "src\layout_processor.c": statement has no effect
+>    CHECK_CANCEL()
+warning 153 in line 2302 of "src\layout_processor.c": statement has no effect
+>        PROGRESS_STATUS("  Error reading directory")
+warning 153 in line 2306 of "src\layout_processor.c": statement has no effect
+>        PROGRESS_STATUS("  No icons found in directory")
+warning 153 in line 2316 of "src\layout_processor.c": statement has no effect
+>            PROGRESS_STATUS("  Resizing to default empty folder size...")
+warning 153 in line 2324 of "src\layout_processor.c": statement has no effect
+>    PROGRESS_STATUS("  Found %lu icons", (unsigned long)iconArray->size)
+warning 153 in line 2333 of "src\layout_processor.c": statement has no effect
+>    CHECK_CANCEL()
+warning 153 in line 2339 of "src\layout_processor.c": statement has no effect
+>        PROGRESS_STATUS("  Creating backup...")
+warning 153 in line 2344 of "src\layout_processor.c": statement has no effect
+>            PROGRESS_STATUS("  Backup created successfully")
+warning 153 in line 2348 of "src\layout_processor.c": statement has no effect
+>            PROGRESS_STATUS("  Warning: Backup failed (status %d) - continuing 
+warning 153 in line 2352 of "src\layout_processor.c": statement has no effect
+>        CHECK_CANCEL()
+warning 153 in line 2354 of "src\layout_processor.c": statement has no effect
+>    PROGRESS_STATUS("  Sorting icons...")
+warning 153 in line 2358 of "src\layout_processor.c": statement has no effect
+>    PUMP_AND_CHECK_CANCEL()
+warning 153 in line 2364 of "src\layout_processor.c": statement has no effect
+>    PUMP_AND_CHECK_CANCEL()
+warning 153 in line 2369 of "src\layout_processor.c": statement has no effect
+>            PROGRESS_STATUS("  Warning: Block layout failed, using standard lay
+warning 153 in line 2388 of "src\layout_processor.c": statement has no effect
+>    PUMP_AND_CHECK_CANCEL()
+warning 153 in line 2429 of "src\layout_processor.c": statement has no effect
+>        PROGRESS_STATUS("  Resizing window...")
+warning 153 in line 2434 of "src\layout_processor.c": statement has no effect
+>    PUMP_AND_CHECK_CANCEL()
+warning 153 in line 2438 of "src\layout_processor.c": statement has no effect
+>    PROGRESS_STATUS("  Saving icon positions...")
+warning 153 in line 2441 of "src\layout_processor.c": statement has no effect
+>        PROGRESS_STATUS("  Done!")
+warning 153 in line 2448 of "src\layout_processor.c": statement has no effect
+>        PROGRESS_STATUS("  Failed to save icon positions")
+warning 153 in line 2452 of "src\layout_processor.c": statement has no effect
+>    CHECK_CANCEL()
+warning 153 in line 2518 of "src\layout_processor.c": statement has no effect
+>        PROGRESS_STATUS("Warning: Maximum recursion depth reached at: %s", path
+warning 153 in line 2523 of "src\layout_processor.c": statement has no effect
+>                        CONSOLE_STATUS("Skipping hidden folder: %s\n", fib->fib
+warning 153 in line 2597 of "src\layout_processor.c": statement has no effect
+>                PROGRESS_STATUS("")
+warning 153 in line 2604 of "src\layout_processor.c": statement has no effect
+>                    PROGRESS_STATUS("Entering: %s", shortened_path)
+warning 153 in line 2608 of "src\layout_processor.c": statement has no effect
+>        PROGRESS_STATUS("  Skipping system path: %s", path)
+warning 153 in line 2899 of "src\layout_processor.c": statement has no effect
+>        CHECK_CANCEL()
+warning 153 in line 2942 of "src\layout_processor.c": statement has no effect
+>            PROGRESS_STATUS("  Created icon: %s (%s)", fib->fib_FileName, type_
+warning 153 in line 3019 of "src\layout_processor.c": statement has no effect
+>    CHECK_CANCEL()
+warning 153 in line 3105 of "src\layout_processor.c": statement has no effect
+>        CHECK_CANCEL()
+warning 153 in line 3144 of "src\layout_processor.c": statement has no effect
+Compiling [build/amiga/aspect_ratio_layout.o] from src/aspect_ratio_layout.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/aspect_ratio_layout.c -o build/amiga/aspect_ratio_layout.o
+>        CONSOLE_ERROR("Aspect ratio values must be positive integers.\n");
+warning 153 in line 90 of "src\aspect_ratio_layout.c": statement has no effect
+>        CONSOLE_ERROR("       Received: %d:%d\n", width, height);
+warning 153 in line 91 of "src\aspect_ratio_layout.c": statement has no effect
+>               ratio / ASPECT_SCALE, (ratio % ASPECT_SCALE) / 10);
+warning 153 in line 109 of "src\aspect_ratio_layout.c": statement has no effect
+>        CONSOLE_WARNING("         Window may have unusual proportions.\n");
+warning 153 in line 110 of "src\aspect_ratio_layout.c": statement has no effect
+>                   elapsedMillis, elapsedMicros % 1000, (unsigned long)iconArra
+warning 153 in line 520 of "src\aspect_ratio_layout.c": statement has no effect
+Compiling [build/amiga/folder_scanner.o] from src/folder_scanner.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/folder_scanner.c -o build/amiga/folder_scanner.o
+Compiling [build/amiga/string_functions.o] from src/string_functions.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/string_functions.c -o build/amiga/string_functions.o
+Compiling [build/amiga/deficons_parser.o] from src/deficons_parser.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/deficons_parser.c -o build/amiga/deficons_parser.o
+Compiling [build/amiga/deficons_identify.o] from src/deficons_identify.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/deficons_identify.c -o build/amiga/deficons_identify.o
+Compiling [build/amiga/deficons_templates.o] from src/deficons_templates.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/deficons_templates.c -o build/amiga/deficons_templates.o
+Compiling [build/amiga/deficons_filters.o] from src/deficons_filters.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/deficons_filters.c -o build/amiga/deficons_filters.o
+Compiling [build/amiga/backup_catalog.o] from src/backup_catalog.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/backup_catalog.c -o build/amiga/backup_catalog.o
+Compiling [build/amiga/backup_lha.o] from src/backup_lha.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/backup_lha.c -o build/amiga/backup_lha.o
+Compiling [build/amiga/backup_marker.o] from src/backup_marker.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/backup_marker.c -o build/amiga/backup_marker.o
+Compiling [build/amiga/backup_paths.o] from src/backup_paths.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/backup_paths.c -o build/amiga/backup_paths.o
+Compiling [build/amiga/backup_runs.o] from src/backup_runs.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/backup_runs.c -o build/amiga/backup_runs.o
+Compiling [build/amiga/backup_session.o] from src/backup_session.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/backup_session.c -o build/amiga/backup_session.o
 Compiling [build/amiga/backup_restore.o] from src/backup_restore.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/backup_restore.c -o build/amiga/backup_restore.o
 >    CONSOLE_STATUS("Restoring archive: %s\n", archivePath);
@@ -38,6 +574,176 @@ warning 153 in line 613 of "src\backup_restore.c": statement has no effect
 warning 153 in line 614 of "src\backup_restore.c": statement has no effect
 >    CONSOLE_STATUS("========================================\n\n");
 warning 153 in line 615 of "src\backup_restore.c": statement has no effect
+Compiling [build/amiga/helpers/listview_simple_columns.o] from src/helpers/listview_simple_columns.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/helpers/listview_simple_columns.c -o build/amiga/helpers/listview_simple_columns.o
+Compiling [build/amiga/helpers/list_formatter.o] from src/helpers/list_formatter.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/helpers/list_formatter.c -o build/amiga/helpers/list_formatter.o
+Compiling [build/amiga/GUI/main_window.o] from src/GUI/main_window.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/main_window.c -o build/amiga/GUI/main_window.o
+>            CONSOLE_DEBUG("Order changed to: %s\n", order_labels_str[code]);
+warning 153 in line 1613 of "src\GUI\main_window.c": statement has no effect
+>            CONSOLE_DEBUG("Sort by changed to: %s\n", sortby_labels_str[code]);
+warning 153 in line 1626 of "src\GUI\main_window.c": statement has no effect
+>                CONSOLE_DEBUG("Recursive: %s\n", win_data->recursive_subdirs ? 
+warning 153 in line 1634 of "src\GUI\main_window.c": statement has no effect
+>                CONSOLE_DEBUG("Backup: %s\n", win_data->enable_backup ? "ON" : 
+warning 153 in line 1643 of "src\GUI\main_window.c": statement has no effect
+>            CONSOLE_DEBUG("Position changed to: %s\n", position_labels_str[code
+warning 153 in line 1649 of "src\GUI\main_window.c": statement has no effect
+>                CONSOLE_DEBUG("Create new icons: %s\n", win_data->enable_defico
+warning 153 in line 1657 of "src\GUI\main_window.c": statement has no effect
+>                CONSOLE_STATUS("Advanced button clicked - opening Advanced Sett
+warning 153 in line 1666 of "src\GUI\main_window.c": statement has no effect
+>                        CONSOLE_STATUS("Advanced settings accepted - updating g
+warning 153 in line 1687 of "src\GUI\main_window.c": statement has no effect
+>                        CONSOLE_DEBUG("Settings will be applied when you click 
+warning 153 in line 1692 of "src\GUI\main_window.c": statement has no effect
+>                        CONSOLE_DEBUG("Advanced settings cancelled\n");
+warning 153 in line 1696 of "src\GUI\main_window.c": statement has no effect
+>                    CONSOLE_ERROR("Failed to open Advanced Settings window\n");
+warning 153 in line 1701 of "src\GUI\main_window.c": statement has no effect
+>                CONSOLE_STATUS("Fix default tools button clicked\n");
+warning 153 in line 1711 of "src\GUI\main_window.c": statement has no effect
+>                CONSOLE_STATUS("Restore backups button clicked - opening Restor
+warning 153 in line 1757 of "src\GUI\main_window.c": statement has no effect
+>                    CONSOLE_DEBUG("Restore window closed\n");
+warning 153 in line 1777 of "src\GUI\main_window.c": statement has no effect
+>                    CONSOLE_ERROR("Failed to open Restore window\n");
+warning 153 in line 1784 of "src\GUI\main_window.c": statement has no effect
+>            CONSOLE_STATUS("Start button clicked - Processing icons...\n");
+warning 153 in line 1790 of "src\GUI\main_window.c": statement has no effect
+>                    CONSOLE_ERROR("Failed to open progress window\n");
+warning 153 in line 1844 of "src\GUI\main_window.c": statement has no effect
+>                CONSOLE_NEWLINE();
+warning 153 in line 1856 of "src\GUI\main_window.c": statement has no effect
+>                CONSOLE_STATUS(">>> Starting icon processing...\n");
+warning 153 in line 1857 of "src\GUI\main_window.c": statement has no effect
+>                CONSOLE_NEWLINE();
+warning 153 in line 1858 of "src\GUI\main_window.c": statement has no effect
+>                    CONSOLE_STATUS("Icon processing completed successfully!\n")
+warning 153 in line 1867 of "src\GUI\main_window.c": statement has no effect
+>                    CONSOLE_WARNING("Icon processing failed or was incomplete\n
+warning 153 in line 1875 of "src\GUI\main_window.c": statement has no effect
+>                CONSOLE_SEPARATOR();
+warning 153 in line 1881 of "src\GUI\main_window.c": statement has no effect
+>                CONSOLE_NEWLINE();
+warning 153 in line 1882 of "src\GUI\main_window.c": statement has no effect
+>            CONSOLE_STATUS("Exit button clicked\n");
+warning 153 in line 1904 of "src\GUI\main_window.c": statement has no effect
+Compiling [build/amiga/GUI/advanced_window.o] from src/GUI/advanced_window.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/advanced_window.c -o build/amiga/GUI/advanced_window.o
+Compiling [build/amiga/GUI/beta_options_window.o] from src/GUI/beta_options_window.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/beta_options_window.c -o build/amiga/GUI/beta_options_window.o
+Compiling [build/amiga/GUI/deficons_settings_window.o] from src/GUI/deficons_settings_window.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/deficons_settings_window.c -o build/amiga/GUI/deficons_settings_window.o
+Compiling [build/amiga/GUI/easy_request_helper.o] from src/GUI/easy_request_helper.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/easy_request_helper.c -o build/amiga/GUI/easy_request_helper.o
+Compiling [build/amiga/GUI/window_enumerator.o] from src/GUI/window_enumerator.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/window_enumerator.c -o build/amiga/GUI/window_enumerator.o
+Compiling [build/amiga/GUI/wb_classify.o] from src/GUI/wb_classify.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/wb_classify.c -o build/amiga/GUI/wb_classify.o
+Compiling [build/amiga/GUI/gui_groupbox.o] from src/GUI/gui_groupbox.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/gui_groupbox.c -o build/amiga/GUI/gui_groupbox.o
+Compiling [build/amiga/GUI/gui_utilities.o] from src/GUI/gui_utilities.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/gui_utilities.c -o build/amiga/GUI/gui_utilities.o
+Compiling [build/amiga/GUI/StatusWindows/progress_common.o] from src/GUI/StatusWindows/progress_common.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/StatusWindows/progress_common.c -o build/amiga/GUI/StatusWindows/progress_common.o
+Compiling [build/amiga/GUI/StatusWindows/progress_window.o] from src/GUI/StatusWindows/progress_window.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/StatusWindows/progress_window.c -o build/amiga/GUI/StatusWindows/progress_window.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src\GUI\StatusWindows\progress_window.c":8
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src\GUI\StatusWindows\progress_window.c":8
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src\GUI\StatusWindows\progress_window.c":8
+Compiling [build/amiga/GUI/StatusWindows/recursive_progress.o] from src/GUI/StatusWindows/recursive_progress.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/StatusWindows/recursive_progress.c -o build/amiga/GUI/StatusWindows/recursive_progress.o
+Compiling [build/amiga/GUI/StatusWindows/main_progress_window.o] from src/GUI/StatusWindows/main_progress_window.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/StatusWindows/main_progress_window.c -o build/amiga/GUI/StatusWindows/main_progress_window.o
+Compiling [build/amiga/GUI/DefaultTools/tool_cache_window.o] from src/GUI/DefaultTools/tool_cache_window.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/DefaultTools/tool_cache_window.c -o build/amiga/GUI/DefaultTools/tool_cache_window.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src\GUI\DefaultTools\tool_cache_window.c":66
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src\GUI\DefaultTools\tool_cache_window.c":66
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src\GUI\DefaultTools\tool_cache_window.c":66
+Compiling [build/amiga/GUI/DefaultTools/tool_cache_reports.o] from src/GUI/DefaultTools/tool_cache_reports.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/DefaultTools/tool_cache_reports.c -o build/amiga/GUI/DefaultTools/tool_cache_reports.o
+Compiling [build/amiga/GUI/DefaultTools/default_tool_update_window_reaction.o] from src/GUI/DefaultTools/default_tool_update_window_reaction.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/DefaultTools/default_tool_update_window_reaction.c -o build/amiga/GUI/DefaultTools/default_tool_update_window_reaction.o
+>                    DoMethodA(req_obj, (Msg)&req_msg);
+warning 161 in line 497 of "src\GUI\DefaultTools\default_tool_update_window_reaction.c": implicit declaration of function <DoMethodA>
+>    data->window = (struct Window *)RA_OpenWindow(data->window_obj);
+warning 161 in line 741 of "src\GUI\DefaultTools\default_tool_update_window_reaction.c": implicit declaration of function <DoMethod>
+Compiling [build/amiga/GUI/DefaultTools/default_tool_backup.o] from src/GUI/DefaultTools/default_tool_backup.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/DefaultTools/default_tool_backup.c -o build/amiga/GUI/DefaultTools/default_tool_backup.o
+Compiling [build/amiga/GUI/DefaultTools/default_tool_restore_window.o] from src/GUI/DefaultTools/default_tool_restore_window.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/DefaultTools/default_tool_restore_window.c -o build/amiga/GUI/DefaultTools/default_tool_restore_window.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src\GUI\DefaultTools\default_tool_restore_window.c":56
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src\GUI\DefaultTools\default_tool_restore_window.c":56
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src/Settings\IControlPrefs.h":15
+	included from file "src\GUI\DefaultTools\default_tool_restore_window.c":56
+Compiling [build/amiga/GUI/RestoreBackups/restore_window.o] from src/GUI/RestoreBackups/restore_window.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/RestoreBackups/restore_window.c -o build/amiga/GUI/RestoreBackups/restore_window.o
+Compiling [build/amiga/GUI/RestoreBackups/folder_view_window.o] from src/GUI/RestoreBackups/folder_view_window.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/RestoreBackups/folder_view_window.c -o build/amiga/GUI/RestoreBackups/folder_view_window.o
+Compiling [build/amiga/DOS/getDiskDetails.o] from src/DOS/getDiskDetails.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/DOS/getDiskDetails.c -o build/amiga/DOS/getDiskDetails.o
+Compiling [build/amiga/Settings/IControlPrefs.o] from src/Settings/IControlPrefs.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/Settings/IControlPrefs.c -o build/amiga/Settings/IControlPrefs.o
+>    UBYTE ic_HoverSlugishness : 
+warning 51 in line 49 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\Settings\IControlPrefs.c":3
+>    UBYTE ic_HoverFlags : 
+warning 51 in line 50 of "prefs\icontrol.h": bitfield type non-portable
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\Settings\IControlPrefs.c":3
+>    struct TagItem ie_Tags[0]
+warning 61 in line 94 of "prefs\icontrol.h": array of size <=0 (set to 1)
+	included from file "src\Settings\IControlPrefs.h":15
+	included from file "src\Settings\IControlPrefs.c":3
+>                    CONSOLE_ERROR("Error opening IFF file: %ld\n", ifferror);
+warning 153 in line 257 of "src\Settings\IControlPrefs.c": statement has no effect
+>            CONSOLE_ERROR("Unable to allocate IFF handle\n");
+warning 153 in line 270 of "src\Settings\IControlPrefs.c": statement has no effect
+>        CONSOLE_ERROR("Unable to open IFFParse library\n");
+warning 153 in line 277 of "src\Settings\IControlPrefs.c": statement has no effect
+Compiling [build/amiga/Settings/WorkbenchPrefs.o] from src/Settings/WorkbenchPrefs.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/Settings/WorkbenchPrefs.c -o build/amiga/Settings/WorkbenchPrefs.o
+>	TEXT whdp_Name[0]
+warning 61 in line 59 of "prefs\workbench.h": array of size <=0 (set to 1)
+	included from file "src\Settings\WorkbenchPrefs.c":7
+>	TEXT wtfp_Format[0]
+warning 61 in line 67 of "prefs\workbench.h": array of size <=0 (set to 1)
+	included from file "src\Settings\WorkbenchPrefs.c":7
+Compiling [build/amiga/Settings/get_fonts.o] from src/Settings/get_fonts.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/Settings/get_fonts.c -o build/amiga/Settings/get_fonts.o
+Compiling [build/amiga/platform/amiga_platform.o] from src/platform/amiga_platform.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/platform/amiga_platform.c -o build/amiga/platform/amiga_platform.o
+Compiling memory tracking: build/amiga/platform_memory.o
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/platform/platform.c -o build/amiga/platform_memory.o
 Linking Amiga executable: Bin/Amiga/iTidy
 vc +aos68k -cpu=68000 -O2 -size -final -lamiga -lauto -o Bin/Amiga/iTidy build/amiga/main_gui.o build/amiga/icon_types.o build/amiga/icon_misc.o build/amiga/icon_management.o build/amiga/file_directory_handling.o build/amiga/window_management.o build/amiga/utilities.o build/amiga/path_utilities.o build/amiga/spinner.o build/amiga/writeLog.o build/amiga/cli_utilities.o build/amiga/layout_preferences.o build/amiga/layout_processor.o build/amiga/aspect_ratio_layout.o build/amiga/folder_scanner.o build/amiga/string_functions.o build/amiga/deficons_parser.o build/amiga/deficons_identify.o build/amiga/deficons_templates.o build/amiga/deficons_filters.o build/amiga/backup_catalog.o build/amiga/backup_lha.o build/amiga/backup_marker.o build/amiga/backup_paths.o build/amiga/backup_runs.o build/amiga/backup_session.o build/amiga/backup_restore.o build/amiga/helpers/listview_simple_columns.o build/amiga/helpers/list_formatter.o build/amiga/GUI/main_window.o build/amiga/GUI/advanced_window.o build/amiga/GUI/beta_options_window.o build/amiga/GUI/deficons_settings_window.o build/amiga/GUI/easy_request_helper.o build/amiga/GUI/window_enumerator.o build/amiga/GUI/wb_classify.o build/amiga/GUI/gui_groupbox.o build/amiga/GUI/gui_utilities.o build/amiga/GUI/StatusWindows/progress_common.o build/amiga/GUI/StatusWindows/progress_window.o build/amiga/GUI/StatusWindows/recursive_progress.o build/amiga/GUI/StatusWindows/main_progress_window.o build/amiga/GUI/DefaultTools/tool_cache_window.o build/amiga/GUI/DefaultTools/tool_cache_reports.o build/amiga/GUI/DefaultTools/default_tool_update_window_reaction.o build/amiga/GUI/DefaultTools/default_tool_backup.o build/amiga/GUI/DefaultTools/default_tool_restore_window.o build/amiga/GUI/RestoreBackups/restore_window.o build/amiga/GUI/RestoreBackups/folder_view_window.o build/amiga/DOS/getDiskDetails.o build/amiga/Settings/IControlPrefs.o build/amiga/Settings/WorkbenchPrefs.o build/amiga/Settings/get_fonts.o build/amiga/platform/amiga_platform.o build/amiga/platform_memory.o 
 Build complete: Bin/Amiga/iTidy
