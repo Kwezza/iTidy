@@ -22,10 +22,11 @@
 10. [Safe Area Defaults](#10-safe-area-defaults)
 11. [Character-to-Pixel Mapping](#11-character-to-pixel-mapping)
 12. [Performance & Safety](#12-performance--safety)
-13. [Future Reuse — Other Icon Types](#13-future-reuse--other-icon-types)
-14. [API Surface Summary](#14-api-surface-summary)
-15. [Metadata Preservation — Test Checklist](#15-metadata-preservation--test-checklist)
-16. [Open Questions / Decisions Log](#16-open-questions--decisions-log)
+13. [Debug & Development Aids](#13-debug--development-aids)
+14. [Future Reuse — Other Icon Types](#14-future-reuse--other-icon-types)
+15. [API Surface Summary](#15-api-surface-summary)
+16. [Metadata Preservation — Test Checklist](#16-metadata-preservation--test-checklist)
+17. [Open Questions / Decisions Log](#17-open-questions--decisions-log)
 
 ---
 
@@ -708,7 +709,105 @@ display after we save. This avoids stale cached icon images.
 
 ---
 
-## 13. Future Reuse — Other Icon Types
+## 13. Debug & Development Aids
+
+### Pixel Buffer Dump to Log
+
+During development, the pixel buffer is dumped to the icon log (`LOG_ICONS`)
+immediately **after the renderer finishes** and **before**
+`itidy_icon_image_apply()` — so the dump captures exactly what the renderer
+produced, regardless of whether the icon save step works or corrupts data.
+
+Guarded by a compile-time define in `src/icon_edit/icon_image_access.h`:
+
+```c
+#define DEBUG_ICON_DUMP
+```
+
+When disabled, the dump function compiles to nothing (zero overhead).
+
+### Dump Format
+
+**Palette (one line):**
+```
+[ICON_DUMP] 40x38 pixels, palette: 8 entries
+[ICON_DUMP] Palette: 0=959595 1=000000 2=FFFFFF 3=3B67A2 4=7B7B7B 5=A0A0A0 6=D4D4D4 7=505050
+```
+
+**Safe area (one line):**
+```
+[ICON_DUMP] Safe area: left=4 top=4 width=32 height=30
+```
+
+**Pixel grid — one hex digit per pixel (palettes ≤ 16 colours):**
+```
+[ICON_DUMP] --- Normal image ---
+[ICON_DUMP] 3333333333333333333333333333333333333333
+[ICON_DUMP] 3222222222222222222222222222222222222223
+[ICON_DUMP] 3211111222112221122211121122222222222223
+[ICON_DUMP] 3222222222222222222222222222222222222223
+[ICON_DUMP] 3211221112211122211222111222222222222223
+[ICON_DUMP] ...
+```
+
+Each row is one line of pixels. Runs of `1` (text index) on a `2`
+(background index) background represent rendered characters. The `3`
+border is the template's decorative frame. Corruption, off-by-one
+errors, and safe area overruns are immediately visible.
+
+**Fallback for palettes > 16 colours:** Two hex digits per pixel,
+space-separated:
+```
+[ICON_DUMP] 03 02 02 02 02 02 02 02 02 02 03
+```
+
+### Source Text Echo
+
+Alongside the pixel dump, log the first few lines of the raw source text
+that was fed to the renderer. This lets you cross-check that the pixel
+pattern matches the expected character layout:
+
+```
+[ICON_DUMP] --- Source text (first 5 lines) ---
+[ICON_DUMP] ; Example config file
+[ICON_DUMP] ToolTypes=YES
+[ICON_DUMP] DefaultTool=SYS:Utilities/More
+[ICON_DUMP]
+[ICON_DUMP] # End of header
+```
+
+### Dump Function
+
+```c
+void itidy_icon_image_dump(
+    const iTidy_IconImageData *img,
+    const iTidy_RenderParams *params,   /* for safe area annotation */
+    const char *source_path             /* echo first N lines of source file */
+);
+```
+
+Called from the Phase 3 orchestration code, between the renderer call and
+the apply call:
+
+```
+   e. Call renderer
+   → itidy_icon_image_dump(&img, &params, source_path)   ← DEBUG ONLY
+   f. If template had selected image: build selected image
+   g. Apply modified image
+```
+
+### When to Remove
+
+This is a development/debugging aid. It should be:
+- **Enabled** during all Phase 1 and Phase 2 development and testing
+- **Disabled** (comment out `#define DEBUG_ICON_DUMP`) before any release
+  build or performance benchmarking
+- **Kept in the source** permanently — it costs nothing when disabled and
+  will be valuable again whenever a new renderer is developed
+
+---
+
+## 14. Future Reuse — Other Icon Types
 
 The **Icon Image Access module** (Phase 1) is deliberately format-agnostic
 and renderer-agnostic. Future content-aware icon features plug in as new
@@ -751,7 +850,7 @@ renderers that operate on the same `iTidy_IconImageData` pixel buffer:
 
 ---
 
-## 14. API Surface Summary
+## 15. API Surface Summary
 
 ### Icon Image Access (`src/icon_edit/icon_image_access.h`)
 
@@ -762,6 +861,7 @@ itidy_icon_image_apply()         — Write pixels + palette back to DiskObject
 itidy_icon_image_save()          — Save icon to disk as OS3.5 format
 itidy_icon_image_free()          — Free pixel/palette buffers
 itidy_icon_image_create_blank()  — Create empty pixel buffer at given size
+itidy_icon_image_dump()          — Dump pixel buffer + palette to LOG_ICONS (DEBUG_ICON_DUMP only)
 ```
 
 ### Generic Render Parameters (`src/icon_edit/icon_image_access.h`)
@@ -791,7 +891,7 @@ itidy_check_cache_valid()        — Check if existing icon matches source (cach
 
 ---
 
-## 15. Metadata Preservation — Test Checklist
+## 16. Metadata Preservation — Test Checklist
 
 The icon editing pipeline must **never alter non-image metadata**. The
 following properties must survive a load → modify image → save cycle
@@ -821,7 +921,7 @@ begins — to catch metadata corruption issues at the source.
 
 ---
 
-## 16. Open Questions / Decisions Log
+## 17. Open Questions / Decisions Log
 
 | # | Question | Decision | Date |
 |---|----------|----------|------|
@@ -836,10 +936,11 @@ begins — to catch metadata corruption issues at the source.
 | 9 | Binary detection: what counts as non-binary? | **TAB, LF, CR, 0x20–0x7E, 0xA0–0xFF.** >10% outside = binary. Aligned with ISO-8859-1 render set. | 2026-02-09 |
 | 10 | Cache-skip: where does the check live? | **Phase 3 (DefIcons pipeline), before file copy.** Check ITIDY_CREATED + SRC_SIZE + SRC_DATE on existing target icon. | 2026-02-09 |
 | 11 | Integration module: does `deficons_creation.c` exist? | **Yes** — confirmed. No rename needed. | 2026-02-09 |
-| 12 | When to validate metadata preservation? | **Early in Phase 1**, before any renderer work. See Section 15 checklist. | 2026-02-09 |
+| 12 | When to validate metadata preservation? | **Early in Phase 1**, before any renderer work. See Section 16 checklist. | 2026-02-09 |
 | 13 | Where does new code live? | **`src/icon_edit/`** subfolder. Keeps plugin code separate from existing codebase. | 2026-02-09 |
 | 14 | Where is the built-in text template? | **`Bin/Amiga/Icons/text_template.info`** (= `PROGDIR:Icons/text_template.info` on Amiga). | 2026-02-09 |
 | 15 | Selected image: generate if template lacks one? | **No.** Honour the template — if no selected image exists, leave ImageData2 NULL. Workbench auto-dims. | 2026-02-09 |
+| 16 | Debug pixel dump to log? | **Yes.** Dump pixel buffer as hex grid to `LOG_ICONS` after render, before apply. Guarded by `#define DEBUG_ICON_DUMP`. See Section 13. | 2026-02-09 |
 
 ---
 
