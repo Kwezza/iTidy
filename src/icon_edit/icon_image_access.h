@@ -130,6 +130,7 @@ typedef struct {
     /* Palette indices to use for rendering */
     UBYTE bg_color_index;       /* Background / whitespace palette index */
     UBYTE text_color_index;     /* Foreground / content pixels palette index */
+    UBYTE mid_color_index;      /* Mid-tone / anti-alias palette index (grey) */
 } iTidy_RenderParams;
 
 /*========================================================================*/
@@ -152,6 +153,13 @@ typedef struct {
     UWORD line_pixel_height;    /* Height of one text line in pixels (typically 1) */
     UWORD line_gap;             /* Vertical gap between lines in pixels (typically 1) */
     UWORD max_read_bytes;       /* Max bytes to read from source file (default 4096) */
+    
+    /* Adaptive text coloring */
+    BOOL enable_adaptive_text;  /* Enable adaptive text color (samples background) */
+    UBYTE darken_percent;       /* Percentage to darken background color (1-100, default 70) */
+    UBYTE *darken_table;        /* Pre-computed lookup table [256]: bg_index -> darkened_index */
+    const struct ColorRegister *palette;  /* Palette reference for adaptive mode */
+    ULONG palette_size;         /* Number of palette entries */
 } iTidy_TextRenderParams;
 
 /*========================================================================*/
@@ -173,6 +181,9 @@ typedef struct {
 /** Default maximum bytes to read from source file */
 #define ITIDY_DEFAULT_READ_BYTES    4096
 
+/** Default darken percentage for adaptive text rendering (1-100) */
+#define ITIDY_DEFAULT_DARKEN_PERCENT  70
+
 /** Threshold for auto-promoting char width from 1 to 2 */
 #define ITIDY_CHAR_WIDTH_PROMOTE_THRESHOLD  64
 
@@ -192,6 +203,9 @@ typedef struct {
 #define ITIDY_TT_CHAR_WIDTH     "ITIDY_CHAR_WIDTH"
 #define ITIDY_TT_BG_COLOR       "ITIDY_BG_COLOR"
 #define ITIDY_TT_TEXT_COLOR      "ITIDY_TEXT_COLOR"
+#define ITIDY_TT_MID_COLOR       "ITIDY_MID_COLOR"
+#define ITIDY_TT_ADAPTIVE_TEXT   "ITIDY_ADAPTIVE_TEXT"
+#define ITIDY_TT_DARKEN_PERCENT  "ITIDY_DARKEN_PERCENT"
 #define ITIDY_TT_READ_BYTES     "ITIDY_READ_BYTES"
 
 /* Stamped ToolTypes on generated icons */
@@ -354,7 +368,8 @@ void itidy_resolve_palette_indices(struct DiskObject *icon,
                                    const struct ColorRegister *palette,
                                    ULONG palette_size,
                                    UBYTE *bg_index,
-                                   UBYTE *text_index);
+                                   UBYTE *text_index,
+                                   UBYTE *mid_index);
 
 /**
  * @brief Add iTidy stamp ToolTypes to a DiskObject.

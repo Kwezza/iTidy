@@ -668,15 +668,18 @@ void itidy_resolve_palette_indices(struct DiskObject *icon,
                                    const struct ColorRegister *palette,
                                    ULONG palette_size,
                                    UBYTE *bg_index,
-                                   UBYTE *text_index)
+                                   UBYTE *text_index,
+                                   UBYTE *mid_index)
 {
     STRPTR *tool_types = NULL;
     LONG tt_bg = -1;
     LONG tt_text = -1;
+    LONG tt_mid = -1;
 
     // Default fallbacks
     *bg_index   = 0;
     *text_index = 1;
+    *mid_index  = 1;  // Fallback to text color if no grey available
 
     if (palette == NULL || palette_size == 0)
     {
@@ -693,6 +696,7 @@ void itidy_resolve_palette_indices(struct DiskObject *icon,
     {
         tt_bg   = parse_integer_tooltype(tool_types, ITIDY_TT_BG_COLOR, -1);
         tt_text = parse_integer_tooltype(tool_types, ITIDY_TT_TEXT_COLOR, -1);
+        tt_mid  = parse_integer_tooltype(tool_types, ITIDY_TT_MID_COLOR, -1);
     }
 
     // Special case: -1 means "no background" (preserve template pixels)
@@ -721,15 +725,27 @@ void itidy_resolve_palette_indices(struct DiskObject *icon,
         tt_text = -1;  // Force auto-detect
     }
 
-    // Auto-detect: scan palette for lightest (bg) and darkest (text)
+    if (tt_mid >= 0 && (ULONG)tt_mid < palette_size)
+    {
+        *mid_index = (UBYTE)tt_mid;
+        log_debug(LOG_ICONS, "itidy_resolve_palette_indices: mid from ToolType = %u\n", (unsigned)*mid_index);
+    }
+    else
+    {
+        tt_mid = -1;  // Force auto-detect
+    }
+
+    // Auto-detect: scan palette for lightest (bg), darkest (text), and mid-luminance (mid)
     // Only auto-detect if not explicitly set (tt_bg == -2, not -1 which means "no bg")
-    if (tt_bg == -2 || tt_text < 0)
+    if (tt_bg == -2 || tt_text < 0 || tt_mid < 0)
     {
         ULONG i;
         ULONG lightest_lum = 0;
         ULONG darkest_lum  = 255;
+        ULONG mid_lum_diff = 999999UL;  // Distance from midpoint
         UBYTE lightest_idx  = 0;
         UBYTE darkest_idx   = 0;
+        UBYTE mid_idx       = 0;
 
         for (i = 0; i < palette_size; i++)
         {
@@ -748,6 +764,44 @@ void itidy_resolve_palette_indices(struct DiskObject *icon,
             }
         }
 
+        // Find mid-tone: color closest to the midpoint between darkest and lightest
+        // Exclude the darkest and lightest colors themselves
+        if (tt_mid < 0 && palette_size > 2)
+        {
+            ULONG target_lum = (darkest_lum + lightest_lum) / 2;
+            
+            for (i = 0; i < palette_size; i++)
+            {
+                if (i == (ULONG)darkest_idx || i == (ULONG)lightest_idx)
+                {
+                    continue;  // Skip extremes
+                }
+                
+                ULONG lum = calculate_luminance(palette[i].red, palette[i].green, palette[i].blue);
+                ULONG diff;
+                
+                if (lum > target_lum)
+                {
+                    diff = lum - target_lum;
+                }
+                else
+                {
+                    diff = target_lum - lum;
+                }
+                
+                if (diff < mid_lum_diff)
+                {
+                    mid_lum_diff = diff;
+                    mid_idx = (UBYTE)i;
+                }
+            }
+        }
+        else
+        {
+            // Fallback: use darkest for mid if palette is too small
+            mid_idx = darkest_idx;
+        }
+
         if (tt_bg == -2)
         {
             *bg_index = lightest_idx;
@@ -760,6 +814,14 @@ void itidy_resolve_palette_indices(struct DiskObject *icon,
             *text_index = darkest_idx;
             log_debug(LOG_ICONS, "itidy_resolve_palette_indices: auto text = %u (lum=%lu)\n",
                       (unsigned)darkest_idx, darkest_lum);
+        }
+
+        if (tt_mid < 0)
+        {
+            *mid_index = mid_idx;
+            ULONG mid_lum = calculate_luminance(palette[mid_idx].red, palette[mid_idx].green, palette[mid_idx].blue);
+            log_debug(LOG_ICONS, "itidy_resolve_palette_indices: auto mid = %u (lum=%lu, target=%lu)\n",
+                      (unsigned)mid_idx, mid_lum, (darkest_lum + lightest_lum) / 2);
         }
 
         // Safety: if bg and text ended up the same, try to pick alternates
@@ -782,6 +844,23 @@ void itidy_resolve_palette_indices(struct DiskObject *icon,
             {
                 *bg_index   = 0;
                 *text_index = (palette_size > 1) ? 1 : 0;
+            }
+        }
+        
+        // Safety: ensure mid is different from extremes if possible
+        if ((*mid_index == *bg_index || *mid_index == *text_index) && palette_size > 2)
+        {
+            // Try to find an alternate mid-tone
+            ULONG i;
+            for (i = 0; i < palette_size; i++)
+            {
+                if (i != (ULONG)*bg_index && i != (ULONG)*text_index)
+                {
+                    *mid_index = (UBYTE)i;
+                    log_debug(LOG_ICONS, "itidy_resolve_palette_indices: adjusted mid to %u (avoid collision)\n",
+                              (unsigned)*mid_index);
+                    break;
+                }
             }
         }
     }
@@ -845,7 +924,8 @@ BOOL itidy_get_render_params(struct DiskObject *icon,
                                   img->palette_normal,
                                   img->palette_size_normal,
                                   &params->base.bg_color_index,
-                                  &params->base.text_color_index);
+                                  &params->base.text_color_index,
+                                  &params->base.mid_color_index);
 
     // Parse text-specific ToolTypes
     if (icon != NULL)
@@ -878,13 +958,74 @@ BOOL itidy_get_render_params(struct DiskObject *icon,
                   (unsigned)params->char_pixel_width, (unsigned)params->base.safe_width);
     }
 
-    log_info(LOG_ICONS, "itidy_get_render_params: safe=%u,%u,%u,%u bg=%u text=%u "
-             "char_w=%u line_h=%u gap=%u read=%u\n",
+    // Parse adaptive text coloring settings
+    params->enable_adaptive_text = FALSE;
+    params->darken_percent = ITIDY_DEFAULT_DARKEN_PERCENT;
+    params->darken_table = NULL;
+    params->palette = NULL;
+    params->palette_size = 0;
+    
+    if (tool_types != NULL)
+    {
+        // Check for ITIDY_ADAPTIVE_TEXT (YES/NO)
+        char *adaptive_val = (char *)FindToolType(tool_types, (STRPTR)ITIDY_TT_ADAPTIVE_TEXT);
+        if (adaptive_val != NULL)
+        {
+            // Case-insensitive check for YES, TRUE, ON, 1
+            if (platform_stricmp(adaptive_val, "YES") == 0 ||
+                platform_stricmp(adaptive_val, "TRUE") == 0 ||
+                platform_stricmp(adaptive_val, "ON") == 0 ||
+                strcmp(adaptive_val, "1") == 0)
+            {
+                params->enable_adaptive_text = TRUE;
+            }
+        }
+        
+        // Parse darken percentage (1-100)
+        if (params->enable_adaptive_text)
+        {
+            LONG darken = parse_integer_tooltype(tool_types, ITIDY_TT_DARKEN_PERCENT,
+                                                ITIDY_DEFAULT_DARKEN_PERCENT);
+            if (darken < 1)
+            {
+                darken = 1;
+            }
+            if (darken > 100)
+            {
+                darken = 100;
+            }
+            params->darken_percent = (UBYTE)darken;
+        }
+    }
+    
+    // Allocate darken table and set palette reference if adaptive mode enabled
+    if (params->enable_adaptive_text)
+    {
+        params->darken_table = (UBYTE *)whd_malloc(256);
+        if (params->darken_table == NULL)
+        {
+            log_error(LOG_ICONS, "itidy_get_render_params: failed to allocate darken table\n");
+            params->enable_adaptive_text = FALSE;  // Disable adaptive mode
+        }
+        else
+        {
+            params->palette = img->palette_normal;
+            params->palette_size = img->palette_size_normal;
+            
+            log_debug(LOG_ICONS, "itidy_get_render_params: adaptive text enabled, darken=%u%%\n",
+                      (unsigned)params->darken_percent);
+        }
+    }
+
+    log_info(LOG_ICONS, "itidy_get_render_params: safe=%u,%u,%u,%u bg=%u text=%u mid=%u "
+             "char_w=%u line_h=%u gap=%u read=%u adaptive=%s\n",
              (unsigned)params->base.safe_left, (unsigned)params->base.safe_top,
              (unsigned)params->base.safe_width, (unsigned)params->base.safe_height,
              (unsigned)params->base.bg_color_index, (unsigned)params->base.text_color_index,
+             (unsigned)params->base.mid_color_index,
              (unsigned)params->char_pixel_width, (unsigned)params->line_pixel_height,
-             (unsigned)params->line_gap, (unsigned)params->max_read_bytes);
+             (unsigned)params->line_gap, (unsigned)params->max_read_bytes,
+             params->enable_adaptive_text ? "YES" : "NO");
 
     return TRUE;
 }

@@ -34,6 +34,114 @@
 /*========================================================================*/
 
 /**
+ * @brief Calculate darkened RGB color (reduce by percentage).
+ *
+ * @param r       Red component (0-255)
+ * @param g       Green component (0-255)
+ * @param b       Blue component (0-255)
+ * @param percent Darken percentage (1-100, where 100 = black, 0 = no change)
+ * @param out_r   Output red
+ * @param out_g   Output green
+ * @param out_b   Output blue
+ */
+static void darken_color(UBYTE r, UBYTE g, UBYTE b, UBYTE percent,
+                        UBYTE *out_r, UBYTE *out_g, UBYTE *out_b)
+{
+    UWORD factor;
+    
+    // Convert percent to reduction factor (0-100 -> 100-0)
+    // 70% darker means keep 30% of original brightness
+    factor = 100 - percent;
+    if (factor > 100)
+    {
+        factor = 100;
+    }
+    
+    *out_r = (UBYTE)((r * factor) / 100);
+    *out_g = (UBYTE)((g * factor) / 100);
+    *out_b = (UBYTE)((b * factor) / 100);
+}
+
+/**
+ * @brief Find the closest palette entry to a target RGB color.
+ *
+ * Uses Euclidean distance in RGB space.
+ *
+ * @param palette      Palette array
+ * @param palette_size Number of palette entries
+ * @param target_r     Target red
+ * @param target_g     Target green
+ * @param target_b     Target blue
+ * @return Palette index of closest color
+ */
+static UBYTE find_closest_palette_color(const struct ColorRegister *palette,
+                                       ULONG palette_size,
+                                       UBYTE target_r, UBYTE target_g, UBYTE target_b)
+{
+    ULONG best_dist = 999999UL;
+    UBYTE best_idx = 0;
+    ULONG i;
+    
+    for (i = 0; i < palette_size; i++)
+    {
+        LONG dr = (LONG)palette[i].red   - (LONG)target_r;
+        LONG dg = (LONG)palette[i].green - (LONG)target_g;
+        LONG db = (LONG)palette[i].blue  - (LONG)target_b;
+        ULONG dist = (ULONG)(dr*dr + dg*dg + db*db);
+        
+        if (dist < best_dist)
+        {
+            best_dist = dist;
+            best_idx = (UBYTE)i;
+        }
+    }
+    
+    return best_idx;
+}
+
+/**
+ * @brief Build adaptive darken lookup table.
+ *
+ * Pre-computes darkened palette indices for fast per-pixel lookup.
+ * For each palette index N, finds the palette index that's closest
+ * to N darkened by darken_percent.
+ *
+ * @param palette       Palette array
+ * @param palette_size  Number of palette entries
+ * @param darken_percent Darken percentage (1-100)
+ * @param out_table     Output lookup table [256]
+ */
+static void build_darken_table(const struct ColorRegister *palette,
+                               ULONG palette_size,
+                               UBYTE darken_percent,
+                               UBYTE *out_table)
+{
+    ULONG i;
+    
+    for (i = 0; i < palette_size; i++)
+    {
+        UBYTE dark_r, dark_g, dark_b;
+        
+        // Calculate darkened RGB
+        darken_color(palette[i].red, palette[i].green, palette[i].blue,
+                    darken_percent, &dark_r, &dark_g, &dark_b);
+        
+        // Find closest palette match
+        out_table[i] = find_closest_palette_color(palette, palette_size,
+                                                   dark_r, dark_g, dark_b);
+    }
+    
+    // Fill unused entries (palette_size to 255) with index 0
+    for (i = palette_size; i < 256; i++)
+    {
+        out_table[i] = 0;
+    }
+    
+    log_debug(LOG_ICONS, "build_darken_table: built table with %lu entries, darken=%u%%\n",
+              palette_size, (unsigned)darken_percent);
+}
+
+/**
  * @brief Check if a byte is an acceptable text character.
  *
  * Acceptable bytes for text content:
@@ -177,26 +285,37 @@ static void fill_safe_area(const iTidy_RenderParams *p)
 /**
  * @brief Paint a horizontal run of pixels at a position within the safe area.
  *
+ * Supports two modes:
+ * 1. Fixed color mode: paint with the specified color_index
+ * 2. Adaptive mode: sample background pixel, darken it via lookup table
+ *
  * @param p             Render parameters (buffer, dimensions)
  * @param safe_x        X position relative to safe area left edge
  * @param safe_y        Y position relative to safe area top edge
  * @param count         Number of pixels to paint
- * @param color_index   Palette index to paint with
+ * @param color_index   Palette index to paint with (ignored in adaptive mode)
+ * @param params        Text render params (for adaptive mode, can be NULL for fixed mode)
  */
 static void paint_pixels(const iTidy_RenderParams *p,
                          UWORD safe_x, UWORD safe_y,
-                         UWORD count, UBYTE color_index)
+                         UWORD count, UBYTE color_index,
+                         const iTidy_TextRenderParams *params)
 {
     UWORD abs_x = p->safe_left + safe_x;
     UWORD abs_y = p->safe_top + safe_y;
     UWORD i;
     UWORD exclude_right;
     UWORD exclude_bottom;
+    BOOL adaptive_mode;
 
     if (abs_y >= p->buffer_height)
     {
         return;
     }
+
+    // Check if adaptive mode is enabled
+    adaptive_mode = (params != NULL && params->enable_adaptive_text && 
+                     params->darken_table != NULL);
 
     // Pre-compute exclusion area bounds (0 width/height = no exclusion)
     exclude_right  = p->exclude_left + p->exclude_width;
@@ -205,6 +324,10 @@ static void paint_pixels(const iTidy_RenderParams *p,
     for (i = 0; i < count; i++)
     {
         UWORD px = abs_x + i;
+        ULONG pixel_offset;
+        UBYTE bg_pixel;
+        UBYTE paint_color;
+        
         if (px >= p->safe_left + p->safe_width || px >= p->buffer_width)
         {
             break;
@@ -220,7 +343,21 @@ static void paint_pixels(const iTidy_RenderParams *p,
             }
         }
 
-        p->pixel_buffer[abs_y * p->buffer_width + px] = color_index;
+        pixel_offset = abs_y * p->buffer_width + px;
+        
+        if (adaptive_mode)
+        {
+            // Adaptive mode: sample background, darken via lookup table
+            bg_pixel = p->pixel_buffer[pixel_offset];
+            paint_color = params->darken_table[bg_pixel];
+        }
+        else
+        {
+            // Fixed color mode: use specified color
+            paint_color = color_index;
+        }
+        
+        p->pixel_buffer[pixel_offset] = paint_color;
     }
 }
 
@@ -248,10 +385,11 @@ BOOL itidy_render_ascii_preview(const char *file_path,
     UWORD out_pixels_per_line;  /* Output pixel columns in safe area */
     UWORD col;                  /* Flush loop iterator */
 
-    /* Per-line horizontal state map for AND word-gap semantics.
-     * 0 = no char seen, 1 = printable (paint), 2 = has space (gap forced).
-     * Any space in a 2-char downscale block kills the output pixel,
-     * preserving visible word gaps in zoomed-out text. */
+    /* Per-line horizontal state map for count-based anti-aliasing.
+     * Each element counts printable characters seen in a downscale block.
+     * 0 = no chars (background), 1 = sparse (mid-tone grey),
+     * 2+ = dense (full text color). Spaces decrement the count,
+     * preserving word gaps. */
     UBYTE line_map[128];
 
     /*--------------------------------------------------------------------*/
@@ -359,6 +497,30 @@ BOOL itidy_render_ascii_preview(const char *file_path,
              (unsigned long)read_size);
 
     /*--------------------------------------------------------------------*/
+    /* Build adaptive darken table (if enabled)                           */
+    /*--------------------------------------------------------------------*/
+
+    if (params->enable_adaptive_text && params->darken_table != NULL &&
+        params->palette != NULL && params->palette_size > 0)
+    {
+        UBYTE darken_pct = params->darken_percent;
+        if (darken_pct == 0)
+        {
+            darken_pct = ITIDY_DEFAULT_DARKEN_PERCENT;
+        }
+        if (darken_pct > 100)
+        {
+            darken_pct = 100;
+        }
+        
+        build_darken_table(params->palette, params->palette_size,
+                          darken_pct, params->darken_table);
+        
+        log_info(LOG_ICONS, "itidy_render_ascii_preview: adaptive text enabled, darken=%u%%\n",
+                 (unsigned)darken_pct);
+    }
+
+    /*--------------------------------------------------------------------*/
     /* Read file into buffer                                              */
     /*--------------------------------------------------------------------*/
 
@@ -412,16 +574,17 @@ BOOL itidy_render_ascii_preview(const char *file_path,
     fill_safe_area(&params->base);
 
     /*--------------------------------------------------------------------*/
-    /* Render text: line-buffered AND semantics with vertical OR          */
+    /* Render text: line-buffered count-based anti-aliasing               */
     /*                                                                    */
-    /* Horizontal AND: for each h_scale-char block that maps to one       */
-    /* output pixel, ALL source chars must be printable.  If ANY char     */
-    /* in the block is a space, the output pixel stays as background.     */
-    /* This preserves visible word gaps in zoomed-out text.               */
+    /* Each source character increments a per-column counter. Spaces      */
+    /* decrement the counter, preserving word gaps. At line end, the      */
+    /* count threshold determines pixel color:                            */
+    /*   - Count 0: background (white, no output)                         */
+    /*   - Count 1: mid-tone (grey, anti-alias edge)                      */
+    /*   - Count 2+: full text color (black, dense text)                  */
     /*                                                                    */
-    /* Vertical OR: each source line paints independently into its        */
-    /* output row.  When v_scale > 1, multiple source lines share the     */
-    /* same output row — any line with text in a column lights it up.     */
+    /* When v_scale > 1, multiple source lines share the same output      */
+    /* row — any line with text in a column contributes to the counter.   */
     /*--------------------------------------------------------------------*/
 
     memset(line_map, 0, out_pixels_per_line);
@@ -442,15 +605,30 @@ BOOL itidy_render_ascii_preview(const char *file_path,
         //
         if (ch == 0x0A)
         {
-            // Flush: paint output pixels that are PRINTABLE (state 1)
+            // Flush: paint output pixels based on character count threshold
             UWORD out_y = (current_line / v_scale) * line_step;
             for (col = 0; col < out_pixels_per_line; col++)
             {
-                if (line_map[col] == 1)
+                UBYTE count = line_map[col];
+                UBYTE color;
+                
+                if (count == 0)
                 {
-                    paint_pixels(&params->base, col * char_w, out_y,
-                                 char_w, params->base.text_color_index);
+                    continue;  // Leave as background
                 }
+                else if (count == 1)
+                {
+                    // Sparse/edge — use mid-tone (grey) for anti-aliasing
+                    color = params->base.mid_color_index;
+                }
+                else
+                {
+                    // Dense — use full text color (black)
+                    color = params->base.text_color_index;
+                }
+                
+                paint_pixels(&params->base, col * char_w, out_y,
+                             char_w, color, params);
             }
 
             // Reset map for the next source line
@@ -470,7 +648,7 @@ BOOL itidy_render_ascii_preview(const char *file_path,
         }
 
         //
-        // Handle tab — mark whitespace positions in line_map
+        // Handle tab — treat as whitespace (decrements count)
         //
         if (ch == 0x09)
         {
@@ -482,9 +660,9 @@ BOOL itidy_render_ascii_preview(const char *file_path,
             while (char_pos < next_tab)
             {
                 UWORD out_x = char_pos / h_scale;
-                if (out_x < out_pixels_per_line)
+                if (out_x < out_pixels_per_line && line_map[out_x] > 0)
                 {
-                    line_map[out_x] = 2;  // Whitespace kills pixel
+                    line_map[out_x]--;  // Whitespace reduces count
                 }
                 char_pos++;
             }
@@ -501,9 +679,9 @@ BOOL itidy_render_ascii_preview(const char *file_path,
 
         //
         // Map source character to output column and update line_map.
-        // AND semantics: a space anywhere in a scale-block forces the
-        // output pixel to stay as background (gap).  Printable chars
-        // only light a pixel if no space has been seen in that block.
+        // Count-based anti-aliasing: accumulate printable chars, decrement
+        // for spaces to preserve word gaps.  Threshold determines final color:
+        // 0 = background, 1 = grey (mid-tone), 2+ = black (text).
         //
         {
             UWORD out_x = char_pos / h_scale;
@@ -511,18 +689,19 @@ BOOL itidy_render_ascii_preview(const char *file_path,
             {
                 if (is_printable_char(ch))
                 {
-                    // Set printable only if not already killed by a space
-                    if (line_map[out_x] == 0)
+                    // Increment count (cap at 255 to prevent overflow)
+                    if (line_map[out_x] < 255)
                     {
-                        line_map[out_x] = 1;
+                        line_map[out_x]++;
                     }
-                    // State 1 stays 1 (still printable)
-                    // State 2 stays 2 (space already killed it)
                 }
                 else if (ch == 0x20)
                 {
-                    // Space forces gap — overrides printable
-                    line_map[out_x] = 2;
+                    // Space decrements count (preserves word gaps)
+                    if (line_map[out_x] > 0)
+                    {
+                        line_map[out_x]--;
+                    }
                 }
             }
         }
@@ -536,11 +715,26 @@ BOOL itidy_render_ascii_preview(const char *file_path,
         UWORD out_y = (current_line / v_scale) * line_step;
         for (col = 0; col < out_pixels_per_line; col++)
         {
-            if (line_map[col] == 1)
+            UBYTE count = line_map[col];
+            UBYTE color;
+            
+            if (count == 0)
             {
-                paint_pixels(&params->base, col * char_w, out_y,
-                             char_w, params->base.text_color_index);
+                continue;  // Leave as background
             }
+            else if (count == 1)
+            {
+                // Sparse — use mid-tone (grey)
+                color = params->base.mid_color_index;
+            }
+            else
+            {
+                // Dense — use full text color (black)
+                color = params->base.text_color_index;
+            }
+            
+            paint_pixels(&params->base, col * char_w, out_y,
+                         char_w, color, params);
         }
     }
 

@@ -348,6 +348,10 @@ int itidy_apply_content_preview(const char *source_path,
                     "text render returned FALSE for '%s' (binary or empty)\n",
                     source_path);
         // Not a hard failure — icon keeps the unmodified template image
+        if (text_params.darken_table != NULL)
+        {
+            whd_free(text_params.darken_table);
+        }
         itidy_icon_image_free(&img);
         FreeDiskObject(target_icon);
         return ITIDY_PREVIEW_FAILED;
@@ -392,6 +396,10 @@ int itidy_apply_content_preview(const char *source_path,
     {
         log_error(LOG_ICONS, "itidy_apply_content_preview: "
                   "image apply failed for '%s'\n", source_path);
+        if (text_params.darken_table != NULL)
+        {
+            whd_free(text_params.darken_table);
+        }
         itidy_icon_image_free(&img);
         FreeDiskObject(target_icon);
         return ITIDY_PREVIEW_FAILED;
@@ -431,6 +439,13 @@ int itidy_apply_content_preview(const char *source_path,
     /*--------------------------------------------------------------------*/
     /* Step 10: Cleanup                                                    */
     /*--------------------------------------------------------------------*/
+
+    // Free adaptive text lookup table if allocated
+    if (text_params.darken_table != NULL)
+    {
+        whd_free(text_params.darken_table);
+        text_params.darken_table = NULL;
+    }
 
     // CRITICAL: Free the clone BEFORE freeing the image data, because
     // the clone references the pixel/palette buffers we set via
