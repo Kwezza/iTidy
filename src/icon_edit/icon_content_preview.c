@@ -102,6 +102,9 @@ BOOL itidy_content_preview_cache_valid(const char *target_path,
  * and text colour palette indices within the safe area only.
  * Pixels outside the safe area (template border artwork) are preserved.
  *
+ * If bg_color_index is ITIDY_NO_BG_COLOR (255), skips the swap entirely
+ * since there's no meaningful background color to swap.
+ *
  * See plan Section 8: Selected Image Handling.
  */
 static BOOL build_selected_image(iTidy_IconImageData *img,
@@ -110,6 +113,13 @@ static BOOL build_selected_image(iTidy_IconImageData *img,
     UBYTE *selected;
     UWORD row;
     ULONG buffer_size;
+
+    // Skip selected image generation if "no background" mode
+    if (params != NULL && params->bg_color_index == ITIDY_NO_BG_COLOR)
+    {
+        log_debug(LOG_ICONS, "build_selected_image: skipping (no background mode)\n");
+        return TRUE;
+    }
 
     if (img == NULL || params == NULL)
     {

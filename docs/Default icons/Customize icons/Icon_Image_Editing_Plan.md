@@ -422,7 +422,7 @@ defaults apply if they are absent.
 | `ITIDY_LINE_GAP` | integer | Vertical gap between lines in pixels | `1` |
 | `ITIDY_MAX_LINES` | integer | Maximum number of lines to render (overrides calculated value) | calculated from safe area |
 | `ITIDY_CHAR_WIDTH` | `1` or `2` | Pixels per character (`0` = auto-select) | `0` (auto) |
-| `ITIDY_BG_COLOR` | palette index | Background colour index in icon palette | auto: lightest palette entry |
+| `ITIDY_BG_COLOR` | palette index or `-1` | Background colour index in icon palette. `-1` = no background (preserve template pixels) | auto: lightest palette entry |
 | `ITIDY_TEXT_COLOR` | palette index | Text colour index in icon palette | auto: darkest palette entry |
 | `ITIDY_READ_BYTES` | integer | Maximum bytes to read from source file | `4096` |
 
@@ -555,7 +555,8 @@ rest.
 The template icon's palette is preserved as-is. We only need two specific
 colours from it for the text rendering:
 
-- **Background colour** — overridable via `ITIDY_BG_COLOR` ToolType
+- **Background colour** — overridable via `ITIDY_BG_COLOR` ToolType.
+  Set to `-1` to skip background fill entirely (preserves template pixels).
 - **Text colour** — overridable via `ITIDY_TEXT_COLOR` ToolType
 
 ### Default Colour Selection (When ToolTypes Are Absent)
@@ -950,6 +951,7 @@ begins — to catch metadata corruption issues at the source.
 | 20 | Downscale merge rule: OR or AND semantics? | **Horizontal AND, vertical OR.** AND preserves word gaps in text. OR ensures multi-line merges don't lose content. See Section 19.2. | 2026-02-09 |
 | 21 | Tab width for icon preview? | **4 characters** (not the traditional 8). Reduced because the icon safe area is tiny and 8-char tabs waste too much space. | 2026-02-09 |
 | 22 | Debug dump log level? | **`log_info()`** (not `log_debug()`). The dump is already compile-time guarded by `DEBUG_ICON_DUMP`, so using INFO ensures it actually appears in the icons log at default log levels. | 2026-02-09 |
+| 23 | How to preserve template artwork in safe area? | **`ITIDY_BG_COLOR=-1` mode.** Uses sentinel value 255 (`ITIDY_NO_BG_COLOR`) to skip background fill entirely. Selected image index swap also skipped in this mode. Allows template icons with pre-rendered artwork or special effects. | 2026-02-09 |
 
 ---
 
@@ -1271,7 +1273,7 @@ style. They are parsed by `itidy_get_render_params()` in
 | `ITIDY_CHAR_WIDTH` | `0`, `1`, or `2` | `0` (auto) | Pixels per character. `0` auto-selects: 1px for safe widths < 64, 2px for ≥ 64. For typical 42-pixel icons this is always 1. |
 | `ITIDY_LINE_HEIGHT` | integer | `1` | Height of one rendered text line in pixels. |
 | `ITIDY_LINE_GAP` | integer | `1` | Vertical gap between rendered text lines in pixels. With `LINE_HEIGHT=1` and `LINE_GAP=1`, each line occupies 2 pixel rows (1 text + 1 blank), giving the "ruled paper" look. |
-| `ITIDY_BG_COLOR` | palette index | auto (lightest) | Which palette entry to use for the background (whitespace) colour. If not set, the palette is scanned and the entry with the highest luminance is chosen. |
+| `ITIDY_BG_COLOR` | palette index or `-1` | auto (lightest) | Which palette entry to use for the background (whitespace) colour. If not set, the palette is scanned and the entry with the highest luminance is chosen. **Special value `-1` skips background fill entirely**, preserving the template's existing pixel data in the safe area. |
 | `ITIDY_TEXT_COLOR` | palette index | auto (darkest) | Which palette entry to use for text (foreground) pixels. If not set, the darkest palette entry is chosen via luminance. |
 | `ITIDY_READ_BYTES` | integer | `4096` | Maximum number of bytes to read from the source file. |
 

@@ -82,10 +82,19 @@ typedef struct {
     ULONG palette_size_normal;              /* Number of palette entries — normal */
     ULONG palette_size_selected;            /* Number of palette entries — selected */
 
+    /* Transparency (palette index to treat as transparent, or -1 for opaque) */
+    LONG transparent_color_normal;          /* Transparent color for normal image */
+    LONG transparent_color_selected;        /* Transparent color for selected image */
+
+    /* Gadget rendering flags (controls border/frame/highlight appearance) */
+    UWORD gadget_flags;                     /* do_Gadget.Flags from DiskObject */
+    LONG is_frameless;                      /* Frameless setting from ICONCTRLA_GetFrameless */
+
     /* Metadata (read-only, for diagnostics) */
     int source_format;                  /* ITIDY_ICON_FORMAT_STANDARD/NEWICON/OS35 */
     BOOL is_palette_mapped;             /* TRUE if icon.library reports palette-mapped */
     BOOL has_selected_image;            /* TRUE if a second image state exists */
+    BOOL has_real_selected_image;       /* TRUE if selected image is real (not auto-dimmed) */
 } iTidy_IconImageData;
 
 /*========================================================================*/
@@ -160,6 +169,10 @@ typedef struct {
 
 /** Threshold for auto-promoting char width from 1 to 2 */
 #define ITIDY_CHAR_WIDTH_PROMOTE_THRESHOLD  64
+
+/** Sentinel value for "no background" — skip background fill entirely.
+ *  Set ITIDY_BG_COLOR=-1 in icon ToolType to preserve template pixels. */
+#define ITIDY_NO_BG_COLOR                   255
 
 /*========================================================================*/
 /* ToolType String Constants                                              */

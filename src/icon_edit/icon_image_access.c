@@ -54,6 +54,10 @@ BOOL itidy_icon_image_extract(struct DiskObject *icon, iTidy_IconImageData *out)
     struct ColorRegister *src_pal_2 = NULL;
     ULONG pal_size_1 = 0;
     ULONG pal_size_2 = 0;
+    LONG trans_color_1 = -1;
+    LONG trans_color_2 = -1;
+    LONG has_real_image_2 = 0;
+    LONG is_frameless = 0;
     ULONG pixel_count;
 
     if (icon == NULL || out == NULL)
@@ -107,9 +111,9 @@ BOOL itidy_icon_image_extract(struct DiskObject *icon, iTidy_IconImageData *out)
 
     out->is_palette_mapped = TRUE;
 
-    // Extract dimensions, pixel data, and palettes
+    // Extract dimensions, pixel data, palettes, transparency, and frameless setting
     {
-        struct TagItem get_tags[11];
+        struct TagItem get_tags[15];
         int t = 0;
 
         get_tags[t].ti_Tag  = ICONCTRLA_GetWidth;
@@ -142,6 +146,22 @@ BOOL itidy_icon_image_extract(struct DiskObject *icon, iTidy_IconImageData *out)
 
         get_tags[t].ti_Tag  = ICONCTRLA_GetPaletteSize2;
         get_tags[t].ti_Data = (ULONG)&pal_size_2;
+        t++;
+
+        get_tags[t].ti_Tag  = ICONCTRLA_GetTransparentColor1;
+        get_tags[t].ti_Data = (ULONG)&trans_color_1;
+        t++;
+
+        get_tags[t].ti_Tag  = ICONCTRLA_GetTransparentColor2;
+        get_tags[t].ti_Data = (ULONG)&trans_color_2;
+        t++;
+
+        get_tags[t].ti_Tag  = ICONCTRLA_HasRealImage2;
+        get_tags[t].ti_Data = (ULONG)&has_real_image_2;
+        t++;
+
+        get_tags[t].ti_Tag  = ICONCTRLA_GetFrameless;
+        get_tags[t].ti_Data = (ULONG)&is_frameless;
         t++;
 
         get_tags[t].ti_Tag  = TAG_DONE;
@@ -231,10 +251,27 @@ BOOL itidy_icon_image_extract(struct DiskObject *icon, iTidy_IconImageData *out)
         out->has_selected_image = FALSE;
     }
 
-    log_info(LOG_ICONS, "itidy_icon_image_extract: %ux%u, pal=%lu entries, selected=%s\n",
+    // Store transparent color indices
+    out->transparent_color_normal = trans_color_1;
+    out->transparent_color_selected = trans_color_2;
+
+    // Store gadget flags (controls border/frame/highlight rendering)
+    out->gadget_flags = icon->do_Gadget.Flags;
+
+    // Store whether this icon has a "real" selected image or uses auto-dimming
+    out->has_real_selected_image = (has_real_image_2 != 0);
+
+    // Store frameless setting (non-zero = frameless)
+    out->is_frameless = is_frameless;
+
+    log_info(LOG_ICONS, "itidy_icon_image_extract: %ux%u, pal=%lu entries, selected=%s, real_sel=%s, trans=(%ld,%ld), gflags=0x%04x, frameless=%s\n",
              (unsigned)out->width, (unsigned)out->height,
              out->palette_size_normal,
-             out->has_selected_image ? "yes" : "no");
+             out->has_selected_image ? "yes" : "no",
+             out->has_real_selected_image ? "yes" : "no",
+             trans_color_1, trans_color_2,
+             (unsigned)out->gadget_flags,
+             is_frameless ? "yes" : "no");
 
     return TRUE;
 }
@@ -275,9 +312,22 @@ struct DiskObject *itidy_icon_image_apply(struct DiskObject *icon,
         return NULL;
     }
 
+    // Apply gadget flags (controls border/frame/highlight rendering)
+    clone->do_Gadget.Flags = data->gadget_flags;
+
+    // Apply frameless setting using IconControlA (proper high-level API)
+    {
+        struct TagItem frameless_tags[2];
+        frameless_tags[0].ti_Tag  = ICONCTRLA_SetFrameless;
+        frameless_tags[0].ti_Data = (data->is_frameless != 0) ? TRUE : FALSE;
+        frameless_tags[1].ti_Tag  = TAG_DONE;
+        frameless_tags[1].ti_Data = 0;
+        IconControlA(clone, frameless_tags);
+    }
+
     // Apply the modified image data to the clone
     {
-        struct TagItem set_tags[10];
+        struct TagItem set_tags[12];
         t = 0;
 
         set_tags[t].ti_Tag  = ICONCTRLA_SetWidth;
@@ -300,8 +350,15 @@ struct DiskObject *itidy_icon_image_apply(struct DiskObject *icon,
         set_tags[t].ti_Data = (ULONG)data->pixel_data_normal;
         t++;
 
-        // Apply selected image data if present
-        if (data->pixel_data_selected != NULL && data->palette_selected != NULL)
+        set_tags[t].ti_Tag  = ICONCTRLA_SetTransparentColor1;
+        set_tags[t].ti_Data = (ULONG)data->transparent_color_normal;
+        t++;
+
+        // Apply selected image data ONLY if template had a real selected image
+        // (not auto-dimmed). If template used auto-dimming, icon.library will
+        // automatically generate a dimmed version for the new icon too.
+        if (data->has_real_selected_image &&
+            data->pixel_data_selected != NULL && data->palette_selected != NULL)
         {
             set_tags[t].ti_Tag  = ICONCTRLA_SetPaletteSize2;
             set_tags[t].ti_Data = data->palette_size_selected;
@@ -313,6 +370,10 @@ struct DiskObject *itidy_icon_image_apply(struct DiskObject *icon,
 
             set_tags[t].ti_Tag  = ICONCTRLA_SetImageData2;
             set_tags[t].ti_Data = (ULONG)data->pixel_data_selected;
+            t++;
+
+            set_tags[t].ti_Tag  = ICONCTRLA_SetTransparentColor2;
+            set_tags[t].ti_Data = (ULONG)data->transparent_color_selected;
             t++;
         }
 
@@ -331,8 +392,11 @@ struct DiskObject *itidy_icon_image_apply(struct DiskObject *icon,
         LayoutIconA(clone, NULL, layout_tags);
     }
 
-    log_info(LOG_ICONS, "itidy_icon_image_apply: applied %ux%u image to clone\n",
-             (unsigned)data->width, (unsigned)data->height);
+    log_info(LOG_ICONS, "itidy_icon_image_apply: applied %ux%u image to clone, gflags=0x%04x, frameless=%s, real_sel=%s\n",
+             (unsigned)data->width, (unsigned)data->height,
+             (unsigned)data->gadget_flags,
+             data->is_frameless ? "yes" : "no",
+             data->has_real_selected_image ? "yes" : "no (auto-dim)");
 
     return clone;
 }
@@ -631,14 +695,20 @@ void itidy_resolve_palette_indices(struct DiskObject *icon,
         tt_text = parse_integer_tooltype(tool_types, ITIDY_TT_TEXT_COLOR, -1);
     }
 
-    if (tt_bg >= 0 && (ULONG)tt_bg < palette_size)
+    // Special case: -1 means "no background" (preserve template pixels)
+    if (tt_bg == -1)
+    {
+        *bg_index = ITIDY_NO_BG_COLOR;
+        log_debug(LOG_ICONS, "itidy_resolve_palette_indices: bg = NO_BG (255) from ToolType\n");
+    }
+    else if (tt_bg >= 0 && (ULONG)tt_bg < palette_size)
     {
         *bg_index = (UBYTE)tt_bg;
         log_debug(LOG_ICONS, "itidy_resolve_palette_indices: bg from ToolType = %u\n", (unsigned)*bg_index);
     }
     else
     {
-        tt_bg = -1;  // Force auto-detect
+        tt_bg = -2;  // Force auto-detect (use -2 to distinguish from explicit -1)
     }
 
     if (tt_text >= 0 && (ULONG)tt_text < palette_size)
@@ -652,7 +722,8 @@ void itidy_resolve_palette_indices(struct DiskObject *icon,
     }
 
     // Auto-detect: scan palette for lightest (bg) and darkest (text)
-    if (tt_bg < 0 || tt_text < 0)
+    // Only auto-detect if not explicitly set (tt_bg == -2, not -1 which means "no bg")
+    if (tt_bg == -2 || tt_text < 0)
     {
         ULONG i;
         ULONG lightest_lum = 0;
@@ -677,7 +748,7 @@ void itidy_resolve_palette_indices(struct DiskObject *icon,
             }
         }
 
-        if (tt_bg < 0)
+        if (tt_bg == -2)
         {
             *bg_index = lightest_idx;
             log_debug(LOG_ICONS, "itidy_resolve_palette_indices: auto bg = %u (lum=%lu)\n",
