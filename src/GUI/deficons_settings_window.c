@@ -22,6 +22,7 @@
 #include "deficons_templates.h"
 #include "icon_types.h"
 #include "platform/platform.h"
+#include "easy_request_helper.h"
 
 #include <clib/alib_protos.h>
 #include <reaction/reaction.h>
@@ -39,8 +40,12 @@
 #include <proto/button.h>
 #include <proto/label.h>
 #include <proto/utility.h>
+#include <proto/asl.h>
+#include <proto/dos.h>
 
 #include <classes/window.h>
+#include <libraries/asl.h>
+#include <dos/dos.h>
 #include <gadgets/layout.h>
 #include <gadgets/listbrowser.h>
 #include <gadgets/chooser.h>
@@ -77,6 +82,7 @@ enum {
     GID_SELECT_ALL,
     GID_SELECT_NONE,
     GID_SHOW_TOOLS,
+    GID_CHANGE_DEFAULT_TOOL,
     GID_FOLDER_MODE_CHOOSER,
     GID_OK,
     GID_CANCEL
@@ -98,6 +104,7 @@ typedef struct {
     Object *select_all_btn;
     Object *select_none_btn;
     Object *show_tools_btn;
+    Object *change_default_tool_btn;
     Object *ok_btn;
     Object *cancel_btn;
     
@@ -108,8 +115,9 @@ typedef struct {
     /* Working copy of preferences */
     LayoutPreferences *prefs;
     
-    /* Result */
+    /* State */
     BOOL user_accepted;
+    BOOL is_showing_tools;
     
 } DefIconsSettingsWindow;
 
@@ -223,7 +231,8 @@ static void expand_root_nodes(struct List *list)
 
 /*
  * Look up default tool for a deficon type by locating its template icon
- * Tries child type first (e.g., "def_wav.info"), then parent if not found
+ * ONLY returns a tool if the DIRECT def_<type>.info file exists
+ * Does NOT fall back to parent (to show inheritance clearly in UI)
  * Returns allocated string (caller must free) or NULL if no default tool
  */
 static char* lookup_deficon_default_tool(const char *type_name)
@@ -231,8 +240,7 @@ static char* lookup_deficon_default_tool(const char *type_name)
     char template_path[512];
     char *default_tool = NULL;
     IconDetailsFromDisk details;
-    BOOL found = FALSE;
-    const char *parent_type;
+    BPTR lock;
     
     if (type_name == NULL || type_name[0] == '\0')
     {
@@ -242,45 +250,22 @@ static char* lookup_deficon_default_tool(const char *type_name)
     
     log_debug(LOG_GUI, "lookup_deficon_default_tool: Looking up type '%s'\n", type_name);
     
-    /* Try to find template icon for this type */
-    log_debug(LOG_GUI, "  Calling deficons_resolve_template('%s', ...)...\n", type_name);
-    found = deficons_resolve_template(type_name, template_path, sizeof(template_path));
+    /* Build direct path to template: ENVARC:Sys/def_<type>.info */
+    snprintf(template_path, sizeof(template_path), "ENVARC:Sys/def_%s.info", type_name);
     
-    if (found)
-    {
-        log_info(LOG_GUI, "  >>> Found template for '%s': %s\n", type_name, template_path);
-    }
-    else
-    {
-        log_debug(LOG_GUI, "  No direct template for '%s', trying parent...\n", type_name);
-        
-        /* If not found, try parent type */
-        parent_type = get_parent_type_name(g_cached_deficons_tree, g_cached_deficons_count, type_name);
-        if (parent_type != NULL)
-        {
-            log_debug(LOG_GUI, "  Parent type: '%s'\n", parent_type);
-            log_debug(LOG_GUI, "  Calling deficons_resolve_template('%s', ...)...\n", parent_type);
-            found = deficons_resolve_template(parent_type, template_path, sizeof(template_path));
-            if (found)
-            {
-                log_info(LOG_GUI, "  >>> Found parent template for '%s': %s\n", parent_type, template_path);
-            }
-            else
-            {
-                log_debug(LOG_GUI, "  Parent template also not found\n");
-            }
-        }
-        else
-        {
-            log_debug(LOG_GUI, "  No parent found for '%s'\n", type_name);
-        }
-    }
+    log_debug(LOG_GUI, "  Checking for direct template: %s\n", template_path);
     
-    if (!found)
+    /* Check if the direct template file exists (don't fall back to parent!) */
+    lock = Lock((STRPTR)template_path, ACCESS_READ);
+    if (!lock)
     {
-        log_debug(LOG_GUI, "  No template found for type: %s\n", type_name);
+        log_debug(LOG_GUI, "  Direct template does not exist: %s\n", template_path);
+        log_debug(LOG_GUI, "  (Not checking parent - want to show inheritance clearly)\n");
         return NULL;
     }
+    UnLock(lock);
+    
+    log_info(LOG_GUI, "  >>> Direct template exists: %s\n", template_path);
     
     /* Load icon and extract default tool */
     log_info(LOG_GUI, "  Loading icon from: %s.info\n", template_path);
@@ -427,8 +412,29 @@ static struct List* build_tree_list(LayoutPreferences *prefs, BOOL show_tools)
         }
         else
         {
-            /* Deeper levels */
-            sprintf(display_text, "  %s", tree_node->type_name);
+            /* Deeper levels (generation 3+) */
+            if (show_tools)
+            {
+                log_debug(LOG_GUI, "build_tree_list: Processing generation %d node '%s'\n", 
+                         tree_node->generation, tree_node->type_name);
+                default_tool = lookup_deficon_default_tool(tree_node->type_name);
+                if (default_tool != NULL)
+                {
+                    sprintf(display_text, "  %s  [%s]", tree_node->type_name, default_tool);
+                    log_info(LOG_GUI, "  Display text: '%s'\n", display_text);
+                    whd_free(default_tool);
+                    default_tool = NULL;
+                }
+                else
+                {
+                    sprintf(display_text, "  %s", tree_node->type_name);
+                    log_debug(LOG_GUI, "  No tool found, display text: '%s'\n", display_text);
+                }
+            }
+            else
+            {
+                sprintf(display_text, "  %s", tree_node->type_name);
+            }
         }
         
         /* Set flags */
@@ -601,6 +607,12 @@ static BOOL create_window(DefIconsSettingsWindow *win)
         GA_RelVerify, TRUE,
     ButtonEnd;
     
+    win->change_default_tool_btn = (Object *)ButtonObject,
+        GA_ID, GID_CHANGE_DEFAULT_TOOL,
+        GA_Text, "Change default tool",
+        GA_RelVerify, TRUE,
+    ButtonEnd;
+    
     win->ok_btn = (Object *)ButtonObject,
         GA_ID, GID_OK,
         GA_Text, "_OK",
@@ -637,7 +649,12 @@ static BOOL create_window(DefIconsSettingsWindow *win)
         LAYOUT_AddChild, (Object *)HLayoutObject,
             LAYOUT_AddChild, win->select_all_btn,
             LAYOUT_AddChild, win->select_none_btn,
+        LayoutEnd,
+        CHILD_WeightedHeight, 0,
+        
+        LAYOUT_AddChild, (Object *)HLayoutObject,
             LAYOUT_AddChild, win->show_tools_btn,
+            LAYOUT_AddChild, win->change_default_tool_btn,
         LayoutEnd,
         CHILD_WeightedHeight, 0,
         
@@ -786,6 +803,11 @@ static void handle_show_tools(DefIconsSettingsWindow *win)
         /* Try to rebuild without tools as fallback */
         log_warning(LOG_GUI, "Attempting fallback rebuild without tools...\n");
         new_list = build_tree_list(win->prefs, FALSE);
+        win->is_showing_tools = FALSE;
+    }
+    else
+    {
+        win->is_showing_tools = TRUE;
     }
     
     win->tree_list = new_list;
@@ -816,6 +838,328 @@ static void handle_show_tools(DefIconsSettingsWindow *win)
     SetWindowPointer(win->window, WA_BusyPointer, FALSE, TAG_DONE);
     
     log_info(LOG_GUI, "=== Default tools display updated ===\n\n");
+}
+
+/*
+ * Handle Change Default Tool button
+ */
+static void handle_change_default_tool(DefIconsSettingsWindow *win)
+{
+    struct Node *selected_node = NULL;
+    DeficonTypeTreeNode *tree_node = NULL;
+    ULONG generation = 0;
+    char *current_tool = NULL;
+    char template_path[512];
+    char drawer[256];
+    char filename[128];
+    struct FileRequester *freq = NULL;
+    char full_path[512];
+    BOOL found = FALSE;
+    
+    log_info(LOG_GUI, "Change default tool button clicked\n");
+    
+    /* Get selected node from listbrowser */
+    GetAttr(LISTBROWSER_SelectedNode, win->tree_listbrowser, (ULONG *)&selected_node);
+    if (selected_node == NULL)
+    {
+        ShowEasyRequest(win->window,
+            "No Selection",
+            "Please select a DefIcon type first.",
+            "OK");
+        return;
+    }
+    
+    /* Get node data */
+    GetListBrowserNodeAttrs(selected_node,
+        LBNA_Generation, &generation,
+        LBNA_UserData, &tree_node,
+        TAG_DONE);
+    
+    /* Validate node */
+    if (tree_node == NULL || generation < 1 || generation > 3)
+    {
+        ShowEasyRequest(win->window,
+            "Invalid Selection",
+            "Please select a valid DefIcon type.",
+            "OK");
+        return;
+    }
+    
+    log_info(LOG_GUI, "Selected type: '%s' (generation %lu)\n", tree_node->type_name, generation);
+    
+    /* Look up current default tool */
+    current_tool = lookup_deficon_default_tool(tree_node->type_name);
+    
+    /* Parse current tool into drawer and filename */
+    if (current_tool != NULL && current_tool[0] != '\0')
+    {
+        char *last_slash = strrchr(current_tool, '/');
+        char *last_colon = strrchr(current_tool, ':');
+        char *separator = NULL;
+        
+        /* Find the last path separator */
+        if (last_slash && last_colon)
+        {
+            separator = (last_slash > last_colon) ? last_slash : last_colon;
+        }
+        else if (last_slash)
+        {
+            separator = last_slash;
+        }
+        else if (last_colon)
+        {
+            separator = last_colon;
+        }
+        
+        if (separator != NULL)
+        {
+            size_t drawer_len = separator - current_tool + 1;
+            if (drawer_len < sizeof(drawer))
+            {
+                strncpy(drawer, current_tool, drawer_len);
+                drawer[drawer_len] = '\0';
+                strncpy(filename, separator + 1, sizeof(filename) - 1);
+                filename[sizeof(filename) - 1] = '\0';
+            }
+            else
+            {
+                strcpy(drawer, "SYS:");
+                strcpy(filename, "");
+            }
+        }
+        else
+        {
+            /* No path separator - just a filename */
+            strcpy(drawer, "SYS:");
+            strncpy(filename, current_tool, sizeof(filename) - 1);
+            filename[sizeof(filename) - 1] = '\0';
+        }
+        
+        log_debug(LOG_GUI, "Parsed current tool: drawer='%s', file='%s'\n", drawer, filename);
+    }
+    else
+    {
+        /* No current tool - default to SYS: */
+        strcpy(drawer, "SYS:");
+        strcpy(filename, "");
+        log_debug(LOG_GUI, "No current tool, defaulting to SYS:\n");
+    }
+    
+    /* Free current tool string */
+    if (current_tool != NULL)
+    {
+        whd_free(current_tool);
+        current_tool = NULL;
+    }
+    
+    /* Open file requester */
+    freq = (struct FileRequester *)AllocAslRequestTags(ASL_FileRequest,
+        ASLFR_TitleText, "Select Default Tool",
+        ASLFR_InitialDrawer, drawer,
+        ASLFR_InitialFile, filename,
+        ASLFR_DoSaveMode, FALSE,
+        ASLFR_RejectIcons, TRUE,
+        ASLFR_Window, win->window,
+        TAG_END);
+    
+    if (!freq)
+    {
+        ShowEasyRequest(win->window,
+            "Error",
+            "Could not open file requester.",
+            "OK");
+        return;
+    }
+    
+    if (AslRequest(freq, NULL))
+    {
+        /* Build full path to selected tool */
+        strcpy(full_path, freq->fr_Drawer);
+        if (!AddPart((STRPTR)full_path, (STRPTR)freq->fr_File, sizeof(full_path)))
+        {
+            FreeAslRequest(freq);
+            ShowEasyRequest(win->window,
+                "Error",
+                "File path is too long.",
+                "OK");
+            return;
+        }
+        
+        log_info(LOG_GUI, "Selected tool: %s\n", full_path);
+        
+        /* For generation 3 (file types), check if child template exists first */
+        /* If not, clone from parent before updating */
+        if (generation == 3)
+        {
+            char child_template_path[512];
+            BPTR lock;
+            BOOL child_exists = FALSE;
+            
+            /* Build direct path to child template: ENVARC:Sys/def_<childtype>.info */
+            snprintf(child_template_path, sizeof(child_template_path), "ENVARC:Sys/def_%s.info", tree_node->type_name);
+            
+            log_info(LOG_GUI, "*** Generation 3 node '%s' - checking if child template exists: %s\n", 
+                    tree_node->type_name, child_template_path);
+            
+            /* Check if child template exists */
+            lock = Lock((STRPTR)child_template_path, ACCESS_READ);
+            if (lock)
+            {
+                UnLock(lock);
+                child_exists = TRUE;
+                log_info(LOG_GUI, "*** Child template EXISTS: %s\n", child_template_path);
+            }
+            else
+            {
+                log_info(LOG_GUI, "*** Child template DOES NOT EXIST: %s\n", child_template_path);
+                log_info(LOG_GUI, "*** Need to clone from parent...\n");
+            }
+            
+            /* If child doesn't exist, clone from parent */
+            if (!child_exists)
+            {
+                const char *parent_type = NULL;
+                char parent_template_path[512];
+                BOOL parent_found = FALSE;
+                
+                /* Get parent type name */
+                parent_type = get_parent_type_name(g_cached_deficons_tree, g_cached_deficons_count, tree_node->type_name);
+                if (parent_type != NULL)
+                {
+                    log_info(LOG_GUI, "*** Parent type: '%s'\n", parent_type);
+                    
+                    /* Find parent template (will walk up hierarchy if needed) */
+                    parent_found = deficons_resolve_template(parent_type, parent_template_path, sizeof(parent_template_path));
+                    if (parent_found)
+                    {
+                        char parent_path_no_info[512];
+                        char *info_ext;
+                        
+                        log_info(LOG_GUI, "*** Parent template found: %s\n", parent_template_path);
+                        
+                        /* GetDiskObject() expects path WITHOUT .info extension */
+                        /* deficons_resolve_template() returns path WITH .info extension */
+                        /* So we need to strip it before calling GetDiskObject() */
+                        strncpy(parent_path_no_info, parent_template_path, sizeof(parent_path_no_info) - 1);
+                        parent_path_no_info[sizeof(parent_path_no_info) - 1] = '\0';
+                        
+                        info_ext = strstr(parent_path_no_info, ".info");
+                        if (info_ext)
+                        {
+                            *info_ext = '\0';
+                            log_debug(LOG_GUI, "*** Stripped .info extension: %s\n", parent_path_no_info);
+                        }
+                        
+                        /* Clone the parent icon to child */
+                        log_info(LOG_GUI, "*** Calling GetDiskObject(%s)\n", parent_path_no_info);
+                        struct DiskObject *parent_dobj = GetDiskObject(parent_path_no_info);
+                        if (parent_dobj)
+                        {
+                            char child_path_no_info[512];
+                            char *child_info_ext;
+                            
+                            log_info(LOG_GUI, "*** Successfully loaded parent icon\n");
+                            log_info(LOG_GUI, "*** Parent path (with .info):  %s\n", parent_template_path);
+                            log_info(LOG_GUI, "*** Child path (with .info):   %s\n", child_template_path);
+                            
+                            /* PutDiskObject() also expects path WITHOUT .info extension */
+                            strncpy(child_path_no_info, child_template_path, sizeof(child_path_no_info) - 1);
+                            child_path_no_info[sizeof(child_path_no_info) - 1] = '\0';
+                            
+                            child_info_ext = strstr(child_path_no_info, ".info");
+                            if (child_info_ext)
+                            {
+                                *child_info_ext = '\0';
+                                log_debug(LOG_GUI, "*** Child path (without .info): %s\n", child_path_no_info);
+                            }
+                            
+                            log_info(LOG_GUI, "*** Calling PutDiskObject(%s, ...)\n", child_path_no_info);
+                            if (PutDiskObject(child_path_no_info, parent_dobj))
+                            {
+                                log_info(LOG_GUI, "*** Successfully cloned parent icon to child\n");
+                                strcpy(template_path, child_template_path);
+                                found = TRUE;
+                            }
+                            else
+                            {
+                                log_error(LOG_GUI, "*** FAILED to save cloned icon to: %s\n", child_path_no_info);
+                            }
+                            
+                            FreeDiskObject(parent_dobj);
+                        }
+                        else
+                        {
+                            log_error(LOG_GUI, "*** FAILED to load parent icon: %s\n", parent_template_path);
+                        }
+                    }
+                    else
+                    {
+                        log_error(LOG_GUI, "*** Parent template not found for: %s\n", parent_type);
+                    }
+                }
+                else
+                {
+                    log_error(LOG_GUI, "*** Could not determine parent type for: %s\n", tree_node->type_name);
+                }
+            }
+            else
+            {
+                /* Child template exists - use it */
+                log_info(LOG_GUI, "*** Using existing child template: %s\n", child_template_path);
+                strcpy(template_path, child_template_path);
+                found = TRUE;
+            }
+        }
+        else
+        {
+            /* Generation 1 or 2 - use normal template resolution */
+            log_info(LOG_GUI, "Generation %lu node '%s' - using deficons_resolve_template\n", 
+                    generation, tree_node->type_name);
+            found = deficons_resolve_template(tree_node->type_name, template_path, sizeof(template_path));
+        }
+        
+        /* Final check - did we find or create a template? */
+        if (!found)
+        {
+            FreeAslRequest(freq);
+            ShowEasyRequest(win->window,
+                "Error",
+                "Could not find or create\ntemplate icon for this type.",
+                "OK");
+            log_error(LOG_GUI, "Template not found for type: %s\n", tree_node->type_name);
+            return;
+        }
+        
+        log_info(LOG_GUI, "Template path: %s\n", template_path);
+        
+        /* Update the icon's default tool */
+        if (SetIconDefaultTool(template_path, full_path))
+        {
+            log_info(LOG_GUI, "Default tool updated successfully\n");
+            
+            /* Refresh the listbrowser if showing tools */
+            if (win->is_showing_tools)
+            {
+                log_debug(LOG_GUI, "Refreshing listbrowser to show updated tool...\n");
+                handle_show_tools(win);
+            }
+            
+            ShowEasyRequest(win->window,
+                "Success",
+                "Default tool updated successfully.",
+                "OK");
+        }
+        else
+        {
+            ShowEasyRequest(win->window,
+                "Error",
+                "Failed to update default tool.",
+                "OK");
+            log_error(LOG_GUI, "Failed to update default tool for: %s\n", template_path);
+        }
+    }
+    
+    FreeAslRequest(freq);
 }
 
 /*
@@ -1052,6 +1396,10 @@ static void run_event_loop(DefIconsSettingsWindow *win)
                             handle_show_tools(win);
                             break;
                         
+                        case GID_CHANGE_DEFAULT_TOOL:
+                            handle_change_default_tool(win);
+                            break;
+                        
                         case GID_OK:
                             handle_ok(win);
                             done = TRUE;
@@ -1092,6 +1440,7 @@ BOOL open_itidy_deficons_settings_window(LayoutPreferences *prefs)
     memset(&win, 0, sizeof(DefIconsSettingsWindow));
     win.prefs = prefs;
     win.user_accepted = FALSE;
+    win.is_showing_tools = FALSE;
     
     /* Open ReAction libraries */
     if (!open_reaction_libs())
