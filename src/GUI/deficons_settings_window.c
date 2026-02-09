@@ -19,6 +19,8 @@
 #include "deficons_settings_window.h"
 #include "writeLog.h"
 #include "deficons_parser.h"
+#include "deficons_templates.h"
+#include "icon_types.h"
 #include "platform/platform.h"
 
 #include <clib/alib_protos.h>
@@ -74,6 +76,7 @@ enum {
     GID_TYPE_TREE = 1,
     GID_SELECT_ALL,
     GID_SELECT_NONE,
+    GID_SHOW_TOOLS,
     GID_FOLDER_MODE_CHOOSER,
     GID_OK,
     GID_CANCEL
@@ -94,6 +97,7 @@ typedef struct {
     Object *chooser_obj;
     Object *select_all_btn;
     Object *select_none_btn;
+    Object *show_tools_btn;
     Object *ok_btn;
     Object *cancel_btn;
     
@@ -218,6 +222,99 @@ static void expand_root_nodes(struct List *list)
 }
 
 /*
+ * Look up default tool for a deficon type by locating its template icon
+ * Tries child type first (e.g., "def_wav.info"), then parent if not found
+ * Returns allocated string (caller must free) or NULL if no default tool
+ */
+static char* lookup_deficon_default_tool(const char *type_name)
+{
+    char template_path[512];
+    char *default_tool = NULL;
+    IconDetailsFromDisk details;
+    BOOL found = FALSE;
+    const char *parent_type;
+    
+    if (type_name == NULL || type_name[0] == '\0')
+    {
+        log_debug(LOG_GUI, "lookup_deficon_default_tool: NULL or empty type_name\n");
+        return NULL;
+    }
+    
+    log_debug(LOG_GUI, "lookup_deficon_default_tool: Looking up type '%s'\n", type_name);
+    
+    /* Try to find template icon for this type */
+    log_debug(LOG_GUI, "  Calling deficons_resolve_template('%s', ...)...\n", type_name);
+    found = deficons_resolve_template(type_name, template_path, sizeof(template_path));
+    
+    if (found)
+    {
+        log_info(LOG_GUI, "  >>> Found template for '%s': %s\n", type_name, template_path);
+    }
+    else
+    {
+        log_debug(LOG_GUI, "  No direct template for '%s', trying parent...\n", type_name);
+        
+        /* If not found, try parent type */
+        parent_type = get_parent_type_name(g_cached_deficons_tree, g_cached_deficons_count, type_name);
+        if (parent_type != NULL)
+        {
+            log_debug(LOG_GUI, "  Parent type: '%s'\n", parent_type);
+            log_debug(LOG_GUI, "  Calling deficons_resolve_template('%s', ...)...\n", parent_type);
+            found = deficons_resolve_template(parent_type, template_path, sizeof(template_path));
+            if (found)
+            {
+                log_info(LOG_GUI, "  >>> Found parent template for '%s': %s\n", parent_type, template_path);
+            }
+            else
+            {
+                log_debug(LOG_GUI, "  Parent template also not found\n");
+            }
+        }
+        else
+        {
+            log_debug(LOG_GUI, "  No parent found for '%s'\n", type_name);
+        }
+    }
+    
+    if (!found)
+    {
+        log_debug(LOG_GUI, "  No template found for type: %s\n", type_name);
+        return NULL;
+    }
+    
+    /* Load icon and extract default tool */
+    log_info(LOG_GUI, "  Loading icon from: %s.info\n", template_path);
+    if (GetIconDetailsFromDisk(template_path, &details, NULL))
+    {
+        if (details.defaultTool != NULL && details.defaultTool[0] != '\0')
+        {
+            log_info(LOG_GUI, "  >>> Found default tool for '%s': %s\n", type_name, details.defaultTool);
+            
+            /* Make a copy since details.defaultTool will be freed */
+            size_t len = strlen(details.defaultTool);
+            default_tool = (char *)whd_malloc(len + 1);
+            if (default_tool != NULL)
+            {
+                strcpy(default_tool, details.defaultTool);
+            }
+            
+            /* Free the default tool from GetIconDetailsFromDisk */
+            whd_free(details.defaultTool);
+        }
+        else
+        {
+            log_debug(LOG_GUI, "  No default tool set in icon: %s\n", template_path);
+        }
+    }
+    else
+    {
+        log_warning(LOG_GUI, "  Failed to load icon details from: %s\n", template_path);
+    }
+    
+    return default_tool;
+}
+
+/*
  * Build hierarchical ListBrowser node list from DefIcons cache
  */
 static BOOL is_deficon_type_checked_for_ui(const LayoutPreferences *prefs, const char *type_name)
@@ -241,12 +338,13 @@ static BOOL is_deficon_type_checked_for_ui(const LayoutPreferences *prefs, const
     return (ptr == NULL);  /* TRUE if NOT found in disabled list */
 }
 
-static struct List* build_tree_list(LayoutPreferences *prefs)
+static struct List* build_tree_list(LayoutPreferences *prefs, BOOL show_tools)
 {
     struct List *list;
     struct Node *node;
     int i;
-    char display_text[128];
+    char display_text[256];
+    char *default_tool = NULL;
     
     if (g_cached_deficons_tree == NULL || g_cached_deficons_count == 0)
     {
@@ -268,6 +366,8 @@ static struct List* build_tree_list(LayoutPreferences *prefs)
     }
     
     /* Build nodes from DefIcons tree */
+    log_debug(LOG_GUI, "build_tree_list: Building %d nodes, show_tools=%d\n", g_cached_deficons_count, show_tools);
+    
     for (i = 0; i < g_cached_deficons_count; i++)
     {
         DeficonTypeTreeNode *tree_node = &g_cached_deficons_tree[i];
@@ -277,12 +377,57 @@ static struct List* build_tree_list(LayoutPreferences *prefs)
         /* Format display text based on generation (generations start at 1) */
         if (tree_node->generation == 1)
         {
-            /* Root nodes: Show type name with checkbox */
-            sprintf(display_text, "%s", tree_node->type_name);
+            /* Root nodes: Show type name, optionally with default tool */
+            if (show_tools)
+            {
+                log_debug(LOG_GUI, "build_tree_list: Processing generation 1 node '%s'\n", tree_node->type_name);
+                default_tool = lookup_deficon_default_tool(tree_node->type_name);
+                if (default_tool != NULL)
+                {
+                    sprintf(display_text, "%s  [%s]", tree_node->type_name, default_tool);
+                    log_info(LOG_GUI, "  Display text: '%s'\n", display_text);
+                    whd_free(default_tool);
+                    default_tool = NULL;
+                }
+                else
+                {
+                    sprintf(display_text, "%s", tree_node->type_name);
+                    log_debug(LOG_GUI, "  No tool found, display text: '%s'\n", display_text);
+                }
+            }
+            else
+            {
+                sprintf(display_text, "%s", tree_node->type_name);
+            }
+        }
+        else if (tree_node->generation == 2)
+        {
+            /* Child nodes: Show as sub-items, optionally with default tool */
+            if (show_tools)
+            {
+                log_debug(LOG_GUI, "build_tree_list: Processing generation 2 node '%s'\n", tree_node->type_name);
+                default_tool = lookup_deficon_default_tool(tree_node->type_name);
+                if (default_tool != NULL)
+                {
+                    sprintf(display_text, "  %s  [%s]", tree_node->type_name, default_tool);
+                    log_info(LOG_GUI, "  Display text: '%s'\n", display_text);
+                    whd_free(default_tool);
+                    default_tool = NULL;
+                }
+                else
+                {
+                    sprintf(display_text, "  %s", tree_node->type_name);
+                    log_debug(LOG_GUI, "  No tool found, display text: '%s'\n", display_text);
+                }
+            }
+            else
+            {
+                sprintf(display_text, "  %s", tree_node->type_name);
+            }
         }
         else
         {
-            /* Child nodes: Show as sub-items (informational only) */
+            /* Deeper levels */
             sprintf(display_text, "  %s", tree_node->type_name);
         }
         
@@ -389,8 +534,8 @@ static STRPTR folder_mode_labels[] = {
  */
 static BOOL create_window(DefIconsSettingsWindow *win)
 {
-    /* Build tree list */
-    win->tree_list = build_tree_list(win->prefs);
+    /* Build tree list (initially without tools) */
+    win->tree_list = build_tree_list(win->prefs, FALSE);
     if (win->tree_list == NULL)
     {
         log_error(LOG_GUI, "Failed to build tree list\n");
@@ -450,6 +595,12 @@ static BOOL create_window(DefIconsSettingsWindow *win)
         GA_RelVerify, TRUE,
     ButtonEnd;
     
+    win->show_tools_btn = (Object *)ButtonObject,
+        GA_ID, GID_SHOW_TOOLS,
+        GA_Text, "Show default _tools",
+        GA_RelVerify, TRUE,
+    ButtonEnd;
+    
     win->ok_btn = (Object *)ButtonObject,
         GA_ID, GID_OK,
         GA_Text, "_OK",
@@ -486,6 +637,7 @@ static BOOL create_window(DefIconsSettingsWindow *win)
         LAYOUT_AddChild, (Object *)HLayoutObject,
             LAYOUT_AddChild, win->select_all_btn,
             LAYOUT_AddChild, win->select_none_btn,
+            LAYOUT_AddChild, win->show_tools_btn,
         LayoutEnd,
         CHILD_WeightedHeight, 0,
         
@@ -570,6 +722,100 @@ static BOOL create_window(DefIconsSettingsWindow *win)
     
     log_debug(LOG_GUI, "DefIcons settings window opened\n");
     return TRUE;
+}
+
+/*
+ * Handle Show Tools button - rebuild list with default tool info
+ */
+static void handle_show_tools(DefIconsSettingsWindow *win)
+{
+    struct List *new_list;
+    
+    log_info(LOG_GUI, "\n=== Scanning DefIcons for default tools ===\n");
+    
+    /* Set busy pointer while scanning */
+    SetWindowPointer(win->window, WA_BusyPointer, TRUE, TAG_DONE);
+    
+    /* Check if template system is initialized */
+    {
+        int template_count = 0;
+        const TemplateCacheEntry *cache = deficons_get_template_cache_stats(&template_count);
+        if (cache == NULL || template_count == 0)
+        {
+            log_warning(LOG_GUI, "DefIcons template system not initialized, initializing now...\n");
+            if (deficons_initialize_templates())
+            {
+                cache = deficons_get_template_cache_stats(&template_count);
+                log_info(LOG_GUI, "Template system initialized: %d templates cached\n", template_count);
+            }
+            else
+            {
+                log_error(LOG_GUI, "Failed to initialize template system!\n");
+                /* Restore normal pointer on error */
+                SetWindowPointer(win->window, WA_BusyPointer, FALSE, TAG_DONE);
+                return;
+            }
+        }
+        else
+        {
+            log_debug(LOG_GUI, "Template system already initialized: %d templates cached\n", template_count);
+        }
+    }
+    
+    log_info(LOG_GUI, "Detaching current listbrowser...\n");
+    
+    /* Detach current list */
+    SetGadgetAttrs((struct Gadget *)win->tree_listbrowser, win->window, NULL,
+        LISTBROWSER_Labels, ~0,
+        TAG_DONE);
+    
+    /* Free old list */
+    if (win->tree_list != NULL)
+    {
+        log_debug(LOG_GUI, "Freeing old tree list...\n");
+        free_tree_list(win->tree_list);
+        win->tree_list = NULL;
+    }
+    
+    /* Build new list with tools displayed */
+    log_info(LOG_GUI, "Building new tree list with default tools...\n");
+    new_list = build_tree_list(win->prefs, TRUE);
+    if (new_list == NULL)
+    {
+        log_error(LOG_GUI, "Failed to rebuild tree list with tools\n");
+        /* Try to rebuild without tools as fallback */
+        log_warning(LOG_GUI, "Attempting fallback rebuild without tools...\n");
+        new_list = build_tree_list(win->prefs, FALSE);
+    }
+    
+    win->tree_list = new_list;
+    
+    /* Expand root nodes to show generation 2 */
+    if (win->tree_list != NULL)
+    {
+        log_debug(LOG_GUI, "Expanding root nodes...\n");
+        expand_root_nodes(win->tree_list);
+    }
+    else
+    {
+        log_error(LOG_GUI, "ERROR: tree_list is NULL after rebuild!\n");
+    }
+    
+    /* Reattach list */
+    log_debug(LOG_GUI, "Reattaching listbrowser with new list...\n");
+    SetGadgetAttrs((struct Gadget *)win->tree_listbrowser, win->window, NULL,
+        LISTBROWSER_Labels, win->tree_list,
+        TAG_DONE);
+    
+    /* Refresh display */
+    log_debug(LOG_GUI, "Refreshing display...\n");
+    RefreshGadgets((struct Gadget *)win->tree_listbrowser, win->window, NULL);
+    RefreshWindowFrame(win->window);
+    
+    /* Restore normal pointer */
+    SetWindowPointer(win->window, WA_BusyPointer, FALSE, TAG_DONE);
+    
+    log_info(LOG_GUI, "=== Default tools display updated ===\n\n");
 }
 
 /*
@@ -800,6 +1046,10 @@ static void run_event_loop(DefIconsSettingsWindow *win)
                         
                         case GID_SELECT_NONE:
                             handle_select_none(win);
+                            break;
+                        
+                        case GID_SHOW_TOOLS:
+                            handle_show_tools(win);
                             break;
                         
                         case GID_OK:
