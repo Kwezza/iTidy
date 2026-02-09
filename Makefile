@@ -61,7 +61,8 @@ CORE_SRCS = \
 	$(SRC_DIR)/deficons_parser.c \
 	$(SRC_DIR)/deficons_identify.c \
 	$(SRC_DIR)/deficons_templates.c \
-	$(SRC_DIR)/deficons_filters.c
+	$(SRC_DIR)/deficons_filters.c \
+	$(SRC_DIR)/deficons_creation.c
 
 # Backup system source files
 BACKUP_SRCS = \

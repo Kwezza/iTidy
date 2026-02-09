@@ -461,16 +461,16 @@ BOOL deficons_resolve_template(const char *type_token, char *template_path, int 
         return FALSE;
     }
     
-    log_info(LOG_ICONS, ">>> RESOLVE: Looking for template for type '%s'\n", type_token);
+    log_debug(LOG_ICONS, ">>> RESOLVE: Looking for template for type '%s'\n", type_token);
     
     /* Check cache first */
     if (lookup_template_cache(type_token, template_path, path_size))
     {
-        log_info(LOG_ICONS, ">>> RESOLVE: Cache hit for '%s' → '%s'\n", type_token, template_path);
+        log_debug(LOG_ICONS, ">>> RESOLVE: Cache hit for '%s' → '%s'\n", type_token, template_path);
         return TRUE;  /* Cache hit */
     }
     
-    log_info(LOG_ICONS, ">>> RESOLVE: Cache miss, trying direct match for '%s'\n", type_token);
+    log_debug(LOG_ICONS, ">>> RESOLVE: Cache miss, trying direct match for '%s'\n", type_token);
     
     /* Cache miss - perform resolution */
     current_type = type_token;
@@ -481,11 +481,11 @@ BOOL deficons_resolve_template(const char *type_token, char *template_path, int 
     {
         find_root_category(type_token, category, sizeof(category));
         add_to_template_cache(type_token, template_path, category, FALSE);
-        log_info(LOG_ICONS, ">>> RESOLVE: Direct match found: %s → %s\n", type_token, template_path);
+        log_debug(LOG_ICONS, ">>> RESOLVE: Direct match found: %s → %s\n", type_token, template_path);
         return TRUE;
     }
     
-    log_info(LOG_ICONS, ">>> RESOLVE: No direct match, walking parent chain...\n");
+    log_debug(LOG_ICONS, ">>> RESOLVE: No direct match, walking parent chain...\n");
     
     /* Walk parent chain */
     while (depth < MAX_PARENT_DEPTH)
@@ -495,18 +495,18 @@ BOOL deficons_resolve_template(const char *type_token, char *template_path, int 
         parent = get_parent_type(current_type);
         if (!parent)
         {
-            log_info(LOG_ICONS, ">>> RESOLVE: No parent found for '%s' at depth %d\n", current_type, depth);
+            log_debug(LOG_ICONS, ">>> RESOLVE: No parent found for '%s' at depth %d\n", current_type, depth);
             break;
         }
         
-        log_info(LOG_ICONS, ">>> RESOLVE: Trying parent: '%s' → '%s'\n", current_type, parent);
+        log_debug(LOG_ICONS, ">>> RESOLVE: Trying parent: '%s' → '%s'\n", current_type, parent);
         
         /* Try parent template */
         if (find_template_file(parent, template_path, path_size))
         {
             find_root_category(type_token, category, sizeof(category));
             add_to_template_cache(type_token, template_path, category, FALSE);
-            log_info(LOG_ICONS, ">>> RESOLVE: Parent chain success: %s → %s → %s\n",
+            log_debug(LOG_ICONS, ">>> RESOLVE: Parent chain success: %s → %s → %s\n",
                     type_token, parent, template_path);
             return TRUE;
         }
@@ -515,13 +515,13 @@ BOOL deficons_resolve_template(const char *type_token, char *template_path, int 
         depth++;
     }
     
-    log_info(LOG_ICONS, ">>> RESOLVE: Parent chain exhausted after %d attempts\n", depth);
+    log_debug(LOG_ICONS, ">>> RESOLVE: Parent chain exhausted after %d attempts\n", depth);
     
     /* No match in type hierarchy - try fallback */
     if (apply_fallback_template(template_path, path_size))
     {
         add_to_template_cache(type_token, template_path, "fallback", TRUE);
-        log_info(LOG_ICONS, "Fallback template used for: %s → %s\n", type_token, template_path);
+        log_debug(LOG_ICONS, "Fallback template used for: %s → %s\n", type_token, template_path);
         return TRUE;
     }
     

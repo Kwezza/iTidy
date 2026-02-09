@@ -10,6 +10,7 @@
 #include "deficons_filters.h"
 #include "deficons_templates.h"
 #include "writeLog.h"
+#include "utilities.h"
 #include "platform/platform.h"
 
 #include <exec/types.h>
@@ -21,6 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <stddef.h>
 
 /*========================================================================*/
 /* System Path Prefixes                                                  */
@@ -216,11 +218,12 @@ BOOL deficons_folder_has_info_files(const char *path)
         return FALSE;
     }
     
-    /* Scan for .info files */
+    /* Scan for .info files (proper suffix check) */
     while (ExNext(lock, fib))
     {
-        /* Check if filename ends with .info */
-        if (strstr(fib->fib_FileName, ".info") != NULL)
+        /* Check if filename ends with .info (not just contains it) */
+        size_t name_len = strlen(fib->fib_FileName);
+        if (name_len >= 6 && strncasecmp_custom(fib->fib_FileName + name_len - 5, ".info", 5) == 0)
         {
             has_info = TRUE;
             log_debug(LOG_ICONS, "Found .info file: %s/%s\n", path, fib->fib_FileName);

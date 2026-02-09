@@ -298,206 +298,186 @@ Compiling [build/amiga/layout_preferences.o] from src/layout_preferences.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/layout_preferences.c -o build/amiga/layout_preferences.o
 Compiling [build/amiga/layout_processor.o] from src/layout_processor.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/layout_processor.c -o build/amiga/layout_processor.o
->    PROGRESS_STATUS("  Icons created: %lu", g_iconsCreatedTotal)
-warning 153 in line 283 of "src\layout_processor.c": statement has no effect
->                          g_iconCreationStats[i].count)
-warning 153 in line 290 of "src\layout_processor.c": statement has no effect
 >        CONSOLE_ERROR("Error: NULL progress window pointer\n");
-warning 153 in line 451 of "src\layout_processor.c": statement has no effect
+warning 153 in line 229 of "src\layout_processor.c": statement has no effect
 >        CONSOLE_ERROR("Error: Failed to get global preferences\n");
-warning 153 in line 481 of "src\layout_processor.c": statement has no effect
+warning 153 in line 259 of "src\layout_processor.c": statement has no effect
 >        CONSOLE_ERROR("Error: No folder path set in preferences\n");
-warning 153 in line 488 of "src\layout_processor.c": statement has no effect
+warning 153 in line 266 of "src\layout_processor.c": statement has no effect
 >    CONSOLE_STATUS("=== Current Preferences Settings ===");
-warning 153 in line 578 of "src\layout_processor.c": statement has no effect
+warning 153 in line 356 of "src\layout_processor.c": statement has no effect
 >    CONSOLE_STATUS("Target Path: %s", sanitizedPath);
-warning 153 in line 581 of "src\layout_processor.c": statement has no effect
+warning 153 in line 359 of "src\layout_processor.c": statement has no effect
 >    CONSOLE_STATUS("Recursive Mode: %s", prefs->recursive_subdirs ? "YES" : "NO
-warning 153 in line 583 of "src\layout_processor.c": statement has no effect
+warning 153 in line 361 of "src\layout_processor.c": statement has no effect
 >    CONSOLE_STATUS("Sort By: %d", prefs->sortBy);
-warning 153 in line 590 of "src\layout_processor.c": statement has no effect
+warning 153 in line 368 of "src\layout_processor.c": statement has no effect
 >    CONSOLE_STATUS("Backup Enabled: %s", prefs->backupPrefs.enableUndoBackup ? 
-warning 153 in line 593 of "src\layout_processor.c": statement has no effect
+warning 153 in line 371 of "src\layout_processor.c": statement has no effect
 >    CONSOLE_STATUS("--- DefIcons Settings ---");
-warning 153 in line 596 of "src\layout_processor.c": statement has no effect
+warning 153 in line 374 of "src\layout_processor.c": statement has no effect
 >    CONSOLE_STATUS("DefIcons icon creation: %s", prefs->enable_deficons_icon_cr
-warning 153 in line 598 of "src\layout_processor.c": statement has no effect
+warning 153 in line 376 of "src\layout_processor.c": statement has no effect
 >    CONSOLE_STATUS("===================================");
-warning 153 in line 606 of "src\layout_processor.c": statement has no effect
+warning 153 in line 384 of "src\layout_processor.c": statement has no effect
 >        CONSOLE_STATUS("\n*** Backup enabled - creating backup session ***\n");
-warning 153 in line 611 of "src\layout_processor.c": statement has no effect
+warning 153 in line 389 of "src\layout_processor.c": statement has no effect
 >        CONSOLE_STATUS("Backup location: %s\n", prefs->backupPrefs.backupRootPa
-warning 153 in line 612 of "src\layout_processor.c": statement has no effect
+warning 153 in line 390 of "src\layout_processor.c": statement has no effect
 >            CONSOLE_STATUS("Backup session started successfully (Run #%u)\n", l
-warning 153 in line 624 of "src\layout_processor.c": statement has no effect
+warning 153 in line 402 of "src\layout_processor.c": statement has no effect
 >            CONSOLE_STATUS("Backup directory: %s\n", localContext.runDirectory)
-warning 153 in line 625 of "src\layout_processor.c": statement has no effect
+warning 153 in line 403 of "src\layout_processor.c": statement has no effect
 >            CONSOLE_STATUS("Source directory: %s\n", sanitizedPath);
-warning 153 in line 626 of "src\layout_processor.c": statement has no effect
+warning 153 in line 404 of "src\layout_processor.c": statement has no effect
 >            CONSOLE_WARNING("Warning: Failed to start backup session - continui
-warning 153 in line 632 of "src\layout_processor.c": statement has no effect
+warning 153 in line 410 of "src\layout_processor.c": statement has no effect
 >        CONSOLE_STATUS("\n*** Backup disabled - no backup will be created ***\n
-warning 153 in line 639 of "src\layout_processor.c": statement has no effect
+warning 153 in line 417 of "src\layout_processor.c": statement has no effect
 >    PROGRESS_STATUS("Processing: %s", sanitizedPath)
-warning 153 in line 646 of "src\layout_processor.c": statement has no effect
+warning 153 in line 424 of "src\layout_processor.c": statement has no effect
 >    PROGRESS_STATUS("Recursive: %s", prefs->recursive_subdirs ? "Yes" : "No")
-warning 153 in line 647 of "src\layout_processor.c": statement has no effect
+warning 153 in line 425 of "src\layout_processor.c": statement has no effect
 >        PROGRESS_STATUS("Creating missing icons using DefIcons...")
-warning 153 in line 656 of "src\layout_processor.c": statement has no effect
+warning 153 in line 436 of "src\layout_processor.c": statement has no effect
 >            PROGRESS_STATUS("Warning: DefIcons not available, skipping icon cre
-warning 153 in line 662 of "src\layout_processor.c": statement has no effect
+warning 153 in line 442 of "src\layout_processor.c": statement has no effect
 >            PROGRESS_STATUS("Warning: DefIcons templates not loaded, skipping i
-warning 153 in line 667 of "src\layout_processor.c": statement has no effect
->                    PROGRESS_STATUS("Created %lu icon(s) recursively", icons_cr
-warning 153 in line 693 of "src\layout_processor.c": statement has no effect
+warning 153 in line 447 of "src\layout_processor.c": statement has no effect
+>                    PROGRESS_STATUS("Created %lu icon(s) recursively", creation
+warning 153 in line 474 of "src\layout_processor.c": statement has no effect
 >                    PROGRESS_STATUS("Warning: Icon creation had errors (%lu cre
-warning 153 in line 698 of "src\layout_processor.c": statement has no effect
->                    PROGRESS_STATUS("Created %lu icon(s) in current folder", ic
-warning 153 in line 706 of "src\layout_processor.c": statement has no effect
+warning 153 in line 479 of "src\layout_processor.c": statement has no effect
+>                    PROGRESS_STATUS("Created %lu icon(s) in current folder", cr
+warning 153 in line 488 of "src\layout_processor.c": statement has no effect
 >                    PROGRESS_STATUS("Warning: Icon creation had errors (%lu cre
-warning 153 in line 711 of "src\layout_processor.c": statement has no effect
+warning 153 in line 493 of "src\layout_processor.c": statement has no effect
 >    CHECK_CANCEL()
-warning 153 in line 758 of "src\layout_processor.c": statement has no effect
+warning 153 in line 546 of "src\layout_processor.c": statement has no effect
 >        PROGRESS_STATUS("")
-warning 153 in line 809 of "src\layout_processor.c": statement has no effect
+warning 153 in line 597 of "src\layout_processor.c": statement has no effect
 >        PROGRESS_STATUS("=== Processing Statistics ===")
-warning 153 in line 810 of "src\layout_processor.c": statement has no effect
+warning 153 in line 598 of "src\layout_processor.c": statement has no effect
 >        PROGRESS_STATUS("  Folders processed: %lu", g_foldersProcessed)
-warning 153 in line 811 of "src\layout_processor.c": statement has no effect
+warning 153 in line 599 of "src\layout_processor.c": statement has no effect
 >        PROGRESS_STATUS("  Icons processed: %lu", g_iconsProcessed)
-warning 153 in line 812 of "src\layout_processor.c": statement has no effect
+warning 153 in line 600 of "src\layout_processor.c": statement has no effect
+>                PROGRESS_STATUS("  Icons created: %lu", total_created)
+warning 153 in line 607 of "src\layout_processor.c": statement has no effect
 >            PROGRESS_STATUS("  Default tools: %d valid, %d missing", validTools
-warning 153 in line 833 of "src\layout_processor.c": statement has no effect
+warning 153 in line 628 of "src\layout_processor.c": statement has no effect
 >            PROGRESS_STATUS("  Total time: %ld min %ld sec", minutes, seconds)
-warning 153 in line 837 of "src\layout_processor.c": statement has no effect
+warning 153 in line 632 of "src\layout_processor.c": statement has no effect
 >            PROGRESS_STATUS("  Total time: %ld seconds", seconds)
-warning 153 in line 839 of "src\layout_processor.c": statement has no effect
+warning 153 in line 634 of "src\layout_processor.c": statement has no effect
 >        PROGRESS_STATUS("")
-warning 153 in line 865 of "src\layout_processor.c": statement has no effect
+warning 153 in line 660 of "src\layout_processor.c": statement has no effect
 >        PROGRESS_STATUS("*** Finalizing backup session ***")
-warning 153 in line 866 of "src\layout_processor.c": statement has no effect
+warning 153 in line 661 of "src\layout_processor.c": statement has no effect
 >        PROGRESS_STATUS("Backup session completed successfully")
-warning 153 in line 868 of "src\layout_processor.c": statement has no effect
+warning 153 in line 663 of "src\layout_processor.c": statement has no effect
 >        PROGRESS_STATUS("  Folders backed up: %u", g_backupContext->foldersBack
-warning 153 in line 869 of "src\layout_processor.c": statement has no effect
+warning 153 in line 664 of "src\layout_processor.c": statement has no effect
 >        PROGRESS_STATUS("  Total bytes archived: %lu", (unsigned long)g_backupC
-warning 153 in line 870 of "src\layout_processor.c": statement has no effect
+warning 153 in line 665 of "src\layout_processor.c": statement has no effect
 >            PROGRESS_STATUS("  Icons created (DefIcons): %lu", g_backupContext-
-warning 153 in line 873 of "src\layout_processor.c": statement has no effect
+warning 153 in line 668 of "src\layout_processor.c": statement has no effect
 >        PROGRESS_STATUS("  Location: %s", g_backupContext->runDirectory)
-warning 153 in line 875 of "src\layout_processor.c": statement has no effect
+warning 153 in line 670 of "src\layout_processor.c": statement has no effect
 >        PROGRESS_STATUS("*** Building PATH search list for default tool scannin
-warning 153 in line 972 of "src\layout_processor.c": statement has no effect
+warning 153 in line 767 of "src\layout_processor.c": statement has no effect
 >            PROGRESS_STATUS("WARNING: Failed to build PATH search list - valida
-warning 153 in line 976 of "src\layout_processor.c": statement has no effect
+warning 153 in line 771 of "src\layout_processor.c": statement has no effect
 >        PROGRESS_STATUS("*** Using PATH search list (already loaded at startup)
-warning 153 in line 981 of "src\layout_processor.c": statement has no effect
+warning 153 in line 776 of "src\layout_processor.c": statement has no effect
 >    PROGRESS_STATUS("Default tool validation enabled")
-warning 153 in line 986 of "src\layout_processor.c": statement has no effect
+warning 153 in line 781 of "src\layout_processor.c": statement has no effect
 >    PROGRESS_STATUS("")
-warning 153 in line 998 of "src\layout_processor.c": statement has no effect
+warning 153 in line 793 of "src\layout_processor.c": statement has no effect
 >    PROGRESS_STATUS("Scanning for default tools: %s", sanitizedPath)
-warning 153 in line 999 of "src\layout_processor.c": statement has no effect
+warning 153 in line 794 of "src\layout_processor.c": statement has no effect
 >    PROGRESS_STATUS("Recursive: %s", prefs->recursive_subdirs ? "Yes" : "No")
-warning 153 in line 1000 of "src\layout_processor.c": statement has no effect
+warning 153 in line 795 of "src\layout_processor.c": statement has no effect
 >    PROGRESS_STATUS("Mode: SCAN TOOLS ONLY (no tidying)")
-warning 153 in line 1001 of "src\layout_processor.c": statement has no effect
+warning 153 in line 796 of "src\layout_processor.c": statement has no effect
 >    PROGRESS_STATUS("")
-warning 153 in line 1002 of "src\layout_processor.c": statement has no effect
+warning 153 in line 797 of "src\layout_processor.c": statement has no effect
 >    CHECK_CANCEL()
-warning 153 in line 1004 of "src\layout_processor.c": statement has no effect
+warning 153 in line 799 of "src\layout_processor.c": statement has no effect
 >    PROGRESS_STATUS("")
-warning 153 in line 1017 of "src\layout_processor.c": statement has no effect
+warning 153 in line 812 of "src\layout_processor.c": statement has no effect
 >    PROGRESS_STATUS("*** Tool scanning complete ***")
-warning 153 in line 1018 of "src\layout_processor.c": statement has no effect
+warning 153 in line 813 of "src\layout_processor.c": statement has no effect
 >    PROGRESS_STATUS("Tool cache retained for viewing")
-warning 153 in line 1022 of "src\layout_processor.c": statement has no effect
+warning 153 in line 817 of "src\layout_processor.c": statement has no effect
 >    PROGRESS_STATUS("  Scanning: %s", path)
-warning 153 in line 1040 of "src\layout_processor.c": statement has no effect
+warning 153 in line 835 of "src\layout_processor.c": statement has no effect
 >    CHECK_CANCEL()
-warning 153 in line 1041 of "src\layout_processor.c": statement has no effect
+warning 153 in line 836 of "src\layout_processor.c": statement has no effect
 >        PROGRESS_STATUS("  No icons found or error reading directory")
-warning 153 in line 1057 of "src\layout_processor.c": statement has no effect
+warning 153 in line 852 of "src\layout_processor.c": statement has no effect
 >    PROGRESS_STATUS("  Found %lu icons (tools validated)", (unsigned long)iconA
-warning 153 in line 1062 of "src\layout_processor.c": statement has no effect
+warning 153 in line 857 of "src\layout_processor.c": statement has no effect
 >                PROGRESS_STATUS("")
-warning 153 in line 1149 of "src\layout_processor.c": statement has no effect
+warning 153 in line 944 of "src\layout_processor.c": statement has no effect
 >                PROGRESS_STATUS("Entering: %s", subdir)
-warning 153 in line 1150 of "src\layout_processor.c": statement has no effect
->    PROGRESS_STATUS("Debug: Entering ProcessSingleDirectory")
-warning 153 in line 2268 of "src\layout_processor.c": statement has no effect
->    PROGRESS_STATUS("Debug: Path='%s'", path ? path : "NULL")
-warning 153 in line 2269 of "src\layout_processor.c": statement has no effect
->    PROGRESS_STATUS("Debug: Locking directory...")
-warning 153 in line 2274 of "src\layout_processor.c": statement has no effect
->        PROGRESS_STATUS("Debug: Lock failed! Error=%ld", error)
-warning 153 in line 2285 of "src\layout_processor.c": statement has no effect
+warning 153 in line 945 of "src\layout_processor.c": statement has no effect
 >        CONSOLE_ERROR("Failed to lock directory: %s (error: %ld)\n", path, erro
-warning 153 in line 2286 of "src\layout_processor.c": statement has no effect
->    PROGRESS_STATUS("Debug: Lock successful. Creating IconArray...")
-warning 153 in line 2293 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2075 of "src\layout_processor.c": statement has no effect
 >    PROGRESS_STATUS("  Scanning for icons...")
-warning 153 in line 2296 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2083 of "src\layout_processor.c": statement has no effect
 >    CHECK_CANCEL()
-warning 153 in line 2302 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2089 of "src\layout_processor.c": statement has no effect
 >        PROGRESS_STATUS("  Error reading directory")
-warning 153 in line 2306 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2093 of "src\layout_processor.c": statement has no effect
 >        PROGRESS_STATUS("  No icons found in directory")
-warning 153 in line 2316 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2103 of "src\layout_processor.c": statement has no effect
 >            PROGRESS_STATUS("  Resizing to default empty folder size...")
-warning 153 in line 2324 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2111 of "src\layout_processor.c": statement has no effect
 >    PROGRESS_STATUS("  Found %lu icons", (unsigned long)iconArray->size)
-warning 153 in line 2333 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2120 of "src\layout_processor.c": statement has no effect
 >    CHECK_CANCEL()
-warning 153 in line 2339 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2126 of "src\layout_processor.c": statement has no effect
 >        PROGRESS_STATUS("  Creating backup...")
-warning 153 in line 2344 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2131 of "src\layout_processor.c": statement has no effect
 >            PROGRESS_STATUS("  Backup created successfully")
-warning 153 in line 2348 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2135 of "src\layout_processor.c": statement has no effect
 >            PROGRESS_STATUS("  Warning: Backup failed (status %d) - continuing 
-warning 153 in line 2352 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2139 of "src\layout_processor.c": statement has no effect
 >        CHECK_CANCEL()
-warning 153 in line 2354 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2141 of "src\layout_processor.c": statement has no effect
 >    PROGRESS_STATUS("  Sorting icons...")
-warning 153 in line 2358 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2145 of "src\layout_processor.c": statement has no effect
 >    PUMP_AND_CHECK_CANCEL()
-warning 153 in line 2364 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2151 of "src\layout_processor.c": statement has no effect
 >    PUMP_AND_CHECK_CANCEL()
-warning 153 in line 2369 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2156 of "src\layout_processor.c": statement has no effect
 >            PROGRESS_STATUS("  Warning: Block layout failed, using standard lay
-warning 153 in line 2388 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2175 of "src\layout_processor.c": statement has no effect
 >    PUMP_AND_CHECK_CANCEL()
-warning 153 in line 2429 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2216 of "src\layout_processor.c": statement has no effect
 >        PROGRESS_STATUS("  Resizing window...")
-warning 153 in line 2434 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2221 of "src\layout_processor.c": statement has no effect
 >    PUMP_AND_CHECK_CANCEL()
-warning 153 in line 2438 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2225 of "src\layout_processor.c": statement has no effect
 >    PROGRESS_STATUS("  Saving icon positions...")
-warning 153 in line 2441 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2228 of "src\layout_processor.c": statement has no effect
 >        PROGRESS_STATUS("  Done!")
-warning 153 in line 2448 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2235 of "src\layout_processor.c": statement has no effect
 >        PROGRESS_STATUS("  Failed to save icon positions")
-warning 153 in line 2452 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2239 of "src\layout_processor.c": statement has no effect
 >    CHECK_CANCEL()
-warning 153 in line 2518 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2305 of "src\layout_processor.c": statement has no effect
 >        PROGRESS_STATUS("Warning: Maximum recursion depth reached at: %s", path
-warning 153 in line 2523 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2310 of "src\layout_processor.c": statement has no effect
+>            PUMP_AND_CHECK_CANCEL()
+warning 153 in line 2358 of "src\layout_processor.c": statement has no effect
 >                        CONSOLE_STATUS("Skipping hidden folder: %s\n", fib->fib
-warning 153 in line 2597 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2387 of "src\layout_processor.c": statement has no effect
 >                PROGRESS_STATUS("")
-warning 153 in line 2604 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2394 of "src\layout_processor.c": statement has no effect
 >                    PROGRESS_STATUS("Entering: %s", shortened_path)
-warning 153 in line 2608 of "src\layout_processor.c": statement has no effect
->        PROGRESS_STATUS("  Skipping system path: %s", path)
-warning 153 in line 2899 of "src\layout_processor.c": statement has no effect
->        CHECK_CANCEL()
-warning 153 in line 2942 of "src\layout_processor.c": statement has no effect
->            PROGRESS_STATUS("  Created icon: %s (%s)", fib->fib_FileName, type_
-warning 153 in line 3019 of "src\layout_processor.c": statement has no effect
->    CHECK_CANCEL()
-warning 153 in line 3105 of "src\layout_processor.c": statement has no effect
->        CHECK_CANCEL()
-warning 153 in line 3144 of "src\layout_processor.c": statement has no effect
+warning 153 in line 2398 of "src\layout_processor.c": statement has no effect
 Compiling [build/amiga/aspect_ratio_layout.o] from src/aspect_ratio_layout.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/aspect_ratio_layout.c -o build/amiga/aspect_ratio_layout.o
 >        CONSOLE_ERROR("Aspect ratio values must be positive integers.\n");
@@ -522,6 +502,18 @@ Compiling [build/amiga/deficons_templates.o] from src/deficons_templates.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/deficons_templates.c -o build/amiga/deficons_templates.o
 Compiling [build/amiga/deficons_filters.o] from src/deficons_filters.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/deficons_filters.c -o build/amiga/deficons_filters.o
+Compiling [build/amiga/deficons_creation.o] from src/deficons_creation.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/deficons_creation.c -o build/amiga/deficons_creation.o
+>        CREATION_STATUS(progress_window, "  Skipping system path: %s", path)
+warning 153 in line 438 of "src\deficons_creation.c": statement has no effect
+>        CREATION_CHECK_CANCEL(progress_window)
+warning 153 in line 471 of "src\deficons_creation.c": statement has no effect
+>    CREATION_CHECK_CANCEL(progress_window)
+warning 153 in line 663 of "src\deficons_creation.c": statement has no effect
+>    CREATION_STATUS(progress_window, "  Creating icons: %s", path)
+warning 153 in line 671 of "src\deficons_creation.c": statement has no effect
+>        CREATION_CHECK_CANCEL(progress_window)
+warning 153 in line 721 of "src\deficons_creation.c": statement has no effect
 Compiling [build/amiga/backup_catalog.o] from src/backup_catalog.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/backup_catalog.c -o build/amiga/backup_catalog.o
 Compiling [build/amiga/backup_lha.o] from src/backup_lha.c
@@ -745,6 +737,6 @@ vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBU
 Compiling memory tracking: build/amiga/platform_memory.o
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/platform/platform.c -o build/amiga/platform_memory.o
 Linking Amiga executable: Bin/Amiga/iTidy
-vc +aos68k -cpu=68000 -O2 -size -final -lamiga -lauto -o Bin/Amiga/iTidy build/amiga/main_gui.o build/amiga/icon_types.o build/amiga/icon_misc.o build/amiga/icon_management.o build/amiga/file_directory_handling.o build/amiga/window_management.o build/amiga/utilities.o build/amiga/path_utilities.o build/amiga/spinner.o build/amiga/writeLog.o build/amiga/cli_utilities.o build/amiga/layout_preferences.o build/amiga/layout_processor.o build/amiga/aspect_ratio_layout.o build/amiga/folder_scanner.o build/amiga/string_functions.o build/amiga/deficons_parser.o build/amiga/deficons_identify.o build/amiga/deficons_templates.o build/amiga/deficons_filters.o build/amiga/backup_catalog.o build/amiga/backup_lha.o build/amiga/backup_marker.o build/amiga/backup_paths.o build/amiga/backup_runs.o build/amiga/backup_session.o build/amiga/backup_restore.o build/amiga/helpers/listview_simple_columns.o build/amiga/helpers/list_formatter.o build/amiga/GUI/main_window.o build/amiga/GUI/advanced_window.o build/amiga/GUI/beta_options_window.o build/amiga/GUI/deficons_settings_window.o build/amiga/GUI/easy_request_helper.o build/amiga/GUI/window_enumerator.o build/amiga/GUI/wb_classify.o build/amiga/GUI/gui_groupbox.o build/amiga/GUI/gui_utilities.o build/amiga/GUI/StatusWindows/progress_common.o build/amiga/GUI/StatusWindows/progress_window.o build/amiga/GUI/StatusWindows/recursive_progress.o build/amiga/GUI/StatusWindows/main_progress_window.o build/amiga/GUI/DefaultTools/tool_cache_window.o build/amiga/GUI/DefaultTools/tool_cache_reports.o build/amiga/GUI/DefaultTools/default_tool_update_window_reaction.o build/amiga/GUI/DefaultTools/default_tool_backup.o build/amiga/GUI/DefaultTools/default_tool_restore_window.o build/amiga/GUI/RestoreBackups/restore_window.o build/amiga/GUI/RestoreBackups/folder_view_window.o build/amiga/DOS/getDiskDetails.o build/amiga/Settings/IControlPrefs.o build/amiga/Settings/WorkbenchPrefs.o build/amiga/Settings/get_fonts.o build/amiga/platform/amiga_platform.o build/amiga/platform_memory.o 
+vc +aos68k -cpu=68000 -O2 -size -final -lamiga -lauto -o Bin/Amiga/iTidy build/amiga/main_gui.o build/amiga/icon_types.o build/amiga/icon_misc.o build/amiga/icon_management.o build/amiga/file_directory_handling.o build/amiga/window_management.o build/amiga/utilities.o build/amiga/path_utilities.o build/amiga/spinner.o build/amiga/writeLog.o build/amiga/cli_utilities.o build/amiga/layout_preferences.o build/amiga/layout_processor.o build/amiga/aspect_ratio_layout.o build/amiga/folder_scanner.o build/amiga/string_functions.o build/amiga/deficons_parser.o build/amiga/deficons_identify.o build/amiga/deficons_templates.o build/amiga/deficons_filters.o build/amiga/deficons_creation.o build/amiga/backup_catalog.o build/amiga/backup_lha.o build/amiga/backup_marker.o build/amiga/backup_paths.o build/amiga/backup_runs.o build/amiga/backup_session.o build/amiga/backup_restore.o build/amiga/helpers/listview_simple_columns.o build/amiga/helpers/list_formatter.o build/amiga/GUI/main_window.o build/amiga/GUI/advanced_window.o build/amiga/GUI/beta_options_window.o build/amiga/GUI/deficons_settings_window.o build/amiga/GUI/easy_request_helper.o build/amiga/GUI/window_enumerator.o build/amiga/GUI/wb_classify.o build/amiga/GUI/gui_groupbox.o build/amiga/GUI/gui_utilities.o build/amiga/GUI/StatusWindows/progress_common.o build/amiga/GUI/StatusWindows/progress_window.o build/amiga/GUI/StatusWindows/recursive_progress.o build/amiga/GUI/StatusWindows/main_progress_window.o build/amiga/GUI/DefaultTools/tool_cache_window.o build/amiga/GUI/DefaultTools/tool_cache_reports.o build/amiga/GUI/DefaultTools/default_tool_update_window_reaction.o build/amiga/GUI/DefaultTools/default_tool_backup.o build/amiga/GUI/DefaultTools/default_tool_restore_window.o build/amiga/GUI/RestoreBackups/restore_window.o build/amiga/GUI/RestoreBackups/folder_view_window.o build/amiga/DOS/getDiskDetails.o build/amiga/Settings/IControlPrefs.o build/amiga/Settings/WorkbenchPrefs.o build/amiga/Settings/get_fonts.o build/amiga/platform/amiga_platform.o build/amiga/platform_memory.o 
 Build complete: Bin/Amiga/iTidy
 Release build optimized for size (-O2 -size -final)
