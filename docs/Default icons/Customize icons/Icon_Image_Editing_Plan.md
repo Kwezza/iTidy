@@ -1131,20 +1131,41 @@ of each line — roughly half of a typical 80-column Amiga text document.
 ASCII art banners, formatted tables, and paragraph text were all cropped
 to the left-hand side.
 
-### 19.2 Solution: 2×2 Downsampling with AND/OR Semantics
+### 19.2 Solution: Automatic Downsampling with AND/OR Semantics
 
-The renderer now downscales the source text before painting pixels. Two
-compile-time constants in `src/icon_edit/icon_text_render.h` control this:
+The renderer now **automatically calculates** the optimal downscaling ratio
+based on the safe area dimensions. Two compile-time target constants in
+`src/icon_edit/icon_text_render.h` define the desired text coverage:
 
 ```c
-#define ITIDY_TEXT_H_SCALE  2   /* 2 source chars → 1 output pixel column */
-#define ITIDY_TEXT_V_SCALE  2   /* 2 source lines → 1 output pixel row */
+#define ITIDY_TARGET_COLUMNS  68   /* Aim to show 68 columns of source text */
+#define ITIDY_TARGET_LINES    38   /* Aim to show 38 lines of source text */
 ```
+
+The renderer calculates the necessary scale factors at runtime:
+
+```c
+h_scale = ceiling(ITIDY_TARGET_COLUMNS / output_pixels)
+v_scale = ceiling(ITIDY_TARGET_LINES / output_rows)
+```
+
+**This means smaller icons automatically increase downscaling** to fit more
+text into less space, while larger icons use less aggressive downscaling
+to maintain readability.
+
+**Examples of automatic scaling:**
+
+| Safe Width | Output Pixels | H-Scale | Columns Shown | Description |
+|------------|---------------|---------|---------------|-------------|
+| 34px | 34 | 2:1 | 68 | Standard icon (default template) |
+| 20px | 20 | 4:1 | 80 | Smaller icon, more aggressive scaling |
+| 10px | 10 | 7:1 | 70 | Tiny icon, maximum downscaling |
+| 68px | 68 | 1:1 | 68 | Large icon, no downscaling needed |
 
 With the default 42×46 icon template (safe area 34×38, line_step=2):
 
-| Parameter | Without Scaling | With 2×2 Scaling |
-|-----------|-----------------|-------------------|
+| Parameter | Without Scaling | With Auto-Scaling (2:1) |
+|-----------|-----------------|-------------------------|
 | Source columns visible | 34 | 68 (~85% of 80-col doc) |
 | Source lines visible | 19 | 38 |
 | Output pixel columns | 34 | 34 |
@@ -1241,16 +1262,24 @@ its corresponding output column with state 2 (space / gap forced).
 The ASCII art header retains its recognisable shape, and body text
 paragraphs show visible word spacing instead of solid bars.
 
-### 19.6 Tuning the Scale Factors
+### 19.6 Tuning the Target Coverage
 
-The scale constants are compile-time defines and easy to experiment with:
+The target constants are compile-time defines and easy to experiment with:
 
-- `1×1` — Original behaviour, 34 chars × 19 lines, no scaling
-- `2×2` — **Current default**, 68 chars × 38 lines, good balance
-- `3×2` — 102 chars × 38 lines, covers full 80-col + margin horizontally
-- `2×1` — 68 chars × 19 lines, wider but fewer lines
+- `ITIDY_TARGET_COLUMNS=34` — Show 34 columns (1:1 scaling on standard icon, less on smaller)
+- `ITIDY_TARGET_COLUMNS=68` — **Current default**, show ~68 columns (good for 80-col files)
+- `ITIDY_TARGET_COLUMNS=80` — Show full 80-column width (more aggressive scaling)
+- `ITIDY_TARGET_LINES=38` — **Current default**, good document coverage
 
-For most Amiga text files (80-column formatted), `2×2` is the sweet spot.
+**How it adapts to different icon sizes:**
+- 34×38 safe area → 2:1 scaling (68 cols × 38 lines)
+- 20×20 safe area → 4:1 h-scale, 2:1 v-scale (80 cols × 40 lines)
+- 10×10 safe area → 7:1 h-scale, 4:1 v-scale (70 cols × 40 lines)
+- 68×76 safe area → 1:1 scaling (68 cols × 38 lines, no downscaling)
+
+For most Amiga text files (80-column formatted), `ITIDY_TARGET_COLUMNS=68`
+provides the best balance of coverage and readability across different
+icon sizes.
 
 ---
 
@@ -1270,6 +1299,7 @@ style. They are parsed by `itidy_get_render_params()` in
 | ToolType | Format | Default | Description |
 |----------|--------|---------|-------------|
 | `ITIDY_TEXT_AREA` | `x,y,w,h` | `4,4,(width-8),(height-8)` | The safe area rectangle where text is rendered. `x,y` is the top-left corner in pixels from the icon's top-left. `w,h` is the width and height in pixels. Everything outside this area is preserved (template border art, folded corner, decorative frame, etc.). |
+| `ITIDY_EXCLUDE_AREA` | `x,y,w,h` | (none) | Optional exclusion zone **within** the safe area where rendering is skipped, preserving template artwork like folded page corners or decorative elements. If a pixel falls within this rectangle during rendering, it is left unchanged from the template. `x,y` is absolute position from icon's top-left, not relative to safe area. |
 | `ITIDY_CHAR_WIDTH` | `0`, `1`, or `2` | `0` (auto) | Pixels per character. `0` auto-selects: 1px for safe widths < 64, 2px for ≥ 64. For typical 42-pixel icons this is always 1. |
 | `ITIDY_LINE_HEIGHT` | integer | `1` | Height of one rendered text line in pixels. |
 | `ITIDY_LINE_GAP` | integer | `1` | Vertical gap between rendered text lines in pixels. With `LINE_HEIGHT=1` and `LINE_GAP=1`, each line occupies 2 pixel rows (1 text + 1 blank), giving the "ruled paper" look. |
@@ -1288,6 +1318,22 @@ ITIDY_TEXT_AREA=3,8,42,37
 
 This tells the renderer to start at pixel (3,8) and use a 42×37 area,
 preserving the top 8 rows for the header artwork.
+
+**Example — preserving a folded page corner:**
+
+If your 42×46 template has a decorative "turned over page" corner in the
+bottom-left (e.g., a 10×10 pixel folded corner starting at pixel position
+4,36), you would add:
+
+```
+ITIDY_TEXT_AREA=4,4,34,38
+ITIDY_EXCLUDE_AREA=4,36,10,10
+```
+
+The text renderer will fill the safe area but skip any pixels that fall
+within the 10×10 exclusion zone, creating a "hole" where the folded corner
+artwork shows through. Text rendering continues around the excluded region
+— it doesn't stop, it just skips those pixels.
 
 ### 20.2 ToolTypes Stamped onto Generated Icons
 

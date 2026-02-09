@@ -809,6 +809,32 @@ BOOL itidy_get_render_params(struct DiskObject *icon,
                           &params->base.safe_width,
                           &params->base.safe_height);
 
+    // Parse exclusion area (for preserving template artwork like folded corners)
+    if (icon != NULL && icon->do_ToolTypes != NULL)
+    {
+        UWORD parsed_x, parsed_y, parsed_w, parsed_h;
+        if (parse_area_tooltype((STRPTR *)icon->do_ToolTypes, ITIDY_TT_EXCLUDE_AREA,
+                                &parsed_x, &parsed_y, &parsed_w, &parsed_h))
+        {
+            // Validate against icon dimensions
+            if (parsed_x + parsed_w <= img->width && parsed_y + parsed_h <= img->height)
+            {
+                params->base.exclude_left   = parsed_x;
+                params->base.exclude_top    = parsed_y;
+                params->base.exclude_width  = parsed_w;
+                params->base.exclude_height = parsed_h;
+
+                log_debug(LOG_ICONS, "itidy_get_render_params: exclude_area=%u,%u,%u,%u\n",
+                          (unsigned)parsed_x, (unsigned)parsed_y,
+                          (unsigned)parsed_w, (unsigned)parsed_h);
+            }
+            else
+            {
+                log_warning(LOG_ICONS, "itidy_get_render_params: EXCLUDE_AREA exceeds icon bounds, ignoring\n");
+            }
+        }
+    }
+
     // Set buffer dimensions
     params->base.buffer_width  = img->width;
     params->base.buffer_height = img->height;

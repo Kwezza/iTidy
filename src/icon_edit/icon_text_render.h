@@ -46,17 +46,17 @@
  *  the safe area may only be 34 characters wide. */
 #define ITIDY_TAB_WIDTH             4
 
-/** Horizontal downscale factor for text preview.
- *  A value of 2 means every 2 source characters map to 1 output pixel
- *  column, effectively fitting ~68 columns of an 80-column document
- *  into a 34-pixel-wide safe area.  Set to 1 to disable. */
-#define ITIDY_TEXT_H_SCALE          2
+/** Target number of source text columns to fit into the icon preview.
+ *  The renderer automatically calculates the horizontal downscale factor
+ *  to fit this many columns into the available safe area width.
+ *  For typical 80-column text files, 68 shows most content. */
+#define ITIDY_TARGET_COLUMNS        68
 
-/** Vertical downscale factor for text preview.
- *  A value of 2 means every 2 source lines map to 1 output pixel row,
- *  effectively fitting ~38 lines into 19 display rows.
- *  Set to 1 to disable. */
-#define ITIDY_TEXT_V_SCALE          2
+/** Target number of source text lines to fit into the icon preview.
+ *  The renderer automatically calculates the vertical downscale factor
+ *  to fit this many lines into the available safe area height.
+ *  38 lines gives good coverage of document structure. */
+#define ITIDY_TARGET_LINES          38
 
 /*========================================================================*/
 /* ASCII Text Renderer Function                                           */

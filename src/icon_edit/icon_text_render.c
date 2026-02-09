@@ -190,11 +190,17 @@ static void paint_pixels(const iTidy_RenderParams *p,
     UWORD abs_x = p->safe_left + safe_x;
     UWORD abs_y = p->safe_top + safe_y;
     UWORD i;
+    UWORD exclude_right;
+    UWORD exclude_bottom;
 
     if (abs_y >= p->buffer_height)
     {
         return;
     }
+
+    // Pre-compute exclusion area bounds (0 width/height = no exclusion)
+    exclude_right  = p->exclude_left + p->exclude_width;
+    exclude_bottom = p->exclude_top + p->exclude_height;
 
     for (i = 0; i < count; i++)
     {
@@ -202,6 +208,16 @@ static void paint_pixels(const iTidy_RenderParams *p,
         if (px >= p->safe_left + p->safe_width || px >= p->buffer_width)
         {
             break;
+        }
+
+        // Skip pixel if it falls within the exclusion area (preserves template artwork)
+        if (p->exclude_width > 0 && p->exclude_height > 0)
+        {
+            if (px >= p->exclude_left && px < exclude_right &&
+                abs_y >= p->exclude_top && abs_y < exclude_bottom)
+            {
+                continue;  // Skip this pixel, preserve template
+            }
         }
 
         p->pixel_buffer[abs_y * p->buffer_width + px] = color_index;
@@ -267,11 +283,8 @@ BOOL itidy_render_ascii_preview(const char *file_path,
     }
 
     /*--------------------------------------------------------------------*/
-    /* Calculate layout limits                                            */
+    /* Calculate layout limits with automatic scaling                     */
     /*--------------------------------------------------------------------*/
-
-    h_scale = ITIDY_TEXT_H_SCALE;
-    v_scale = ITIDY_TEXT_V_SCALE;
 
     line_step = params->line_pixel_height + params->line_gap;
     if (line_step == 0)
@@ -279,8 +292,37 @@ BOOL itidy_render_ascii_preview(const char *file_path,
         line_step = 1;
     }
 
+    out_pixels_per_line = params->base.safe_width / char_w;
+    if (out_pixels_per_line == 0)
+    {
+        out_pixels_per_line = 1;
+    }
+
+    /* Auto-calculate horizontal scale to fit target columns into safe width.
+     * Examples: 34px wide → 2:1 scale (68 cols), 20px → 4:1 scale (80 cols),
+     *           10px → 7:1 scale (~70 cols). Minimum scale = 1 (no downscaling). */
+    h_scale = (ITIDY_TARGET_COLUMNS + out_pixels_per_line - 1) / out_pixels_per_line;
+    if (h_scale < 1)
+    {
+        h_scale = 1;
+    }
+
+    /* Auto-calculate vertical scale to fit target lines into safe height */
+    {
+        UWORD out_rows = params->base.safe_height / line_step;
+        if (out_rows == 0)
+        {
+            out_rows = 1;
+        }
+        v_scale = (ITIDY_TARGET_LINES + out_rows - 1) / out_rows;
+        if (v_scale < 1)
+        {
+            v_scale = 1;
+        }
+    }
+
     // Source chars/lines = output pixel slots * scale factor
-    max_source_chars = (params->base.safe_width / char_w) * h_scale;
+    max_source_chars = out_pixels_per_line * h_scale;
     if (max_source_chars == 0)
     {
         max_source_chars = 1;

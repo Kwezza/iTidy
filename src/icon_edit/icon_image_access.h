@@ -121,6 +121,12 @@ typedef struct {
     UWORD safe_width;           /* Width of safe area in pixels */
     UWORD safe_height;          /* Height of safe area in pixels */
 
+    /* Exclusion area within safe area (preserves template artwork like folded corners) */
+    UWORD exclude_left;         /* Left edge of exclusion area (pixels from buffer left) */
+    UWORD exclude_top;          /* Top edge of exclusion area (pixels from buffer top) */
+    UWORD exclude_width;        /* Width of exclusion area (0 = no exclusion) */
+    UWORD exclude_height;       /* Height of exclusion area (0 = no exclusion) */
+
     /* Palette indices to use for rendering */
     UBYTE bg_color_index;       /* Background / whitespace palette index */
     UBYTE text_color_index;     /* Foreground / content pixels palette index */
@@ -179,6 +185,7 @@ typedef struct {
 /*========================================================================*/
 
 #define ITIDY_TT_TEXT_AREA      "ITIDY_TEXT_AREA"
+#define ITIDY_TT_EXCLUDE_AREA   "ITIDY_EXCLUDE_AREA"
 #define ITIDY_TT_LINE_HEIGHT    "ITIDY_LINE_HEIGHT"
 #define ITIDY_TT_LINE_GAP       "ITIDY_LINE_GAP"
 #define ITIDY_TT_MAX_LINES      "ITIDY_MAX_LINES"
