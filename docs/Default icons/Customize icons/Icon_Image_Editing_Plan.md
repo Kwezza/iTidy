@@ -1,9 +1,9 @@
 # iTidy — Icon Image Editing & Content-Aware Preview Plan
 
-**Version:** 1.1  
+**Version:** 2.0  
 **Created:** 2026-02-09  
 **Last updated:** 2026-02-09  
-**Status:** Planning  
+**Status:** Implemented (Phases 1–3 complete)  
 **Relates to:** `docs/iTidy_Future_Content_Aware_Icons_TODO.md`
 
 ---
@@ -27,6 +27,9 @@
 15. [API Surface Summary](#15-api-surface-summary)
 16. [Metadata Preservation — Test Checklist](#16-metadata-preservation--test-checklist)
 17. [Open Questions / Decisions Log](#17-open-questions--decisions-log)
+18. [Implementation Status & Lessons Learned](#18-implementation-status--lessons-learned)
+19. [Text Downscaling — Fitting 80-Column Documents into Tiny Icons](#19-text-downscaling--fitting-80-column-documents-into-tiny-icons)
+20. [Template Icon ToolType Reference (For Icon Designers)](#20-template-icon-tooltype-reference-for-icon-designers)
 
 ---
 
@@ -941,8 +944,399 @@ begins — to catch metadata corruption issues at the source.
 | 14 | Where is the built-in text template? | **`Bin/Amiga/Icons/text_template.info`** (= `PROGDIR:Icons/text_template.info` on Amiga). | 2026-02-09 |
 | 15 | Selected image: generate if template lacks one? | **No.** Honour the template — if no selected image exists, leave ImageData2 NULL. Workbench auto-dims. | 2026-02-09 |
 | 16 | Debug pixel dump to log? | **Yes.** Dump pixel buffer as hex grid to `LOG_ICONS` after render, before apply. Guarded by `#define DEBUG_ICON_DUMP`. See Section 13. | 2026-02-09 |
+| 17 | Two-icon merge: why not load from the copied target? | **Old planar icons cannot provide palette-mapped data.** `ENVARC:Sys/def_ascii.info` on many systems is an old-format planar icon. We load a separate image template for pixel data and use the Workbench default for metadata only. See Section 18.2. | 2026-02-09 |
+| 18 | `GetDiskObject()` vs `GetIconTagList()` for image template? | **`GetIconTagList()` with `ICONGETA_RemapIcon=FALSE`.** `GetDiskObject()` does NOT activate palette-mapped image data — palette pointers come back NULL. See Section 18.3. | 2026-02-09 |
+| 19 | Text scaling: 1:1 or downsampled? | **2:1 horizontal and vertical downsampling.** Fits ~68 columns × 38 lines into a 34×19 pixel output. See Section 19. | 2026-02-09 |
+| 20 | Downscale merge rule: OR or AND semantics? | **Horizontal AND, vertical OR.** AND preserves word gaps in text. OR ensures multi-line merges don't lose content. See Section 19.2. | 2026-02-09 |
+| 21 | Tab width for icon preview? | **4 characters** (not the traditional 8). Reduced because the icon safe area is tiny and 8-char tabs waste too much space. | 2026-02-09 |
+| 22 | Debug dump log level? | **`log_info()`** (not `log_debug()`). The dump is already compile-time guarded by `DEBUG_ICON_DUMP`, so using INFO ensures it actually appears in the icons log at default log levels. | 2026-02-09 |
 
 ---
 
-*This document will be updated as implementation progresses and new
-renderers are added.*
+## 18. Implementation Status & Lessons Learned
+
+**Status as of 2026-02-09:** All three phases are **implemented, compiled,
+and tested on real hardware (WinUAE).** Icons render correctly as OS3.5
+palette-mapped colour icons with visible text content previews.
+
+### 18.1 Implementation Summary
+
+| Phase | Files | Status | Lines (approx) |
+|-------|-------|--------|-----------------|
+| **Phase 1** — Icon Image Access | `src/icon_edit/icon_image_access.h` (412), `icon_image_access.c` (~1174) | ✅ Complete | ~1586 |
+| **Phase 2** — ASCII Text Renderer | `src/icon_edit/icon_text_render.h` (110), `icon_text_render.c` (~480) | ✅ Complete | ~590 |
+| **Phase 3** — Orchestration | `src/icon_edit/icon_content_preview.h` (142), `icon_content_preview.c` (~440) | ✅ Complete | ~582 |
+| **Integration** | Modified `src/deficons_creation.c` (~825 total) | ✅ Complete | ~10 lines added |
+| **Build** | `Makefile` — `ICON_EDIT_SRCS` variable | ✅ Complete | 3 lines added |
+
+**Total new code:** ~2758 lines across 6 new files plus minor integration
+edits.
+
+### 18.2 Critical Design Change: Two-Icon Merge Architecture
+
+The original plan (Section 5.1) assumed the pipeline would:
+1. Copy the Workbench template `.info` to the target
+2. Load the copied icon
+3. Extract pixel data from it
+4. Render into its pixel buffer
+5. Save
+
+**This failed in practice.** The Workbench default icon for ASCII files
+(`ENVARC:Sys/def_ascii.info`) on many systems is an **old planar format**
+icon. Old planar icons cannot provide palette-mapped pixel data via
+`IconControlA()` — even after calling `LayoutIconA()` to attempt conversion,
+the palette pointers came back NULL:
+
+```
+"missing essential data (w=42 h=46 pix1=0x4102f292 pal1=0 palsize=0)"
+```
+
+**Solution: Two-icon merge.** The implementation uses two separate icons:
+
+1. **Target icon** (`ENVARC:Sys/def_ascii.info` or whichever Workbench
+   default the DefIcons system resolves) — provides **metadata only**:
+   DefaultTool, ToolTypes, icon type (`WBPROJECT`), stack size, etc.
+   Loaded with the standard `GetDiskObject()`.
+
+2. **Image template** (`PROGDIR:Icons/text_template`) — provides **pixel
+   data only**: a custom OS3.5 palette-mapped colour icon designed for
+   content preview rendering. Loaded with `GetIconTagList()`.
+
+The pipeline extracts pixels from the image template, renders the text
+preview into them, then applies the modified pixels onto a `DupDiskObjectA()`
+clone of the target icon. The result has the Workbench metadata from icon #1
+and the colour image from icon #2.
+
+```
+Target icon (ENVARC:Sys/def_ascii.info)
+  └── Provides: DefaultTool, ToolTypes, icon type, stack, position
+       └── DupDiskObjectA() clone receives the rendered pixel data
+
+Image template (PROGDIR:Icons/text_template)
+  └── Provides: Palette-mapped pixel data, palette, safe area
+       └── GetIconTagList() with ICONGETA_RemapIcon=FALSE
+       └── Pixel data extracted, rendered into, then applied to clone
+```
+
+### 18.3 Critical API Discovery: `GetIconTagList()` vs `GetDiskObject()`
+
+**`GetDiskObject()` does NOT fully activate palette-mapped image data.**
+
+This was discovered during testing. When loading the image template with
+`GetDiskObject()`, the icon loaded successfully but `IconControlA()` with
+`ICONCTRLA_GetPalette1` returned NULL — the palette-mapped data was never
+"put to use" by icon.library.
+
+The AmigaOS AutoDocs for `icon.library` confirm this:
+
+> "palette mapped image data that was never put to use (this happens if
+> it is retrieved with GetDiskObject() rather than the new
+> GetIconTagList() call)"
+
+**Fix:** Load the image template using `GetIconTagList()` with these tags:
+
+```c
+ICONGETA_RemapIcon         = FALSE  /* Get raw palette indices */
+ICONGETA_GenerateImageMasks = FALSE /* Skip mask generation */
+```
+
+`ICONGETA_RemapIcon=FALSE` is critical — without it, icon.library would
+remap the pixel data to screen colours, making the palette indices unusable
+for modification and save.
+
+### 18.4 Image Template Details
+
+The built-in text template (`Bin/Amiga/Icons/text_template.info`) has:
+
+| Property | Value |
+|----------|-------|
+| Dimensions | 42 × 46 pixels |
+| Format | OS3.5 palette-mapped |
+| Palette | 10 entries |
+| Selected image | Yes (both image states) |
+| Border art | Grey gradient frame around a white interior |
+
+**Palette entries (from actual icon):**
+
+| Index | RGB | Description |
+|-------|-----|-------------|
+| 0 | `000000` | Black (border outer) |
+| 1 | `AAAAAA` | Light grey |
+| 2 | `FFFFFF` | **White — background (lightest)** |
+| 3 | `E3E3E3` | Very light grey |
+| 4 | `C6C6C6` | Light-medium grey |
+| 5 | `8A8A8A` | Medium grey |
+| 6 | `6A6A6A` | Medium-dark grey |
+| 7 | `292929` | Dark grey |
+| 8 | `494949` | Dark grey |
+| 9 | `000000` | **Black — text (darkest)** |
+
+The palette auto-detection correctly identifies index 2 (white) as
+background and index 9 (black) as text colour via the luminance heuristic.
+
+**Safe area** (default, no ToolType override): `left=4, top=4, width=34,
+height=38` — calculated as `(42-8) × (46-8)` with the standard 4px margin.
+
+### 18.5 Actual Rendering Pipeline Flow (As Implemented)
+
+This is the actual flow in `itidy_apply_content_preview()`, reflecting the
+two-icon merge and the order of operations:
+
+```
+ 1. Check type supports preview (itidy_is_text_preview_type)
+ 2. Load target_icon = GetDiskObject(source_path)       [Workbench metadata]
+ 3. Load image_icon = GetIconTagList(PROGDIR:Icons/text_template,
+                        ICONGETA_RemapIcon=FALSE,
+                        ICONGETA_GenerateImageMasks=FALSE) [pixel data]
+ 4. Extract pixel data from image_icon (itidy_icon_image_extract)
+ 5. Get render params from image_icon (itidy_get_render_params)
+ 6. FreeDiskObject(image_icon)                          [done with template]
+ 7. Render ASCII text into extracted pixel buffer
+ 8. Build selected image (safe-area index swap, if template had one)
+ 9. Debug dump pixel buffer to log (if DEBUG_ICON_DUMP)
+10. Clone target_icon, apply modified pixels to clone (itidy_icon_image_apply)
+11. Stamp ITIDY_CREATED/KIND/SRC ToolTypes on clone
+12. Save clone to disk (itidy_icon_image_save) as OS3.5 format
+13. DisposeObject(clone), FreeDiskObject(target_icon)
+14. Free pixel/palette buffers (itidy_icon_image_free)
+```
+
+### 18.6 DefIcons Integration Point
+
+The content preview is called from `deficons_creation.c` after a successful
+`deficons_copy_icon_file()` for files (not drawers). The call site is:
+
+```c
+/* After deficons_copy_icon_file() succeeds, for files only: */
+itidy_apply_content_preview(fullpath, type_token, fib->fib_Size, &fib->fib_Date);
+```
+
+The function returns one of:
+- `ITIDY_PREVIEW_NOT_APPLICABLE` (0) — type doesn't support preview
+- `ITIDY_PREVIEW_APPLIED` (1) — preview rendered and saved
+- `ITIDY_PREVIEW_FAILED` (2) — rendering failed, icon keeps template image
+- `ITIDY_PREVIEW_SKIPPED_CACHED` (3) — existing icon is already current
+
+---
+
+## 19. Text Downscaling — Fitting 80-Column Documents into Tiny Icons
+
+### 19.1 The Problem
+
+The original 1:1 renderer mapped 1 source character to 1 output pixel.
+With a 34-pixel-wide safe area, this showed only the first 34 characters
+of each line — roughly half of a typical 80-column Amiga text document.
+ASCII art banners, formatted tables, and paragraph text were all cropped
+to the left-hand side.
+
+### 19.2 Solution: 2×2 Downsampling with AND/OR Semantics
+
+The renderer now downscales the source text before painting pixels. Two
+compile-time constants in `src/icon_edit/icon_text_render.h` control this:
+
+```c
+#define ITIDY_TEXT_H_SCALE  2   /* 2 source chars → 1 output pixel column */
+#define ITIDY_TEXT_V_SCALE  2   /* 2 source lines → 1 output pixel row */
+```
+
+With the default 42×46 icon template (safe area 34×38, line_step=2):
+
+| Parameter | Without Scaling | With 2×2 Scaling |
+|-----------|-----------------|-------------------|
+| Source columns visible | 34 | 68 (~85% of 80-col doc) |
+| Source lines visible | 19 | 38 |
+| Output pixel columns | 34 | 34 |
+| Output pixel rows | 19 | 19 |
+
+**Horizontal merge rule: AND semantics.**
+
+For each 2-character source block that maps to one output pixel, the output
+is foreground (text) ONLY if **all** source characters in the block are
+printable. If **any** character is a space, the output stays as background.
+
+This preserves visible word gaps: a source block like `[e, ]` (end of word
++ space) produces a background pixel, maintaining the visual rhythm of
+words separated by whitespace. Without this, every text line becomes a
+solid bar from left to right.
+
+**Vertical merge rule: OR semantics.**
+
+When multiple source lines map to the same output row (v_scale > 1), each
+source line is processed independently. If ANY source line has printable
+text in a column, the output pixel lights up. This is correct because
+different lines should contribute their content, not cancel each other out.
+
+### 19.3 Implementation: Line-Buffered State Map
+
+The renderer uses a per-line state map (`UBYTE line_map[128]`) with three
+states per output column:
+
+| State | Meaning |
+|-------|---------|
+| 0 | No character seen yet in this scale-block |
+| 1 | Printable character seen, no space — will paint foreground |
+| 2 | Space seen — forces background (kills the pixel) |
+
+At each newline, the map is flushed: columns in state 1 are painted as
+foreground pixels, then the map is cleared for the next source line. The
+vertical OR happens naturally because `paint_pixels()` only sets foreground
+and never erases existing foreground from a previous source line.
+
+### 19.4 Tab Handling
+
+Tabs are expanded to `ITIDY_TAB_WIDTH` (4 characters, reduced from the
+traditional 8 because the effective source width is only 68 characters).
+Each position in the tab expansion is treated as whitespace and marks
+its corresponding output column with state 2 (space / gap forced).
+
+### 19.5 Visual Comparison
+
+**Before (1:1, 34 chars × 19 lines — cropped):**
+```
+             ########  ########  ##
+            ##       ###       ###
+   ## #### #####     #   ########
+  ######### ####    #   #     #####
+       #######     ####      #####
+        ###########################
+        ############  ########  ###
+        ###
+         #             ########## #
+         #
+         #
+         #                     ####
+         #
+         #     #
+         # ####
+         # ###        ####### ####
+         #########  ###############
+                  ##
+```
+
+**After (2:1 AND/OR, 68 chars × 38 lines — full document width):**
+```
+       #### #### #### ## #### ####
+  # # ##   # ####    #  #    #    #
+  ######  ##   ###  #####   ##   ##
+     ##############################
+     #      #####  ### ###       #
+                                 #
+                ### ##           #
+      ##                       # #
+     ####  ################# #####
+                            #
+ ### ### ## ###
+ ##############
+ ## ### # # # ### # # ## ## # ## #
+ ### ########## # # ###  # # ### ##
+ ### ####  ## ### # ####  # #### ##
+ ############ ##### #### # ## ###
+ ## ## # # # # # ### # # ### # ####
+ ##### # ### ################ #####
+ # ##### ########## ### # #### # #
+```
+
+The ASCII art header retains its recognisable shape, and body text
+paragraphs show visible word spacing instead of solid bars.
+
+### 19.6 Tuning the Scale Factors
+
+The scale constants are compile-time defines and easy to experiment with:
+
+- `1×1` — Original behaviour, 34 chars × 19 lines, no scaling
+- `2×2` — **Current default**, 68 chars × 38 lines, good balance
+- `3×2` — 102 chars × 38 lines, covers full 80-col + margin horizontally
+- `2×1` — 68 chars × 19 lines, wider but fewer lines
+
+For most Amiga text files (80-column formatted), `2×2` is the sweet spot.
+
+---
+
+## 20. Template Icon ToolType Reference (For Icon Designers)
+
+Template icons can be customised by adding ToolTypes that control how iTidy
+renders content previews into them. All ToolTypes use the `ITIDY_` prefix
+and are **optional** — sensible defaults are computed automatically.
+
+### 20.1 ToolTypes Read from the Image Template
+
+These ToolTypes are read from the image template icon
+(`PROGDIR:Icons/text_template.info`) and control the rendering area and
+style. They are parsed by `itidy_get_render_params()` in
+`src/icon_edit/icon_image_access.c`.
+
+| ToolType | Format | Default | Description |
+|----------|--------|---------|-------------|
+| `ITIDY_TEXT_AREA` | `x,y,w,h` | `4,4,(width-8),(height-8)` | The safe area rectangle where text is rendered. `x,y` is the top-left corner in pixels from the icon's top-left. `w,h` is the width and height in pixels. Everything outside this area is preserved (template border art, folded corner, decorative frame, etc.). |
+| `ITIDY_CHAR_WIDTH` | `0`, `1`, or `2` | `0` (auto) | Pixels per character. `0` auto-selects: 1px for safe widths < 64, 2px for ≥ 64. For typical 42-pixel icons this is always 1. |
+| `ITIDY_LINE_HEIGHT` | integer | `1` | Height of one rendered text line in pixels. |
+| `ITIDY_LINE_GAP` | integer | `1` | Vertical gap between rendered text lines in pixels. With `LINE_HEIGHT=1` and `LINE_GAP=1`, each line occupies 2 pixel rows (1 text + 1 blank), giving the "ruled paper" look. |
+| `ITIDY_BG_COLOR` | palette index | auto (lightest) | Which palette entry to use for the background (whitespace) colour. If not set, the palette is scanned and the entry with the highest luminance is chosen. |
+| `ITIDY_TEXT_COLOR` | palette index | auto (darkest) | Which palette entry to use for text (foreground) pixels. If not set, the darkest palette entry is chosen via luminance. |
+| `ITIDY_READ_BYTES` | integer | `4096` | Maximum number of bytes to read from the source file. |
+
+**Example — customising the safe area for a differently-shaped template:**
+
+If your template icon is 48×48 with a 3-pixel border and a 5-pixel
+decorative header, you might set:
+
+```
+ITIDY_TEXT_AREA=3,8,42,37
+```
+
+This tells the renderer to start at pixel (3,8) and use a 42×37 area,
+preserving the top 8 rows for the header artwork.
+
+### 20.2 ToolTypes Stamped onto Generated Icons
+
+These ToolTypes are **added** to every icon that iTidy generates with a
+content preview. They are written by `itidy_stamp_created_tooltypes()`.
+Existing user ToolTypes (like `FILETYPE` from DefIcons) are preserved —
+the `ITIDY_*` entries are appended.
+
+| ToolType | Example Value | Purpose |
+|----------|---------------|---------|
+| `ITIDY_CREATED` | `1` | Marks this icon as iTidy-generated. |
+| `ITIDY_KIND` | `text_preview` | Identifies the type of content preview. Future values: `iff_thumbnail`, `font_preview`. |
+| `ITIDY_SRC` | `Instructions` | Filename (without path) of the source file that was previewed. |
+| `ITIDY_SRC_SIZE` | `12345` | Source file size in bytes at the time the icon was generated. |
+| `ITIDY_SRC_DATE` | `5765,42300,0` | Source file AmigaOS datestamp (`ds_Days,ds_Minute,ds_Tick`) at generation time. |
+
+**Cache-skip logic:** Before re-rendering, iTidy checks `ITIDY_CREATED`,
+`ITIDY_SRC_SIZE`, and `ITIDY_SRC_DATE` on an existing target icon. If all
+match the current source file, the icon is already up-to-date and both the
+template copy and rendering are skipped entirely. This prevents redundant
+work during recursive directory processing.
+
+### 20.3 How to Create a Custom Image Template
+
+To create your own text preview template icon:
+
+1. **Create a 42×46 (or any size) palette-mapped OS3.5 icon** using an icon
+   editor (e.g., IconEdit on Workbench 3.2).
+2. **Design the border/frame artwork** around the edges. The 4-pixel margin
+   is the default safe area, so leave pixels 0–3 and (width-4)–(width-1)
+   for your border design.
+3. **Fill the interior** (the safe area) with a solid background colour —
+   this is the "paper" area that text will be rendered into.
+4. **Add ToolTypes** to fine-tune the rendering area if your border is
+   wider/narrower than the default 4px margin:
+   ```
+   ITIDY_TEXT_AREA=6,6,30,34
+   ITIDY_BG_COLOR=2
+   ITIDY_TEXT_COLOR=9
+   ```
+5. **Save as `PROGDIR:Icons/text_template.info`** (or replace the existing
+   file at `Bin/Amiga/Icons/text_template.info` on the host).
+6. **Ensure the icon has a selected image** if you want Workbench selection
+   highlighting to use safe-area index swap instead of auto-dim.
+
+The icon's palette is preserved exactly as-is. The renderer only paints
+using the two palette indices (background and text) — all other palette
+entries in the border artwork are never touched.
+
+---
+
+*This document was last updated on 2026-02-09 after Phases 1–3 were
+implemented and tested. It will continue to be updated as new renderers
+are added and issues are discovered.*

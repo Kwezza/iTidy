@@ -220,6 +220,14 @@ BOOL itidy_render_ascii_preview(const char *file_path,
     ULONG read_size;
     UWORD char_w;
     UWORD scan_size;
+    UWORD out_pixels_per_line;  /* Output pixel columns in safe area */
+    UWORD col;                  /* Flush loop iterator */
+
+    /* Per-line horizontal state map for AND word-gap semantics.
+     * 0 = no char seen, 1 = printable (paint), 2 = has space (gap forced).
+     * Any space in a 2-char downscale block kills the output pixel,
+     * preserving visible word gaps in zoomed-out text. */
+    UBYTE line_map[128];
 
     /*--------------------------------------------------------------------*/
     /* Validate parameters                                                */
@@ -273,6 +281,12 @@ BOOL itidy_render_ascii_preview(const char *file_path,
     if (max_source_lines == 0)
     {
         max_source_lines = 1;
+    }
+
+    out_pixels_per_line = params->base.safe_width / char_w;
+    if (out_pixels_per_line > 128)
+    {
+        out_pixels_per_line = 128;
     }
 
     // Determine read size
@@ -347,9 +361,19 @@ BOOL itidy_render_ascii_preview(const char *file_path,
     fill_safe_area(&params->base);
 
     /*--------------------------------------------------------------------*/
-    /* Render text: each printable char → pixel(s), line by line          */
+    /* Render text: line-buffered AND semantics with vertical OR          */
+    /*                                                                    */
+    /* Horizontal AND: for each h_scale-char block that maps to one       */
+    /* output pixel, ALL source chars must be printable.  If ANY char     */
+    /* in the block is a space, the output pixel stays as background.     */
+    /* This preserves visible word gaps in zoomed-out text.               */
+    /*                                                                    */
+    /* Vertical OR: each source line paints independently into its        */
+    /* output row.  When v_scale > 1, multiple source lines share the     */
+    /* same output row — any line with text in a column lights it up.     */
     /*--------------------------------------------------------------------*/
 
+    memset(line_map, 0, out_pixels_per_line);
     char_pos = 0;
 
     for (read_pos = 0; read_pos < (ULONG)bytes_read; read_pos++)
@@ -363,10 +387,23 @@ BOOL itidy_render_ascii_preview(const char *file_path,
         }
 
         //
-        // Handle newline (LF)
+        // Handle newline (LF) — flush line_map, advance to next line
         //
         if (ch == 0x0A)
         {
+            // Flush: paint output pixels that are PRINTABLE (state 1)
+            UWORD out_y = (current_line / v_scale) * line_step;
+            for (col = 0; col < out_pixels_per_line; col++)
+            {
+                if (line_map[col] == 1)
+                {
+                    paint_pixels(&params->base, col * char_w, out_y,
+                                 char_w, params->base.text_color_index);
+                }
+            }
+
+            // Reset map for the next source line
+            memset(line_map, 0, out_pixels_per_line);
             current_line++;
             char_pos = 0;
             continue;
@@ -382,12 +419,24 @@ BOOL itidy_render_ascii_preview(const char *file_path,
         }
 
         //
-        // Handle tab — advance to next tab stop (in source coordinates)
+        // Handle tab — mark whitespace positions in line_map
         //
         if (ch == 0x09)
         {
             UWORD next_tab = ((char_pos / ITIDY_TAB_WIDTH) + 1) * ITIDY_TAB_WIDTH;
-            char_pos = (next_tab < max_source_chars) ? next_tab : max_source_chars;
+            if (next_tab > max_source_chars)
+            {
+                next_tab = max_source_chars;
+            }
+            while (char_pos < next_tab)
+            {
+                UWORD out_x = char_pos / h_scale;
+                if (out_x < out_pixels_per_line)
+                {
+                    line_map[out_x] = 2;  // Whitespace kills pixel
+                }
+                char_pos++;
+            }
             continue;
         }
 
@@ -400,22 +449,48 @@ BOOL itidy_render_ascii_preview(const char *file_path,
         }
 
         //
-        // Printable character → map source position to output pixel.
-        // Multiple source chars may map to the same output pixel via
-        // integer division (OR semantics: if ANY source char in a
-        // scale-block is non-space, the output pixel lights up).
+        // Map source character to output column and update line_map.
+        // AND semantics: a space anywhere in a scale-block forces the
+        // output pixel to stay as background (gap).  Printable chars
+        // only light a pixel if no space has been seen in that block.
         //
-        if (is_printable_char(ch))
         {
-            UWORD out_x = (char_pos / h_scale) * char_w;
-            UWORD out_y = (current_line / v_scale) * line_step;
-
-            paint_pixels(&params->base, out_x, out_y,
-                         char_w, params->base.text_color_index);
+            UWORD out_x = char_pos / h_scale;
+            if (out_x < out_pixels_per_line)
+            {
+                if (is_printable_char(ch))
+                {
+                    // Set printable only if not already killed by a space
+                    if (line_map[out_x] == 0)
+                    {
+                        line_map[out_x] = 1;
+                    }
+                    // State 1 stays 1 (still printable)
+                    // State 2 stays 2 (space already killed it)
+                }
+                else if (ch == 0x20)
+                {
+                    // Space forces gap — overrides printable
+                    line_map[out_x] = 2;
+                }
+            }
         }
-        // else: space (0x20) or other control char → background (already filled)
 
         char_pos++;
+    }
+
+    // Flush the final line (file may not end with a trailing newline)
+    if (current_line < max_source_lines)
+    {
+        UWORD out_y = (current_line / v_scale) * line_step;
+        for (col = 0; col < out_pixels_per_line; col++)
+        {
+            if (line_map[col] == 1)
+            {
+                paint_pixels(&params->base, col * char_w, out_y,
+                             char_w, params->base.text_color_index);
+            }
+        }
     }
 
     /*--------------------------------------------------------------------*/
