@@ -1,0 +1,111 @@
+Short:    HD-Installer for Addams Family V1.4
+Author:   Codetapper/Action (codetapper@hotmail.com), ICQ: 26051687
+Uploader: Codetapper/Action (codetapper@hotmail.com)
+Version:  1.4
+Type:     game/patch
+
+This patch applies to "Addams Family" (c) 1992 Ocean - 1 disk.
+Thanks to Carlo Pirri and Chris Vella for sending the originals!
+
+REQUIREMENTS:
+- Slave requires WHDLoad V10+.
+- Game requires 512k chip mem and 512k other mem (+0.9Mb other memory 
+  for preload option)
+
+FEATURES:
+- Full load from HD
+- RNC copylock removed
+- 1 access fault fixed
+- Instructions included
+- Trainer (Help to toggle infinite lives and Del to toggle energy. The
+  screen will flash green when a cheat is enabled and red if disabled)
+- 2 different RomIcons, NewIcons and GlowIcons (all created by Frank!)
+- Quit option (default key is 'F10')
+
+VERSION 1.4 BETA:
+- OK I found a problem, caused by a copperlist getting corrupted after the
+  operating system switched back to the game.
+
+- I've disabled the extra 512k that it used
+  (I think just for buffering files) and you can cut
+  the diskimage down to $bb800 bytes.
+
+- This config seems to allow you to preload the entire game on an
+  A1200 without any fast memory, and even if some memory is used up,
+  it loads from disk OK in my brief tests.
+
+VERSION 1.3:
+- Trainer flash screen code caused bugs in NTSC mode only. Thanks to
+  Frank for the bug report!
+
+CHEAT MODE:
+- Taken from Sweet Cheater by Keith Krellwitz!
+  Enter any of the following for your password:
+
+            FIRST POWER-UP________________________"&1#1#"
+            SECOND POWER-UP_______________________"?1S1M"
+            THIRD POWER-UP________________________"BLSRS"
+            PUGSLEY_______________________________"V121B"
+            WEDNESDAY_____________________________"VD2RL"
+            GRANNY________________________________"V&YKW"
+            FESTER________________________________"VL#R4"
+            GAME ENDING___________________________"#Z6D?"
+
+  To get 4 free lives each time your game is over, walk past the continue
+  door to the left and there is a room where you can collect them.
+  
+  In the hall of rooms, walk left until there is a door above you.
+  Push up to enter a secret room; collect all the stuff in this room
+  and go directly above where you entered this room and press up to
+  enter the other secret room.
+
+  On some versions of the game enter the code `11111' on the password
+  screen for 100 lives.
+
+  For Morticia, use the 3rd power-up code, go to the piano room and
+  wait for the Addams Family music to play.  Now open the self sealed
+  door and finish the last level.
+
+  Pause the game by pressing 'SPACE' and then hit the 'ESC' key.  You
+  will now be in a room with a continue door and an escape door.
+  Instead of choosing one of these options just keep walking left
+  until you come across another room full of extra lives.
+
+
+The trainer in this game was done the old fashioned way, play the game and
+quit with 5 lives making a dump of memory. Then play again with 4 lives 
+and do a diff on the files! Search for all memory accesses to that location
+and bingo!
+
+I couldn't decide which icon I liked better so I have included all of them
+in the installer. I suggest you rename the icons and have a look to decide
+which you like better!
+
+Currently there is one illegal copperlist entry in the game which I have
+been unsuccessful at skipping so far so if you are desperate to rip 
+pictures, use WHDLoad 12 as it will not complain. Be aware that the game
+runs perfectly with it so do not fear!
+
+Greetings to Jean-François Fabre for the original version, Mr Larmer for
+Copylock Decoder, Bored Seal for testing and bug reports, Galahad/Fairlight
+for testing and copperlist advice, Bert for constantly improving WHDLoad,
+Carlo and Chris for being the best original suppliers ever, Frank for 
+awesome icons and finally all Action members!
+
+
+Codetapper/Action (31-Mar-2001)
+
+
+         Bug report form, full WHDLoad package and other installs:
+                          http://www.whdload.org/
+
+            ________  ________  ________  ____  ________  ________
+           _)       \_)       \_)       \_)   \_)       \_)       \
+   __ ___ /___/     /   /_____/\  /     /     /   /     /   /     /
+  /_//__// \___    /   /     /CT\/     /     /   /     /   /     /
+        /___/     /___      /   /     /_____/___      /___/     /___ __
+            \____/    \____/    \____/          \____/    \____//__//_/
+
+
+           Visit the Action website for more of our productions:
+                           http://zap.to/action/

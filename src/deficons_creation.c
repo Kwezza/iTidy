@@ -32,6 +32,9 @@
 #include "backup_session.h"
 #include "path_utilities.h"
 
+/* Content-aware icon preview (Phase 3 integration) */
+#include "icon_edit/icon_content_preview.h"
+
 /* Progress window integration */
 #include "GUI/StatusWindows/main_progress_window.h"
 
@@ -585,6 +588,29 @@ BOOL deficons_create_missing_icons_in_directory(
             if (backup_context != NULL && backup_context->createdIconsOpen)
             {
                 LogCreatedIconToManifest(backup_context, info_path);
+            }
+
+            /* Apply content preview for text-type files.
+             * This renders a miniature text preview into the newly-copied
+             * icon's pixel buffer. For non-text types (drawers, music,
+             * pictures, etc.) this returns NOT_APPLICABLE immediately
+             * and the icon keeps the unmodified template image. */
+            if (fib->fib_DirEntryType <= 0)  /* Files only, not drawers */
+            {
+                int preview_result = itidy_apply_content_preview(
+                    fullpath, type_token,
+                    (ULONG)fib->fib_Size, &fib->fib_Date);
+
+                if (preview_result == ITIDY_PREVIEW_APPLIED)
+                {
+                    log_info(LOG_ICONS, "Content preview applied: %s (type: %s)\n",
+                             fib->fib_FileName, type_token);
+                }
+                else if (preview_result == ITIDY_PREVIEW_FAILED)
+                {
+                    log_debug(LOG_ICONS, "Content preview skipped/failed: %s\n",
+                              fib->fib_FileName);
+                }
             }
 
             /* Track category statistics */

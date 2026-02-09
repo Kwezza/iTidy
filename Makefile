@@ -64,6 +64,12 @@ CORE_SRCS = \
 	$(SRC_DIR)/deficons_filters.c \
 	$(SRC_DIR)/deficons_creation.c
 
+# Icon editing / content-aware preview source files
+ICON_EDIT_SRCS = \
+	$(SRC_DIR)/icon_edit/icon_image_access.c \
+	$(SRC_DIR)/icon_edit/icon_text_render.c \
+	$(SRC_DIR)/icon_edit/icon_content_preview.c
+
 # Backup system source files
 BACKUP_SRCS = \
 	$(SRC_DIR)/backup_catalog.c \
@@ -126,11 +132,12 @@ PLATFORM_SRCS = $(SRC_DIR)/platform/amiga_platform.c
 MEMORY_TRACKING_SRCS = $(SRC_DIR)/platform/platform.c
 
 # All sources
-SRCS = $(CORE_SRCS) $(BACKUP_SRCS) $(HELPERS_SRCS) $(GUI_SRCS) $(DEFAULT_TOOLS_SRCS) $(RESTORE_BACKUP_SRCS) $(DOS_SRCS) $(SETTINGS_SRCS) $(PLATFORM_SRCS) $(MEMORY_TRACKING_SRCS)
+SRCS = $(CORE_SRCS) $(ICON_EDIT_SRCS) $(BACKUP_SRCS) $(HELPERS_SRCS) $(GUI_SRCS) $(DEFAULT_TOOLS_SRCS) $(RESTORE_BACKUP_SRCS) $(DOS_SRCS) $(SETTINGS_SRCS) $(PLATFORM_SRCS) $(MEMORY_TRACKING_SRCS)
 
 # Object files (in build directory)
 # Note: platform.c is in include/platform, needs special handling
 CORE_OBJS = $(CORE_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
+ICON_EDIT_OBJS = $(ICON_EDIT_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 BACKUP_OBJS = $(BACKUP_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 HELPERS_OBJS = $(HELPERS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 GUI_OBJS = $(GUI_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
@@ -141,7 +148,7 @@ SETTINGS_OBJS = $(SETTINGS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 PLATFORM_OBJS = $(PLATFORM_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 MEMORY_TRACKING_OBJS = $(OUT_DIR)/platform_memory.o
 
-OBJS = $(CORE_OBJS) $(BACKUP_OBJS) $(HELPERS_OBJS) $(GUI_OBJS) $(DEFAULT_TOOLS_OBJS) $(RESTORE_BACKUP_OBJS) $(DOS_OBJS) $(SETTINGS_OBJS) $(PLATFORM_OBJS) $(MEMORY_TRACKING_OBJS)
+OBJS = $(CORE_OBJS) $(ICON_EDIT_OBJS) $(BACKUP_OBJS) $(HELPERS_OBJS) $(GUI_OBJS) $(DEFAULT_TOOLS_OBJS) $(RESTORE_BACKUP_OBJS) $(DOS_OBJS) $(SETTINGS_OBJS) $(PLATFORM_OBJS) $(MEMORY_TRACKING_OBJS)
 
 ################################################################################
 # Build Rules
@@ -165,6 +172,7 @@ directories:
 	@if not exist "$(OUT_DIR)\platform" mkdir "$(OUT_DIR)\platform"
 	@if not exist "$(OUT_DIR)\helpers" mkdir "$(OUT_DIR)\helpers"
 	@if not exist "$(OUT_DIR)\GUI" mkdir "$(OUT_DIR)\GUI"
+	@if not exist "$(OUT_DIR)\icon_edit" mkdir "$(OUT_DIR)\icon_edit"
 	@if not exist "$(OUT_DIR)\GUI\StatusWindows" mkdir "$(OUT_DIR)\GUI\StatusWindows"
 	@if not exist "$(OUT_DIR)\GUI\DefaultTools" mkdir "$(OUT_DIR)\GUI\DefaultTools"
 	@if not exist "$(OUT_DIR)\GUI\RestoreBackups" mkdir "$(OUT_DIR)\GUI\RestoreBackups"
@@ -271,6 +279,11 @@ $(OUT_DIR)/GUI/wb_classify.o: $(SRC_DIR)/GUI/wb_classify.c $(SRC_DIR)/GUI/wb_cla
 # Platform-specific
 $(OUT_DIR)/platform/host_platform.o: $(SRC_DIR)/platform/host_platform.c $(SRC_DIR)/platform/platform.h
 $(OUT_DIR)/platform/amiga_platform.o: $(SRC_DIR)/platform/amiga_platform.c $(SRC_DIR)/platform/platform.h
+
+# Icon editing module
+$(OUT_DIR)/icon_edit/icon_image_access.o: $(SRC_DIR)/icon_edit/icon_image_access.c $(SRC_DIR)/icon_edit/icon_image_access.h
+$(OUT_DIR)/icon_edit/icon_text_render.o: $(SRC_DIR)/icon_edit/icon_text_render.c $(SRC_DIR)/icon_edit/icon_text_render.h $(SRC_DIR)/icon_edit/icon_image_access.h
+$(OUT_DIR)/icon_edit/icon_content_preview.o: $(SRC_DIR)/icon_edit/icon_content_preview.c $(SRC_DIR)/icon_edit/icon_content_preview.h $(SRC_DIR)/icon_edit/icon_image_access.h $(SRC_DIR)/icon_edit/icon_text_render.h
 
 # All objects depend on platform headers
 $(OBJS): $(SRC_DIR)/platform/platform.h $(SRC_DIR)/platform/platform_types.h
