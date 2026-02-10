@@ -515,9 +515,28 @@ static int apply_iff_preview(const char *source_path,
     {
         if (render_result == ITIDY_PREVIEW_NOT_SUPPORTED)
         {
-            log_warning(LOG_ICONS, "apply_iff_preview: "
-                        "unsupported IFF format (HAM?) for '%s'\n", source_path);
-            result = ITIDY_PREVIEW_NOT_SUPPORTED;
+            log_info(LOG_ICONS, "apply_iff_preview: "
+                     "native parser cannot handle format (HAM?) - trying datatype fallback for '%s'\n",
+                     source_path);
+            
+            /* Try datatype-based fallback (handles HAM, HAM8, and other formats) */
+            render_result = itidy_render_via_datatype(source_path, &iff_params, &img);
+            if (render_result != 0)
+            {
+                log_warning(LOG_ICONS, "apply_iff_preview: "
+                            "datatype fallback also failed for '%s' (error=%d)\n",
+                            source_path, render_result);
+                result = (render_result == ITIDY_PREVIEW_NOT_SUPPORTED) 
+                         ? ITIDY_PREVIEW_NOT_SUPPORTED 
+                         : ITIDY_PREVIEW_FAILED;
+                itidy_iff_params_free(&iff_params);
+                itidy_icon_image_free(&img);
+                FreeDiskObject(target_icon);
+                return result;
+            }
+            
+            log_info(LOG_ICONS, "apply_iff_preview: "
+                     "datatype fallback succeeded for '%s'\n", source_path);
         }
         else
         {
@@ -525,11 +544,11 @@ static int apply_iff_preview(const char *source_path,
                         "render failed for '%s' (error=%d)\n",
                         source_path, render_result);
             result = ITIDY_PREVIEW_FAILED;
+            itidy_iff_params_free(&iff_params);
+            itidy_icon_image_free(&img);
+            FreeDiskObject(target_icon);
+            return result;
         }
-        itidy_iff_params_free(&iff_params);
-        itidy_icon_image_free(&img);
-        FreeDiskObject(target_icon);
-        return result;
     }
 
     /*--------------------------------------------------------------------*/

@@ -229,6 +229,22 @@ int itidy_render_iff_thumbnail(const char *source_path,
                                iTidy_IconImageData *img);
 
 /**
+ * @brief Render IFF thumbnail via datatypes.library fallback.
+ *
+ * Used when the native parser cannot handle a format (e.g., HAM images).
+ * Opens the image via picture.datatype, reads decoded RGB24 pixel data,
+ * quantizes to the destination palette, and scales to fit.
+ *
+ * @param source_path   Full Amiga path to the IFF image file
+ * @param params        Render params (safe area, palette mode, etc.)
+ * @param dest_img      Destination image buffer to render into
+ * @return 0 on success, ITIDY_PREVIEW_* error code on failure
+ */
+int itidy_render_via_datatype(const char *source_path,
+                               iTidy_IFFRenderParams *params,
+                               iTidy_IconImageData *dest_img);
+
+/**
  * @brief Free IFF-specific allocated buffers.
  *
  * Frees src_chunky and src_palette in the IFF render params.

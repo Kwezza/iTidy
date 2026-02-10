@@ -22,6 +22,10 @@
 #include <proto/iffparse.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
+#include <datatypes/datatypes.h>
+#include <datatypes/datatypesclass.h>
+#include <datatypes/pictureclass.h>
+#include <proto/datatypes.h>
 
 #include <console_output.h>
 
@@ -150,12 +154,12 @@ static void decode_camg_flags(ULONG camg_raw, iTidy_IFFRenderParams *params)
     params->is_ham       = (camg_raw & ITIDY_CAMG_HAM) ? TRUE : FALSE;
     params->is_ehb       = (camg_raw & ITIDY_CAMG_EHB) ? TRUE : FALSE;
 
-    log_debug(LOG_ICONS, "decode_camg_flags: raw=0x%08lX lace=%s hires=%s ham=%s ehb=%s\n",
-              camg_raw,
-              params->is_interlace ? "yes" : "no",
-              params->is_hires ? "yes" : "no",
-              params->is_ham ? "yes" : "no",
-              params->is_ehb ? "yes" : "no");
+    log_info(LOG_ICONS, "decode_camg_flags: raw=0x%08lX lace=%s hires=%s ham=%s ehb=%s\n",
+             camg_raw,
+             params->is_interlace ? "yes" : "no",
+             params->is_hires ? "yes" : "no",
+             params->is_ham ? "yes" : "no",
+             params->is_ehb ? "yes" : "no");
 }
 
 /*========================================================================*/
@@ -457,7 +461,11 @@ int itidy_iff_parse(const char *source_path, iTidy_IFFRenderParams *iff_params)
     if (camg_sp != NULL && camg_sp->sp_Size >= 4)
     {
         ULONG camg_raw;
+        UBYTE *camg_bytes = (UBYTE *)camg_sp->sp_Data;
         memcpy(&camg_raw, camg_sp->sp_Data, 4);
+        log_info(LOG_ICONS, "itidy_iff_parse: CAMG bytes=%02X %02X %02X %02X (raw=0x%08lX) '%s'\n",
+                 camg_bytes[0], camg_bytes[1], camg_bytes[2], camg_bytes[3],
+                 camg_raw, source_path);
         decode_camg_flags(camg_raw, iff_params);
     }
     else
@@ -1304,4 +1312,275 @@ void itidy_iff_params_free(iTidy_IFFRenderParams *params)
         params->src_palette = NULL;
         params->src_palette_size = 0;
     }
+}
+
+/*========================================================================*/
+/* itidy_render_via_datatype — Datatype-based fallback renderer          */
+/*========================================================================*/
+
+int itidy_render_via_datatype(const char *source_path,
+                               iTidy_IFFRenderParams *params,
+                               iTidy_IconImageData *dest_img)
+{
+    Object *dt_obj = NULL;
+    struct Library *DataTypesBase = NULL;
+    struct BitMapHeader *bmhd = NULL;
+    UBYTE *rgb24_buffer = NULL;
+    UBYTE *chunky_buffer = NULL;
+    ULONG src_width = 0, src_height = 0;
+    ULONG display_width, display_height;
+    ULONG rgb24_size;
+    int result = ITIDY_PREVIEW_NOT_SUPPORTED;
+    ULONG modeid;
+    BOOL is_hires = FALSE;
+    BOOL is_lace = FALSE;
+
+    log_info(LOG_ICONS, "itidy_render_via_datatype: attempting datatype fallback for '%s'\n",
+             source_path);
+
+    /* Open datatypes.library */
+    DataTypesBase = OpenLibrary("datatypes.library", 39);
+    if (DataTypesBase == NULL)
+    {
+        log_error(LOG_ICONS, "itidy_render_via_datatype: failed to open datatypes.library\n");
+        return ITIDY_PREVIEW_NOT_SUPPORTED;
+    }
+
+    /* Open the image via datatypes */
+    dt_obj = NewDTObject((APTR)source_path,
+                         DTA_SourceType, DTST_FILE,
+                         DTA_GroupID, GID_PICTURE,
+                         PDTA_Remap, FALSE,  /* Don't remap - we want original colors */
+                         TAG_DONE);
+
+    if (dt_obj == NULL)
+    {
+        log_error(LOG_ICONS, "itidy_render_via_datatype: NewDTObject failed for '%s'\n",
+                  source_path);
+        CloseLibrary(DataTypesBase);
+        return ITIDY_PREVIEW_NOT_SUPPORTED;
+    }
+
+    /* Get bitmap header for dimensions */
+    if (GetDTAttrs(dt_obj, PDTA_BitMapHeader, &bmhd, TAG_DONE) != 1 || bmhd == NULL)
+    {
+        log_error(LOG_ICONS, "itidy_render_via_datatype: failed to get BitMapHeader\n");
+        goto cleanup;
+    }
+
+    src_width = bmhd->bmh_Width;
+    src_height = bmhd->bmh_Height;
+
+    log_info(LOG_ICONS, "itidy_render_via_datatype: image %lux%lu depth=%u\n",
+             src_width, src_height, (unsigned)bmhd->bmh_Depth);
+
+    if (src_width == 0 || src_height == 0 || src_width > 4096 || src_height > 4096)
+    {
+        log_error(LOG_ICONS, "itidy_render_via_datatype: invalid dimensions\n");
+        goto cleanup;
+    }
+
+    /* Get mode ID for aspect ratio correction */
+    if (GetDTAttrs(dt_obj, PDTA_ModeID, &modeid, TAG_DONE) == 1)
+    {
+        is_hires = (modeid & 0x8000) ? TRUE : FALSE;
+        is_lace = (modeid & 0x0004) ? TRUE : FALSE;
+        log_info(LOG_ICONS, "itidy_render_via_datatype: ModeID=0x%08lX hires=%s lace=%s\n",
+                 modeid, is_hires ? "yes" : "no", is_lace ? "yes" : "no");
+    }
+
+    /* Infer hires from width if ModeID didn't indicate it (like normal IFF code) */
+    if (!is_hires && src_width >= ITIDY_HIRES_WIDTH_THRESHOLD)
+    {
+        is_hires = TRUE;
+        log_info(LOG_ICONS, "itidy_render_via_datatype: inferred hires from width %lu "
+                 "(ModeID lacked HIRES flag)\n", src_width);
+    }
+
+    /* Infer interlace from height if ModeID didn't indicate it */
+    if (!is_lace && src_height >= 400)
+    {
+        is_lace = TRUE;
+        log_info(LOG_ICONS, "itidy_render_via_datatype: inferred interlace from height %lu "
+                 "(ModeID lacked LACE flag)\n", src_height);
+    }
+
+    /* Apply aspect ratio corrections */
+    display_width = src_width;
+    display_height = src_height;
+
+    if (is_hires && src_width >= ITIDY_HIRES_WIDTH_THRESHOLD)
+    {
+        display_width = src_width / 2;
+        log_debug(LOG_ICONS, "itidy_render_via_datatype: hires correction: %lu -> %lu width\n",
+                  src_width, display_width);
+    }
+
+    if (is_lace)
+    {
+        display_height = src_height / 2;
+        log_debug(LOG_ICONS, "itidy_render_via_datatype: interlace correction: %lu -> %lu height\n",
+                  src_height, display_height);
+    }
+
+    /* Allocate RGB24 buffer (3 bytes per pixel) */
+    rgb24_size = src_width * src_height * 3;
+    rgb24_buffer = (UBYTE *)whd_malloc(rgb24_size);
+    if (rgb24_buffer == NULL)
+    {
+        log_error(LOG_ICONS, "itidy_render_via_datatype: failed to allocate RGB24 buffer (%lu bytes)\n",
+                  rgb24_size);
+        goto cleanup;
+    }
+
+    /* Read pixel data as RGB24 via PDTM_READPIXELARRAY */
+    if (DoMethod(dt_obj, PDTM_READPIXELARRAY,
+                 rgb24_buffer,            /* PixelArray (APTR) */
+                 PBPAFMT_RGB,             /* PixelFormat (24-bit RGB) */
+                 src_width * 3,           /* PixelArrayMod (bytes per row) */
+                 0, 0,                    /* Left, Top */
+                 src_width, src_height)   /* Width, Height */
+        == 0)
+    {
+        log_error(LOG_ICONS, "itidy_render_via_datatype: PDTM_READPIXELARRAY failed\n");
+        goto cleanup;
+    }
+
+    log_info(LOG_ICONS, "itidy_render_via_datatype: read %lux%lu RGB24 pixels\n",
+             src_width, src_height);
+
+    /* Build a better palette from the RGB data (6x6x6 color cube + grays) */
+    {
+        ULONG pal_idx = 0;
+        ULONG r_step, g_step, b_step;
+        
+        /* Generate 6x6x6 RGB color cube (216 colors) */
+        for (r_step = 0; r_step < 6; r_step++)
+        {
+            for (g_step = 0; g_step < 6; g_step++)
+            {
+                for (b_step = 0; b_step < 6; b_step++)
+                {
+                    if (pal_idx < dest_img->palette_size_normal)
+                    {
+                        dest_img->palette_normal[pal_idx].red   = (r_step * 255) / 5;
+                        dest_img->palette_normal[pal_idx].green = (g_step * 255) / 5;
+                        dest_img->palette_normal[pal_idx].blue  = (b_step * 255) / 5;
+                        pal_idx++;
+                    }
+                }
+            }
+        }
+        
+        /* Fill remaining with grayscale ramp */
+        while (pal_idx < dest_img->palette_size_normal)
+        {
+            UBYTE gray = (UBYTE)((pal_idx - 216) * 255 / (dest_img->palette_size_normal - 216));
+            dest_img->palette_normal[pal_idx].red   = gray;
+            dest_img->palette_normal[pal_idx].green = gray;
+            dest_img->palette_normal[pal_idx].blue  = gray;
+            pal_idx++;
+        }
+        
+        log_info(LOG_ICONS, "itidy_render_via_datatype: built %u-color palette (6x6x6 cube + grays)\n",
+                 (unsigned)dest_img->palette_size_normal);
+    }
+
+    /* Allocate chunky buffer for quantized pixels */
+    chunky_buffer = (UBYTE *)whd_malloc(src_width * src_height);
+    if (chunky_buffer == NULL)
+    {
+        log_error(LOG_ICONS, "itidy_render_via_datatype: failed to allocate chunky buffer\n");
+        goto cleanup;
+    }
+
+    /* Quantize RGB24 to new palette */
+    {
+        ULONG i;
+        UBYTE *rgb_ptr = rgb24_buffer;
+        UBYTE *chunky_ptr = chunky_buffer;
+
+        for (i = 0; i < src_width * src_height; i++)
+        {
+            UBYTE r = *rgb_ptr++;
+            UBYTE g = *rgb_ptr++;
+            UBYTE b = *rgb_ptr++;
+
+            /* Find closest color in destination palette */
+            *chunky_ptr++ = itidy_find_closest_palette_color(
+                dest_img->palette_normal,
+                dest_img->palette_size_normal,
+                r, g, b);
+        }
+    }
+
+    log_info(LOG_ICONS, "itidy_render_via_datatype: quantized to %u-color palette\n",
+             (unsigned)dest_img->palette_size_normal);
+
+    /* Calculate destination size based on display aspect ratio (like normal IFF code) */
+    {
+        ULONG x_scale_fp, y_scale_fp, scale_fp;
+        UWORD output_width, output_height;
+        UWORD offset_x, offset_y;
+
+        /* Fixed-point 16.16: scale = source / dest */
+        x_scale_fp = ((ULONG)display_width << 16) / params->base.safe_width;
+        y_scale_fp = ((ULONG)display_height << 16) / params->base.safe_height;
+
+        /* Use larger scale to fit entirely within safe area */
+        scale_fp = (x_scale_fp > y_scale_fp) ? x_scale_fp : y_scale_fp;
+        if (scale_fp == 0)
+        {
+            scale_fp = 1 << 16;  /* 1:1 minimum */
+        }
+
+        /* Output dimensions at this scale */
+        output_width  = (UWORD)(((ULONG)display_width << 16) / scale_fp);
+        output_height = (UWORD)(((ULONG)display_height << 16) / scale_fp);
+
+        /* Clamp to safe area */
+        if (output_width > params->base.safe_width)
+            output_width = params->base.safe_width;
+        if (output_height > params->base.safe_height)
+            output_height = params->base.safe_height;
+
+        /* Ensure minimum 1x1 */
+        if (output_width == 0) output_width = 1;
+        if (output_height == 0) output_height = 1;
+
+        /* Center within safe area */
+        offset_x = params->base.safe_left + (params->base.safe_width - output_width) / 2;
+        offset_y = params->base.safe_top + (params->base.safe_height - output_height) / 2;
+
+        log_info(LOG_ICONS, "itidy_render_via_datatype: scaling %lux%lu -> %ux%u "
+                 "(display %lux%lu, safe %ux%u, offset %u,%u)\n",
+                 src_width, src_height, (unsigned)output_width, (unsigned)output_height,
+                 display_width, display_height,
+                 (unsigned)params->base.safe_width, (unsigned)params->base.safe_height,
+                 (unsigned)offset_x, (unsigned)offset_y);
+
+        area_average_scale(chunky_buffer,
+                           (UWORD)src_width, (UWORD)src_height,
+                           dest_img->pixel_data_normal, output_width, output_height,
+                           dest_img->width,  /* stride */
+                           offset_x, offset_y,
+                           dest_img->palette_normal, dest_img->palette_size_normal,
+                           dest_img->palette_normal, dest_img->palette_size_normal);
+
+        /* Store output dimensions for cropping */
+        params->output_width = output_width;
+        params->output_height = output_height;
+        params->output_offset_x = offset_x;
+        params->output_offset_y = offset_y;
+    }
+
+    log_info(LOG_ICONS, "itidy_render_via_datatype: complete for '%s'\n", source_path);
+    result = 0;
+
+cleanup:
+    if (chunky_buffer) whd_free(chunky_buffer);
+    if (rgb24_buffer) whd_free(rgb24_buffer);
+    if (dt_obj) DisposeDTObject(dt_obj);
+    if (DataTypesBase) CloseLibrary(DataTypesBase);
+    return result;
 }
