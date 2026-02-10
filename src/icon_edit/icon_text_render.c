@@ -279,6 +279,64 @@ static void fill_safe_area(const iTidy_RenderParams *p)
 }
 
 /*========================================================================*/
+/* Internal: Select Intensity Color Based on Character Density           */
+/*========================================================================*/
+
+/**
+ * @brief Map character count to graduated grey intensity.
+ *
+ * Uses the count of printable characters in a downscale block to select
+ * an appropriate grey shade from the expanded palette. Higher counts
+ * (denser text) produce darker colors; lower counts (sparse text with
+ * spaces) produce lighter colors.
+ *
+ * This creates smooth visual distinction between solid text and text
+ * with word spacing, improving readability on tiny icon previews.
+ *
+ * @param count         Character count in this downscale block (0-255)
+ * @param h_scale       Horizontal downscale factor (chars per pixel)
+ * @param mid_index     Mid-tone color index (start of grey ramp)
+ * @param text_index    Full text color index (darkest, end of grey ramp)
+ * @return              Palette index representing appropriate intensity
+ */
+static UBYTE select_intensity_color(UBYTE count, UWORD h_scale,
+                                   UBYTE mid_index, UBYTE text_index)
+{
+    UWORD density_percent;
+    UBYTE grey_range;
+    UBYTE grey_step;
+    
+    if (count == 0)
+    {
+        return 0;  // Background - caller should skip rendering
+    }
+    
+    // Special case: single character in block (edge/anti-alias)
+    if (count == 1)
+    {
+        return mid_index;  // Use mid-tone for sparse pixels
+    }
+    
+    // Calculate density: (count / h_scale) * 100
+    // Clamp to 100% if count exceeds scale factor
+    density_percent = (count * 100) / h_scale;
+    if (density_percent > 100)
+    {
+        density_percent = 100;
+    }
+    
+    // Map density to grey ramp between mid_index and text_index
+    // Examples: mid=21, text=31 → 10 shades available
+    //   33% density → index ~24 (lighter grey)
+    //   67% density → index ~27 (medium grey)
+    //  100% density → index 31 (full black)
+    grey_range = text_index - mid_index;
+    grey_step = (density_percent * grey_range) / 100;
+    
+    return mid_index + grey_step;
+}
+
+/*========================================================================*/
 /* Internal: Paint Pixels                                                 */
 /*========================================================================*/
 
@@ -299,7 +357,8 @@ static void fill_safe_area(const iTidy_RenderParams *p)
 static void paint_pixels(const iTidy_RenderParams *p,
                          UWORD safe_x, UWORD safe_y,
                          UWORD count, UBYTE color_index,
-                         const iTidy_TextRenderParams *params)
+                         const iTidy_TextRenderParams *params,
+                         const UBYTE *darken_table_override)
 {
     UWORD abs_x = p->safe_left + safe_x;
     UWORD abs_y = p->safe_top + safe_y;
@@ -307,6 +366,7 @@ static void paint_pixels(const iTidy_RenderParams *p,
     UWORD exclude_right;
     UWORD exclude_bottom;
     BOOL adaptive_mode;
+    const UBYTE *active_darken_table;
 
     if (abs_y >= p->buffer_height)
     {
@@ -316,6 +376,9 @@ static void paint_pixels(const iTidy_RenderParams *p,
     // Check if adaptive mode is enabled
     adaptive_mode = (params != NULL && params->enable_adaptive_text && 
                      params->darken_table != NULL);
+    
+    // Use override table if provided, otherwise use default
+    active_darken_table = (darken_table_override != NULL) ? darken_table_override : params->darken_table;
 
     // Pre-compute exclusion area bounds (0 width/height = no exclusion)
     exclude_right  = p->exclude_left + p->exclude_width;
@@ -349,7 +412,7 @@ static void paint_pixels(const iTidy_RenderParams *p,
         {
             // Adaptive mode: sample background, darken via lookup table
             bg_pixel = p->pixel_buffer[pixel_offset];
-            paint_color = params->darken_table[bg_pixel];
+            paint_color = active_darken_table[bg_pixel];
         }
         else
         {
@@ -384,6 +447,9 @@ BOOL itidy_render_ascii_preview(const char *file_path,
     UWORD scan_size;
     UWORD out_pixels_per_line;  /* Output pixel columns in safe area */
     UWORD col;                  /* Flush loop iterator */
+    UBYTE darken_table_light[256];  /* Second darken table for alternating lines */
+    UBYTE darken_table_33[256];     /* 33% density darken table */
+    UBYTE darken_table_67[256];     /* 67% density darken table */
 
     /* Per-line horizontal state map for count-based anti-aliasing.
      * Each element counts printable characters seen in a downscale block.
@@ -424,7 +490,8 @@ BOOL itidy_render_ascii_preview(const char *file_path,
     /* Calculate layout limits with automatic scaling                     */
     /*--------------------------------------------------------------------*/
 
-    line_step = params->line_pixel_height + params->line_gap;
+    // No gap between lines - continuous ruled paper effect
+    line_step = params->line_pixel_height;
     if (line_step == 0)
     {
         line_step = 1;
@@ -445,19 +512,9 @@ BOOL itidy_render_ascii_preview(const char *file_path,
         h_scale = 1;
     }
 
-    /* Auto-calculate vertical scale to fit target lines into safe height */
-    {
-        UWORD out_rows = params->base.safe_height / line_step;
-        if (out_rows == 0)
-        {
-            out_rows = 1;
-        }
-        v_scale = (ITIDY_TARGET_LINES + out_rows - 1) / out_rows;
-        if (v_scale < 1)
-        {
-            v_scale = 1;
-        }
-    }
+    /* 1:1 vertical mapping - render every source line (no downsampling)
+     * for ruled paper effect with alternating dark/light intensity */
+    v_scale = 1;
 
     // Source chars/lines = output pixel slots * scale factor
     max_source_chars = out_pixels_per_line * h_scale;
@@ -466,7 +523,8 @@ BOOL itidy_render_ascii_preview(const char *file_path,
         max_source_chars = 1;
     }
 
-    max_source_lines = (params->base.safe_height / line_step) * v_scale;
+    // Max lines = available height / line_step (simplified for v_scale=1)
+    max_source_lines = params->base.safe_height / line_step;
     if (max_source_lines == 0)
     {
         max_source_lines = 1;
@@ -504,6 +562,8 @@ BOOL itidy_render_ascii_preview(const char *file_path,
         params->palette != NULL && params->palette_size > 0)
     {
         UBYTE darken_pct = params->darken_percent;
+        UBYTE darken_light_pct;      /* Lighter darken % for alternating lines */
+        
         if (darken_pct == 0)
         {
             darken_pct = ITIDY_DEFAULT_DARKEN_PERCENT;
@@ -516,8 +576,31 @@ BOOL itidy_render_ascii_preview(const char *file_path,
         build_darken_table(params->palette, params->palette_size,
                           darken_pct, params->darken_table);
         
-        log_info(LOG_ICONS, "itidy_render_ascii_preview: adaptive text enabled, darken=%u%%\n",
-                 (unsigned)darken_pct);
+        // Build second table for alternating lighter lines (user-configurable)
+        darken_light_pct = params->darken_alt_percent;
+        if (darken_light_pct == 0)
+        {
+            darken_light_pct = ITIDY_DEFAULT_DARKEN_ALT_PERCENT;
+        }
+        if (darken_light_pct > 100)
+        {
+            darken_light_pct = 100;
+        }
+        build_darken_table(params->palette, params->palette_size,
+                          darken_light_pct, darken_table_light);
+        
+        // Build graduated darken tables for different density levels
+        // These provide smooth visual variation for sparse vs dense text
+        UBYTE darken_33_pct = (darken_pct * 33) / 100;  // 33% density = lighter
+        UBYTE darken_67_pct = (darken_pct * 67) / 100;  // 67% density = medium
+        build_darken_table(params->palette, params->palette_size,
+                          darken_33_pct, darken_table_33);
+        build_darken_table(params->palette, params->palette_size,
+                          darken_67_pct, darken_table_67);
+        
+        log_info(LOG_ICONS, "itidy_render_ascii_preview: adaptive text enabled, darken=%u%% (alt=%u%%, 33=%u%%, 67=%u%%)\n",
+                 (unsigned)darken_pct, (unsigned)darken_light_pct,
+                 (unsigned)darken_33_pct, (unsigned)darken_67_pct);
     }
 
     /*--------------------------------------------------------------------*/
@@ -607,28 +690,53 @@ BOOL itidy_render_ascii_preview(const char *file_path,
         {
             // Flush: paint output pixels based on character count threshold
             UWORD out_y = (current_line / v_scale) * line_step;
+            BOOL is_alternate_line = (out_y % 2) == 1;  // Odd lines are lighter
+            
             for (col = 0; col < out_pixels_per_line; col++)
             {
                 UBYTE count = line_map[col];
                 UBYTE color;
+                const UBYTE *density_table;
                 
                 if (count == 0)
                 {
                     continue;  // Leave as background
                 }
-                else if (count == 1)
+                
+                // Select darken table based on character density
+                // This provides graduated intensity for sparse vs dense text
+                if (count == 1)
                 {
-                    // Sparse/edge — use mid-tone (grey) for anti-aliasing
+                    // Sparse/edge - use lightest darkening
+                    density_table = is_alternate_line ? darken_table_light : darken_table_33;
                     color = params->base.mid_color_index;
                 }
                 else
                 {
-                    // Dense — use full text color (black)
+                    // Calculate density percentage
+                    UWORD density_pct = (count * 100) / h_scale;
+                    
+                    if (density_pct < 50)
+                    {
+                        // Low density (33%) - lighter darkening
+                        density_table = is_alternate_line ? darken_table_light : darken_table_33;
+                    }
+                    else if (density_pct < 85)
+                    {
+                        // Medium density (67%) - medium darkening
+                        density_table = is_alternate_line ? darken_table_light : darken_table_67;
+                    }
+                    else
+                    {
+                        // High density (100%) - full darkening
+                        density_table = is_alternate_line ? darken_table_light : params->darken_table;
+                    }
+                    
                     color = params->base.text_color_index;
                 }
                 
                 paint_pixels(&params->base, col * char_w, out_y,
-                             char_w, color, params);
+                             char_w, color, params, density_table);
             }
 
             // Reset map for the next source line
@@ -713,28 +821,52 @@ BOOL itidy_render_ascii_preview(const char *file_path,
     if (current_line < max_source_lines)
     {
         UWORD out_y = (current_line / v_scale) * line_step;
+        BOOL is_alternate_line = (out_y % 2) == 1;  // Odd lines are lighter
+        
         for (col = 0; col < out_pixels_per_line; col++)
         {
             UBYTE count = line_map[col];
             UBYTE color;
+            const UBYTE *density_table;
             
             if (count == 0)
             {
                 continue;  // Leave as background
             }
-            else if (count == 1)
+            
+            // Select darken table based on character density
+            if (count == 1)
             {
-                // Sparse — use mid-tone (grey)
+                // Sparse/edge - use lightest darkening
+                density_table = is_alternate_line ? darken_table_light : darken_table_33;
                 color = params->base.mid_color_index;
             }
             else
             {
-                // Dense — use full text color (black)
+                // Calculate density percentage
+                UWORD density_pct = (count * 100) / h_scale;
+                
+                if (density_pct < 50)
+                {
+                    // Low density (33%) - lighter darkening
+                    density_table = is_alternate_line ? darken_table_light : darken_table_33;
+                }
+                else if (density_pct < 85)
+                {
+                    // Medium density (67%) - medium darkening
+                    density_table = is_alternate_line ? darken_table_light : darken_table_67;
+                }
+                else
+                {
+                    // High density (100%) - full darkening
+                    density_table = is_alternate_line ? darken_table_light : params->darken_table;
+                }
+                
                 color = params->base.text_color_index;
             }
             
             paint_pixels(&params->base, col * char_w, out_y,
-                         char_w, color, params);
+                         char_w, color, params, density_table);
         }
     }
 

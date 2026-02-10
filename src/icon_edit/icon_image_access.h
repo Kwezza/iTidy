@@ -157,6 +157,7 @@ typedef struct {
     /* Adaptive text coloring */
     BOOL enable_adaptive_text;  /* Enable adaptive text color (samples background) */
     UBYTE darken_percent;       /* Percentage to darken background color (1-100, default 70) */
+    UBYTE darken_alt_percent;   /* Percentage for alternating lines (1-100, default 35) */
     UBYTE *darken_table;        /* Pre-computed lookup table [256]: bg_index -> darkened_index */
     const struct ColorRegister *palette;  /* Palette reference for adaptive mode */
     ULONG palette_size;         /* Number of palette entries */
@@ -182,7 +183,8 @@ typedef struct {
 #define ITIDY_DEFAULT_READ_BYTES    4096
 
 /** Default darken percentage for adaptive text rendering (1-100) */
-#define ITIDY_DEFAULT_DARKEN_PERCENT  70
+#define ITIDY_DEFAULT_DARKEN_PERCENT      70
+#define ITIDY_DEFAULT_DARKEN_ALT_PERCENT  35
 
 /** Threshold for auto-promoting char width from 1 to 2 */
 #define ITIDY_CHAR_WIDTH_PROMOTE_THRESHOLD  64
@@ -204,9 +206,10 @@ typedef struct {
 #define ITIDY_TT_BG_COLOR       "ITIDY_BG_COLOR"
 #define ITIDY_TT_TEXT_COLOR      "ITIDY_TEXT_COLOR"
 #define ITIDY_TT_MID_COLOR       "ITIDY_MID_COLOR"
-#define ITIDY_TT_ADAPTIVE_TEXT   "ITIDY_ADAPTIVE_TEXT"
-#define ITIDY_TT_DARKEN_PERCENT  "ITIDY_DARKEN_PERCENT"
-#define ITIDY_TT_EXPAND_PALETTE  "ITIDY_EXPAND_PALETTE"
+#define ITIDY_TT_ADAPTIVE_TEXT       "ITIDY_ADAPTIVE_TEXT"
+#define ITIDY_TT_DARKEN_PERCENT      "ITIDY_DARKEN_PERCENT"
+#define ITIDY_TT_DARKEN_ALT_PERCENT  "ITIDY_DARKEN_ALT_PERCENT"
+#define ITIDY_TT_EXPAND_PALETTE      "ITIDY_EXPAND_PALETTE"
 #define ITIDY_TT_READ_BYTES     "ITIDY_READ_BYTES"
 
 /* Stamped ToolTypes on generated icons */

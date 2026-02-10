@@ -1241,6 +1241,19 @@ BOOL itidy_get_render_params(struct DiskObject *icon,
                 darken = 100;
             }
             params->darken_percent = (UBYTE)darken;
+            
+            // Parse alternating line darken percentage (1-100)
+            LONG darken_alt = parse_integer_tooltype(tool_types, ITIDY_TT_DARKEN_ALT_PERCENT,
+                                                ITIDY_DEFAULT_DARKEN_ALT_PERCENT);
+            if (darken_alt < 1)
+            {
+                darken_alt = 1;
+            }
+            if (darken_alt > 100)
+            {
+                darken_alt = 100;
+            }
+            params->darken_alt_percent = (UBYTE)darken_alt;
         }
     }
     
