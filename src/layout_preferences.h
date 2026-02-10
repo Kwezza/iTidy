@@ -209,6 +209,7 @@ typedef struct {
     BOOL deficons_log_created_icons;           /* TRUE = log all created .info files to dedicated log (for testing/delete scripts) */
     UWORD deficons_icon_size_mode;              /* 0=Small(48), 1=Medium(64), 2=Large(100) — IFF thumbnail size */
     UWORD deficons_palette_mode;                /* 0=Picture (use image CMAP), 1=Screen (quantize to WB screen) */
+    BOOL deficons_enable_thumbnail_borders;     /* TRUE = enable borders/frames on image thumbnails, FALSE = frameless (edge-to-edge) */
     
     /* Logging and Debug Settings */
     UWORD logLevel;                            /* Log level: 0=DEBUG, 1=INFO, 2=WARN, 3=ERROR */
@@ -273,6 +274,7 @@ typedef struct {
 #define DEFAULT_DEFICONS_LOG_CREATED_ICONS                 TRUE    /* Log created icons to separate file (useful for testing) */
 #define DEFAULT_DEFICONS_ICON_SIZE_MODE                     1       /* 0=Small(48), 1=Medium(64), 2=Large(100) */
 #define DEFAULT_DEFICONS_PALETTE_MODE                       0       /* 0=Picture (use image CMAP), 1=Screen (quantize to WB palette) */
+#define DEFAULT_DEFICONS_ENABLE_THUMBNAIL_BORDERS           TRUE    /* Default: Borders enabled (frameless=FALSE) */
 
 /* Logging and Debug Defaults */
 #define DEFAULT_LOG_LEVEL                                  1       /* Default: INFO level (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR) */

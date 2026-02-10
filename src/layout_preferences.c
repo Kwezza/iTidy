@@ -97,6 +97,7 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     prefs->deficons_log_created_icons = DEFAULT_DEFICONS_LOG_CREATED_ICONS;
     prefs->deficons_icon_size_mode = DEFAULT_DEFICONS_ICON_SIZE_MODE;
     prefs->deficons_palette_mode = DEFAULT_DEFICONS_PALETTE_MODE;
+    prefs->deficons_enable_thumbnail_borders = DEFAULT_DEFICONS_ENABLE_THUMBNAIL_BORDERS;
     
     /* Logging and Debug Settings */
     prefs->logLevel = DEFAULT_LOG_LEVEL;

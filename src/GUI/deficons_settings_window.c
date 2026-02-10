@@ -15,6 +15,7 @@
 #define ChooserBase iTidy_DefIcons_ChooserBase
 #define ButtonBase iTidy_DefIcons_ButtonBase
 #define LabelBase iTidy_DefIcons_LabelBase
+#define CheckBoxBase iTidy_DefIcons_CheckBoxBase
 
 #include "deficons_settings_window.h"
 #include "writeLog.h"
@@ -38,6 +39,7 @@
 #include <proto/listbrowser.h>
 #include <proto/chooser.h>
 #include <proto/button.h>
+#include <proto/checkbox.h>
 #include <proto/label.h>
 #include <proto/utility.h>
 #include <proto/asl.h>
@@ -50,6 +52,7 @@
 #include <gadgets/listbrowser.h>
 #include <gadgets/chooser.h>
 #include <gadgets/button.h>
+#include <gadgets/checkbox.h>
 #include <images/label.h>
 #include <libraries/gadtools.h>
 
@@ -75,6 +78,7 @@ struct Library *iTidy_DefIcons_ListBrowserBase = NULL;
 struct Library *iTidy_DefIcons_ChooserBase = NULL;
 struct Library *iTidy_DefIcons_ButtonBase = NULL;
 struct Library *iTidy_DefIcons_LabelBase = NULL;
+struct Library *iTidy_DefIcons_CheckBoxBase = NULL;
 
 /* Gadget IDs */
 enum {
@@ -86,6 +90,7 @@ enum {
     GID_FOLDER_MODE_CHOOSER,
     GID_ICON_SIZE_CHOOSER,
     GID_PALETTE_MODE_CHOOSER,
+    GID_THUMBNAIL_BORDERS_CHECKBOX,
     GID_OK,
     GID_CANCEL
 };
@@ -105,6 +110,7 @@ typedef struct {
     Object *chooser_obj;
     Object *icon_size_chooser_obj;
     Object *palette_mode_chooser_obj;
+    Object *thumbnail_borders_checkbox;
     Object *select_all_btn;
     Object *select_none_btn;
     Object *show_tools_btn;
@@ -135,11 +141,13 @@ static BOOL open_reaction_libs(void)
     iTidy_DefIcons_ListBrowserBase = OpenLibrary("gadgets/listbrowser.gadget", 44);
     iTidy_DefIcons_ChooserBase = OpenLibrary("gadgets/chooser.gadget", 44);
     iTidy_DefIcons_ButtonBase = OpenLibrary("gadgets/button.gadget", 44);
+    iTidy_DefIcons_CheckBoxBase = OpenLibrary("gadgets/checkbox.gadget", 44);
     iTidy_DefIcons_LabelBase = OpenLibrary("images/label.image", 44);
     
     if (!iTidy_DefIcons_WindowBase || !iTidy_DefIcons_LayoutBase ||
         !iTidy_DefIcons_ListBrowserBase || !iTidy_DefIcons_ChooserBase ||
-        !iTidy_DefIcons_ButtonBase || !iTidy_DefIcons_LabelBase)
+        !iTidy_DefIcons_ButtonBase || !iTidy_DefIcons_CheckBoxBase ||
+        !iTidy_DefIcons_LabelBase)
     {
         return FALSE;
     }
@@ -156,6 +164,11 @@ static void close_reaction_libs(void)
     {
         CloseLibrary(iTidy_DefIcons_LabelBase);
         iTidy_DefIcons_LabelBase = NULL;
+    }
+    if (iTidy_DefIcons_CheckBoxBase)
+    {
+        CloseLibrary(iTidy_DefIcons_CheckBoxBase);
+        iTidy_DefIcons_CheckBoxBase = NULL;
     }
     if (iTidy_DefIcons_ButtonBase)
     {
@@ -622,6 +635,13 @@ static BOOL create_window(DefIconsSettingsWindow *win)
         CHOOSER_Selected, win->prefs->deficons_palette_mode,
     ChooserEnd;
     
+    win->thumbnail_borders_checkbox = (Object *)CheckBoxObject,
+        GA_ID, GID_THUMBNAIL_BORDERS_CHECKBOX,
+        GA_Text, "Enable _borders on image thumbnails",
+        GA_Selected, win->prefs->deficons_enable_thumbnail_borders,
+        GA_RelVerify, TRUE,
+    CheckBoxEnd;
+    
     win->select_all_btn = (Object *)ButtonObject,
         GA_ID, GID_SELECT_ALL,
         GA_Text, "Select _All",
@@ -699,6 +719,9 @@ static BOOL create_window(DefIconsSettingsWindow *win)
             LAYOUT_AddChild, win->palette_mode_chooser_obj,
             CHILD_WeightedWidth, 100,
         LayoutEnd,
+        CHILD_WeightedHeight, 0,
+        
+        LAYOUT_AddChild, win->thumbnail_borders_checkbox,
         CHILD_WeightedHeight, 0,
         
         LAYOUT_AddChild, (Object *)HLayoutObject,
@@ -1368,6 +1391,13 @@ static void handle_ok(DefIconsSettingsWindow *win)
         win->prefs->deficons_palette_mode = (UWORD)selected_palette;
     }
     
+    /* Get thumbnail borders checkbox state */
+    {
+        ULONG borders_enabled = 0;
+        GetAttr(GA_Selected, win->thumbnail_borders_checkbox, &borders_enabled);
+        win->prefs->deficons_enable_thumbnail_borders = (BOOL)borders_enabled;
+    }
+    
     /* Rebuild disabled types from current checkbox state (source of truth) */
     clear_disabled_deficon_types(win->prefs);
     for (node = win->tree_list->lh_Head; node->ln_Succ; node = node->ln_Succ)
@@ -1409,10 +1439,11 @@ static void handle_ok(DefIconsSettingsWindow *win)
     }
     
     log_info(LOG_GUI, "DefIcons settings saved: folder_mode=%d, icon_size=%d, "
-             "palette_mode=%d, disabled_types='%s'\n",
+             "palette_mode=%d, thumbnail_borders=%s, disabled_types='%s'\n",
              win->prefs->deficons_folder_icon_mode,
              win->prefs->deficons_icon_size_mode,
              win->prefs->deficons_palette_mode,
+             win->prefs->deficons_enable_thumbnail_borders ? "enabled" : "disabled",
              win->prefs->deficons_disabled_types);
     
     win->user_accepted = TRUE;

@@ -610,12 +610,15 @@ static int apply_iff_preview(const char *source_path,
         img.transparent_color_normal = -1;
         img.transparent_color_selected = -1;
 
-        // Frameless — the thumbnail IS the icon, no border/frame needed
-        img.is_frameless = TRUE;
+        // Frameless setting — controlled by user preference
+        // If borders enabled (TRUE), set frameless to FALSE so Workbench draws borders
+        // If borders disabled (FALSE), set frameless to TRUE for edge-to-edge thumbnails
+        img.is_frameless = prefs ? !prefs->deficons_enable_thumbnail_borders : FALSE;
 
         log_info(LOG_ICONS, "apply_iff_preview: cropped to tight %ux%u, "
-                 "transparency disabled, frameless\n",
-                 (unsigned)thumb_w, (unsigned)thumb_h);
+                 "transparency disabled, frameless=%s\n",
+                 (unsigned)thumb_w, (unsigned)thumb_h,
+                 img.is_frameless ? "yes" : "no");
     }
 
     /*--------------------------------------------------------------------*/

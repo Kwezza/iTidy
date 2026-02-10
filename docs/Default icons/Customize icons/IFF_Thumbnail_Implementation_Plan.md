@@ -26,7 +26,7 @@
 
 3. **Transparency disabled**: Palette index 0 (often black) was being treated as transparent by Workbench, causing holes in dark images like Space and Waterfall. **Fix**: `transparent_color_normal` and `transparent_color_selected` are set to -1 (no transparency) after cropping.
 
-4. **Frameless icons**: Since the thumbnail IS the icon (edge-to-edge, no border artwork), `is_frameless` is set to TRUE. Workbench draws no border frame around the icon.
+4. **Frameless icons (user-configurable)**: Since the thumbnail IS the icon (edge-to-edge, no border artwork), the default behavior was to set `is_frameless` to TRUE so Workbench draws no border frame. However, this is now **user-configurable** via a checkbox in the DefIcons settings window. The `deficons_enable_thumbnail_borders` preference field (default: TRUE) controls this behavior. When borders are enabled (TRUE), `is_frameless` is set to FALSE (Workbench draws borders). When borders are disabled (FALSE), `is_frameless` is set to TRUE (edge-to-edge thumbnails). **Implementation**: Added in `layout_preferences.h` as `deficons_enable_thumbnail_borders` with default `DEFAULT_DEFICONS_ENABLE_THUMBNAIL_BORDERS = TRUE`. Checkbox gadget added to `deficons_settings_window.c` with label "Enable _borders on image thumbnails". Logic applied in `icon_content_preview.c` during the cropping step: `img.is_frameless = prefs ? !prefs->deficons_enable_thumbnail_borders : FALSE;`
 
 5. **Selected image discarded**: Edge-to-edge thumbnails have no safe area for the bg/text index swap to operate on, so the selected image building step is skipped. The icon relies on Workbench's standard complement highlighting for selection feedback.
 
