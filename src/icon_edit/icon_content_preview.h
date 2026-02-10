@@ -58,6 +58,32 @@
  */
 #define ITIDY_TEXT_TEMPLATE_PATH    "PROGDIR:Icons/text_template"
 
+/**
+ * IFF thumbnail template paths — one per size tier.
+ *
+ * Each template is a plain safe-area fill icon with ToolTypes defining
+ * the render parameters (ITIDY_TEXT_AREA, ITIDY_BG_COLOR,
+ * ITIDY_PALETTE_MODE). Per the Template Contract (Section 12 of the
+ * IFF Thumbnail Implementation Plan), these have no custom pixel-art
+ * borders — Workbench draws the icon frame.
+ */
+#define ITIDY_IFF_TEMPLATE_SMALL   "PROGDIR:Icons/iff_template_small"
+#define ITIDY_IFF_TEMPLATE_MEDIUM  "PROGDIR:Icons/iff_template_medium"
+#define ITIDY_IFF_TEMPLATE_LARGE   "PROGDIR:Icons/iff_template_large"
+
+/*========================================================================*/
+/* Icon Size Tiers                                                        */
+/*========================================================================*/
+
+/** Small template: 48x48 pixels */
+#define ITIDY_ICON_SIZE_SMALL   0
+
+/** Medium template: 64x64 pixels (default) */
+#define ITIDY_ICON_SIZE_MEDIUM  1
+
+/** Large template: 100x100 pixels */
+#define ITIDY_ICON_SIZE_LARGE   2
+
 /*========================================================================*/
 /* Type Detection                                                         */
 /*========================================================================*/
@@ -74,6 +100,33 @@
  * @return TRUE if the type is text-based and supports preview
  */
 BOOL itidy_is_text_preview_type(const char *type_token);
+
+/**
+ * @brief Check whether a DefIcons type token supports IFF thumbnail.
+ *
+ * Currently matches only "ilbm" — the standard IFF ILBM picture format.
+ * Future expansion may add other picture types (acbm, etc.) or use
+ * the broader "picture" category for datatype-based decoding.
+ *
+ * @param type_token    DefIcons type token (e.g., "ilbm", "c", "mod")
+ * @return TRUE if the type supports IFF thumbnail generation
+ */
+BOOL itidy_is_iff_preview_type(const char *type_token);
+
+/**
+ * @brief Select the IFF template path based on icon size preference.
+ *
+ * Returns the appropriate IFF template path constant based on the
+ * current global deficons_icon_size_mode preference:
+ *   - ITIDY_ICON_SIZE_SMALL  → ITIDY_IFF_TEMPLATE_SMALL  (48x48)
+ *   - ITIDY_ICON_SIZE_MEDIUM → ITIDY_IFF_TEMPLATE_MEDIUM (64x64)
+ *   - ITIDY_ICON_SIZE_LARGE  → ITIDY_IFF_TEMPLATE_LARGE  (100x100)
+ *
+ * Defaults to medium if preference is out of range.
+ *
+ * @return Static string pointer to the template path (do NOT free)
+ */
+const char *itidy_get_iff_template_path(void);
 
 /*========================================================================*/
 /* Cache Validation                                                       */

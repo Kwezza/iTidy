@@ -908,6 +908,36 @@ static BOOL expand_palette_for_adaptive(struct ColorRegister **palette_ptr, ULON
     return TRUE;
 }
 
+/*========================================================================*/
+/* itidy_find_closest_palette_color — Shared Euclidean RGB palette match  */
+/*========================================================================*/
+
+UBYTE itidy_find_closest_palette_color(const struct ColorRegister *palette,
+                                       ULONG palette_size,
+                                       UBYTE target_r, UBYTE target_g,
+                                       UBYTE target_b)
+{
+    ULONG best_dist = 999999UL;
+    UBYTE best_idx = 0;
+    ULONG i;
+
+    for (i = 0; i < palette_size; i++)
+    {
+        LONG dr = (LONG)palette[i].red   - (LONG)target_r;
+        LONG dg = (LONG)palette[i].green - (LONG)target_g;
+        LONG db = (LONG)palette[i].blue  - (LONG)target_b;
+        ULONG dist = (ULONG)(dr*dr + dg*dg + db*db);
+
+        if (dist < best_dist)
+        {
+            best_dist = dist;
+            best_idx = (UBYTE)i;
+        }
+    }
+
+    return best_idx;
+}
+
 /*------------------------------------------------------------------------*/
 
 void itidy_resolve_palette_indices(struct DiskObject *icon,

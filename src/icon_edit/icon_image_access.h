@@ -418,6 +418,28 @@ BOOL itidy_check_cache_valid(const char *target_path,
                              const struct DateStamp *source_date);
 
 /*========================================================================*/
+/* Shared Palette Utilities                                               */
+/*========================================================================*/
+
+/**
+ * @brief Find the closest palette entry to a target RGB color.
+ *
+ * Uses Euclidean distance in RGB space. Shared by text renderer
+ * and IFF thumbnail renderer.
+ *
+ * @param palette       Palette array (ColorRegister: R, G, B bytes)
+ * @param palette_size  Number of entries in palette
+ * @param target_r      Target red component (0-255)
+ * @param target_g      Target green component (0-255)
+ * @param target_b      Target blue component (0-255)
+ * @return Palette index of closest color match
+ */
+UBYTE itidy_find_closest_palette_color(const struct ColorRegister *palette,
+                                       ULONG palette_size,
+                                       UBYTE target_r, UBYTE target_g,
+                                       UBYTE target_b);
+
+/*========================================================================*/
 /* Debug Functions                                                        */
 /*========================================================================*/
 

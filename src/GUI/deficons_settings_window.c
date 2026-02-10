@@ -84,6 +84,7 @@ enum {
     GID_SHOW_TOOLS,
     GID_CHANGE_DEFAULT_TOOL,
     GID_FOLDER_MODE_CHOOSER,
+    GID_ICON_SIZE_CHOOSER,
     GID_OK,
     GID_CANCEL
 };
@@ -101,6 +102,7 @@ typedef struct {
     Object *main_layout;
     Object *tree_listbrowser;
     Object *chooser_obj;
+    Object *icon_size_chooser_obj;
     Object *select_all_btn;
     Object *select_none_btn;
     Object *show_tools_btn;
@@ -535,6 +537,14 @@ static STRPTR folder_mode_labels[] = {
     NULL
 };
 
+/* Icon size chooser labels (matches ITIDY_ICON_SIZE_* constants) */
+static STRPTR icon_size_labels[] = {
+    "Small (48x48)",
+    "Medium (64x64)",
+    "Large (100x100)",
+    NULL
+};
+
 /*
  * Create the window
  */
@@ -587,6 +597,13 @@ static BOOL create_window(DefIconsSettingsWindow *win)
         GA_RelVerify, TRUE,
         CHOOSER_LabelArray, folder_mode_labels,
         CHOOSER_Selected, win->prefs->deficons_folder_icon_mode,
+    ChooserEnd;
+    
+    win->icon_size_chooser_obj = (Object *)ChooserObject,
+        GA_ID, GID_ICON_SIZE_CHOOSER,
+        GA_RelVerify, TRUE,
+        CHOOSER_LabelArray, icon_size_labels,
+        CHOOSER_Selected, win->prefs->deficons_icon_size_mode,
     ChooserEnd;
     
     win->select_all_btn = (Object *)ButtonObject,
@@ -642,6 +659,17 @@ static BOOL create_window(DefIconsSettingsWindow *win)
             CHILD_WeightedWidth, 0,
             
             LAYOUT_AddChild, win->chooser_obj,
+            CHILD_WeightedWidth, 100,
+        LayoutEnd,
+        CHILD_WeightedHeight, 0,
+        
+        LAYOUT_AddChild, (Object *)HLayoutObject,
+            LAYOUT_AddChild, (Object *)LabelObject,
+                LABEL_Text, "Icon Size:",
+            LabelEnd,
+            CHILD_WeightedWidth, 0,
+            
+            LAYOUT_AddChild, win->icon_size_chooser_obj,
             CHILD_WeightedWidth, 100,
         LayoutEnd,
         CHILD_WeightedHeight, 0,
@@ -1299,6 +1327,13 @@ static void handle_ok(DefIconsSettingsWindow *win)
     GetAttr(CHOOSER_Selected, win->chooser_obj, &selected_mode);
     win->prefs->deficons_folder_icon_mode = (UWORD)selected_mode;
     
+    /* Get icon size mode from chooser */
+    {
+        ULONG selected_size = 0;
+        GetAttr(CHOOSER_Selected, win->icon_size_chooser_obj, &selected_size);
+        win->prefs->deficons_icon_size_mode = (UWORD)selected_size;
+    }
+    
     /* Rebuild disabled types from current checkbox state (source of truth) */
     clear_disabled_deficon_types(win->prefs);
     for (node = win->tree_list->lh_Head; node->ln_Succ; node = node->ln_Succ)
@@ -1339,8 +1374,9 @@ static void handle_ok(DefIconsSettingsWindow *win)
         }
     }
     
-    log_info(LOG_GUI, "DefIcons settings saved: folder_mode=%d, disabled_types='%s'\n",
+    log_info(LOG_GUI, "DefIcons settings saved: folder_mode=%d, icon_size=%d, disabled_types='%s'\n",
              win->prefs->deficons_folder_icon_mode,
+             win->prefs->deficons_icon_size_mode,
              win->prefs->deficons_disabled_types);
     
     win->user_accepted = TRUE;

@@ -62,42 +62,9 @@ static void darken_color(UBYTE r, UBYTE g, UBYTE b, UBYTE percent,
     *out_b = (UBYTE)((b * factor) / 100);
 }
 
-/**
- * @brief Find the closest palette entry to a target RGB color.
- *
- * Uses Euclidean distance in RGB space.
- *
- * @param palette      Palette array
- * @param palette_size Number of palette entries
- * @param target_r     Target red
- * @param target_g     Target green
- * @param target_b     Target blue
- * @return Palette index of closest color
+/* find_closest_palette_color — promoted to shared function in icon_image_access.c
+ * Call itidy_find_closest_palette_color() instead.
  */
-static UBYTE find_closest_palette_color(const struct ColorRegister *palette,
-                                       ULONG palette_size,
-                                       UBYTE target_r, UBYTE target_g, UBYTE target_b)
-{
-    ULONG best_dist = 999999UL;
-    UBYTE best_idx = 0;
-    ULONG i;
-    
-    for (i = 0; i < palette_size; i++)
-    {
-        LONG dr = (LONG)palette[i].red   - (LONG)target_r;
-        LONG dg = (LONG)palette[i].green - (LONG)target_g;
-        LONG db = (LONG)palette[i].blue  - (LONG)target_b;
-        ULONG dist = (ULONG)(dr*dr + dg*dg + db*db);
-        
-        if (dist < best_dist)
-        {
-            best_dist = dist;
-            best_idx = (UBYTE)i;
-        }
-    }
-    
-    return best_idx;
-}
 
 /**
  * @brief Build adaptive darken lookup table.
@@ -127,8 +94,8 @@ static void build_darken_table(const struct ColorRegister *palette,
                     darken_percent, &dark_r, &dark_g, &dark_b);
         
         // Find closest palette match
-        out_table[i] = find_closest_palette_color(palette, palette_size,
-                                                   dark_r, dark_g, dark_b);
+        out_table[i] = itidy_find_closest_palette_color(palette, palette_size,
+                                                        dark_r, dark_g, dark_b);
     }
     
     // Fill unused entries (palette_size to 255) with index 0

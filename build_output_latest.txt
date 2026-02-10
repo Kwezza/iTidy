@@ -505,19 +505,23 @@ vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBU
 Compiling [build/amiga/deficons_creation.o] from src/deficons_creation.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/deficons_creation.c -o build/amiga/deficons_creation.o
 >        CREATION_STATUS(progress_window, "  Skipping system path: %s", path)
-warning 153 in line 438 of "src\deficons_creation.c": statement has no effect
+warning 153 in line 441 of "src\deficons_creation.c": statement has no effect
 >        CREATION_CHECK_CANCEL(progress_window)
-warning 153 in line 471 of "src\deficons_creation.c": statement has no effect
+warning 153 in line 474 of "src\deficons_creation.c": statement has no effect
 >    CREATION_CHECK_CANCEL(progress_window)
-warning 153 in line 663 of "src\deficons_creation.c": statement has no effect
+warning 153 in line 689 of "src\deficons_creation.c": statement has no effect
 >    CREATION_STATUS(progress_window, "  Creating icons: %s", path)
-warning 153 in line 671 of "src\deficons_creation.c": statement has no effect
+warning 153 in line 697 of "src\deficons_creation.c": statement has no effect
 >        CREATION_CHECK_CANCEL(progress_window)
-warning 153 in line 721 of "src\deficons_creation.c": statement has no effect
+warning 153 in line 747 of "src\deficons_creation.c": statement has no effect
 Compiling [build/amiga/icon_edit/icon_image_access.o] from src/icon_edit/icon_image_access.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_edit/icon_image_access.c -o build/amiga/icon_edit/icon_image_access.o
->    icon->do_ToolTypes = (char **)new_tooltypes;
-warning 110 in line 907 of "src\icon_edit\icon_image_access.c": pointer assignment with different qualifiers
+Compiling [build/amiga/icon_edit/icon_text_render.o] from src/icon_edit/icon_text_render.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_edit/icon_text_render.c -o build/amiga/icon_edit/icon_text_render.o
+Compiling [build/amiga/icon_edit/icon_iff_render.o] from src/icon_edit/icon_iff_render.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_edit/icon_iff_render.c -o build/amiga/icon_edit/icon_iff_render.o
+Compiling [build/amiga/icon_edit/icon_content_preview.o] from src/icon_edit/icon_content_preview.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_edit/icon_content_preview.c -o build/amiga/icon_edit/icon_content_preview.o
 Compiling [build/amiga/backup_catalog.o] from src/backup_catalog.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/backup_catalog.c -o build/amiga/backup_catalog.o
 Compiling [build/amiga/backup_lha.o] from src/backup_lha.c
@@ -741,6 +745,6 @@ vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBU
 Compiling memory tracking: build/amiga/platform_memory.o
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/platform/platform.c -o build/amiga/platform_memory.o
 Linking Amiga executable: Bin/Amiga/iTidy
-vc +aos68k -cpu=68000 -O2 -size -final -lamiga -lauto -o Bin/Amiga/iTidy build/amiga/main_gui.o build/amiga/icon_types.o build/amiga/icon_misc.o build/amiga/icon_management.o build/amiga/file_directory_handling.o build/amiga/window_management.o build/amiga/utilities.o build/amiga/path_utilities.o build/amiga/spinner.o build/amiga/writeLog.o build/amiga/cli_utilities.o build/amiga/layout_preferences.o build/amiga/layout_processor.o build/amiga/aspect_ratio_layout.o build/amiga/folder_scanner.o build/amiga/string_functions.o build/amiga/deficons_parser.o build/amiga/deficons_identify.o build/amiga/deficons_templates.o build/amiga/deficons_filters.o build/amiga/deficons_creation.o build/amiga/icon_edit/icon_image_access.o build/amiga/backup_catalog.o build/amiga/backup_lha.o build/amiga/backup_marker.o build/amiga/backup_paths.o build/amiga/backup_runs.o build/amiga/backup_session.o build/amiga/backup_restore.o build/amiga/helpers/listview_simple_columns.o build/amiga/helpers/list_formatter.o build/amiga/GUI/main_window.o build/amiga/GUI/advanced_window.o build/amiga/GUI/beta_options_window.o build/amiga/GUI/deficons_settings_window.o build/amiga/GUI/easy_request_helper.o build/amiga/GUI/window_enumerator.o build/amiga/GUI/wb_classify.o build/amiga/GUI/gui_groupbox.o build/amiga/GUI/gui_utilities.o build/amiga/GUI/StatusWindows/progress_common.o build/amiga/GUI/StatusWindows/progress_window.o build/amiga/GUI/StatusWindows/recursive_progress.o build/amiga/GUI/StatusWindows/main_progress_window.o build/amiga/GUI/DefaultTools/tool_cache_window.o build/amiga/GUI/DefaultTools/tool_cache_reports.o build/amiga/GUI/DefaultTools/default_tool_update_window_reaction.o build/amiga/GUI/DefaultTools/default_tool_backup.o build/amiga/GUI/DefaultTools/default_tool_restore_window.o build/amiga/GUI/RestoreBackups/restore_window.o build/amiga/GUI/RestoreBackups/folder_view_window.o build/amiga/DOS/getDiskDetails.o build/amiga/Settings/IControlPrefs.o build/amiga/Settings/WorkbenchPrefs.o build/amiga/Settings/get_fonts.o build/amiga/platform/amiga_platform.o build/amiga/platform_memory.o 
+vc +aos68k -cpu=68000 -O2 -size -final -lamiga -lauto -o Bin/Amiga/iTidy build/amiga/main_gui.o build/amiga/icon_types.o build/amiga/icon_misc.o build/amiga/icon_management.o build/amiga/file_directory_handling.o build/amiga/window_management.o build/amiga/utilities.o build/amiga/path_utilities.o build/amiga/spinner.o build/amiga/writeLog.o build/amiga/cli_utilities.o build/amiga/layout_preferences.o build/amiga/layout_processor.o build/amiga/aspect_ratio_layout.o build/amiga/folder_scanner.o build/amiga/string_functions.o build/amiga/deficons_parser.o build/amiga/deficons_identify.o build/amiga/deficons_templates.o build/amiga/deficons_filters.o build/amiga/deficons_creation.o build/amiga/icon_edit/icon_image_access.o build/amiga/icon_edit/icon_text_render.o build/amiga/icon_edit/icon_iff_render.o build/amiga/icon_edit/icon_content_preview.o build/amiga/backup_catalog.o build/amiga/backup_lha.o build/amiga/backup_marker.o build/amiga/backup_paths.o build/amiga/backup_runs.o build/amiga/backup_session.o build/amiga/backup_restore.o build/amiga/helpers/listview_simple_columns.o build/amiga/helpers/list_formatter.o build/amiga/GUI/main_window.o build/amiga/GUI/advanced_window.o build/amiga/GUI/beta_options_window.o build/amiga/GUI/deficons_settings_window.o build/amiga/GUI/easy_request_helper.o build/amiga/GUI/window_enumerator.o build/amiga/GUI/wb_classify.o build/amiga/GUI/gui_groupbox.o build/amiga/GUI/gui_utilities.o build/amiga/GUI/StatusWindows/progress_common.o build/amiga/GUI/StatusWindows/progress_window.o build/amiga/GUI/StatusWindows/recursive_progress.o build/amiga/GUI/StatusWindows/main_progress_window.o build/amiga/GUI/DefaultTools/tool_cache_window.o build/amiga/GUI/DefaultTools/tool_cache_reports.o build/amiga/GUI/DefaultTools/default_tool_update_window_reaction.o build/amiga/GUI/DefaultTools/default_tool_backup.o build/amiga/GUI/DefaultTools/default_tool_restore_window.o build/amiga/GUI/RestoreBackups/restore_window.o build/amiga/GUI/RestoreBackups/folder_view_window.o build/amiga/DOS/getDiskDetails.o build/amiga/Settings/IControlPrefs.o build/amiga/Settings/WorkbenchPrefs.o build/amiga/Settings/get_fonts.o build/amiga/platform/amiga_platform.o build/amiga/platform_memory.o 
 Build complete: Bin/Amiga/iTidy
 Release build optimized for size (-O2 -size -final)

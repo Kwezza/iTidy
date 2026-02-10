@@ -68,6 +68,7 @@ CORE_SRCS = \
 ICON_EDIT_SRCS = \
 	$(SRC_DIR)/icon_edit/icon_image_access.c \
 	$(SRC_DIR)/icon_edit/icon_text_render.c \
+	$(SRC_DIR)/icon_edit/icon_iff_render.c \
 	$(SRC_DIR)/icon_edit/icon_content_preview.c
 
 # Backup system source files
@@ -283,6 +284,7 @@ $(OUT_DIR)/platform/amiga_platform.o: $(SRC_DIR)/platform/amiga_platform.c $(SRC
 # Icon editing module
 $(OUT_DIR)/icon_edit/icon_image_access.o: $(SRC_DIR)/icon_edit/icon_image_access.c $(SRC_DIR)/icon_edit/icon_image_access.h
 $(OUT_DIR)/icon_edit/icon_text_render.o: $(SRC_DIR)/icon_edit/icon_text_render.c $(SRC_DIR)/icon_edit/icon_text_render.h $(SRC_DIR)/icon_edit/icon_image_access.h
+$(OUT_DIR)/icon_edit/icon_iff_render.o: $(SRC_DIR)/icon_edit/icon_iff_render.c $(SRC_DIR)/icon_edit/icon_iff_render.h $(SRC_DIR)/icon_edit/icon_image_access.h
 $(OUT_DIR)/icon_edit/icon_content_preview.o: $(SRC_DIR)/icon_edit/icon_content_preview.c $(SRC_DIR)/icon_edit/icon_content_preview.h $(SRC_DIR)/icon_edit/icon_image_access.h $(SRC_DIR)/icon_edit/icon_text_render.h
 
 # All objects depend on platform headers

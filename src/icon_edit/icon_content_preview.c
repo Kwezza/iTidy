@@ -25,8 +25,10 @@
 #include "icon_content_preview.h"
 #include "icon_image_access.h"
 #include "icon_text_render.h"
+#include "icon_iff_render.h"
 #include "../deficons_templates.h"
 #include "../writeLog.h"
+#include "../layout_preferences.h"
 
 /*========================================================================*/
 /* itidy_is_text_preview_type                                             */
@@ -59,6 +61,51 @@ BOOL itidy_is_text_preview_type(const char *type_token)
 }
 
 /*========================================================================*/
+/* itidy_is_iff_preview_type                                              */
+/*========================================================================*/
+
+BOOL itidy_is_iff_preview_type(const char *type_token)
+{
+    if (type_token == NULL || type_token[0] == '\0')
+    {
+        return FALSE;
+    }
+
+    // Direct match — only "ilbm" (standard IFF ILBM picture format)
+    // Future: could also match "acbm" or broader "picture" category
+    if (strcmp(type_token, "ilbm") == 0)
+    {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+/*========================================================================*/
+/* itidy_get_iff_template_path                                            */
+/*========================================================================*/
+
+const char *itidy_get_iff_template_path(void)
+{
+    const LayoutPreferences *prefs = GetGlobalPreferences();
+
+    if (prefs != NULL)
+    {
+        switch (prefs->deficons_icon_size_mode)
+        {
+            case ITIDY_ICON_SIZE_SMALL:
+                return ITIDY_IFF_TEMPLATE_SMALL;
+            case ITIDY_ICON_SIZE_LARGE:
+                return ITIDY_IFF_TEMPLATE_LARGE;
+            default:
+                break;
+        }
+    }
+
+    return ITIDY_IFF_TEMPLATE_MEDIUM;
+}
+
+/*========================================================================*/
 /* itidy_content_preview_cache_valid                                      */
 /*========================================================================*/
 
@@ -78,6 +125,10 @@ BOOL itidy_content_preview_cache_valid(const char *target_path,
     if (itidy_is_text_preview_type(type_token))
     {
         expected_kind = ITIDY_KIND_TEXT_PREVIEW;
+    }
+    else if (itidy_is_iff_preview_type(type_token))
+    {
+        expected_kind = ITIDY_KIND_IFF_THUMBNAIL;
     }
     else
     {
@@ -197,6 +248,436 @@ static BOOL build_selected_image(iTidy_IconImageData *img,
 }
 
 /*========================================================================*/
+/* Internal: Selected Image Contrast Validation                           */
+/*========================================================================*/
+
+/**
+ * @brief Ensure the selected image is visually distinct from normal.
+ *
+ * IFF thumbnails can have mid-tone palettes where the bg/text index
+ * swap produces near-identical colors. This samples the safe area
+ * and checks that the average luminance delta between normal and
+ * selected pixels exceeds a threshold.
+ *
+ * If contrast is insufficient, applies a uniform brightness shift
+ * to the selected image's safe-area pixels as a fallback.
+ *
+ * @param img       Icon image data with both normal and selected buffers
+ * @param params    Render params with safe area coordinates
+ * @return TRUE if contrast is sufficient (or was corrected)
+ */
+static BOOL validate_selected_contrast(const iTidy_IconImageData *img,
+                                       const iTidy_RenderParams *params)
+{
+    ULONG sample_count = 0;
+    ULONG delta_sum = 0;
+    UWORD row, col;
+    UWORD step;
+    ULONG avg_delta;
+
+    if (img == NULL || params == NULL)
+    {
+        return TRUE;
+    }
+
+    if (!img->has_selected_image || img->pixel_data_selected == NULL)
+    {
+        return TRUE;  // No selected image to validate
+    }
+
+    if (img->palette_normal == NULL || img->palette_size_normal == 0)
+    {
+        return TRUE;
+    }
+
+    // Sample a grid of pixels (every 4th pixel to keep it fast)
+    step = 4;
+    for (row = 0; row < params->safe_height; row += step)
+    {
+        UWORD y = params->safe_top + row;
+        if (y >= img->height)
+        {
+            break;
+        }
+
+        for (col = 0; col < params->safe_width; col += step)
+        {
+            UWORD x = params->safe_left + col;
+            ULONG offset;
+            UBYTE idx_normal, idx_selected;
+            LONG lum_normal, lum_selected, delta;
+
+            if (x >= img->width)
+            {
+                break;
+            }
+
+            offset = (ULONG)y * (ULONG)img->width + (ULONG)x;
+            idx_normal = img->pixel_data_normal[offset];
+            idx_selected = img->pixel_data_selected[offset];
+
+            // Calculate luminance (approximate: (R*2 + G*5 + B) / 8)
+            if (idx_normal < img->palette_size_normal)
+            {
+                lum_normal = ((LONG)img->palette_normal[idx_normal].red * 2
+                            + (LONG)img->palette_normal[idx_normal].green * 5
+                            + (LONG)img->palette_normal[idx_normal].blue) / 8;
+            }
+            else
+            {
+                lum_normal = 0;
+            }
+
+            if (idx_selected < img->palette_size_normal)
+            {
+                lum_selected = ((LONG)img->palette_normal[idx_selected].red * 2
+                              + (LONG)img->palette_normal[idx_selected].green * 5
+                              + (LONG)img->palette_normal[idx_selected].blue) / 8;
+            }
+            else
+            {
+                lum_selected = 0;
+            }
+
+            delta = lum_normal - lum_selected;
+            if (delta < 0) delta = -delta;
+            delta_sum += (ULONG)delta;
+            sample_count++;
+        }
+    }
+
+    if (sample_count == 0)
+    {
+        return TRUE;
+    }
+
+    // Average luminance delta across sampled pixels
+    avg_delta = delta_sum / sample_count;
+
+    // Minimum contrast threshold: 20 out of 255 luminance range
+    if (avg_delta < 20)
+    {
+        log_warning(LOG_ICONS, "validate_selected_contrast: "
+                    "low contrast (avg delta=%lu) — selected state may be hard to see\n",
+                    avg_delta);
+        // TODO: Future enhancement — apply brightness shift fallback
+        // For now, just warn. The icon will still work, just less visible.
+        return FALSE;
+    }
+
+    log_debug(LOG_ICONS, "validate_selected_contrast: OK (avg delta=%lu)\n",
+              avg_delta);
+    return TRUE;
+}
+
+/*========================================================================*/
+/* Internal: Apply IFF Thumbnail Preview                                  */
+/*========================================================================*/
+
+/**
+ * @brief Complete IFF thumbnail rendering pipeline.
+ *
+ * Follows the 15-step pipeline from Section 16 of the IFF plan:
+ * load target icon → select template → extract image → build params →
+ * render thumbnail → build selected → validate contrast → apply →
+ * stamp → save → cleanup.
+ */
+static int apply_iff_preview(const char *source_path,
+                             const char *type_token,
+                             ULONG source_size,
+                             const struct DateStamp *source_date)
+{
+    struct DiskObject *target_icon = NULL;
+    struct DiskObject *image_icon = NULL;
+    struct DiskObject *clone = NULL;
+    iTidy_IconImageData img;
+    iTidy_IFFRenderParams iff_params;
+    const char *template_path;
+    const char *source_name;
+    int render_result;
+    int result = ITIDY_PREVIEW_FAILED;
+
+    log_info(LOG_ICONS, "apply_iff_preview: applying IFF thumbnail "
+             "for '%s' (type=%s)\n", source_path, type_token);
+
+    /*--------------------------------------------------------------------*/
+    /* Step 1: Load the target icon (Workbench metadata template)         */
+    /*--------------------------------------------------------------------*/
+
+    target_icon = GetDiskObject((STRPTR)source_path);
+    if (target_icon == NULL)
+    {
+        log_error(LOG_ICONS, "apply_iff_preview: "
+                  "cannot load target icon for '%s'\n", source_path);
+        return ITIDY_PREVIEW_FAILED;
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 2: Select IFF template based on size preference                */
+    /*--------------------------------------------------------------------*/
+
+    template_path = itidy_get_iff_template_path();
+
+    /*--------------------------------------------------------------------*/
+    /* Step 3: Load the image template (IFF-specific pixel data)          */
+    /*--------------------------------------------------------------------*/
+
+    {
+        struct TagItem get_template_tags[3];
+        get_template_tags[0].ti_Tag  = ICONGETA_RemapIcon;
+        get_template_tags[0].ti_Data = FALSE;
+        get_template_tags[1].ti_Tag  = ICONGETA_GenerateImageMasks;
+        get_template_tags[1].ti_Data = FALSE;
+        get_template_tags[2].ti_Tag  = TAG_DONE;
+        get_template_tags[2].ti_Data = 0;
+
+        image_icon = GetIconTagList((STRPTR)template_path, get_template_tags);
+    }
+    if (image_icon == NULL)
+    {
+        log_error(LOG_ICONS, "apply_iff_preview: "
+                  "cannot load image template '%s' — ensure the "
+                  "Icons drawer exists in the program directory\n",
+                  template_path);
+        FreeDiskObject(target_icon);
+        return ITIDY_PREVIEW_FAILED;
+    }
+
+    log_info(LOG_ICONS, "apply_iff_preview: loaded image template "
+             "from '%s'\n", template_path);
+
+    /*--------------------------------------------------------------------*/
+    /* Step 4: Extract image data from the image template                 */
+    /*         Fallback: if template is not palette-mapped (old planar    */
+    /*         format), create blank pixel/palette data.  In PICTURE      */
+    /*         palette mode the renderer replaces the entire palette and  */
+    /*         overwrites all safe-area pixels, so blank data is fine.    */
+    /*--------------------------------------------------------------------*/
+
+    memset(&img, 0, sizeof(img));
+
+    if (!itidy_icon_image_extract(image_icon, &img))
+    {
+        // Template is not palette-mapped — create blank image from dimensions
+        ULONG tmpl_w = 0, tmpl_h = 0;
+
+        {
+            struct TagItem dim_tags[3];
+            dim_tags[0].ti_Tag  = ICONCTRLA_GetWidth;
+            dim_tags[0].ti_Data = (ULONG)&tmpl_w;
+            dim_tags[1].ti_Tag  = ICONCTRLA_GetHeight;
+            dim_tags[1].ti_Data = (ULONG)&tmpl_h;
+            dim_tags[2].ti_Tag  = TAG_DONE;
+            dim_tags[2].ti_Data = 0;
+            IconControlA(image_icon, dim_tags);
+        }
+
+        // Fall back to gadget dimensions if ICONCTRLA didn't help
+        if (tmpl_w == 0 || tmpl_h == 0)
+        {
+            tmpl_w = (ULONG)image_icon->do_Gadget.Width;
+            tmpl_h = (ULONG)image_icon->do_Gadget.Height;
+        }
+
+        if (tmpl_w == 0 || tmpl_h == 0)
+        {
+            log_error(LOG_ICONS, "apply_iff_preview: "
+                      "cannot determine template dimensions from '%s'\n",
+                      template_path);
+            FreeDiskObject(image_icon);
+            FreeDiskObject(target_icon);
+            return ITIDY_PREVIEW_FAILED;
+        }
+
+        log_info(LOG_ICONS, "apply_iff_preview: template not palette-mapped, "
+                 "creating blank %lux%lu image (PICTURE mode will overwrite)\n",
+                 tmpl_w, tmpl_h);
+
+        if (!itidy_icon_image_create_blank((UWORD)tmpl_w, (UWORD)tmpl_h,
+                                           0, &img))
+        {
+            log_error(LOG_ICONS, "apply_iff_preview: "
+                      "blank image creation failed for %lux%lu\n",
+                      tmpl_w, tmpl_h);
+            FreeDiskObject(image_icon);
+            FreeDiskObject(target_icon);
+            return ITIDY_PREVIEW_FAILED;
+        }
+
+        // Create a placeholder palette (256 entries).
+        // The IFF renderer in PICTURE mode will replace this entirely
+        // with the source image's CMAP, so actual colours don't matter.
+        // We just need valid data for itidy_resolve_palette_indices().
+        {
+            ULONG pal_entries = 256;
+            img.palette_size_normal = pal_entries;
+            img.palette_normal = (struct ColorRegister *)whd_malloc(
+                pal_entries * sizeof(struct ColorRegister));
+            if (img.palette_normal == NULL)
+            {
+                log_error(LOG_ICONS, "apply_iff_preview: "
+                          "placeholder palette alloc failed\n");
+                itidy_icon_image_free(&img);
+                FreeDiskObject(image_icon);
+                FreeDiskObject(target_icon);
+                return ITIDY_PREVIEW_FAILED;
+            }
+            memset(img.palette_normal, 0,
+                   pal_entries * sizeof(struct ColorRegister));
+
+            // Entry 0 = light grey (typical background)
+            img.palette_normal[0].red   = 0xAA;
+            img.palette_normal[0].green = 0xAA;
+            img.palette_normal[0].blue  = 0xAA;
+            // Entry 1 = black (typical foreground) — already zero
+        }
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 5: Build IFF render parameters from template ToolTypes        */
+    /*--------------------------------------------------------------------*/
+
+    memset(&iff_params, 0, sizeof(iff_params));
+
+    if (!itidy_get_iff_render_params(image_icon, &img, &iff_params))
+    {
+        log_error(LOG_ICONS, "apply_iff_preview: "
+                  "get_iff_render_params failed for template\n");
+        itidy_icon_image_free(&img);
+        FreeDiskObject(image_icon);
+        FreeDiskObject(target_icon);
+        return ITIDY_PREVIEW_FAILED;
+    }
+
+    // Done with image template DiskObject
+    FreeDiskObject(image_icon);
+    image_icon = NULL;
+
+    // Point the render params at the normal pixel buffer
+    iff_params.base.pixel_buffer = img.pixel_data_normal;
+    iff_params.base.buffer_width = img.width;
+    iff_params.base.buffer_height = img.height;
+
+    /*--------------------------------------------------------------------*/
+    /* Step 6: Render IFF thumbnail (parse, decode, scale)                */
+    /*--------------------------------------------------------------------*/
+
+    render_result = itidy_render_iff_thumbnail(source_path, &iff_params, &img);
+    if (render_result != 0)
+    {
+        if (render_result == ITIDY_PREVIEW_NOT_SUPPORTED)
+        {
+            log_warning(LOG_ICONS, "apply_iff_preview: "
+                        "unsupported IFF format (HAM?) for '%s'\n", source_path);
+            result = ITIDY_PREVIEW_NOT_SUPPORTED;
+        }
+        else
+        {
+            log_warning(LOG_ICONS, "apply_iff_preview: "
+                        "render failed for '%s' (error=%d)\n",
+                        source_path, render_result);
+            result = ITIDY_PREVIEW_FAILED;
+        }
+        itidy_iff_params_free(&iff_params);
+        itidy_icon_image_free(&img);
+        FreeDiskObject(target_icon);
+        return result;
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 7: Build selected image (safe-area index swap)                */
+    /*--------------------------------------------------------------------*/
+
+    if (img.has_selected_image && img.pixel_data_selected != NULL)
+    {
+        if (!build_selected_image(&img, &iff_params.base))
+        {
+            log_warning(LOG_ICONS, "apply_iff_preview: "
+                        "selected image build failed for '%s'\n", source_path);
+            if (img.pixel_data_selected)
+            {
+                whd_free(img.pixel_data_selected);
+                img.pixel_data_selected = NULL;
+            }
+            img.has_selected_image = FALSE;
+        }
+        else
+        {
+            // Step 7b: Validate selected image contrast
+            validate_selected_contrast(&img, &iff_params.base);
+        }
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 8: Debug dump (guarded by DEBUG_ICON_DUMP)                     */
+    /*--------------------------------------------------------------------*/
+
+    itidy_icon_image_dump(&img, &iff_params.base, source_path);
+
+    /*--------------------------------------------------------------------*/
+    /* Step 9: Apply modified image to a DiskObject clone                  */
+    /*--------------------------------------------------------------------*/
+
+    clone = itidy_icon_image_apply(target_icon, &img);
+    if (clone == NULL)
+    {
+        log_error(LOG_ICONS, "apply_iff_preview: "
+                  "image apply failed for '%s'\n", source_path);
+        itidy_iff_params_free(&iff_params);
+        itidy_icon_image_free(&img);
+        FreeDiskObject(target_icon);
+        return ITIDY_PREVIEW_FAILED;
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 10: Stamp ToolTypes on the clone                               */
+    /*--------------------------------------------------------------------*/
+
+    source_name = (const char *)FilePart((STRPTR)source_path);
+
+    if (!itidy_stamp_created_tooltypes(clone, ITIDY_KIND_IFF_THUMBNAIL,
+                                       source_name, source_size, source_date))
+    {
+        log_warning(LOG_ICONS, "apply_iff_preview: "
+                    "ToolType stamp failed for '%s' (non-fatal)\n", source_path);
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 11: Save the modified icon to disk                             */
+    /*--------------------------------------------------------------------*/
+
+    if (itidy_icon_image_save(source_path, clone))
+    {
+        log_info(LOG_ICONS, "apply_iff_preview: "
+                 "saved IFF thumbnail icon for '%s'\n", source_path);
+        result = ITIDY_PREVIEW_APPLIED;
+    }
+    else
+    {
+        log_error(LOG_ICONS, "apply_iff_preview: "
+                  "save failed for '%s'\n", source_path);
+        result = ITIDY_PREVIEW_FAILED;
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 12: Cleanup                                                    */
+    /*--------------------------------------------------------------------*/
+
+    // Free IFF-specific buffers (src_chunky, src_palette)
+    itidy_iff_params_free(&iff_params);
+
+    // CRITICAL: Free clone BEFORE image data (clone references pixel buffers)
+    FreeDiskObject(clone);
+    clone = NULL;
+
+    itidy_icon_image_free(&img);
+    FreeDiskObject(target_icon);
+    target_icon = NULL;
+
+    return result;
+}
+
+/*========================================================================*/
 /* itidy_apply_content_preview                                            */
 /*========================================================================*/
 
@@ -227,7 +708,16 @@ int itidy_apply_content_preview(const char *source_path,
     /* Check if this type supports content preview                        */
     /*--------------------------------------------------------------------*/
 
-    if (!itidy_is_text_preview_type(type_token))
+    if (itidy_is_text_preview_type(type_token))
+    {
+        // Fall through to text preview pipeline below
+    }
+    else if (itidy_is_iff_preview_type(type_token))
+    {
+        return apply_iff_preview(source_path, type_token,
+                                 source_size, source_date);
+    }
+    else
     {
         return ITIDY_PREVIEW_NOT_APPLICABLE;
     }
