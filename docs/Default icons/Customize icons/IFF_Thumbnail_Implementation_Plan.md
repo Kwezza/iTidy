@@ -538,17 +538,20 @@ static BOOL validate_cmap(const struct StoredProperty *cmap_sp, ULONG *out_palet
 - Workbench may need to remap/dither when displaying if screen palette differs
 - Slight display performance cost vs screen-matched palette
 
-#### Mode 2: Screen Palette (`ITIDY_PALETTE_MODE=SCREEN`) — Stubbed for Future
+#### Mode 2: Screen Palette (`ITIDY_PALETTE_MODE=SCREEN`) — Low Priority
 
 Quantize the IFF image's colors to match the current Workbench screen palette. This produces icons that display instantly without remapping.
 
-**Status:** Stubbed. Will log "screen palette mode not yet implemented" and fall back to picture palette mode.
+**Status:** Stubbed and marked as **low priority**. Will log "screen palette mode not yet implemented" and fall back to picture palette mode.
 
-**Future implementation notes:**
+**Rationale for low priority:** Testing has shown that Workbench handles color reduction and remapping surprisingly well, even when the screen palette is reduced all the way down to just 4 colors. The current picture palette mode implementation is fast enough that the performance benefit of pre-quantizing to the screen palette is minimal. The complexity of implementing screen palette matching, dithering, and dynamic palette tracking does not justify the marginal improvement.
+
+**Future implementation notes (if revisited):**
 - Read Workbench screen palette via `GetRGB32()` on the screen's `ViewPort.ColorMap`
 - For each source pixel's RGB value, find the closest Workbench palette entry
 - May need dithering (ordered or Floyd-Steinberg) to compensate for limited palette
 - Consider using the existing `expand_palette_for_adaptive()` infrastructure
+- Track screen depth changes and palette modifications
 
 ### ~~New ToolType~~ → GUI Preference (Deviation 13):
 
