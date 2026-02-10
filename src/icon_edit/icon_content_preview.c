@@ -82,27 +82,25 @@ BOOL itidy_is_iff_preview_type(const char *type_token)
 }
 
 /*========================================================================*/
-/* itidy_get_iff_template_path                                            */
+/* itidy_get_iff_icon_dimensions                                          */
 /*========================================================================*/
 
-const char *itidy_get_iff_template_path(void)
+UWORD itidy_get_iff_icon_dimensions(const LayoutPreferences *prefs)
 {
-    const LayoutPreferences *prefs = GetGlobalPreferences();
-
     if (prefs != NULL)
     {
         switch (prefs->deficons_icon_size_mode)
         {
             case ITIDY_ICON_SIZE_SMALL:
-                return ITIDY_IFF_TEMPLATE_SMALL;
+                return ITIDY_IFF_SIZE_SMALL;
             case ITIDY_ICON_SIZE_LARGE:
-                return ITIDY_IFF_TEMPLATE_LARGE;
+                return ITIDY_IFF_SIZE_LARGE;
             default:
                 break;
         }
     }
 
-    return ITIDY_IFF_TEMPLATE_MEDIUM;
+    return ITIDY_IFF_SIZE_MEDIUM;
 }
 
 /*========================================================================*/
@@ -377,10 +375,15 @@ static BOOL validate_selected_contrast(const iTidy_IconImageData *img,
 /**
  * @brief Complete IFF thumbnail rendering pipeline.
  *
- * Follows the 15-step pipeline from Section 16 of the IFF plan:
- * load target icon → select template → extract image → build params →
- * render thumbnail → build selected → validate contrast → apply →
- * stamp → save → cleanup.
+ * Streamlined pipeline (template-free):
+ * load target icon → create blank image from size preference →
+ * build render params from preferences → render thumbnail →
+ * crop to content → apply to target clone → stamp → save → cleanup.
+ *
+ * The target icon (Workbench deficon) provides all metadata (default
+ * tool, tooltypes, icon type). Image dimensions come from the
+ * deficons_icon_size_mode preference; palette mode comes from
+ * deficons_palette_mode. No separate template .info files needed.
  */
 static int apply_iff_preview(const char *source_path,
                              const char *type_token,
@@ -388,12 +391,12 @@ static int apply_iff_preview(const char *source_path,
                              const struct DateStamp *source_date)
 {
     struct DiskObject *target_icon = NULL;
-    struct DiskObject *image_icon = NULL;
     struct DiskObject *clone = NULL;
     iTidy_IconImageData img;
     iTidy_IFFRenderParams iff_params;
-    const char *template_path;
+    const LayoutPreferences *prefs;
     const char *source_name;
+    UWORD icon_dim;
     int render_result;
     int result = ITIDY_PREVIEW_FAILED;
 
@@ -413,150 +416,95 @@ static int apply_iff_preview(const char *source_path,
     }
 
     /*--------------------------------------------------------------------*/
-    /* Step 2: Select IFF template based on size preference                */
+    /* Step 2: Determine icon dimensions from size preference              */
+    /*         No template file needed — size comes from preferences,      */
+    /*         PICTURE palette mode replaces all pixels and palette.       */
     /*--------------------------------------------------------------------*/
 
-    template_path = itidy_get_iff_template_path();
+    prefs = GetGlobalPreferences();
+    icon_dim = itidy_get_iff_icon_dimensions(prefs);
+
+    log_info(LOG_ICONS, "apply_iff_preview: icon size=%ux%u (mode=%u), "
+             "palette_mode=%u\n",
+             (unsigned)icon_dim, (unsigned)icon_dim,
+             (unsigned)(prefs ? prefs->deficons_icon_size_mode : 1),
+             (unsigned)(prefs ? prefs->deficons_palette_mode : 0));
 
     /*--------------------------------------------------------------------*/
-    /* Step 3: Load the image template (IFF-specific pixel data)          */
-    /*--------------------------------------------------------------------*/
-
-    {
-        struct TagItem get_template_tags[3];
-        get_template_tags[0].ti_Tag  = ICONGETA_RemapIcon;
-        get_template_tags[0].ti_Data = FALSE;
-        get_template_tags[1].ti_Tag  = ICONGETA_GenerateImageMasks;
-        get_template_tags[1].ti_Data = FALSE;
-        get_template_tags[2].ti_Tag  = TAG_DONE;
-        get_template_tags[2].ti_Data = 0;
-
-        image_icon = GetIconTagList((STRPTR)template_path, get_template_tags);
-    }
-    if (image_icon == NULL)
-    {
-        log_error(LOG_ICONS, "apply_iff_preview: "
-                  "cannot load image template '%s' — ensure the "
-                  "Icons drawer exists in the program directory\n",
-                  template_path);
-        FreeDiskObject(target_icon);
-        return ITIDY_PREVIEW_FAILED;
-    }
-
-    log_info(LOG_ICONS, "apply_iff_preview: loaded image template "
-             "from '%s'\n", template_path);
-
-    /*--------------------------------------------------------------------*/
-    /* Step 4: Extract image data from the image template                 */
-    /*         Fallback: if template is not palette-mapped (old planar    */
-    /*         format), create blank pixel/palette data.  In PICTURE      */
-    /*         palette mode the renderer replaces the entire palette and  */
-    /*         overwrites all safe-area pixels, so blank data is fine.    */
+    /* Step 3: Create blank pixel buffer and placeholder palette           */
+    /*         PICTURE mode replaces the entire palette and all pixels     */
+    /*         with the IFF source image's CMAP/BODY data, so we only     */
+    /*         need valid allocations for the pipeline to operate on.      */
     /*--------------------------------------------------------------------*/
 
     memset(&img, 0, sizeof(img));
 
-    if (!itidy_icon_image_extract(image_icon, &img))
-    {
-        // Template is not palette-mapped — create blank image from dimensions
-        ULONG tmpl_w = 0, tmpl_h = 0;
-
-        {
-            struct TagItem dim_tags[3];
-            dim_tags[0].ti_Tag  = ICONCTRLA_GetWidth;
-            dim_tags[0].ti_Data = (ULONG)&tmpl_w;
-            dim_tags[1].ti_Tag  = ICONCTRLA_GetHeight;
-            dim_tags[1].ti_Data = (ULONG)&tmpl_h;
-            dim_tags[2].ti_Tag  = TAG_DONE;
-            dim_tags[2].ti_Data = 0;
-            IconControlA(image_icon, dim_tags);
-        }
-
-        // Fall back to gadget dimensions if ICONCTRLA didn't help
-        if (tmpl_w == 0 || tmpl_h == 0)
-        {
-            tmpl_w = (ULONG)image_icon->do_Gadget.Width;
-            tmpl_h = (ULONG)image_icon->do_Gadget.Height;
-        }
-
-        if (tmpl_w == 0 || tmpl_h == 0)
-        {
-            log_error(LOG_ICONS, "apply_iff_preview: "
-                      "cannot determine template dimensions from '%s'\n",
-                      template_path);
-            FreeDiskObject(image_icon);
-            FreeDiskObject(target_icon);
-            return ITIDY_PREVIEW_FAILED;
-        }
-
-        log_info(LOG_ICONS, "apply_iff_preview: template not palette-mapped, "
-                 "creating blank %lux%lu image (PICTURE mode will overwrite)\n",
-                 tmpl_w, tmpl_h);
-
-        if (!itidy_icon_image_create_blank((UWORD)tmpl_w, (UWORD)tmpl_h,
-                                           0, &img))
-        {
-            log_error(LOG_ICONS, "apply_iff_preview: "
-                      "blank image creation failed for %lux%lu\n",
-                      tmpl_w, tmpl_h);
-            FreeDiskObject(image_icon);
-            FreeDiskObject(target_icon);
-            return ITIDY_PREVIEW_FAILED;
-        }
-
-        // Create a placeholder palette (256 entries).
-        // The IFF renderer in PICTURE mode will replace this entirely
-        // with the source image's CMAP, so actual colours don't matter.
-        // We just need valid data for itidy_resolve_palette_indices().
-        {
-            ULONG pal_entries = 256;
-            img.palette_size_normal = pal_entries;
-            img.palette_normal = (struct ColorRegister *)whd_malloc(
-                pal_entries * sizeof(struct ColorRegister));
-            if (img.palette_normal == NULL)
-            {
-                log_error(LOG_ICONS, "apply_iff_preview: "
-                          "placeholder palette alloc failed\n");
-                itidy_icon_image_free(&img);
-                FreeDiskObject(image_icon);
-                FreeDiskObject(target_icon);
-                return ITIDY_PREVIEW_FAILED;
-            }
-            memset(img.palette_normal, 0,
-                   pal_entries * sizeof(struct ColorRegister));
-
-            // Entry 0 = light grey (typical background)
-            img.palette_normal[0].red   = 0xAA;
-            img.palette_normal[0].green = 0xAA;
-            img.palette_normal[0].blue  = 0xAA;
-            // Entry 1 = black (typical foreground) — already zero
-        }
-    }
-
-    /*--------------------------------------------------------------------*/
-    /* Step 5: Build IFF render parameters from template ToolTypes        */
-    /*--------------------------------------------------------------------*/
-
-    memset(&iff_params, 0, sizeof(iff_params));
-
-    if (!itidy_get_iff_render_params(image_icon, &img, &iff_params))
+    if (!itidy_icon_image_create_blank(icon_dim, icon_dim, 0, &img))
     {
         log_error(LOG_ICONS, "apply_iff_preview: "
-                  "get_iff_render_params failed for template\n");
-        itidy_icon_image_free(&img);
-        FreeDiskObject(image_icon);
+                  "blank image creation failed for %ux%u\n",
+                  (unsigned)icon_dim, (unsigned)icon_dim);
         FreeDiskObject(target_icon);
         return ITIDY_PREVIEW_FAILED;
     }
 
-    // Done with image template DiskObject
-    FreeDiskObject(image_icon);
-    image_icon = NULL;
+    // Create a placeholder palette (256 entries).
+    // The IFF renderer in PICTURE mode will replace this entirely
+    // with the source image's CMAP, so actual colours don't matter.
+    {
+        ULONG pal_entries = 256;
+        img.palette_size_normal = pal_entries;
+        img.palette_normal = (struct ColorRegister *)whd_malloc(
+            pal_entries * sizeof(struct ColorRegister));
+        if (img.palette_normal == NULL)
+        {
+            log_error(LOG_ICONS, "apply_iff_preview: "
+                      "placeholder palette alloc failed\n");
+            itidy_icon_image_free(&img);
+            FreeDiskObject(target_icon);
+            return ITIDY_PREVIEW_FAILED;
+        }
+        memset(img.palette_normal, 0,
+               pal_entries * sizeof(struct ColorRegister));
 
-    // Point the render params at the normal pixel buffer
+        // Entry 0 = light grey (typical background)
+        img.palette_normal[0].red   = 0xAA;
+        img.palette_normal[0].green = 0xAA;
+        img.palette_normal[0].blue  = 0xAA;
+        // Entry 1 = black (typical foreground) — already zero
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 4: Build IFF render parameters directly from preferences       */
+    /*         No template ToolTypes needed — all parameters are either    */
+    /*         derived from preferences or use fixed IFF-path defaults.    */
+    /*--------------------------------------------------------------------*/
+
+    memset(&iff_params, 0, sizeof(iff_params));
+
+    // Palette mode from preferences (default: PICTURE)
+    iff_params.palette_mode = (prefs != NULL)
+        ? prefs->deficons_palette_mode
+        : ITIDY_PAL_PICTURE;
+
+    // Point the render params at the blank pixel buffer
     iff_params.base.pixel_buffer = img.pixel_data_normal;
     iff_params.base.buffer_width = img.width;
     iff_params.base.buffer_height = img.height;
+
+    // IFF thumbnails use the full icon dimensions for scaling (no safe
+    // area margins). After rendering, the buffer is cropped to the exact
+    // thumbnail dimensions so the icon size matches the content.
+    iff_params.base.safe_left = 0;
+    iff_params.base.safe_top = 0;
+    iff_params.base.safe_width = img.width;
+    iff_params.base.safe_height = img.height;
+    iff_params.base.bg_color_index = ITIDY_NO_BG_COLOR;
+
+    log_debug(LOG_ICONS, "apply_iff_preview: params ready — "
+              "buffer=%ux%u, palette_mode=%u\n",
+              (unsigned)img.width, (unsigned)img.height,
+              (unsigned)iff_params.palette_mode);
 
     /*--------------------------------------------------------------------*/
     /* Step 6: Render IFF thumbnail (parse, decode, scale)                */
@@ -585,31 +533,74 @@ static int apply_iff_preview(const char *source_path,
     }
 
     /*--------------------------------------------------------------------*/
-    /* Step 7: Build selected image (safe-area index swap)                */
+    /* Step 6b: Crop pixel buffer to exact thumbnail dimensions            */
+    /*          Remove letterbox/pillarbox areas so the icon size matches  */
+    /*          the thumbnail content. Disable transparency so palette     */
+    /*          index 0 (often black) is visible, not transparent.         */
     /*--------------------------------------------------------------------*/
 
-    if (img.has_selected_image && img.pixel_data_selected != NULL)
     {
-        if (!build_selected_image(&img, &iff_params.base))
+        UWORD thumb_w = iff_params.output_width;
+        UWORD thumb_h = iff_params.output_height;
+        UWORD src_ox = iff_params.output_offset_x;
+        UWORD src_oy = iff_params.output_offset_y;
+        ULONG tight_size = (ULONG)thumb_w * (ULONG)thumb_h;
+        UBYTE *tight_buf;
+        UWORD row;
+
+        tight_buf = (UBYTE *)whd_malloc(tight_size);
+        if (tight_buf == NULL)
         {
-            log_warning(LOG_ICONS, "apply_iff_preview: "
-                        "selected image build failed for '%s'\n", source_path);
-            if (img.pixel_data_selected)
-            {
-                whd_free(img.pixel_data_selected);
-                img.pixel_data_selected = NULL;
-            }
-            img.has_selected_image = FALSE;
+            log_error(LOG_ICONS, "apply_iff_preview: "
+                      "crop alloc failed (%ux%u)\n",
+                      (unsigned)thumb_w, (unsigned)thumb_h);
+            itidy_iff_params_free(&iff_params);
+            itidy_icon_image_free(&img);
+            FreeDiskObject(target_icon);
+            return ITIDY_PREVIEW_FAILED;
         }
-        else
+
+        // Copy just the thumbnail rows from the rendered buffer
+        for (row = 0; row < thumb_h; row++)
         {
-            // Step 7b: Validate selected image contrast
-            validate_selected_contrast(&img, &iff_params.base);
+            ULONG src_off = (ULONG)(src_oy + row) * (ULONG)img.width
+                          + (ULONG)src_ox;
+            ULONG dst_off = (ULONG)row * (ULONG)thumb_w;
+            memcpy(tight_buf + dst_off,
+                   img.pixel_data_normal + src_off, thumb_w);
         }
+
+        // Replace pixel buffer with the tight crop
+        whd_free(img.pixel_data_normal);
+        img.pixel_data_normal = tight_buf;
+        img.width = thumb_w;
+        img.height = thumb_h;
+
+        // Discard selected image — edge-to-edge thumbnails have no safe
+        // area for the bg/text index swap to operate on
+        if (img.pixel_data_selected != NULL)
+        {
+            whd_free(img.pixel_data_selected);
+            img.pixel_data_selected = NULL;
+        }
+        img.has_selected_image = FALSE;
+        img.has_real_selected_image = FALSE;
+
+        // Disable transparency — palette index 0 is often black and
+        // must be visible in the thumbnail, not treated as transparent
+        img.transparent_color_normal = -1;
+        img.transparent_color_selected = -1;
+
+        // Frameless — the thumbnail IS the icon, no border/frame needed
+        img.is_frameless = TRUE;
+
+        log_info(LOG_ICONS, "apply_iff_preview: cropped to tight %ux%u, "
+                 "transparency disabled, frameless\n",
+                 (unsigned)thumb_w, (unsigned)thumb_h);
     }
 
     /*--------------------------------------------------------------------*/
-    /* Step 8: Debug dump (guarded by DEBUG_ICON_DUMP)                     */
+    /* Step 7: Debug dump (guarded by DEBUG_ICON_DUMP)                     */
     /*--------------------------------------------------------------------*/
 
     itidy_icon_image_dump(&img, &iff_params.base, source_path);

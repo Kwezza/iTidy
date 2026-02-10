@@ -467,6 +467,21 @@ int itidy_iff_parse(const char *source_path, iTidy_IFFRenderParams *iff_params)
         decode_camg_flags(0, iff_params);
     }
 
+    /*--------------------------------------------------------------------*/
+    /* Step 6b: Infer hires from width if CAMG flag is missing             */
+    /*                                                                    */
+    /* Many old Amiga IFF tools wrote incorrect CAMG chunks, omitting the  */
+    /* HIRES flag even for 640+ pixel wide images. Fall back to width.     */
+    /*--------------------------------------------------------------------*/
+
+    if (!iff_params->is_hires && bmhd.w > ITIDY_HIRES_WIDTH_THRESHOLD)
+    {
+        iff_params->is_hires = TRUE;
+        log_info(LOG_ICONS, "itidy_iff_parse: inferred hires from width %u "
+                 "(CAMG lacked HIRES flag) '%s'\n",
+                 (unsigned)bmhd.w, source_path);
+    }
+
     // Check for HAM — not supported
     if (iff_params->is_ham)
     {
@@ -695,10 +710,34 @@ int itidy_iff_parse(const char *source_path, iTidy_IFFRenderParams *iff_params)
     }
 
     /*--------------------------------------------------------------------*/
-    /* Step 9: Calculate display dimensions (interlace correction)        */
+    /* Step 9: Calculate display dimensions (aspect ratio correction)     */
+    /*                                                                    */
+    /* Amiga display modes have non-square pixels:                        */
+    /*   Lowres (320px wide): ~1:1 pixel aspect on a standard monitor     */
+    /*   Hires (640px wide):  pixels are half as wide → halve width       */
+    /*   Interlace (2× lines): pixels are half as tall → halve height     */
+    /*   Hires+Lace (e.g. 672×446): halve BOTH width and height          */
+    /*                                                                    */
+    /* The source chunky buffer retains the full BMHD dimensions; the     */
+    /* area-average scaler will naturally average over the denser source   */
+    /* samples when display_width < src_width or display_height < src_h.  */
     /*--------------------------------------------------------------------*/
 
-    iff_params->display_width = bmhd.w;
+    if (iff_params->is_hires)
+    {
+        iff_params->display_width = bmhd.w / 2;
+        if (iff_params->display_width == 0)
+        {
+            iff_params->display_width = 1;
+        }
+        log_debug(LOG_ICONS, "itidy_iff_parse: hires correction: %u -> %u width\n",
+                  (unsigned)bmhd.w, (unsigned)iff_params->display_width);
+    }
+    else
+    {
+        iff_params->display_width = bmhd.w;
+    }
+
     if (iff_params->is_interlace)
     {
         iff_params->display_height = bmhd.h / 2;
@@ -760,89 +799,6 @@ cleanup:
     }
 
     return result;
-}
-
-/*========================================================================*/
-/* itidy_get_iff_render_params — Build IFF params from template ToolTypes */
-/*========================================================================*/
-
-BOOL itidy_get_iff_render_params(struct DiskObject *icon,
-                                 const iTidy_IconImageData *img,
-                                 iTidy_IFFRenderParams *params)
-{
-    STRPTR *tool_types;
-    STRPTR tt_val;
-
-    if (icon == NULL || img == NULL || params == NULL)
-    {
-        return FALSE;
-    }
-
-    // Parse safe area from template ToolTypes (reuses existing helper)
-    itidy_parse_safe_area(icon, img->width, img->height,
-                          &params->base.safe_left, &params->base.safe_top,
-                          &params->base.safe_width, &params->base.safe_height);
-
-    // Parse BG color index
-    itidy_resolve_palette_indices(icon,
-                                 img->palette_normal,
-                                 img->palette_size_normal,
-                                 &params->base.bg_color_index,
-                                 &params->base.text_color_index,
-                                 &params->base.mid_color_index);
-
-    // Parse exclusion area (if any)
-    params->base.exclude_left   = 0;
-    params->base.exclude_top    = 0;
-    params->base.exclude_width  = 0;
-    params->base.exclude_height = 0;
-
-    // Parse palette mode from template ToolType
-    params->palette_mode = ITIDY_PAL_PICTURE;  // Default
-
-    tool_types = icon->do_ToolTypes;
-    if (tool_types != NULL)
-    {
-        tt_val = FindToolType(tool_types, (STRPTR)ITIDY_TT_PALETTE_MODE);
-        if (tt_val != NULL)
-        {
-            if (MatchToolValue(tt_val, (STRPTR)"SCREEN"))
-            {
-                params->palette_mode = ITIDY_PAL_SCREEN;
-                log_debug(LOG_ICONS, "itidy_get_iff_render_params: palette mode = SCREEN (stubbed)\n");
-            }
-            else
-            {
-                log_debug(LOG_ICONS, "itidy_get_iff_render_params: palette mode = PICTURE\n");
-            }
-        }
-    }
-
-    // Initialize IFF-specific fields to zero (populated by itidy_iff_parse later)
-    params->src_width = 0;
-    params->src_height = 0;
-    params->src_depth = 0;
-    params->src_compression = 0;
-    params->src_masking = 0;
-    params->camg_flags = 0;
-    params->is_interlace = FALSE;
-    params->is_hires = FALSE;
-    params->is_ham = FALSE;
-    params->is_ehb = FALSE;
-    params->display_width = 0;
-    params->display_height = 0;
-    params->src_chunky = NULL;
-    params->src_palette = NULL;
-    params->src_palette_size = 0;
-
-    log_debug(LOG_ICONS, "itidy_get_iff_render_params: safe area=(%u,%u %ux%u) "
-              "bg=%u palette_mode=%u\n",
-              (unsigned)params->base.safe_left, (unsigned)params->base.safe_top,
-              (unsigned)params->base.safe_width, (unsigned)params->base.safe_height,
-              (unsigned)params->base.bg_color_index,
-              (unsigned)params->palette_mode);
-
-    return TRUE;
 }
 
 /*========================================================================*/
@@ -1166,6 +1122,12 @@ int itidy_render_iff_thumbnail(const char *source_path,
     // Center within safe area (letterbox/pillarbox)
     offset_x = iff_params->base.safe_left + (iff_params->base.safe_width - output_width) / 2;
     offset_y = iff_params->base.safe_top + (iff_params->base.safe_height - output_height) / 2;
+
+    // Store output dimensions for caller (enables post-render cropping)
+    iff_params->output_width = output_width;
+    iff_params->output_height = output_height;
+    iff_params->output_offset_x = offset_x;
+    iff_params->output_offset_y = offset_y;
 
     log_info(LOG_ICONS, "itidy_render_iff_thumbnail: scaling %ux%u -> %ux%u "
              "(safe %ux%u, offset %u,%u)\n",

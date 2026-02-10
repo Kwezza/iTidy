@@ -21,6 +21,7 @@
 
 #include <exec/types.h>
 #include <dos/dos.h>
+#include "../layout_preferences.h"
 
 /*========================================================================*/
 /* Result Codes                                                           */
@@ -58,31 +59,27 @@
  */
 #define ITIDY_TEXT_TEMPLATE_PATH    "PROGDIR:Icons/text_template"
 
+/*========================================================================*/
+/* IFF Thumbnail Icon Sizes                                               */
+/*========================================================================*/
+
 /**
- * IFF thumbnail template paths — one per size tier.
+ * IFF thumbnail pixel dimensions for each size tier.
  *
- * Each template is a plain safe-area fill icon with ToolTypes defining
- * the render parameters (ITIDY_TEXT_AREA, ITIDY_BG_COLOR,
- * ITIDY_PALETTE_MODE). Per the Template Contract (Section 12 of the
- * IFF Thumbnail Implementation Plan), these have no custom pixel-art
- * borders — Workbench draws the icon frame.
+ * IFF thumbnails no longer use separate template .info files.
+ * Dimensions are derived directly from the deficons_icon_size_mode
+ * preference via itidy_get_iff_icon_dimensions().
  */
-#define ITIDY_IFF_TEMPLATE_SMALL   "PROGDIR:Icons/iff_template_small"
-#define ITIDY_IFF_TEMPLATE_MEDIUM  "PROGDIR:Icons/iff_template_medium"
-#define ITIDY_IFF_TEMPLATE_LARGE   "PROGDIR:Icons/iff_template_large"
 
-/*========================================================================*/
-/* Icon Size Tiers                                                        */
-/*========================================================================*/
-
-/** Small template: 48x48 pixels */
+/** Icon size tiers (indices into the size preference chooser) */
 #define ITIDY_ICON_SIZE_SMALL   0
-
-/** Medium template: 64x64 pixels (default) */
 #define ITIDY_ICON_SIZE_MEDIUM  1
-
-/** Large template: 100x100 pixels */
 #define ITIDY_ICON_SIZE_LARGE   2
+
+/** Pixel dimensions for each size tier (square icons) */
+#define ITIDY_IFF_SIZE_SMALL    48
+#define ITIDY_IFF_SIZE_MEDIUM   64
+#define ITIDY_IFF_SIZE_LARGE    100
 
 /*========================================================================*/
 /* Type Detection                                                         */
@@ -114,19 +111,18 @@ BOOL itidy_is_text_preview_type(const char *type_token);
 BOOL itidy_is_iff_preview_type(const char *type_token);
 
 /**
- * @brief Select the IFF template path based on icon size preference.
+ * @brief Get IFF thumbnail pixel dimensions from size preference.
  *
- * Returns the appropriate IFF template path constant based on the
- * current global deficons_icon_size_mode preference:
- *   - ITIDY_ICON_SIZE_SMALL  → ITIDY_IFF_TEMPLATE_SMALL  (48x48)
- *   - ITIDY_ICON_SIZE_MEDIUM → ITIDY_IFF_TEMPLATE_MEDIUM (64x64)
- *   - ITIDY_ICON_SIZE_LARGE  → ITIDY_IFF_TEMPLATE_LARGE  (100x100)
+ * Converts the deficons_icon_size_mode preference into actual pixel
+ * dimensions:
+ *   - ITIDY_ICON_SIZE_SMALL  → 48x48
+ *   - ITIDY_ICON_SIZE_MEDIUM → 64x64 (default)
+ *   - ITIDY_ICON_SIZE_LARGE  → 100x100
  *
- * Defaults to medium if preference is out of range.
- *
- * @return Static string pointer to the template path (do NOT free)
+ * @param prefs  Layout preferences (NULL-safe, defaults to medium)
+ * @return Square icon dimension in pixels
  */
-const char *itidy_get_iff_template_path(void);
+UWORD itidy_get_iff_icon_dimensions(const LayoutPreferences *prefs);
 
 /*========================================================================*/
 /* Cache Validation                                                       */

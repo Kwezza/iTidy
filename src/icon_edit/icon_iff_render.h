@@ -69,6 +69,10 @@
 /** Extra Half-Brite (EHB) — 64 colors via palette expansion */
 #define ITIDY_CAMG_EHB            0x0080UL
 
+/** Width threshold for inferring hires when CAMG flag is missing.
+ *  Lowres max with extreme overscan is ~376; anything above 400 is hires. */
+#define ITIDY_HIRES_WIDTH_THRESHOLD  400
+
 /*========================================================================*/
 /* Compression Modes                                                      */
 /*========================================================================*/
@@ -171,14 +175,13 @@ typedef struct {
 
     /* Rendering mode */
     UWORD palette_mode;                 /* ITIDY_PAL_PICTURE or ITIDY_PAL_SCREEN */
+
+    /* Output dimensions (populated by itidy_render_iff_thumbnail) */
+    UWORD output_width;                 /* Actual thumbnail width after scaling */
+    UWORD output_height;                /* Actual thumbnail height after scaling */
+    UWORD output_offset_x;             /* X pixel offset of thumbnail in buffer */
+    UWORD output_offset_y;             /* Y pixel offset of thumbnail in buffer */
 } iTidy_IFFRenderParams;
-
-/*========================================================================*/
-/* ToolType Constants                                                     */
-/*========================================================================*/
-
-/** Palette mode ToolType on template icons */
-#define ITIDY_TT_PALETTE_MODE   "ITIDY_PALETTE_MODE"
 
 /*========================================================================*/
 /* Public API — IFF Parsing and Rendering                                 */
@@ -224,22 +227,6 @@ int itidy_iff_parse(const char *source_path, iTidy_IFFRenderParams *iff_params);
 int itidy_render_iff_thumbnail(const char *source_path,
                                iTidy_IFFRenderParams *iff_params,
                                iTidy_IconImageData *img);
-
-/**
- * @brief Build IFF render params from template icon ToolTypes.
- *
- * Reads ITIDY_TEXT_AREA, ITIDY_BG_COLOR, ITIDY_PALETTE_MODE from the
- * image template's ToolTypes and populates iff_params.base with safe
- * area coordinates and palette indices.
- *
- * @param icon      Loaded image template DiskObject with ToolTypes
- * @param img       Extracted image data (for dimensions and palette)
- * @param params    Output: populated IFF render parameters
- * @return TRUE on success, FALSE on failure
- */
-BOOL itidy_get_iff_render_params(struct DiskObject *icon,
-                                 const iTidy_IconImageData *img,
-                                 iTidy_IFFRenderParams *params);
 
 /**
  * @brief Free IFF-specific allocated buffers.

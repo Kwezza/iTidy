@@ -1,9 +1,50 @@
 # IFF ILBM Thumbnail Renderer — Implementation Plan
 
 **Date**: 2026-02-10  
-**Status**: Planning  
+**Status**: ✅ Implemented (Phases A–D complete)  
+**Implemented**: 2026-02-10  
 **Module**: `src/icon_edit/icon_iff_render.c/.h`  
 **Depends on**: Completed ASCII text renderer (Phase 1–3 of Icon_Image_Editing_Plan.md)
+
+---
+
+## Implementation Status Summary
+
+| Phase | Status | Notes |
+|-------|--------|-------|
+| A: Core IFF Parsing | ✅ Complete | All parsing, ByteRun1, bitplane→chunky, CAMG, EHB, HAM stub, hires inference |
+| B: Scaling & Rendering | ✅ Complete | Area-average + 2×2 pre-filter, fixed-point 16.16, picture palette, hires+lace aspect |
+| C: Integration | ✅ Complete | Template-free pipeline, direct dimension lookup, cache validation |
+| D: Size & Palette UI | ✅ Complete | Size chooser + palette mode chooser in DefIcons settings |
+| E: Polish & Future | 🔲 Not started | HAM support, screen palette mode implementation, datatype fallback |
+
+### Key Deviations From Original Plan
+
+1. **Template icon format problem** (Section 12 deviation): The `iff_template_medium.info` file is an old-format planar icon, NOT OS 3.5 palette-mapped. `itidy_icon_image_extract()` failed on it. **Fix**: Added a fallback path in `apply_iff_preview()` that creates blank pixel/palette buffers from the template's dimensions when extraction fails. Since PICTURE palette mode replaces the entire palette and overwrites all safe-area pixels, blank buffers work correctly.
+
+2. **Safe area abandoned for IFF thumbnails** (Section 12 deviation): The original plan used template safe areas to constrain the thumbnail. In practice, source IFF images can be any size and aspect ratio, causing the thumbnail to float inside the icon frame with wasted space. **Fix**: The safe area is overridden to `(0, 0, img.width, img.height)` — the full template dimensions — and after rendering, the pixel buffer is cropped to the exact thumbnail size. This produces tight-fitting icons that match the content.
+
+3. **Transparency disabled**: Palette index 0 (often black) was being treated as transparent by Workbench, causing holes in dark images like Space and Waterfall. **Fix**: `transparent_color_normal` and `transparent_color_selected` are set to -1 (no transparency) after cropping.
+
+4. **Frameless icons**: Since the thumbnail IS the icon (edge-to-edge, no border artwork), `is_frameless` is set to TRUE. Workbench draws no border frame around the icon.
+
+5. **Selected image discarded**: Edge-to-edge thumbnails have no safe area for the bg/text index swap to operate on, so the selected image building step is skipped. The icon relies on Workbench's standard complement highlighting for selection feedback.
+
+6. **`itidy_find_closest_palette_color()`**: Promoted from static in `icon_text_render.c` to shared in `icon_image_access.c/.h` with `itidy_` prefix, as planned.
+
+7. **EHB implemented in Phase A**: As planned, EHB support was included early via `expand_ehb_palette()` in the core parsing phase. Standard decode works after palette expansion.
+
+8. **`iTidy_IFFRenderParams` extended**: Four output dimension fields were added post-plan: `output_width`, `output_height`, `output_offset_x`, `output_offset_y`. These are populated by `itidy_render_iff_thumbnail()` and used by the caller to crop the pixel buffer.
+
+9. **`itidy_icon_image_create_blank()`**: Already existed in `icon_image_access.c/.h` — used as the fallback for non-palette-mapped templates.
+
+10. **Hires aspect ratio correction missing** (Step 9 bug): The original implementation only corrected for interlace (halving `display_height`) but never corrected for hires (halving `display_width`). Amiga hires pixels are half the width of lowres pixels, so a 672-pixel-wide hires image should display at the same physical width as 336 lowres pixels. Without this correction, hires and hires+interlace images produced horizontally squished thumbnails (e.g. Zebra-Stripes-V2.IFF at 672×446 hires+lace was producing a 64×21 thumbnail instead of ~64×42). **Fix**: Added hires width correction in Step 9 — when `is_hires` is TRUE, `display_width = bmhd.w / 2`. This is independent of the interlace height correction, so hires+lace images get both halved.
+
+11. **Missing HIRES CAMG flag in many IFF files** (Step 6b addition): Many old Amiga IFF tools (particularly those producing EHB images) wrote incomplete CAMG chunks — setting interlace and EHB flags but omitting the HIRES flag, even for 672-pixel-wide images that are clearly hires resolution. This caused the hires width correction from item 10 to not trigger. **Fix**: Added width-based hires inference as a fallback (Step 6b). After CAMG decoding, if `is_hires` is FALSE but `bmhd.w > ITIDY_HIRES_WIDTH_THRESHOLD` (400 pixels — lowres maxes out at ~376 with extreme overscan), `is_hires` is set to TRUE and the inference is logged. The threshold constant is defined in `icon_iff_render.h`.
+
+12. **Combined hires+interlace+EHB** (test case validation): Images like Utopia-10.IFF and Utopia-13.IFF (672×442, 6 planes, EHB, interlace, missing HIRES flag) exercise all three fixes together: EHB palette expansion (item 7), hires inference from width (item 11), and dual aspect ratio correction (item 10). After all fixes, these produce correct ~64×42 thumbnails with proper proportions.
+
+13. **IFF template icons removed** (template elimination refactor): The three `iff_template_small/medium/large.info` files turned out to be vestigial. They were old-format planar icons — `itidy_icon_image_extract()` always failed on them, falling back to blank pixel buffers. Their ToolTypes (safe area, bg/text color, palette mode) were all overridden immediately after reading because IFF thumbnails are edge-to-edge with no safe area margins. The templates only contributed icon dimensions, which are trivially derived from the size preference constant. **Refactor**: Removed all template loading, extraction, and ToolType parsing from `apply_iff_preview()`. Icon dimensions now come directly from `itidy_get_iff_icon_dimensions()` which maps the preference to pixel sizes (48/64/100). Palette mode now comes from a new `deficons_palette_mode` field in `LayoutPreferences` with a chooser gadget in the DefIcons settings window. Removed: `itidy_get_iff_template_path()`, `itidy_get_iff_render_params()`, `ITIDY_IFF_TEMPLATE_*` constants, `ITIDY_TT_PALETTE_MODE` constant. Added: `itidy_get_iff_icon_dimensions()`, `ITIDY_IFF_SIZE_*` pixel constants, `deficons_palette_mode` preference field, palette mode chooser gadget. The `iff_template_*.info` files in `Bin/Amiga/Icons/` can now be deleted.
 
 ---
 
@@ -13,12 +54,12 @@ Add an IFF ILBM image thumbnail renderer to the existing icon_edit pipeline, reu
 
 1. Parse IFF ILBM files via `iffparse.library`
 2. Decode interleaved bitplanes to a chunky pixel buffer
-3. Correct aspect ratio for interlace images using CAMG viewport flags
+3. Correct aspect ratio for hires and interlace images using CAMG viewport flags (with width-based hires inference fallback)
 4. Area-average downscale to fit the icon template's safe area
 5. Handle palette via two user-selectable modes (picture palette / screen palette)
 6. Produce OS 3.5 format icons via the existing apply→stamp→save pipeline
 
-Three icon size tiers are supported (48×48, 64×64, 100×100) via separate template icons, with a user preference chooser in the DefIcons settings GUI.
+Three icon size tiers are supported (48×48, 64×64, 100×100) controlled by a user preference chooser in the DefIcons settings GUI. Dimensions are derived directly from the preference — no separate template `.info` files are needed.
 
 ---
 
@@ -32,9 +73,9 @@ Type detection → Load target icon (metadata) + Load image template (pixels)
 → Debug dump → Apply to clone → Stamp ToolTypes → Save OS 3.5 → Cleanup
 ```
 
-### IFF Thumbnail Addition:
+### IFF Thumbnail Pipeline (Template-Free):
 
-The IFF renderer slots in as a **parallel renderer** alongside the text renderer. The dispatch in `icon_content_preview.c` gains a new branch:
+The IFF renderer slots in as a **parallel renderer** alongside the text renderer, but with a significantly simplified setup phase — no template icons are loaded. The dispatch in `icon_content_preview.c`:
 
 ```
 if (itidy_is_text_preview_type(type_token))
@@ -47,13 +88,15 @@ else
 
 Everything after the renderer call (selected image, apply, stamp, save) is **shared unchanged**.
 
+> **⚠️ IMPLEMENTATION NOTE**: The IFF pipeline is **template-free** (deviation 13). Unlike the text renderer which loads a template `.info` file for pixel data and ToolType-based rendering parameters, the IFF pipeline creates blank pixel buffers directly from dimension constants and derives all parameters from `LayoutPreferences`. The IFF pipeline also diverges after rendering: it crops the pixel buffer to the exact thumbnail size, disables transparency, sets the icon to frameless mode, and skips the selected image building step.
+
 ### Key Reused Components:
 
 | Component | Location | Reuse |
 |-----------|----------|-------|
-| `iTidy_IconImageData` | `icon_image_access.h` | Holds template + output pixel/palette data |
+| `iTidy_IconImageData` | `icon_image_access.h` | Holds pixel/palette data (created blank for IFF, not extracted from template) |
 | `iTidy_RenderParams` | `icon_image_access.h` | Base struct for safe area, buffer, colors |
-| `itidy_icon_image_extract()` | `icon_image_access.c` | Extract pixels from image template |
+| `itidy_icon_image_create_blank()` | `icon_image_access.c` | Create blank pixel buffer at specified dimensions |
 | `itidy_icon_image_apply()` | `icon_image_access.c` | Apply rendered pixels to output icon |
 | `itidy_icon_image_save()` | `icon_image_access.c` | Save as OS 3.5 format |
 | `itidy_icon_image_free()` | `icon_image_access.c` | Free pixel/palette memory |
@@ -61,9 +104,10 @@ Everything after the renderer call (selected image, apply, stamp, save) is **sha
 | `itidy_stamp_created_tooltypes()` | `icon_image_access.c` | Stamp ITIDY_CREATED/KIND/SRC |
 | `itidy_check_cache_valid()` | `icon_image_access.c` | Skip unchanged files |
 | `itidy_icon_image_dump()` | `icon_image_access.c` | Debug hex grid output |
-| `build_selected_image()` | `icon_content_preview.c` | Safe-area index swap for selected state |
-| `find_closest_palette_color()` | Promote to `icon_image_access.c` (currently static in `icon_text_render.c`) | Euclidean RGB palette matching |
+| `itidy_find_closest_palette_color()` | `icon_image_access.c` | Euclidean RGB palette matching (promoted from static in `icon_text_render.c`) |
 | `ITIDY_KIND_IFF_THUMBNAIL` | `icon_image_access.h` | Already defined as `"iff_thumbnail"` |
+| ~~`itidy_icon_image_extract()`~~ | ~~`icon_image_access.c`~~ | ~~Extract pixels from image template~~ — Not used by IFF pipeline (deviation 13) |
+| ~~`build_selected_image()`~~ | ~~`icon_content_preview.c`~~ | ~~Safe-area index swap~~ — Skipped for IFF (edge-to-edge thumbnails) |
 
 ---
 
@@ -81,17 +125,19 @@ Everything after the renderer call (selected image, apply, stamp, save) is **sha
 
 ## 4. Modified Files
 
-| File | Changes |
-|------|---------|
-| `src/icon_edit/icon_image_access.h` | Add `find_closest_palette_color()` prototype, new IFF ToolType constants |
-| `src/icon_edit/icon_image_access.c` | Promote `find_closest_palette_color()` from `icon_text_render.c` |
-| `src/icon_edit/icon_text_render.c` | Remove static `find_closest_palette_color()`, call shared version |
-| `src/icon_edit/icon_content_preview.h` | Add IFF template path constants |
-| `src/icon_edit/icon_content_preview.c` | Add IFF type detection, dispatch branch, template path selection |
-| `src/layout_preferences.h` | Add `deficons_icon_size_mode` preference field |
-| `src/layout_preferences.c` | Load/save icon size preference |
-| `src/GUI/deficons_settings_window.c` | Add icon size chooser gadget |
-| `Makefile` | Add `icon_iff_render.c` to `ICON_EDIT_SRCS` and dependency rule |
+| File | Changes | Status |
+|------|---------|--------|
+| `src/icon_edit/icon_image_access.h` | Add `itidy_find_closest_palette_color()` prototype, IFF ToolType constants | ✅ Done |
+| `src/icon_edit/icon_image_access.c` | Promote `find_closest_palette_color()` from `icon_text_render.c` with `itidy_` prefix | ✅ Done |
+| `src/icon_edit/icon_text_render.c` | Remove static `find_closest_palette_color()`, call shared version | ✅ Done |
+| `src/icon_edit/icon_content_preview.h` | ~~Add IFF template path constants~~ → Replaced with `ITIDY_IFF_SIZE_*` pixel dimension constants + `itidy_get_iff_icon_dimensions()` prototype. Removed `ITIDY_IFF_TEMPLATE_*` and `itidy_get_iff_template_path()` | ✅ Updated |
+| `src/icon_edit/icon_content_preview.c` | ~~Template dispatch~~ → Template-free dispatch. `apply_iff_preview()` refactored: removed template load/extract/ToolType parse (~100 lines). `itidy_get_iff_template_path()` replaced by `itidy_get_iff_icon_dimensions()` | ✅ Updated |
+| `src/icon_edit/icon_iff_render.h` | Removed `ITIDY_TT_PALETTE_MODE` constant and `itidy_get_iff_render_params()` prototype | ✅ Updated |
+| `src/icon_edit/icon_iff_render.c` | Removed `itidy_get_iff_render_params()` function (~80 lines) — params now built directly in `apply_iff_preview()` | ✅ Updated |
+| `src/layout_preferences.h` | Add `deficons_icon_size_mode` + `deficons_palette_mode` preference fields and defaults | ✅ Done |
+| `src/layout_preferences.c` | Initialize both icon size and palette mode preferences | ✅ Done |
+| `src/GUI/deficons_settings_window.c` | Add icon size chooser gadget + palette mode chooser gadget | ✅ Done |
+| `Makefile` | Add `icon_iff_render.c` to `ICON_EDIT_SRCS` and dependency rule | ✅ Done |
 
 ---
 
@@ -135,8 +181,17 @@ typedef struct {
 
     /* Rendering mode */
     iTidy_PaletteMode palette_mode;      /* PICTURE or SCREEN */
+
+    /* Output dimensions (populated by itidy_render_iff_thumbnail) */
+    /* Added during implementation — not in original plan */
+    UWORD output_width;                  /* Actual thumbnail width after scaling */
+    UWORD output_height;                 /* Actual thumbnail height after scaling */
+    UWORD output_offset_x;              /* X pixel offset of thumbnail in buffer */
+    UWORD output_offset_y;              /* Y pixel offset of thumbnail in buffer */
 } iTidy_IFFRenderParams;
 ```
+
+> **Implementation note**: The `output_*` fields were added to support post-render cropping. The renderer calculates the scaled thumbnail dimensions and position, stores them here, and the caller uses them to extract a tight pixel buffer.
 
 ### BMHD Structure (standard IFF ILBM — from IFF spec)
 
@@ -495,32 +550,59 @@ Quantize the IFF image's colors to match the current Workbench screen palette. T
 - May need dithering (ordered or Floyd-Steinberg) to compensate for limited palette
 - Consider using the existing `expand_palette_for_adaptive()` infrastructure
 
-### New ToolType:
+### ~~New ToolType~~ → GUI Preference (Deviation 13):
 
-```
-ITIDY_PALETTE_MODE=PICTURE    (default — use IFF's own CMAP)
-ITIDY_PALETTE_MODE=SCREEN     (future — quantize to Workbench palette)
+> **SUPERSEDED**: The palette mode was originally specified via a `ITIDY_PALETTE_MODE` ToolType on the template icon. Since templates have been eliminated (deviation 13), the palette mode is now stored as a `deficons_palette_mode` field in `LayoutPreferences` and controlled by a chooser gadget in the DefIcons settings window.
+
+```c
+/* In layout_preferences.h */
+UWORD deficons_palette_mode;  /* 0=Picture (use image CMAP), 1=Screen (quantize to WB screen) */
+#define DEFAULT_DEFICONS_PALETTE_MODE  0  /* Picture mode */
+
+/* In deficons_settings_window.c */
+static STRPTR palette_mode_labels[] = {
+    "Picture (original colors)",
+    "Screen (match Workbench)",
+    NULL
+};
 ```
 
-Constant: `ITIDY_TT_PALETTE_MODE` = `"ITIDY_PALETTE_MODE"`
+~~Constant: `ITIDY_TT_PALETTE_MODE` = `"ITIDY_PALETTE_MODE"`~~ — Removed from `icon_iff_render.h`
 
 ---
 
 ## 12. IFF Template Contract
 
-**⚠️ HARD RULES** for IFF thumbnail template icons. These are non-negotiable constraints that keep the rendering pipeline correct and predictable.
+### ⚠️ FULLY SUPERSEDED — Templates Eliminated (Deviation 13)
 
-### Rule 1: Safe Area Must Be Defined
+> **Templates have been completely removed from the IFF thumbnail pipeline.** The original plan used `.info` template icons to provide dimensions, palette data, safe area coordinates, and rendering parameters via ToolTypes. Through a series of implementation discoveries, every role the templates played was found to be either unnecessary or better served by other mechanisms:
+>
+> | Original Template Role | Why It Was Unnecessary | Replacement |
+> |----------------------|----------------------|-------------|
+> | **Pixel data** (palette, pixel buffer) | PICTURE mode replaces the entire palette and overwrites all pixels | Blank pixel buffer created from dimensions |
+> | **Safe area** (`ITIDY_TEXT_AREA` ToolType) | Overridden to full image dimensions for edge-to-edge thumbnails | Hardcoded `(0, 0, width, height)` |
+> | **Background color** (`ITIDY_BG_COLOR` ToolType) | Disabled — no background fill needed for edge-to-edge thumbnails | `ITIDY_NO_BG_COLOR` constant |
+> | **Palette mode** (`ITIDY_PALETTE_MODE` ToolType) | Better as a user-facing GUI setting than a hidden ToolType | `deficons_palette_mode` preference field + chooser gadget |
+> | **Icon dimensions** (width × height) | Only remaining role — trivially replaced by a constant lookup | `itidy_get_iff_icon_dimensions()` maps preference to 48/64/100 |
+> | **Icon metadata** (DiskObject structure) | `itidy_icon_image_apply()` clones the *target* icon, not the template | Not needed |
+>
+> **The three `iff_template_*.info` files in `Bin/Amiga/Icons/` are no longer referenced by any code and should be deleted.**
+>
+> See deviation 13 in the Key Deviations section for the full change summary.
+
+### Original Rules (preserved for historical reference only):
+
+### Rule 1: Safe Area Must Be Defined *(now overridden)*
 
 Every IFF template icon **must** include the `ITIDY_TEXT_AREA=x,y,w,h` ToolType defining the rectangular area where the thumbnail will be rendered. Without this, the renderer falls back to the 4px-margin default, which may not match the template's visual design.
 
-### Rule 2: No Custom Pixel-Art Borders
+### Rule 2: No Custom Pixel-Art Borders *(still true — icon is frameless)*
 
 IFF templates **must not** rely on custom pixel-art borders or decorative frame artwork stored in the pixel data. In `ITIDY_PALETTE_MODE=PICTURE`, the template's entire palette is replaced with the source image's CMAP. Any pixel-art drawn at specific palette indices will display with wrong colors after palette replacement.
 
 **Instead**: Templates should be plain safe-area fill (single `ITIDY_BG_COLOR` fill covering the entire pixel area). The icon's visible border/frame is handled by Workbench's standard icon border rendering (`GFLG_GADGHCOMP` or similar), which is drawn by Intuition at display time and is independent of the icon's pixel palette.
 
-### Rule 3: Background Index Must Be Defined
+### Rule 3: Background Index Must Be Defined *(now overridden)*
 
 Every template **must** include `ITIDY_BG_COLOR=N` specifying the palette index used for:
 - Filling the safe area before rendering
@@ -528,25 +610,27 @@ Every template **must** include `ITIDY_BG_COLOR=N` specifying the palette index 
 
 This index will be remapped to the closest match in the source image's palette during rendering.
 
-### Rule 4: Palette Mode Must Be Specified
+### Rule 4: Palette Mode Must Be Specified *(still applies)*
 
 Every template **must** include `ITIDY_PALETTE_MODE=PICTURE` (or `SCREEN` when supported). This makes the rendering mode explicit and self-documenting. The default if missing is `PICTURE`.
 
-### Rule 5: Templates Are Size-Specific
+### Rule 5: Templates Are Size-Specific *(still true but output is cropped)*
 
-Each template file is designed for one specific icon dimension. The output icon will be exactly the template's pixel dimensions. There is no runtime scaling of the template itself.
+Each template file is designed for one specific icon dimension. ~~The output icon will be exactly the template's pixel dimensions.~~ The template's dimensions set the **maximum** thumbnail size. The output icon is cropped to the actual scaled thumbnail dimensions, which may be smaller if the image's aspect ratio doesn't fill the full template area.
 
 ### Minimum Valid IFF Template ToolTypes:
 
 ```
-ITIDY_TEXT_AREA=4,4,40,40
-ITIDY_BG_COLOR=0
 ITIDY_PALETTE_MODE=PICTURE
 ```
 
-### Why These Rules Matter:
+> Note: `ITIDY_TEXT_AREA` and `ITIDY_BG_COLOR` are no longer required for IFF thumbnails but are still used by the text preview renderer.
 
-The two-icon-merge architecture means the template provides **all pixel data** (dimensions, palette, pixel buffer) while the target Workbench icon provides only **metadata** (DefaultTool, ToolTypes, icon type). When the renderer replaces the palette (PICTURE mode), any assumption about palette index → color mapping in the template's pixels is invalidated. Keeping templates as plain fills with Workbench-drawn borders eliminates this class of bug entirely.
+### Why These Rules Mattered (Historical Context):
+
+The two-icon-merge architecture means the template provides **all pixel data** (dimensions, palette, pixel buffer) while the target Workbench icon provides only **metadata** (DefaultTool, ToolTypes, icon type). When the renderer replaces the palette (PICTURE mode), any assumption about palette index → color mapping in the template's pixels is invalidated.
+
+**Post-implementation update**: ~~In practice, the template's pixel data is entirely irrelevant for IFF thumbnails~~ → **Templates have been eliminated entirely (deviation 13).** The IFF pipeline no longer loads any template `.info` files. Dimensions come from `itidy_get_iff_icon_dimensions()` (preference-to-pixel constant lookup), palette mode from `deficons_palette_mode` GUI preference, and blank pixel buffers are created directly. The template icon's two remaining roles (dimensions + palette mode ToolType) are now served by preference constants and a GUI chooser respectively.
 
 ---
 
@@ -554,19 +638,20 @@ The two-icon-merge architecture means the template provides **all pixel data** (
 
 ### Three Size Options:
 
-| Size | Template File | Dimensions | Safe Area (approx) | Use Case |
-|------|--------------|------------|--------------------|----|
-| Small | `iff_template_small.info` | 48×48 | ~40×40 | Low-res screens, many icons |
-| Medium | `iff_template_medium.info` | 64×64 | ~56×56 | Default, good balance |
-| Large | `iff_template_large.info` | 100×100 | ~92×92 | Hi-res screens, detail |
+| Size | Preference Value | Dimensions | Constant | Use Case |
+|------|-----------------|------------|----------|----------|
+| Small | `ITIDY_ICON_SIZE_SMALL` (0) | 48×48 | `ITIDY_IFF_SIZE_SMALL` | Low-res screens, many icons |
+| Medium | `ITIDY_ICON_SIZE_MEDIUM` (1) | 64×64 | `ITIDY_IFF_SIZE_MEDIUM` | Default, good balance |
+| Large | `ITIDY_ICON_SIZE_LARGE` (2) | 100×100 | `ITIDY_IFF_SIZE_LARGE` | Hi-res screens, detail |
 
-### Template Icon Design:
+### Icon Properties (Template-Free):
 
-- **Border**: Handled by Workbench's default icon border rendering (NOT stored in pixel data). Template icon has standard `GFLG_GADGHCOMP` (complement highlighting) or similar. No custom frame artwork to remap
-- **Safe area**: The entire pixel area minus a small margin, specified via `ITIDY_TEXT_AREA` ToolType
-- **Background**: Flat fill color specified by `ITIDY_BG_COLOR` (used for letterbox/pillarbox fill)
-- **Palette mode**: `ITIDY_PALETTE_MODE=PICTURE` (default)
-- **Each template is a separately crafted `.info` file** with its own dimensions, safe area, and ToolTypes
+- **Border**: None — icon is frameless (`is_frameless = TRUE`). Workbench complement highlighting used for selection
+- **Safe area**: Full image dimensions `(0, 0, width, height)` — edge-to-edge thumbnails, no margin
+- **Background**: Disabled (`ITIDY_NO_BG_COLOR`) — thumbnail pixels fill the entire icon
+- **Palette mode**: Controlled by `deficons_palette_mode` preference (default: PICTURE)
+- **Transparency**: Disabled (`transparent_color = -1`) — no transparent pixels
+- **Dimensions**: Derived from `itidy_get_iff_icon_dimensions()` based on preference constant
 
 ### Size Selection Mechanism:
 
@@ -582,28 +667,29 @@ The two-icon-merge architecture means the template provides **all pixel data** (
 UWORD deficons_icon_size_mode;   /* 0=Small(48), 1=Medium(64), 2=Large(100) */
 ```
 
-A chooser gadget will be added to the DefIcons settings GUI (`src/GUI/deficons_settings_window.c`).
+A chooser gadget ~~will be~~ has been added to the DefIcons settings GUI (`src/GUI/deficons_settings_window.c`), along with a palette mode chooser.
 
-### Template Path Selection:
+### ~~Template Path Selection~~ → Dimension Lookup (Deviation 13):
 
 ```c
-/* In icon_content_preview.h */
-#define ITIDY_IFF_TEMPLATE_SMALL   "PROGDIR:Icons/iff_template_small"
-#define ITIDY_IFF_TEMPLATE_MEDIUM  "PROGDIR:Icons/iff_template_medium"
-#define ITIDY_IFF_TEMPLATE_LARGE   "PROGDIR:Icons/iff_template_large"
+/* In icon_content_preview.h — pixel dimension constants */
+#define ITIDY_IFF_SIZE_SMALL    48
+#define ITIDY_IFF_SIZE_MEDIUM   64
+#define ITIDY_IFF_SIZE_LARGE   100
 
-/* In icon_content_preview.c — select template based on preference */
-const char *get_iff_template_path(void)
+/* In icon_content_preview.c — map preference to pixel dimensions */
+UWORD itidy_get_iff_icon_dimensions(const LayoutPreferences *prefs)
 {
-    const LayoutPreferences *prefs = GetGlobalPreferences();
     switch (prefs->deficons_icon_size_mode)
     {
-        case ITIDY_ICON_SIZE_SMALL:  return ITIDY_IFF_TEMPLATE_SMALL;
-        case ITIDY_ICON_SIZE_LARGE:  return ITIDY_IFF_TEMPLATE_LARGE;
-        default:                     return ITIDY_IFF_TEMPLATE_MEDIUM;
+        case ITIDY_ICON_SIZE_SMALL:  return ITIDY_IFF_SIZE_SMALL;
+        case ITIDY_ICON_SIZE_LARGE:  return ITIDY_IFF_SIZE_LARGE;
+        default:                     return ITIDY_IFF_SIZE_MEDIUM;
     }
 }
 ```
+
+> **Replaces**: `itidy_get_iff_template_path()` which returned `ITIDY_IFF_TEMPLATE_SMALL/MEDIUM/LARGE` path strings. Template `.info` files are no longer loaded.
 
 ---
 
@@ -709,72 +795,98 @@ Initially match only `"ilbm"` (the standard IFF picture format). Broader `"pictu
 Once the ILBM-specific decoder is proven, a future enhancement could add a **datatype-based fallback path** for other picture types (JPEG, PNG, GIF, TIFF, etc.):
 
 - **Default behaviour** (current): Only `"ilbm"` matched — pure iffparse.library decoding
-- **Advanced toggle** (future): `ITIDY_TT_USE_DATATYPES=YES` on the template icon
+- **Advanced toggle** (future): A preference or command-line flag to enable datatype decoding
   - Opens the source file via `picture.datatype` (`NewDTObjectA()`)
   - Obtains decoded bitmap/pixel data via `PDTA_BitMap` or `PDTA_DestBitMap`
   - Uses `PDTA_ModeID` for CAMG-equivalent mode detection
   - Feeds decoded pixels into the same scaling/rendering pipeline
   - Would match any type under the `"picture"` category
 
-This approach would give iTidy thumbnail support for **any format with an installed datatype**, without needing format-specific decoders. However, it introduces a dependency on the datatype being present and working correctly. Keep this as a clearly separate code path activated by an opt-in ToolType, not a silent upgrade.
+This approach would give iTidy thumbnail support for **any format with an installed datatype**, without needing format-specific decoders. However, it introduces a dependency on the datatype being present and working correctly. Keep this as a clearly separate code path activated by an opt-in preference, not a silent upgrade.
 
 ---
 
 ## 16. Complete Rendering Pipeline
 
-### IFF Thumbnail Pipeline (step-by-step):
+### IFF Thumbnail Pipeline (step-by-step) — AS IMPLEMENTED (post-deviation 13):
 
 ```
  1. itidy_is_iff_preview_type(type_token)       → Verify type is "ilbm"
  2. itidy_check_cache_valid(path, ITIDY_KIND_IFF_THUMBNAIL, size, date)
                                                   → Skip if icon already up-to-date
  3. GetDiskObject(source_path)                    → Load TARGET icon (Workbench metadata)
- 4. get_iff_template_path()                       → Select template by size preference
- 5. GetIconTagList(template_path,
-       ICONGETA_RemapIcon=FALSE,
-       ICONGETA_GenerateImageMasks=FALSE)          → Load IMAGE TEMPLATE (pixel data)
- 6. itidy_icon_image_extract(image_icon, &img)    → Copy pixels+palette from template
- 7. itidy_get_iff_render_params(image_icon, &img, &iff_params)
-                                                   → Build render params from ToolTypes
- 8. FreeDiskObject(image_icon)                     → Done with template DiskObject
- 9. itidy_render_iff_thumbnail(source_path, &iff_params, &img)
+ 4. prefs = GetGlobalPreferences()                → Get user preferences
+    icon_dim = itidy_get_iff_icon_dimensions(prefs)  → Map size pref to pixels (48/64/100)
+ 5. itidy_icon_image_create_blank(icon_dim, icon_dim, 0, &img)
+                                                  → Create blank pixel buffer at icon size
+    → Create 256-entry placeholder palette (overwritten by PICTURE mode)
+ 6. Build iTidy_IFFRenderParams directly:
+    → safe area = (0, 0, icon_dim, icon_dim) — full image, edge-to-edge
+    → bg_color_index = ITIDY_NO_BG_COLOR (no background fill)
+    → palette_mode = prefs->deficons_palette_mode
+    → All IFF-specific fields zeroed (populated by renderer)
+10. itidy_render_iff_thumbnail(source_path, &iff_params, &img)
                                                    → Parse IFF, decode, scale, render
-10. build_selected_image(&img, &params.base)       → Safe-area index swap for selected
-10b. validate_selected_contrast(&img, &params.base) → Ensure selection is visually distinct
-11. itidy_icon_image_dump(&img, &params.base, path) → Debug hex grid (if enabled)
-12. itidy_icon_image_apply(target_icon, &img)      → Clone target, apply rendered pixels
-13. itidy_stamp_created_tooltypes(clone, ITIDY_KIND_IFF_THUMBNAIL, ...)
+    → Stores output_width/height/offset_x/offset_y in iff_params
+ 7. itidy_render_iff_thumbnail(source_path, &iff_params, &img)
+                                                   → Parse IFF, decode, scale, render
+    → Stores output_width/height/offset_x/offset_y in iff_params
+ 8. CROP: Allocate tight buffer (output_width × output_height)
+    → Copy only thumbnail rows from rendered buffer
+    → Replace img pixel buffer with tight crop
+    → Discard selected image (no safe area for index swap)
+    → Set transparent_color_normal = -1 (disable transparency)
+    → Set is_frameless = TRUE (thumbnail IS the icon)
+ 9. itidy_icon_image_dump(&img, &params.base, path) → Debug hex grid (if enabled)
+10. itidy_icon_image_apply(target_icon, &img)      → Clone target, apply rendered pixels
+11. itidy_stamp_created_tooltypes(clone, ITIDY_KIND_IFF_THUMBNAIL, ...)
                                                    → Stamp ITIDY_CREATED/KIND/SRC
-14. itidy_icon_image_save(source_path, clone)      → Save as OS 3.5 format
-15. Cleanup: FreeDiskObject(clone) → itidy_icon_image_free(&img) → FreeDiskObject(target)
+12. itidy_icon_image_save(source_path, clone)      → Save as OS 3.5 format
+13. Cleanup: iff_params_free → FreeDiskObject(clone) → icon_image_free → FreeDiskObject(target)
 ```
 
-### Inside `itidy_render_iff_thumbnail()` (step 9 expanded):
+### Original Pipeline (preserved for reference):
 
 ```
- 9a. Open iffparse.library
- 9b. AllocIFF → InitIFFasDOS → Open file → OpenIFF
- 9c. PropChunk(BMHD, CMAP, CAMG) + StopChunk(BODY)
- 9d. ParseIFF(IFFPARSE_SCAN)
- 9e. FindProp(BMHD) → validate, extract dimensions/depth/compression
- 9f. FindProp(CAMG) → decode viewport flags (HAM/EHB/interlace/hires)
- 9g. If HAM or EHB → cleanup, return ITIDY_PREVIEW_NOT_SUPPORTED
- 9h. FindProp(CMAP) → copy palette to iff_params.src_palette
- 9i. Allocate src_chunky buffer (src_width * src_height bytes)
- 9j. ReadChunkBytes(BODY) into compressed buffer
- 9k. Decompress ByteRun1 (if compression=1) row by row
- 9l. Convert interleaved bitplanes to chunky pixels
- 9m. CloseIFF → Close file → FreeIFF → CloseLibrary
- 9n. Calculate display dimensions (halve height if interlace)
- 9o. Calculate scaling to fit safe area, preserving aspect ratio
- 9p. Fill safe area with bg_color_index
- 9q. If palette_mode == PICTURE:
+(Original plan used template icons — steps 4-6 were different:)
+ 4. itidy_get_iff_template_path()              → Select template .info by size preference
+ 5. GetIconTagList(template_path, ...)         → Load IMAGE TEMPLATE from .info file
+ 6. itidy_icon_image_extract(image_icon, &img) → Extract pixels+palette from template
+    └─ FALLBACK: Create blank buffers if template not palette-mapped
+ 7. itidy_get_iff_render_params(image_icon, &img, &iff_params)
+                                               → Build render params from template ToolTypes
+ 8. FreeDiskObject(image_icon)                 → Done with template DiskObject
+ 9. Override safe area to full image (0, 0, w, h) — bg_color = ITIDY_NO_BG_COLOR
+
+All of steps 4-9 have been replaced by steps 4-6 in the current pipeline (deviation 13).
+```
+
+### Inside `itidy_render_iff_thumbnail()` (step 7 expanded):
+
+```
+ 7a. Open iffparse.library
+ 7b. AllocIFF → InitIFFasDOS → Open file → OpenIFF
+ 7c. PropChunk(BMHD, CMAP, CAMG) + StopChunk(BODY)
+ 7d. ParseIFF(IFFPARSE_SCAN)
+ 7e. FindProp(BMHD) → validate, extract dimensions/depth/compression
+ 7f. FindProp(CAMG) → decode viewport flags (HAM/EHB/interlace/hires)
+ 7g. If HAM or EHB → cleanup, return ITIDY_PREVIEW_NOT_SUPPORTED
+ 7h. FindProp(CMAP) → copy palette to iff_params.src_palette
+ 7i. Allocate src_chunky buffer (src_width * src_height bytes)
+ 7j. ReadChunkBytes(BODY) into compressed buffer
+ 7k. Decompress ByteRun1 (if compression=1) row by row
+ 7l. Convert interleaved bitplanes to chunky pixels
+ 7m. CloseIFF → Close file → FreeIFF → CloseLibrary
+ 7n. Calculate display dimensions (halve height if interlace, halve width if hires)
+ 7o. Calculate scaling to fit safe area, preserving aspect ratio
+ 7p. Fill safe area with bg_color_index
+ 7q. If palette_mode == PICTURE:
        - Replace img->palette_normal with src_palette
        - Area-average scale src_chunky → pixel_buffer (direct index write)
- 9r. If palette_mode == SCREEN:
+ 7r. If palette_mode == SCREEN:
        - Stub: log warning, fall back to PICTURE mode
- 9s. Free src_chunky buffer
- 9t. Return ITIDY_PREVIEW_OK
+ 7s. Free src_chunky buffer
+ 7t. Return ITIDY_PREVIEW_OK
 ```
 ### Selected Image Contrast Validation (step 10b)
 
@@ -821,22 +933,17 @@ Rename with `itidy_` prefix for namespace safety. Update all call sites in `icon
 
 ---
 
-## 18. New ToolType Constants
+## 18. ~~New ToolType Constants~~ → Removed (Deviation 13)
 
-### Added to `icon_image_access.h`:
+### ~~Added to `icon_image_access.h`~~ — Removed from `icon_iff_render.h`:
 
-| Constant | String | Purpose |
-|----------|--------|---------|
-| `ITIDY_TT_PALETTE_MODE` | `"ITIDY_PALETTE_MODE"` | Palette mode selection (PICTURE/SCREEN) |
+| Constant | String | Original Purpose | Status |
+|----------|--------|-----------------|--------|
+| ~~`ITIDY_TT_PALETTE_MODE`~~ | ~~`"ITIDY_PALETTE_MODE"`~~ | ~~Palette mode selection (PICTURE/SCREEN)~~ | ❌ Removed — palette mode now stored in `LayoutPreferences.deficons_palette_mode` and controlled by GUI chooser |
 
-### Template Icon ToolType Examples:
+### ~~Template Icon ToolType Examples~~ — Templates Eliminated:
 
-**iff_template_medium.info ToolTypes:**
-```
-ITIDY_TEXT_AREA=4,4,56,56
-ITIDY_BG_COLOR=0
-ITIDY_PALETTE_MODE=PICTURE
-```
+> Templates no longer exist. The palette mode, icon dimensions, and all rendering parameters that were previously read from template ToolTypes are now derived from `LayoutPreferences` fields set via the DefIcons settings GUI.
 
 ---
 
@@ -888,10 +995,12 @@ Six classic Amiga IFF ILBM images in `Bin/Amiga/Tests/images/`:
 5. **Interlace detection**: Test with interlace IFF (if available) — verify height halving
 6. **HAM/EHB rejection**: Test with HAM images — verify graceful skip with log message
 7. **Missing CAMG**: Test with old IFF files lacking CAMG chunk — verify fallback
-8. **Palette replacement**: Verify template border handled by Workbench, safe area shows correct colors
+8. **Palette replacement**: Verify icon uses source image's CMAP palette, edge-to-edge thumbnail fills entire icon
 9. **Cache validation**: Render once, re-run — verify skip on unchanged source
-10. **Selected image**: Verify selected state shows safe-area index swap
+10. **Selected image**: Verify Workbench complement highlighting provides selection feedback (no custom selected image)
 11. **Debug dump**: Verify hex grid output shows expected pixel indices
+12. **Size switching**: Change icon size preference (Small/Medium/Large) in DefIcons settings, verify thumbnails regenerate at correct dimensions
+13. **Palette mode**: Verify Picture mode (default) uses source CMAP. Screen mode should fall back to Picture with log message
 
 ### Testing Workflow:
 
@@ -906,51 +1015,76 @@ Six classic Amiga IFF ILBM images in `Bin/Amiga/Tests/images/`:
 
 ## 21. Implementation Order
 
-### Phase A: Core IFF Parsing (get data out of the file)
+### Phase A: Core IFF Parsing (get data out of the file) — ✅ COMPLETE
 
-1. Create `icon_iff_render.h` with all structs and prototypes
-2. Create `icon_iff_render.c` with IFF parsing (iffparse.library)
-3. Implement ByteRun1 decompression
-4. Implement bitplane→chunky conversion
-5. Implement CAMG detection (interlace, HAM, EHB)
-6. Add HAM stub (detect and skip with log message)
-7. **Implement EHB support** — palette expansion via `expand_ehb_palette()`, then standard decode (low-hanging fruit, completes before Phase B scaling)
-8. Implement CMAP validation (Section 11 edge cases)
-9. Test standalone parsing with debug output
+1. ✅ Create `icon_iff_render.h` with all structs and prototypes
+2. ✅ Create `icon_iff_render.c` with IFF parsing (iffparse.library)
+3. ✅ Implement ByteRun1 decompression
+4. ✅ Implement bitplane→chunky conversion
+5. ✅ Implement CAMG detection (interlace, HAM, EHB)
+6. ✅ Add HAM stub (detect and skip with log message)
+7. ✅ **Implement EHB support** — palette expansion via `expand_ehb_palette()`, then standard decode
+8. ✅ Implement CMAP validation (Section 11 edge cases)
+9. ✅ Test standalone parsing with debug output
 
-### Phase B: Scaling and Rendering (get pixels into the icon)
+> **Phase A implementation note**: All IFF parsing, ByteRun1 decompression, bitplane→chunky conversion, CAMG detection, EHB palette expansion, and HAM stub were implemented in a single phase. `icon_iff_render.c` is ~1200 lines. `find_closest_palette_color()` was promoted to shared as `itidy_find_closest_palette_color()` in `icon_image_access.c/.h`. Compiled cleanly on first build.
 
-10. Implement interlace height correction
-11. Implement area-average downscaling with aspect ratio preservation
-12. Add scaling fast-path with 2×2 pre-filter for extreme ratios (Section 10)
-13. Implement picture palette mode (replace palette, write indices)
-14. Stub screen palette mode
-15. Promote `find_closest_palette_color()` to shared
-16. Test rendering into a template pixel buffer
+### Phase B: Scaling and Rendering (get pixels into the icon) — ✅ COMPLETE
 
-### Phase C: Integration (wire into the pipeline)
+10. ✅ Implement interlace height correction
+11. ✅ Implement area-average downscaling with aspect ratio preservation
+12. ✅ Add scaling fast-path with 2×2 pre-filter for extreme ratios (Section 10)
+13. ✅ Implement picture palette mode (replace palette, write indices)
+14. ✅ Stub screen palette mode
+15. ✅ Promote `find_closest_palette_color()` to shared (done in Phase A)
+16. ✅ Test rendering into a template pixel buffer
 
-17. Add `itidy_is_iff_preview_type()` to dispatch
-18. Add IFF branch to `icon_content_preview.c`
-19. Define template path constants
-20. Update Makefile
-21. Create initial template icons (plain safe-area fill per Template Contract)
-22. Add selected image contrast validation (step 10b in pipeline)
-23. Test end-to-end with test images
+> **Phase B implementation note**: All scaling uses fixed-point 16.16 arithmetic exclusively — no floating point. The `area_average_scale()` function handles arbitrary reduction ratios. The `prefilter_2x2()` function creates a half-size intermediate buffer for extreme reductions (>8:1 ratio on images >65K pixels). Compiled cleanly.
 
-### Phase D: Size Selection UI
+### Phase C: Integration (wire into the pipeline) — ✅ COMPLETE
 
-24. Add `deficons_icon_size_mode` to `LayoutPreferences`
-25. Add size chooser to DefIcons settings GUI
-26. Create all three template icon sizes
-27. Test size switching
+17. ✅ Add `itidy_is_iff_preview_type()` to dispatch
+18. ✅ Add IFF branch to `icon_content_preview.c`
+19. ✅ ~~Define template path constants~~ → Replaced with `ITIDY_IFF_SIZE_*` pixel dimension constants (deviation 13)
+20. ✅ Update Makefile
+21. ✅ ~~Create initial template icons~~ → Templates eliminated; blank buffers created from dimension constants (deviation 13)
+22. ✅ Add selected image contrast validation (step 10b in pipeline)
+23. ✅ Test end-to-end with test images
 
-### Phase E: Polish and Future
+> **Phase C implementation notes**:
+> - First compile failed because `deficons_icon_size_mode` didn't exist yet (Phase D dependency). Fixed by stubbing `itidy_get_iff_template_path()` to always return medium template.
+> - **Runtime bug #1**: Template `iff_template_medium.info` is old-format planar, not OS 3.5 palette-mapped. `itidy_icon_image_extract()` failed on it. Fixed by adding fallback path: query template dimensions via `ICONCTRLA_GetWidth/GetHeight`, create blank pixel/palette buffers via `itidy_icon_image_create_blank()`. PICTURE mode replaces everything anyway.
+> - **Runtime bug #2**: Thumbnail appeared floating inside the icon frame with wasted space. Fixed by overriding safe area to `(0, 0, img.width, img.height)` and cropping the pixel buffer to exact thumbnail dimensions after rendering.
+> - **Runtime bug #3**: Black (palette index 0) was transparent in Workbench, causing holes in dark images (Space, Waterfall). Fixed by setting `transparent_color_normal = -1` to disable transparency.
+> - Set `is_frameless = TRUE` since the thumbnail IS the icon (no border artwork).
+> - Discarded selected image building — edge-to-edge thumbnails have no safe area for the bg/text index swap.
+> - Added `output_width/height/offset_x/offset_y` fields to `iTidy_IFFRenderParams` for post-render cropping.
+> - **Deviation 13 (later refactor)**: All template loading, extraction, ToolType parsing, and `itidy_get_iff_render_params()` were subsequently removed. The pipeline now creates blank pixel buffers directly from dimension constants and builds render params inline. See Phase D notes.
 
-28. HAM support (complex — per-scanline state machine + RGB→palette quantization)
-29. Screen palette mode (read Workbench palette, quantize with optional dithering)
-30. Datatype-based fallback for non-ILBM picture types (Section 15)
-31. Low-res pixel aspect ratio correction (subtle)
+### Phase D: Size & Palette UI — ✅ COMPLETE
+
+24. ✅ Add `deficons_icon_size_mode` to `LayoutPreferences`
+25. ✅ Add size chooser to DefIcons settings GUI
+26. ✅ ~~Create all three template icon sizes~~ → N/A — templates eliminated (deviation 13)
+27. ✅ Test size switching
+28. ✅ Add `deficons_palette_mode` to `LayoutPreferences` (deviation 13)
+29. ✅ Add palette mode chooser to DefIcons settings GUI (deviation 13)
+30. ✅ Remove `itidy_get_iff_template_path()` → replaced by `itidy_get_iff_icon_dimensions()` (deviation 13)
+31. ✅ Remove `itidy_get_iff_render_params()` → params built directly in `apply_iff_preview()` (deviation 13)
+32. ✅ Remove `ITIDY_IFF_TEMPLATE_*` path constants and `ITIDY_TT_PALETTE_MODE` ToolType constant (deviation 13)
+33. ✅ Refactor `apply_iff_preview()` to template-free pipeline (~100 lines removed) (deviation 13)
+
+> **Phase D implementation note**: Added `UWORD deficons_icon_size_mode` to `LayoutPreferences` struct with `DEFAULT_DEFICONS_ICON_SIZE_MODE = 1` (medium). Added `GID_ICON_SIZE_CHOOSER` enum value, `icon_size_chooser_obj`, `icon_size_labels[]` array (`"Small (48x48)"`, `"Medium (64x64)"`, `"Large (100x100)"`), gadget creation, layout placement, and value read on OK in `deficons_settings_window.c`.
+>
+> **Template elimination (deviation 13)**: Subsequently added `UWORD deficons_palette_mode` with `DEFAULT_DEFICONS_PALETTE_MODE = 0` (Picture). Added `GID_PALETTE_MODE_CHOOSER`, `palette_mode_chooser_obj`, `palette_mode_labels[]` array (`"Picture (original colors)"`, `"Screen (match Workbench)"`). Removed all template-related code: `itidy_get_iff_template_path()`, `itidy_get_iff_render_params()`, `ITIDY_IFF_TEMPLATE_*` constants, `ITIDY_TT_PALETTE_MODE` constant. The `apply_iff_preview()` function was refactored to derive dimensions from `itidy_get_iff_icon_dimensions()` (preference-to-pixel lookup) and build render params directly. The three `iff_template_*.info` files in `Bin/Amiga/Icons/` are no longer needed.
+
+### Phase E: Polish and Future — 🔲 NOT STARTED
+
+34. 🔲 HAM support (complex — per-scanline state machine + RGB→palette quantization)
+35. 🔲 Screen palette mode implementation (read Workbench palette via `GetRGB32()`, quantize with optional dithering) — GUI chooser already exists
+36. 🔲 Datatype-based fallback for non-ILBM picture types (Section 15)
+37. 🔲 Low-res pixel aspect ratio correction (subtle)
+38. 🔲 Consider: selected image for frameless thumbnails (complement highlight may suffice)
 
 ---
 
@@ -960,18 +1094,25 @@ Six classic Amiga IFF ILBM images in `Bin/Amiga/Tests/images/`:
 |---|----------|----------|------|
 | 1 | Use iffparse.library or hand-rolled parser? | iffparse.library — proven, handles chunk nesting | 2026-02-10 |
 | 2 | HAM/EHB support? | HAM: detect and stub. EHB: implement early (palette expansion is trivial) | 2026-02-10 |
-| 3 | Palette strategy? | Two modes via ToolType: PICTURE (initial) / SCREEN (future) | 2026-02-10 |
+| 3 | Palette strategy? | Two modes: PICTURE (initial) / SCREEN (future). ~~Originally via template ToolType~~ → Now via `deficons_palette_mode` GUI preference (deviation 13) | 2026-02-10 |
 | 4 | Template border artwork remapping? | Not needed — icon uses Workbench default border drawing. Formalised as Template Contract rule | 2026-02-10 |
 | 5 | Icon size selection mechanism? | Preference in LayoutPreferences + chooser in DefIcons GUI | 2026-02-10 |
 | 6 | Interlace aspect correction? | Yes — halve display height when V_LACE detected | 2026-02-10 |
 | 7 | Low-res pixel aspect correction? | Deferred — subtle effect, skip for initial implementation | 2026-02-10 |
 | 8 | CAMG chunk parsing? | Yes — PropChunk alongside BMHD/CMAP for HAM/EHB/interlace | 2026-02-10 |
 | 9 | Initial testing palette mode? | PICTURE mode (embed IFF's own CMAP) | 2026-02-10 |
-| 10 | Hardcode size for initial testing? | Medium (64×64) as default, all three templates created | 2026-02-10 |
+| 10 | Hardcode size for initial testing? | Medium (64×64) as default. ~~All three templates created~~ → Templates eliminated, dimensions from constants (deviation 13) | 2026-02-10 |
 | 11 | CMAP validation edge cases? | Validate missing/tiny/odd/oversized CMAP. Fall back to normal DefIcons if unusable | 2026-02-10 |
 | 12 | Template pixel-art borders? | Forbidden in PICTURE mode — templates must be plain safe-area fill (Template Contract) | 2026-02-10 |
 | 13 | Scaling performance on 68020? | Area-average default + 2×2 pre-filter bail-out for extreme ratios (>8:1 on large images) | 2026-02-10 |
 | 14 | EHB implementation timing? | Phase A (with parsing) — low-hanging fruit, palette expansion + standard decode | 2026-02-10 |
-| 15 | Future picture type expansion? | Datatype-based fallback path, opt-in via ITIDY_TT_USE_DATATYPES ToolType | 2026-02-10 |
+| 15 | Future picture type expansion? | Datatype-based fallback path, opt-in via preference or flag (~~originally ITIDY_TT_USE_DATATYPES ToolType~~ — templates eliminated) | 2026-02-10 |
 | 16 | Selected image contrast? | Add minimum contrast validation to ensure selection is visually distinct | 2026-02-10 |
 | 17 | Integer vs float arithmetic? | Fixed-point (16.16) only — no float code paths on 68020 | 2026-02-10 |
+| 18 | Template not palette-mapped? | ~~Fallback: create blank pixel/palette buffers from template dimensions~~ → Templates eliminated entirely. Blank buffers created from dimension constants (deviation 13) | 2026-02-10 |
+| 19 | Safe area for IFF thumbnails? | Override to full image dimensions. Crop buffer to exact thumbnail size after rendering. Template safe area ToolType not required | 2026-02-10 |
+| 20 | Transparency for IFF thumbnails? | Disabled (set to -1). Index 0 is often black and must be visible, not transparent | 2026-02-10 |
+| 21 | Icon frame for IFF thumbnails? | Frameless (is_frameless=TRUE). Thumbnail IS the icon, no border needed. Workbench complement highlighting used for selection | 2026-02-10 |
+| 22 | Selected image for IFF thumbnails? | Discarded. Edge-to-edge thumbnails have no safe area for bg/text index swap. Complement highlighting provides selection feedback | 2026-02-10 |
+| 23 | Template pixel data needed? | No. ~~Template only needs valid dimensions~~ → Templates eliminated entirely. Dimensions from preference constants, palette mode from GUI chooser (deviation 13) | 2026-02-10 |
+| 24 | Eliminate template .info files entirely? | Yes. Templates were vestigial — extraction always failed (old planar format), all ToolTypes were overridden, only dimensions were used. Replaced by `itidy_get_iff_icon_dimensions()` + `deficons_palette_mode` GUI preference. Three files (`iff_template_small/medium/large.info`) can be deleted from `Bin/Amiga/Icons/` | 2026-02-10 |
