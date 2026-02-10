@@ -34,6 +34,10 @@
 /*========================================================================*/
 
 static ULONG calculate_luminance(UBYTE r, UBYTE g, UBYTE b);
+static UBYTE find_darkest_luminance(const struct ColorRegister *palette, ULONG palette_size);
+static UBYTE find_lightest_luminance(const struct ColorRegister *palette, ULONG palette_size);
+static BOOL should_expand_palette(struct DiskObject *icon, const iTidy_IconImageData *img);
+static BOOL expand_palette_for_adaptive(struct ColorRegister **palette_ptr, ULONG *palette_size_ptr);
 static LONG parse_integer_tooltype(STRPTR *tool_types, const char *key, LONG default_val);
 static BOOL parse_area_tooltype(STRPTR *tool_types, const char *key,
                                 UWORD *out_x, UWORD *out_y,
@@ -222,6 +226,15 @@ BOOL itidy_icon_image_extract(struct DiskObject *icon, iTidy_IconImageData *out)
     }
     memcpy(out->palette_normal, src_pal_1, pal_size_1 * sizeof(struct ColorRegister));
 
+    // Automatic palette expansion for adaptive rendering (if conditions met)
+    if (should_expand_palette(icon, out))
+    {
+        if (!expand_palette_for_adaptive(&out->palette_normal, &out->palette_size_normal))
+        {
+            log_warning(LOG_ICONS, "itidy_icon_image_extract: palette expansion failed, continuing with original palette\n");
+        }
+    }
+
     // Copy selected image data if present
     if (src_pixels_2 != NULL && src_pal_2 != NULL && pal_size_2 > 0)
     {
@@ -245,6 +258,15 @@ BOOL itidy_icon_image_extract(struct DiskObject *icon, iTidy_IconImageData *out)
             return FALSE;
         }
         memcpy(out->palette_selected, src_pal_2, pal_size_2 * sizeof(struct ColorRegister));
+        
+        // Expand selected palette too (for consistency with normal palette)
+        if (should_expand_palette(icon, out))
+        {
+            if (!expand_palette_for_adaptive(&out->palette_selected, &out->palette_size_selected))
+            {
+                log_warning(LOG_ICONS, "itidy_icon_image_extract: selected palette expansion failed\n");
+            }
+        }
     }
     else
     {
@@ -660,6 +682,230 @@ void itidy_parse_safe_area(struct DiskObject *icon,
 static ULONG calculate_luminance(UBYTE r, UBYTE g, UBYTE b)
 {
     return (299UL * (ULONG)r + 587UL * (ULONG)g + 114UL * (ULONG)b) / 1000UL;
+}
+
+/*------------------------------------------------------------------------*/
+
+/**
+ * @brief Find the luminance of the darkest color in a palette.
+ *
+ * @param palette       Palette array
+ * @param palette_size  Number of palette entries
+ * @return Luminance value (0-255) of the darkest entry
+ */
+static UBYTE find_darkest_luminance(const struct ColorRegister *palette, ULONG palette_size)
+{
+    ULONG i;
+    UBYTE darkest_lum = 255;
+    
+    if (palette == NULL || palette_size == 0)
+    {
+        return 0;
+    }
+    
+    for (i = 0; i < palette_size; i++)
+    {
+        ULONG lum = calculate_luminance(palette[i].red, palette[i].green, palette[i].blue);
+        if (lum < darkest_lum)
+        {
+            darkest_lum = (UBYTE)lum;
+        }
+    }
+    
+    return darkest_lum;
+}
+
+/**
+ * @brief Find the luminance of the lightest color in a palette.
+ *
+ * @param palette       Palette array
+ * @param palette_size  Number of palette entries
+ * @return Luminance value (0-255) of the lightest entry
+ */
+static UBYTE find_lightest_luminance(const struct ColorRegister *palette, ULONG palette_size)
+{
+    ULONG i;
+    UBYTE lightest_lum = 0;
+    
+    if (palette == NULL || palette_size == 0)
+    {
+        return 255;
+    }
+    
+    for (i = 0; i < palette_size; i++)
+    {
+        ULONG lum = calculate_luminance(palette[i].red, palette[i].green, palette[i].blue);
+        if (lum > lightest_lum)
+        {
+            lightest_lum = (UBYTE)lum;
+        }
+    }
+    
+    return lightest_lum;
+}
+
+/**
+ * @brief Check if palette expansion should be performed.
+ *
+ * Expansion is triggered when:
+ *   1. ITIDY_ADAPTIVE_TEXT=YES on template icon
+ *   2. ITIDY_EXPAND_PALETTE != NO (defaults to YES)
+ *   3. Palette size < 16 colors
+ *   4. Palette has at least 2 colors
+ *
+ * @param icon  Template DiskObject (for reading ToolTypes)
+ * @param img   Extracted image data (for palette size check)
+ * @return TRUE if expansion should occur, FALSE otherwise
+ */
+static BOOL should_expand_palette(struct DiskObject *icon, const iTidy_IconImageData *img)
+{
+    STRPTR *tool_types;
+    char *adaptive_val;
+    char *expand_val;
+    BOOL adaptive_enabled = FALSE;
+    BOOL expand_enabled = TRUE;  // Default to YES
+    
+    if (icon == NULL || img == NULL)
+    {
+        return FALSE;
+    }
+    
+    // Check palette size constraints
+    if (img->palette_size_normal < 2 || img->palette_size_normal >= 16)
+    {
+        return FALSE;
+    }
+    
+    tool_types = (STRPTR *)icon->do_ToolTypes;
+    if (tool_types == NULL)
+    {
+        return FALSE;  // No ToolTypes, can't check adaptive mode
+    }
+    
+    // Check if adaptive text is enabled
+    adaptive_val = (char *)FindToolType(tool_types, (STRPTR)ITIDY_TT_ADAPTIVE_TEXT);
+    if (adaptive_val != NULL)
+    {
+        if (platform_stricmp(adaptive_val, "YES") == 0 ||
+            platform_stricmp(adaptive_val, "TRUE") == 0 ||
+            platform_stricmp(adaptive_val, "ON") == 0 ||
+            strcmp(adaptive_val, "1") == 0)
+        {
+            adaptive_enabled = TRUE;
+        }
+    }
+    
+    if (!adaptive_enabled)
+    {
+        return FALSE;  // Adaptive mode not enabled, no point expanding
+    }
+    
+    // Check if palette expansion is explicitly disabled
+    expand_val = (char *)FindToolType(tool_types, (STRPTR)ITIDY_TT_EXPAND_PALETTE);
+    if (expand_val != NULL)
+    {
+        if (platform_stricmp(expand_val, "NO") == 0 ||
+            platform_stricmp(expand_val, "FALSE") == 0 ||
+            platform_stricmp(expand_val, "OFF") == 0 ||
+            strcmp(expand_val, "0") == 0)
+        {
+            expand_enabled = FALSE;
+        }
+    }
+    
+    return expand_enabled;
+}
+
+/**
+ * @brief Expand a small palette by adding smooth grey ramp entries.
+ *
+ * Preserves original palette entries at indices 0..N-1, adds new
+ * grey tones at indices N..31 to provide smoother darkening during
+ * adaptive text rendering.
+ *
+ * Reallocates the palette buffer to 32 entries. Original entries
+ * are preserved so existing pixel data in icon borders remains valid.
+ *
+ * @param palette_ptr      Pointer to palette pointer (will be reallocated)
+ * @param palette_size_ptr Pointer to palette size (will be updated to 32)
+ * @return TRUE on success, FALSE on allocation failure
+ */
+static BOOL expand_palette_for_adaptive(struct ColorRegister **palette_ptr, ULONG *palette_size_ptr)
+{
+    struct ColorRegister *old_palette;
+    struct ColorRegister *new_palette;
+    ULONG old_size;
+    ULONG num_new;
+    UBYTE darkest_lum;
+    UBYTE lightest_lum;
+    ULONG i;
+    
+    if (palette_ptr == NULL || *palette_ptr == NULL || palette_size_ptr == NULL)
+    {
+        log_error(LOG_ICONS, "expand_palette_for_adaptive: NULL parameter\n");
+        return FALSE;
+    }
+    
+    old_palette = *palette_ptr;
+    old_size = *palette_size_ptr;
+    
+    // Sanity check
+    if (old_size >= 32)
+    {
+        return TRUE;  // Already large enough
+    }
+    
+    // Allocate new 32-entry palette
+    new_palette = (struct ColorRegister *)whd_malloc(32 * sizeof(struct ColorRegister));
+    if (new_palette == NULL)
+    {
+        log_error(LOG_ICONS, "expand_palette_for_adaptive: failed to allocate 32-entry palette\n");
+        return FALSE;
+    }
+    
+    // Copy original entries (preserve indices)
+    memcpy(new_palette, old_palette, old_size * sizeof(struct ColorRegister));
+    
+    // Find darkest and lightest colors in original palette
+    darkest_lum = find_darkest_luminance(old_palette, old_size);
+    lightest_lum = find_lightest_luminance(old_palette, old_size);
+    
+    // Generate grey ramp (evenly spaced from light to dark)
+    num_new = 32 - old_size;
+    for (i = 0; i < num_new; i++)
+    {
+        // Use integer-only math to avoid floating-point operations
+        // Formula: grey = lightest - (i * (lightest - darkest)) / (num_new - 1)
+        ULONG range = lightest_lum - darkest_lum;
+        ULONG scaled_step;
+        UBYTE grey_value;
+        
+        if (num_new > 1)
+        {
+            scaled_step = (i * range) / (num_new - 1);
+        }
+        else
+        {
+            scaled_step = 0;
+        }
+        
+        grey_value = lightest_lum - (UBYTE)scaled_step;
+        
+        new_palette[old_size + i].red   = grey_value;
+        new_palette[old_size + i].green = grey_value;
+        new_palette[old_size + i].blue  = grey_value;
+    }
+    
+    // Free old palette, update pointers
+    whd_free(old_palette);
+    *palette_ptr = new_palette;
+    *palette_size_ptr = 32;
+    
+    log_info(LOG_ICONS, "expand_palette_for_adaptive: expanded %lu colors -> 32 "
+             "(added %lu grey ramp entries from lum %u to %u)\n",
+             old_size, num_new, (unsigned)lightest_lum, (unsigned)darkest_lum);
+    
+    return TRUE;
 }
 
 /*------------------------------------------------------------------------*/

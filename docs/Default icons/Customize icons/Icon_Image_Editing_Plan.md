@@ -1125,8 +1125,7 @@ begins — to catch metadata corruption issues at the source.
 | 21 | Tab width for icon preview? | **4 characters** (not the traditional 8). Reduced because the icon safe area is tiny and 8-char tabs waste too much space. | 2026-02-09 |
 | 22 | Debug dump log level? | **`log_info()`** (not `log_debug()`). The dump is already compile-time guarded by `DEBUG_ICON_DUMP`, so using INFO ensures it actually appears in the icons log at default log levels. | 2026-02-09 |
 | 23 | How to preserve template artwork in safe area? | **`ITIDY_BG_COLOR=-1` mode.** Uses sentinel value 255 (`ITIDY_NO_BG_COLOR`) to skip background fill entirely. Selected image index swap also skipped in this mode. Allows template icons with pre-rendered artwork or special effects. | 2026-02-09 |
-| 24 | Should iTidy auto-generate grey ramps for better adaptive rendering? | **Future enhancement (post-v1.0).** Add `itidy_expand_palette_for_adaptive()` to automatically expand simple 8-16 color templates to 32-48 colors with smooth grey ramps. Preserves border artwork, remaps pixels, zero user effort. See Section 14. | 2026-02-09 |
-| 23 | How to preserve template artwork in safe area? | **`ITIDY_BG_COLOR=-1` mode.** Uses sentinel value 255 (`ITIDY_NO_BG_COLOR`) to skip background fill entirely. Selected image index swap also skipped in this mode. Allows template icons with pre-rendered artwork or special effects. | 2026-02-09 |
+| 24 | Should iTidy auto-generate grey ramps for better adaptive rendering? | **Yes, enabled by default** (`ITIDY_EXPAND_PALETTE=YES`). Automatically expands palettes < 16 colors to 32 colors when adaptive mode is enabled. Preserves original colors at indices 0-N, adds grey ramp at N-31. Zero pixel remapping needed. Provides smooth adaptive text on gradients with minimal overhead (~34ms on 68000, +200 bytes per icon). Implemented 2026-02-10. See `Palette_Expansion_Implementation_Plan.md`. | 2026-02-10 |
 
 ---
 
@@ -1483,6 +1482,7 @@ style. They are parsed by `itidy_get_render_params()` in
 | `ITIDY_MID_COLOR` | palette index | auto (mid-luminance) | Grey/mid-tone colour for 3-color anti-aliasing mode. If not set, the palette entry with luminance closest to the midpoint between darkest and lightest is chosen. Used for smoother character edges. |
 | `ITIDY_ADAPTIVE_TEXT` | `YES`, `TRUE`, `ON`, `1` | (off) | Enables adaptive background-aware text rendering. When enabled, text colour is dynamically chosen by darkening the background pixel by `ITIDY_DARKEN_PERCENT`. Produces text that adapts to gradient backgrounds. |
 | `ITIDY_DARKEN_PERCENT` | `1`–`100` | `70` | Percentage to darken background pixels when `ITIDY_ADAPTIVE_TEXT` is enabled. `70` means "keep 30% of original brightness" (recommended). Higher values = darker text. Only used when adaptive mode is active. |
+| `ITIDY_EXPAND_PALETTE` | `YES`, `NO` | `YES` | When adaptive text is enabled and the palette has fewer than 16 colors, automatically expand it to 32 colors by adding a smooth grey ramp. This provides better darkening matches for gradient backgrounds. Set to `NO` to preserve the original palette exactly as-is. Expanded palettes preserve original colors at indices 0-N, adding grey ramp at N-31, so existing border artwork is unaffected. |
 | `ITIDY_READ_BYTES` | integer | `4096` | Maximum number of bytes to read from the source file. |
 
 **Example — customising the safe area for a differently-shaped template:**
