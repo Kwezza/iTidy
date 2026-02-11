@@ -138,6 +138,27 @@ typedef struct {
 } iTidy_BMHD;
 
 /*========================================================================*/
+/* Progress Callback                                                      */
+/*========================================================================*/
+
+/**
+ * @brief Progress callback function for long-running operations.
+ *
+ * Called periodically during IFF parsing, quantization, and scaling to
+ * update the user interface with current progress. Implementations should
+ * be fast and non-blocking.
+ *
+ * @param user_data   Opaque pointer passed through from caller
+ * @param phase       Human-readable description of current phase
+ * @param current     Current progress value (e.g., scanline number, pixel count)
+ * @param total       Total expected value for this phase
+ */
+typedef void (*iTidy_ProgressCallback)(void *user_data,
+                                        const char *phase,
+                                        ULONG current,
+                                        ULONG total);
+
+/*========================================================================*/
 /* iTidy_IFFRenderParams — IFF-Specific Render Parameters                 */
 /*========================================================================*/
 
@@ -181,6 +202,12 @@ typedef struct {
     UWORD output_height;                /* Actual thumbnail height after scaling */
     UWORD output_offset_x;             /* X pixel offset of thumbnail in buffer */
     UWORD output_offset_y;             /* Y pixel offset of thumbnail in buffer */
+
+    /* Progress reporting */
+    iTidy_ProgressCallback progress_callback;  /* Optional progress callback */
+    void *progress_user_data;           /* Opaque data for callback */
+    ULONG last_progress_ticks;          /* Timer for throttling updates (DOS ticks) */
+    BOOL *cancel_flag;                  /* Optional pointer to cancel flag (may be NULL) */
 } iTidy_IFFRenderParams;
 
 /*========================================================================*/
@@ -253,5 +280,28 @@ int itidy_render_via_datatype(const char *source_path,
  * @param params    IFF render params to clean up
  */
 void itidy_iff_params_free(iTidy_IFFRenderParams *params);
+
+/**
+ * @brief Report progress if callback is set and throttle time has elapsed.
+ *
+ * Helper to invoke the progress callback only if:
+ *  1. A callback is registered
+ *  2. At least 'min_ticks' have elapsed since last update (for throttling)
+ *  3. This is a forced update (current == total) OR throttle time passed
+ *
+ * Also checks the cancel flag if set and returns FALSE if operation was cancelled.
+ *
+ * @param params      IFF render params containing callback and timing state
+ * @param phase       Human-readable phase description
+ * @param current     Current progress value
+ * @param total       Total expected value
+ * @param min_ticks   Minimum ticks between updates (use TICKS_PER_SECOND for 1s)
+ * @return TRUE to continue, FALSE if cancelled
+ */
+BOOL itidy_report_progress_throttled(iTidy_IFFRenderParams *params,
+                                     const char *phase,
+                                     ULONG current,
+                                     ULONG total,
+                                     ULONG min_ticks);
 
 #endif /* ICON_IFF_RENDER_H */

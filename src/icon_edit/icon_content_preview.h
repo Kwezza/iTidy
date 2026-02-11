@@ -180,11 +180,15 @@ BOOL itidy_content_preview_cache_valid(const char *target_path,
  * @param type_token    DefIcons type token (e.g., "ascii")
  * @param source_size   Source file size in bytes (from FileInfoBlock)
  * @param source_date   Source file datestamp (from FileInfoBlock)
+ * @param progress_callback Optional progress callback for long operations (may be NULL)
+ * @param progress_user_data Opaque data passed to callback (may be NULL)
  * @return One of the ITIDY_PREVIEW_* result codes
  */
 int itidy_apply_content_preview(const char *source_path,
                                 const char *type_token,
                                 ULONG source_size,
-                                const struct DateStamp *source_date);
+                                const struct DateStamp *source_date,
+                                void (*progress_callback)(void *, const char *, ULONG, ULONG),
+                                void *progress_user_data);
 
 #endif /* ICON_CONTENT_PREVIEW_H */

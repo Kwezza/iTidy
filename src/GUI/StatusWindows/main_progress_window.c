@@ -421,6 +421,9 @@ void itidy_main_progress_update_heartbeat(struct iTidyMainProgressWindow *window
     SetGadgetAttrs((struct Gadget *)window_data->status_label_obj, window_data->window, NULL,
         GA_Text, buffer,
         TAG_DONE);
+    
+    /* CRITICAL: Pump events so cancel button works during long operations */
+    itidy_main_progress_window_handle_events(window_data);
 }
 
 void itidy_main_progress_window_set_button_text(struct iTidyMainProgressWindow *window_data, const char *text)

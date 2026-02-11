@@ -29,6 +29,7 @@
 #include "../deficons_templates.h"
 #include "../writeLog.h"
 #include "../layout_preferences.h"
+#include "../GUI/StatusWindows/main_progress_window.h"  /* For cancel flag */
 
 /*========================================================================*/
 /* itidy_is_text_preview_type                                             */
@@ -412,7 +413,9 @@ static BOOL validate_selected_contrast(const iTidy_IconImageData *img,
 static int apply_iff_preview(const char *source_path,
                              const char *type_token,
                              ULONG source_size,
-                             const struct DateStamp *source_date)
+                             const struct DateStamp *source_date,
+                             void (*progress_callback)(void *, const char *, ULONG, ULONG),
+                             void *progress_user_data)
 {
     struct DiskObject *target_icon = NULL;
     struct DiskObject *clone = NULL;
@@ -423,6 +426,25 @@ static int apply_iff_preview(const char *source_path,
     UWORD icon_dim;
     int render_result;
     int result = ITIDY_PREVIEW_FAILED;
+
+    memset(&img, 0, sizeof(img));
+    memset(&iff_params, 0, sizeof(iff_params));
+
+    /* Initialize progress callback */
+    iff_params.progress_callback = (iTidy_ProgressCallback)progress_callback;
+    iff_params.progress_user_data = progress_user_data;
+    iff_params.last_progress_ticks = 0;
+    
+    /* Initialize cancel flag - points to progress window's cancel_requested if available */
+    if (progress_user_data != NULL)
+    {
+        struct iTidyMainProgressWindow *pw = (struct iTidyMainProgressWindow *)progress_user_data;
+        iff_params.cancel_flag = &pw->cancel_requested;
+    }
+    else
+    {
+        iff_params.cancel_flag = NULL;
+    }
 
     log_info(LOG_ICONS, "apply_iff_preview: applying IFF thumbnail "
              "for '%s' (type=%s)\n", source_path, type_token);
@@ -721,7 +743,9 @@ static int apply_iff_preview(const char *source_path,
 int itidy_apply_content_preview(const char *source_path,
                                 const char *type_token,
                                 ULONG source_size,
-                                const struct DateStamp *source_date)
+                                const struct DateStamp *source_date,
+                                void (*progress_callback)(void *, const char *, ULONG, ULONG),
+                                void *progress_user_data)
 {
     struct DiskObject *target_icon = NULL;   /* Workbench template (metadata) */
     struct DiskObject *image_icon = NULL;    /* Image template (color pixels) */
@@ -752,7 +776,8 @@ int itidy_apply_content_preview(const char *source_path,
     else if (itidy_is_iff_preview_type(type_token))
     {
         return apply_iff_preview(source_path, type_token,
-                                 source_size, source_date);
+                                 source_size, source_date,
+                                 progress_callback, progress_user_data);
     }
     else
     {

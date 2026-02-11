@@ -593,7 +593,9 @@ BOOL deficons_create_missing_icons_in_directory(
             {
                 int preview_result = itidy_apply_content_preview(
                     fullpath, type_token,
-                    (ULONG)fib->fib_Size, &fib->fib_Date);
+                    (ULONG)fib->fib_Size, &fib->fib_Date,
+                    (void (*)(void *, const char *, ULONG, ULONG))itidy_main_progress_update_heartbeat,
+                    progress_window);
 
                 if (preview_result == ITIDY_PREVIEW_APPLIED)
                 {

@@ -1386,7 +1386,92 @@ traditional 8 because the effective source width is only 68 characters).
 Each position in the tab expansion is treated as whitespace and marks
 its corresponding output column with state 2 (space / gap forced).
 
-### 19.5 Visual Comparison
+### 19.5 Vertical Scaling and Character Aspect Ratio
+
+**Problem discovered 2026-02-11:** The initial implementation of vertical
+scaling set `v_scale = h_scale`, meaning both horizontal and vertical
+dimensions were compressed at the same ratio (e.g. 3:1 horizontal, 3:1
+vertical). This caused two critical issues:
+
+1. **Loss of fine detail** — ASCII art with circular designs or intricate
+   patterns lost definition because 3×3 source pixels were averaged into
+   each output pixel, blurring out the details
+2. **Incorrect aspect ratio assumption** — The code assumed text characters
+   have 1:1 aspect ratio (square pixels), but **Amiga text characters are
+   approximately 2:1 tall-to-wide** (e.g. Topaz 8 font is 8 pixels tall ×
+   4 pixels wide)
+
+**Original problem investigation:** Looking at the log output for `sdw-life.txt`:
+
+```
+[INFO] file='...sdw-life.txt' safe=24x33 char_w=1 scale=3x1 src_chars=72 src_lines=33
+```
+
+This revealed:
+- Safe area: 24 pixels wide × 33 pixels tall
+- Horizontal scaling: **3:1** (72 source characters → 24 pixels)
+- Vertical scaling: **1:1** (33 source lines → 33 pixels) ← **HARDCODED PROBLEM**
+
+The code originally hardcoded `v_scale = 1` at `icon_text_render.c:484`,
+while it auto-calculated horizontal scale to fit `ITIDY_TARGET_COLUMNS` (68)
+into the safe area. This created an asymmetric compression ratio.
+
+**Why it looked stretched:** The original ASCII art had:
+- ~68-80 characters wide → compressed 3:1 horizontally (correct)
+- ~38+ lines tall → NOT compressed at all (1:1 mapping) ← created stretch
+
+The first attempted fix was to apply the same auto-scaling to vertical:
+```c
+v_scale = (ITIDY_TARGET_LINES + max_lines - 1) / max_lines;
+```
+
+However, this caused even worse problems — with `ITIDY_TARGET_LINES = 38`
+and `safe_height = 33`, this produced `v_scale = 2`, leading to 3×3 block
+compression that destroyed fine ASCII art details.
+
+**Root cause (discovered after first fix failed):** Setting `v_scale = h_scale`
+treated characters as if they were square, when they are actually rectangular.
+This caused excessive vertical compression, losing the fine structure of ASCII
+art like circles made from special characters.
+
+**Solution implemented:** Change vertical scale calculation to account for
+the 2:1 character aspect ratio:
+
+```c
+/* Calculate horizontal scale to fit target columns */
+h_scale = (ITIDY_TARGET_COLUMNS + out_pixels_per_line - 1) / out_pixels_per_line;
+if (h_scale < 1) h_scale = 1;
+
+/* Calculate vertical scale at half the rate of horizontal scale
+ * to account for 2:1 tall-to-wide character aspect ratio.
+ * Example: h_scale=3 → v_scale=1 (3:1 horizontal, 1:1 vertical) */
+v_scale = h_scale / 2;
+if (v_scale < 1) v_scale = 1;
+```
+
+**Actual scaling examples:**
+
+| h_scale | Old v_scale | New v_scale | Compression | Result |
+|---------|-------------|-------------|-------------|--------|
+| 2 | 2 (2×2) | 1 (2×1) | Reduced vertical blur | ✓ Preserves detail |
+| 3 | 3 (3×3) | 1 (3×1) | **Reduced vertical blur** | ✓ Circle details visible |
+| 4 | 4 (4×4) | 2 (4×2) | Reduced vertical blur | ✓ Good balance |
+| 6 | 6 (6×6) | 3 (6×3) | Reduced vertical blur | ✓ Maintains proportion |
+
+**Visual benefit:** With the corrected scaling (e.g. 3×1 instead of 3×3),
+ASCII art circles and intricate designs maintain their definition because
+vertical detail is preserved while still achieving the necessary horizontal
+compression to fit 68-80 columns of text.
+
+**Character aspect ratio explained:** Amiga's Topaz 8 font and most other
+system fonts have roughly 2:1 height-to-width proportions. When text is
+compressed 3:1 horizontally but only 1:1 vertically (via `v_scale = h_scale / 2`),
+the visual result maintains correct aspect ratio because:
+- 3 characters wide × 1 character tall (source)
+- 1 pixel wide × 1 pixel tall (output)
+- Character proportions: 3×(2:1) horizontally vs 1×(2:1) vertically = balanced
+
+### 19.6 Visual Comparison
 
 **Before (1:1, 34 chars × 19 lines — cropped):**
 ```

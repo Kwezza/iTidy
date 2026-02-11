@@ -34,6 +34,71 @@
 #include "../writeLog.h"
 
 /*========================================================================*/
+/* Progress Reporting Helper                                              */
+/*========================================================================*/
+
+/**
+ * @brief Report progress with time-based throttling.
+ *
+ * Invokes the progress callback only if a callback is set AND either:
+ *  - This is the final update (current == total), OR
+ *  - At least min_ticks have elapsed since the last update
+ *
+ * Uses DOS ticks (TICKS_PER_SECOND = 50 on PAL, 60 on NTSC).
+ */
+BOOL itidy_report_progress_throttled(iTidy_IFFRenderParams *params,
+                                     const char *phase,
+                                     ULONG current,
+                                     ULONG total,
+                                     ULONG min_ticks)
+{
+    struct DateStamp ds;
+    ULONG current_ticks;
+    
+    /* Check for cancellation first */
+    if (params != NULL && params->cancel_flag != NULL && *params->cancel_flag)
+    {
+        return FALSE;  /* Operation cancelled */
+    }
+    
+    if (params == NULL || params->progress_callback == NULL)
+    {
+        return TRUE;  /* No callback, continue */
+    }
+    
+    /* Always report final progress */
+    if (current >= total)
+    {
+        params->progress_callback(params->progress_user_data, phase, current, total);
+        params->last_progress_ticks = 0;  /* Reset for next phase */
+        
+        /* Log final progress update */
+        log_debug(LOG_ICONS, "Progress: %s: %lu / %lu (complete)\n",
+                  phase ? phase : "Processing", current, total);
+        return TRUE;
+    }
+    
+    /* Check if enough time has elapsed since last update */
+    /* DateStamp has ticks (1/50th or 1/60th second), convert to simple tick count */
+    DateStamp(&ds);
+    current_ticks = (ds.ds_Days * 24 * 60 * TICKS_PER_SECOND) +
+                    (ds.ds_Minute * TICKS_PER_SECOND) +
+                    ds.ds_Tick;
+    
+    if (current_ticks - params->last_progress_ticks >= min_ticks)
+    {
+        params->progress_callback(params->progress_user_data, phase, current, total);
+        params->last_progress_ticks = current_ticks;
+        
+        /* Log progress update for post-analysis */
+        log_debug(LOG_ICONS, "Progress: %s: %lu / %lu\n", 
+                  phase ? phase : "Processing", current, total);
+    }
+    
+    return TRUE;  /* Continue processing */
+}
+
+/*========================================================================*/
 /* Internal Prototypes                                                    */
 /*========================================================================*/
 
@@ -59,7 +124,8 @@ static void area_average_scale(const UBYTE *src_chunky,
                                const struct ColorRegister *src_palette,
                                ULONG src_palette_size,
                                const struct ColorRegister *dest_palette,
-                               ULONG dest_palette_size);
+                               ULONG dest_palette_size,
+                               iTidy_IFFRenderParams *params);
 static BOOL prefilter_2x2(const UBYTE *src, UWORD src_w, UWORD src_h,
                           UBYTE **out_buf, UWORD *out_w, UWORD *out_h,
                           const struct ColorRegister *palette,
@@ -603,6 +669,18 @@ int itidy_iff_parse(const char *source_path, iTidy_IFFRenderParams *iff_params)
 
             planar_to_chunky(planar_buf, bmhd.w, bmhd.nPlanes,
                              chunky_buf + (ULONG)y * (ULONG)bmhd.w);
+
+            /* Report progress every 20 rows (throttled to ~1 second) */
+            if (y % 20 == 0 || y == bmhd.h - 1)
+            {
+                if (!itidy_report_progress_throttled(iff_params, "Decoding pixels",
+                                                     y + 1, bmhd.h, TICKS_PER_SECOND))
+                {
+                    log_info(LOG_ICONS, "itidy_iff_parse: cancelled by user at row %u\n", (unsigned)y);
+                    result = -1;  /* Cancelled */
+                    goto cleanup;
+                }
+            }
         }
     }
     else if (bmhd.compression == ITIDY_IFF_COMPRESS_BYTERUN1)
@@ -680,6 +758,18 @@ int itidy_iff_parse(const char *source_path, iTidy_IFFRenderParams *iff_params)
 
                 planar_to_chunky(planar_buf, bmhd.w, bmhd.nPlanes,
                                  chunky_buf + (ULONG)y * (ULONG)bmhd.w);
+
+                /* Report progress every 20 rows (throttled to ~1 second) */
+                if (y % 20 == 0 || y == bmhd.h - 1)
+                {
+                    if (!itidy_report_progress_throttled(iff_params, "Decoding pixels",
+                                                         y + 1, bmhd.h, TICKS_PER_SECOND))
+                    {
+                        log_info(LOG_ICONS, "itidy_iff_parse: cancelled by user at row %u\n", (unsigned)y);
+                        result = -1;  /* Cancelled */
+                        goto cleanup;
+                    }
+                }
 
                 // Advance source position past the compressed data consumed.
                 // ByteRun1 decompresses exactly body_row_size bytes of output.
@@ -839,6 +929,7 @@ cleanup:
  * @param src_palette_size Number of entries in source palette
  * @param dest_palette     Destination icon palette (for color matching)
  * @param dest_palette_size Number of entries in destination palette
+ * @param params           IFF render params (for progress reporting, may be NULL)
  */
 static void area_average_scale(const UBYTE *src_chunky,
                                UWORD src_w, UWORD src_h,
@@ -848,7 +939,8 @@ static void area_average_scale(const UBYTE *src_chunky,
                                const struct ColorRegister *src_palette,
                                ULONG src_palette_size,
                                const struct ColorRegister *dest_palette,
-                               ULONG dest_palette_size)
+                               ULONG dest_palette_size,
+                               iTidy_IFFRenderParams *params)
 {
     UWORD out_x, out_y;
     ULONG scale_x_fp;  // Fixed 16.16: src pixels per output pixel (horizontal)
@@ -947,6 +1039,17 @@ static void area_average_scale(const UBYTE *src_chunky,
             dest_offset = (ULONG)(dest_offset_y + out_y) * (ULONG)dest_stride
                         + (ULONG)(dest_offset_x + out_x);
             dest_buf[dest_offset] = best_idx;
+        }
+
+        /* Report progress every 5 rows (throttled to ~1 second) */
+        if (params != NULL && (out_y % 5 == 0 || out_y == dest_h - 1))
+        {
+            if (!itidy_report_progress_throttled(params, "Scaling image",
+                                                out_y + 1, dest_h, TICKS_PER_SECOND))
+            {
+                log_info(LOG_ICONS, "area_average_scale: cancelled by user at row %u\n", (unsigned)out_y);
+                return;  /* Abort scaling */
+            }
         }
     }
 
@@ -1244,7 +1347,8 @@ int itidy_render_iff_thumbnail(const char *source_path,
                                    iff_params->src_palette,
                                    iff_params->src_palette_size,
                                    img->palette_normal,
-                                   img->palette_size_normal);
+                                   img->palette_size_normal,
+                                   iff_params);
                 whd_free(half_buf);
             }
             else
@@ -1260,7 +1364,8 @@ int itidy_render_iff_thumbnail(const char *source_path,
                                    iff_params->src_palette,
                                    iff_params->src_palette_size,
                                    img->palette_normal,
-                                   img->palette_size_normal);
+                                   img->palette_size_normal,
+                                   iff_params);
             }
         }
         else
@@ -1275,7 +1380,8 @@ int itidy_render_iff_thumbnail(const char *source_path,
                                iff_params->src_palette,
                                iff_params->src_palette_size,
                                img->palette_normal,
-                               img->palette_size_normal);
+                               img->palette_size_normal,
+                               iff_params);
         }
     }
 
@@ -1499,8 +1605,9 @@ int itidy_render_via_datatype(const char *source_path,
         ULONG i;
         UBYTE *rgb_ptr = rgb24_buffer;
         UBYTE *chunky_ptr = chunky_buffer;
+        ULONG total_pixels = src_width * src_height;
 
-        for (i = 0; i < src_width * src_height; i++)
+        for (i = 0; i < total_pixels; i++)
         {
             UBYTE r = *rgb_ptr++;
             UBYTE g = *rgb_ptr++;
@@ -1511,6 +1618,19 @@ int itidy_render_via_datatype(const char *source_path,
                 dest_img->palette_normal,
                 dest_img->palette_size_normal,
                 r, g, b);
+
+            /* Report progress every 5000 pixels (throttled to 0.5 seconds) */
+            /* This is critical for HAM images which take ~24 minutes on 68000 */
+            if (i % 5000 == 0 || i == total_pixels - 1)
+            {
+                if (!itidy_report_progress_throttled(params, "Quantizing colors",
+                                                     i + 1, total_pixels, TICKS_PER_SECOND / 2))
+                {
+                    log_info(LOG_ICONS, "itidy_render_via_datatype: cancelled by user at pixel %lu\n", i);
+                    result = -1;  /* Cancelled */
+                    goto cleanup;
+                }
+            }
         }
     }
 
@@ -1565,7 +1685,8 @@ int itidy_render_via_datatype(const char *source_path,
                            dest_img->width,  /* stride */
                            offset_x, offset_y,
                            dest_img->palette_normal, dest_img->palette_size_normal,
-                           dest_img->palette_normal, dest_img->palette_size_normal);
+                           dest_img->palette_normal, dest_img->palette_size_normal,
+                           params);
 
         /* Store output dimensions for cropping */
         params->output_width = output_width;
