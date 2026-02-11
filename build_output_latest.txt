@@ -509,17 +509,19 @@ warning 153 in line 441 of "src\deficons_creation.c": statement has no effect
 >        CREATION_CHECK_CANCEL(progress_window)
 warning 153 in line 474 of "src\deficons_creation.c": statement has no effect
 >    CREATION_CHECK_CANCEL(progress_window)
-warning 153 in line 689 of "src\deficons_creation.c": statement has no effect
+warning 153 in line 683 of "src\deficons_creation.c": statement has no effect
 >    CREATION_STATUS(progress_window, "  Creating icons: %s", path)
-warning 153 in line 697 of "src\deficons_creation.c": statement has no effect
+warning 153 in line 691 of "src\deficons_creation.c": statement has no effect
 >        CREATION_CHECK_CANCEL(progress_window)
-warning 153 in line 747 of "src\deficons_creation.c": statement has no effect
+warning 153 in line 741 of "src\deficons_creation.c": statement has no effect
 Compiling [build/amiga/icon_edit/icon_image_access.o] from src/icon_edit/icon_image_access.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_edit/icon_image_access.c -o build/amiga/icon_edit/icon_image_access.o
 Compiling [build/amiga/icon_edit/icon_text_render.o] from src/icon_edit/icon_text_render.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_edit/icon_text_render.c -o build/amiga/icon_edit/icon_text_render.o
 Compiling [build/amiga/icon_edit/icon_iff_render.o] from src/icon_edit/icon_iff_render.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_edit/icon_iff_render.c -o build/amiga/icon_edit/icon_iff_render.o
+>        == 0)
+warning 161 in line 1443 of "src\icon_edit\icon_iff_render.c": implicit declaration of function <DoMethod>
 Compiling [build/amiga/icon_edit/icon_content_preview.o] from src/icon_edit/icon_content_preview.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_edit/icon_content_preview.c -o build/amiga/icon_edit/icon_content_preview.o
 Compiling [build/amiga/backup_catalog.o] from src/backup_catalog.c

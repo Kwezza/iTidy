@@ -132,6 +132,12 @@ static struct NewMenu main_window_menu_template[] =
     { NM_ITEM,  "About...",     NULL, 0, 0, (APTR)MENU_PROJECT_ABOUT },
     { NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
     { NM_ITEM,  "Quit",         "Q",  0, 0, (APTR)MENU_PROJECT_CLOSE },
+    { NM_TITLE, "Log mode",     NULL, 0, 0, NULL },
+    { NM_ITEM,  "Disabled (recommended)", NULL, CHECKIT | CHECKED, 30, (APTR)MENU_LOG_DISABLED },
+    { NM_ITEM,  "Debug",        NULL, CHECKIT, 29, (APTR)MENU_LOG_DEBUG },
+    { NM_ITEM,  "Info",         NULL, CHECKIT, 27, (APTR)MENU_LOG_INFO },
+    { NM_ITEM,  "Warning",      NULL, CHECKIT, 23, (APTR)MENU_LOG_WARNING },
+    { NM_ITEM,  "Error",        NULL, CHECKIT, 15, (APTR)MENU_LOG_ERROR },
     { NM_END,   NULL,           NULL, 0, 0, NULL }
 };
 
@@ -1193,7 +1199,15 @@ static void handle_main_new_menu(struct iTidyMainWindow *win_data)
     
     log_debug(LOG_GUI, "Menu: New clicked - resetting to defaults\n");
     
+    /* CRITICAL: Preserve current log level (from tooltype or menu selection)
+     * User's log level choice should persist when creating new preferences */
+    LogLevel current_log_level = get_global_log_level();
+    
     InitLayoutPreferences(&default_prefs);
+    
+    /* Restore the log level before updating global preferences */
+    default_prefs.logLevel = current_log_level;
+    
     UpdateGlobalPreferences(&default_prefs);
     sync_gui_from_preferences(win_data, &default_prefs);
     
@@ -1434,7 +1448,20 @@ static void handle_main_open_menu(struct iTidyMainWindow *win_data)
         
         if (load_preferences_from_file(full_path, &loaded_prefs))
         {
+            /* CRITICAL: Preserve current log level (from tooltype or menu selection)
+             * Old settings files may have different log level, but we want to keep
+             * the user's current session log level choice */
+            LogLevel current_log_level = get_global_log_level();
+            
             UpdateGlobalPreferences(&loaded_prefs);
+            
+            /* Restore the log level and update both global and preferences */
+            set_global_log_level(current_log_level);
+            {
+                LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
+                ((LayoutPreferences *)prefs)->logLevel = current_log_level;
+            }
+            
             sync_gui_from_preferences(win_data, &loaded_prefs);
             
             strncpy(win_data->last_save_path, full_path, sizeof(win_data->last_save_path) - 1);
@@ -1565,6 +1592,51 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                 
                 case MENU_PROJECT_CLOSE:
                     continue_running = FALSE;
+                    break;
+                
+                case MENU_LOG_DISABLED:
+                    set_global_log_level(LOG_LEVEL_DISABLED);
+                    {
+                        LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
+                        ((LayoutPreferences *)prefs)->logLevel = LOG_LEVEL_DISABLED;
+                    }
+                    log_info(LOG_GUI, "Log level changed to: DISABLED\n");
+                    break;
+                
+                case MENU_LOG_DEBUG:
+                    set_global_log_level(LOG_LEVEL_DEBUG);
+                    {
+                        LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
+                        ((LayoutPreferences *)prefs)->logLevel = LOG_LEVEL_DEBUG;
+                    }
+                    log_info(LOG_GUI, "Log level changed to: DEBUG\n");
+                    break;
+                
+                case MENU_LOG_INFO:
+                    set_global_log_level(LOG_LEVEL_INFO);
+                    {
+                        LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
+                        ((LayoutPreferences *)prefs)->logLevel = LOG_LEVEL_INFO;
+                    }
+                    log_info(LOG_GUI, "Log level changed to: INFO\n");
+                    break;
+                
+                case MENU_LOG_WARNING:
+                    set_global_log_level(LOG_LEVEL_WARNING);
+                    {
+                        LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
+                        ((LayoutPreferences *)prefs)->logLevel = LOG_LEVEL_WARNING;
+                    }
+                    log_info(LOG_GUI, "Log level changed to: WARNING\n");
+                    break;
+                
+                case MENU_LOG_ERROR:
+                    set_global_log_level(LOG_LEVEL_ERROR);
+                    {
+                        LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
+                        ((LayoutPreferences *)prefs)->logLevel = LOG_LEVEL_ERROR;
+                    }
+                    log_info(LOG_GUI, "Log level changed to: ERROR\n");
                     break;
             }
             

@@ -275,7 +275,9 @@ BOOL ProcessDirectoryWithPreferences(void)
     /* Get start time */
     DateStamp(&g_startTime);
     
-    /* Apply logging preferences before processing */
+    /* Apply logging preferences before processing
+     * Note: prefs->logLevel is set from tooltype at startup in main_gui.c
+     * or from the Log mode menu selection, ensuring user choice is preserved */
     set_global_log_level((LogLevel)prefs->logLevel);
     set_memory_logging_enabled(prefs->memoryLoggingEnabled);
     set_performance_logging_enabled(prefs->enable_performance_logging);

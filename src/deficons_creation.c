@@ -543,9 +543,6 @@ BOOL deficons_create_missing_icons_in_directory(
                 continue;
             }
 
-            log_debug(LOG_ICONS, "DefIcons identified: %s -> type '%s'\n",
-                     fib->fib_FileName, type_token);
-
             /* Apply type filters */
             if (!deficons_should_create_icon(type_token, prefs))
             {
@@ -556,15 +553,12 @@ BOOL deficons_create_missing_icons_in_directory(
         }
 
         /* Resolve template */
-        log_debug(LOG_ICONS, "Resolving template for type '%s'...\n", type_token);
         if (!deficons_resolve_template(type_token, template_path, sizeof(template_path)))
         {
             log_warning(LOG_ICONS, "No template for type: %s (file: %s)\n",
                         type_token, fib->fib_FileName);
             continue;
         }
-
-        log_debug(LOG_ICONS, "Template resolved: %s -> %s\n", type_token, template_path);
 
         /* Copy template to create .info */
         if (deficons_copy_icon_file(template_path, info_path))

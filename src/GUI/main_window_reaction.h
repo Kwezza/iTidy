@@ -98,4 +98,11 @@ typedef enum {
 #define MENU_PROJECT_ABOUT        1006
 #define MENU_PROJECT_DEFICONS     1007
 
+/* Log mode menu IDs */
+#define MENU_LOG_DISABLED         2001
+#define MENU_LOG_DEBUG            2002
+#define MENU_LOG_INFO             2003
+#define MENU_LOG_WARNING          2004
+#define MENU_LOG_ERROR            2005
+
 #endif /* ITIDY_MAIN_WINDOW_REACTION_H */

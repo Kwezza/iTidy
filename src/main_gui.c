@@ -249,7 +249,7 @@ typedef struct {
 } ToolTypeSettings;
 
 /* Global tooltype settings (initialized at startup) */
-static ToolTypeSettings g_tooltypes = { FALSE, 3, FALSE }; /* Default: ERROR level */
+static ToolTypeSettings g_tooltypes = { FALSE, 4, FALSE }; /* Default: DISABLED level */
 
 /**
  * @brief Case-insensitive string comparison (snake_case naming)
@@ -287,7 +287,7 @@ static int stricmp_n(const char *str1, const char *str2, int len)
  * Called once at program startup if launched from Workbench.
  * 
  * Supported tooltypes:
- *   DEBUGLEVEL=n  - Set log level (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR)
+ *   DEBUGLEVEL=n  - Set log level (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR, 4=DISABLED)
  * 
  * @param wb_startup Pointer to WBStartup message (NULL if launched from CLI)
  */
@@ -304,7 +304,7 @@ static void parse_program_tooltypes(struct WBStartup *wb_startup)
     
     /* Reset to defaults */
     g_tooltypes.tooltypes_loaded = FALSE;
-    g_tooltypes.debug_level = 3;        /* Default: ERROR (changed from INFO) */
+    g_tooltypes.debug_level = 4;        /* Default: DISABLED (recommended) */
     g_tooltypes.debug_level_set = FALSE;
     
     /* If not launched from Workbench, nothing to parse */
@@ -358,8 +358,8 @@ static void parse_program_tooltypes(struct WBStartup *wb_startup)
                 {
                     CONSOLE_DEBUG("DEBUG: Found DEBUGLEVEL tooltype: %s\n", tool_value);
                     value = atoi(tool_value);
-                    /* Validate range 0-3 */
-                    if (value >= 0 && value <= 3)
+                    /* Validate range 0-4 (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR, 4=DISABLED) */
+                    if (value >= 0 && value <= 4)
                     {
                         g_tooltypes.debug_level = (UWORD)value;
                         g_tooltypes.debug_level_set = TRUE;
@@ -368,7 +368,7 @@ static void parse_program_tooltypes(struct WBStartup *wb_startup)
                     }
                     else
                     {
-                        CONSOLE_WARNING("WARNING: DEBUGLEVEL=%d out of range (0-3)\n", value);
+                        CONSOLE_WARNING("WARNING: DEBUGLEVEL=%d out of range (0-4)\n", value);
                     }
                 }
                 else
@@ -705,9 +705,9 @@ int main(int argc, char **argv)
     }
     else
     {
-        /* Set default log level (ERROR - least verbose, no tooltype found) */
-        set_global_log_level(LOG_LEVEL_ERROR);
-        /* Don't log anything here - we're at ERROR level, these would be filtered anyway */
+        /* Set default log level (DISABLED - no logging, no tooltype found) */
+        set_global_log_level(LOG_LEVEL_DISABLED);
+        /* Don't log anything here - we're at DISABLED level, these would be filtered anyway */
     }
     
     /* Disable memory logging by default (can be enabled via Beta Options) */
@@ -715,6 +715,9 @@ int main(int argc, char **argv)
     
     /* Disable performance logging by default (can be enabled via Beta Options) */
     set_performance_logging_enabled(FALSE);
+    
+    /* Dump Workbench screen palette for diagnostic purposes */
+    DumpWorkbenchScreenPalette();
     
     /* Initialize memory tracking if enabled */
     whd_memory_init();
@@ -778,6 +781,17 @@ int main(int argc, char **argv)
     /* Initialize global preferences with default values */
     CONSOLE_STATUS("Initializing preferences with defaults...\n");
     InitializeGlobalPreferences();
+    
+    /* CRITICAL: Apply tooltype debug level to preferences AFTER initialization
+     * InitializeGlobalPreferences() resets logLevel to DEFAULT_LOG_LEVEL,
+     * so we must update the preference structure to preserve the tooltype setting.
+     * This ensures layout_processor.c respects the user's tooltype choice. */
+    if (g_tooltypes.debug_level_set)
+    {
+        LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
+        ((LayoutPreferences *)prefs)->logLevel = g_tooltypes.debug_level;
+        log_info(LOG_GENERAL, "ToolType DEBUGLEVEL=%u applied to preferences\n", (unsigned int)g_tooltypes.debug_level);
+    }
 
     /* Initialize DefIcons cache (non-fatal if fails) */
     CONSOLE_STATUS("Loading DefIcons type tree cache...\n");

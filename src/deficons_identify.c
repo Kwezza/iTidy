@@ -286,7 +286,7 @@ static BOOL query_deficons_port(const char *filepath, char *result, int result_s
             result[result_size - 1] = '\0';
             success = TRUE;
             
-            log_debug(LOG_ICONS, "DefIcons identified: %s → %s\n", filepath, result);
+            log_info(LOG_ICONS, "DefIcons query: '%s' → type '%s'\n", filepath, result);
             
             /* Delete result string (allocated by DefIcons) */
             DeleteArgstring((STRPTR)reply->rm_Result2);
@@ -406,9 +406,38 @@ void deficons_cleanup_arexx(void)
     log_info(LOG_ICONS, "DefIcons ARexx cleanup complete\n");
 }
 
+/**
+ * @brief Validate DefIcons response for known problematic cases
+ * 
+ * DefIcons can return incorrect types for text files with ASCII art,
+ * returning 'project' instead of 'ascii'. This validation catches
+ * suspicious responses and forces a fresh query.
+ * 
+ * @param extension File extension (lowercase, with dot)
+ * @param type_token Type token returned by DefIcons
+ * @return TRUE if response is valid, FALSE if suspicious
+ */
+static BOOL validate_deficons_response(const char *extension, const char *type_token)
+{
+    /* Known issue: .txt files containing ASCII art sometimes return 'project'
+     * instead of 'ascii'. If we see this combination, treat it as invalid. */
+    if (extension && type_token)
+    {
+        if (strcmp(extension, ".txt") == 0 && strcmp(type_token, "project") == 0)
+        {
+            log_warning(LOG_ICONS, "Suspicious DefIcons response: .txt → 'project' (expected 'ascii')\n");
+            return FALSE;
+        }
+    }
+    
+    return TRUE;
+}
+
 BOOL deficons_identify_file(const char *filepath, char *type_token, int token_size)
 {
     char extension[DEFICONS_MAX_EXT_LEN];
+    BOOL has_extension = FALSE;
+    BOOL bypass_cache = FALSE;
     
     if (!g_initialized)
     {
@@ -422,23 +451,54 @@ BOOL deficons_identify_file(const char *filepath, char *type_token, int token_si
         return FALSE;
     }
     
+    /* Extract extension if present */
+    has_extension = extract_extension(filepath, extension, sizeof(extension));
+    
     /* Try cache first if file has extension */
-    if (extract_extension(filepath, extension, sizeof(extension)))
+    if (has_extension)
     {
         if (lookup_cache(extension, type_token, token_size))
         {
-            return TRUE;  /* Cache hit */
+            /* Validate cached response - if suspicious, bypass cache and re-query */
+            if (!validate_deficons_response(extension, type_token))
+            {
+                log_info(LOG_ICONS, "Cache entry invalid for %s, forcing fresh query: %s\n",
+                         extension, filepath);
+                bypass_cache = TRUE;
+            }
+            else
+            {
+                return TRUE;  /* Cache hit - valid response */
+            }
         }
     }
     
-    /* Cache miss or no extension - query DefIcons */
+    /* Cache miss, no extension, or bypassing invalid cache - query DefIcons */
     if (query_deficons_port(filepath, type_token, token_size))
     {
-        /* Add to cache if we have an extension */
-        if (extension[0] != '\0')
+        /* Validate fresh response before caching/using */
+        if (has_extension && !validate_deficons_response(extension, type_token))
         {
+            /* DefIcons returned suspicious type - override it */
+            log_warning(LOG_ICONS, "DefIcons returned suspicious type for %s: '%s' (overriding to 'ascii')\n",
+                       filepath, type_token);
+            
+            /* Force the correct type for .txt files */
+            if (strcmp(extension, ".txt") == 0)
+            {
+                strncpy(type_token, "ascii", token_size - 1);
+                type_token[token_size - 1] = '\0';
+                log_info(LOG_ICONS, "Corrected type to 'ascii' for: %s\n", filepath);
+            }
+            
+            /* Don't cache the bad response from DefIcons */
+        }
+        else if (has_extension && !bypass_cache)
+        {
+            /* Response is valid, cache it */
             add_to_cache(extension, type_token);
         }
+        
         return TRUE;
     }
     

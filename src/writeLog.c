@@ -47,7 +47,7 @@ static char g_logsDirectory[256] = {0};
 static BOOL g_logSystemInitialized = FALSE;
 
 // Global log level and memory tracking control
-static LogLevel g_globalLogLevel = LOG_LEVEL_ERROR;  /* Default to ERROR (quietest) */
+static LogLevel g_globalLogLevel = LOG_LEVEL_DISABLED;  /* Default to DISABLED (no logging) */
 static BOOL g_memoryLoggingEnabled = FALSE;
 static BOOL g_performanceLoggingEnabled = FALSE;
 
@@ -72,7 +72,8 @@ static const char* g_levelNames[] = {
     "DEBUG",
     "INFO",
     "WARN",
-    "ERROR"
+    "ERROR",
+    "DISABLED"
 };
 
 const char* get_log_category_name(LogCategory category) {
@@ -83,7 +84,7 @@ const char* get_log_category_name(LogCategory category) {
 }
 
 const char* get_log_level_name(LogLevel level) {
-    if (level >= 0 && level <= LOG_LEVEL_ERROR) {
+    if (level >= 0 && level <= LOG_LEVEL_DISABLED) {
         return g_levelNames[level];
     }
     return "UNKNOWN";

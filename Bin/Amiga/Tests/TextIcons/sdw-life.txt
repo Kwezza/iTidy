@@ -30,13 +30,7 @@ WONt STOp                       __/\\_//\__
 
 
 
-
-
-
-
-                                                      [ Slt!TextAdd v1.o ]
-
-
+                                                     [ Slt!TextAdd v1.o ]
 
  
 -SOF---

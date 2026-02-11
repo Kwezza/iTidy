@@ -481,7 +481,7 @@ BOOL deficons_resolve_template(const char *type_token, char *template_path, int 
     {
         find_root_category(type_token, category, sizeof(category));
         add_to_template_cache(type_token, template_path, category, FALSE);
-        log_debug(LOG_ICONS, ">>> RESOLVE: Direct match found: %s → %s\n", type_token, template_path);
+        log_info(LOG_ICONS, "Template resolved: '%s' → %s (direct match)\n", type_token, template_path);
         return TRUE;
     }
     
@@ -506,8 +506,8 @@ BOOL deficons_resolve_template(const char *type_token, char *template_path, int 
         {
             find_root_category(type_token, category, sizeof(category));
             add_to_template_cache(type_token, template_path, category, FALSE);
-            log_debug(LOG_ICONS, ">>> RESOLVE: Parent chain success: %s → %s → %s\n",
-                    type_token, parent, template_path);
+            log_info(LOG_ICONS, "Template resolved: '%s' → %s (parent chain: %s)\n",
+                    type_token, template_path, parent);
             return TRUE;
         }
         
@@ -521,7 +521,7 @@ BOOL deficons_resolve_template(const char *type_token, char *template_path, int 
     if (apply_fallback_template(template_path, path_size))
     {
         add_to_template_cache(type_token, template_path, "fallback", TRUE);
-        log_debug(LOG_ICONS, "Fallback template used for: %s → %s\n", type_token, template_path);
+        log_info(LOG_ICONS, "Template resolved: '%s' → %s (FALLBACK - no type-specific icon)\n", type_token, template_path);
         return TRUE;
     }
     

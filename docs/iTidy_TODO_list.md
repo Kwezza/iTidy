@@ -128,9 +128,46 @@ All items here are **non‑destructive** by design and only apply when **no exis
 **Status:** Ideas backlog  
 **Priority:** Low–Medium (non‑core, quality‑of‑life features)  
 **Philosophy:** Pre‑calculated, deterministic, Workbench‑native, never invasive
+
 ---
 
-## 10. Iconify Mode (Workbench AppIcon Drop Target)
+## 10. Workbench Palette Remapping for Generated Icons
+
+**Problem:** On low-depth Workbench screens (4-bit/16 colors or less), generated icons with colorful themes (cyan, yellow, etc.) get poorly quantized because those colors don't exist in the Workbench palette, resulting in muddy, low-contrast icons.
+
+**Analysis:**
+- Current icon templates use cyan/turquoise gradients (10+ shades)
+- Typical 16-color Workbench palettes are mostly greys with blue, red, tan, peach
+- Only first 8 colors appear stable on some configurations
+- Icon colors must be remapped to closest available Workbench colors
+- Minimal code impact: ~100 lines total
+
+**Implementation:**
+- [ ] Add global Workbench palette capture at startup (reuse dump function)
+- [ ] Store `g_wb_palette` and `g_wb_depth` globally
+- [ ] Implement color distance calculation (Euclidean RGB distance)
+- [ ] Implement palette remapping function:
+  - [ ] Build mapping table (icon palette → WB palette indices)
+  - [ ] Remap all pixel data in both normal and selected images
+  - [ ] Constrain to first 8 colors for maximum stability
+- [ ] Add GUI checkbox: "Remap to Workbench Colors (low-depth screens)"
+  - [ ] Auto-disable/hide on 256-color screens
+  - [ ] Only enable when WB depth ≤ 4 bits
+- [ ] Apply remapping after text rendering, before PutDiskObject()
+- [ ] Add preference to layout_preferences.h/c
+- [ ] Performance: ~2,200 operations per icon (< 1ms on 68020+)
+
+**Benefits:**
+- Predictable, stable icon appearance on low-depth screens
+- Icons match Workbench color theme
+- Optional feature (disabled by default on high-depth screens)
+- Self-contained, minimal code bloat
+
+**Priority:** Medium (quality-of-life for low-depth users)
+
+---
+
+## 11. Iconify Mode (Workbench AppIcon Drop Target)
 
 Goal: Allow iTidy to be **iconified** to an **AppIcon** on the Workbench and process folders that are **dropped onto it**, using the **current GUI settings** (including DefIcons creation options).
 

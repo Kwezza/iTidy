@@ -760,3 +760,98 @@ BOOL CreateDirectoryForFile(const char *filepath)
     /* Create the directory path */
     return CreateDirectoryPath(dir_path);
 }
+
+/*========================================================================*/
+/* DumpWorkbenchScreenPalette — Diagnostic Palette Dump                   */
+/*========================================================================*/
+
+/**
+ * @brief Dump the active Workbench screen palette to the log file.
+ *
+ * This function retrieves the current Workbench screen and dumps its
+ * palette to the general log. Useful for analyzing how icons will render
+ * at different color depths (4, 8, 16, 256 colors).
+ *
+ * Information logged:
+ * - Screen dimensions and depth
+ * - Number of colors available
+ * - Full palette (RGB values in hex format)
+ *
+ * This helps diagnose icon rendering issues on low-depth screens where
+ * icon palettes must be remapped to the limited Workbench palette.
+ */
+void DumpWorkbenchScreenPalette(void)
+{
+#if PLATFORM_AMIGA
+    struct Screen *wb_screen = NULL;
+    struct ViewPort *vp = NULL;
+    struct ColorMap *cm = NULL;
+    ULONG num_colors;
+    ULONG i;
+    UBYTE r, g, b;
+    
+    log_info(LOG_GENERAL, "\n");
+    log_info(LOG_GENERAL, "=======================================================\n");
+    log_info(LOG_GENERAL, "Workbench Screen Palette Diagnostic Dump\n");
+    log_info(LOG_GENERAL, "=======================================================\n");
+    
+    /* Lock the Workbench screen */
+    wb_screen = LockPubScreen("Workbench");
+    if (wb_screen == NULL)
+    {
+        log_error(LOG_GENERAL, "Failed to lock Workbench screen\n");
+        return;
+    }
+    
+    /* Get viewport and color map */
+    vp = &wb_screen->ViewPort;
+    cm = vp->ColorMap;
+    
+    if (cm == NULL)
+    {
+        log_error(LOG_GENERAL, "Workbench screen has no ColorMap\n");
+        UnlockPubScreen(NULL, wb_screen);
+        return;
+    }
+    
+    /* Get screen information */
+    num_colors = 1UL << wb_screen->RastPort.BitMap->Depth;
+    
+    log_info(LOG_GENERAL, "Screen dimensions: %dx%d\n", 
+             wb_screen->Width, wb_screen->Height);
+    log_info(LOG_GENERAL, "Screen depth: %d bitplanes\n", 
+             wb_screen->RastPort.BitMap->Depth);
+    log_info(LOG_GENERAL, "Maximum colors: %lu\n", num_colors);
+    log_info(LOG_GENERAL, "\n");
+    
+    /* Dump the palette */
+    log_info(LOG_GENERAL, "Workbench Palette (%lu colors):\n", num_colors);
+    log_info(LOG_GENERAL, "-------------------------------------------------------\n");
+    
+    for (i = 0; i < num_colors && i < 256; i++)
+    {
+        /* Get RGB values using GetRGB4() - returns 12-bit value (4 bits per component)
+         * Format: 0x0RGB where each component is 0-15 */
+        ULONG rgb4 = GetRGB4(cm, i);
+        
+        /* Extract 4-bit components and scale to 8-bit (multiply by 17) */
+        r = (UBYTE)(((rgb4 >> 8) & 0x0F) * 17);
+        g = (UBYTE)(((rgb4 >> 4) & 0x0F) * 17);
+        b = (UBYTE)((rgb4 & 0x0F) * 17);
+        
+        /* Log in compact hex format (similar to icon palette dumps) */
+        log_info(LOG_GENERAL, "  [%3lu] = %02X%02X%02X (RGB4: %03lX)\n", i, r, g, b, rgb4);
+    }
+    
+    log_info(LOG_GENERAL, "-------------------------------------------------------\n");
+    log_info(LOG_GENERAL, "Palette dump complete\n");
+    log_info(LOG_GENERAL, "=======================================================\n");
+    log_info(LOG_GENERAL, "\n");
+    
+    /* Unlock the screen */
+    UnlockPubScreen(NULL, wb_screen);
+#else
+    /* Host platform - log a message */
+    log_info(LOG_GENERAL, "DumpWorkbenchScreenPalette: Not available on host platform\n");
+#endif
+}

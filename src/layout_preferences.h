@@ -277,7 +277,7 @@ typedef struct {
 #define DEFAULT_DEFICONS_ENABLE_THUMBNAIL_BORDERS           TRUE    /* Default: Borders enabled (frameless=FALSE) */
 
 /* Logging and Debug Defaults */
-#define DEFAULT_LOG_LEVEL                                  1       /* Default: INFO level (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR) */
+#define DEFAULT_LOG_LEVEL                                  4       /* Default: DISABLED level (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR, 4=DISABLED) */
 #define DEFAULT_MEMORY_LOGGING_ENABLED                     FALSE   /* Default: Disabled (can be very verbose) */
 #define DEFAULT_PERFORMANCE_LOGGING_ENABLED                FALSE   /* Default: Disabled (performance timing logs) */
 

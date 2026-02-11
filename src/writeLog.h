@@ -42,7 +42,8 @@ typedef enum {
     LOG_LEVEL_DEBUG,    /* Verbose debugging information */
     LOG_LEVEL_INFO,     /* Normal informational messages */
     LOG_LEVEL_WARNING,  /* Warning conditions */
-    LOG_LEVEL_ERROR     /* Error conditions */
+    LOG_LEVEL_ERROR,    /* Error conditions */
+    LOG_LEVEL_DISABLED  /* Logging disabled (no messages output) */
 } LogLevel;
 
 /*---------------------------------------------------------------------------*/

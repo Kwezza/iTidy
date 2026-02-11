@@ -151,6 +151,11 @@ BOOL itidy_content_preview_cache_valid(const char *target_path,
  * and text colour palette indices within the safe area only.
  * Pixels outside the safe area (template border artwork) are preserved.
  *
+ * IMPORTANT: If the template has a REAL selected image (not auto-dimmed),
+ * the selected buffer already has the text rendered on it (done during
+ * the text rendering phase). In this case, we skip the index swap entirely
+ * and just copy the palette.
+ *
  * If bg_color_index is ITIDY_NO_BG_COLOR (255), skips the swap entirely
  * since there's no meaningful background color to swap.
  *
@@ -179,6 +184,25 @@ static BOOL build_selected_image(iTidy_IconImageData *img,
     if (!img->has_selected_image || img->pixel_data_selected == NULL)
     {
         return TRUE;  // Nothing to do — this is fine
+    }
+
+    // If template has a REAL selected image (not auto-dimmed), the text
+    // has already been rendered onto it during the rendering phase.
+    // Just copy the palette and return.
+    if (img->has_real_selected_image)
+    {
+        // Copy normal palette to selected palette if both exist
+        if (img->palette_normal != NULL && img->palette_selected != NULL
+            && img->palette_size_normal > 0)
+        {
+            ULONG pal_bytes = img->palette_size_normal * sizeof(struct ColorRegister);
+            memcpy(img->palette_selected, img->palette_normal, pal_bytes);
+            img->palette_size_selected = img->palette_size_normal;
+        }
+
+        log_debug(LOG_ICONS, "build_selected_image: template has real selected image, "
+                  "skipping index swap (text already rendered)\n");
+        return TRUE;
     }
 
     buffer_size = (ULONG)img->width * (ULONG)img->height;
@@ -858,6 +882,81 @@ int itidy_apply_content_preview(const char *source_path,
         itidy_icon_image_free(&img);
         FreeDiskObject(target_icon);
         return ITIDY_PREVIEW_FAILED;
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 4b: Render text on selected image (if template has real one)  */
+    /*--------------------------------------------------------------------*/
+
+    if (img.has_selected_image && img.has_real_selected_image &&
+        img.pixel_data_selected != NULL)
+    {
+        iTidy_TextRenderParams selected_params;
+        UBYTE *selected_darken_table = NULL;
+
+        log_info(LOG_ICONS, "itidy_apply_content_preview: template has real selected image, "
+                 "rendering text on selected buffer for '%s'\n", source_path);
+
+        // Copy the text_params structure
+        memcpy(&selected_params, &text_params, sizeof(iTidy_TextRenderParams));
+
+        // Point to the selected image buffer instead
+        selected_params.base.pixel_buffer = img.pixel_data_selected;
+
+        // CRITICAL: Point to the SELECTED palette, not the normal palette.
+        // The selected template artwork has a different (dimmed) palette,
+        // so the darken table must be built from the selected palette entries.
+        // Without this, the renderer will calculate pixel indices that don't
+        // exist in the selected palette, causing bright white artifacts.
+        if (img.palette_selected != NULL)
+        {
+            selected_params.palette = img.palette_selected;
+            selected_params.palette_size = img.palette_size_selected;
+        }
+
+        // CRITICAL: Allocate a NEW darken table for the selected image.
+        // The selected template artwork has different pixel indices than
+        // the normal artwork, so we need to rebuild the darken lookup table.
+        // itidy_render_ascii_preview() will populate this table from the palette.
+        if (selected_params.enable_adaptive_text && selected_params.darken_table != NULL)
+        {
+            selected_darken_table = (UBYTE *)whd_malloc(256);
+            if (selected_darken_table == NULL)
+            {
+                log_warning(LOG_ICONS, "itidy_apply_content_preview: "
+                            "failed to allocate darken table for selected image\n");
+                // Fall back to non-adaptive rendering
+                selected_params.enable_adaptive_text = FALSE;
+                selected_params.darken_table = NULL;
+            }
+            else
+            {
+                selected_params.darken_table = selected_darken_table;
+            }
+        }
+
+        // Render text on the selected image buffer
+        // (This will paint text on top of the template's selected artwork)
+        if (!itidy_render_ascii_preview(source_path, &selected_params))
+        {
+            log_warning(LOG_ICONS, "itidy_apply_content_preview: "
+                        "selected image text render failed for '%s' (non-fatal)\n",
+                        source_path);
+            // Non-fatal — continue with normal image only
+        }
+        else
+        {
+            log_debug(LOG_ICONS, "itidy_apply_content_preview: "
+                      "successfully rendered text on selected image for '%s'\n",
+                      source_path);
+        }
+
+        // Free the selected image's darken table
+        if (selected_darken_table != NULL)
+        {
+            whd_free(selected_darken_table);
+            selected_darken_table = NULL;
+        }
     }
 
     /*--------------------------------------------------------------------*/

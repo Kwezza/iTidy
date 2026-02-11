@@ -136,6 +136,12 @@ void main_window( void )
     { NM_ITEM, "About", 0, 0, 447, NULL },
     { NM_ITEM, NM_BARLABEL, 0, 0, 383, NULL },
     { NM_ITEM, "Quit", 0, 0, 255, NULL },
+    { NM_TITLE, "Log mode", 0, 0, 0, NULL },
+    { NM_ITEM, "Disabled (recommended)", 0, CHECKIT | CHECKED, 30, NULL },
+    { NM_ITEM, "Debug", 0, CHECKIT, 29, NULL },
+    { NM_ITEM, "Info", 0, CHECKIT, 27, NULL },
+    { NM_ITEM, "Warning", 0, CHECKIT, 23, NULL },
+    { NM_ITEM, "Error", 0, CHECKIT, 15, NULL },
     { NM_END, NULL, 0, 0, 0, (APTR)0 }
   };
 
@@ -1109,7 +1115,7 @@ void recursive_progress_window( void )
         LAYOUT_AddChild, main_gadgets[main_progress_bar] = NewObject( FUELGAUGE_GetClass(), NULL, 
           GA_ID, main_progress_bar,
           GA_RelVerify, TRUE,
-          GA_Text, 1089156236,
+          GA_Text, 1079700964,
           FUELGAUGE_Min, 0,
           FUELGAUGE_Max, 0,
           FUELGAUGE_Level, 0,
@@ -1125,7 +1131,7 @@ void recursive_progress_window( void )
         LAYOUT_AddChild, main_gadgets[sub_progress_bar] = NewObject( FUELGAUGE_GetClass(), NULL, 
           GA_ID, sub_progress_bar,
           GA_RelVerify, TRUE,
-          GA_Text, 1089157316,
+          GA_Text, 1079702044,
           FUELGAUGE_Min, 0,
           FUELGAUGE_Max, 0,
           FUELGAUGE_Level, 0,

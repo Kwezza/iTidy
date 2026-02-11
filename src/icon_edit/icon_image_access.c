@@ -830,15 +830,85 @@ static BOOL should_expand_palette(struct DiskObject *icon, const iTidy_IconImage
  * @param palette_size_ptr Pointer to palette size (will be updated to 32)
  * @return TRUE on success, FALSE on allocation failure
  */
+/**
+ * @brief Find similar color in palette within RGB distance tolerance.
+ *
+ * Returns palette index if a color exists within tolerance, or -1 if none found.
+ * Uses Euclidean RGB distance (squared, no sqrt for performance).
+ *
+ * @param palette      Palette to search
+ * @param palette_size Number of palette entries
+ * @param target_r     Target red (0-255)
+ * @param target_g     Target green (0-255)
+ * @param target_b     Target blue (0-255)
+ * @param tolerance    Maximum RGB distance squared (e.g., 20*20 = 400)
+ * @return Palette index (0-255) or -1 if no match within tolerance
+ */
+static LONG find_similar_color_within_tolerance(const struct ColorRegister *palette,
+                                                ULONG palette_size,
+                                                UBYTE target_r, UBYTE target_g,
+                                                UBYTE target_b,
+                                                ULONG tolerance_squared)
+{
+    ULONG i;
+    
+    for (i = 0; i < palette_size; i++)
+    {
+        LONG dr = (LONG)palette[i].red   - (LONG)target_r;
+        LONG dg = (LONG)palette[i].green - (LONG)target_g;
+        LONG db = (LONG)palette[i].blue  - (LONG)target_b;
+        ULONG dist = (ULONG)(dr*dr + dg*dg + db*db);
+        
+        if (dist <= tolerance_squared)
+        {
+            return (LONG)i;  // Found acceptable match
+        }
+    }
+    
+    return -1;  // No match within tolerance
+}
+
+/**
+ * @brief Darken an RGB color by percentage.
+ *
+ * @param r       Red component (0-255)
+ * @param g       Green component (0-255)
+ * @param b       Blue component (0-255)
+ * @param percent Darken percentage (1-100, where 70 = 70% darker)
+ * @param out_r   Output red
+ * @param out_g   Output green
+ * @param out_b   Output blue
+ */
+static void darken_rgb(UBYTE r, UBYTE g, UBYTE b, UBYTE percent,
+                      UBYTE *out_r, UBYTE *out_g, UBYTE *out_b)
+{
+    UWORD factor;
+    
+    // Convert percent to reduction factor (0-100 -> 100-0)
+    // 70% darker means keep 30% of original brightness
+    factor = 100 - percent;
+    if (factor > 100)
+    {
+        factor = 100;
+    }
+    
+    *out_r = (UBYTE)((r * factor) / 100);
+    *out_g = (UBYTE)((g * factor) / 100);
+    *out_b = (UBYTE)((b * factor) / 100);
+}
+
 static BOOL expand_palette_for_adaptive(struct ColorRegister **palette_ptr, ULONG *palette_size_ptr)
 {
     struct ColorRegister *old_palette;
     struct ColorRegister *new_palette;
     ULONG old_size;
-    ULONG num_new;
-    UBYTE darkest_lum;
-    UBYTE lightest_lum;
+    ULONG current_size;
     ULONG i;
+    ULONG num_added_main = 0;
+    ULONG num_added_alt = 0;
+    ULONG num_reused = 0;
+    const ULONG MAX_PALETTE = 64;  // Limit to 64 colors (good Amiga compatibility)
+    const ULONG TOLERANCE_SQUARED = 20 * 20;  // ~20 RGB units tolerance
     
     if (palette_ptr == NULL || *palette_ptr == NULL || palette_size_ptr == NULL)
     {
@@ -849,61 +919,94 @@ static BOOL expand_palette_for_adaptive(struct ColorRegister **palette_ptr, ULON
     old_palette = *palette_ptr;
     old_size = *palette_size_ptr;
     
-    // Sanity check
-    if (old_size >= 32)
-    {
-        return TRUE;  // Already large enough
-    }
-    
-    // Allocate new 32-entry palette
-    new_palette = (struct ColorRegister *)whd_malloc(32 * sizeof(struct ColorRegister));
+    // Allocate new palette with room to grow (up to 64 colors)
+    new_palette = (struct ColorRegister *)whd_malloc(MAX_PALETTE * sizeof(struct ColorRegister));
     if (new_palette == NULL)
     {
-        log_error(LOG_ICONS, "expand_palette_for_adaptive: failed to allocate 32-entry palette\n");
+        log_error(LOG_ICONS, "expand_palette_for_adaptive: failed to allocate palette\n");
         return FALSE;
     }
     
-    // Copy original entries (preserve indices)
+    // Copy original entries (preserve indices 0 to old_size-1)
     memcpy(new_palette, old_palette, old_size * sizeof(struct ColorRegister));
+    current_size = old_size;
     
-    // Find darkest and lightest colors in original palette
-    darkest_lum = find_darkest_luminance(old_palette, old_size);
-    lightest_lum = find_lightest_luminance(old_palette, old_size);
+    /*--------------------------------------------------------------------*/
+    /* Phase 1: Add darkened versions (70% darker) for text rendering     */
+    /*--------------------------------------------------------------------*/
     
-    // Generate grey ramp (evenly spaced from light to dark)
-    num_new = 32 - old_size;
-    for (i = 0; i < num_new; i++)
+    for (i = 0; i < old_size && current_size < MAX_PALETTE; i++)
     {
-        // Use integer-only math to avoid floating-point operations
-        // Formula: grey = lightest - (i * (lightest - darkest)) / (num_new - 1)
-        ULONG range = lightest_lum - darkest_lum;
-        ULONG scaled_step;
-        UBYTE grey_value;
+        UBYTE dark_r, dark_g, dark_b;
+        LONG match_idx;
         
-        if (num_new > 1)
+        // Calculate 70% darkened RGB
+        darken_rgb(old_palette[i].red, old_palette[i].green, old_palette[i].blue,
+                  70, &dark_r, &dark_g, &dark_b);
+        
+        // Check if this darkened color already exists in palette
+        match_idx = find_similar_color_within_tolerance(new_palette, current_size,
+                                                        dark_r, dark_g, dark_b,
+                                                        TOLERANCE_SQUARED);
+        
+        if (match_idx >= 0)
         {
-            scaled_step = (i * range) / (num_new - 1);
+            // Reusing existing color
+            num_reused++;
         }
         else
         {
-            scaled_step = 0;
+            // Add new darkened color
+            new_palette[current_size].red   = dark_r;
+            new_palette[current_size].green = dark_g;
+            new_palette[current_size].blue  = dark_b;
+            current_size++;
+            num_added_main++;
         }
+    }
+    
+    /*--------------------------------------------------------------------*/
+    /* Phase 2: Add alternate darkened versions (35% darker) for shading  */
+    /*--------------------------------------------------------------------*/
+    
+    for (i = 0; i < old_size && current_size < MAX_PALETTE; i++)
+    {
+        UBYTE alt_r, alt_g, alt_b;
+        LONG match_idx;
         
-        grey_value = lightest_lum - (UBYTE)scaled_step;
+        // Calculate 35% darkened RGB (alternate shading)
+        darken_rgb(old_palette[i].red, old_palette[i].green, old_palette[i].blue,
+                  35, &alt_r, &alt_g, &alt_b);
         
-        new_palette[old_size + i].red   = grey_value;
-        new_palette[old_size + i].green = grey_value;
-        new_palette[old_size + i].blue  = grey_value;
+        // Check if this color already exists
+        match_idx = find_similar_color_within_tolerance(new_palette, current_size,
+                                                        alt_r, alt_g, alt_b,
+                                                        TOLERANCE_SQUARED);
+        
+        if (match_idx >= 0)
+        {
+            // Reusing existing color
+            num_reused++;
+        }
+        else
+        {
+            // Add new alternate color
+            new_palette[current_size].red   = alt_r;
+            new_palette[current_size].green = alt_g;
+            new_palette[current_size].blue  = alt_b;
+            current_size++;
+            num_added_alt++;
+        }
     }
     
     // Free old palette, update pointers
     whd_free(old_palette);
     *palette_ptr = new_palette;
-    *palette_size_ptr = 32;
+    *palette_size_ptr = current_size;
     
-    log_info(LOG_ICONS, "expand_palette_for_adaptive: expanded %lu colors -> 32 "
-             "(added %lu grey ramp entries from lum %u to %u)\n",
-             old_size, num_new, (unsigned)lightest_lum, (unsigned)darkest_lum);
+    log_info(LOG_ICONS, "expand_palette_for_adaptive: expanded %lu colors -> %lu "
+             "(added %lu main + %lu alt darkened, reused %lu existing)\n",
+             old_size, current_size, num_added_main, num_added_alt, num_reused);
     
     return TRUE;
 }
@@ -1571,11 +1674,11 @@ static void dump_source_text(const char *source_path, int max_lines)
     fh = Open((STRPTR)source_path, MODE_OLDFILE);
     if (fh == 0)
     {
-        log_info(LOG_ICONS, "[ICON_DUMP] Could not open source: %s\n", source_path);
+        log_debug(LOG_ICONS, "[ICON_DUMP] Could not open source: %s\n", source_path);
         return;
     }
 
-    log_info(LOG_ICONS, "[ICON_DUMP] --- Source text (first %d lines) ---\n", max_lines);
+    log_debug(LOG_ICONS, "[ICON_DUMP] --- Source text (first %d lines) ---\n", max_lines);
 
     bytes_read = Read(fh, read_buf, sizeof(read_buf) - 1);
     if (bytes_read > 0)
@@ -1591,7 +1694,7 @@ static void dump_source_text(const char *source_path, int max_lines)
         if (ch == '\n' || ch == '\0')
         {
             line_buf[buf_pos] = '\0';
-            log_info(LOG_ICONS, "[ICON_DUMP] %s\n", line_buf);
+            log_debug(LOG_ICONS, "[ICON_DUMP] %s\n", line_buf);
             buf_pos = 0;
             lines_read++;
         }
@@ -1613,7 +1716,7 @@ static void dump_source_text(const char *source_path, int max_lines)
     if (buf_pos > 0 && lines_read < max_lines)
     {
         line_buf[buf_pos] = '\0';
-        log_info(LOG_ICONS, "[ICON_DUMP] %s\n", line_buf);
+        log_debug(LOG_ICONS, "[ICON_DUMP] %s\n", line_buf);
     }
 
     Close(fh);
@@ -1628,11 +1731,11 @@ void itidy_icon_image_dump(const iTidy_IconImageData *img,
 
     if (img == NULL || img->pixel_data_normal == NULL)
     {
-        log_info(LOG_ICONS, "[ICON_DUMP] No image data to dump\n");
+        log_debug(LOG_ICONS, "[ICON_DUMP] No image data to dump\n");
         return;
     }
 
-    log_info(LOG_ICONS, "[ICON_DUMP] %ux%u pixels, palette: %lu entries\n",
+    log_debug(LOG_ICONS, "[ICON_DUMP] %ux%u pixels, palette: %lu entries\n",
               (unsigned)img->width, (unsigned)img->height,
               img->palette_size_normal);
 
@@ -1652,13 +1755,13 @@ void itidy_icon_image_dump(const iTidy_IconImageData *img,
                             (unsigned)img->palette_normal[i].green,
                             (unsigned)img->palette_normal[i].blue);
         }
-        log_info(LOG_ICONS, "[ICON_DUMP] Palette: %s\n", pal_buf);
+        log_debug(LOG_ICONS, "[ICON_DUMP] Palette: %s\n", pal_buf);
     }
 
     // Log safe area
     if (params != NULL)
     {
-        log_info(LOG_ICONS, "[ICON_DUMP] Safe area: left=%u top=%u width=%u height=%u\n",
+        log_debug(LOG_ICONS, "[ICON_DUMP] Safe area: left=%u top=%u width=%u height=%u\n",
                   (unsigned)params->safe_left, (unsigned)params->safe_top,
                   (unsigned)params->safe_width, (unsigned)params->safe_height);
     }
@@ -1667,7 +1770,7 @@ void itidy_icon_image_dump(const iTidy_IconImageData *img,
     use_two_hex = (img->palette_size_normal > 16) ? TRUE : FALSE;
 
     // Dump normal image pixel grid
-    log_info(LOG_ICONS, "[ICON_DUMP] --- Normal image ---\n");
+    log_debug(LOG_ICONS, "[ICON_DUMP] --- Normal image ---\n");
 
     for (row = 0; row < img->height; row++)
     {
@@ -1690,7 +1793,91 @@ void itidy_icon_image_dump(const iTidy_IconImageData *img,
         }
 
         row_buf[rpos] = '\0';
-        log_info(LOG_ICONS, "[ICON_DUMP] %s\n", row_buf);
+        log_debug(LOG_ICONS, "[ICON_DUMP] %s\n", row_buf);
+    }
+
+    // Dump selected image pixel grid (if present)
+    if (img->has_selected_image && img->pixel_data_selected != NULL)
+    {
+        log_debug(LOG_ICONS, "[ICON_DUMP] --- Selected image (real=%s) ---\n",
+                  img->has_real_selected_image ? "yes" : "no");
+
+        for (row = 0; row < img->height; row++)
+        {
+            char row_buf[600];  // Enough for 256 pixels * 2 chars + spaces
+            int rpos = 0;
+
+            for (col = 0; col < img->width && rpos < (int)(sizeof(row_buf) - 8); col++)
+            {
+                UBYTE pixel = img->pixel_data_selected[row * img->width + col];
+
+                if (use_two_hex)
+                {
+                    rpos += snprintf(row_buf + rpos, sizeof(row_buf) - rpos,
+                                     "%02X ", (unsigned)pixel);
+                }
+                else
+                {
+                    row_buf[rpos++] = (pixel < 10) ? ('0' + pixel) : ('A' + pixel - 10);
+                }
+            }
+
+            row_buf[rpos] = '\0';
+            log_debug(LOG_ICONS, "[ICON_DUMP] %s\n", row_buf);
+        }
+
+        // Dump selected palette if different from normal
+        if (img->palette_selected != NULL && img->palette_size_selected > 0)
+        {
+            BOOL palettes_differ = FALSE;
+
+            // Check if palettes differ
+            if (img->palette_size_selected != img->palette_size_normal)
+            {
+                palettes_differ = TRUE;
+            }
+            else
+            {
+                ULONG i;
+                for (i = 0; i < img->palette_size_normal; i++)
+                {
+                    if (img->palette_normal[i].red != img->palette_selected[i].red ||
+                        img->palette_normal[i].green != img->palette_selected[i].green ||
+                        img->palette_normal[i].blue != img->palette_selected[i].blue)
+                    {
+                        palettes_differ = TRUE;
+                        break;
+                    }
+                }
+            }
+
+            if (palettes_differ)
+            {
+                char pal_buf[1024];
+                int pos = 0;
+                ULONG i;
+
+                log_debug(LOG_ICONS, "[ICON_DUMP] Selected palette differs from normal:\n");
+                for (i = 0; i < img->palette_size_selected && pos < (int)(sizeof(pal_buf) - 16); i++)
+                {
+                    pos += snprintf(pal_buf + pos, sizeof(pal_buf) - pos,
+                                    "%lu=%02X%02X%02X ",
+                                    i,
+                                    (unsigned)img->palette_selected[i].red,
+                                    (unsigned)img->palette_selected[i].green,
+                                    (unsigned)img->palette_selected[i].blue);
+                }
+                log_debug(LOG_ICONS, "[ICON_DUMP] Selected Palette: %s\n", pal_buf);
+            }
+            else
+            {
+                log_debug(LOG_ICONS, "[ICON_DUMP] Selected palette same as normal\n");
+            }
+        }
+    }
+    else
+    {
+        log_debug(LOG_ICONS, "[ICON_DUMP] No selected image present\n");
     }
 
     // Dump source text excerpt
