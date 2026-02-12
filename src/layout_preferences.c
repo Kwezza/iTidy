@@ -99,6 +99,9 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     prefs->deficons_palette_mode = DEFAULT_DEFICONS_PALETTE_MODE;
     prefs->deficons_enable_thumbnail_borders = DEFAULT_DEFICONS_ENABLE_THUMBNAIL_BORDERS;
     
+    /* DefIcons Exclude Paths - Initialize with defaults */
+    reset_deficons_exclude_paths_to_defaults(prefs);
+    
     /* Logging and Debug Settings */
     prefs->logLevel = DEFAULT_LOG_LEVEL;
     prefs->memoryLoggingEnabled = DEFAULT_MEMORY_LOGGING_ENABLED;
@@ -533,6 +536,178 @@ void clear_disabled_deficon_types(LayoutPreferences *prefs)
     
     prefs->deficons_disabled_types[0] = '\0';
 }
+
+/*========================================================================*/
+/* DefIcons Exclude Paths Helper Functions                               */
+/*========================================================================*/
+
+/**
+ * @brief Default exclude paths list (system directories)
+ * 
+ * Uses DEVICE: placeholder which gets substituted with the actual
+ * volume being scanned at runtime (e.g., DEVICE:Fonts becomes SYS:Fonts
+ * when scanning SYS:, or Work:Fonts when scanning Work:).
+ */
+static const char *DEFAULT_EXCLUDE_PATHS[] = {
+    "DEVICE:Fonts",
+    "DEVICE:Locale",
+    "DEVICE:Classes",
+    "DEVICE:Libs",
+    "DEVICE:C",
+    "DEVICE:Rexxc",
+    "DEVICE:T",
+    "DEVICE:L",
+    "DEVICE:Devs",
+    "DEVICE:Resources",
+    "DEVICE:System",
+    "DEVICE:Storage",
+    "DEVICE:Expansion",
+    "DEVICE:Kickstart",
+    "DEVICE:Env",
+    "DEVICE:Envarc",
+    "DEVICE:Prefs/Env-Archive",
+    NULL
+};
+
+/*========================================================================*/
+/**
+ * @brief Reset exclude paths to default list
+ * 
+ * Resets the exclude paths array to the default list of system
+ * directories that should be skipped during icon creation.
+ * Uses DEVICE: placeholder for portability across volumes.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ */
+/*========================================================================*/
+void reset_deficons_exclude_paths_to_defaults(LayoutPreferences *prefs)
+{
+    int i;
+    
+    if (prefs == NULL)
+        return;
+    
+    /* Clear existing paths */
+    prefs->deficons_exclude_path_count = 0;
+    memset(prefs->deficons_exclude_paths, 0, sizeof(prefs->deficons_exclude_paths));
+    
+    /* Copy default paths */
+    for (i = 0; DEFAULT_EXCLUDE_PATHS[i] != NULL && i < MAX_DEFICONS_EXCLUDE_PATHS; i++)
+    {
+        strncpy(prefs->deficons_exclude_paths[i], DEFAULT_EXCLUDE_PATHS[i], DEFICONS_EXCLUDE_PATH_LENGTH - 1);
+        prefs->deficons_exclude_paths[i][DEFICONS_EXCLUDE_PATH_LENGTH - 1] = '\0';
+        prefs->deficons_exclude_path_count++;
+    }
+}
+
+/*========================================================================*/
+/**
+ * @brief Add a path to the exclude list
+ * 
+ * Adds a directory path to the exclude list. Paths can use the
+ * DEVICE: placeholder for portability (e.g., "DEVICE:Fonts").
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ * @param path Path to add (absolute or DEVICE: pattern)
+ * 
+ * @return TRUE if added successfully, FALSE if list is full or duplicate
+ */
+/*========================================================================*/
+BOOL add_deficons_exclude_path(LayoutPreferences *prefs, const char *path)
+{
+    int i;
+    
+    if (prefs == NULL || path == NULL || path[0] == '\0')
+        return FALSE;
+    
+    /* Check if list is full */
+    if (prefs->deficons_exclude_path_count >= MAX_DEFICONS_EXCLUDE_PATHS)
+        return FALSE;
+    
+    /* Check for duplicates (case-insensitive) */
+    for (i = 0; i < prefs->deficons_exclude_path_count; i++)
+    {
+        if (Stricmp(prefs->deficons_exclude_paths[i], path) == 0)
+            return FALSE;  /* Already exists */
+    }
+    
+    /* Add new path */
+    strncpy(prefs->deficons_exclude_paths[prefs->deficons_exclude_path_count], path, DEFICONS_EXCLUDE_PATH_LENGTH - 1);
+    prefs->deficons_exclude_paths[prefs->deficons_exclude_path_count][DEFICONS_EXCLUDE_PATH_LENGTH - 1] = '\0';
+    prefs->deficons_exclude_path_count++;
+    
+    return TRUE;
+}
+
+/*========================================================================*/
+/**
+ * @brief Remove a path from the exclude list
+ * 
+ * Removes a path at the specified index from the exclude list.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ * @param index Index of path to remove (0-based)
+ * 
+ * @return TRUE if removed successfully, FALSE if index invalid
+ */
+/*========================================================================*/
+BOOL remove_deficons_exclude_path(LayoutPreferences *prefs, int index)
+{
+    int i;
+    
+    if (prefs == NULL || index < 0 || index >= prefs->deficons_exclude_path_count)
+        return FALSE;
+    
+    /* Shift remaining entries down */
+    for (i = index; i < prefs->deficons_exclude_path_count - 1; i++)
+    {
+        strncpy(prefs->deficons_exclude_paths[i], prefs->deficons_exclude_paths[i + 1], DEFICONS_EXCLUDE_PATH_LENGTH);
+    }
+    
+    /* Clear last entry */
+    memset(prefs->deficons_exclude_paths[prefs->deficons_exclude_path_count - 1], 0, DEFICONS_EXCLUDE_PATH_LENGTH);
+    prefs->deficons_exclude_path_count--;
+    
+    return TRUE;
+}
+
+/*========================================================================*/
+/**
+ * @brief Modify an existing exclude path
+ * 
+ * Replaces the path at the specified index with a new value.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ * @param index Index of path to modify (0-based)
+ * @param new_path New path value
+ * 
+ * @return TRUE if modified successfully, FALSE if index invalid
+ */
+/*========================================================================*/
+BOOL modify_deficons_exclude_path(LayoutPreferences *prefs, int index, const char *new_path)
+{
+    int i;
+    
+    if (prefs == NULL || new_path == NULL || new_path[0] == '\0')
+        return FALSE;
+    
+    if (index < 0 || index >= prefs->deficons_exclude_path_count)
+        return FALSE;
+    
+    /* Check for duplicates with other entries (case-insensitive) */
+    for (i = 0; i < prefs->deficons_exclude_path_count; i++)
+    {
+        if (i != index && Stricmp(prefs->deficons_exclude_paths[i], new_path) == 0)
+            return FALSE;  /* Duplicate found */
+    }
+    
+    /* Update path */
+    strncpy(prefs->deficons_exclude_paths[index], new_path, DEFICONS_EXCLUDE_PATH_LENGTH - 1);
+    prefs->deficons_exclude_paths[index][DEFICONS_EXCLUDE_PATH_LENGTH - 1] = '\0';
+    
+    return TRUE;
+}
+
 
 /* End of layout_preferences.c */
 

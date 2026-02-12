@@ -382,6 +382,15 @@ BOOL ProcessDirectoryWithPreferences(void)
              prefs->deficons_folder_icon_mode == 1 ? "Always" :
              prefs->deficons_folder_icon_mode == 2 ? "Never" : "Unknown");
     log_info(LOG_GENERAL, "Skip System Assigns: %s\n", prefs->deficons_skip_system_assigns ? "YES" : "NO");
+    log_info(LOG_GENERAL, "Exclude Paths Count: %u\n", prefs->deficons_exclude_path_count);
+    if (prefs->deficons_exclude_path_count > 0)
+    {
+        log_info(LOG_GENERAL, "Exclude Paths List:\n");
+        for (UWORD i = 0; i < prefs->deficons_exclude_path_count; i++)
+        {
+            log_info(LOG_GENERAL, "  [%u] %s\n", i, prefs->deficons_exclude_paths[i]);
+        }
+    }
     log_info(LOG_GENERAL, "========================================\n\n");
     CONSOLE_STATUS("===================================");
     

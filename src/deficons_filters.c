@@ -9,6 +9,7 @@
 
 #include "deficons_filters.h"
 #include "deficons_templates.h"
+#include "backup_paths.h"
 #include "writeLog.h"
 #include "utilities.h"
 #include "platform/platform.h"
@@ -29,7 +30,16 @@
 /*========================================================================*/
 
 static const char *g_system_path_prefixes[] = {
-    "SYS:",
+    "SYS:C/",
+    "SYS:S/",
+    "SYS:Devs/",
+    "SYS:Libs/",
+    "SYS:L/",
+    "SYS:Fonts/",
+    "SYS:Locale/",
+    "SYS:Classes/",
+    "SYS:Rexxc/",
+    "SYS:System/",
     "C:",
     "S:",
     "DEVS:",
@@ -108,6 +118,81 @@ BOOL deficons_should_create_icon(const char *type_token, const LayoutPreferences
     
     /* All checks passed */
     return TRUE;
+}
+
+/*========================================================================*/
+/**
+ * @brief Check if path matches user-defined exclude list
+ * 
+ * Tests whether a path should be excluded based on the user-configurable
+ * exclude paths list. Supports DEVICE: placeholder substitution.
+ * 
+ * @param path Full path to check
+ * @param prefs Layout preferences containing exclude paths array and folder_path
+ * 
+ * @return TRUE if path matches any exclude pattern, FALSE otherwise
+ */
+/*========================================================================*/
+BOOL deficons_is_excluded_path(const char *path, const LayoutPreferences *prefs)
+{
+    char device[32];
+    char pattern[256];
+    int i;
+    
+    if (!path || !prefs)
+    {
+        log_error(LOG_ICONS, "Invalid parameters to deficons_is_excluded_path\n");
+        return FALSE;
+    }
+    
+    /* Extract device from current scan folder (e.g., "SYS:" from "SYS:Fonts") */
+    if (!GetDeviceName(prefs->folder_path, device))
+    {
+        log_debug(LOG_ICONS, "Cannot extract device from folder_path: %s\n", prefs->folder_path);
+        /* Continue anyway - absolute patterns will still work */
+        device[0] = '\0';
+    }
+    
+    /* Check each exclude path pattern */
+    for (i = 0; i < prefs->deficons_exclude_path_count; i++)
+    {
+        const char *exclude_pattern = prefs->deficons_exclude_paths[i];
+        
+        if (exclude_pattern[0] == '\0')
+            continue;  /* Skip empty entries */
+        
+        /* Check if pattern starts with "DEVICE:" placeholder */
+        if (strncmp(exclude_pattern, "DEVICE:", 7) == 0)
+        {
+            /* Substitute current scan device */
+            if (device[0] != '\0')
+            {
+                /* Build pattern: "SYS:" + "Fonts" */
+                snprintf(pattern, sizeof(pattern), "%s:%s", device, exclude_pattern + 7);
+            }
+            else
+            {
+                /* No device available - skip this pattern */
+                continue;
+            }
+        }
+        else
+        {
+            /* Use absolute pattern as-is (e.g., "Work:MyStuff") */
+            strncpy(pattern, exclude_pattern, sizeof(pattern) - 1);
+            pattern[sizeof(pattern) - 1] = '\0';
+        }
+        
+        /* Case-insensitive prefix match */
+        if (starts_with_ignore_case(path, pattern))
+        {
+            log_debug(LOG_ICONS, "Path excluded by pattern '%s' -> '%s'\n", 
+                      exclude_pattern, pattern);
+            return TRUE;
+        }
+    }
+    
+    return FALSE;
 }
 
 BOOL deficons_is_system_path(const char *path, const LayoutPreferences *prefs)

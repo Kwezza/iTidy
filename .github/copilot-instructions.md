@@ -123,6 +123,7 @@ make TARGET=host
 - **Comments**: Both `/* */` and `//` style allowed
 - **Format strings**: Be careful with `Printf()` vs `printf()` - use AmigaOS types correctly
 - **Naming convention**: **snake_case** for all variables, functions, and identifiers
+- **Text encoding**: **CRITICAL** - Use only **ASCII characters** (0x00-0x7F) in all strings, especially UI text. NO Unicode characters (→ ≠ ≤ ≥ • etc.) - AmigaOS uses the standard Topaz font which only supports ASCII. Use ASCII alternatives: `->` not `→`, `!=` not `≠`, `<=` not `≤`, `>=` not `≥`, `*` or `-` not `•`
 
 ### Example of Correct C99 Style with snake_case:
 ```c

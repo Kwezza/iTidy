@@ -258,11 +258,46 @@ static BOOL filename_has_info_suffix(const char *filename)
         return FALSE;
 
     len = strlen(filename);
-    if (len < 6)  /* minimum: "x.info" */
+    if (len < 5)  /* minimum: ".info" */
         return FALSE;
 
     /* Compare last 5 characters case-insensitively */
     return (strncasecmp_custom(filename + len - 5, ".info", 5) == 0);
+}
+
+/**
+ * Check if a filename represents a system file that should NEVER receive
+ * an icon, regardless of user preferences.
+ *
+ * These are universal Workbench system files that are critical for proper
+ * operation and must not be treated as regular files.
+ *
+ * @param filename The base filename to check (not full path)
+ * @return TRUE if this is a system file that should be skipped
+ */
+static BOOL is_system_file_never_icon(const char *filename)
+{
+    if (!filename || filename[0] == '\0')
+        return FALSE;
+
+    /* .info files are icon metadata themselves - never create icons for them */
+    if (filename_has_info_suffix(filename))
+        return TRUE;
+
+    /* Files named exactly ".info" (edge case - no base name) */
+    if (strcmp(filename, ".info") == 0)
+        return TRUE;
+
+    /* .backdrop files track left-out icons on Workbench - critical system files */
+    if (strcmp(filename, ".backdrop") == 0)
+        return TRUE;
+
+    /* Add other universal system files here as needed:
+     * - .disk files (optional - disk.info type files)
+     * - .newicons files (NewIcons system files)
+     */
+
+    return FALSE;
 }
 
 /*========================================================================*/
@@ -332,6 +367,10 @@ BOOL deficons_folder_has_visible_contents(const char *path,
     /* Pass 1: Check for existing .info files (cheapest check — no ARexx) */
     while (ExNext(lock, fib))
     {
+        /* Skip system files that never receive icons */
+        if (is_system_file_never_icon(fib->fib_FileName))
+            continue;
+
         if (filename_has_info_suffix(fib->fib_FileName))
         {
             visible = TRUE;
@@ -381,8 +420,8 @@ BOOL deficons_folder_has_visible_contents(const char *path,
         if (fib->fib_DirEntryType > 0)
             continue;
 
-        /* Skip .info files themselves */
-        if (filename_has_info_suffix(fib->fib_FileName))
+        /* Skip system files that never receive icons */
+        if (is_system_file_never_icon(fib->fib_FileName))
             continue;
 
         /* Build full path */
@@ -465,6 +504,14 @@ BOOL deficons_create_missing_icons_in_directory(
         CREATION_STATUS(progress_window, "  Skipping system path: %s", path);
         return TRUE;
     }
+    
+    /* Check if path matches user exclude list */
+    if (deficons_is_excluded_path(path, prefs))
+    {
+        log_info(LOG_ICONS, "Skipping user-excluded path: %s\n", path);
+        CREATION_STATUS(progress_window, "  Skipping excluded path: %s", path);
+        return TRUE;
+    }
 
     /* Lock directory */
     lock = Lock((STRPTR)path, ACCESS_READ);
@@ -506,8 +553,8 @@ BOOL deficons_create_missing_icons_in_directory(
             continue;
         }
 
-        /* Skip .info files themselves (proper suffix check) */
-        if (filename_has_info_suffix(fib->fib_FileName))
+        /* Skip system files that never receive icons */
+        if (is_system_file_never_icon(fib->fib_FileName))
             continue;
 
         /* Build .info path */
@@ -560,6 +607,13 @@ BOOL deficons_create_missing_icons_in_directory(
         }
         else
         {
+            /* Skip empty files (0 bytes) - no content to identify or preview */
+            if (fib->fib_Size == 0)
+            {
+                log_debug(LOG_ICONS, "Skipping empty file (0 bytes): %s\n", fib->fib_FileName);
+                continue;
+            }
+
             /* Identify file type via DefIcons */
             if (!deficons_identify_file(fullpath, type_token, sizeof(type_token)))
             {

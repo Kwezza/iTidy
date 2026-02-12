@@ -75,6 +75,27 @@ BOOL deficons_should_create_icon(const char *type_token, const LayoutPreferences
 BOOL deficons_is_system_path(const char *path, const LayoutPreferences *prefs);
 
 /**
+ * @brief Check if path matches user-defined exclude list
+ * 
+ * Tests whether a path should be excluded based on the user-configurable
+ * exclude paths list. Supports DEVICE: placeholder substitution.
+ * 
+ * DEVICE: Placeholder:
+ * - "DEVICE:Fonts" pattern matches "SYS:Fonts" when scanning SYS:
+ * - "DEVICE:Fonts" pattern matches "Work:Fonts" when scanning Work:
+ * - Device is extracted from folder_path in preferences
+ * 
+ * @param path Full path to check
+ * @param prefs Layout preferences containing exclude paths array and folder_path
+ * 
+ * @return TRUE if path matches any exclude pattern, FALSE otherwise
+ * 
+ * @note Case-insensitive prefix matching
+ * @note DEVICE: is substituted with volume from folder_path at runtime
+ */
+BOOL deficons_is_excluded_path(const char *path, const LayoutPreferences *prefs);
+
+/**
  * @brief Check if a folder icon should be created
  * 
  * Applies folder icon creation mode logic to determine if a drawer

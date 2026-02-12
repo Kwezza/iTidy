@@ -405,6 +405,68 @@ else
     /* No preview — icon keeps the unmodified template image */
 ```
 
+### 5.3 File Exclusion Filters
+
+Before processing files, iTidy applies several pre-filters to skip files that
+should never receive icons, regardless of user preferences or DefIcons
+identification results.
+
+#### 5.3.1 System Files (Hardcoded Exclusions)
+
+These files are critical Workbench system files and are **always** skipped:
+
+| File Pattern | Purpose | Reason for Exclusion |
+|--------------|---------|---------------------|
+| `*.info` | Icon metadata files | These ARE icons themselves — creating icons for icons would cause recursion |
+| `.info` | Edge case: file named exactly ".info" | Same as above — treated as icon metadata |
+| `.backdrop` | Workbench left-out icon tracking | Critical system file that tracks which icons should remain visible on Workbench root. Must never be modified or given an icon |
+
+**Implementation:** Function `is_system_file_never_icon()` in
+`src/deficons_creation.c` checks filenames against these patterns before any
+DefIcons identification occurs. These exclusions apply **universally** across
+all volumes and directories.
+
+**Historical note:** Early testing revealed that without these filters, iTidy
+would create icons for `Workbench:.info` (the device icon itself) and
+`Workbench:.backdrop` (the left-out icon tracker), which could corrupt the
+Workbench display. The `.info` check also had a subtle bug where files named
+exactly ".info" (5 characters) were missed due to a minimum length check of 6
+characters — this was corrected to catch all `.info` files including this edge
+case.
+
+#### 5.3.2 Empty Files (0 Bytes)
+
+Files with zero bytes (completely empty) are skipped before DefIcons
+identification:
+
+```c
+/* In deficons_creation.c, before calling deficons_identify_file() */
+if (fib->fib_Size == 0)
+{
+    log_debug(LOG_ICONS, "Skipping empty file (0 bytes): %s\n", fib->fib_FileName);
+    continue;
+}
+```
+
+**Rationale:**
+- Empty files contain no data to identify or preview
+- DefIcons cannot meaningfully determine the type of an empty file
+- Text preview rendering requires actual content to display
+- Such files are typically placeholders or remnants (e.g., `MuForce.log`
+  created at 0 bytes on system startup)
+
+**Minimum size:** 1 byte. Any file with actual content (≥1 byte) will be
+processed normally. This allows legitimate small files (e.g., a 64-byte text
+file) to receive icons while excluding truly empty placeholders.
+
+#### 5.3.3 User-Configurable Exclude Paths
+
+In addition to the above hardcoded filters, users can configure directory paths
+to exclude via the "Exclude Paths" window (see `src/GUI/exclude_paths_window.c`).
+This allows project-specific or temporary directories to be skipped during
+recursive icon creation. See `docs/layout_preferences.h` for the preference
+storage details.
+
 ---
 
 ## 6. Template Icon ToolType Conventions

@@ -58,6 +58,7 @@
 #include "RestoreBackups/restore_window.h"
 #include "DefaultTools/tool_cache_window.h"
 #include "deficons_settings_window.h"
+#include "exclude_paths_window.h"
 #include "easy_request_helper.h"
 #include "layout_preferences.h"
 #include "layout_processor.h"
@@ -128,6 +129,7 @@ static struct NewMenu main_window_menu_template[] =
     { NM_ITEM,  "Save as...",   "A",  0, 0, (APTR)MENU_PROJECT_SAVE_AS },
     { NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
     { NM_ITEM,  "DefIcons Settings...", "D",  0, 0, (APTR)MENU_PROJECT_DEFICONS },
+    { NM_ITEM,  "Exclude Paths...", "E",  0, 0, (APTR)MENU_PROJECT_EXCLUDE_PATHS },
     { NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
     { NM_ITEM,  "About...",     NULL, 0, 0, (APTR)MENU_PROJECT_ABOUT },
     { NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
@@ -1542,6 +1544,33 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                     }
                     break;
                 
+                case MENU_PROJECT_EXCLUDE_PATHS:
+                    {
+                        LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
+                        LayoutPreferences working_copy;
+                        
+                        /* Make working copy of preferences */
+                        memcpy(&working_copy, prefs, sizeof(LayoutPreferences));
+                        
+                        /* Copy current folder path from GUI to working copy */
+                        strncpy(working_copy.folder_path, win_data->folder_path_buffer, 
+                            sizeof(working_copy.folder_path) - 1);
+                        working_copy.folder_path[sizeof(working_copy.folder_path) - 1] = '\0';
+                        
+                        /* Open Exclude Paths window */
+                        if (open_exclude_paths_window(&working_copy))
+                        {
+                            /* User clicked OK - update global preferences */
+                            UpdateGlobalPreferences(&working_copy);
+                            log_info(LOG_GUI, "Exclude paths updated\n");
+                        }
+                        else
+                        {
+                            log_debug(LOG_GUI, "Exclude paths window cancelled\n");
+                        }
+                    }
+                    break;
+                
                 case MENU_PROJECT_ABOUT:
                     {
                         Object *req_obj;
@@ -1880,6 +1909,7 @@ static void handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                 prefs->sortBy = win_data->sortby_selected;
                 prefs->recursive_subdirs = win_data->recursive_subdirs;
                 prefs->enable_backup = win_data->enable_backup;
+                prefs->enable_deficons_icon_creation = win_data->enable_deficons_icon_creation;
                 prefs->windowPositionMode = (WindowPositionMode)win_data->window_position_selected;
                 
                 strncpy(prefs->folder_path, win_data->folder_path_buffer, 
