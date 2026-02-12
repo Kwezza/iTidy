@@ -1539,6 +1539,15 @@ BOOL open_itidy_deficons_settings_window(LayoutPreferences *prefs)
         return FALSE;
     }
     
+    /* Apply default type selections if this is the first time opening the window
+     * or if disabled_types is still the old default (empty string).
+     * This ensures the defaults match the screenshot after loading the deficons tree. */
+    if (prefs->deficons_disabled_types[0] == '\0')
+    {
+        log_info(LOG_GUI, "Applying default type selections (tool, prefs, iff, key, kickstart disabled)\n");
+        apply_default_deficon_type_selections(prefs, g_cached_deficons_tree, g_cached_deficons_count);
+    }
+    
     /* Initialize structure */
     memset(&win, 0, sizeof(DefIconsSettingsWindow));
     win.prefs = prefs;

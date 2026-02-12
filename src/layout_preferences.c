@@ -538,6 +538,66 @@ void clear_disabled_deficon_types(LayoutPreferences *prefs)
 }
 
 /*========================================================================*/
+/**
+ * @brief Apply default disabled types after loading deficons tree
+ * 
+ * Sets the default disabled types (tool, prefs, iff, key, kickstart) based on
+ * the screenshot defaults. Silently skips any types that don't exist in the
+ * loaded deficons tree (since deficons.prefs is an external user system file).
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ * @param tree Pointer to DefIcons type tree array (DeficonTypeTreeNode*)
+ * @param count Number of nodes in tree
+ */
+/*========================================================================*/
+void apply_default_deficon_type_selections(LayoutPreferences *prefs, 
+                                           const void *tree_void, 
+                                           int count)
+{
+    const char *default_disabled_types[] = {
+        "tool",
+        "prefs",
+        "iff",
+        "key",
+        "kickstart",
+        NULL
+    };
+    int i, j;
+    const DeficonTypeTreeNode *tree = (const DeficonTypeTreeNode *)tree_void;
+    
+    if (prefs == NULL || tree == NULL || count == 0)
+        return;
+    
+    /* Clear existing disabled types first */
+    clear_disabled_deficon_types(prefs);
+    
+    /* Add each default disabled type if it exists in the tree */
+    for (i = 0; default_disabled_types[i] != NULL; i++)
+    {
+        const char *type_name = default_disabled_types[i];
+        BOOL type_exists = FALSE;
+        
+        /* Check if this type exists in the loaded tree (generation 1 only) */
+        for (j = 0; j < count; j++)
+        {
+            if (tree[j].generation == 1 && 
+                strcmp(tree[j].type_name, type_name) == 0)
+            {
+                type_exists = TRUE;
+                break;
+            }
+        }
+        
+        /* Only add to disabled list if it exists in the tree */
+        if (type_exists)
+        {
+            add_disabled_deficon_type(prefs, type_name);
+        }
+        /* Silently skip types that don't exist in user's deficons.prefs */
+    }
+}
+
+/*========================================================================*/
 /* DefIcons Exclude Paths Helper Functions                               */
 /*========================================================================*/
 

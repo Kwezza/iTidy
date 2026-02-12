@@ -70,6 +70,21 @@
 #include "../icon_types.h"  /* For ToolCacheEntry and g_ToolCache extern */
 
 /*------------------------------------------------------------------------*/
+/* External References                                                    */
+/*------------------------------------------------------------------------*/
+
+/* ToolType settings structure (defined in main_gui.c) */
+typedef struct ToolTypeSettings_tag {
+    BOOL tooltypes_loaded;
+    UWORD debug_level;
+    BOOL debug_level_set;
+    char loadprefs_path[256];
+    BOOL loadprefs_set;
+} ToolTypeSettings;
+
+extern ToolTypeSettings g_tooltypes;
+
+/*------------------------------------------------------------------------*/
 /* ReAction Library Bases                                                */
 /*------------------------------------------------------------------------*/
 struct Library *WindowBase = NULL;
@@ -149,7 +164,7 @@ static struct NewMenu main_window_menu_template[] =
 static struct List *create_chooser_labels(STRPTR *strings);
 static void free_chooser_labels(struct List *list);
 static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win_data);
-static void handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWindow *win_data);
+static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWindow *win_data);
 
 /* Save/Load Preferences */
 static BOOL save_preferences_to_file(const char *filepath, const LayoutPreferences *prefs);
@@ -915,7 +930,7 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
                 break;
             
             case WMHI_GADGETUP:
-                handle_gadget_event(result & WMHI_GADGETMASK, code, win_data);
+                continue_running = handle_gadget_event(result & WMHI_GADGETMASK, code, win_data);
                 break;
             
             case WMHI_ICONIFY:
@@ -1186,6 +1201,169 @@ static void sync_gui_to_preferences(struct iTidyMainWindow *win_data, LayoutPref
     prefs->backupPrefs.enableUndoBackup = win_data->enable_backup;
     
     log_debug(LOG_GUI, "Preferences updated from GUI state (folder: %s)\n", prefs->folder_path);
+}
+
+/*------------------------------------------------------------------------*/
+/* LOADPREFS Tooltype Handler                                            */
+/*------------------------------------------------------------------------*/
+
+/**
+ * @brief Auto-load preferences file specified in LOADPREFS tooltype
+ * 
+ * This function is called after the main window opens successfully.
+ * It checks if a LOADPREFS tooltype was specified, validates the file exists,
+ * loads the preferences, and updates the GUI. Shows ReAction requesters for
+ * any errors encountered.
+ * 
+ * @param win_data Pointer to main window structure
+ */
+void handle_tooltype_loadprefs(struct iTidyMainWindow *win_data)
+{
+    LayoutPreferences loaded_prefs;
+    char expanded_path[512];
+    char error_msg[600];
+    BPTR lock;
+    
+    if (!win_data || !win_data->window)
+        return;
+    
+    /* Check if LOADPREFS was set */
+    if (!g_tooltypes.loadprefs_set || g_tooltypes.loadprefs_path[0] == '\0')
+        return;
+    
+    log_info(LOG_GUI, "LOADPREFS tooltype found: %s\n", g_tooltypes.loadprefs_path);
+    
+    /* Check if path is relative (no colon = no device/assign specified)
+     * If so, prepend the default settings directory */
+    if (strchr(g_tooltypes.loadprefs_path, ':') == NULL)
+    {
+        /* Relative path - prepend PROGDIR:userdata/Settings/ */
+        snprintf(expanded_path, sizeof(expanded_path), "PROGDIR:userdata/Settings/%s", 
+                 g_tooltypes.loadprefs_path);
+        log_debug(LOG_GUI, "LOADPREFS relative path, prepending default dir: %s\n", expanded_path);
+        
+        /* Now expand PROGDIR: */
+        char temp_path[512];
+        if (ExpandProgDir(expanded_path, temp_path, sizeof(temp_path)))
+        {
+            strncpy(expanded_path, temp_path, sizeof(expanded_path) - 1);
+            expanded_path[sizeof(expanded_path) - 1] = '\0';
+        }
+    }
+    else
+    {
+        /* Absolute path or assign - expand PROGDIR: if present */
+        if (!ExpandProgDir(g_tooltypes.loadprefs_path, expanded_path, sizeof(expanded_path)))
+        {
+            /* If expansion fails, use original path */
+            strncpy(expanded_path, g_tooltypes.loadprefs_path, sizeof(expanded_path) - 1);
+            expanded_path[sizeof(expanded_path) - 1] = '\0';
+        }
+    }
+    
+    log_debug(LOG_GUI, "LOADPREFS final path: %s\n", expanded_path);
+    
+    /* Check if file exists */
+    lock = Lock((STRPTR)expanded_path, ACCESS_READ);
+    if (!lock)
+    {
+        log_warning(LOG_GUI, "LOADPREFS file not found: %s\n", expanded_path);
+        
+        /* Show warning requester */
+        snprintf(error_msg, sizeof(error_msg),
+                "Preferences file specified in LOADPREFS tooltype was not found.\n\n"
+                "File: %s\n\n"
+                "iTidy will continue with default settings.",
+                expanded_path);
+        
+        ShowEasyRequest(win_data->window,
+                       "LOADPREFS Warning",
+                       error_msg,
+                       "_Continue");
+        return;
+    }
+    UnLock(lock);
+    
+    /* Load preferences from file */
+    if (!load_preferences_from_file(expanded_path, &loaded_prefs))
+    {
+        log_error(LOG_GUI, "LOADPREFS failed to load preferences: %s\n", expanded_path);
+        
+        /* Show error requester */
+        snprintf(error_msg, sizeof(error_msg),
+                "Failed to load preferences file.\n\n"
+                "File: %s\n\n"
+                "The file may be corrupted or in an incompatible format.\n"
+                "iTidy will continue with default settings.",
+                expanded_path);
+        
+        ShowEasyRequest(win_data->window,
+                       "LOADPREFS Error",
+                       error_msg,
+                       "_Continue");
+        return;
+    }
+    
+    /* CRITICAL: Preserve log level from DEBUGLEVEL tooltype if it was set
+     * The tooltype should take precedence over the loaded preferences file */
+    LogLevel current_log_level = get_global_log_level();
+    BOOL preserve_log_level = g_tooltypes.debug_level_set;
+    
+    /* Update global preferences */
+    UpdateGlobalPreferences(&loaded_prefs);
+    
+    /* Restore log level if DEBUGLEVEL tooltype was set */
+    if (preserve_log_level)
+    {
+        set_global_log_level(current_log_level);
+        log_info(LOG_GUI, "LOADPREFS: Preserved DEBUGLEVEL tooltype setting\n");
+    }
+    
+    /* Update GUI to reflect loaded preferences */
+    sync_gui_from_preferences(win_data, &loaded_prefs);
+    
+    log_info(LOG_GUI, "LOADPREFS loaded successfully: %s\n", expanded_path);
+    
+    /* Show success message with filename */
+    {
+        char success_msg[700];
+        const char *filename = FilePart((STRPTR)expanded_path);
+        
+        snprintf(success_msg, sizeof(success_msg),
+                "Preferences loaded successfully from:\n\n%s",
+                filename ? filename : expanded_path);
+        
+        if (RequesterBase)
+        {
+            Object *req_obj = NewObject(REQUESTER_GetClass(), NULL,
+                REQ_Type, REQTYPE_INFO,
+                REQ_TitleText, "LOADPREFS",
+                REQ_BodyText, success_msg,
+                REQ_GadgetText, "_Ok",
+                REQ_Image, REQIMAGE_INFO,
+                TAG_DONE);
+            
+            if (req_obj)
+            {
+                struct orRequest req_msg;
+                req_msg.MethodID = RM_OPENREQ;
+                req_msg.or_Attrs = NULL;
+                req_msg.or_Window = win_data->window;
+                req_msg.or_Screen = NULL;
+                
+                DoMethodA(req_obj, (Msg)&req_msg);
+                DisposeObject(req_obj);
+            }
+        }
+        else
+        {
+            /* Fallback to ShowEasyRequest */
+            ShowEasyRequest(win_data->window,
+                           "LOADPREFS",
+                           success_msg,
+                           "_Ok");
+        }
+    }
 }
 
 /*------------------------------------------------------------------------*/
@@ -1684,7 +1862,7 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
 /* Gadget Event Handling                                                 */
 /*------------------------------------------------------------------------*/
 
-static void handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWindow *win_data)
+static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWindow *win_data)
 {
     switch (gadget_id)
     {
@@ -2002,9 +2180,9 @@ static void handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
         
         case ITIDY_GAID_EXIT_BUTTON:
             /* Signal to close - will be handled in main loop */
-            /* Post a close window message */
             CONSOLE_STATUS("Exit button clicked\n");
-            /* Use RA_HandleInput return to signal exit */
-            break;
+            return FALSE;  /* Exit the program */
     }
+    
+    return TRUE;  /* Continue running */
 }

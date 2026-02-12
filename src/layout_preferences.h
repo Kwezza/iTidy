@@ -274,7 +274,7 @@ typedef struct {
 
 /* DefIcons Feature Defaults (Workbench 3.2+) */
 #define DEFAULT_ENABLE_DEFICONS_ICON_CREATION              FALSE   /* Disabled by default (opt-in feature) */
-#define DEFAULT_DEFICONS_DISABLED_TYPES                    ""      /* Empty string = all types enabled */
+#define DEFAULT_DEFICONS_DISABLED_TYPES                    "tool,prefs,iff,key,kickstart"  /* Disabled types (unchecked in default UI) */
 #define DEFAULT_DEFICONS_FOLDER_ICON_MODE                  0       /* 0=Smart (create if visible), 1=Always, 2=Never */
 #define DEFAULT_DEFICONS_SKIP_SYSTEM_ASSIGNS               TRUE    /* Skip system directories by default */
 #define DEFAULT_DEFICONS_LOG_CREATED_ICONS                 TRUE    /* Log created icons to separate file (useful for testing) */
@@ -447,6 +447,24 @@ BOOL remove_disabled_deficon_type(LayoutPreferences *prefs, const char *type_nam
  * @param prefs Pointer to LayoutPreferences structure
  */
 void clear_disabled_deficon_types(LayoutPreferences *prefs);
+
+/**
+ * @brief Apply default disabled types after loading deficons tree
+ * 
+ * Sets the default disabled types (tool, prefs, iff, key, kickstart) based on
+ * the screenshot defaults. Silently skips any types that don't exist in the
+ * loaded deficons tree (since deficons.prefs is an external user system file).
+ * 
+ * This should be called after the deficons tree is loaded and before displaying
+ * the settings window for the first time, or when resetting to defaults.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ * @param tree Pointer to DefIcons type tree array
+ * @param count Number of nodes in tree
+ */
+void apply_default_deficon_type_selections(LayoutPreferences *prefs, 
+                                           const void *tree, 
+                                           int count);
 
 /*========================================================================*/
 /* DefIcons Exclude Paths Helper Functions                               */

@@ -113,4 +113,15 @@ void close_itidy_main_window(struct iTidyMainWindow *win_data);
  */
 BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data);
 
+/**
+ * @brief Auto-load preferences from LOADPREFS tooltype if specified
+ *
+ * This function is called after the main window opens successfully.
+ * It checks for a LOADPREFS tooltype, validates the file, loads preferences,
+ * and updates the GUI. Shows error requesters if the file is missing or invalid.
+ *
+ * @param win_data Pointer to window data structure
+ */
+void handle_tooltype_loadprefs(struct iTidyMainWindow *win_data);
+
 #endif /* ITIDY_MAIN_WINDOW_H */

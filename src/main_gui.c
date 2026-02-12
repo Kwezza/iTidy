@@ -242,14 +242,18 @@ static int RequireWB3OrBetter(void)
  * This structure stores all tooltype values extracted from the program's
  * icon when launched from Workbench. Values are parsed once at startup.
  */
-typedef struct {
+typedef struct ToolTypeSettings_tag {
     BOOL tooltypes_loaded;      /* TRUE if tooltypes were successfully parsed */
     UWORD debug_level;          /* DEBUGLEVEL=n (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR) */
     BOOL debug_level_set;       /* TRUE if DEBUGLEVEL was found in tooltypes */
+    
+    /* LOADPREFS tooltype support */
+    char loadprefs_path[256];   /* Path from LOADPREFS=... */
+    BOOL loadprefs_set;         /* TRUE if LOADPREFS was found in tooltypes */
 } ToolTypeSettings;
 
-/* Global tooltype settings (initialized at startup) */
-static ToolTypeSettings g_tooltypes = { FALSE, 4, FALSE }; /* Default: DISABLED level */
+/* Global tooltype settings (initialized at startup) - exported for use by main_window.c */
+ToolTypeSettings g_tooltypes = { FALSE, 4, FALSE, "", FALSE }; /* Default: DISABLED level, no LOADPREFS */
 
 /**
  * @brief Case-insensitive string comparison (snake_case naming)
@@ -376,11 +380,37 @@ static void parse_program_tooltypes(struct WBStartup *wb_startup)
                     CONSOLE_DEBUG("DEBUG: No DEBUGLEVEL tooltype found\n");
                 }
                 
-                /* Future tooltypes can be added here */
-                /* Example:
-                 * tool_value = FindToolType(tool_types, "OPTION");
-                 * if (tool_value != NULL) { ... }
-                 */
+                /* Parse LOADPREFS tooltype */
+                tool_value = (STRPTR)FindToolType(tool_types, (STRPTR)"LOADPREFS");
+                if (tool_value != NULL)
+                {
+                    /* Strip leading/trailing whitespace and copy path */
+                    const char *start = tool_value;
+                    const char *end;
+                    
+                    /* Skip leading whitespace */
+                    while (*start && (*start == ' ' || *start == '\t'))
+                        start++;
+                    
+                    /* Find end of string (before trailing whitespace) */
+                    end = start + strlen(start) - 1;
+                    while (end > start && (*end == ' ' || *end == '\t'))
+                        end--;
+                    
+                    /* Copy trimmed path */
+                    size_t len = (size_t)(end - start + 1);
+                    if (len > 0 && len < sizeof(g_tooltypes.loadprefs_path))
+                    {
+                        strncpy(g_tooltypes.loadprefs_path, start, len);
+                        g_tooltypes.loadprefs_path[len] = '\0';
+                        g_tooltypes.loadprefs_set = TRUE;
+                        CONSOLE_DEBUG("DEBUG: LOADPREFS tooltype found: %s\n", g_tooltypes.loadprefs_path);
+                    }
+                }
+                else
+                {
+                    CONSOLE_DEBUG("DEBUG: No LOADPREFS tooltype found\n");
+                }
                 
                 g_tooltypes.tooltypes_loaded = TRUE;
                 CONSOLE_DEBUG("DEBUG: ToolTypes loaded successfully\n");
@@ -915,6 +945,13 @@ int main(int argc, char **argv)
     }
 
     CONSOLE_STATUS("GUI window opened successfully.\n");
+    
+    /* Check for LOADPREFS tooltype and auto-load preferences if specified */
+    if (g_tooltypes.loadprefs_set && g_tooltypes.loadprefs_path[0] != '\0')
+    {
+        handle_tooltype_loadprefs(&gui_window);
+    }
+    
     CONSOLE_STATUS("Click the close gadget to exit.\n\n");
     
     /* Log CPU and memory information now that logging is fully initialized */
