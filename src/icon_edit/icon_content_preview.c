@@ -430,21 +430,9 @@ static int apply_iff_preview(const char *source_path,
     memset(&img, 0, sizeof(img));
     memset(&iff_params, 0, sizeof(iff_params));
 
-    /* Initialize progress callback */
-    iff_params.progress_callback = (iTidy_ProgressCallback)progress_callback;
-    iff_params.progress_user_data = progress_user_data;
-    iff_params.last_progress_ticks = 0;
-    
-    /* Initialize cancel flag - points to progress window's cancel_requested if available */
-    if (progress_user_data != NULL)
-    {
-        struct iTidyMainProgressWindow *pw = (struct iTidyMainProgressWindow *)progress_user_data;
-        iff_params.cancel_flag = &pw->cancel_requested;
-    }
-    else
-    {
-        iff_params.cancel_flag = NULL;
-    }
+    /* Debug: Log incoming parameters */
+    log_debug(LOG_ICONS, "apply_iff_preview: progress_callback=%p, progress_user_data=%p\n",
+              (void*)progress_callback, progress_user_data);
 
     log_info(LOG_ICONS, "apply_iff_preview: applying IFF thumbnail "
              "for '%s' (type=%s)\n", source_path, type_token);
@@ -527,6 +515,22 @@ static int apply_iff_preview(const char *source_path,
     /*--------------------------------------------------------------------*/
 
     memset(&iff_params, 0, sizeof(iff_params));
+
+    /* Initialize progress callback (AFTER memset!) */
+    iff_params.progress_callback = (iTidy_ProgressCallback)progress_callback;
+    iff_params.progress_user_data = progress_user_data;
+    iff_params.last_progress_ticks = 0;
+    
+    /* Initialize cancel flag - points to progress window's cancel_requested if available */
+    if (progress_user_data != NULL)
+    {
+        struct iTidyMainProgressWindow *pw = (struct iTidyMainProgressWindow *)progress_user_data;
+        iff_params.cancel_flag = &pw->cancel_requested;
+    }
+    else
+    {
+        iff_params.cancel_flag = NULL;
+    }
 
     // Palette mode from preferences (default: PICTURE)
     iff_params.palette_mode = (prefs != NULL)

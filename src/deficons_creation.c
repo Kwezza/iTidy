@@ -266,6 +266,30 @@ static BOOL filename_has_info_suffix(const char *filename)
 }
 
 /*========================================================================*/
+/* Progress Callback Wrapper                                             */
+/*========================================================================*/
+
+/**
+ * progress_callback_wrapper - Adapts iTidyMainProgressWindow heartbeat
+ *                              function to the generic progress callback interface.
+ *
+ * This wrapper is used when passing progress updates from content preview
+ * operations (e.g., IFF rendering) to the main progress window.
+ */
+static void progress_callback_wrapper(void *user_data,
+                                      const char *phase,
+                                      ULONG current,
+                                      ULONG total)
+{
+    struct iTidyMainProgressWindow *progress_win = (struct iTidyMainProgressWindow *)user_data;
+    
+    if (progress_win != NULL)
+    {
+        itidy_main_progress_update_heartbeat(progress_win, phase, (LONG)current, (LONG)total);
+    }
+}
+
+/*========================================================================*/
 /* Smart Folder Mode: Lightweight Pre-Scan                               */
 /*========================================================================*/
 
@@ -591,10 +615,13 @@ BOOL deficons_create_missing_icons_in_directory(
              * and the icon keeps the unmodified template image. */
             if (fib->fib_DirEntryType <= 0)  /* Files only, not drawers */
             {
+                log_debug(LOG_ICONS, "Calling itidy_apply_content_preview: progress_window=%p, wrapper=%p\n",
+                          (void*)progress_window, (void*)progress_callback_wrapper);
+                
                 int preview_result = itidy_apply_content_preview(
                     fullpath, type_token,
                     (ULONG)fib->fib_Size, &fib->fib_Date,
-                    (void (*)(void *, const char *, ULONG, ULONG))itidy_main_progress_update_heartbeat,
+                    progress_callback_wrapper,
                     progress_window);
 
                 if (preview_result == ITIDY_PREVIEW_APPLIED)
