@@ -16,7 +16,7 @@
 | B: Scaling & Rendering | ✅ Complete | Area-average + 2×2 pre-filter, fixed-point 16.16, picture palette, hires+lace aspect |
 | C: Integration | ✅ Complete | Template-free pipeline, direct dimension lookup, cache validation |
 | D: Size & Palette UI | ✅ Complete | Size chooser + palette mode chooser in DefIcons settings |
-| E: Polish & Future | � Partial | HAM via datatype fallback ✅, screen palette mode 🔲, other datatypes 🔲, max color count 🔲 |
+| E: Polish & Future | 🔄 Partial | HAM via datatype fallback ✅, screen palette mode 🔲, other datatypes 🔲, max color count 🔲, dithering (3 methods + Auto) 🔲, grayscale/WB palette mapping 🔲, Ultra mode (256-color detail-preserving) 🔲 |
 
 ### Key Deviations From Original Plan
 
@@ -45,6 +45,29 @@
 12. **Combined hires+interlace+EHB** (test case validation): Images like Utopia-10.IFF and Utopia-13.IFF (672×442, 6 planes, EHB, interlace, missing HIRES flag) exercise all three fixes together: EHB palette expansion (item 7), hires inference from width (item 11), and dual aspect ratio correction (item 10). After all fixes, these produce correct ~64×42 thumbnails with proper proportions.
 
 13. **IFF template icons removed** (template elimination refactor): The three `iff_template_small/medium/large.info` files turned out to be vestigial. They were old-format planar icons — `itidy_icon_image_extract()` always failed on them, falling back to blank pixel buffers. Their ToolTypes (safe area, bg/text color, palette mode) were all overridden immediately after reading because IFF thumbnails are edge-to-edge with no safe area margins. The templates only contributed icon dimensions, which are trivially derived from the size preference constant. **Refactor**: Removed all template loading, extraction, and ToolType parsing from `apply_iff_preview()`. Icon dimensions now come directly from `itidy_get_iff_icon_dimensions()` which maps the preference to pixel sizes (48/64/100). Palette mode now comes from a new `deficons_palette_mode` field in `LayoutPreferences` with a chooser gadget in the DefIcons settings window. Removed: `itidy_get_iff_template_path()`, `itidy_get_iff_render_params()`, `ITIDY_IFF_TEMPLATE_*` constants, `ITIDY_TT_PALETTE_MODE` constant. Added: `itidy_get_iff_icon_dimensions()`, `ITIDY_IFF_SIZE_*` pixel constants, `deficons_palette_mode` preference field, palette mode chooser gadget. The `iff_template_*.info` files in `Bin/Amiga/Icons/` can now be deleted.
+
+---
+
+## Important Note for Implementers
+
+**⚠️ Code Examples Are Guidance, Not Gospel**
+
+All implementation code shown in this document (algorithms, function signatures, logic flows) is provided as **guidance** to illustrate the intended approach and goals. It is NOT rigid specification.
+
+**If production testing reveals:**
+- A better algorithm or approach to achieve the same goal
+- Performance issues requiring optimization
+- Edge cases not handled by the documented code
+- Incorrect logic or calculations
+
+**Then the programmer should:**
+- ✅ **Adjust the code** to fix issues or improve the implementation
+- ✅ **Find a better way** to reach the goals if the documented approach proves problematic
+- ❌ **Do NOT try to force the documented code to work** if testing shows it's fundamentally flawed
+
+**The goals and requirements matter** (e.g. "preserve hair strand details during downsampling", "reduce palette to N colors with optional dithering"). **The specific implementation path is flexible** — use the documented code as a starting point, then refine based on real-world testing.
+
+**Documentation update**: When significant deviations are made, add an entry to the "Key Deviations" section above explaining what was changed and why.
 
 ---
 
@@ -553,19 +576,88 @@ Quantize the IFF image's colors to match the current Workbench screen palette. T
 - Consider using the existing `expand_palette_for_adaptive()` infrastructure
 - Track screen depth changes and palette modifications
 
+#### Mode 3: Generic Palette (Fixed 6×6×6 Cube) — RECOMMENDED for Low-Depth Screens
+
+Use a **fixed, pre-defined palette** with wide color distribution that is shared across ALL generated icons. This solves the pen scavenging problem on low-depth screens.
+
+**Status:** 🔲 Not yet implemented (high priority for 8-bit users)
+
+**Advantages:**
+
+| Benefit | Impact |
+|---------|--------|
+| **No pen scavenging** | All icons share the same palette → Workbench allocates pens once |
+| **Consistent appearance** | All icons use the same color set → visual harmony across desktop |
+| **Fast icon loading** | No per-icon palette allocation or remapping overhead |
+| **Predictable quality** | Known palette → users can tune for their screen depth |
+| **Already implemented** | The 6×6×6 RGB cube (216 colors) + grayscale ramp is used in datatype path |
+
+**Disadvantages:**
+
+- Slightly lower color fidelity vs per-image palettes (but with dithering, the difference is negligible)
+- Fixed palette may not suit all images (e.g., monochrome images get forced into color cube)
+
+**Implementation:**
+
+```c
+/* In layout_preferences.h */
+UWORD deficons_palette_mode;  /* 0=Picture, 1=Screen (stub), 2=Generic */
+#define DEFAULT_DEFICONS_PALETTE_MODE  0  /* Picture mode (backward compatible) */
+
+/* In deficons_settings_window.c */
+static STRPTR palette_mode_labels[] = {
+    "Picture (original colours)",
+    "Screen (match Workbench)",     /* Stubbed */
+    "Generic (fixed 216-colour cube)",
+    NULL
+};
+```
+
+**The Generic Palette:**
+
+- **6×6×6 RGB color cube**: 216 colors covering the full RGB space uniformly
+  - R, G, B each quantized to 6 levels: 0, 51, 102, 153, 204, 255
+  - Index = `r_idx * 36 + g_idx * 6 + b_idx` (where r/g/b_idx ∈ [0..5])
+  - Indices 0-215
+- **Grayscale ramp**: 40 additional gray levels for smooth monochrome gradients
+  - Indices 216-255
+  - Already defined in `build_6x6x6_cube_palette()` (see `icon_iff_render.c` line ~1850)
+
+**When to use Generic Palette:**
+
+- **Low-depth screens**: 32-128 colors (pen pressure is real)
+- **Icon-heavy workflows**: Folders with 50+ thumbnails
+- **Consistency preference**: Users who want uniform icon appearance
+
+**Pipeline changes:**
+
+1. At icon creation time, replace normal palette generation with the fixed 6×6×6 cube palette
+2. During area-average scaling or quantization, map colors to the cube (same as datatype path)
+3. Apply dithering (if enabled) during the color mapping step
+4. All icons in the folder will share identical palette → Workbench allocates pens once
+
+**Comparison to existing modes:**
+
+| Mode | Palette Source | Pen Allocation | Best For |
+|------|----------------|----------------|----------|
+| Picture (Mode 0) | Image's own CMAP | Per-icon (can exhaust pens) | High-depth screens (256 colors), quality priority |
+| Screen (Mode 1) | Workbench screen palette | None (uses existing pens) | **Stubbed** — complexity not justified |
+| Generic (Mode 2) | Fixed 6×6×6 cube | Once for all icons | **Low-depth screens (32-128 colors), icon-heavy folders** |
+
 ### ~~New ToolType~~ → GUI Preference (Deviation 13):
 
 > **SUPERSEDED**: The palette mode was originally specified via a `ITIDY_PALETTE_MODE` ToolType on the template icon. Since templates have been eliminated (deviation 13), the palette mode is now stored as a `deficons_palette_mode` field in `LayoutPreferences` and controlled by a chooser gadget in the DefIcons settings window.
 
 ```c
 /* In layout_preferences.h */
-UWORD deficons_palette_mode;  /* 0=Picture (use image CMAP), 1=Screen (quantize to WB screen) */
-#define DEFAULT_DEFICONS_PALETTE_MODE  0  /* Picture mode */
+UWORD deficons_palette_mode;  /* 0=Picture (use image CMAP), 1=Screen (stub), 2=Generic (6x6x6 cube) */
+#define DEFAULT_DEFICONS_PALETTE_MODE  0  /* Picture mode (backward compatible) */
 
 /* In deficons_settings_window.c */
 static STRPTR palette_mode_labels[] = {
-    "Picture (original colors)",
+    "Picture (original colours)",
     "Screen (match Workbench)",
+    "Generic (fixed 216-colour cube)",
     NULL
 };
 ```
@@ -590,34 +682,1258 @@ Add a user-configurable **maximum color count** option that reduces the icon's p
 
 | Option | Colors | Typical Use Case |
 |--------|--------|------------------|
+| 4 | 4 | Extreme reduction, very low-color screens |
+| 8 | 8 | Classic 8-color Amiga look, dithering essential |
 | 16 | 16 | Fastest display, 4-bit screens, minimal palette pressure |
 | 32 | 32 | Good compromise for low-color screens |
 | 64 | 64 | Moderate reduction, decent quality |
 | 128 | 128 | Light reduction, preserves most detail |
-| 256 | 256 | No reduction (current default behavior) |
+| No limit (256) | 256 | No reduction (current default behavior) |
 
 ### Implementation Notes
 
-- **GUI**: Add a chooser gadget in the DefIcons settings window (e.g. "Max icon colors") with labels: `"16"`, `"32"`, `"64"`, `"128"`, `"256 (no limit)"`
-- **Preference field**: `UWORD deficons_max_icon_colors` in `LayoutPreferences` with `DEFAULT_DEFICONS_MAX_ICON_COLORS = 256`
-- **Algorithm**: After rendering is complete but before saving, if the icon's palette exceeds the configured limit:
-  1. Count unique colors actually used in the pixel buffer
-  2. If count exceeds the limit, apply median-cut or popularity-based quantization to reduce the palette
-  3. Remap all pixel indices to the reduced palette
-  4. Use `itidy_find_closest_palette_color()` (already shared) for the remapping step
-- **Applies to both pipelines**: Native IFF (PICTURE palette mode) and datatype fallback (6x6x6 cube)
+**⚠️ Implementation Flexibility Reminder**: All code examples in this section (quantization algorithms, dithering logic, thresholds, formulas) are guidance to illustrate the goals. If testing shows a better approach or reveals issues, adjust the implementation rather than forcing the documented code to work. The goals matter ("reduce palette", "preserve quality with dithering") — the exact code path is flexible. Document significant changes in "Key Deviations" section.
+
+- **File Organization** (CRITICAL for maintainability):
+  - **DO NOT create one monolithic source file** for all dithering/palette functions
+  - **Create subfolder**: `src/icon_edit/palette/` to organize related code modules
+  - **Proposed file structure**:
+    - `palette/palette_quantization.c/h` — Median Cut, popularity-based quantization, color space conversions
+    - `palette/palette_dithering.c/h` — Ordered (Bayer), Floyd-Steinberg error diffusion, dithering utilities
+    - `palette/palette_mapping.c/h` — Color distance calculations, nearest-color matching, RGB-to-palette remapping
+    - `palette/palette_reduction.c/h` — High-level pipeline coordinator (count colors, select algorithm, apply dithering)
+    - `palette/palette_grayscale.c/h` — Grayscale conversion, Workbench palette (0-7) mapping, hybrid modes (see 12d)
+    - `palette/ultra_downsample.c/h` — Detail-preserving downsampling algorithm (see 12e)
+  - **Rationale**: Each file has a single, clear responsibility. Easier to test, debug, and extend individual algorithms without affecting others.
+  - **Makefile integration**: Add `palette/*.c` to compilation rules
+  - **Header includes**: Main renderer (`icon_iff_render.c`) includes only the high-level coordinator header (`palette_reduction.h`)
+
+- **GUI**: Three primary controls in DefIcons settings window:
+  1. **Chooser gadget**: "Max icon colors" with labels: `"4 colours"`, `"8 colours"`, `"16 colours"`, `"32 colours"`, `"64 colours"`, `"128 colours"`, `"No limit (256 colours)"`, optionally `"Ultra (256 + detail-preserving)"` (see section 12e)
+  2. **Chooser gadget**: "Dithering" with labels: `"None"`, `"Ordered (Fast)"`, `"Floyd-Steinberg (Best)"`, `"Auto (recommended)"` (see section 12c)
+  3. **Chooser gadget** (for 4-8 colors only): "Color mapping" with labels: `"Grayscale"`, `"Workbench palette (0-7)"`, `"Hybrid (grays + accents)"` (see section 12d)
+- **Preference fields**: 
+  - `UWORD deficons_max_icon_colors` in `LayoutPreferences` with `DEFAULT_DEFICONS_MAX_ICON_COLORS = 256`
+  - `UWORD deficons_dither_method` with `DEFAULT_DEFICONS_DITHER_METHOD = 3` (Auto)
+  - `UWORD deficons_lowcolor_mapping` with `DEFAULT_DEFICONS_LOWCOLOR_MAPPING = 0` (Grayscale)
+  - `BOOL deficons_ultra_mode` with `DEFAULT_DEFICONS_ULTRA_MODE = FALSE` (see section 12e)
+- **Order of operations** (CRITICAL):
+  1. Render image to full palette (via area-average scaling)
+  2. Count unique colors actually used in the pixel buffer
+  3. **If count exceeds limit**: Calculate reduced palette (median-cut or popularity-based quantization)
+  4. **Remap pixels to reduced palette**: WITH dithering if enabled (see 12c)
+  5. Save icon with reduced palette
+- **Why this order**: Dithering must know the target palette to select neighboring colors effectively. You cannot dither before knowing what colors are available in the final palette.
+- **Applies to both pipelines**: Native IFF (PICTURE palette mode) and datatype fallback (6×6×6 cube)
 - **Performance**: The reduction itself adds minimal overhead (single-pass pixel scan + palette rebuild). The benefit comes at display time when Workbench has far fewer colors to map
 - **Fixed-point arithmetic**: All color distance calculations must use integer math only (no floats on 68020)
+- **Dithering integration**: When remapping to reduced palette, pass pixel coordinates (x, y) to `find_closest_color_with_dither()` if dithering is enabled
 
 ### Rationale
 
 On an 8-bit Workbench screen, loading a folder full of 256-color HAM-derived icons can noticeably slow the desktop as Workbench remaps each icon's palette against the screen palette. Reducing to 64 or even 32 colors typically produces visually acceptable thumbnails at a fraction of the display-time cost. The user can choose the trade-off between quality and performance based on their hardware and screen depth.
+
+### Additional Consideration: Pen Scavenging Problem
+
+On low-depth Workbench screens (32-128 colors), each icon with a unique palette forces Workbench to allocate shared pens. When loading a folder with many icons, Workbench quickly runs out of free pens and begins remapping/dithering icons to available colors, causing:
+- Slow icon loading (pen allocation overhead)
+- Visual inconsistency (earlier icons get better colors, later icons get remapped)
+- Desktop slowdown (constant palette juggling)
+
+This is particularly noticeable on 32-color screens where icons can exhaust the palette.
+
+**Potential solutions**: 
+- See Mode 3 (Generic Palette) in section 11 — use a fixed, shared palette across all icons
+- See section 12d (Grayscale/Workbench Palette Mapping) — for 4-8 color icons, pre-map to stable colors
 
 ### Open Questions
 
 - Should the option auto-adjust based on screen depth? (e.g. auto-cap at 16 on 4-bit screens)
 - Should there be an "Auto" setting that picks a sensible limit based on detected screen depth?
 - Quantization algorithm: median-cut (better quality) vs popularity (simpler, faster)?
+- ~~Should low color counts (4, 8) auto-enable dithering by default?~~ **RESOLVED**: Auto dithering option handles this (see 12c)
+
+---
+
+## 12c. Dithering for Palette Reduction
+
+**Status:** 🔲 Not yet implemented (Phase E future item)
+
+### Problem
+
+When reducing icon color count (especially to 8-16 colors via the max color count feature in 12b), smooth gradients and subtle color transitions produce visible color banding artifacts. The quantization process maps similar colors to the same palette entry, creating "posterization" where the image looks flat and blocky instead of smooth.
+
+This is most noticeable in:
+- Sky gradients (light blue → dark blue)
+- Skin tones (beige → tan → brown)
+- Shadows and highlights (smooth brightness transitions)
+- Natural images reduced to 16 colors or less
+
+### Proposed Solution: User-Selectable Dithering Methods
+
+Offer **three dithering methods** plus an **Auto** option that picks the best method based on color count. This gives users control over the quality vs speed trade-off.
+
+**Key Insight: One-Time Cost vs Repeated Display Cost**
+
+Icon creation is a **one-time operation**, but icon display happens **every time Workbench opens a folder**. Spending an extra 0.1-0.2 seconds during creation to produce a better-dithered icon that displays instantly (no runtime remapping) is a smart trade-off.
+
+**Workbench 3.2 Quality Setting Benefit:**
+
+Workbench's Quality setting controls how much effort it spends remapping/dithering icons at display time:
+- **Low quality**: Fast, uses nearest-color (blocky if palette doesn't match)
+- **High quality**: Slow, applies its own dithering/remapping
+
+If the icon is **already dithered to the correct palette**, Workbench can use **Low Quality mode** (fast display) and still look good. You're pre-computing what Workbench would do at runtime.
+
+### Dithering Method Comparison
+
+| Method | Speed | Quality | Memory | When to Use |
+|--------|-------|---------|--------|-------------|
+| **None** | Instant | Poor at <16 colors | 0 bytes | 64+ colors, or smooth gradients only |
+| **Ordered (Bayer)** | Very fast (~0.02s) | Good at 16-32, acceptable at 8 | 16 bytes | General purpose, 8-32 colors |
+| **Floyd-Steinberg** | Moderate (~0.12s) | Excellent at all counts | ~192 bytes/row | 4-16 colors, quality priority |
+| **Auto** | Varies | Best for color count | Varies | Recommended default (smart selection) |
+
+### Method 1: None (No Dithering)
+
+**Description:** Pure nearest-color matching with no dithering.
+
+**Speed:** Instant (no overhead)
+
+**Quality:**
+- Excellent at 64+ colors
+- Acceptable at 32 colors for images with smooth gradients
+- Poor at 16 colors (visible banding)
+- Unusable at 8 or 4 colors
+
+**When to use:**
+- High color counts (64+) where dithering adds no value
+- Images with already-smooth color transitions
+- Testing/comparison purposes
+
+### Method 2: Ordered (Bayer 4×4 Matrix) — Fast
+
+**Description:** Spatial dithering using a 4×4 threshold matrix. Adds position-dependent noise to break up color bands.
+
+**Advantages:**
+
+| Advantage | Benefit |
+|-----------|----------|
+| **Very fast** | One array lookup + simple math per pixel (~40 cycles) |
+| **Fixed-point only** | No floating-point math — 68020-friendly |
+| **Stateless** | Each pixel processed independently (no error buffers) |
+| **Predictable pattern** | Repeating 4×4 grid pattern is visually stable |
+| **Memory-efficient** | Only needs 16-byte lookup table |
+
+**Disadvantages:**
+- Visible grid pattern at very low color counts (4-8)
+- Less effective than error diffusion for complex images
+
+**Performance:**
+- Per-pixel cost: ~40 cycles
+- 64×64 icon: ~0.02 seconds on 7 MHz 68020
+- Negligible overhead
+
+**When to use:**
+- 16-32 colors (sweet spot)
+- 8 colors if Floyd-Steinberg is too slow
+- General-purpose dithering
+
+### Method 3: Floyd-Steinberg Error Diffusion — High Quality
+
+**Description:** Error diffusion dithering. The quantization error at each pixel is propagated to neighboring unprocessed pixels, producing organic-looking dither patterns with no visible grid.
+
+**Advantages:**
+
+| Advantage | Benefit |
+|-----------|----------|
+| **Excellent quality** | Best results at all color counts, especially 4-16 |
+| **No grid pattern** | Organic, natural-looking dither |
+| **Preserves detail** | Better edge preservation than ordered dithering |
+| **Industry standard** | Proven algorithm used in print/display for decades |
+
+**Disadvantages:**
+- Slower (~200 cycles per pixel vs ~40 for Bayer)
+- Requires error buffers (2 rows × width × 3 channels × 2 bytes = ~384 bytes for 64px width)
+- Sequential processing (must process left-to-right, top-to-bottom)
+- More complex implementation
+
+**Performance:**
+- Per-pixel cost: ~200 cycles
+- 64×64 icon: ~0.12 seconds on 7 MHz 68020
+- Still acceptable for one-time creation
+
+**When to use:**
+- 4-8 colors (critical quality improvement)
+- 16 colors (noticeable improvement)
+- Quality priority, user willing to wait ~0.1s longer
+
+**Error Diffusion Pattern:**
+
+```
+        X   7/16  
+  3/16  5/16  1/16
+```
+
+Where `X` is the current pixel. Error is distributed to 4 neighbors.
+
+### Method 4: Auto (Recommended Default)
+
+**Description:** Automatically selects the best dithering method based on the max color count.
+
+**Selection Logic:**
+
+| Max Colors | Auto Selects | Rationale |
+|------------|--------------|----------|
+| 64+ | **None** | Enough colors for smooth gradients |
+| 32 | **Ordered** | Good quality, fast |
+| 16 | **Ordered** | Acceptable quality, negligible overhead |
+| 8 | **Floyd-Steinberg** | Quality critical, worth the 0.1s cost |
+| 4 | **Floyd-Steinberg** | Essential for usability |
+
+**User Experience:**
+- Smart default for most users
+- Balances quality and speed automatically
+- Can be overridden by manual selection
+
+### Implementation Details
+
+#### 4×4 Bayer Threshold Matrix
+
+```c
+/* 4x4 Bayer ordered dithering matrix (range 0-15) */
+static const UBYTE bayer_4x4[16] = {
+     0,  8,  2, 10,
+    12,  4, 14,  6,
+     3, 11,  1,  9,
+    15,  7, 13,  5
+};
+```
+
+#### Modified Color Matching Function
+
+```c
+/**
+ * Find closest palette color with optional Bayer dithering.
+ * 
+ * When dithering is enabled, applies a position-dependent threshold
+ * from a 4x4 Bayer matrix to break up color banding. The threshold
+ * is centered around 0 (range -7 to +8) and added to the RGB values
+ * before palette matching.
+ */
+static UBYTE find_closest_color_with_dither(
+    const struct ColorRegister *palette,
+    ULONG palette_size,
+    UBYTE target_r, UBYTE target_g, UBYTE target_b,
+    UWORD pixel_x, UWORD pixel_y,  /* For dither matrix lookup */
+    BOOL enable_dither)
+{
+    UBYTE adj_r = target_r;
+    UBYTE adj_g = target_g;
+    UBYTE adj_b = target_b;
+    
+    if (enable_dither)
+    {
+        /* Get threshold from Bayer matrix (0-15) based on pixel position */
+        UBYTE threshold = bayer_4x4[(pixel_y & 3) * 4 + (pixel_x & 3)];
+        
+        /* Center range: -7 to +8 */
+        WORD dither_offset = (WORD)threshold - 7;
+        
+        /* Apply dither offset with clamping to 0-255 */
+        if (dither_offset > 0)
+        {
+            WORD temp;
+            temp = (WORD)adj_r + dither_offset;
+            adj_r = (temp > 255) ? 255 : (UBYTE)temp;
+            temp = (WORD)adj_g + dither_offset;
+            adj_g = (temp > 255) ? 255 : (UBYTE)temp;
+            temp = (WORD)adj_b + dither_offset;
+            adj_b = (temp > 255) ? 255 : (UBYTE)temp;
+        }
+        else if (dither_offset < 0)
+        {
+            WORD abs_offset = -dither_offset;
+            WORD temp;
+            temp = (WORD)adj_r - abs_offset;
+            adj_r = (temp < 0) ? 0 : (UBYTE)temp;
+            temp = (WORD)adj_g - abs_offset;
+            adj_g = (temp < 0) ? 0 : (UBYTE)temp;
+            temp = (WORD)adj_b - abs_offset;
+            adj_b = (temp < 0) ? 0 : (UBYTE)temp;
+        }
+        /* dither_offset == 0: no adjustment */
+    }
+    
+    /* Standard Manhattan distance search with adjusted RGB values */
+    /* ... existing find_closest_color_fast() logic ... */
+}
+```
+
+#### Integration Points
+
+**Order of Operations (CRITICAL):**
+
+1. Render image → area-average scale → full palette (e.g., 256 colors)
+2. If max color count < current palette size → calculate reduced palette (median-cut/popularity)
+3. **Remap all pixels to reduced palette WITH dithering** (if enabled)
+4. Save icon with reduced palette
+
+**Primary Use Case: Palette Reduction Remapping (from 12b)**
+
+When remapping pixels from a full palette to a reduced palette (e.g., 256 → 16 colors):
+
+```c
+/* For each pixel in the icon */
+for (y = 0; y < height; y++) {
+    for (x = 0; x < width; x++) {
+        UBYTE old_idx = pixel_buffer[y * width + x];
+        
+        /* Look up RGB from original palette */
+        UBYTE r = old_palette[old_idx].red;
+        UBYTE g = old_palette[old_idx].green;
+        UBYTE b = old_palette[old_idx].blue;
+        
+        /* Find closest match in reduced palette WITH dithering */
+        UBYTE new_idx = find_closest_color_with_dither(
+            reduced_palette, reduced_palette_size,
+            r, g, b,
+            x, y,  /* Pixel position for Bayer matrix */
+            prefs->deficons_enable_dithering);
+        
+        pixel_buffer[y * width + x] = new_idx;
+    }
+}
+```
+
+This is where dithering has the most visual impact — when reducing from many colors to few.
+
+**Secondary Use Case: Direct Rendering (Optional)**
+
+Dithering can also be applied during the initial area-average scaling:
+
+- **Location**: `area_average_scale()` function
+- **When**: During the final `find_closest_color_fast()` call (line ~1268)
+- **How**: Pass `out_x` and `out_y` for Bayer matrix lookup
+- **Note**: Only needed when rendering directly to a low-color palette (e.g., Generic Palette mode with 4-8 colors)
+
+**Tertiary Use Case: Datatype Path (Optional)**
+
+For datatype fallback path (HAM, JPEG, etc.):
+
+- **Location**: `quantize_rgb24_to_cube()` function
+- **When**: During 6×6×6 cube quantization
+- **Note**: The 216-color cube is dense enough that dithering provides minimal benefit unless further reduced
+
+### Implementation Details
+
+#### Ordered (Bayer) Implementation
+
+**4×4 Bayer Threshold Matrix:**
+
+```c
+/* 4x4 Bayer ordered dithering matrix (range 0-15) */
+static const UBYTE bayer_4x4[16] = {
+     0,  8,  2, 10,
+    12,  4, 14,  6,
+     3, 11,  1,  9,
+    15,  7, 13,  5
+};
+
+/* Get dither threshold for pixel position */
+UBYTE threshold = bayer_4x4[(pixel_y & 3) * 4 + (pixel_x & 3)];
+WORD dither_offset = (WORD)threshold - 7;  /* Center range: -7 to +8 */
+
+/* Apply to RGB values (with clamping to 0-255) */
+adjusted_r = CLAMP(target_r + dither_offset, 0, 255);
+/* ... then do palette matching ... */
+```
+
+#### Floyd-Steinberg Implementation
+
+**Error Buffers:**
+
+```c
+/* Allocate error buffers for RGB channels (2 rows × width) */
+WORD *error_buf_r = whd_malloc((ULONG)width * 2 * sizeof(WORD));
+WORD *error_buf_g = whd_malloc((ULONG)width * 2 * sizeof(WORD));
+WORD *error_buf_b = whd_malloc((ULONG)width * 2 * sizeof(WORD));
+
+/* Current and next row pointers */
+WORD *curr_row_r = error_buf_r;
+WORD *next_row_r = error_buf_r + width;
+/* Swap rows at end of each scanline */
+```
+
+**Error Diffusion:**
+
+```c
+for (y = 0; y < height; y++) {
+    for (x = 0; x < width; x++) {
+        /* Add accumulated error to pixel RGB */
+        WORD adj_r = CLAMP(pixel_r + curr_row_r[x], 0, 255);
+        /* ... match to palette ... */
+        UBYTE chosen_idx = find_closest_color(palette, adj_r, adj_g, adj_b);
+        
+        /* Calculate quantization error (16.16 fixed-point) */
+        LONG err_r = ((LONG)adj_r - (LONG)palette[chosen_idx].red) << 16;
+        
+        /* Distribute error to neighbors */
+        if (x + 1 < width)
+            curr_row_r[x + 1] += (err_r * 7) >> 20;  /* 7/16 */
+        if (x > 0)
+            next_row_r[x - 1] += (err_r * 3) >> 20;  /* 3/16 */
+        next_row_r[x]     += (err_r * 5) >> 20;      /* 5/16 */
+        if (x + 1 < width)
+            next_row_r[x + 1] += (err_r * 1) >> 20;  /* 1/16 */
+    }
+    /* Swap current and next row buffers */
+}
+```
+
+**Fixed-Point Error Propagation:**
+- Error scaled to 16.16 fixed-point to avoid rounding errors
+- Fractions (7/16, 5/16, 3/16, 1/16) implemented as bit shifts
+- No floating-point math — 68020-friendly
+
+#### GUI & Preferences
+
+**Preferences in `LayoutPreferences`:**
+
+```c
+/* In layout_preferences.h */
+UWORD deficons_max_icon_colors;     /* 4, 8, 16, 32, 64, 128, 256 */
+UWORD deficons_dither_method;       /* 0=None, 1=Ordered, 2=Floyd-Steinberg, 3=Auto */
+
+#define DEFAULT_DEFICONS_MAX_ICON_COLORS 256
+#define DEFAULT_DEFICONS_DITHER_METHOD   3  /* Auto */
+
+/* Dithering method constants */
+#define ITIDY_DITHER_NONE          0
+#define ITIDY_DITHER_ORDERED       1
+#define ITIDY_DITHER_FLOYD         2
+#define ITIDY_DITHER_AUTO          3
+```
+
+**GUI Layout:**
+
+```
+DefIcons Settings Window
+┌──────────────────────────────────────────────┐
+│ Palette mode:   [Generic (fixed 216▼]      │
+│                                              │
+│ Max icon colors: [16 colours          ▼]    │
+│ Dithering:      [Auto (recommended)   ▼]    │
+│                  - None                       │
+│                  - Ordered (Fast)             │
+│                  - Floyd-Steinberg (Best)     │
+│                  - Auto (recommended)         │
+│ ...                                          │
+└──────────────────────────────────────────────┘
+```
+
+**Chooser Labels:**
+
+```c
+/* In deficons_settings_window.c */
+static STRPTR dither_method_labels[] = {
+    "None (smooth gradients only)",
+    "Ordered (Fast - 4x4 pattern)",
+    "Floyd-Steinberg (Best quality)",
+    "Auto (recommended)",
+    NULL
+};
+```
+
+**Behavior:**
+- Dithering chooser is **ghosted/disabled** when max colors = 256 (no reduction active)
+- Auto option shows tooltip explaining its selection logic
+- Manual options allow user to override Auto for specific needs
+
+**Recommended Workflow for Low-Depth Screens:**
+1. Palette mode: "Generic (fixed 216-colour cube)" → no pen scavenging
+2. Max icon colors: 16 or 8
+3. Dithering: "Auto" (or "Floyd-Steinberg" for best quality)
+4. Result: Fast-loading, good-looking icons with no Workbench overhead
+
+### Performance Analysis
+
+**Detailed Per-Method Breakdown (64×64 icon = 4,096 pixels):**
+
+| Method | Cycles/Pixel | Total Cycles | 7 MHz 68020 | 14 MHz 68030 | Overhead |
+|--------|--------------|--------------|-------------|--------------|----------|
+| None | 0 | 0 | 0.000s | 0.000s | Baseline |
+| Ordered | ~40 | 164K | 0.023s | 0.012s | Negligible |
+| Floyd-Steinberg | ~200 | 819K | 0.117s | 0.058s | Noticeable but acceptable |
+
+**Real-World Impact:**
+
+- **None**: Instant, but poor quality at <16 colors
+- **Ordered**: Adds ~0.02s per icon (imperceptible)
+- **Floyd-Steinberg**: Adds ~0.1s per icon (one-time cost, worth it for 4-8 colors)
+
+**Batch Creation:**
+- 100 icons with Floyd-Steinberg: +10 seconds total
+- **Still acceptable** given the one-time nature and quality improvement
+
+**Memory Overhead:**
+
+| Method | Memory Required |
+|--------|----------------|
+| None | 0 bytes |
+| Ordered | 16 bytes (lookup table) |
+| Floyd-Steinberg | ~384 bytes (2 rows × 64px × 3 channels × 2 bytes) |
+
+Even Floyd-Steinberg's memory cost is trivial on systems with 1+ MB RAM.
+
+### Visual Quality Improvement
+
+Dithering effectiveness increases as color count decreases:
+
+| Max Colors | Dithering Benefit |
+|------------|-------------------|
+| 256 | None (enough colors for smooth gradients) |
+| 128 | Minimal (slight improvement in very smooth areas) |
+| 64 | Moderate (helps with sky gradients, subtle shadows) |
+| 32 | High (clearly reduces banding in most images) |
+| 16 | **Very High** (essential — makes 16-color images look acceptable) |
+| 8 | **Critical** (unusable without dithering, acceptable with it) |
+| 4 | **Extreme** (barely recognizable without dithering, may need 8×8 matrix) |
+
+### Open Questions
+
+- ~~Should dithering auto-enable when max colors ≤ 16?~~ **RESOLVED**: Use Auto option (smart default)
+- Should there be a 4th manual option for 8×8 Bayer matrix? (finer pattern, 64 bytes)
+- ~~Apply dithering during initial rendering or only during palette reduction?~~ **RESOLVED**: Primary use is during palette reduction remapping (see Integration Points above)
+- Add visual indicator in icon to show dithering method used? (e.g., tiny "O" for Ordered, "F" for Floyd)
+- For Floyd-Steinberg: serpentine scanning (alternate row directions) for better quality?
+
+### Future Enhancements
+
+**8×8 Bayer Matrix Option:**
+
+```c
+/* 8x8 Bayer matrix (range 0-63) — finer dither pattern */
+static const UBYTE bayer_8x8[64] = { ... };
+```
+
+Would provide smoother dither patterns with less visible grid. Memory cost is trivial (64 bytes). Could be added as:
+- "Ordered 4×4 (Fast)"
+- "Ordered 8×8 (Better pattern)"
+- "Floyd-Steinberg (Best)"
+
+**Serpentine Scanning:**
+
+Alternate row scan direction (left-to-right, then right-to-left) to reduce directional bias in Floyd-Steinberg. Common refinement in production implementations.
+
+---
+
+## 12d. Grayscale and Workbench Palette Mapping (4-8 Colors)
+
+**Status:** 🔲 Not yet implemented (Phase E future item)
+
+### Problem
+
+On classic 4-color or 8-color Workbench screens, **colors 0-7 are stable system colors** that rarely change. These are the "locked" Workbench palette that most applications rely on. When creating icons with 4 or 8 colors, two strategies emerge:
+
+1. **Grayscale conversion**: Convert image to grayscale, use 4 or 8 gray levels
+2. **Workbench palette mapping**: Map to the known Workbench system colors (indices 0-7)
+
+Both eliminate runtime color remapping by Workbench, speeding up display significantly.
+
+### Standard Workbench 0-7 Palette
+
+Typical Workbench 3.x system palette (may vary slightly):
+
+| Index | Color | RGB (approx) | Usage |
+|-------|-------|--------------|-------|
+| 0 | Light gray | (170, 170, 170) | Window background |
+| 1 | Black | (0, 0, 0) | Text, outlines |
+| 2 | White | (255, 255, 255) | Highlights |
+| 3 | Blue/Cyan | (102, 136, 187) | Selected items |
+| 4 | Dark gray | (85, 85, 85) | Shadows |
+| 5 | Mid gray | (119, 119, 119) | Window borders |
+| 6 | Orange/Tan | (187, 119, 68) | Drag bars (often) |
+| 7 | Light blue | (170, 170, 221) | Gadgets (often) |
+
+**Note:** Colors 4-7 vary more across Workbench themes, but 0-3 are highly stable.
+
+### Strategy 1: Grayscale Conversion
+
+**When to use:**
+- Monochrome or near-monochrome source images
+- User prefers consistent appearance across all images
+- Maximum compatibility (grayscale works everywhere)
+
+**Implementation:**
+
+```c
+/* Convert RGB to grayscale using standard luminance formula */
+UBYTE gray = (UBYTE)((306L * r + 601L * g + 117L * b) >> 10);  /* ITU-R BT.601 */
+
+/* For 4 colors: quantize to 0, 85, 170, 255 */
+UBYTE gray_4color = (gray + 42) / 85;  /* 0-3 index */
+
+/* For 8 colors: quantize to 0, 36, 73, 109, 146, 182, 219, 255 */
+UBYTE gray_8color = (gray + 18) / 36;  /* 0-7 index */
+```
+
+**Palette setup (4 grays):**
+
+```c
+static const struct ColorRegister gray_4_palette[4] = {
+    {   0,   0,   0 },  /* Black */
+    {  85,  85,  85 },  /* Dark gray */
+    { 170, 170, 170 },  /* Light gray */
+    { 255, 255, 255 }   /* White */
+};
+```
+
+**Palette setup (8 grays):**
+
+```c
+static const struct ColorRegister gray_8_palette[8] = {
+    {   0,   0,   0 },  /* Black */
+    {  36,  36,  36 },
+    {  73,  73,  73 },
+    { 109, 109, 109 },
+    { 146, 146, 146 },
+    { 182, 182, 182 },
+    { 219, 219, 219 },
+    { 255, 255, 255 }   /* White */
+};
+```
+
+**Advantages:**
+- Simple, deterministic
+- Works on any Workbench (no theme dependency)
+- Clean, professional look
+- Excellent with dithering (Floyd-Steinberg produces photo-quality grays)
+
+**Disadvantages:**
+- Loses color information (blue sky becomes gray)
+- May look dull compared to color images
+
+### Strategy 2: Workbench Palette Mapping
+
+**When to use:**
+- User wants to preserve some color (blues, tans)
+- Targeting a specific Workbench theme
+- Folder contains mixed color and monochrome images
+
+**Implementation:**
+
+```c
+/* Pre-defined Workbench 0-7 palette (user-configurable or detected) */
+static const struct ColorRegister wb_palette[8] = {
+    { 170, 170, 170 },  /* 0: Light gray */
+    {   0,   0,   0 },  /* 1: Black */
+    { 255, 255, 255 },  /* 2: White */
+    { 102, 136, 187 },  /* 3: Blue */
+    {  85,  85,  85 },  /* 4: Dark gray */
+    { 119, 119, 119 },  /* 5: Mid gray */
+    { 187, 119,  68 },  /* 6: Orange/Tan */
+    { 170, 170, 221 }   /* 7: Light blue */
+};
+
+/* For each pixel RGB, find closest match in wb_palette[0..7] */
+UBYTE best_idx = find_closest_color_fast(wb_palette, 8, r, g, b);
+```
+
+**Palette Setup:**
+
+The icon's palette is set to **exactly match** the Workbench 0-7 colors. Workbench then uses direct pen allocation (no remapping).
+
+**Advantages:**
+- Preserves some color information (blues, tans, etc.)
+- Matches Workbench theme colors (visual integration)
+- Fast display (no runtime remapping needed)
+- Works with Workbench Quality = Low (instant display)
+
+**Disadvantages:**
+- Dependent on Workbench theme (if user changes theme, icons may look wrong)
+- Only 8 colors to work with (4 for 4-color mode using indices 0-3 only)
+- May produce odd color shifts (green grass → gray or tan)
+
+### Strategy 3: Hybrid (Grayscale + WB Accent Colors)
+
+**Best of both worlds:**
+
+Use grayscale for most of the palette, but reserve 1-2 colors for Workbench accent colors (blue for highlights, orange for warnings).
+
+**Example 8-color hybrid palette:**
+
+```c
+static const struct ColorRegister hybrid_8_palette[8] = {
+    {   0,   0,   0 },  /* 0: Black */
+    {  73,  73,  73 },  /* 1: Dark gray */
+    { 146, 146, 146 },  /* 2: Mid gray */
+    { 219, 219, 219 },  /* 3: Light gray */
+    { 255, 255, 255 },  /* 4: White */
+    { 102, 136, 187 },  /* 5: WB Blue (for UI elements) */
+    { 187, 119,  68 },  /* 6: WB Orange (for warnings) */
+    { 170, 170, 170 }   /* 7: WB Light gray (for borders) */
+};
+```
+
+This provides good grayscale range (5 grays) plus Workbench theme integration (blues/oranges).
+
+### GUI Option
+
+**Add to DefIcons Settings Window:**
+
+```
+For 4-8 color icons:
+  Color mapping: [Grayscale               ▼]
+                 [Workbench palette (0-7)]
+                 [Hybrid (grays + accents)]
+```
+
+**Preference field:**
+
+```c
+/* In layout_preferences.h */
+UWORD deficons_lowcolor_mapping;  /* 0=Grayscale, 1=WB palette, 2=Hybrid */
+#define DEFAULT_DEFICONS_LOWCOLOR_MAPPING 0  /* Grayscale (safe default) */
+```
+
+**Behavior:**
+- Only active when max icon colors ≤ 8
+- Ghosted/disabled for 16+ colors (not applicable)
+- Tooltip: "Grayscale provides consistent quality. Workbench palette matches your desktop theme but may change appearance if theme changes."
+
+### Performance Benefit
+
+**Display-time speedup:**
+
+By pre-mapping to known stable colors (grayscale or WB 0-7), Workbench can use **direct pen allocation** instead of:
+1. Searching for closest available colors
+2. Allocating new shared pens
+3. Remapping/dithering at display time
+
+**Result:** Icon display is **near-instant** even on 68000 systems with Workbench Quality = Low.
+
+### Open Questions
+
+- Should grayscale be forced for 4 colors? (WB palette 0-3 only gives limited options)
+- Auto-detect current Workbench palette and save it to preferences?
+- Allow user to customize the "Workbench palette" definition via color pickers?
+- Hybrid option: which WB colors to include? User-selectable or hardcoded?
+
+---
+
+## 12e. Ultra Quality Mode (Detail-Preserving + Full 256-Color Palette)
+
+### The Problem: Lost High-Frequency Details
+
+Traditional area-average downsampling loses **small bright/dark details** like stars, sparkles, hair strands, and fine textures. When scaling 320×256 → 64×64, each output pixel averages a 5×4 source region (20 pixels). A single-pixel bright detail surrounded by darker pixels essentially vanishes:
+
+```
+/* Example: white star (255) surrounded by 19 black pixels (0) */
+Output = (255 + 0×19) / 20 = 13  /* Nearly black — star vanishes! */
+
+/* Example: dark hair strand (50) surrounded by 19 skin-tone pixels (180) */
+Output = (50 + 180×19) / 20 = 173  /* Blurred into skin tone — hair vanishes! */
+```
+
+**Real-world examples from 32-color OCS Amiga artwork:**
+
+1. **Hair texture** (monkey face, Venus) — Individual hair strands blur into solid brown/orange blocks. Fine texture disappears.
+2. **Night sky** (space scene) — Stars vanish because they're averaged with surrounding black space.
+3. **Fabric texture** — Weave patterns and folds lose definition.
+4. **Facial details** — Wrinkles, eyelashes, nostril edges blur away.
+
+**This is especially problematic for classic OCS artwork** where the original 32-color palette was carefully crafted to show these fine details at native resolution. When downsampling to icon size, those details are lost entirely.
+
+### AmigaOS Icon Color Limit: 256 Colors Maximum
+
+**CRITICAL:** AmigaOS icons (including OS3.5+ GlowIcons/ColorIcons) are **palette-based with a maximum of 256 colors**. Even on RTG screens with 16-bit or 24-bit color depth, icons are stored as:
+- An 8-bit palette (CMAP) with up to 256 RGB entries
+- Pixels as 8-bit indices into that palette
+
+**Ultra mode cannot bypass this limit.** There is no way to store true 16-bit or 24-bit RGB data in an AmigaOS icon file.
+
+### The Solution: Detail-Preserving Downsampling + Full 256-Color Palette
+
+**What Ultra mode does:**
+
+1. **Uses detail-preserving downsampling** to prevent fine detail loss (see algorithm below)
+2. **Uses the FULL 256-color palette** (ignores the "Max icon colors" setting — no reduction to 16/32/64)
+3. **Generates optimal palette** from the downsampled RGB data (Median Cut or similar)
+4. **No dithering needed** (256 colors are enough to minimize banding)
+
+**Why 256 colors helps even when source is 32 colors:**
+
+When downsampling a 320×256 OCS image with 32 source colors to 64×64:
+- **Standard mode (32 colors):** Hair strands blend into ~3-4 averaged colors (solid blocks)
+- **Ultra mode (256 colors):** Hair strands get ~20-30 intermediate colors representing subtle texture variations
+- The detail-preserving algorithm **boosts strand visibility**, and the larger palette **captures the gradations** that area-averaging creates
+
+**Example:** Hair texture in a 32-color monkey portrait:
+- **Source (32 colors):** Individual brown hair strands (RGB 120, 80, 40) against orange skin (RGB 200, 140, 80)
+- **Standard downsampling (32 colors):** Strands average to mid-tone (RGB 160, 110, 60) — looks like solid brown fill
+- **Ultra downsampling (256 colors):** Strand boost creates variations (RGB 130-180, 85-135, 45-75) — texture visible!
+
+**This is particularly valuable for:**
+- Classic OCS/ECS artwork (32-64 colors) with fine details
+- Scanned artwork and digitized photos
+- Hand-painted artwork with brush strokes
+- Any image where texture matters
+
+**RTG benefit:**
+- RTG screens display all 256 colors **accurately** without remapping/dithering
+- On Chipset 8-bit screens, Workbench must remap the 256 colors to available screen colors (slower but still better than losing detail entirely)
+- **Recommended primarily for RTG users**, but works on any system
+
+### Detail-Preserving Downsampling Algorithm
+
+**Core idea:** Boost the contribution of bright isolated pixels (stars) so they don't vanish in the average.
+
+**Implementation:**
+
+```c
+/* Detail-preserving downsampling for Ultra mode */
+void ultra_quality_downsample(UBYTE *src_rgb, UBYTE *dest_rgb,
+                               int src_w, int src_h, int dest_w, int dest_h)
+{
+    int scale_x = src_w / dest_w;  /* e.g., 4 */
+    int scale_y = src_h / dest_h;  /* e.g., 4 */
+    int sample_count = scale_x * scale_y;  /* e.g., 16 */
+    
+    for (int dest_y = 0; dest_y < dest_h; dest_y++)
+    {
+        for (int dest_x = 0; dest_x < dest_w; dest_x++)
+        {
+            int src_x_start = dest_x * scale_x;
+            int src_y_start = dest_y * scale_y;
+            int src_x_end = src_x_start + scale_x;
+            int src_y_end = src_y_start + scale_y;
+            
+            /* Accumulate area-average sums */
+            ULONG r_sum = 0, g_sum = 0, b_sum = 0;
+            UBYTE max_brightness = 0;
+            UBYTE max_r = 0, max_g = 0, max_b = 0;
+            
+            /* Scan source region */
+            for (int sy = src_y_start; sy < src_y_end; sy++)
+            {
+                for (int sx = src_x_start; sx < src_x_end; sx++)
+                {
+                    int src_offset = (sy * src_w + sx) * 3;
+                    UBYTE r = src_rgb[src_offset + 0];
+                    UBYTE g = src_rgb[src_offset + 1];
+                    UBYTE b = src_rgb[src_offset + 2];
+                    
+                    /* Standard perceptual luminance (ITU-R BT.601) */
+                    /* Y = 0.299*R + 0.587*G + 0.114*B */
+                    /* Fixed-point: (306*R + 601*G + 117*B) >> 10 */
+                    UBYTE brightness = (UBYTE)((306L * r + 601L * g + 117L * b) >> 10);
+                    
+                    /* Track brightest pixel (for detail preservation) */
+                    if (brightness > max_brightness)
+                    {
+                        max_brightness = brightness;
+                        max_r = r;
+                        max_g = g;
+                        max_b = b;
+                    }
+                    
+                    /* Accumulate for average */
+                    r_sum += r;
+                    g_sum += g;
+                    b_sum += b;
+                }
+            }
+            
+            /* Compute area-average color */
+            UBYTE avg_r = (UBYTE)(r_sum / sample_count);
+            UBYTE avg_g = (UBYTE)(g_sum / sample_count);
+            UBYTE avg_b = (UBYTE)(b_sum / sample_count);
+            
+            /* Compute average brightness */
+            UBYTE avg_brightness = (UBYTE)((306L * avg_r + 601L * avg_g + 117L * avg_b) >> 10);
+            
+            /* Detail preservation: if brightest pixel is 3× brighter than average,
+             * boost output to preserve the detail (e.g., stars in night sky) */
+            if (max_brightness > avg_brightness * 3)
+            {
+                /* Blend: 70% average + 30% boosted brightness */
+                /* This preserves the star while maintaining color accuracy */
+                int boost_r = max_r - avg_r;
+                int boost_g = max_g - avg_g;
+                int boost_b = max_b - avg_b;
+                
+                avg_r = (UBYTE)MIN(255, avg_r + boost_r * 3 / 10);
+                avg_g = (UBYTE)MIN(255, avg_g + boost_g * 3 / 10);
+                avg_b = (UBYTE)MIN(255, avg_b + boost_b * 3 / 10);
+            }
+            
+            /* Write output pixel (as 24-bit RGB — will be quantized to 256-color palette later) */
+            int dest_offset = (dest_y * dest_w + dest_x) * 3;
+            dest_rgb[dest_offset + 0] = avg_r;
+            dest_rgb[dest_offset + 1] = avg_g;
+            dest_rgb[dest_offset + 2] = avg_b;
+        }
+    }
+}
+```
+
+**Key Parameters:**
+
+```c
+/* Brightness detection threshold */
+#define ULTRA_DETAIL_THRESHOLD 3  /* Max must be 3× brighter than avg to trigger */
+
+/* Brightness boost blend ratio */
+#define ULTRA_BOOST_NUMERATOR   3  /* 3/10 = 30% boost */
+#define ULTRA_BOOST_DENOMINATOR 10
+```
+
+### Palette Generation (256 Colors Maximum)
+
+After detail-preserving downsampling produces a 24-bit RGB buffer, it must be quantized to a 256-color palette:
+
+**Method: Median Cut or Popularity-Based**
+
+```c
+/* Generate optimal 256-color palette from RGB buffer */
+ColorRegister palette[256];
+int palette_size = generate_optimal_palette(dest_rgb, dest_w, dest_h, palette, 256);
+
+/* Remap RGB pixels to palette indices */
+UBYTE *indexed_pixels = remap_to_palette(dest_rgb, dest_w, dest_h, palette, palette_size);
+
+/* Save as standard 8-bit AmigaOS icon with 256-color CMAP */
+save_icon_with_palette(indexed_pixels, dest_w, dest_h, palette, palette_size);
+```
+
+**No dithering needed:** With 256 colors available, banding is minimal for most images. Dithering would only add noise.
+
+### File Size Comparison
+
+| Mode | Palette Size | Icon Size (64×64) | Compression | Approx. File Size |
+|------|--------------|-------------------|-------------|-------------------|
+| Reduced (16 colors) | 16 entries | 4,096 bytes (8-bit indices) | RLE | 2-3 KB |
+| Reduced (64 colors) | 64 entries | 4,096 bytes (8-bit indices) | RLE | 2-4 KB |
+| Ultra (256 colors) | 256 entries | 4,096 bytes (8-bit indices) | RLE | 3-5 KB |
+
+**Note:** All modes use the same pixel buffer size (64×64 = 4,096 bytes). The only difference is palette size (16×3 = 48 bytes vs 256×3 = 768 bytes). File size is similar regardless of color count.
+
+### Performance Analysis
+
+| Phase | Standard Mode (64 colors) | Ultra Mode (256 colors) | Overhead |
+|-------|---------------------------|-------------------------|----------|
+| **Load source IFF** | 0.05s | 0.05s | — |
+| **Downsampling** | 0.05s (area-average) | 0.06-0.07s (detail-preserving) | +20-40% |
+| **Palette quantization** | 0.02s (Median Cut, 64 colors) | 0.03s (Median Cut, 256 colors) | +50% |
+| **Dithering** | 0.05s (Floyd-Steinberg) | — (not needed with 256 colors) | -0.05s |
+| **Save output IFF** | 0.03s | 0.03s | — |
+| **Total** | ~0.20s | ~0.17-0.19s | **5-15% faster** |
+
+**Result:** Ultra mode with 256 colors is slightly **faster or equal** to standard mode with 64 colors + dithering because it skips the dithering step.
+
+### Visual Quality Comparison
+
+| Detail Type | Standard (64 colors + dither) | Ultra (256 colors detail-preserving) |
+|-------------|-------------------------------|-------------------------------------|
+| **Hair texture (OCS artwork)** | Blurs into solid blocks, strands lost | Individual strands visible, texture preserved |
+| **Facial details (wrinkles, eyelashes)** | Smoothed away, generic appearance | Sharp features, character retained |
+| **Stars in night sky** | Most single-pixel stars lost | Stars preserved (30% brightness boost) |
+| **Fabric texture (weave, folds)** | Flat appearance, detail lost | Texture and depth visible |
+| **Fine text** | Readable but slightly fuzzy | Sharper with edge preservation |
+| **Smooth gradients** | Minor banding with dithering | Smooth (256 colors) |
+| **Color accuracy** | Good with dithering | Excellent (4× more colors) |
+| **Overall quality** | Good | Excellent |
+
+**Bottom line for OCS artwork:** Ultra mode is the difference between "recognizable but blurry" and "looks like a proper miniature of the original."
+
+### RTG vs Chipset Display
+
+**RTG screens (16-bit or higher):**
+- Display all 256 colors **accurately** without remapping
+- Fast icon display (no pen scavenging or palette juggling)
+- Icons look exactly as intended
+
+**Chipset 8-bit screens (256 colors total):**
+- If Workbench palette matches icon palette → perfect display
+- If Workbench palette differs → remapping/dithering required (slow)
+- Multiple 256-color icons cause pen scavenging problems (see section 11, Mode 3)
+
+**Ultra mode is a trade-off:**
+- **Best for:** RTG users displaying classic OCS/ECS artwork who want maximum detail preservation
+- **Acceptable for:** Chipset 8-bit users willing to accept palette remapping overhead for better quality
+- **Avoid for:** Chipset users on very low-depth screens (32-color screens) — stick to 16-32 color modes
+
+### Limitations and Warnings
+
+**1. Icon format constraint:**
+   - Icons are **palette-based** with maximum 256 colors (AmigaOS limitation)
+   - Cannot bypass this limit, even on RTG screens
+   - This is NOT true 16-bit or 24-bit color (just more palette entries)
+
+**2. Chipset display performance:**
+   - On Chipset 8-bit screens, 256-color icons may cause palette remapping overhead
+   - Multiple 256-color icons exhaust shared pens (pen scavenging problem)
+   - Consider using "Generic Palette" mode (section 11, Mode 3) alongside Ultra for Chipset compatibility
+
+**3. File size:**
+   - Slightly larger palette (256 entries vs 64 entries = +640 bytes)
+   - RLE compression minimizes impact (~3-5 KB vs 2-4 KB)
+   - Not a significant concern for hard drive users
+
+**4. When NOT to use Ultra:**
+   - Simple graphics, diagrams, or flat-color artwork (no fine details to preserve)
+   - Landscapes or portraits without texture (standard 64-color + dither is sufficient)
+   - Users on 32-64 color Chipset screens (pen scavenging will make display slow)
+   - Auto mode should detect when Ultra is unnecessary
+
+### GUI Integration
+
+**Option 1: Extend max colors chooser (recommended)**
+
+```
+Max icon colors: [4 colours                  ▼]
+                 [8 colours                  ]
+                 [16 colours                 ]
+                 [32 colours                 ]
+                 [64 colours                 ]
+                 [128 colours                ]
+                 [No limit (256 colours)     ]
+                 [Ultra (256 + detail-preserving)]
+```
+
+**Option 2: Separate checkbox**
+
+```
+Max icon colors: [64 colours                 ▼]
+
+☑ Ultra quality (detail-preserving)
+  Preserves fine details like hair texture and stars.
+  Uses full 256-color palette. Best for RTG screens.
+```
+
+**Recommended: Option 1** — simpler UI, clearly shows Ultra is a "max colors" variant.
+
+### Preference Fields
+
+```c
+/* In layout_preferences.h */
+BOOL deficons_ultra_mode;  /* TRUE = 256 colors + detail-preserving, FALSE = standard */
+#define DEFAULT_DEFICONS_ULTRA_MODE FALSE  /* Standard mode by default */
+```
+
+**Interaction with other settings:**
+
+When `deficons_ultra_mode == TRUE`:
+- **Override** `deficons_max_icon_colors` to 256 (full palette)
+- **Disable** `deficons_dither_method` (no dithering needed with 256 colors)
+- **Ignore** `deficons_lowcolor_mapping` (not applicable above 8 colors)
+- **Still use** `deficons_palette_mode` (PICTURE vs SCREEN)
+
+**IMPORTANT EXCEPTION:** Ultra mode CAN be combined with palette reduction + dithering for "Ultra + Dithering" workflow (see below).
+
+### Ultra + Dithering Workflow (Best of Both Worlds)
+
+**Scenario:** You want detail preservation from Ultra mode BUT need low color counts for Chipset compatibility (avoid pen scavenging).
+
+**Pipeline:**
+
+1. **Step 1:** Use Ultra detail-preserving downsample → 64×64 RGB buffer with preserved hair/stars/texture
+2. **Step 2:** Reduce to target color count (16/32 colors) using palette quantization
+3. **Step 3:** Apply Floyd-Steinberg dithering during remapping
+4. **Result:** 16-color icon with dithered hair texture patterns
+
+**Why this works better than standard pipeline:**
+
+| Pipeline | Hair Strands in Source | After Downsampling | After Dither to 16 Colors | Result |
+|----------|------------------------|-------------------|---------------------------|--------|
+| **Standard** | Present | **Blurred away** by area-average | Dithering can't restore lost detail | Solid brown blur |
+| **Ultra + Dither** | Present | **Preserved** by detail-boost | Dithering represents preserved texture | Dithered hair patterns visible! |
+
+**Key insight:** Dithering can only dither what's in the image. If details are already averaged away, dithering just patterns the blur. But if Ultra preserves details first, dithering can represent them at low color counts.
+
+**Example: 32-color OCS monkey portrait → 16-color icon**
+
+- **Standard (area-average + 16-color dither):**
+  - Hair strands: Averaged to mid-tone during downsampling → dithered as solid pattern (no texture visible)
+  
+- **Ultra (detail-preserve + 16-color dither):**
+  - Hair strands: Preserved during downsampling (boosted by 30%) → dithered as textured pattern (strands visible!)
+
+**When to use Ultra + Dithering:**
+
+- ✅ Chipset users on 32-128 color screens (avoid pen scavenging but want quality)
+- ✅ Classic OCS artwork with fine texture details
+- ✅ File size concerns (16-32 colors = smaller than 256 colors)
+- ✅ Want detail preservation without palette remapping overhead
+
+**How to enable in GUI:**
+
+```
+Max icon colors: [16 colours                 ▼]
+Dithering:       [Floyd-Steinberg (Best)     ▼]
+☑ Ultra quality (detail-preserving)
+```
+
+**Implementation note:** When Ultra mode is enabled AND max icon colors < 256, the pipeline becomes:
+1. Ultra detail-preserving downsample to RGB buffer
+2. Generate optimal N-color palette (N = user's max icon colors setting)
+3. Remap with dithering if enabled
+
+This overrides the "Ultra disables dithering" rule. Ultra + low color count = automatic dithering recommendation.
+
+### Implementation Notes
+
+**⚠️ Implementation Flexibility Reminder**: All code examples in section 12e (detail-preserving algorithm, brightness thresholds, boost percentages, Ultra + Dithering pipeline) are guidance to illustrate the goals. If production testing shows different thresholds work better, or a different approach preserves details more effectively, adjust the implementation. The goal is "preserve hair strands/stars during downsampling" — the exact algorithm is flexible. Document significant changes in "Key Deviations" section.
+
+**Phase E additions:**
+
+**Item 43:** Add "Ultra quality mode" GUI control:
+   - Add to max icon colors chooser: `"Ultra (256 + detail-preserving)"`
+   - Or add checkbox: `"☑ Ultra quality (detail-preserving)"`
+   - Info tooltip: "Best for images with stars, sparkles, or fine details. Uses full 256-color palette."
+   
+**Item 44:** Implement `ultra_quality_downsample()`:
+   - Detail-preserving downsampling algorithm (as shown above)
+   - Brightness detection and boost logic
+   - Integration with existing `area_average_scale()` — use Ultra algorithm if mode enabled
+   
+**Item 45:** Integrate with palette quantization:
+   - After Ultra downsampling, generate optimal 256-color palette (Median Cut)
+   - Remap RGB buffer to palette indices
+   - Save as standard 8-bit icon with 256-entry CMAP
+   
+**Item 46:** Add Auto mode logic (optional):
+   - Detect high-frequency details in source image
+   - Auto-enable Ultra mode if >1% of pixels are bright isolated details
+   - Display notification: "Ultra mode auto-enabled (stars detected)"
+
+### Tuning Parameters
+
+**Brightness threshold** (how bright must a detail be to preserve it?):
+
+```c
+/* Conservative (preserve only very bright details like stars) */
+#define ULTRA_DETAIL_THRESHOLD 4  /* Max must be 4× brighter */
+
+/* Moderate (recommended — good balance) */
+#define ULTRA_DETAIL_THRESHOLD 3  /* Max must be 3× brighter */
+
+/* Aggressive (preserve even subtle highlights) */
+#define ULTRA_DETAIL_THRESHOLD 2  /* Max must be 2× brighter */
+```
+
+**Boost strength** (how much to brighten the detail):
+
+```c
+/* Subtle boost (more natural, may still lose faint stars) */
+#define ULTRA_BOOST_NUMERATOR   2  /* 2/10 = 20% */
+#define ULTRA_BOOST_DENOMINATOR 10
+
+/* Standard boost (recommended) */
+#define ULTRA_BOOST_NUMERATOR   3  /* 3/10 = 30% */
+#define ULTRA_BOOST_DENOMINATOR 10
+
+/* Strong boost (maximum star visibility, may look artificial) */
+#define ULTRA_BOOST_NUMERATOR   5  /* 5/10 = 50% */
+#define ULTRA_BOOST_DENOMINATOR 10
+```
+
+### Auto Mode Integration
+
+**When to auto-enable Ultra mode:**
+
+```c
+/* Auto mode decision logic */
+BOOL should_use_ultra_mode(UBYTE *source_rgb, int src_width, int src_height)
+{
+    /* Check image characteristics first (fast test) */
+    int high_freq_pixel_count = count_high_frequency_details(source_rgb, src_width, src_height);
+    int total_pixels = src_width * src_height;
+    
+    /* If >1% of pixels are bright isolated details, use Ultra */
+    if (high_freq_pixel_count * 100 / total_pixels > 1)
+        return TRUE;  /* Image has stars/sparkles — Ultra benefits it */
+    
+    /* Otherwise standard 64-color mode is fine */
+    return FALSE;
+}
+```
+
+**High-frequency detail detection:**
+
+```c
+int count_high_frequency_details(UBYTE *rgb, int width, int height)
+{
+    int detail_count = 0;
+    
+    for (int y = 1; y < height - 1; y++)
+    {
+        for (int x = 1; x < width - 1; x++)
+        {
+            int offset = (y * width + x) * 3;
+            UBYTE center_brightness = (UBYTE)((306L * rgb[offset+0] + 
+                                               601L * rgb[offset+1] + 
+                                               117L * rgb[offset+2]) >> 10);
+            
+            /* Sample 4 neighbors (N, S, E, W) */
+            int n_off = ((y-1) * width + x) * 3;
+            int s_off = ((y+1) * width + x) * 3;
+            int e_off = (y * width + (x+1)) * 3;
+            int w_off = (y * width + (x-1)) * 3;
+            
+            UBYTE north_brightness = (UBYTE)((306L * rgb[n_off+0] + 601L * rgb[n_off+1] + 117L * rgb[n_off+2]) >> 10);
+            UBYTE south_brightness = (UBYTE)((306L * rgb[s_off+0] + 601L * rgb[s_off+1] + 117L * rgb[s_off+2]) >> 10);
+            UBYTE east_brightness  = (UBYTE)((306L * rgb[e_off+0] + 601L * rgb[e_off+1] + 117L * rgb[e_off+2]) >> 10);
+            UBYTE west_brightness  = (UBYTE)((306L * rgb[w_off+0] + 601L * rgb[w_off+1] + 117L * rgb[w_off+2]) >> 10);
+            
+            UBYTE avg_neighbor = (north_brightness + south_brightness + 
+                                  east_brightness + west_brightness) / 4;
+            
+            /* If center is 3× brighter than neighbors, it's a detail */
+            if (center_brightness > avg_neighbor * 3)
+                detail_count++;
+        }
+    }
+    
+    return detail_count;
+}
+```
+
+**Note:** This detection scan takes ~0.01s for a 256×256 image on 68020. It's fast enough to run on every image if Auto mode is enabled.
+
+### Summary: Why Ultra Mode Matters for OCS Artwork
+
+**Target use case:** Classic Amiga artwork in 32-64 colors (OCS/ECS) with fine texture details
+
+**Problem solved:** When reducing 320×256 → 64×64 icons:
+- Hair strands blur into solid blocks
+- Facial features (wrinkles, eyelashes) disappear
+- Fabric texture and brush strokes flatten
+- Stars and sparkles vanish
+
+**Ultra mode solution:**
+1. **Detail-preserving algorithm:** Boosts contribution of fine details by 30% so they don't vanish in averaging
+2. **256-color palette:** Provides enough colors to represent the gradations that downsampling creates (even from 32-color sources)
+3. **No dithering needed:** 256 colors eliminate banding without adding noise
+4. **Result:** Icons look like proper miniatures of the original artwork, not blurry thumbnails
+
+**Performance:** Similar or faster than 64-color mode with dithering (~0.17-0.19s vs ~0.20s per icon)
+
+**Best for:** 
+- **Primary:** RTG users displaying classic OCS artwork, digitized artwork, hand-painted images, or any content where texture/detail preservation is critical
+- **Also valuable:** Chipset users who combine Ultra with palette reduction + dithering (see "Ultra + Dithering Workflow" above) for best quality at low color counts
+
+### Open Questions
+
+- **Threshold tuning:** Is 3× the right brightness threshold, or should it be user-adjustable?
+- **Boost strength:** 30% boost seems reasonable from initial testing, but needs validation with real images
+- **Auto mode default:** Should Auto mode enable Ultra for high-frequency images by default, or require explicit user opt-in?
+- **Performance on 68000:** Is detail-preserving scan acceptable on 68000 systems (~0.05-0.1s)?
+- **UI placement:** Extend max colors chooser (Option 1) or separate checkbox (Option 2)?
+- **Ultra + Dithering workflow:** Should GUI automatically enable dithering when Ultra mode + low color count (<64) is selected? Or leave it manual?
+- **Ultra + Dithering recommendation:** Should Auto mode suggest "Ultra + 32 colors + dither" for Chipset users with detailed images?
+- **Comparison baseline:** Should "standard mode" default to 64 colors or 128 colors for comparison?
 
 ---
 
@@ -1222,12 +2538,21 @@ Six classic Amiga IFF ILBM images in `Bin/Amiga/Tests/images/`:
 
 ### Phase E: Polish and Future — � PARTIAL
 
+**File Organization Note**: When implementing items 39-46 (palette reduction, dithering, Ultra mode), organize code into `src/icon_edit/palette/` subfolder with separate focused modules rather than one monolithic file. See section 12b Implementation Notes for proposed file structure (`palette_quantization.c`, `palette_dithering.c`, `palette_mapping.c`, `palette_reduction.c`, `palette_grayscale.c`, `ultra_downsample.c`).
+
 34. ✅ HAM support via datatype fallback (implemented 2026-02-10) — `itidy_render_via_datatype()` handles HAM6/HAM8 via `picture.datatype`, RGB24 pixel extraction via `PDTM_READPIXELARRAY`, 6×6×6 color cube quantization, aspect-ratio-aware scaling
 35. 🔲 Screen palette mode implementation (read Workbench palette via `GetRGB32()`, quantize with optional dithering) — GUI chooser already exists
 36. 🔲 Datatype-based rendering for non-ILBM picture types (JPEG, PNG, GIF) — infrastructure exists (`itidy_render_via_datatype()`), needs type detection expansion
 37. 🔲 Low-res pixel aspect ratio correction (subtle)
 38. 🔲 Consider: selected image for frameless thumbnails (complement highlight may suffice)
-39. 🔲 Maximum icon color count option (reduce palette to 16/32/64/128/256 colors) — see section 12b below
+39. 🔲 Maximum icon color count option (reduce palette to 4/8/16/32/64/128/256 colors) — see section 12b below — **File**: `palette/palette_reduction.c`
+40. 🔲 Dithering methods: None/Ordered/Floyd-Steinberg/Auto — see section 12c below — **Files**: `palette/palette_dithering.c`, `palette/palette_mapping.c`
+41. 🔲 Floyd-Steinberg error diffusion dithering (high quality, ~0.1s overhead) — worth it for 4-16 colors — see section 12c — **File**: `palette/palette_dithering.c`
+42. 🔲 Grayscale and Workbench palette mapping for 4-8 color icons — see section 12d below — **File**: `palette/palette_grayscale.c`
+43. 🔲 Ultra quality mode GUI control (add to max colors chooser or separate checkbox) — see section 12e — **GUI integration only**
+44. 🔲 Detail-preserving downsampling algorithm (preserve stars, sparkles, high-frequency details) — see section 12e — **File**: `palette/ultra_downsample.c`
+45. 🔲 Integrate Ultra with 256-color palette quantization (Median Cut, no dithering needed) — see section 12e — **Files**: `palette/palette_quantization.c`, `palette/ultra_downsample.c`
+46. 🔲 Optional Auto mode logic (detect high-frequency details and auto-enable Ultra) — see section 12e — **File**: `palette/ultra_downsample.c`
 
 ---
 
@@ -1264,3 +2589,18 @@ Six classic Amiga IFF ILBM images in `Bin/Amiga/Tests/images/`:
 | 27 | Datatype aspect ratio handling? | Same algorithm as native IFF: calculate destination size from `display_width × display_height` (aspect-corrected), scale from actual buffer size (`src_width × src_height`). Infer hires from width ≥400px, lace from height ≥400px (ModeID often incomplete). | 2026-02-10 |
 | 28 | Hybrid native+datatype or datatype-only? | Hybrid. Native parser for 90% (faster, no dependencies), datatype fallback for HAM/exotic formats. Best of both: speed for common cases, completeness for edge cases. | 2026-02-10 |
 | 29 | Max icon color count to reduce palette pressure? | Add user-configurable chooser (16/32/64/128/256). Post-render quantization step before save. Primarily benefits 8-bit screens loading HAM-derived icons. See section 12b. | 2026-02-13 |
+| 30 | Dithering algorithm for low-color icons? | Three methods offered: None, Ordered (Bayer 4×4), Floyd-Steinberg, plus Auto option. Floyd-Steinberg reconsidered: one-time creation cost (~0.1s) is acceptable for quality improvement at 4-16 colors. Ordered remains fast default (16-32 colors). Auto selects best method based on color count. See section 12c. | 2026-02-15 |
+| 31 | Order of operations: palette reduction vs dithering? | Palette reduction FIRST, then dither during pixel remapping. Dithering requires knowing the target palette to select neighboring colors effectively. See sections 12b and 12c. | 2026-02-15 |
+| 32 | Color count options for max icon colors chooser? | 4, 8, 16, 32, 64, 128, "No limit (256 colours)". More granular than original spec to support extreme reduction for very low-depth screens. Dithering becomes critical at 16 and below. | 2026-02-15 |
+| 33 | Generic palette to solve pen scavenging? | Add Mode 3: Generic Palette using fixed 6×6×6 cube (216 colors) + grayscale ramp. All icons share the same palette → Workbench allocates pens once → no scavenging on 32-128 color screens. Already implemented for datatype path. See section 11, Mode 3. | 2026-02-15 |
+| 34 | Floyd-Steinberg worth the performance cost? | YES for one-time icon creation. Adds ~0.1s per icon but produces dramatically better quality at 4-8 colors. Workbench displays pre-dithered icons instantly (no runtime remapping). Benefits Workbench Quality setting. See section 12c performance analysis. | 2026-02-15 |
+| 35 | Grayscale vs Workbench palette for 4-8 colors? | Offer both via chooser: Grayscale (consistent, theme-independent), Workbench palette 0-7 (color preservation, theme integration), Hybrid (grays + WB accent colors). Pre-mapping to stable colors eliminates Workbench display-time remapping (instant display). See section 12d. | 2026-02-15 |
+| 36 | Ultra quality mode for detail preservation? | Add Ultra mode (256 colors + detail-preserving downsampling). Preserves small bright details (stars in night sky) lost in traditional area-averaging. Uses full 256-color palette (not reduced). Similar file size to standard mode (~3-5 KB for 64×64). Best displayed on RTG screens for accurate color rendering. See section 12e. | 2026-02-15 |
+| 37 | Detail-preserving algorithm: how to detect stars/sparkles? | Scan each downsampled region for maximum brightness. If max brightness > 3× average brightness, boost output by 30% to preserve the detail. Uses perceptual luminance (ITU-R BT.601). Threshold and boost % are tunable constants. See section 12e implementation. | 2026-02-15 |
+| 38 | Ultra mode palette generation? | Generate optimal 256-color palette from detail-preserved RGB buffer using Median Cut. No dithering needed with 256 colors. File size similar to standard mode (palette is 256×3 = 768 bytes vs 64×3 = 192 bytes, negligible difference with RLE). Still 8-bit palette-based icon (AmigaOS constraint). | 2026-02-15 |
+| 39 | Ultra mode interaction with other settings? | When Ultra enabled: override max icon colors to 256 (full palette), disable dithering (not needed with 256 colors), ignore lowcolor mapping (N/A above 8 colors). Palette mode (PICTURE vs SCREEN) still applies. Ultra = 256 colors + detail-preserving algorithm. | 2026-02-15 |
+| 40 | Auto mode: when to select Ultra automatically? | Check image characteristics: if >1% of pixels are bright isolated details (stars/sparkles), enable Ultra. Fast pre-scan (~0.01s) detects high-frequency content. No RTG/screen depth checks needed (Ultra works on any screen, just displays better on RTG). Otherwise use standard 64-color mode. See section 12e `should_use_ultra_mode()` logic. | 2026-02-15 |
+| 41 | Should Ultra mode warn about Chipset display? | Optional: display info tooltip "Best for RTG screens" but don't block usage. 256-color icons work on Chipset but may cause palette remapping overhead (pen scavenging). User can choose between Ultra (quality) or reduced colors (Chipset compatibility). No mandatory RTG detection needed. | 2026-02-15 |
+| 42 | Ultra mode performance vs standard 64-color? | Similar or slightly faster! Detail-preserving scan adds ~0.01-0.02s. Palette generation to 256 colors takes ~0.03s (vs 0.02s for 64 colors). No dithering needed (saves 0.05s). Net: ~0.17-0.19s vs ~0.20s for 64-color + dither. Comparable speed with better quality. See section 12e performance table. | 2026-02-15 || 43 | Ultra + Dithering workflow: Should GUI auto-enable dithering? | When Ultra mode + low color count (<64) selected, should dithering be automatically enabled (override "Ultra disables dithering" rule)? Or leave it manual? Auto-enable is user-friendly (preserves details THEN dithers them), but may confuse users expecting Ultra = no dither. Recommend: Auto-enable with tooltip explaining the pipeline. See section 12e "Ultra + Dithering Workflow". | 2026-02-15 |
+| 44 | Ultra + Dithering: Order-of-operations critical? | YES. Must preserve details FIRST (Ultra downsample), THEN reduce colors + dither. Standard pipeline averages away hair strands/stars, then dithering just patterns the blur. Ultra + Dither pipeline keeps details during downsampling, then dithers them into 16-32 color patterns (strands visible!). Key insight: Dithering can only dither what's in the image. If details averaged away, dithering can't restore them. See section 12e comparison table. | 2026-02-15 |
+| 45 | Ultra + Dithering performance impact? | Slightly slower than Ultra alone: detail-scan ~0.01-0.02s, palette generation to 16-32 colors ~0.01s, dithering ~0.05s. Total ~0.23-0.26s vs ~0.17-0.19s for Ultra alone. But produces Chipset-compatible 16-32 color icons with preserved texture (hair strands, fabric weave) that standard 16-color + dither cannot achieve. Worth the extra ~0.06s for OCS artwork use case. See section 12e. | 2026-02-15 |
