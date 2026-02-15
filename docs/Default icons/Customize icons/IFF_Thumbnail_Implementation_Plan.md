@@ -16,7 +16,7 @@
 | B: Scaling & Rendering | ✅ Complete | Area-average + 2×2 pre-filter, fixed-point 16.16, picture palette, hires+lace aspect |
 | C: Integration | ✅ Complete | Template-free pipeline, direct dimension lookup, cache validation |
 | D: Size & Palette UI | ✅ Complete | Size chooser + palette mode chooser in DefIcons settings |
-| E: Polish & Future | � Partial | HAM via datatype fallback ✅, screen palette mode 🔲, other datatypes 🔲 |
+| E: Polish & Future | � Partial | HAM via datatype fallback ✅, screen palette mode 🔲, other datatypes 🔲, max color count 🔲 |
 
 ### Key Deviations From Original Plan
 
@@ -571,6 +571,53 @@ static STRPTR palette_mode_labels[] = {
 ```
 
 ~~Constant: `ITIDY_TT_PALETTE_MODE` = `"ITIDY_PALETTE_MODE"`~~ — Removed from `icon_iff_render.h`
+
+---
+
+## 12b. Maximum Icon Color Count (Palette Reduction)
+
+**Status:** 🔲 Not yet implemented (Phase E future item)
+
+### Problem
+
+When a high-color source image (e.g. a HAM6/HAM8 picture converted to a 256-color icon via the datatype fallback path) is displayed on an 8-bit (256-color) Workbench screen, Workbench must find or allocate matching palette entries for every unique color in the icon. If the icon contains close to 256 distinct colors, this color mapping process can cause significant slowdown when loading and displaying the icon — the system spends time searching for closest-match colors across the full screen palette for each icon pixel.
+
+This is especially noticeable on 68020-class hardware where the palette matching is CPU-intensive. A HAM image can contain thousands of unique colors which, after quantization to 256 via the 6x6x6 color cube, still produces up to 216 distinct palette entries that all need mapping against the screen palette.
+
+### Proposed Solution
+
+Add a user-configurable **maximum color count** option that reduces the icon's palette before saving. This caps the number of unique colors in the generated icon to a user-selected limit:
+
+| Option | Colors | Typical Use Case |
+|--------|--------|------------------|
+| 16 | 16 | Fastest display, 4-bit screens, minimal palette pressure |
+| 32 | 32 | Good compromise for low-color screens |
+| 64 | 64 | Moderate reduction, decent quality |
+| 128 | 128 | Light reduction, preserves most detail |
+| 256 | 256 | No reduction (current default behavior) |
+
+### Implementation Notes
+
+- **GUI**: Add a chooser gadget in the DefIcons settings window (e.g. "Max icon colors") with labels: `"16"`, `"32"`, `"64"`, `"128"`, `"256 (no limit)"`
+- **Preference field**: `UWORD deficons_max_icon_colors` in `LayoutPreferences` with `DEFAULT_DEFICONS_MAX_ICON_COLORS = 256`
+- **Algorithm**: After rendering is complete but before saving, if the icon's palette exceeds the configured limit:
+  1. Count unique colors actually used in the pixel buffer
+  2. If count exceeds the limit, apply median-cut or popularity-based quantization to reduce the palette
+  3. Remap all pixel indices to the reduced palette
+  4. Use `itidy_find_closest_palette_color()` (already shared) for the remapping step
+- **Applies to both pipelines**: Native IFF (PICTURE palette mode) and datatype fallback (6x6x6 cube)
+- **Performance**: The reduction itself adds minimal overhead (single-pass pixel scan + palette rebuild). The benefit comes at display time when Workbench has far fewer colors to map
+- **Fixed-point arithmetic**: All color distance calculations must use integer math only (no floats on 68020)
+
+### Rationale
+
+On an 8-bit Workbench screen, loading a folder full of 256-color HAM-derived icons can noticeably slow the desktop as Workbench remaps each icon's palette against the screen palette. Reducing to 64 or even 32 colors typically produces visually acceptable thumbnails at a fraction of the display-time cost. The user can choose the trade-off between quality and performance based on their hardware and screen depth.
+
+### Open Questions
+
+- Should the option auto-adjust based on screen depth? (e.g. auto-cap at 16 on 4-bit screens)
+- Should there be an "Auto" setting that picks a sensible limit based on detected screen depth?
+- Quantization algorithm: median-cut (better quality) vs popularity (simpler, faster)?
 
 ---
 
@@ -1180,6 +1227,7 @@ Six classic Amiga IFF ILBM images in `Bin/Amiga/Tests/images/`:
 36. 🔲 Datatype-based rendering for non-ILBM picture types (JPEG, PNG, GIF) — infrastructure exists (`itidy_render_via_datatype()`), needs type detection expansion
 37. 🔲 Low-res pixel aspect ratio correction (subtle)
 38. 🔲 Consider: selected image for frameless thumbnails (complement highlight may suffice)
+39. 🔲 Maximum icon color count option (reduce palette to 16/32/64/128/256 colors) — see section 12b below
 
 ---
 
@@ -1215,3 +1263,4 @@ Six classic Amiga IFF ILBM images in `Bin/Amiga/Tests/images/`:
 | 26 | Datatype RGB24 quantization palette? | 6×6×6 RGB color cube (216 colors) + grayscale ramp. Uniform color distribution gives better matching than source palette. Avoids black/white output from minimal default palettes. | 2026-02-10 |
 | 27 | Datatype aspect ratio handling? | Same algorithm as native IFF: calculate destination size from `display_width × display_height` (aspect-corrected), scale from actual buffer size (`src_width × src_height`). Infer hires from width ≥400px, lace from height ≥400px (ModeID often incomplete). | 2026-02-10 |
 | 28 | Hybrid native+datatype or datatype-only? | Hybrid. Native parser for 90% (faster, no dependencies), datatype fallback for HAM/exotic formats. Best of both: speed for common cases, completeness for edge cases. | 2026-02-10 |
+| 29 | Max icon color count to reduce palette pressure? | Add user-configurable chooser (16/32/64/128/256). Post-render quantization step before save. Primarily benefits 8-bit screens loading HAM-derived icons. See section 12b. | 2026-02-13 |

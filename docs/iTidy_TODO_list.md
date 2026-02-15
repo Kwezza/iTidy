@@ -33,6 +33,13 @@ All items here are **non‑destructive** by design and only apply when **no exis
   - [ ] Quality mode (optional, slower)
   - [ ] Bail‑out rules for HAM hires / interlace / large images
 - [ ] Cache thumbnails and skip regeneration when source unchanged
+- [ ] Add maximum icon color count option (reduce palette to 16/32/64/128/256):
+  - [ ] Chooser gadget in DefIcons settings ("Max icon colors")
+  - [ ] Post-render quantization: reduce palette when color count exceeds limit
+  - [ ] Remap pixel indices to reduced palette using closest-color matching
+  - [ ] Primarily benefits 8-bit screens where HAM-derived 256-color icons cause
+        slow Workbench palette remapping at display time
+  - [ ] Consider auto-adjustment based on detected screen depth
 
 ---
 
@@ -95,6 +102,8 @@ All items here are **non‑destructive** by design and only apply when **no exis
 - [ ] Skip generation when free memory is low
 - [ ] Skip softlinks or use generic link icon
 - [ ] Deterministic output: same input = same icon every run
+- [ ] Cap icon palette size to user-configured max (16–256) to reduce
+      Workbench color remapping overhead on low-depth screens
 
 ---
 
