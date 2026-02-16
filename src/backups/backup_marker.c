@@ -7,7 +7,7 @@
  * Date: October 24, 2025
  */
 
-#include "platform/platform.h"
+#include "../platform/platform.h"
 
 /* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
 #include <console_output.h>
@@ -18,7 +18,7 @@
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
-#include "writeLog.h"
+#include "../writeLog.h"
 #define DEBUG_LOG(...) /* disabled on Amiga */
 
 #include "backup_marker.h"

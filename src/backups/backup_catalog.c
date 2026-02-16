@@ -17,7 +17,7 @@
 /* Amiga-specific includes */
 #include <dos/dos.h>
 #include <proto/dos.h>
-#include "writeLog.h"
+#include "../writeLog.h"
 /* VBCC C99 mode has issues with variadic macros, just disable for now */
 #define DEBUG_LOG(...) /* disabled */
 

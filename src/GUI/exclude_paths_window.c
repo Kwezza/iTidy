@@ -19,7 +19,7 @@
 
 #include "exclude_paths_window.h"
 #include "../writeLog.h"
-#include "../backup_paths.h"
+#include "../backups/backup_paths.h"
 #include "../platform/platform.h"
 
 #include <clib/alib_protos.h>

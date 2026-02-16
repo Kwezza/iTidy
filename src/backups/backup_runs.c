@@ -7,7 +7,7 @@
  * Date: October 24, 2025
  */
 
-#include "platform/platform.h"
+#include "../platform/platform.h"
 #include "backup_runs.h"
 #include "backup_paths.h"
 #include <string.h>
@@ -23,7 +23,7 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <exec/memory.h>
-#include "writeLog.h"
+#include "../writeLog.h"
 #define DEBUG_LOG(...) /* disabled on Amiga */
 
 /*========================================================================*/

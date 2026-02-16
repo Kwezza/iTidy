@@ -66,7 +66,7 @@
 #include "file_directory_handling.h"
 #include "layout_preferences.h"
 #include "GUI/main_window.h"
-#include "deficons_parser.h"
+#include "deficons/deficons_parser.h"
 
 /* VBCC: Set stack size to 80KB at compile time */
 long __stack = 80000L;

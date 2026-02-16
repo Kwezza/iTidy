@@ -8,7 +8,7 @@
  * Task: 7 - Session Manager
  */
 
-#include "platform/platform.h"
+#include "../platform/platform.h"
 
 /* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
 #include <console_output.h>
@@ -18,17 +18,17 @@
 #include <dos/dosasl.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
-#include "writeLog.h"
+#include "../writeLog.h"
 #define DEBUG_LOG(...) /* disabled on Amiga */
 
 #include "backup_session.h"
-#include "layout_preferences.h"
+#include "../layout_preferences.h"
 #include "backup_paths.h"
 #include "backup_runs.h"
 #include "backup_catalog.h"
 #include "backup_lha.h"
 #include "backup_marker.h"
-#include "file_directory_handling.h"
+#include "../file_directory_handling.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>

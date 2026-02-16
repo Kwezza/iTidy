@@ -26,17 +26,17 @@
 #include "deficons_identify.h"
 #include "deficons_templates.h"
 #include "deficons_filters.h"
-#include "layout_preferences.h"
-#include "writeLog.h"
-#include "utilities.h"
-#include "backup_session.h"
-#include "path_utilities.h"
+#include "../layout_preferences.h"
+#include "../writeLog.h"
+#include "../utilities.h"
+#include "../backups/backup_session.h"
+#include "../path_utilities.h"
 
 /* Content-aware icon preview (Phase 3 integration) */
-#include "icon_edit/icon_content_preview.h"
+#include "../icon_edit/icon_content_preview.h"
 
 /* Progress window integration */
-#include "GUI/StatusWindows/main_progress_window.h"
+#include "../GUI/StatusWindows/main_progress_window.h"
 
 /*========================================================================*/
 /* Helper Macros (local to this module)                                  */

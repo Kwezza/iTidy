@@ -11,8 +11,8 @@
  */
 
 #include "deficons_parser.h"
-#include "writeLog.h"
-#include "platform/platform.h"
+#include "../writeLog.h"
+#include "../platform/platform.h"
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <dos/dos.h>

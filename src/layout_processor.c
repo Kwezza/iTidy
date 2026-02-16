@@ -94,16 +94,16 @@
 #include "folder_scanner.h"
 
 /* Backup system integration */
-#include "backup_session.h"
-#include "backup_catalog.h"
+#include "backups/backup_session.h"
+#include "backups/backup_catalog.h"
 #include "path_utilities.h"
 #include "GUI/window_enumerator.h"
 
 /* DefIcons icon creation system */
-#include "deficons_identify.h"
-#include "deficons_templates.h"
-#include "deficons_filters.h"
-#include "deficons_creation.h"
+#include "deficons/deficons_identify.h"
+#include "deficons/deficons_templates.h"
+#include "deficons/deficons_filters.h"
+#include "deficons/deficons_creation.h"
 
 /* Progress window integration */
 #include "GUI/StatusWindows/main_progress_window.h"

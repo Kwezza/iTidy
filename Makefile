@@ -57,12 +57,15 @@ CORE_SRCS = \
 	$(SRC_DIR)/layout_processor.c \
 	$(SRC_DIR)/aspect_ratio_layout.c \
 	$(SRC_DIR)/folder_scanner.c \
-	$(SRC_DIR)/string_functions.c \
-	$(SRC_DIR)/deficons_parser.c \
-	$(SRC_DIR)/deficons_identify.c \
-	$(SRC_DIR)/deficons_templates.c \
-	$(SRC_DIR)/deficons_filters.c \
-	$(SRC_DIR)/deficons_creation.c
+	$(SRC_DIR)/string_functions.c
+
+# DefIcons source files
+DEFICONS_SRCS = \
+	$(SRC_DIR)/deficons/deficons_parser.c \
+	$(SRC_DIR)/deficons/deficons_identify.c \
+	$(SRC_DIR)/deficons/deficons_templates.c \
+	$(SRC_DIR)/deficons/deficons_filters.c \
+	$(SRC_DIR)/deficons/deficons_creation.c
 
 # Icon editing / content-aware preview source files
 ICON_EDIT_SRCS = \
@@ -79,13 +82,13 @@ ICON_EDIT_SRCS = \
 
 # Backup system source files
 BACKUP_SRCS = \
-	$(SRC_DIR)/backup_catalog.c \
-	$(SRC_DIR)/backup_lha.c \
-	$(SRC_DIR)/backup_marker.c \
-	$(SRC_DIR)/backup_paths.c \
-	$(SRC_DIR)/backup_runs.c \
-	$(SRC_DIR)/backup_session.c \
-	$(SRC_DIR)/backup_restore.c
+	$(SRC_DIR)/backups/backup_catalog.c \
+	$(SRC_DIR)/backups/backup_lha.c \
+	$(SRC_DIR)/backups/backup_marker.c \
+	$(SRC_DIR)/backups/backup_paths.c \
+	$(SRC_DIR)/backups/backup_runs.c \
+	$(SRC_DIR)/backups/backup_session.c \
+	$(SRC_DIR)/backups/backup_restore.c
 
 # Helper utilities source files
 HELPERS_SRCS = \
@@ -145,6 +148,7 @@ SRCS = $(CORE_SRCS) $(ICON_EDIT_SRCS) $(BACKUP_SRCS) $(HELPERS_SRCS) $(GUI_SRCS)
 # Object files (in build directory)
 # Note: platform.c is in include/platform, needs special handling
 CORE_OBJS = $(CORE_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
+DEFICONS_OBJS = $(DEFICONS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 ICON_EDIT_OBJS = $(ICON_EDIT_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 BACKUP_OBJS = $(BACKUP_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 HELPERS_OBJS = $(HELPERS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
@@ -156,7 +160,7 @@ SETTINGS_OBJS = $(SETTINGS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 PLATFORM_OBJS = $(PLATFORM_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 MEMORY_TRACKING_OBJS = $(OUT_DIR)/platform_memory.o
 
-OBJS = $(CORE_OBJS) $(ICON_EDIT_OBJS) $(BACKUP_OBJS) $(HELPERS_OBJS) $(GUI_OBJS) $(DEFAULT_TOOLS_OBJS) $(RESTORE_BACKUP_OBJS) $(DOS_OBJS) $(SETTINGS_OBJS) $(PLATFORM_OBJS) $(MEMORY_TRACKING_OBJS)
+OBJS = $(CORE_OBJS) $(DEFICONS_OBJS) $(ICON_EDIT_OBJS) $(BACKUP_OBJS) $(HELPERS_OBJS) $(GUI_OBJS) $(DEFAULT_TOOLS_OBJS) $(RESTORE_BACKUP_OBJS) $(DOS_OBJS) $(SETTINGS_OBJS) $(PLATFORM_OBJS) $(MEMORY_TRACKING_OBJS)
 
 ################################################################################
 # Build Rules
@@ -175,6 +179,8 @@ amiga: all
 # GUI MIGRATION NOTE: Added GUI subdirectory for GUI window source files
 directories:
 	@if not exist "$(OUT_DIR)" mkdir "$(OUT_DIR)"
+	@if not exist "$(OUT_DIR)\deficons" mkdir "$(OUT_DIR)\deficons"
+	@if not exist "$(OUT_DIR)\backups" mkdir "$(OUT_DIR)\backups"
 	@if not exist "$(OUT_DIR)\DOS" mkdir "$(OUT_DIR)\DOS"
 	@if not exist "$(OUT_DIR)\Settings" mkdir "$(OUT_DIR)\Settings"
 	@if not exist "$(OUT_DIR)\platform" mkdir "$(OUT_DIR)\platform"

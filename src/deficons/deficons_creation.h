@@ -24,7 +24,7 @@
 struct iTidyMainProgressWindow;
 
 /* Need full BackupContext definition (it's a typedef, not struct tag) */
-#include "backup_types.h"
+#include "../backups/backup_types.h"
 
 /*========================================================================*/
 /* Result Structure                                                      */

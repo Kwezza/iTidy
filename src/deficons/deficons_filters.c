@@ -9,10 +9,10 @@
 
 #include "deficons_filters.h"
 #include "deficons_templates.h"
-#include "backup_paths.h"
-#include "writeLog.h"
-#include "utilities.h"
-#include "platform/platform.h"
+#include "../backups/backup_paths.h"
+#include "../writeLog.h"
+#include "../utilities.h"
+#include "../platform/platform.h"
 
 #include <exec/types.h>
 #include <dos/dos.h>

@@ -28,7 +28,7 @@
 #include "icon_iff_render.h"
 #include "palette/palette_reduction.h"
 #include "palette/ultra_downsample.h"
-#include "../deficons_templates.h"
+#include "../deficons/deficons_templates.h"
 #include "../writeLog.h"
 #include "../layout_preferences.h"
 #include "../GUI/StatusWindows/main_progress_window.h"  /* For cancel flag */
@@ -502,8 +502,7 @@ static BOOL validate_selected_contrast(const iTidy_IconImageData *img,
  *
  * The target icon (Workbench deficon) provides all metadata (default
  * tool, tooltypes, icon type). Image dimensions come from the
- * deficons_icon_size_mode preference; palette mode comes from
- * deficons_palette_mode. No separate template .info files needed.
+ * deficons_icon_size_mode preference. No separate template .info files needed.
  */
 static int apply_iff_preview(const char *source_path,
                              const char *type_token,
@@ -553,11 +552,9 @@ static int apply_iff_preview(const char *source_path,
     prefs = GetGlobalPreferences();
     icon_dim = itidy_get_iff_icon_dimensions(prefs);
 
-    log_info(LOG_ICONS, "apply_iff_preview: icon size=%ux%u (mode=%u), "
-             "palette_mode=%u\n",
+    log_info(LOG_ICONS, "apply_iff_preview: icon size=%ux%u (mode=%u)\n",
              (unsigned)icon_dim, (unsigned)icon_dim,
-             (unsigned)(prefs ? prefs->deficons_icon_size_mode : 1),
-             (unsigned)(prefs ? prefs->deficons_palette_mode : 0));
+             (unsigned)(prefs ? prefs->deficons_icon_size_mode : 1));
 
     /*--------------------------------------------------------------------*/
     /* Step 3: Create blank pixel buffer and placeholder palette           */
@@ -627,11 +624,6 @@ static int apply_iff_preview(const char *source_path,
         iff_params.cancel_flag = NULL;
     }
 
-    // Palette mode from preferences (default: PICTURE)
-    iff_params.palette_mode = (prefs != NULL)
-        ? prefs->deficons_palette_mode
-        : ITIDY_PAL_PICTURE;
-
     // Point the render params at the blank pixel buffer
     iff_params.base.pixel_buffer = img.pixel_data_normal;
     iff_params.base.buffer_width = img.width;
@@ -647,9 +639,8 @@ static int apply_iff_preview(const char *source_path,
     iff_params.base.bg_color_index = ITIDY_NO_BG_COLOR;
 
     log_debug(LOG_ICONS, "apply_iff_preview: params ready — "
-              "buffer=%ux%u, palette_mode=%u\n",
-              (unsigned)img.width, (unsigned)img.height,
-              (unsigned)iff_params.palette_mode);
+              "buffer=%ux%u\n",
+              (unsigned)img.width, (unsigned)img.height);
 
     /*--------------------------------------------------------------------*/
     /* Step 6: Render IFF thumbnail (parse, decode, scale)                */
@@ -1001,8 +992,20 @@ int itidy_apply_content_preview(const char *source_path,
     /* Check if this type supports content preview                        */
     /*--------------------------------------------------------------------*/
 
+    /* Get global preferences to check if preview features are enabled */
+    const LayoutPreferences *prefs = GetGlobalPreferences();
+
     if (itidy_is_text_preview_type(type_token))
     {
+        /* Check if text preview feature is disabled by user */
+        if (prefs && !prefs->deficons_enable_text_previews)
+        {
+            log_debug(LOG_ICONS, "Skipping text preview for '%s' (type=%s) - "
+                      "text preview feature disabled by user\n",
+                      source_path, type_token);
+            return ITIDY_PREVIEW_NOT_APPLICABLE;
+        }
+        
         /* Check if this type is excluded via EXCLUDETYPE tooltype */
         if (is_excluded_from_text_preview(type_token))
         {
@@ -1016,6 +1019,15 @@ int itidy_apply_content_preview(const char *source_path,
     }
     else if (itidy_is_iff_preview_type(type_token))
     {
+        /* Check if picture preview feature is disabled by user */
+        if (prefs && !prefs->deficons_enable_picture_previews)
+        {
+            log_debug(LOG_ICONS, "Skipping picture preview for '%s' (type=%s) - "
+                      "picture preview feature disabled by user\n",
+                      source_path, type_token);
+            return ITIDY_PREVIEW_NOT_APPLICABLE;
+        }
+        
         return apply_iff_preview(source_path, type_token,
                                  source_size, source_date,
                                  progress_callback, progress_user_data);

@@ -57,13 +57,13 @@
 
 #include "restore_window.h"
 #include "GUI/StatusWindows/recursive_progress.h"
-#include "backup_restore.h"
+#include "backups/backup_restore.h"
 #include "writeLog.h"
 #include "folder_view_window.h"
 #include "GUI/gui_utilities.h"
-#include "backup_runs.h"
-#include "backup_catalog.h"
-#include "backup_session.h"
+#include "backups/backup_runs.h"
+#include "backups/backup_catalog.h"
+#include "backups/backup_session.h"
 #include "string_functions.h"
 #include "../easy_request_helper.h"
 

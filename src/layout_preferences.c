@@ -10,7 +10,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "layout_preferences.h"
-#include "deficons_parser.h"
+#include "deficons/deficons_parser.h"
 
 /*========================================================================*/
 /* Global Preferences Singleton                                          */
@@ -96,8 +96,9 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     prefs->deficons_skip_system_assigns = DEFAULT_DEFICONS_SKIP_SYSTEM_ASSIGNS;
     prefs->deficons_log_created_icons = DEFAULT_DEFICONS_LOG_CREATED_ICONS;
     prefs->deficons_icon_size_mode = DEFAULT_DEFICONS_ICON_SIZE_MODE;
-    prefs->deficons_palette_mode = DEFAULT_DEFICONS_PALETTE_MODE;
     prefs->deficons_enable_thumbnail_borders = DEFAULT_DEFICONS_ENABLE_THUMBNAIL_BORDERS;
+    prefs->deficons_enable_text_previews = DEFAULT_DEFICONS_ENABLE_TEXT_PREVIEWS;
+    prefs->deficons_enable_picture_previews = DEFAULT_DEFICONS_ENABLE_PICTURE_PREVIEWS;
     
     /* DefIcons Exclude Paths - Initialize with defaults */
     reset_deficons_exclude_paths_to_defaults(prefs);

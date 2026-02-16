@@ -84,16 +84,6 @@
 #define ITIDY_IFF_COMPRESS_BYTERUN1 1
 
 /*========================================================================*/
-/* Palette Modes                                                          */
-/*========================================================================*/
-
-/** Use the IFF image's own CMAP palette for the icon */
-#define ITIDY_PAL_PICTURE   0
-
-/** Quantize to Workbench screen palette (future — stubbed) */
-#define ITIDY_PAL_SCREEN    1
-
-/*========================================================================*/
 /* Scaling Thresholds                                                     */
 /*========================================================================*/
 
@@ -193,9 +183,6 @@ typedef struct {
     UBYTE *src_chunky;                  /* Decoded chunky pixel buffer (one byte per pixel) */
     struct ColorRegister *src_palette;  /* CMAP palette (allocated copy) */
     ULONG src_palette_size;             /* Number of CMAP entries */
-
-    /* Rendering mode */
-    UWORD palette_mode;                 /* ITIDY_PAL_PICTURE or ITIDY_PAL_SCREEN */
 
     /* Output dimensions (populated by itidy_render_iff_thumbnail) */
     UWORD output_width;                 /* Actual thumbnail width after scaling */

@@ -11,9 +11,9 @@
 #include "backup_lha.h"
 #include "backup_paths.h"
 #include "backup_types.h"
-#include "file_directory_handling.h"
-#include "writeLog.h"
-#include "GUI/StatusWindows/recursive_progress.h"
+#include "../file_directory_handling.h"
+#include "../writeLog.h"
+#include "../GUI/StatusWindows/recursive_progress.h"
 
 /* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
 #include <console_output.h>

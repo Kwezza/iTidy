@@ -1398,41 +1398,31 @@ int itidy_render_iff_thumbnail(const char *source_path,
     }
 
     /*--------------------------------------------------------------------*/
-    /* Step 4: Replace icon palette with source CMAP (PICTURE mode)       */
+    /* Step 4: Replace icon palette with source CMAP                       */
     /*--------------------------------------------------------------------*/
 
-    if (iff_params->palette_mode == ITIDY_PAL_SCREEN)
+    // Replace the icon's palette with the source image's palette
+    if (img->palette_normal != NULL)
     {
-        log_warning(LOG_ICONS, "itidy_render_iff_thumbnail: SCREEN palette mode "
-                    "not yet implemented, falling back to PICTURE mode\n");
-        iff_params->palette_mode = ITIDY_PAL_PICTURE;
+        whd_free(img->palette_normal);
     }
 
-    if (iff_params->palette_mode == ITIDY_PAL_PICTURE)
+    img->palette_normal = (struct ColorRegister *)whd_malloc(
+        iff_params->src_palette_size * sizeof(struct ColorRegister));
+
+    if (img->palette_normal == NULL)
     {
-        // Replace the icon's palette with the source image's palette
-        if (img->palette_normal != NULL)
-        {
-            whd_free(img->palette_normal);
-        }
-
-        img->palette_normal = (struct ColorRegister *)whd_malloc(
-            iff_params->src_palette_size * sizeof(struct ColorRegister));
-
-        if (img->palette_normal == NULL)
-        {
-            log_error(LOG_ICONS, "itidy_render_iff_thumbnail: palette replacement alloc failed\n");
-            itidy_iff_params_free(iff_params);
-            return -1;
-        }
-
-        memcpy(img->palette_normal, iff_params->src_palette,
-               iff_params->src_palette_size * sizeof(struct ColorRegister));
-        img->palette_size_normal = iff_params->src_palette_size;
-
-        log_debug(LOG_ICONS, "itidy_render_iff_thumbnail: replaced icon palette "
-                  "with source CMAP (%lu entries)\n", iff_params->src_palette_size);
+        log_error(LOG_ICONS, "itidy_render_iff_thumbnail: palette replacement alloc failed\n");
+        itidy_iff_params_free(iff_params);
+        return -1;
     }
+
+    memcpy(img->palette_normal, iff_params->src_palette,
+           iff_params->src_palette_size * sizeof(struct ColorRegister));
+    img->palette_size_normal = iff_params->src_palette_size;
+
+    log_debug(LOG_ICONS, "itidy_render_iff_thumbnail: replaced icon palette "
+              "with source CMAP (%lu entries)\n", iff_params->src_palette_size);
 
     /*--------------------------------------------------------------------*/
     /* Step 5: Scale source pixels into the safe area                     */

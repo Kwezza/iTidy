@@ -10,8 +10,8 @@
 
 #include "deficons_templates.h"
 #include "deficons_parser.h"
-#include "writeLog.h"
-#include "platform/platform.h"
+#include "../writeLog.h"
+#include "../platform/platform.h"
 
 #include <exec/types.h>
 #include <exec/memory.h>

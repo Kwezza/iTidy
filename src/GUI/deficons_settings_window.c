@@ -19,9 +19,9 @@
 
 #include "deficons_settings_window.h"
 #include "writeLog.h"
-#include "deficons_parser.h"
-#include "deficons_templates.h"
-#include "icon_types.h"
+#include "../deficons/deficons_parser.h"
+#include "../deficons/deficons_templates.h"
+#include "../icon_types.h"
 #include "platform/platform.h"
 #include "easy_request_helper.h"
 #include "icon_edit/palette/palette_reduction.h"
@@ -90,8 +90,9 @@ enum {
     GID_CHANGE_DEFAULT_TOOL,
     GID_FOLDER_MODE_CHOOSER,
     GID_ICON_SIZE_CHOOSER,
-    GID_PALETTE_MODE_CHOOSER,
     GID_THUMBNAIL_BORDERS_CHECKBOX,
+    GID_TEXT_PREVIEW_CHECKBOX,
+    GID_PICTURE_PREVIEW_CHECKBOX,
     GID_MAX_COLORS_CHOOSER,
     GID_DITHER_METHOD_CHOOSER,
     GID_LOWCOLOR_MAPPING_CHOOSER,
@@ -113,8 +114,9 @@ typedef struct {
     Object *tree_listbrowser;
     Object *chooser_obj;
     Object *icon_size_chooser_obj;
-    Object *palette_mode_chooser_obj;
     Object *thumbnail_borders_checkbox;
+    Object *text_preview_checkbox;
+    Object *picture_preview_checkbox;
     Object *max_colors_chooser_obj;
     Object *dither_method_chooser_obj;
     Object *lowcolor_mapping_chooser_obj;
@@ -128,6 +130,13 @@ typedef struct {
     struct Window *window;
     struct List *tree_list;
     struct ColumnInfo *column_info;
+    
+    /* Chooser lists (must be allocated with AllocChooserNode) */
+    struct List *folder_mode_list;
+    struct List *icon_size_list;
+    struct List *max_colors_list;
+    struct List *dither_method_list;
+    struct List *lowcolor_mapping_list;
     
     /* Working copy of preferences */
     LayoutPreferences *prefs;
@@ -201,6 +210,47 @@ static void close_reaction_libs(void)
     {
         CloseLibrary(iTidy_DefIcons_WindowBase);
         iTidy_DefIcons_WindowBase = NULL;
+    }
+}
+
+/*
+ * Helper function to create a chooser list from a string array
+ * (Similar to beta_options_window.c pattern)
+ */
+static struct List* make_chooser_list(STRPTR *labels)
+{
+    struct List *list = (struct List *)whd_malloc(sizeof(struct List));
+    if (list)
+    {
+        NewList(list);
+        while (*labels)
+        {
+            struct Node *node = AllocChooserNode(CNA_Text, *labels, TAG_END);
+            if (node)
+            {
+                AddTail(list, node);
+            }
+            labels++;
+        }
+    }
+    return list;
+}
+
+/*
+ * Helper function to free a chooser list
+ */
+static void free_chooser_list(struct List *list)
+{
+    if (list)
+    {
+        struct Node *node, *next;
+        node = list->lh_Head;
+        while ((next = node->ln_Succ))
+        {
+            FreeChooserNode(node);
+            node = next;
+        }
+        whd_free(list);
     }
 }
 
@@ -567,13 +617,6 @@ static STRPTR icon_size_labels[] = {
     NULL
 };
 
-/* Palette mode chooser labels (matches ITIDY_PAL_* constants) */
-static STRPTR palette_mode_labels[] = {
-    "Picture (original colors)",
-    "Screen (match Workbench)",
-    NULL
-};
-
 /* Max icon colors chooser labels (indices 0-7) */
 static STRPTR max_colors_labels[] = {
     "4 colors",
@@ -617,11 +660,37 @@ static BOOL create_window(DefIconsSettingsWindow *win)
         return FALSE;
     }
     
+    /* Create chooser lists (must be done before creating chooser objects) */
+    win->folder_mode_list = make_chooser_list(folder_mode_labels);
+    win->icon_size_list = make_chooser_list(icon_size_labels);
+    win->max_colors_list = make_chooser_list(max_colors_labels);
+    win->dither_method_list = make_chooser_list(dither_method_labels);
+    win->lowcolor_mapping_list = make_chooser_list(lowcolor_mapping_labels);
+    
+    if (!win->folder_mode_list || !win->icon_size_list ||
+        !win->max_colors_list || !win->dither_method_list || !win->lowcolor_mapping_list)
+    {
+        log_error(LOG_GUI, "Failed to create chooser lists\n");
+        /* Free any lists that were created before the failure */
+        free_chooser_list(win->folder_mode_list);
+        free_chooser_list(win->icon_size_list);
+        free_chooser_list(win->max_colors_list);
+        free_chooser_list(win->dither_method_list);
+        free_chooser_list(win->lowcolor_mapping_list);
+        free_tree_list(win->tree_list);
+        return FALSE;
+    }
+    
     /* Allocate column info (single column with terminator) */
     win->column_info = (struct ColumnInfo *)AllocMem(sizeof(struct ColumnInfo) * 2, MEMF_PUBLIC | MEMF_CLEAR);
     if (win->column_info == NULL)
     {
         log_error(LOG_GUI, "Failed to allocate column info\n");
+        free_chooser_list(win->folder_mode_list);
+        free_chooser_list(win->icon_size_list);
+        free_chooser_list(win->max_colors_list);
+        free_chooser_list(win->dither_method_list);
+        free_chooser_list(win->lowcolor_mapping_list);
         FreeListBrowserList(win->tree_list);
         win->tree_list = NULL;
         return FALSE;
@@ -654,28 +723,35 @@ static BOOL create_window(DefIconsSettingsWindow *win)
     win->chooser_obj = (Object *)ChooserObject,
         GA_ID, GID_FOLDER_MODE_CHOOSER,
         GA_RelVerify, TRUE,
-        CHOOSER_LabelArray, folder_mode_labels,
+        CHOOSER_Labels, win->folder_mode_list,
         CHOOSER_Selected, win->prefs->deficons_folder_icon_mode,
     ChooserEnd;
     
     win->icon_size_chooser_obj = (Object *)ChooserObject,
         GA_ID, GID_ICON_SIZE_CHOOSER,
         GA_RelVerify, TRUE,
-        CHOOSER_LabelArray, icon_size_labels,
+        CHOOSER_Labels, win->icon_size_list,
         CHOOSER_Selected, win->prefs->deficons_icon_size_mode,
-    ChooserEnd;
-    
-    win->palette_mode_chooser_obj = (Object *)ChooserObject,
-        GA_ID, GID_PALETTE_MODE_CHOOSER,
-        GA_RelVerify, TRUE,
-        CHOOSER_LabelArray, palette_mode_labels,
-        CHOOSER_Selected, win->prefs->deficons_palette_mode,
     ChooserEnd;
     
     win->thumbnail_borders_checkbox = (Object *)CheckBoxObject,
         GA_ID, GID_THUMBNAIL_BORDERS_CHECKBOX,
         GA_Text, "Enable _borders on image thumbnails",
         GA_Selected, win->prefs->deficons_enable_thumbnail_borders,
+        GA_RelVerify, TRUE,
+    CheckBoxEnd;
+    
+    win->text_preview_checkbox = (Object *)CheckBoxObject,
+        GA_ID, GID_TEXT_PREVIEW_CHECKBOX,
+        GA_Text, "Enable _text file preview thumbnails",
+        GA_Selected, win->prefs->deficons_enable_text_previews,
+        GA_RelVerify, TRUE,
+    CheckBoxEnd;
+    
+    win->picture_preview_checkbox = (Object *)CheckBoxObject,
+        GA_ID, GID_PICTURE_PREVIEW_CHECKBOX,
+        GA_Text, "Enable _picture file preview thumbnails",
+        GA_Selected, win->prefs->deficons_enable_picture_previews,
         GA_RelVerify, TRUE,
     CheckBoxEnd;
     
@@ -704,7 +780,7 @@ static BOOL create_window(DefIconsSettingsWindow *win)
             GA_ID, GID_MAX_COLORS_CHOOSER,
             GA_RelVerify, TRUE,
             GA_Disabled, FALSE,
-            CHOOSER_LabelArray, max_colors_labels,
+            CHOOSER_Labels, win->max_colors_list,
             CHOOSER_Selected, max_colors_index,
         ChooserEnd;
 
@@ -712,7 +788,7 @@ static BOOL create_window(DefIconsSettingsWindow *win)
             GA_ID, GID_DITHER_METHOD_CHOOSER,
             GA_RelVerify, TRUE,
             GA_Disabled, ghost_dither,
-            CHOOSER_LabelArray, dither_method_labels,
+            CHOOSER_Labels, win->dither_method_list,
             CHOOSER_Selected, win->prefs->deficons_dither_method,
         ChooserEnd;
 
@@ -720,7 +796,7 @@ static BOOL create_window(DefIconsSettingsWindow *win)
             GA_ID, GID_LOWCOLOR_MAPPING_CHOOSER,
             GA_RelVerify, TRUE,
             GA_Disabled, ghost_lowcolor,
-            CHOOSER_LabelArray, lowcolor_mapping_labels,
+            CHOOSER_Labels, win->lowcolor_mapping_list,
             CHOOSER_Selected, win->prefs->deficons_lowcolor_mapping,
         ChooserEnd;
     }
@@ -793,18 +869,13 @@ static BOOL create_window(DefIconsSettingsWindow *win)
         LayoutEnd,
         CHILD_WeightedHeight, 0,
         
-        LAYOUT_AddChild, (Object *)HLayoutObject,
-            LAYOUT_AddChild, (Object *)LabelObject,
-                LABEL_Text, "Palette Mode:",
-            LabelEnd,
-            CHILD_WeightedWidth, 0,
-            
-            LAYOUT_AddChild, win->palette_mode_chooser_obj,
-            CHILD_WeightedWidth, 100,
-        LayoutEnd,
+        LAYOUT_AddChild, win->thumbnail_borders_checkbox,
         CHILD_WeightedHeight, 0,
         
-        LAYOUT_AddChild, win->thumbnail_borders_checkbox,
+        LAYOUT_AddChild, win->text_preview_checkbox,
+        CHILD_WeightedHeight, 0,
+        
+        LAYOUT_AddChild, win->picture_preview_checkbox,
         CHILD_WeightedHeight, 0,
         
         LAYOUT_AddChild, (Object *)HLayoutObject,
@@ -881,6 +952,11 @@ static BOOL create_window(DefIconsSettingsWindow *win)
             FreeMem(win->column_info, sizeof(struct ColumnInfo) * 2);
         }
         free_tree_list(win->tree_list);
+        free_chooser_list(win->folder_mode_list);
+        free_chooser_list(win->icon_size_list);
+        free_chooser_list(win->max_colors_list);
+        free_chooser_list(win->dither_method_list);
+        free_chooser_list(win->lowcolor_mapping_list);
         return FALSE;
     }
     
@@ -896,6 +972,11 @@ static BOOL create_window(DefIconsSettingsWindow *win)
             FreeMem(win->column_info, sizeof(struct ColumnInfo) * 2);
         }
         free_tree_list(win->tree_list);
+        free_chooser_list(win->folder_mode_list);
+        free_chooser_list(win->icon_size_list);
+        free_chooser_list(win->max_colors_list);
+        free_chooser_list(win->dither_method_list);
+        free_chooser_list(win->lowcolor_mapping_list);
         return FALSE;
     }
     
@@ -1500,18 +1581,29 @@ static void handle_ok(DefIconsSettingsWindow *win)
         win->prefs->deficons_icon_size_mode = (UWORD)selected_size;
     }
     
-    /* Get palette mode from chooser */
-    {
-        ULONG selected_palette = 0;
-        GetAttr(CHOOSER_Selected, win->palette_mode_chooser_obj, &selected_palette);
-        win->prefs->deficons_palette_mode = (UWORD)selected_palette;
-    }
-    
     /* Get thumbnail borders checkbox state */
     {
         ULONG borders_enabled = 0;
         GetAttr(GA_Selected, win->thumbnail_borders_checkbox, &borders_enabled);
         win->prefs->deficons_enable_thumbnail_borders = (BOOL)borders_enabled;
+    }
+    
+    /* Get text preview checkbox state */
+    {
+        ULONG text_preview_enabled = 0;
+        GetAttr(GA_Selected, win->text_preview_checkbox, &text_preview_enabled);
+        win->prefs->deficons_enable_text_previews = (BOOL)text_preview_enabled;
+        log_info(LOG_GUI, "Text preview thumbnails toggled: %s\n",
+                 text_preview_enabled ? "enabled" : "disabled");
+    }
+    
+    /* Get picture preview checkbox state */
+    {
+        ULONG picture_preview_enabled = 0;
+        GetAttr(GA_Selected, win->picture_preview_checkbox, &picture_preview_enabled);
+        win->prefs->deficons_enable_picture_previews = (BOOL)picture_preview_enabled;
+        log_info(LOG_GUI, "Picture preview thumbnails toggled: %s\n",
+                 picture_preview_enabled ? "enabled" : "disabled");
     }
     
     /* Get max colors chooser state */
@@ -1556,11 +1648,10 @@ static void handle_ok(DefIconsSettingsWindow *win)
               win->prefs->deficons_disabled_types);
     
     log_info(LOG_GUI, "DefIcons settings saved: folder_mode=%d, icon_size=%d, "
-             "palette_mode=%d, thumbnail_borders=%s, max_colors=%u, "
+             "thumbnail_borders=%s, max_colors=%u, "
              "dither=%u, lowcolor=%u, ultra=%s, disabled_types='%s'\n",
              win->prefs->deficons_folder_icon_mode,
              win->prefs->deficons_icon_size_mode,
-             win->prefs->deficons_palette_mode,
              win->prefs->deficons_enable_thumbnail_borders ? "enabled" : "disabled",
              (unsigned)win->prefs->deficons_max_icon_colors,
              (unsigned)win->prefs->deficons_dither_method,
@@ -1733,6 +1824,13 @@ BOOL open_itidy_deficons_settings_window(LayoutPreferences *prefs)
         FreeMem(win.column_info, sizeof(struct ColumnInfo) * 2);
         win.column_info = NULL;
     }
+    
+    /* Free chooser lists */
+    free_chooser_list(win.folder_mode_list);
+    free_chooser_list(win.icon_size_list);
+    free_chooser_list(win.max_colors_list);
+    free_chooser_list(win.dither_method_list);
+    free_chooser_list(win.lowcolor_mapping_list);
     
     free_tree_list(win.tree_list);
     close_reaction_libs();

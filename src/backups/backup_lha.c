@@ -14,7 +14,7 @@
 #include <dos/dos.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
-#include "writeLog.h"
+#include "../writeLog.h"
 #define DEBUG_LOG(...) /* disabled on Amiga */
 #define PATH_SEP "/"
 #define NULL_DEVICE "NIL:"

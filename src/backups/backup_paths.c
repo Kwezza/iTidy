@@ -14,7 +14,7 @@
 /* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
 #include <console_output.h>
 
-#include "writeLog.h"
+#include "../writeLog.h"
 #define DEBUG_LOG(...) /* disabled on Amiga */
 
 /*========================================================================*/

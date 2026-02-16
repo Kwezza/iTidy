@@ -66,7 +66,7 @@
 #include "gui_utilities.h"
 #include "../utilities.h"
 #include "StatusWindows/main_progress_window.h"
-#include "../backup_lha.h"
+#include "../backups/backup_lha.h"
 #include "../icon_types.h"  /* For ToolCacheEntry and g_ToolCache extern */
 
 /*------------------------------------------------------------------------*/

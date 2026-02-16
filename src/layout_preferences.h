@@ -208,8 +208,9 @@ typedef struct {
     BOOL deficons_skip_system_assigns;         /* TRUE = skip SYS:, C:, S:, DEVS:, LIBS:, etc. */
     BOOL deficons_log_created_icons;           /* TRUE = log all created .info files to dedicated log (for testing/delete scripts) */
     UWORD deficons_icon_size_mode;              /* 0=Small(48), 1=Medium(64), 2=Large(100) — IFF thumbnail size */
-    UWORD deficons_palette_mode;                /* 0=Picture (use image CMAP), 1=Screen (quantize to WB screen) */
     BOOL deficons_enable_thumbnail_borders;     /* TRUE = enable borders/frames on image thumbnails, FALSE = frameless (edge-to-edge) */
+    BOOL deficons_enable_text_previews;         /* TRUE = enable text file content preview rendering on icons */
+    BOOL deficons_enable_picture_previews;      /* TRUE = enable picture file thumbnail rendering on icons */
     
     /* DefIcons Exclude Paths (user-configurable exclude list) */
     #define MAX_DEFICONS_EXCLUDE_PATHS 32
@@ -289,8 +290,9 @@ typedef struct {
 #define DEFAULT_DEFICONS_SKIP_SYSTEM_ASSIGNS               TRUE    /* Skip system directories by default */
 #define DEFAULT_DEFICONS_LOG_CREATED_ICONS                 TRUE    /* Log created icons to separate file (useful for testing) */
 #define DEFAULT_DEFICONS_ICON_SIZE_MODE                     1       /* 0=Small(48), 1=Medium(64), 2=Large(100) */
-#define DEFAULT_DEFICONS_PALETTE_MODE                       0       /* 0=Picture (use image CMAP), 1=Screen (quantize to WB palette) */
 #define DEFAULT_DEFICONS_ENABLE_THUMBNAIL_BORDERS           TRUE    /* Default: Borders enabled (frameless=FALSE) */
+#define DEFAULT_DEFICONS_ENABLE_TEXT_PREVIEWS               TRUE    /* Default: Text content previews enabled */
+#define DEFAULT_DEFICONS_ENABLE_PICTURE_PREVIEWS            TRUE    /* Default: Picture thumbnails enabled */
 
 /* DefIcons Palette Reduction Defaults */
 #define DEFAULT_DEFICONS_MAX_ICON_COLORS                    256     /* No limit (full palette) */
