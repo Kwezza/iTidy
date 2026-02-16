@@ -58,6 +58,7 @@
 #include "RestoreBackups/restore_window.h"
 #include "DefaultTools/tool_cache_window.h"
 #include "deficons_settings_window.h"
+#include "deficons_creation_window.h"
 #include "exclude_paths_window.h"
 #include "easy_request_helper.h"
 #include "layout_preferences.h"
@@ -143,7 +144,8 @@ static struct NewMenu main_window_menu_template[] =
     { NM_ITEM,  "Save",         "S",  0, 0, (APTR)MENU_PROJECT_SAVE },
     { NM_ITEM,  "Save as...",   "A",  0, 0, (APTR)MENU_PROJECT_SAVE_AS },
     { NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
-    { NM_ITEM,  "DefIcons Settings...", "D",  0, 0, (APTR)MENU_PROJECT_DEFICONS },
+    { NM_ITEM,  "DefIcons types...", "D",  0, 0, (APTR)MENU_PROJECT_DEFICONS },
+    { NM_ITEM,  "DefIcons options...", "I",  0, 0, (APTR)MENU_PROJECT_DEFICONS_OPTIONS },
     { NM_ITEM,  "Exclude Paths...", "E",  0, 0, (APTR)MENU_PROJECT_EXCLUDE_PATHS },
     { NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
     { NM_ITEM,  "About...",     NULL, 0, 0, (APTR)MENU_PROJECT_ABOUT },
@@ -1790,6 +1792,28 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                         else
                         {
                             log_debug(LOG_GUI, "DefIcons settings cancelled\n");
+                        }
+                    }
+                    break;
+                
+                case MENU_PROJECT_DEFICONS_OPTIONS:
+                    {
+                        LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
+                        LayoutPreferences working_copy;
+                        
+                        /* Make working copy of preferences */
+                        memcpy(&working_copy, prefs, sizeof(LayoutPreferences));
+                        
+                        /* Open DefIcons creation options window */
+                        if (open_itidy_deficons_creation_window(&working_copy))
+                        {
+                            /* User clicked OK - update global preferences */
+                            UpdateGlobalPreferences(&working_copy);
+                            log_info(LOG_GUI, "DefIcons creation preferences updated\n");
+                        }
+                        else
+                        {
+                            log_debug(LOG_GUI, "DefIcons creation options cancelled\n");
                         }
                     }
                     break;

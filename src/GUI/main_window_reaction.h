@@ -97,6 +97,7 @@ typedef enum {
 #define MENU_PROJECT_CLOSE        1005
 #define MENU_PROJECT_ABOUT        1006
 #define MENU_PROJECT_DEFICONS     1007
+#define MENU_PROJECT_DEFICONS_OPTIONS 1009
 #define MENU_PROJECT_EXCLUDE_PATHS 1008
 
 /* Log mode menu IDs */
