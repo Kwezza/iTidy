@@ -521,6 +521,19 @@ static void free_tree_list(struct List *list)
  */
 static BOOL create_window(DefIconsSettingsWindow *win)
 {
+    /* Define hint info for gadget help (tooltips) */
+    static struct HintInfo hintInfo[] =
+    {
+        {GID_TYPE_TREE, -1, "Select the file types to create icons for. This list comes from the \"DefaultIcons\" Preferences tool in the Workbench Prefs drawer.", 0},
+        {GID_SELECT_ALL, -1, "Select all file types in the list above. Note: this may create icons for any files that do not already have an icon, including system files. Use with care.", 0},
+        {GID_SHOW_TOOLS, -1, "Scans the default icons and displays the Default Tool for each entry in the list above.", 0},
+        {GID_SELECT_NONE, -1, "Deselects all selected file types.", 0},
+        {GID_CHANGE_DEFAULT_TOOL, -1, "Change the Default Tool for the selected icon. If needed, a default icon is created automatically. Changes apply immediately.", 0},
+        {GID_OK, -1, "Saves changes.", 0},
+        {GID_CANCEL, -1, "Closes the window without saving changes. Note: Default Tool changes are applied immediately and saved automatically.", 0},
+        {-1, -1, NULL, 0}
+    };
+    
     /* Build tree list (initially without tools) */
     win->tree_list = build_tree_list(win->prefs, FALSE);
     if (win->tree_list == NULL)
@@ -565,79 +578,142 @@ static BOOL create_window(DefIconsSettingsWindow *win)
     
     win->select_all_btn = (Object *)ButtonObject,
         GA_ID, GID_SELECT_ALL,
-        GA_Text, "Select _All",
+        GA_Text, "Select all",
         GA_RelVerify, TRUE,
+        GA_TabCycle, TRUE,
+        BUTTON_TextPen, 1,
+        BUTTON_BackgroundPen, 0,
+        BUTTON_FillTextPen, 1,
+        BUTTON_FillPen, 3,
     ButtonEnd;
     
     win->select_none_btn = (Object *)ButtonObject,
         GA_ID, GID_SELECT_NONE,
-        GA_Text, "Select _None",
+        GA_Text, "Select none",
         GA_RelVerify, TRUE,
+        GA_TabCycle, TRUE,
+        BUTTON_TextPen, 1,
+        BUTTON_BackgroundPen, 0,
+        BUTTON_FillTextPen, 1,
+        BUTTON_FillPen, 3,
     ButtonEnd;
     
     win->show_tools_btn = (Object *)ButtonObject,
         GA_ID, GID_SHOW_TOOLS,
-        GA_Text, "Show default _tools",
+        GA_Text, "Show default tools",
         GA_RelVerify, TRUE,
+        GA_TabCycle, TRUE,
+        BUTTON_TextPen, 1,
+        BUTTON_BackgroundPen, 0,
+        BUTTON_FillTextPen, 1,
+        BUTTON_FillPen, 3,
     ButtonEnd;
     
     win->change_default_tool_btn = (Object *)ButtonObject,
         GA_ID, GID_CHANGE_DEFAULT_TOOL,
         GA_Text, "Change default tool",
         GA_RelVerify, TRUE,
+        GA_TabCycle, TRUE,
+        BUTTON_TextPen, 1,
+        BUTTON_BackgroundPen, 0,
+        BUTTON_FillTextPen, 1,
+        BUTTON_FillPen, 3,
     ButtonEnd;
     
     win->ok_btn = (Object *)ButtonObject,
         GA_ID, GID_OK,
-        GA_Text, "_OK",
+        GA_Text, "OK",
         GA_RelVerify, TRUE,
+        GA_TabCycle, TRUE,
+        BUTTON_TextPen, 1,
+        BUTTON_BackgroundPen, 0,
+        BUTTON_FillTextPen, 1,
+        BUTTON_FillPen, 3,
     ButtonEnd;
     
     win->cancel_btn = (Object *)ButtonObject,
         GA_ID, GID_CANCEL,
-        GA_Text, "_Cancel",
+        GA_Text, "Cancel",
         GA_RelVerify, TRUE,
+        GA_TabCycle, TRUE,
+        BUTTON_TextPen, 1,
+        BUTTON_BackgroundPen, 0,
+        BUTTON_FillTextPen, 1,
+        BUTTON_FillPen, 3,
     ButtonEnd;
     
     /* Create layout */
     win->main_layout = (Object *)VLayoutObject,
-        LAYOUT_AddChild, (Object *)LabelObject,
-            LABEL_Text, "Select file types for automatic icon creation:",
-        LabelEnd,
-        CHILD_WeightedHeight, 0,
+        LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
         
-        LAYOUT_AddChild, win->tree_listbrowser,
-        CHILD_WeightedHeight, 100,
-        
-        LAYOUT_AddChild, (Object *)HLayoutObject,
-            LAYOUT_AddChild, win->select_all_btn,
-            LAYOUT_AddChild, win->select_none_btn,
+        /* Main outer group with bevel */
+        LAYOUT_AddChild, (Object *)VLayoutObject,
+            LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+            LAYOUT_BevelStyle, BVS_THIN,
+            LAYOUT_LeftSpacing, 2,
+            LAYOUT_RightSpacing, 2,
+            LAYOUT_TopSpacing, 2,
+            LAYOUT_BottomSpacing, 2,
+            LAYOUT_Label, "Select file types to create icons for:",
+            
+            /* ListBrowser container */
+            LAYOUT_AddChild, (Object *)VLayoutObject,
+                LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                LAYOUT_AddChild, win->tree_listbrowser,
+            LayoutEnd,
+            CHILD_WeightedHeight, 90,
+            
+            /* Button row - two columns */
+            LAYOUT_AddChild, (Object *)HLayoutObject,
+                LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
+                
+                /* Left column buttons */
+                LAYOUT_AddChild, (Object *)VLayoutObject,
+                    LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                    LAYOUT_AddChild, win->select_all_btn,
+                    LAYOUT_AddChild, win->show_tools_btn,
+                LayoutEnd,
+                
+                /* Right column buttons */
+                LAYOUT_AddChild, (Object *)VLayoutObject,
+                    LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                    LAYOUT_AddChild, win->select_none_btn,
+                    LAYOUT_AddChild, win->change_default_tool_btn,
+                LayoutEnd,
+            LayoutEnd,
+            CHILD_WeightedHeight, 10,
         LayoutEnd,
-        CHILD_WeightedHeight, 0,
         
+        /* OK/Cancel buttons at bottom */
         LAYOUT_AddChild, (Object *)HLayoutObject,
-            LAYOUT_AddChild, win->show_tools_btn,
-            LAYOUT_AddChild, win->change_default_tool_btn,
-        LayoutEnd,
-        CHILD_WeightedHeight, 0,
-        
-        LAYOUT_AddChild, (Object *)HLayoutObject,
+            LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
             LAYOUT_AddChild, win->ok_btn,
             LAYOUT_AddChild, win->cancel_btn,
         LayoutEnd,
-        CHILD_WeightedHeight, 0,
+        CHILD_WeightedHeight, 2,
     LayoutEnd;
     
     /* Create window */
     win->window_obj = (Object *)WindowObject,
-        WA_Title, "DefIcons: Icon Type Selection",
-        WA_Activate, TRUE,
-        WA_DepthGadget, TRUE,
-        WA_DragBar, TRUE,
-        WA_CloseGadget, TRUE,
-        WA_SizeGadget, FALSE,
+        WA_Title, "DefIcons: Icon creation setup",
+        WA_Left, 5,
+        WA_Top, 20,
         WA_Width, 400,
         WA_Height, 500,
+        WA_MinWidth, 150,
+        WA_MinHeight, 80,
+        WA_MaxWidth, 8192,
+        WA_MaxHeight, 8192,
+        WINDOW_HintInfo, hintInfo,
+        WINDOW_GadgetHelp, TRUE,
+        WA_CloseGadget, TRUE,
+        WA_DepthGadget, TRUE,
+        WA_SizeGadget, TRUE,
+        WA_DragBar, TRUE,
+        WA_Activate, TRUE,
+        WA_NoCareRefresh, TRUE,
+        WA_IDCMP, IDCMP_GADGETDOWN | IDCMP_GADGETUP | IDCMP_CLOSEWINDOW | IDCMP_NEWSIZE,
+        WINDOW_IconTitle, "DefIcons",
         WINDOW_Position, WPOS_CENTERSCREEN,
         WINDOW_Layout, win->main_layout,
     WindowEnd;
