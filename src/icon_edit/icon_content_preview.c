@@ -127,6 +127,102 @@ static BOOL is_excluded_from_text_preview(const char *type_token)
 }
 
 /*========================================================================*/
+/* Template Resolution                                                    */
+/*========================================================================*/
+
+/**
+ * @brief Resolve the preview template path for a given DefIcons type.
+ *
+ * Implements three-level fallback chain:
+ *   1. PROGDIR:Icons/def_<type_token>  (type-specific template)
+ *   2. PROGDIR:Icons/def_ascii         (generic ASCII category template)
+ *   3. PROGDIR:Icons/text_template     (ultimate fallback, always exists)
+ *
+ * Each level is checked for existence via Lock() before proceeding to
+ * the next fallback level. This allows users to create custom templates
+ * for specific text types (e.g., def_c.info for C source files) while
+ * automatically falling back to sensible defaults.
+ *
+ * @param type_token    DefIcons type token (e.g., "c", "rexx", "html")
+ * @param path_buf      Output buffer for resolved template path
+ * @param buf_size      Size of path_buf in bytes
+ * @return TRUE if a template was resolved (always succeeds with fallback)
+ *
+ * @note The returned path does NOT include the .info extension
+ * @note All logging to LOG_ICONS at info level for template selection tracking
+ */
+static BOOL itidy_resolve_preview_template(const char *type_token,
+                                            char *path_buf,
+                                            int buf_size)
+{
+    BPTR lock = 0;
+    char test_path[256];
+    
+    if (type_token == NULL || type_token[0] == '\0' || 
+        path_buf == NULL || buf_size < 32)
+    {
+        log_error(LOG_ICONS, "itidy_resolve_preview_template: invalid parameters\n");
+        return FALSE;
+    }
+    
+    /*--------------------------------------------------------------------*/
+    /* Level 1: Try type-specific template (PROGDIR:Icons/def_<type>)     */
+    /*--------------------------------------------------------------------*/
+    
+    snprintf(test_path, sizeof(test_path), "PROGDIR:Icons/def_%s.info", type_token);
+    test_path[sizeof(test_path) - 1] = '\0';
+    
+    log_debug(LOG_ICONS, "Trying type-specific template: %s\n", test_path);
+    
+    lock = Lock((STRPTR)test_path, ACCESS_READ);
+    if (lock != 0)
+    {
+        UnLock(lock);
+        snprintf(path_buf, buf_size, "PROGDIR:Icons/def_%s", type_token);
+        path_buf[buf_size - 1] = '\0';
+        log_info(LOG_ICONS, "Using type-specific preview template: %s for type=%s\n",
+                 path_buf, type_token);
+        return TRUE;
+    }
+    
+    /*--------------------------------------------------------------------*/
+    /* Level 2: Try generic ASCII category template (def_ascii)           */
+    /*--------------------------------------------------------------------*/
+    
+    snprintf(test_path, sizeof(test_path), "PROGDIR:Icons/def_ascii.info");
+    test_path[sizeof(test_path) - 1] = '\0';
+    
+    log_debug(LOG_ICONS, "Type-specific template not found, trying generic: %s\n",
+              test_path);
+    
+    lock = Lock((STRPTR)test_path, ACCESS_READ);
+    if (lock != 0)
+    {
+        UnLock(lock);
+        snprintf(path_buf, buf_size, "PROGDIR:Icons/def_ascii");
+        path_buf[buf_size - 1] = '\0';
+        log_info(LOG_ICONS, "Using generic ASCII preview template: %s for type=%s\n",
+                 path_buf, type_token);
+        return TRUE;
+    }
+    
+    /*--------------------------------------------------------------------*/
+    /* Level 3: Ultimate fallback to text_template (always exists)        */
+    /*--------------------------------------------------------------------*/
+    
+    log_debug(LOG_ICONS, "Generic ASCII template not found, falling back to: %s\n",
+              ITIDY_TEXT_TEMPLATE_FALLBACK);
+    
+    strncpy(path_buf, ITIDY_TEXT_TEMPLATE_FALLBACK, buf_size - 1);
+    path_buf[buf_size - 1] = '\0';
+    
+    log_info(LOG_ICONS, "Using fallback preview template: %s for type=%s\n",
+             path_buf, type_token);
+    
+    return TRUE;
+}
+
+/*========================================================================*/
 /* itidy_is_text_preview_type                                             */
 /*========================================================================*/
 
@@ -1055,10 +1151,15 @@ int itidy_apply_content_preview(const char *source_path,
     }
 
     /*--------------------------------------------------------------------*/
-    /* Step 2: Load the image template (custom color icon with pixel      */
-    /*         data). This is separate from the Workbench default —       */
-    /*         it is iTidy's own palette-mapped icon designed for          */
-    /*         content preview rendering.                                 */
+    /* Step 2: Resolve and load the IMAGE TEMPLATE (separate from target  */
+    /*         icon). Template selection follows a three-level fallback:  */
+    /*           1. PROGDIR:Icons/def_<type>  (type-specific)             */
+    /*           2. PROGDIR:Icons/def_ascii   (generic ASCII)             */
+    /*           3. PROGDIR:Icons/text_template (ultimate fallback)       */
+    /*                                                                     */
+    /*         This is separate from the Workbench default — it is        */
+    /*         iTidy's own palette-mapped icon designed for content       */
+    /*         preview rendering.                                         */
     /*                                                                    */
     /*         CRITICAL: We use GetIconTagList() instead of the older     */
     /*         GetDiskObject() because GetDiskObject() does NOT fully     */
@@ -1073,7 +1174,19 @@ int itidy_apply_content_preview(const char *source_path,
     /*--------------------------------------------------------------------*/
 
     {
+        char template_path[256];
         struct TagItem get_template_tags[3];
+        
+        /* Resolve template path based on type_token */
+        if (!itidy_resolve_preview_template(type_token, template_path,
+                                            sizeof(template_path)))
+        {
+            log_error(LOG_ICONS, "itidy_apply_content_preview: "
+                      "template resolution failed for type=%s\n", type_token);
+            FreeDiskObject(target_icon);
+            return ITIDY_PREVIEW_FAILED;
+        }
+        
         get_template_tags[0].ti_Tag  = ICONGETA_RemapIcon;
         get_template_tags[0].ti_Data = FALSE;
         get_template_tags[1].ti_Tag  = ICONGETA_GenerateImageMasks;
@@ -1081,21 +1194,18 @@ int itidy_apply_content_preview(const char *source_path,
         get_template_tags[2].ti_Tag  = TAG_DONE;
         get_template_tags[2].ti_Data = 0;
 
-        image_icon = GetIconTagList((STRPTR)ITIDY_TEXT_TEMPLATE_PATH,
-                                    get_template_tags);
+        image_icon = GetIconTagList((STRPTR)template_path, get_template_tags);
+        
+        if (image_icon == NULL)
+        {
+            log_error(LOG_ICONS, "itidy_apply_content_preview: "
+                      "cannot load image template '%s' (resolved for type=%s) — "
+                      "ensure the Icons drawer exists in the program directory\n",
+                      template_path, type_token);
+            FreeDiskObject(target_icon);
+            return ITIDY_PREVIEW_FAILED;
+        }
     }
-    if (image_icon == NULL)
-    {
-        log_error(LOG_ICONS, "itidy_apply_content_preview: "
-                  "cannot load image template '%s' — ensure the "
-                  "Icons drawer exists in the program directory\n",
-                  ITIDY_TEXT_TEMPLATE_PATH);
-        FreeDiskObject(target_icon);
-        return ITIDY_PREVIEW_FAILED;
-    }
-
-    log_info(LOG_ICONS, "itidy_apply_content_preview: loaded image template "
-             "from '%s'\n", ITIDY_TEXT_TEMPLATE_PATH);
 
     /*--------------------------------------------------------------------*/
     /* Step 3: Extract image data from the IMAGE TEMPLATE (not the        */
@@ -1109,8 +1219,8 @@ int itidy_apply_content_preview(const char *source_path,
     if (!itidy_icon_image_extract(image_icon, &img))
     {
         log_error(LOG_ICONS, "itidy_apply_content_preview: "
-                  "image extract failed from template '%s'\n",
-                  ITIDY_TEXT_TEMPLATE_PATH);
+                  "image extract failed from resolved template (type=%s)\n",
+                  type_token);
         FreeDiskObject(image_icon);
         FreeDiskObject(target_icon);
         return ITIDY_PREVIEW_FAILED;

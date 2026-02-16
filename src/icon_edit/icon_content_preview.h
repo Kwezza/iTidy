@@ -44,20 +44,26 @@
 /*========================================================================*/
 
 /**
- * Path to the built-in text preview image template.
+ * Path to the generic text preview image template (ultimate fallback).
  *
  * This is iTidy's own palette-mapped color icon that provides the pixel
- * data for text preview rendering. It lives in the program's Icons
- * drawer, separate from the Workbench default icons in ENVARC:Sys/.
+ * data for text preview rendering when no type-specific template exists.
+ * It lives in the program's Icons drawer, separate from the Workbench
+ * default icons in ENVARC:Sys/.
  *
  * The DefIcons pipeline copies the Workbench default icon (for metadata:
- * default tool, tooltypes, icon type), then this image template supplies
+ * default tool, tooltypes, icon type), then an image template supplies
  * the color pixel data that gets the text preview rendered into it.
+ *
+ * Template resolution order:
+ *   1. PROGDIR:Icons/def_<type>     (e.g., def_c, def_rexx)
+ *   2. PROGDIR:Icons/def_ascii      (generic ASCII fallback)
+ *   3. PROGDIR:Icons/text_template  (ultimate fallback, always exists)
  *
  * Host path:  Bin\Amiga\Icons\text_template.info
  * Amiga path: PROGDIR:Icons/text_template
  */
-#define ITIDY_TEXT_TEMPLATE_PATH    "PROGDIR:Icons/text_template"
+#define ITIDY_TEXT_TEMPLATE_FALLBACK    "PROGDIR:Icons/text_template"
 
 /*========================================================================*/
 /* IFF Thumbnail Icon Sizes                                               */

@@ -301,7 +301,7 @@ warning 153 in line 274 of "src\cli_utilities.c": statement has no effect
 Compiling [build/amiga/layout_preferences.o] from src/layout_preferences.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/layout_preferences.c -o build/amiga/layout_preferences.o
 >        if (Stricmp(prefs->deficons_exclude_paths[i], path) == 0)
-warning 161 in line 696 of "src\layout_preferences.c": implicit declaration of function <Stricmp>
+warning 161 in line 697 of "src\layout_preferences.c": implicit declaration of function <Stricmp>
 Compiling [build/amiga/layout_processor.o] from src/layout_processor.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/layout_processor.c -o build/amiga/layout_processor.o
 >        CONSOLE_ERROR("Error: NULL progress window pointer\n");
@@ -500,28 +500,28 @@ Compiling [build/amiga/folder_scanner.o] from src/folder_scanner.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/folder_scanner.c -o build/amiga/folder_scanner.o
 Compiling [build/amiga/string_functions.o] from src/string_functions.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/string_functions.c -o build/amiga/string_functions.o
-Compiling [build/amiga/deficons_parser.o] from src/deficons_parser.c
-vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/deficons_parser.c -o build/amiga/deficons_parser.o
-Compiling [build/amiga/deficons_identify.o] from src/deficons_identify.c
-vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/deficons_identify.c -o build/amiga/deficons_identify.o
-Compiling [build/amiga/deficons_templates.o] from src/deficons_templates.c
-vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/deficons_templates.c -o build/amiga/deficons_templates.o
-Compiling [build/amiga/deficons_filters.o] from src/deficons_filters.c
-vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/deficons_filters.c -o build/amiga/deficons_filters.o
-Compiling [build/amiga/deficons_creation.o] from src/deficons_creation.c
-vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/deficons_creation.c -o build/amiga/deficons_creation.o
+Compiling [build/amiga/deficons/deficons_parser.o] from src/deficons/deficons_parser.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/deficons/deficons_parser.c -o build/amiga/deficons/deficons_parser.o
+Compiling [build/amiga/deficons/deficons_identify.o] from src/deficons/deficons_identify.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/deficons/deficons_identify.c -o build/amiga/deficons/deficons_identify.o
+Compiling [build/amiga/deficons/deficons_templates.o] from src/deficons/deficons_templates.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/deficons/deficons_templates.c -o build/amiga/deficons/deficons_templates.o
+Compiling [build/amiga/deficons/deficons_filters.o] from src/deficons/deficons_filters.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/deficons/deficons_filters.c -o build/amiga/deficons/deficons_filters.o
+Compiling [build/amiga/deficons/deficons_creation.o] from src/deficons/deficons_creation.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/deficons/deficons_creation.c -o build/amiga/deficons/deficons_creation.o
 >        CREATION_STATUS(progress_window, "  Skipping system path: %s", path)
-warning 153 in line 504 of "src\deficons_creation.c": statement has no effect
+warning 153 in line 504 of "src\deficons\deficons_creation.c": statement has no effect
 >        CREATION_STATUS(progress_window, "  Skipping excluded path: %s", path)
-warning 153 in line 512 of "src\deficons_creation.c": statement has no effect
+warning 153 in line 512 of "src\deficons\deficons_creation.c": statement has no effect
 >        CREATION_CHECK_CANCEL(progress_window)
-warning 153 in line 545 of "src\deficons_creation.c": statement has no effect
+warning 153 in line 545 of "src\deficons\deficons_creation.c": statement has no effect
 >    CREATION_CHECK_CANCEL(progress_window)
-warning 153 in line 766 of "src\deficons_creation.c": statement has no effect
+warning 153 in line 766 of "src\deficons\deficons_creation.c": statement has no effect
 >    CREATION_STATUS(progress_window, "  Creating icons: %s", path)
-warning 153 in line 774 of "src\deficons_creation.c": statement has no effect
+warning 153 in line 774 of "src\deficons\deficons_creation.c": statement has no effect
 >        CREATION_CHECK_CANCEL(progress_window)
-warning 153 in line 824 of "src\deficons_creation.c": statement has no effect
+warning 153 in line 824 of "src\deficons\deficons_creation.c": statement has no effect
 Compiling [build/amiga/icon_edit/icon_image_access.o] from src/icon_edit/icon_image_access.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_edit/icon_image_access.c -o build/amiga/icon_edit/icon_image_access.o
 Compiling [build/amiga/icon_edit/icon_text_render.o] from src/icon_edit/icon_text_render.c
@@ -529,11 +529,11 @@ vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBU
 Compiling [build/amiga/icon_edit/icon_iff_render.o] from src/icon_edit/icon_iff_render.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_edit/icon_iff_render.c -o build/amiga/icon_edit/icon_iff_render.o
 >        == 0)
-warning 161 in line 1869 of "src\icon_edit\icon_iff_render.c": implicit declaration of function <DoMethod>
+warning 161 in line 1859 of "src\icon_edit\icon_iff_render.c": implicit declaration of function <DoMethod>
 Compiling [build/amiga/icon_edit/icon_content_preview.o] from src/icon_edit/icon_content_preview.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_edit/icon_content_preview.c -o build/amiga/icon_edit/icon_content_preview.o
 >        exclude_list = (char *)FindToolType(tooltypes, "EXCLUDETYPE");
-warning 110 in line 79 of "src\icon_edit\icon_content_preview.c": pointer assignment with different qualifiers
+warning 110 in line 81 of "src\icon_edit\icon_content_preview.c": pointer assignment with different qualifiers
 Compiling [build/amiga/icon_edit/palette/palette_mapping.o] from src/icon_edit/palette/palette_mapping.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_edit/palette/palette_mapping.c -o build/amiga/icon_edit/palette/palette_mapping.o
 Compiling [build/amiga/icon_edit/palette/palette_quantization.o] from src/icon_edit/palette/palette_quantization.c
@@ -546,58 +546,58 @@ Compiling [build/amiga/icon_edit/palette/palette_grayscale.o] from src/icon_edit
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_edit/palette/palette_grayscale.c -o build/amiga/icon_edit/palette/palette_grayscale.o
 Compiling [build/amiga/icon_edit/palette/ultra_downsample.o] from src/icon_edit/palette/ultra_downsample.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_edit/palette/ultra_downsample.c -o build/amiga/icon_edit/palette/ultra_downsample.o
-Compiling [build/amiga/backup_catalog.o] from src/backup_catalog.c
-vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/backup_catalog.c -o build/amiga/backup_catalog.o
-Compiling [build/amiga/backup_lha.o] from src/backup_lha.c
-vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/backup_lha.c -o build/amiga/backup_lha.o
-Compiling [build/amiga/backup_marker.o] from src/backup_marker.c
-vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/backup_marker.c -o build/amiga/backup_marker.o
-Compiling [build/amiga/backup_paths.o] from src/backup_paths.c
-vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/backup_paths.c -o build/amiga/backup_paths.o
-Compiling [build/amiga/backup_runs.o] from src/backup_runs.c
-vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/backup_runs.c -o build/amiga/backup_runs.o
-Compiling [build/amiga/backup_session.o] from src/backup_session.c
-vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/backup_session.c -o build/amiga/backup_session.o
-Compiling [build/amiga/backup_restore.o] from src/backup_restore.c
-vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/backup_restore.c -o build/amiga/backup_restore.o
+Compiling [build/amiga/backups/backup_catalog.o] from src/backups/backup_catalog.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/backups/backup_catalog.c -o build/amiga/backups/backup_catalog.o
+Compiling [build/amiga/backups/backup_lha.o] from src/backups/backup_lha.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/backups/backup_lha.c -o build/amiga/backups/backup_lha.o
+Compiling [build/amiga/backups/backup_marker.o] from src/backups/backup_marker.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/backups/backup_marker.c -o build/amiga/backups/backup_marker.o
+Compiling [build/amiga/backups/backup_paths.o] from src/backups/backup_paths.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/backups/backup_paths.c -o build/amiga/backups/backup_paths.o
+Compiling [build/amiga/backups/backup_runs.o] from src/backups/backup_runs.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/backups/backup_runs.c -o build/amiga/backups/backup_runs.o
+Compiling [build/amiga/backups/backup_session.o] from src/backups/backup_session.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/backups/backup_session.c -o build/amiga/backups/backup_session.o
+Compiling [build/amiga/backups/backup_restore.o] from src/backups/backup_restore.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/backups/backup_restore.c -o build/amiga/backups/backup_restore.o
 >    CONSOLE_STATUS("Restoring archive: %s\n", archivePath);
-warning 153 in line 88 of "src\backup_restore.c": statement has no effect
+warning 153 in line 88 of "src\backups\backup_restore.c": statement has no effect
 >    CONSOLE_STATUS("  -> Restoring to: %s\n", destPath);
-warning 153 in line 89 of "src\backup_restore.c": statement has no effect
+warning 153 in line 89 of "src\backups\backup_restore.c": statement has no effect
 >    CONSOLE_STATUS("  -> Restored successfully\n");
-warning 153 in line 136 of "src\backup_restore.c": statement has no effect
+warning 153 in line 136 of "src\backups\backup_restore.c": statement has no effect
 >           windowInfo.left, windowInfo.top);
-warning 153 in line 414 of "src\backup_restore.c": statement has no effect
+warning 153 in line 414 of "src\backups\backup_restore.c": statement has no effect
 >    CONSOLE_STATUS("Restoring archive: %s\n", archivePath);
-warning 153 in line 498 of "src\backup_restore.c": statement has no effect
+warning 153 in line 498 of "src\backups\backup_restore.c": statement has no effect
 >    CONSOLE_STATUS("  -> Restoring to: %s\n", originalPath);
-warning 153 in line 516 of "src\backup_restore.c": statement has no effect
+warning 153 in line 516 of "src\backups\backup_restore.c": statement has no effect
 >    CONSOLE_STATUS("  -> Restored successfully\n");
-warning 153 in line 551 of "src\backup_restore.c": statement has no effect
+warning 153 in line 551 of "src\backups\backup_restore.c": statement has no effect
 >    CONSOLE_STATUS("\n========================================\n");
-warning 153 in line 565 of "src\backup_restore.c": statement has no effect
+warning 153 in line 565 of "src\backups\backup_restore.c": statement has no effect
 >    CONSOLE_STATUS("Starting Full Run Restore\n");
-warning 153 in line 566 of "src\backup_restore.c": statement has no effect
+warning 153 in line 566 of "src\backups\backup_restore.c": statement has no effect
 >    CONSOLE_STATUS("Run Directory: %s\n", runDirectory);
-warning 153 in line 567 of "src\backup_restore.c": statement has no effect
+warning 153 in line 567 of "src\backups\backup_restore.c": statement has no effect
 >    CONSOLE_STATUS("========================================\n\n");
-warning 153 in line 568 of "src\backup_restore.c": statement has no effect
+warning 153 in line 568 of "src\backups\backup_restore.c": statement has no effect
 >    CONSOLE_STATUS("Reading catalog: %s\n\n", catalogPath);
-warning 153 in line 580 of "src\backup_restore.c": statement has no effect
+warning 153 in line 580 of "src\backups\backup_restore.c": statement has no effect
 >    CONSOLE_STATUS("\n========================================\n");
-warning 153 in line 609 of "src\backup_restore.c": statement has no effect
+warning 153 in line 609 of "src\backups\backup_restore.c": statement has no effect
 >    CONSOLE_STATUS("Restore Summary\n");
-warning 153 in line 610 of "src\backup_restore.c": statement has no effect
+warning 153 in line 610 of "src\backups\backup_restore.c": statement has no effect
 >    CONSOLE_STATUS("========================================\n");
-warning 153 in line 611 of "src\backup_restore.c": statement has no effect
+warning 153 in line 611 of "src\backups\backup_restore.c": statement has no effect
 >    CONSOLE_STATUS("Archives restored: %u\n", ctx->stats.archivesRestored);
-warning 153 in line 612 of "src\backup_restore.c": statement has no effect
+warning 153 in line 612 of "src\backups\backup_restore.c": statement has no effect
 >    CONSOLE_STATUS("Archives failed:   %u\n", ctx->stats.archivesFailed);
-warning 153 in line 613 of "src\backup_restore.c": statement has no effect
+warning 153 in line 613 of "src\backups\backup_restore.c": statement has no effect
 >    CONSOLE_STATUS("Total data:        %lu bytes\n", ctx->stats.totalBytesResto
-warning 153 in line 614 of "src\backup_restore.c": statement has no effect
+warning 153 in line 614 of "src\backups\backup_restore.c": statement has no effect
 >    CONSOLE_STATUS("========================================\n\n");
-warning 153 in line 615 of "src\backup_restore.c": statement has no effect
+warning 153 in line 615 of "src\backups\backup_restore.c": statement has no effect
 Compiling [build/amiga/helpers/listview_simple_columns.o] from src/helpers/listview_simple_columns.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/helpers/listview_simple_columns.c -o build/amiga/helpers/listview_simple_columns.o
 Compiling [build/amiga/helpers/list_formatter.o] from src/helpers/list_formatter.c
@@ -605,61 +605,63 @@ vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBU
 Compiling [build/amiga/GUI/main_window.o] from src/GUI/main_window.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/main_window.c -o build/amiga/GUI/main_window.o
 >            CONSOLE_DEBUG("Order changed to: %s\n", order_labels_str[code]);
-warning 153 in line 1892 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 1988 of "src\GUI\main_window.c": statement has no effect
 >            CONSOLE_DEBUG("Sort by changed to: %s\n", sortby_labels_str[code]);
-warning 153 in line 1905 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2001 of "src\GUI\main_window.c": statement has no effect
 >                CONSOLE_DEBUG("Recursive: %s\n", win_data->recursive_subdirs ? 
-warning 153 in line 1913 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2009 of "src\GUI\main_window.c": statement has no effect
 >                CONSOLE_DEBUG("Backup: %s\n", win_data->enable_backup ? "ON" : 
-warning 153 in line 1922 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2018 of "src\GUI\main_window.c": statement has no effect
 >            CONSOLE_DEBUG("Position changed to: %s\n", position_labels_str[code
-warning 153 in line 1928 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2024 of "src\GUI\main_window.c": statement has no effect
 >                CONSOLE_DEBUG("Create new icons: %s\n", win_data->enable_defico
-warning 153 in line 1936 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2032 of "src\GUI\main_window.c": statement has no effect
 >                CONSOLE_STATUS("Advanced button clicked - opening Advanced Sett
-warning 153 in line 1945 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2041 of "src\GUI\main_window.c": statement has no effect
 >                        CONSOLE_STATUS("Advanced settings accepted - updating g
-warning 153 in line 1966 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2062 of "src\GUI\main_window.c": statement has no effect
 >                        CONSOLE_DEBUG("Settings will be applied when you click 
-warning 153 in line 1971 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2067 of "src\GUI\main_window.c": statement has no effect
 >                        CONSOLE_DEBUG("Advanced settings cancelled\n");
-warning 153 in line 1975 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2071 of "src\GUI\main_window.c": statement has no effect
 >                    CONSOLE_ERROR("Failed to open Advanced Settings window\n");
-warning 153 in line 1980 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2076 of "src\GUI\main_window.c": statement has no effect
 >                CONSOLE_STATUS("Fix default tools button clicked\n");
-warning 153 in line 1990 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2086 of "src\GUI\main_window.c": statement has no effect
 >                CONSOLE_STATUS("Restore backups button clicked - opening Restor
-warning 153 in line 2036 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2132 of "src\GUI\main_window.c": statement has no effect
 >                    CONSOLE_DEBUG("Restore window closed\n");
-warning 153 in line 2056 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2152 of "src\GUI\main_window.c": statement has no effect
 >                    CONSOLE_ERROR("Failed to open Restore window\n");
-warning 153 in line 2063 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2159 of "src\GUI\main_window.c": statement has no effect
 >            CONSOLE_STATUS("Start button clicked - Processing icons...\n");
-warning 153 in line 2069 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2165 of "src\GUI\main_window.c": statement has no effect
 >                    CONSOLE_ERROR("Failed to open progress window\n");
-warning 153 in line 2124 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2220 of "src\GUI\main_window.c": statement has no effect
 >                CONSOLE_NEWLINE();
-warning 153 in line 2136 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2232 of "src\GUI\main_window.c": statement has no effect
 >                CONSOLE_STATUS(">>> Starting icon processing...\n");
-warning 153 in line 2137 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2233 of "src\GUI\main_window.c": statement has no effect
 >                CONSOLE_NEWLINE();
-warning 153 in line 2138 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2234 of "src\GUI\main_window.c": statement has no effect
 >                    CONSOLE_STATUS("Icon processing completed successfully!\n")
-warning 153 in line 2147 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2243 of "src\GUI\main_window.c": statement has no effect
 >                    CONSOLE_WARNING("Icon processing failed or was incomplete\n
-warning 153 in line 2155 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2251 of "src\GUI\main_window.c": statement has no effect
 >                CONSOLE_SEPARATOR();
-warning 153 in line 2161 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2257 of "src\GUI\main_window.c": statement has no effect
 >                CONSOLE_NEWLINE();
-warning 153 in line 2162 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2258 of "src\GUI\main_window.c": statement has no effect
 >            CONSOLE_STATUS("Exit button clicked\n");
-warning 153 in line 2183 of "src\GUI\main_window.c": statement has no effect
+warning 153 in line 2279 of "src\GUI\main_window.c": statement has no effect
 Compiling [build/amiga/GUI/advanced_window.o] from src/GUI/advanced_window.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/advanced_window.c -o build/amiga/GUI/advanced_window.o
 Compiling [build/amiga/GUI/beta_options_window.o] from src/GUI/beta_options_window.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/beta_options_window.c -o build/amiga/GUI/beta_options_window.o
 Compiling [build/amiga/GUI/deficons_settings_window.o] from src/GUI/deficons_settings_window.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/deficons_settings_window.c -o build/amiga/GUI/deficons_settings_window.o
+Compiling [build/amiga/GUI/deficons_creation_window.o] from src/GUI/deficons_creation_window.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/deficons_creation_window.c -o build/amiga/GUI/deficons_creation_window.o
 Compiling [build/amiga/GUI/exclude_paths_window.o] from src/GUI/exclude_paths_window.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/GUI/exclude_paths_window.c -o build/amiga/GUI/exclude_paths_window.o
 Compiling [build/amiga/GUI/easy_request_helper.o] from src/GUI/easy_request_helper.c
@@ -771,6 +773,6 @@ vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBU
 Compiling memory tracking: build/amiga/platform_memory.o
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/platform/platform.c -o build/amiga/platform_memory.o
 Linking Amiga executable: Bin/Amiga/iTidy
-vc +aos68k -cpu=68000 -O2 -size -final -lamiga -lauto -o Bin/Amiga/iTidy build/amiga/main_gui.o build/amiga/icon_types.o build/amiga/icon_misc.o build/amiga/icon_management.o build/amiga/file_directory_handling.o build/amiga/window_management.o build/amiga/utilities.o build/amiga/path_utilities.o build/amiga/spinner.o build/amiga/writeLog.o build/amiga/cli_utilities.o build/amiga/layout_preferences.o build/amiga/layout_processor.o build/amiga/aspect_ratio_layout.o build/amiga/folder_scanner.o build/amiga/string_functions.o build/amiga/deficons_parser.o build/amiga/deficons_identify.o build/amiga/deficons_templates.o build/amiga/deficons_filters.o build/amiga/deficons_creation.o build/amiga/icon_edit/icon_image_access.o build/amiga/icon_edit/icon_text_render.o build/amiga/icon_edit/icon_iff_render.o build/amiga/icon_edit/icon_content_preview.o build/amiga/icon_edit/palette/palette_mapping.o build/amiga/icon_edit/palette/palette_quantization.o build/amiga/icon_edit/palette/palette_dithering.o build/amiga/icon_edit/palette/palette_reduction.o build/amiga/icon_edit/palette/palette_grayscale.o build/amiga/icon_edit/palette/ultra_downsample.o build/amiga/backup_catalog.o build/amiga/backup_lha.o build/amiga/backup_marker.o build/amiga/backup_paths.o build/amiga/backup_runs.o build/amiga/backup_session.o build/amiga/backup_restore.o build/amiga/helpers/listview_simple_columns.o build/amiga/helpers/list_formatter.o build/amiga/GUI/main_window.o build/amiga/GUI/advanced_window.o build/amiga/GUI/beta_options_window.o build/amiga/GUI/deficons_settings_window.o build/amiga/GUI/exclude_paths_window.o build/amiga/GUI/easy_request_helper.o build/amiga/GUI/window_enumerator.o build/amiga/GUI/wb_classify.o build/amiga/GUI/gui_groupbox.o build/amiga/GUI/gui_utilities.o build/amiga/GUI/StatusWindows/progress_common.o build/amiga/GUI/StatusWindows/progress_window.o build/amiga/GUI/StatusWindows/recursive_progress.o build/amiga/GUI/StatusWindows/main_progress_window.o build/amiga/GUI/DefaultTools/tool_cache_window.o build/amiga/GUI/DefaultTools/tool_cache_reports.o build/amiga/GUI/DefaultTools/default_tool_update_window_reaction.o build/amiga/GUI/DefaultTools/default_tool_backup.o build/amiga/GUI/DefaultTools/default_tool_restore_window.o build/amiga/GUI/RestoreBackups/restore_window.o build/amiga/GUI/RestoreBackups/folder_view_window.o build/amiga/DOS/getDiskDetails.o build/amiga/Settings/IControlPrefs.o build/amiga/Settings/WorkbenchPrefs.o build/amiga/Settings/get_fonts.o build/amiga/platform/amiga_platform.o build/amiga/platform_memory.o 
+vc +aos68k -cpu=68000 -O2 -size -final -lamiga -lauto -o Bin/Amiga/iTidy build/amiga/main_gui.o build/amiga/icon_types.o build/amiga/icon_misc.o build/amiga/icon_management.o build/amiga/file_directory_handling.o build/amiga/window_management.o build/amiga/utilities.o build/amiga/path_utilities.o build/amiga/spinner.o build/amiga/writeLog.o build/amiga/cli_utilities.o build/amiga/layout_preferences.o build/amiga/layout_processor.o build/amiga/aspect_ratio_layout.o build/amiga/folder_scanner.o build/amiga/string_functions.o build/amiga/deficons/deficons_parser.o build/amiga/deficons/deficons_identify.o build/amiga/deficons/deficons_templates.o build/amiga/deficons/deficons_filters.o build/amiga/deficons/deficons_creation.o build/amiga/icon_edit/icon_image_access.o build/amiga/icon_edit/icon_text_render.o build/amiga/icon_edit/icon_iff_render.o build/amiga/icon_edit/icon_content_preview.o build/amiga/icon_edit/palette/palette_mapping.o build/amiga/icon_edit/palette/palette_quantization.o build/amiga/icon_edit/palette/palette_dithering.o build/amiga/icon_edit/palette/palette_reduction.o build/amiga/icon_edit/palette/palette_grayscale.o build/amiga/icon_edit/palette/ultra_downsample.o build/amiga/backups/backup_catalog.o build/amiga/backups/backup_lha.o build/amiga/backups/backup_marker.o build/amiga/backups/backup_paths.o build/amiga/backups/backup_runs.o build/amiga/backups/backup_session.o build/amiga/backups/backup_restore.o build/amiga/helpers/listview_simple_columns.o build/amiga/helpers/list_formatter.o build/amiga/GUI/main_window.o build/amiga/GUI/advanced_window.o build/amiga/GUI/beta_options_window.o build/amiga/GUI/deficons_settings_window.o build/amiga/GUI/deficons_creation_window.o build/amiga/GUI/exclude_paths_window.o build/amiga/GUI/easy_request_helper.o build/amiga/GUI/window_enumerator.o build/amiga/GUI/wb_classify.o build/amiga/GUI/gui_groupbox.o build/amiga/GUI/gui_utilities.o build/amiga/GUI/StatusWindows/progress_common.o build/amiga/GUI/StatusWindows/progress_window.o build/amiga/GUI/StatusWindows/recursive_progress.o build/amiga/GUI/StatusWindows/main_progress_window.o build/amiga/GUI/DefaultTools/tool_cache_window.o build/amiga/GUI/DefaultTools/tool_cache_reports.o build/amiga/GUI/DefaultTools/default_tool_update_window_reaction.o build/amiga/GUI/DefaultTools/default_tool_backup.o build/amiga/GUI/DefaultTools/default_tool_restore_window.o build/amiga/GUI/RestoreBackups/restore_window.o build/amiga/GUI/RestoreBackups/folder_view_window.o build/amiga/DOS/getDiskDetails.o build/amiga/Settings/IControlPrefs.o build/amiga/Settings/WorkbenchPrefs.o build/amiga/Settings/get_fonts.o build/amiga/platform/amiga_platform.o build/amiga/platform_memory.o 
 Build complete: Bin/Amiga/iTidy
 Release build optimized for size (-O2 -size -final)
