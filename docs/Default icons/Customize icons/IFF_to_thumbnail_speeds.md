@@ -295,3 +295,170 @@ Render time correlates with:
 - `area_average_scale()`: Same-index fast path skips RGB average + palette search for uniform pixel blocks
 - `find_closest_color_fast()`: Manhattan distance (no multiplies) replaces Euclidean (3× MULS per entry)
 - `prefilter_2x2()`: Also updated to use Manhattan distance
+
+---
+
+## Real Hardware Benchmarks — Amiga 600 + 68030 @ 50MHz
+
+### Test Configuration
+
+- **Hardware**: Amiga 600 with 68030 accelerator @ 50MHz, 2MB Chip RAM, 64MB Fast RAM
+- **Display**: Indivision ECS4 RTG card @ 800x600, 8-bit depth
+- **OS**: Workbench 3.2
+- **Code Version**: v3 (native IFF parser + datatype HAM fallback)
+- **Thumbnail Size**: 64x64 pixels (mode=1, palette_mode=0)
+- **Test Dates**: 2026-02-13 (debug run), 2026-02-14 (INFO-only run)
+
+Two runs were performed on the same real hardware to isolate the impact of debug logging:
+
+| Run | Log File | Log Level | ICON_DUMP |
+|-----|----------|-----------|-----------|
+| Debug run | `icons_2026-02-13_21-40-40.log` | DEBUG | Yes (40+ lines of pixel data per image) |
+| **INFO-only run** | `icons_2026-02-14_00-06-54.log` | **INFO** | **No** |
+
+> **Important**: All previous benchmarks in this document were captured in **WinUAE emulation** on a
+> stock 68000 @ ~7MHz. These are the first benchmarks from **real Amiga hardware** with an accelerator.
+
+---
+
+### INFO-Only Results (Production Configuration)
+
+This run reflects real-world production performance with no debug overhead.
+
+#### Standard Lowres Images (320x200, 5 bitplanes, 32 colors)
+
+| Image | Decode | Scale | Total (incl. save) | WinUAE 68000 v3 | Speedup vs WinUAE |
+|-------|--------|-------|--------------------|-----------------|--------------------|
+| Venus | <1s | ~1s | **~2s** | 4s | 2x |
+| Space | <1s | ~1s | **~2s** | 3s | 1.5x |
+| Waterfall | <1s | ~1s | **~1s** | 4s | 4x |
+| Gorilla | <1s | ~1s | **~2s** | 4s | 2x |
+| Yacht | ~1s | <1s | **~2s** | 4s | 2x |
+| KingTut | ~1s | <1s | **~2s** | 3s | 1.5x |
+| **Average** | **<1s** | **~1s** | **~1.8s** | **~3.7s** | **~2x** |
+
+#### Hi-Res / Interlaced Images
+
+| Image | Resolution | Display Mode | Decode | Scale | Total | WinUAE 68000 v3 | Speedup |
+|-------|-----------|--------------|--------|-------|-------|-----------------|---------|
+| Utopia-17.IFF | 336x442, 5bp | Interlace | ~1s | ~1s | **~3s** | 7s | 2.3x |
+| Zebra-Stripes-V2.IFF | 672x446, 4bp | HR + Interlace | ~2s | ~3s | **~5s** | 9s | 1.8x |
+| Activision-Screen.IFF | 672x436, 4bp | HR + Interlace | ~1s | ~2s | **~3s** | 9s | 3x |
+
+#### HAM Images (Datatype Fallback)
+
+| Image | Resolution | Display Mode | DT Read | Scale + Quantize | Total | WinUAE 68000 v3 | Speedup |
+|-------|-----------|--------------|---------|------------------|-------|-----------------|---------|
+| Utopia-16.IFF | 336x442 | HAM6 + Interlace | ~1s | ~1s | **~3s** | ~14s | 4.7x |
+
+#### Grand Total — INFO-Only (all 10 images)
+
+| Environment | Total Render Time | Per Image Average |
+|-------------|-------------------|-------------------|
+| WinUAE 68000 @ ~7MHz (v3 @ 64px) | ~61s | ~6.1s |
+| Real A600 + 68030 @ 50MHz (DEBUG) | ~41s | ~4.1s |
+| **Real A600 + 68030 @ 50MHz (INFO-only)** | **~26s** | **~2.6s** |
+
+| Comparison | Speedup |
+|------------|---------|
+| INFO-only vs WinUAE 68000 | **~2.3x** |
+| INFO-only vs DEBUG run | **~1.6x** |
+| DEBUG run vs WinUAE 68000 | ~1.5x |
+
+---
+
+### Debug Run Results (with ICON_DUMP)
+
+For reference, the debug run with full ICON_DUMP pixel logging enabled:
+
+#### Standard Lowres Images (320x200, 5 bitplanes, 32 colors)
+
+| Image | Decode | Scale | Total (incl. save) | WinUAE 68000 v3 | Speedup |
+|-------|--------|-------|--------------------|--------------------|---------|
+| Venus | ~1s | ~1s | **~3s** | 4s | 1.3x |
+| Space | ~1s | ~1s | **~3s** | 3s | 1x |
+| Waterfall | ~1s | ~1s | **~3s** | 4s | 1.3x |
+| Gorilla | ~1s | ~1s | **~3s** | 4s | 1.3x |
+| Yacht | ~1s | ~1s | **~4s** | 4s | 1x |
+| KingTut | ~1s | ~1s | **~3s** | 3s | 1x |
+| **Average** | **~1s** | **~1s** | **~3.2s** | **~3.7s** | **~1.2x** |
+
+#### Hi-Res / Interlaced Images
+
+| Image | Resolution | Display Mode | Decode | Scale | Total | WinUAE 68000 v3 | Speedup |
+|-------|-----------|--------------|--------|-------|-------|-----------------|---------|
+| Utopia-17.IFF | 336x442, 5bp | Interlace | ~2s | ~1s | **~5s** | 7s | 1.4x |
+| Zebra-Stripes-V2.IFF | 672x446, 4bp | HR + Interlace | ~2s | ~2-3s | **~6s** | 9s | 1.5x |
+| Activision-Screen.IFF | 672x436, 4bp | HR + Interlace | ~2s | ~2-3s | **~6s** | 9s | 1.5x |
+
+#### HAM Images (Datatype Fallback)
+
+| Image | Resolution | Display Mode | DT Read + Scale | Total | WinUAE 68000 v3 | Speedup |
+|-------|-----------|--------------|-----------------|-------|-----------------|---------|
+| Utopia-16.IFF | 336x442 | HAM6 + Interlace | ~3s | **~5s** | ~14s | 2.8x |
+
+---
+
+### Per-Image Comparison: INFO-Only vs Debug vs WinUAE
+
+| Image | Type | INFO-only | Debug | WinUAE 68000 | INFO vs WinUAE |
+|-------|------|-----------|-------|--------------|----------------|
+| Venus | Lowres | **2s** | 3s | 4s | 2x |
+| Space | Lowres | **2s** | 3s | 3s | 1.5x |
+| Waterfall | Lowres | **1s** | 3s | 4s | 4x |
+| Gorilla | Lowres | **2s** | 3s | 4s | 2x |
+| Yacht | Lowres | **2s** | 4s | 4s | 2x |
+| KingTut | Lowres | **2s** | 3s | 3s | 1.5x |
+| Utopia-17 | Interlace | **3s** | 5s | 7s | 2.3x |
+| Zebra-Stripes-V2 | HR+Lace | **5s** | 6s | 9s | 1.8x |
+| Activision-Screen | HR+Lace | **3s** | 6s | 9s | 3x |
+| Utopia-16 | HAM6 (DT) | **3s** | 5s | 14s | 4.7x |
+| **TOTAL** | | **25s** | **41s** | **61s** | **2.4x** |
+
+### Impact of Debug Logging
+
+The ICON_DUMP debug output adds **~1-2 seconds per image** of pure disk I/O overhead (writing 40+ lines of pixel data to the log file). This overhead is constant regardless of CPU speed:
+
+| Metric | DEBUG run | INFO-only | Difference |
+|--------|-----------|-----------|------------|
+| Total time (10 images) | ~41s | **~25s** | **16s saved** |
+| Per-image average | ~4.1s | **~2.5s** | ~1.6s/image |
+| Overhead ratio | — | — | **~60% overhead** from debug logging |
+
+The debug logging penalty is proportionally larger on faster hardware because the compute phases complete quickly, making the fixed I/O cost a bigger fraction of total time.
+
+### Analysis
+
+#### Why the Speedup is ~2.3x (not 7x)
+
+The 68030 @ 50MHz has a ~7x clock advantage over the 68000 @ ~7MHz, but the measured speedup is ~2.3x. Contributing factors:
+
+1. **1-second timestamp resolution**: Many sub-second phases on the 68030 are recorded as "~1s". A lowres image that truly takes 0.4s still shows as 1s, while the same image at 3.5s on the 68000 shows as 4s — masking a real 8.75x speedup.
+
+2. **I/O-bound phases**: Icon save (`PutDiskObject`), template copy, and DefIcons ARexx queries are disk-bound operations that don't scale with CPU speed. These account for ~1s per image on both platforms.
+
+3. **WinUAE host acceleration**: WinUAE's emulated filesystem runs on the host PC's NVMe/SSD, which is faster than real AmigaOS filesystem I/O on the Amiga's CF/SD storage. This makes the WinUAE baseline artificially fast for I/O-heavy operations.
+
+4. **68030 cache effects**: The 68030's small instruction/data caches (256 bytes each) help but don't eliminate memory bandwidth bottlenecks for large image data.
+
+#### True Compute Speedup Estimate
+
+The images where compute dominates (hi-res/HAM) show the clearest gains:
+
+| Image Type | INFO-only | WinUAE 68000 | Measured Speedup | Est. Compute Speedup |
+|-----------|-----------|--------------|------------------|---------------------|
+| Hi-res 672-wide | 3-5s | 9s | 1.8-3x | ~4-6x (removing ~1s I/O floor) |
+| HAM6 datatype | 3s | 14s | 4.7x | ~5-7x (HAM has minimal I/O overhead) |
+| Lowres 320x200 | 1-2s | 3-4s | 2x | ~5-10x (sub-second compute, I/O dominates) |
+
+The HAM image gives the best estimate of raw compute speedup at **~4.7x**, since its processing is almost entirely CPU-bound (datatype decode + RGB24 scale + quantize) with minimal I/O overhead relative to total time.
+
+### Key Observations
+
+1. **All images process in 1-5 seconds** — excellent interactive performance
+2. **Lowres images are near-instant** at 1-2s (approaching the I/O floor)
+3. **HAM datatype fallback benefits most** from the faster CPU (4.7x visible speedup)
+4. **Hi-res images show clear gains** — Activision-Screen drops from 9s to 3s (3x)
+5. **Debug logging adds ~60% overhead** — always disable ICON_DUMP for production/benchmarking
+6. **64px thumbnails are fully practical** for real-time interactive use on accelerated hardware
+7. **26 seconds for 10 images** — under 3 seconds per image average in production configuration
