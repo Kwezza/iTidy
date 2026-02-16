@@ -32,6 +32,99 @@
 #include "../GUI/StatusWindows/main_progress_window.h"  /* For cancel flag */
 
 /*========================================================================*/
+/* Helper: Check if type is excluded via EXCLUDETYPE tooltype            */
+/*========================================================================*/
+
+/**
+ * @brief Check if a file type should be excluded from text preview
+ * 
+ * Reads the EXCLUDETYPE tooltype from Icons/def_ascii.info to check
+ * if the given type token should bypass text preview rendering.
+ * 
+ * Format: EXCLUDETYPE=amigaguide,html,install
+ * 
+ * @param type_token File type to check (e.g., "amigaguide", "c", "rexx")
+ * @return TRUE if type should be excluded, FALSE otherwise
+ * 
+ * @note Case-insensitive matching
+ * @note Handles comma-separated lists with optional whitespace
+ */
+static BOOL is_excluded_from_text_preview(const char *type_token)
+{
+    struct DiskObject *ascii_template = NULL;
+    char **tooltypes = NULL;
+    char *exclude_list = NULL;
+    BOOL excluded = FALSE;
+    char buffer[256];
+    char *token;
+    char *token_start;
+    
+    if (type_token == NULL || type_token[0] == '\0')
+    {
+        return FALSE;
+    }
+    
+    /* Load the base ASCII template to read its tooltypes */
+    ascii_template = GetDiskObject((STRPTR)"Icons/def_ascii");
+    if (ascii_template == NULL)
+    {
+        log_debug(LOG_ICONS, "Could not load Icons/def_ascii.info for EXCLUDETYPE check\n");
+        return FALSE;
+    }
+    
+    /* Look for EXCLUDETYPE tooltype */
+    tooltypes = (char **)ascii_template->do_ToolTypes;
+    if (tooltypes != NULL)
+    {
+        exclude_list = (char *)FindToolType(tooltypes, "EXCLUDETYPE");
+        if (exclude_list != NULL)
+        {
+            log_debug(LOG_ICONS, "Found EXCLUDETYPE tooltype: %s\n", exclude_list);
+            
+            /* Parse comma-separated list (case-insensitive) */
+            strncpy(buffer, exclude_list, sizeof(buffer) - 1);
+            buffer[sizeof(buffer) - 1] = '\0';
+            
+            token = strtok(buffer, ",");
+            while (token != NULL)
+            {
+                /* Trim leading whitespace */
+                token_start = token;
+                while (*token_start == ' ' || *token_start == '\t')
+                {
+                    token_start++;
+                }
+                
+                /* Trim trailing whitespace */
+                {
+                    char *token_end = token_start + strlen(token_start) - 1;
+                    while (token_end > token_start && 
+                           (*token_end == ' ' || *token_end == '\t'))
+                    {
+                        *token_end = '\0';
+                        token_end--;
+                    }
+                }
+                
+                /* Case-insensitive compare */
+                if (platform_stricmp(token_start, type_token) == 0)
+                {
+                    log_info(LOG_ICONS, "Type '%s' excluded from text preview via EXCLUDETYPE tooltype\n",
+                             type_token);
+                    excluded = TRUE;
+                    break;
+                }
+                
+                token = strtok(NULL, ",");
+            }
+        }
+    }
+    
+    FreeDiskObject(ascii_template);
+    return excluded;
+}
+
+/*========================================================================*/
 /* itidy_is_text_preview_type                                             */
 /*========================================================================*/
 
@@ -775,6 +868,15 @@ int itidy_apply_content_preview(const char *source_path,
 
     if (itidy_is_text_preview_type(type_token))
     {
+        /* Check if this type is excluded via EXCLUDETYPE tooltype */
+        if (is_excluded_from_text_preview(type_token))
+        {
+            log_info(LOG_ICONS, "Skipping text preview for '%s' (type=%s) - "
+                     "excluded via EXCLUDETYPE tooltype in Icons/def_ascii.info\n",
+                     source_path, type_token);
+            return ITIDY_PREVIEW_NOT_APPLICABLE;
+        }
+        
         // Fall through to text preview pipeline below
     }
     else if (itidy_is_iff_preview_type(type_token))
