@@ -69,7 +69,13 @@ ICON_EDIT_SRCS = \
 	$(SRC_DIR)/icon_edit/icon_image_access.c \
 	$(SRC_DIR)/icon_edit/icon_text_render.c \
 	$(SRC_DIR)/icon_edit/icon_iff_render.c \
-	$(SRC_DIR)/icon_edit/icon_content_preview.c
+	$(SRC_DIR)/icon_edit/icon_content_preview.c \
+	$(SRC_DIR)/icon_edit/palette/palette_mapping.c \
+	$(SRC_DIR)/icon_edit/palette/palette_quantization.c \
+	$(SRC_DIR)/icon_edit/palette/palette_dithering.c \
+	$(SRC_DIR)/icon_edit/palette/palette_reduction.c \
+	$(SRC_DIR)/icon_edit/palette/palette_grayscale.c \
+	$(SRC_DIR)/icon_edit/palette/ultra_downsample.c
 
 # Backup system source files
 BACKUP_SRCS = \
@@ -175,6 +181,7 @@ directories:
 	@if not exist "$(OUT_DIR)\helpers" mkdir "$(OUT_DIR)\helpers"
 	@if not exist "$(OUT_DIR)\GUI" mkdir "$(OUT_DIR)\GUI"
 	@if not exist "$(OUT_DIR)\icon_edit" mkdir "$(OUT_DIR)\icon_edit"
+	@if not exist "$(OUT_DIR)\icon_edit\palette" mkdir "$(OUT_DIR)\icon_edit\palette"
 	@if not exist "$(OUT_DIR)\GUI\StatusWindows" mkdir "$(OUT_DIR)\GUI\StatusWindows"
 	@if not exist "$(OUT_DIR)\GUI\DefaultTools" mkdir "$(OUT_DIR)\GUI\DefaultTools"
 	@if not exist "$(OUT_DIR)\GUI\RestoreBackups" mkdir "$(OUT_DIR)\GUI\RestoreBackups"
@@ -287,6 +294,14 @@ $(OUT_DIR)/icon_edit/icon_image_access.o: $(SRC_DIR)/icon_edit/icon_image_access
 $(OUT_DIR)/icon_edit/icon_text_render.o: $(SRC_DIR)/icon_edit/icon_text_render.c $(SRC_DIR)/icon_edit/icon_text_render.h $(SRC_DIR)/icon_edit/icon_image_access.h
 $(OUT_DIR)/icon_edit/icon_iff_render.o: $(SRC_DIR)/icon_edit/icon_iff_render.c $(SRC_DIR)/icon_edit/icon_iff_render.h $(SRC_DIR)/icon_edit/icon_image_access.h
 $(OUT_DIR)/icon_edit/icon_content_preview.o: $(SRC_DIR)/icon_edit/icon_content_preview.c $(SRC_DIR)/icon_edit/icon_content_preview.h $(SRC_DIR)/icon_edit/icon_image_access.h $(SRC_DIR)/icon_edit/icon_text_render.h
+
+# Palette reduction module
+$(OUT_DIR)/icon_edit/palette/palette_mapping.o: $(SRC_DIR)/icon_edit/palette/palette_mapping.c $(SRC_DIR)/icon_edit/palette/palette_mapping.h $(SRC_DIR)/icon_edit/palette/palette_dithering.h
+$(OUT_DIR)/icon_edit/palette/palette_quantization.o: $(SRC_DIR)/icon_edit/palette/palette_quantization.c $(SRC_DIR)/icon_edit/palette/palette_quantization.h
+$(OUT_DIR)/icon_edit/palette/palette_dithering.o: $(SRC_DIR)/icon_edit/palette/palette_dithering.c $(SRC_DIR)/icon_edit/palette/palette_dithering.h $(SRC_DIR)/icon_edit/palette/palette_mapping.h
+$(OUT_DIR)/icon_edit/palette/palette_reduction.o: $(SRC_DIR)/icon_edit/palette/palette_reduction.c $(SRC_DIR)/icon_edit/palette/palette_reduction.h $(SRC_DIR)/icon_edit/palette/palette_mapping.h $(SRC_DIR)/icon_edit/palette/palette_quantization.h $(SRC_DIR)/icon_edit/palette/palette_dithering.h $(SRC_DIR)/icon_edit/palette/palette_grayscale.h
+$(OUT_DIR)/icon_edit/palette/palette_grayscale.o: $(SRC_DIR)/icon_edit/palette/palette_grayscale.c $(SRC_DIR)/icon_edit/palette/palette_grayscale.h $(SRC_DIR)/icon_edit/palette/palette_mapping.h $(SRC_DIR)/icon_edit/palette/palette_dithering.h
+$(OUT_DIR)/icon_edit/palette/ultra_downsample.o: $(SRC_DIR)/icon_edit/palette/ultra_downsample.c $(SRC_DIR)/icon_edit/palette/ultra_downsample.h $(SRC_DIR)/icon_edit/palette/palette_mapping.h $(SRC_DIR)/icon_edit/palette/palette_quantization.h
 
 # All objects depend on platform headers
 $(OBJS): $(SRC_DIR)/platform/platform.h $(SRC_DIR)/platform/platform_types.h

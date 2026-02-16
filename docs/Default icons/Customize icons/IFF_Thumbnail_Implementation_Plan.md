@@ -668,7 +668,19 @@ static STRPTR palette_mode_labels[] = {
 
 ## 12b. Maximum Icon Color Count (Palette Reduction)
 
-**Status:** 🔲 Not yet implemented (Phase E future item)
+**Status:** ✅ Implemented (2026-02-16)
+
+> **Implementation Notes (2026-02-16):**
+> - All 6 modules created in `src/icon_edit/palette/` exactly as proposed: `palette_quantization.c/h`, `palette_dithering.c/h`, `palette_mapping.c/h`, `palette_reduction.c/h`, `palette_grayscale.c/h`, `ultra_downsample.c/h`
+> - Main entry point: `itidy_reduce_palette()` in `palette_reduction.c` — called from `icon_content_preview.c` Step 6c
+> - Median Cut quantization implemented in `palette_quantization.c` with `iTidy_ColorEntry` histogram and `iTidy_ColorBox` splitting
+> - Manhattan (L1) color distance used throughout (multiply-free for 68020 performance) rather than squared Euclidean
+> - All arithmetic is integer-only as required (no floats)
+> - Preference fields added to `LayoutPreferences`: `deficons_max_icon_colors` (UWORD), `deficons_dither_method` (UWORD), `deficons_lowcolor_mapping` (UWORD), `deficons_ultra_mode` (BOOL) — all at END of struct for binary compatibility
+> - Three chooser gadgets added to DefIcons settings window: Max Colors, Dithering, Low-Color Mapping
+> - Ghosting behavior: Dither chooser ghosted when max colors >= 256 or Ultra mode active; Low-color mapping chooser ghosted when max colors > 8 or Ultra mode active
+> - Ultra mode integrated as last entry in Max Colors chooser ("Ultra (256 + detail boost)") per Option 1 recommendation in section 12e, rather than a separate checkbox
+> - **Deviation from plan**: Chooser labels use slightly different wording than planned (e.g., "256 colors (full)" instead of "No limit (256 colours)", "Ultra (256 + detail boost)" instead of "Ultra (256 + detail-preserving)") — cosmetic only, no functional difference
 
 ### Problem
 
@@ -757,7 +769,17 @@ This is particularly noticeable on 32-color screens where icons can exhaust the 
 
 ## 12c. Dithering for Palette Reduction
 
-**Status:** 🔲 Not yet implemented (Phase E future item)
+**Status:** ✅ Implemented (2026-02-16)
+
+> **Implementation Notes (2026-02-16):**
+> - Bayer 4x4 ordered dithering implemented in `palette_dithering.c` via `itidy_dither_bayer_offset()` — returns signed offset (-7 to +8) exactly as planned
+> - Floyd-Steinberg error diffusion implemented in `palette_dithering.c` via `itidy_floyd_steinberg_dither()` — processes entire pixel buffer in-place
+> - Auto mode selection logic implemented in `palette_reduction.c`: 64+ colors -> None, 32 -> Ordered, 16 -> Ordered, 8 -> Floyd-Steinberg, 4 -> Floyd-Steinberg — matches the planned selection table
+> - Nearest-color with dithering adjustment implemented in `palette_mapping.c` via `itidy_palette_find_nearest_dithered()`
+> - **Deviation from plan**: Floyd-Steinberg uses `WORD` (16-bit signed) error buffers rather than full 16.16 fixed-point as documented. The error values at icon dimensions (max 100px wide) fit comfortably in 16-bit range, so the simpler approach was used. Error distribution fractions (7/16, 5/16, 3/16, 1/16) are computed via integer multiply-and-shift
+> - **Deviation from plan**: Chooser labels differ slightly from plan (e.g., "Ordered (Bayer 4x4)" instead of "Ordered (Fast - 4x4 pattern)", "Error diffusion (Floyd-Steinberg)" instead of "Floyd-Steinberg (Best quality)", "Auto (based on color count)" instead of "Auto (recommended)") — cosmetic only
+> - Dithering is applied during the palette reduction remapping pass (primary use case), not during initial rendering — as documented in the plan's "Integration Points" section
+> - Error buffers allocated via `whd_malloc()` (tracked memory) and freed before function return
 
 ### Problem
 
@@ -1230,7 +1252,18 @@ Alternate row scan direction (left-to-right, then right-to-left) to reduce direc
 
 ## 12d. Grayscale and Workbench Palette Mapping (4-8 Colors)
 
-**Status:** 🔲 Not yet implemented (Phase E future item)
+**Status:** ✅ Implemented (2026-02-16)
+
+> **Implementation Notes (2026-02-16):**
+> - All three strategies implemented in `palette_grayscale.c`: Grayscale, Workbench palette (0-7), Hybrid (grays + WB accents)
+> - `itidy_rgb_to_gray()` uses ITU-R BT.601 formula `(306*R + 601*G + 117*B) >> 10` — integer-only as planned
+> - `itidy_grayscale_palette()` generates evenly-spaced gray levels for 4 or 8 color modes
+> - `itidy_workbench_palette()` provides standard Workbench 3.x system palette (indices 0-7)
+> - `itidy_hybrid_palette()` combines grayscale base with WB accent colors (blue, orange)
+> - Low-color mapping is invoked by `palette_reduction.c` when `max_colors <= 8` and replaces the Median Cut quantization step
+> - Chooser gadget ghosted/disabled when max colors > 8 (not applicable) — as planned
+> - Preference field `deficons_lowcolor_mapping` (UWORD, default 0 = Grayscale) stored in `LayoutPreferences`
+> - Chooser labels: "Grayscale", "Workbench palette", "Hybrid (grays + WB accents)" — matches plan closely
 
 ### Problem
 
@@ -1423,6 +1456,20 @@ By pre-mapping to known stable colors (grayscale or WB 0-7), Workbench can use *
 ---
 
 ## 12e. Ultra Quality Mode (Detail-Preserving + Full 256-Color Palette)
+
+**Status:** ✅ Implemented (2026-02-16)
+
+> **Implementation Notes (2026-02-16):**
+> - Detail-preserving downsampling implemented in `ultra_downsample.c` via `itidy_ultra_downsample()` — algorithm follows the plan: area-average + brightness detection + 30% boost for isolated bright pixels
+> - Tuning constants match plan defaults: `ITIDY_ULTRA_DETAIL_THRESHOLD = 3` (3x brighter triggers boost), `ITIDY_ULTRA_BOOST_NUMERATOR/DENOMINATOR = 3/10` (30% blend)
+> - Palette generation from RGB24 buffer: `itidy_ultra_generate_palette()` uses Median Cut quantization to produce optimal 256-color palette
+> - Pixel remapping: `itidy_ultra_remap_to_indexed()` converts RGB24 to palette indices
+> - **GUI: Option 1 chosen** (as recommended in plan): Ultra added as last entry in Max Colors chooser ("Ultra (256 + detail boost)") rather than a separate checkbox. This keeps the UI simpler.
+> - Ultra mode pipeline in `icon_content_preview.c` Step 6d: converts indexed pixels to RGB24 via palette lookup -> Ultra downsample -> generate 256-color palette -> remap to indexed
+> - **Ultra + Dithering combined workflow implemented**: When Ultra mode is active AND `max_icon_colors < 256` (user manually overrides), the pipeline runs Ultra downsample first (preserving details), then applies standard palette reduction + dithering. This matches the "Ultra + Dithering Workflow" section's recommendation.
+> - **Deviation from plan**: When Ultra is selected via the chooser, `deficons_ultra_mode` is set to TRUE and `deficons_max_icon_colors` is forced to 256. The dither and lowcolor choosers are ghosted. The Ultra+Dither workflow is only triggered if the user has Ultra mode enabled in preferences AND a low color count — this scenario arises from direct preference editing rather than the GUI, since the GUI ghosts the color count chooser when Ultra is selected.
+> - Item 46 (Auto mode logic — auto-detect high-frequency details) deferred as nice-to-have. The `itidy_should_use_ultra_mode()` function from the plan is not yet implemented.
+> - All arithmetic is integer-only (fixed-point luminance calculation) as required
 
 ### The Problem: Lost High-Frequency Details
 
@@ -2536,7 +2583,7 @@ Six classic Amiga IFF ILBM images in `Bin/Amiga/Tests/images/`:
 >
 > **Template elimination (deviation 13)**: Subsequently added `UWORD deficons_palette_mode` with `DEFAULT_DEFICONS_PALETTE_MODE = 0` (Picture). Added `GID_PALETTE_MODE_CHOOSER`, `palette_mode_chooser_obj`, `palette_mode_labels[]` array (`"Picture (original colors)"`, `"Screen (match Workbench)"`). Removed all template-related code: `itidy_get_iff_template_path()`, `itidy_get_iff_render_params()`, `ITIDY_IFF_TEMPLATE_*` constants, `ITIDY_TT_PALETTE_MODE` constant. The `apply_iff_preview()` function was refactored to derive dimensions from `itidy_get_iff_icon_dimensions()` (preference-to-pixel lookup) and build render params directly. The three `iff_template_*.info` files in `Bin/Amiga/Icons/` are no longer needed.
 
-### Phase E: Polish and Future — � PARTIAL
+### Phase E: Polish and Future — ✅ MOSTLY COMPLETE (items 39-45 done, 46 deferred)
 
 **File Organization Note**: When implementing items 39-46 (palette reduction, dithering, Ultra mode), organize code into `src/icon_edit/palette/` subfolder with separate focused modules rather than one monolithic file. See section 12b Implementation Notes for proposed file structure (`palette_quantization.c`, `palette_dithering.c`, `palette_mapping.c`, `palette_reduction.c`, `palette_grayscale.c`, `ultra_downsample.c`).
 
@@ -2545,14 +2592,14 @@ Six classic Amiga IFF ILBM images in `Bin/Amiga/Tests/images/`:
 36. 🔲 Datatype-based rendering for non-ILBM picture types (JPEG, PNG, GIF) — infrastructure exists (`itidy_render_via_datatype()`), needs type detection expansion
 37. 🔲 Low-res pixel aspect ratio correction (subtle)
 38. 🔲 Consider: selected image for frameless thumbnails (complement highlight may suffice)
-39. 🔲 Maximum icon color count option (reduce palette to 4/8/16/32/64/128/256 colors) — see section 12b below — **File**: `palette/palette_reduction.c`
-40. 🔲 Dithering methods: None/Ordered/Floyd-Steinberg/Auto — see section 12c below — **Files**: `palette/palette_dithering.c`, `palette/palette_mapping.c`
-41. 🔲 Floyd-Steinberg error diffusion dithering (high quality, ~0.1s overhead) — worth it for 4-16 colors — see section 12c — **File**: `palette/palette_dithering.c`
-42. 🔲 Grayscale and Workbench palette mapping for 4-8 color icons — see section 12d below — **File**: `palette/palette_grayscale.c`
-43. 🔲 Ultra quality mode GUI control (add to max colors chooser or separate checkbox) — see section 12e — **GUI integration only**
-44. 🔲 Detail-preserving downsampling algorithm (preserve stars, sparkles, high-frequency details) — see section 12e — **File**: `palette/ultra_downsample.c`
-45. 🔲 Integrate Ultra with 256-color palette quantization (Median Cut, no dithering needed) — see section 12e — **Files**: `palette/palette_quantization.c`, `palette/ultra_downsample.c`
-46. 🔲 Optional Auto mode logic (detect high-frequency details and auto-enable Ultra) — see section 12e — **File**: `palette/ultra_downsample.c`
+39. ✅ Maximum icon color count option (reduce palette to 4/8/16/32/64/128/256 colors) — see section 12b below — **File**: `palette/palette_reduction.c` (implemented 2026-02-16)
+40. ✅ Dithering methods: None/Ordered/Floyd-Steinberg/Auto — see section 12c below — **Files**: `palette/palette_dithering.c`, `palette/palette_mapping.c` (implemented 2026-02-16)
+41. ✅ Floyd-Steinberg error diffusion dithering (high quality, ~0.1s overhead) — worth it for 4-16 colors — see section 12c — **File**: `palette/palette_dithering.c` (implemented 2026-02-16)
+42. ✅ Grayscale and Workbench palette mapping for 4-8 color icons — see section 12d below — **File**: `palette/palette_grayscale.c` (implemented 2026-02-16)
+43. ✅ Ultra quality mode GUI control (add to max colors chooser or separate checkbox) — see section 12e — **GUI integration only** (implemented 2026-02-16: added as last entry in Max Colors chooser)
+44. ✅ Detail-preserving downsampling algorithm (preserve stars, sparkles, high-frequency details) — see section 12e — **File**: `palette/ultra_downsample.c` (implemented 2026-02-16)
+45. ✅ Integrate Ultra with 256-color palette quantization (Median Cut, no dithering needed) — see section 12e — **Files**: `palette/palette_quantization.c`, `palette/ultra_downsample.c` (implemented 2026-02-16)
+46. 🔲 Optional Auto mode logic (detect high-frequency details and auto-enable Ultra) — see section 12e — **File**: `palette/ultra_downsample.c` — deferred (nice-to-have)
 
 ---
 

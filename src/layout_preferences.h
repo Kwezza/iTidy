@@ -230,6 +230,16 @@ typedef struct {
     
     /* Backup Settings */
     BackupPreferences backupPrefs;   /* Embedded backup configuration */
+    
+    /* === NEW FIELDS BELOW THIS LINE (v2 prefs format) === */
+    /* These MUST remain at the end of the struct for backward  */
+    /* compatibility with v1 preference files.                  */
+    
+    /* DefIcons Palette Reduction Settings (Workbench 3.2+) */
+    UWORD deficons_max_icon_colors;             /* Max palette colors: 4,8,16,32,64,128,256 */
+    UWORD deficons_dither_method;               /* 0=None, 1=Ordered, 2=Floyd-Steinberg, 3=Auto */
+    UWORD deficons_lowcolor_mapping;            /* 0=Grayscale, 1=WB palette, 2=Hybrid (only when max<=8) */
+    BOOL deficons_ultra_mode;                   /* TRUE = 256-color detail-preserving downsample */
 } LayoutPreferences;
 
 /*========================================================================*/
@@ -281,6 +291,12 @@ typedef struct {
 #define DEFAULT_DEFICONS_ICON_SIZE_MODE                     1       /* 0=Small(48), 1=Medium(64), 2=Large(100) */
 #define DEFAULT_DEFICONS_PALETTE_MODE                       0       /* 0=Picture (use image CMAP), 1=Screen (quantize to WB palette) */
 #define DEFAULT_DEFICONS_ENABLE_THUMBNAIL_BORDERS           TRUE    /* Default: Borders enabled (frameless=FALSE) */
+
+/* DefIcons Palette Reduction Defaults */
+#define DEFAULT_DEFICONS_MAX_ICON_COLORS                    256     /* No limit (full palette) */
+#define DEFAULT_DEFICONS_DITHER_METHOD                      3       /* Auto (smart selection by color count) */
+#define DEFAULT_DEFICONS_LOWCOLOR_MAPPING                   0       /* Grayscale (safe default for 4-8 colors) */
+#define DEFAULT_DEFICONS_ULTRA_MODE                         FALSE   /* Standard mode by default */
 
 /* Logging and Debug Defaults */
 #define DEFAULT_LOG_LEVEL                                  4       /* Default: DISABLED level (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR, 4=DISABLED) */

@@ -24,6 +24,7 @@
 #include "icon_types.h"
 #include "platform/platform.h"
 #include "easy_request_helper.h"
+#include "icon_edit/palette/palette_reduction.h"
 
 #include <clib/alib_protos.h>
 #include <reaction/reaction.h>
@@ -91,6 +92,9 @@ enum {
     GID_ICON_SIZE_CHOOSER,
     GID_PALETTE_MODE_CHOOSER,
     GID_THUMBNAIL_BORDERS_CHECKBOX,
+    GID_MAX_COLORS_CHOOSER,
+    GID_DITHER_METHOD_CHOOSER,
+    GID_LOWCOLOR_MAPPING_CHOOSER,
     GID_OK,
     GID_CANCEL
 };
@@ -111,6 +115,9 @@ typedef struct {
     Object *icon_size_chooser_obj;
     Object *palette_mode_chooser_obj;
     Object *thumbnail_borders_checkbox;
+    Object *max_colors_chooser_obj;
+    Object *dither_method_chooser_obj;
+    Object *lowcolor_mapping_chooser_obj;
     Object *select_all_btn;
     Object *select_none_btn;
     Object *show_tools_btn;
@@ -567,6 +574,36 @@ static STRPTR palette_mode_labels[] = {
     NULL
 };
 
+/* Max icon colors chooser labels (indices 0-7) */
+static STRPTR max_colors_labels[] = {
+    "4 colors",
+    "8 colors",
+    "16 colors",
+    "32 colors",
+    "64 colors",
+    "128 colors",
+    "256 colors (full)",
+    "Ultra (256 + detail boost)",
+    NULL
+};
+
+/* Dithering method chooser labels */
+static STRPTR dither_method_labels[] = {
+    "None",
+    "Ordered (Bayer 4x4)",
+    "Error diffusion (Floyd-Steinberg)",
+    "Auto (based on color count)",
+    NULL
+};
+
+/* Low-color mapping chooser labels (used when max colors <= 8) */
+static STRPTR lowcolor_mapping_labels[] = {
+    "Grayscale",
+    "Workbench palette",
+    "Hybrid (grays + WB accents)",
+    NULL
+};
+
 /*
  * Create the window
  */
@@ -641,6 +678,52 @@ static BOOL create_window(DefIconsSettingsWindow *win)
         GA_Selected, win->prefs->deficons_enable_thumbnail_borders,
         GA_RelVerify, TRUE,
     CheckBoxEnd;
+    
+    {
+        /* Determine initial chooser indices from preferences */
+        UWORD max_colors_index;
+        BOOL is_ultra = win->prefs->deficons_ultra_mode;
+        BOOL ghost_dither;
+        BOOL ghost_lowcolor;
+
+        if (is_ultra)
+        {
+            max_colors_index = ITIDY_MAX_COLORS_ULTRA_INDEX;  /* 7 = Ultra */
+        }
+        else
+        {
+            max_colors_index = itidy_max_colors_to_index(win->prefs->deficons_max_icon_colors);
+        }
+
+        /* Ghost dither when 256 colors or Ultra (no reduction needed) */
+        ghost_dither = (win->prefs->deficons_max_icon_colors >= 256) || is_ultra;
+        /* Ghost lowcolor when max colors > 8 */
+        ghost_lowcolor = (win->prefs->deficons_max_icon_colors > 8) || is_ultra;
+
+        win->max_colors_chooser_obj = (Object *)ChooserObject,
+            GA_ID, GID_MAX_COLORS_CHOOSER,
+            GA_RelVerify, TRUE,
+            GA_Disabled, FALSE,
+            CHOOSER_LabelArray, max_colors_labels,
+            CHOOSER_Selected, max_colors_index,
+        ChooserEnd;
+
+        win->dither_method_chooser_obj = (Object *)ChooserObject,
+            GA_ID, GID_DITHER_METHOD_CHOOSER,
+            GA_RelVerify, TRUE,
+            GA_Disabled, ghost_dither,
+            CHOOSER_LabelArray, dither_method_labels,
+            CHOOSER_Selected, win->prefs->deficons_dither_method,
+        ChooserEnd;
+
+        win->lowcolor_mapping_chooser_obj = (Object *)ChooserObject,
+            GA_ID, GID_LOWCOLOR_MAPPING_CHOOSER,
+            GA_RelVerify, TRUE,
+            GA_Disabled, ghost_lowcolor,
+            CHOOSER_LabelArray, lowcolor_mapping_labels,
+            CHOOSER_Selected, win->prefs->deficons_lowcolor_mapping,
+        ChooserEnd;
+    }
     
     win->select_all_btn = (Object *)ButtonObject,
         GA_ID, GID_SELECT_ALL,
@@ -725,6 +808,39 @@ static BOOL create_window(DefIconsSettingsWindow *win)
         CHILD_WeightedHeight, 0,
         
         LAYOUT_AddChild, (Object *)HLayoutObject,
+            LAYOUT_AddChild, (Object *)LabelObject,
+                LABEL_Text, "Max Colors:",
+            LabelEnd,
+            CHILD_WeightedWidth, 0,
+            
+            LAYOUT_AddChild, win->max_colors_chooser_obj,
+            CHILD_WeightedWidth, 100,
+        LayoutEnd,
+        CHILD_WeightedHeight, 0,
+        
+        LAYOUT_AddChild, (Object *)HLayoutObject,
+            LAYOUT_AddChild, (Object *)LabelObject,
+                LABEL_Text, "Dithering:",
+            LabelEnd,
+            CHILD_WeightedWidth, 0,
+            
+            LAYOUT_AddChild, win->dither_method_chooser_obj,
+            CHILD_WeightedWidth, 100,
+        LayoutEnd,
+        CHILD_WeightedHeight, 0,
+        
+        LAYOUT_AddChild, (Object *)HLayoutObject,
+            LAYOUT_AddChild, (Object *)LabelObject,
+                LABEL_Text, "Low-Color Map:",
+            LabelEnd,
+            CHILD_WeightedWidth, 0,
+            
+            LAYOUT_AddChild, win->lowcolor_mapping_chooser_obj,
+            CHILD_WeightedWidth, 100,
+        LayoutEnd,
+        CHILD_WeightedHeight, 0,
+        
+        LAYOUT_AddChild, (Object *)HLayoutObject,
             LAYOUT_AddChild, win->select_all_btn,
             LAYOUT_AddChild, win->select_none_btn,
         LayoutEnd,
@@ -752,7 +868,7 @@ static BOOL create_window(DefIconsSettingsWindow *win)
         WA_CloseGadget, TRUE,
         WA_SizeGadget, FALSE,
         WA_Width, 400,
-        WA_Height, 400,
+        WA_Height, 500,
         WINDOW_Position, WPOS_CENTERSCREEN,
         WINDOW_Layout, win->main_layout,
     WindowEnd;
@@ -1398,52 +1514,58 @@ static void handle_ok(DefIconsSettingsWindow *win)
         win->prefs->deficons_enable_thumbnail_borders = (BOOL)borders_enabled;
     }
     
-    /* Rebuild disabled types from current checkbox state (source of truth) */
-    clear_disabled_deficon_types(win->prefs);
-    for (node = win->tree_list->lh_Head; node->ln_Succ; node = node->ln_Succ)
+    /* Get max colors chooser state */
     {
-        ULONG generation = 0;
-        BOOL is_checked = FALSE;
-        DeficonTypeTreeNode *tree_node = NULL;
-        
-        GetListBrowserNodeAttrs(node,
-            LBNA_Generation, &generation,
-            LBNA_Checked, &is_checked,
-            LBNA_UserData, &tree_node,
-            TAG_DONE);
-        
-        if (generation == 2 && tree_node != NULL && !is_checked)
+        ULONG selected_max_colors = 0;
+        GetAttr(CHOOSER_Selected, win->max_colors_chooser_obj, &selected_max_colors);
+        if (selected_max_colors == ITIDY_MAX_COLORS_ULTRA_INDEX)
         {
-            add_disabled_deficon_type(win->prefs, tree_node->type_name);
+            win->prefs->deficons_ultra_mode = TRUE;
+            win->prefs->deficons_max_icon_colors = 256;
         }
-    }
-
-    /* Debug: dump checkbox states */
-    log_debug(LOG_GUI, "DefIcons checkbox states on OK:\n");
-    for (node = win->tree_list->lh_Head; node->ln_Succ; node = node->ln_Succ)
-    {
-        ULONG generation = 0;
-        BOOL is_checked = FALSE;
-        DeficonTypeTreeNode *tree_node = NULL;
-        
-        GetListBrowserNodeAttrs(node,
-            LBNA_Generation, &generation,
-            LBNA_Checked, &is_checked,
-            LBNA_UserData, &tree_node,
-            TAG_DONE);
-        
-        if (generation == 2 && tree_node != NULL)
+        else
         {
-            log_debug(LOG_GUI, "  [%c] %s\n", is_checked ? 'X' : ' ', tree_node->type_name);
+            win->prefs->deficons_ultra_mode = FALSE;
+            win->prefs->deficons_max_icon_colors = itidy_max_colors_from_index((UWORD)selected_max_colors);
         }
     }
     
+    /* Get dither method chooser state */
+    {
+        ULONG selected_dither = 0;
+        GetAttr(CHOOSER_Selected, win->dither_method_chooser_obj, &selected_dither);
+        win->prefs->deficons_dither_method = (UWORD)selected_dither;
+    }
+    
+    /* Get low-color mapping chooser state */
+    {
+        ULONG selected_lowcolor = 0;
+        GetAttr(CHOOSER_Selected, win->lowcolor_mapping_chooser_obj, &selected_lowcolor);
+        win->prefs->deficons_lowcolor_mapping = (UWORD)selected_lowcolor;
+    }
+    
+    /* NOTE: Do NOT rebuild disabled_types from LBNA_Checked attributes here.
+     * The ListBrowser LBNA_Checked attribute may not reflect user toggles
+     * reliably (especially for hidden/hierarchical nodes).  Instead, trust
+     * the live-updated prefs->deficons_disabled_types which is maintained
+     * correctly by handle_tree_click, handle_select_all, and
+     * handle_select_none throughout the session. */
+
+    /* Debug: log the current disabled types state */
+    log_debug(LOG_GUI, "DefIcons disabled types on OK: '%s'\n",
+              win->prefs->deficons_disabled_types);
+    
     log_info(LOG_GUI, "DefIcons settings saved: folder_mode=%d, icon_size=%d, "
-             "palette_mode=%d, thumbnail_borders=%s, disabled_types='%s'\n",
+             "palette_mode=%d, thumbnail_borders=%s, max_colors=%u, "
+             "dither=%u, lowcolor=%u, ultra=%s, disabled_types='%s'\n",
              win->prefs->deficons_folder_icon_mode,
              win->prefs->deficons_icon_size_mode,
              win->prefs->deficons_palette_mode,
              win->prefs->deficons_enable_thumbnail_borders ? "enabled" : "disabled",
+             (unsigned)win->prefs->deficons_max_icon_colors,
+             (unsigned)win->prefs->deficons_dither_method,
+             (unsigned)win->prefs->deficons_lowcolor_mapping,
+             win->prefs->deficons_ultra_mode ? "yes" : "no",
              win->prefs->deficons_disabled_types);
     
     win->user_accepted = TRUE;
@@ -1502,6 +1624,31 @@ static void run_event_loop(DefIconsSettingsWindow *win)
                         case GID_CHANGE_DEFAULT_TOOL:
                             handle_change_default_tool(win);
                             break;
+                        
+                        case GID_MAX_COLORS_CHOOSER:
+                        {
+                            /* Update ghost state of dither/lowcolor choosers */
+                            ULONG sel = 0;
+                            BOOL ghost_dither;
+                            BOOL ghost_lowcolor;
+                            UWORD max_col;
+
+                            GetAttr(CHOOSER_Selected, win->max_colors_chooser_obj, &sel);
+                            max_col = itidy_max_colors_from_index((UWORD)sel);
+
+                            /* Ultra (index 7) or 256 -> no reduction, ghost dither */
+                            ghost_dither = (sel == ITIDY_MAX_COLORS_ULTRA_INDEX) || (max_col >= 256);
+                            /* Lowcolor mapping only relevant for <= 8 colors */
+                            ghost_lowcolor = (sel == ITIDY_MAX_COLORS_ULTRA_INDEX) || (max_col > 8);
+
+                            SetGadgetAttrs((struct Gadget *)win->dither_method_chooser_obj,
+                                win->window, NULL,
+                                GA_Disabled, ghost_dither, TAG_DONE);
+                            SetGadgetAttrs((struct Gadget *)win->lowcolor_mapping_chooser_obj,
+                                win->window, NULL,
+                                GA_Disabled, ghost_lowcolor, TAG_DONE);
+                            break;
+                        }
                         
                         case GID_OK:
                             handle_ok(win);

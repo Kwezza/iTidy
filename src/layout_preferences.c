@@ -118,6 +118,12 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     prefs->backupPrefs.useLha = TRUE;
     strcpy(prefs->backupPrefs.backupRootPath, "PROGDIR:Backups");
     prefs->backupPrefs.maxBackupsPerFolder = 3;
+    
+    /* DefIcons Palette Reduction Settings (v2 fields - must be last) */
+    prefs->deficons_max_icon_colors = DEFAULT_DEFICONS_MAX_ICON_COLORS;
+    prefs->deficons_dither_method = DEFAULT_DEFICONS_DITHER_METHOD;
+    prefs->deficons_lowcolor_mapping = DEFAULT_DEFICONS_LOWCOLOR_MAPPING;
+    prefs->deficons_ultra_mode = DEFAULT_DEFICONS_ULTRA_MODE;
 }
 
 /*========================================================================*/

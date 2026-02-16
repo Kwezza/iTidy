@@ -961,7 +961,8 @@ static BOOL save_preferences_to_file(const char *filepath, const LayoutPreferenc
 {
     BPTR file;
     const char header[] = "ITIDYPREFS";
-    ULONG version = 1;
+    ULONG version = 2;
+    ULONG struct_size = sizeof(LayoutPreferences);
     
     if (!filepath || !prefs)
     {
@@ -984,7 +985,7 @@ static BOOL save_preferences_to_file(const char *filepath, const LayoutPreferenc
         return FALSE;
     }
     
-    log_info(LOG_GUI, "Saving preferences to: %s\n", filepath);
+    log_info(LOG_GUI, "Saving preferences to: %s (v%lu, size=%lu)\n", filepath, version, struct_size);
     
     if (Write(file, (APTR)header, 10) != 10)
     {
@@ -996,6 +997,14 @@ static BOOL save_preferences_to_file(const char *filepath, const LayoutPreferenc
     if (Write(file, (APTR)&version, sizeof(ULONG)) != sizeof(ULONG))
     {
         log_error(LOG_GUI, "Failed to write version\n");
+        Close(file);
+        return FALSE;
+    }
+    
+    /* v2: write struct size for forward compatibility */
+    if (Write(file, (APTR)&struct_size, sizeof(ULONG)) != sizeof(ULONG))
+    {
+        log_error(LOG_GUI, "Failed to write struct size\n");
         Close(file);
         return FALSE;
     }
@@ -1026,6 +1035,10 @@ static BOOL load_preferences_from_file(const char *filepath, LayoutPreferences *
     
     log_info(LOG_GUI, "Loading preferences from: %s\n", filepath);
     
+    /* Initialize with defaults so new fields get sane values
+     * even when loading an older (smaller) preference file */
+    InitLayoutPreferences(prefs);
+    
     file = Open((STRPTR)filepath, MODE_OLDFILE);
     if (!file)
     {
@@ -1055,21 +1068,80 @@ static BOOL load_preferences_from_file(const char *filepath, LayoutPreferences *
         return FALSE;
     }
     
-    if (version != 1)
+    if (version == 1)
+    {
+        /* v1 format is no longer supported - tell user to re-save */
+        log_warning(LOG_GUI, "v1 preferences file detected - not supported, "
+                    "please re-save your settings\n");
+        Close(file);
+        return FALSE;
+    }
+    else if (version == 2)
+    {
+        /* v2 format: header(10) + version(4) + struct_size(4) + struct */
+        ULONG stored_size;
+        ULONG read_size;
+
+        if (Read(file, (APTR)&stored_size, sizeof(ULONG)) != sizeof(ULONG))
+        {
+            log_error(LOG_GUI, "Failed to read v2 struct size\n");
+            Close(file);
+            return FALSE;
+        }
+
+        /* Read the smaller of stored size or current struct size */
+        read_size = (stored_size < sizeof(LayoutPreferences))
+                  ? stored_size
+                  : sizeof(LayoutPreferences);
+
+        if (Read(file, (APTR)prefs, read_size) != (LONG)read_size)
+        {
+            log_error(LOG_GUI, "Failed to read v2 preferences structure\n");
+            Close(file);
+            return FALSE;
+        }
+
+        log_info(LOG_GUI, "Loaded v2 preferences: stored=%lu, read=%lu, "
+                 "current=%lu\n",
+                 stored_size, read_size,
+                 (unsigned long)sizeof(LayoutPreferences));
+    }
+    else
     {
         log_error(LOG_GUI, "Unsupported file version: %lu\n", version);
         Close(file);
         return FALSE;
     }
     
-    if (Read(file, (APTR)prefs, sizeof(LayoutPreferences)) != sizeof(LayoutPreferences))
-    {
-        log_error(LOG_GUI, "Failed to read preferences structure\n");
-        Close(file);
-        return FALSE;
-    }
-    
     Close(file);
+    
+    /* Validate palette reduction fields to prevent out-of-range crashes */
+    {
+        /* max_icon_colors must be one of: 4,8,16,32,64,128,256 */
+        UWORD mc = prefs->deficons_max_icon_colors;
+        if (mc != 4 && mc != 8 && mc != 16 && mc != 32 &&
+            mc != 64 && mc != 128 && mc != 256)
+        {
+            log_warning(LOG_GUI, "Invalid max_icon_colors %u, resetting to 256\n", (unsigned)mc);
+            prefs->deficons_max_icon_colors = DEFAULT_DEFICONS_MAX_ICON_COLORS;
+        }
+
+        /* dither_method: 0-3 */
+        if (prefs->deficons_dither_method > 3)
+        {
+            log_warning(LOG_GUI, "Invalid dither_method %u, resetting to Auto\n",
+                        (unsigned)prefs->deficons_dither_method);
+            prefs->deficons_dither_method = DEFAULT_DEFICONS_DITHER_METHOD;
+        }
+
+        /* lowcolor_mapping: 0-2 */
+        if (prefs->deficons_lowcolor_mapping > 2)
+        {
+            log_warning(LOG_GUI, "Invalid lowcolor_mapping %u, resetting to Grayscale\n",
+                        (unsigned)prefs->deficons_lowcolor_mapping);
+            prefs->deficons_lowcolor_mapping = DEFAULT_DEFICONS_LOWCOLOR_MAPPING;
+        }
+    }
     
     /* DefIcons icon creation setting loaded from file */
     if (prefs->enable_deficons_icon_creation)

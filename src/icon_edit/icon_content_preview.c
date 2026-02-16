@@ -26,6 +26,8 @@
 #include "icon_image_access.h"
 #include "icon_text_render.h"
 #include "icon_iff_render.h"
+#include "palette/palette_reduction.h"
+#include "palette/ultra_downsample.h"
 #include "../deficons_templates.h"
 #include "../writeLog.h"
 #include "../layout_preferences.h"
@@ -762,6 +764,139 @@ static int apply_iff_preview(const char *source_path,
                  "transparency disabled, frameless=%s\n",
                  (unsigned)thumb_w, (unsigned)thumb_h,
                  img.is_frameless ? "yes" : "no");
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 6c: Palette reduction (max colors / dithering)                 */
+    /*          Reduces the colour count if user has configured a limit    */
+    /*          below the current unique-colour count.  Dithering and      */
+    /*          low-colour mapping are applied as configured.              */
+    /*          Skipped when Ultra mode is active (Step 6d handles it).    */
+    /*--------------------------------------------------------------------*/
+
+    if (prefs != NULL && prefs->deficons_max_icon_colors < 256
+        && !prefs->deficons_ultra_mode)
+    {
+        log_info(LOG_ICONS, "apply_iff_preview: reducing palette to max %u colors "
+                 "(dither=%u, lowcolor=%u)\n",
+                 (unsigned)prefs->deficons_max_icon_colors,
+                 (unsigned)prefs->deficons_dither_method,
+                 (unsigned)prefs->deficons_lowcolor_mapping);
+
+        if (!itidy_reduce_palette(&img,
+                                  prefs->deficons_max_icon_colors,
+                                  prefs->deficons_dither_method,
+                                  prefs->deficons_lowcolor_mapping))
+        {
+            log_warning(LOG_ICONS, "apply_iff_preview: "
+                        "palette reduction failed (non-fatal)\n");
+        }
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 6d: Ultra Quality mode (detail-preserving palette)             */
+    /*          Converts indexed pixels to RGB24, generates an optimal     */
+    /*          256-color palette via Median Cut, then remaps back to      */
+    /*          indexed.  If max_colors < 256, a subsequent palette        */
+    /*          reduction + dithering pass is applied on top.              */
+    /*--------------------------------------------------------------------*/
+
+    if (prefs != NULL && prefs->deficons_ultra_mode)
+    {
+        ULONG pixel_count = (ULONG)img.width * (ULONG)img.height;
+        UBYTE *rgb24_buf = (UBYTE *)whd_malloc(pixel_count * 3);
+
+        log_info(LOG_ICONS, "apply_iff_preview: Ultra mode - optimizing "
+                 "256-color palette for %ux%u thumbnail\n",
+                 (unsigned)img.width, (unsigned)img.height);
+
+        if (rgb24_buf != NULL)
+        {
+            struct ColorRegister *ultra_pal;
+            ULONG i;
+
+            // Convert indexed pixels to RGB24 using current palette
+            for (i = 0; i < pixel_count; i++)
+            {
+                UBYTE idx = img.pixel_data_normal[i];
+                if (idx < img.palette_size_normal)
+                {
+                    rgb24_buf[i * 3 + 0] = img.palette_normal[idx].red;
+                    rgb24_buf[i * 3 + 1] = img.palette_normal[idx].green;
+                    rgb24_buf[i * 3 + 2] = img.palette_normal[idx].blue;
+                }
+                else
+                {
+                    rgb24_buf[i * 3 + 0] = 0;
+                    rgb24_buf[i * 3 + 1] = 0;
+                    rgb24_buf[i * 3 + 2] = 0;
+                }
+            }
+
+            // Generate optimal 256-color palette from actual pixel content
+            ultra_pal = (struct ColorRegister *)whd_malloc(256 * sizeof(struct ColorRegister));
+            if (ultra_pal != NULL)
+            {
+                UWORD ultra_pal_size = 0;
+
+                if (itidy_ultra_generate_palette(rgb24_buf, pixel_count,
+                                                  256, ultra_pal, &ultra_pal_size))
+                {
+                    // Remap pixels to the new optimal palette
+                    itidy_ultra_remap_to_indexed(rgb24_buf, pixel_count,
+                                                 ultra_pal, ultra_pal_size,
+                                                 img.pixel_data_normal);
+
+                    // Replace palette in img
+                    whd_free(img.palette_normal);
+                    img.palette_normal = ultra_pal;
+                    img.palette_size_normal = ultra_pal_size;
+                    ultra_pal = NULL;  // Ownership transferred
+
+                    log_info(LOG_ICONS, "apply_iff_preview: Ultra mode "
+                             "produced %u-color optimized palette\n",
+                             (unsigned)ultra_pal_size);
+                }
+                else
+                {
+                    log_warning(LOG_ICONS, "apply_iff_preview: "
+                                "Ultra palette generation failed (non-fatal)\n");
+                }
+
+                if (ultra_pal != NULL)
+                {
+                    whd_free(ultra_pal);
+                }
+            }
+
+            whd_free(rgb24_buf);
+        }
+        else
+        {
+            log_warning(LOG_ICONS, "apply_iff_preview: "
+                        "Ultra RGB24 alloc failed (non-fatal)\n");
+        }
+
+        /* Ultra + Dithering: if user also wants fewer than 256 colors,
+         * run palette reduction on top of the Ultra-optimized image.
+         * This combines detail-preserving palette with dithering. */
+        if (prefs->deficons_max_icon_colors < 256)
+        {
+            log_info(LOG_ICONS, "apply_iff_preview: Ultra + reduction to "
+                     "%u colors (dither=%u, lowcolor=%u)\n",
+                     (unsigned)prefs->deficons_max_icon_colors,
+                     (unsigned)prefs->deficons_dither_method,
+                     (unsigned)prefs->deficons_lowcolor_mapping);
+
+            if (!itidy_reduce_palette(&img,
+                                      prefs->deficons_max_icon_colors,
+                                      prefs->deficons_dither_method,
+                                      prefs->deficons_lowcolor_mapping))
+            {
+                log_warning(LOG_ICONS, "apply_iff_preview: "
+                            "Ultra + reduction failed (non-fatal)\n");
+            }
+        }
     }
 
     /*--------------------------------------------------------------------*/
