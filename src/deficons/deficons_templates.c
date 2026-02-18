@@ -687,3 +687,103 @@ void deficons_clear_template_cache(void)
     }
     g_template_cache_count = 0;
 }
+
+/*========================================================================*/
+/* ASCII Subtype Enumeration                                             */
+/*========================================================================*/
+
+/* Static storage for the subtype array - sized to hold all known types.
+ * The DefIcons "ascii" family has at most ~30 known subtypes; 64 is safe. */
+#define ITIDY_ASCII_SUBTYPES_MAX 64
+
+static const char *s_ascii_subtypes[ITIDY_ASCII_SUBTYPES_MAX + 1];  /* +1 for NULL terminator */
+static int s_ascii_subtype_count = 0;
+static BOOL s_ascii_subtypes_built = FALSE;
+
+/**
+ * @brief Recursively collect ASCII family type tokens from the DefIcons tree
+ *
+ * Walks g_cached_deficons_tree starting from nodes whose parent_index
+ * refers to the "ascii" node (or any already-collected ascii-family node).
+ * Results are stored in s_ascii_subtypes[].
+ *
+ * @param root_index Index of the "ascii" node in g_cached_deficons_tree
+ */
+static void collect_ascii_children(int root_index)
+{
+    int i;
+
+    for (i = 0; i < g_cached_deficons_count; i++)
+    {
+        if (g_cached_deficons_tree[i].parent_index == root_index)
+        {
+            if (s_ascii_subtype_count < ITIDY_ASCII_SUBTYPES_MAX)
+            {
+                s_ascii_subtypes[s_ascii_subtype_count] = g_cached_deficons_tree[i].type_name;
+                s_ascii_subtype_count++;
+                /* Recurse in case there are further children */
+                collect_ascii_children(i);
+            }
+        }
+    }
+}
+
+const char **deficons_get_ascii_subtypes(int *count_out)
+{
+    static const char *s_empty[] = { NULL };
+
+    /* Return cached result if already built */
+    if (s_ascii_subtypes_built)
+    {
+        if (count_out) *count_out = s_ascii_subtype_count;
+        return (s_ascii_subtype_count > 0) ? s_ascii_subtypes : s_empty;
+    }
+
+    s_ascii_subtype_count = 0;
+    s_ascii_subtypes_built = TRUE;
+
+    if (!g_cached_deficons_tree || g_cached_deficons_count <= 0)
+    {
+        log_warning(LOG_ICONS, "deficons_get_ascii_subtypes: type tree not available\n");
+        if (count_out) *count_out = 0;
+        return s_empty;
+    }
+
+    /* Step 1: Find the "ascii" node */
+    {
+        int ascii_index = -1;
+        int i;
+
+        for (i = 0; i < g_cached_deficons_count; i++)
+        {
+            if (strcmp(g_cached_deficons_tree[i].type_name, "ascii") == 0)
+            {
+                ascii_index = i;
+                break;
+            }
+        }
+
+        if (ascii_index < 0)
+        {
+            log_warning(LOG_ICONS, "deficons_get_ascii_subtypes: 'ascii' type not found in tree\n");
+            if (count_out) *count_out = 0;
+            return s_empty;
+        }
+
+        /* Step 2: "ascii" itself is always the first entry */
+        s_ascii_subtypes[0] = g_cached_deficons_tree[ascii_index].type_name;
+        s_ascii_subtype_count = 1;
+
+        /* Step 3: Collect all descendants */
+        collect_ascii_children(ascii_index);
+    }
+
+    /* NULL-terminate */
+    s_ascii_subtypes[s_ascii_subtype_count] = NULL;
+
+    log_info(LOG_ICONS, "deficons_get_ascii_subtypes: found %d type(s) in ascii family\n",
+             s_ascii_subtype_count);
+
+    if (count_out) *count_out = s_ascii_subtype_count;
+    return s_ascii_subtypes;
+}

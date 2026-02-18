@@ -162,4 +162,23 @@ const TemplateCacheEntry* deficons_get_template_cache_stats(int *count_out);
  */
 void deficons_clear_template_cache(void);
 
+/**
+ * @brief Get list of all ASCII sub-type tokens
+ *
+ * Returns a NULL-terminated array of ASCII child type tokens from
+ * g_cached_deficons_tree. The first entry is always "ascii" itself.
+ * Remaining entries are direct/indirect ASCII children, in tree order.
+ *
+ * @param count_out If non-NULL, receives the number of entries (excluding
+ *                  the terminating NULL pointer).
+ *
+ * @return Pointer to a static NULL-terminated array of string pointers.
+ *         Contents are valid as long as g_cached_deficons_tree is valid.
+ *         Never returns NULL (an empty list is returned if tree not found).
+ *
+ * @note Do NOT free or modify the returned array or its strings.
+ * @note Requires g_cached_deficons_tree to be initialised (from main_gui.c).
+ */
+const char **deficons_get_ascii_subtypes(int *count_out);
+
 #endif /* DEFICONS_TEMPLATES_H */

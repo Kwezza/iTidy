@@ -103,6 +103,7 @@ GUI_SRCS = \
 	$(SRC_DIR)/GUI/deficons_settings_window.c \
 	$(SRC_DIR)/GUI/deficons_creation_window.c \
 	$(SRC_DIR)/GUI/exclude_paths_window.c \
+	$(SRC_DIR)/GUI/text_templates_window.c \
 	$(SRC_DIR)/GUI/easy_request_helper.c \
 	$(SRC_DIR)/GUI/window_enumerator.c \
 	$(SRC_DIR)/GUI/wb_classify.c \

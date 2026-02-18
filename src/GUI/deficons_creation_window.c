@@ -20,6 +20,7 @@
 #define CheckBoxBase iTidy_DefIconsCreation_CheckBoxBase
 
 #include "deficons_creation_window.h"
+#include "text_templates_window.h"
 #include "writeLog.h"
 #include "icon_edit/palette/palette_reduction.h"
 #include "platform/platform.h"
@@ -65,6 +66,7 @@ enum {
     GID_ICON_SIZE_CHOOSER,
     GID_THUMBNAIL_BORDERS_CHOOSER,
     GID_TEXT_PREVIEW_CHECKBOX,
+    GID_MANAGE_TEXT_TEMPLATES,
     GID_PICTURE_PREVIEW_CHECKBOX,
     GID_UPSCALE_THUMBNAILS_CB,
     /* Per-format enable checkboxes */
@@ -93,6 +95,7 @@ typedef struct {
     Object *icon_size_chooser_obj;
     Object *thumbnail_borders_chooser_obj;
     Object *text_preview_checkbox;
+    Object *manage_text_templates_btn;
     Object *picture_preview_checkbox;
     Object *upscale_thumbnails_cb;
     /* Per-format enable checkboxes */
@@ -484,7 +487,13 @@ static BOOL create_window(DefIconsCreationWindow *win)
         GA_Selected, win->prefs->deficons_enable_text_previews,
         GA_RelVerify, TRUE,
     CheckBoxEnd;
-    
+
+    win->manage_text_templates_btn = (Object *)ButtonObject,
+        GA_ID, GID_MANAGE_TEXT_TEMPLATES,
+        GA_Text, "_Manage Text Templates...",
+        GA_RelVerify, TRUE,
+    ButtonEnd;
+
     win->picture_preview_checkbox = (Object *)CheckBoxObject,
         GA_ID, GID_PICTURE_PREVIEW_CHECKBOX,
         GA_Text, "Enable _picture file preview thumbnails",
@@ -652,7 +661,10 @@ static BOOL create_window(DefIconsCreationWindow *win)
 
             LAYOUT_AddChild, win->text_preview_checkbox,
             CHILD_WeightedHeight, 0,
-            
+
+            LAYOUT_AddChild, win->manage_text_templates_btn,
+            CHILD_WeightedHeight, 0,
+
             LAYOUT_AddChild, win->picture_preview_checkbox,
             CHILD_WeightedHeight, 0,
             
@@ -810,11 +822,15 @@ static void event_loop(DefIconsCreationWindow *win)
                             handle_ok(win);
                             done = TRUE;
                             break;
-                        
+
                         case GID_CANCEL:
                             done = TRUE;
                             break;
-                        
+
+                        case GID_MANAGE_TEXT_TEMPLATES:
+                            open_text_templates_window(win->prefs);
+                            break;
+
                         default:
                             handle_gadget_up(win, gadget_id);
                             break;
