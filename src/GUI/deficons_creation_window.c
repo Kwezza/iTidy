@@ -63,7 +63,7 @@ struct Library *iTidy_DefIconsCreation_CheckBoxBase = NULL;
 enum {
     GID_FOLDER_MODE_CHOOSER = 1,
     GID_ICON_SIZE_CHOOSER,
-    GID_THUMBNAIL_BORDERS_CHECKBOX,
+    GID_THUMBNAIL_BORDERS_CHOOSER,
     GID_TEXT_PREVIEW_CHECKBOX,
     GID_PICTURE_PREVIEW_CHECKBOX,
     GID_UPSCALE_THUMBNAILS_CB,
@@ -91,7 +91,7 @@ typedef struct {
     Object *main_layout;
     Object *folder_mode_chooser_obj;
     Object *icon_size_chooser_obj;
-    Object *thumbnail_borders_checkbox;
+    Object *thumbnail_borders_chooser_obj;
     Object *text_preview_checkbox;
     Object *picture_preview_checkbox;
     Object *upscale_thumbnails_cb;
@@ -114,6 +114,7 @@ typedef struct {
     /* Chooser lists (must be allocated with AllocChooserNode) */
     struct List *folder_mode_list;
     struct List *icon_size_list;
+    struct List *thumbnail_borders_list;
     struct List *max_colors_list;
     struct List *dither_method_list;
     struct List *lowcolor_mapping_list;
@@ -139,6 +140,14 @@ static STRPTR icon_size_labels[] = {
     "Small (48x48)",
     "Medium (64x64)",
     "Large (100x100)",
+    NULL
+};
+
+/* Thumbnail border mode chooser labels (matches ITIDY_THUMB_BORDER_* constants) */
+static STRPTR thumbnail_border_labels[] = {
+    "Never",
+    "Auto (smart)",
+    "Always",
     NULL
 };
 
@@ -291,10 +300,10 @@ static void handle_ok(DefIconsCreationWindow *win)
     GetAttr(CHOOSER_Selected, win->icon_size_chooser_obj, &selected_value);
     win->prefs->deficons_icon_size_mode = (UWORD)selected_value;
     
-    /* Get thumbnail borders checkbox state */
+    /* Get thumbnail border mode from chooser */
     selected_value = 0;
-    GetAttr(GA_Selected, win->thumbnail_borders_checkbox, &selected_value);
-    win->prefs->deficons_enable_thumbnail_borders = (BOOL)selected_value;
+    GetAttr(CHOOSER_Selected, win->thumbnail_borders_chooser_obj, &selected_value);
+    win->prefs->deficons_thumbnail_border_mode = (UWORD)selected_value;
     
     /* Get text preview checkbox state */
     selected_value = 0;
@@ -365,11 +374,11 @@ static void handle_ok(DefIconsCreationWindow *win)
     win->prefs->deficons_lowcolor_mapping = (UWORD)selected_value;
     
     log_info(LOG_GUI, "DefIcons creation settings saved: folder_mode=%d, icon_size=%d, "
-             "borders=%d, text_preview=%d, picture_preview=%d, max_colors=%d, "
+             "border_mode=%d, text_preview=%d, picture_preview=%d, max_colors=%d, "
              "ultra=%d, dither=%d, lowcolor=%d\n",
              win->prefs->deficons_folder_icon_mode,
              win->prefs->deficons_icon_size_mode,
-             win->prefs->deficons_enable_thumbnail_borders,
+             win->prefs->deficons_thumbnail_border_mode,
              win->prefs->deficons_enable_text_previews,
              win->prefs->deficons_enable_picture_previews,
              win->prefs->deficons_max_icon_colors,
@@ -426,17 +435,21 @@ static BOOL create_window(DefIconsCreationWindow *win)
     /* Create chooser lists (must be done before creating chooser objects) */
     win->folder_mode_list = make_chooser_list(folder_mode_labels);
     win->icon_size_list = make_chooser_list(icon_size_labels);
+    win->thumbnail_borders_list = make_chooser_list(thumbnail_border_labels);
     win->max_colors_list = make_chooser_list(max_colors_labels);
     win->dither_method_list = make_chooser_list(dither_method_labels);
     win->lowcolor_mapping_list = make_chooser_list(lowcolor_mapping_labels);
     
     if (!win->folder_mode_list || !win->icon_size_list ||
+        !win->thumbnail_borders_list ||
         !win->max_colors_list || !win->dither_method_list || !win->lowcolor_mapping_list)
     {
         log_error(LOG_GUI, "Failed to create chooser lists\n");
         /* Free any lists that were created before the failure */
         free_chooser_list(win->folder_mode_list);
         free_chooser_list(win->icon_size_list);
+        free_chooser_list(win->thumbnail_borders_list);
+        free_chooser_list(win->thumbnail_borders_list);
         free_chooser_list(win->max_colors_list);
         free_chooser_list(win->dither_method_list);
         free_chooser_list(win->lowcolor_mapping_list);
@@ -458,12 +471,12 @@ static BOOL create_window(DefIconsCreationWindow *win)
         CHOOSER_Selected, win->prefs->deficons_icon_size_mode,
     ChooserEnd;
     
-    win->thumbnail_borders_checkbox = (Object *)CheckBoxObject,
-        GA_ID, GID_THUMBNAIL_BORDERS_CHECKBOX,
-        GA_Text, "Enable _borders on image thumbnails",
-        GA_Selected, win->prefs->deficons_enable_thumbnail_borders,
+    win->thumbnail_borders_chooser_obj = (Object *)ChooserObject,
+        GA_ID, GID_THUMBNAIL_BORDERS_CHOOSER,
         GA_RelVerify, TRUE,
-    CheckBoxEnd;
+        CHOOSER_Labels, win->thumbnail_borders_list,
+        CHOOSER_Selected, (ULONG)win->prefs->deficons_thumbnail_border_mode,
+    ChooserEnd;
     
     win->text_preview_checkbox = (Object *)CheckBoxObject,
         GA_ID, GID_TEXT_PREVIEW_CHECKBOX,
@@ -625,10 +638,18 @@ static BOOL create_window(DefIconsCreationWindow *win)
                 CHILD_WeightedWidth, 100,
             LayoutEnd,
             CHILD_WeightedHeight, 0,
-            
-            LAYOUT_AddChild, win->thumbnail_borders_checkbox,
+
+            LAYOUT_AddChild, (Object *)HLayoutObject,
+                LAYOUT_AddChild, (Object *)LabelObject,
+                    LABEL_Text, "_Thumbnail borders:",
+                LabelEnd,
+                CHILD_WeightedWidth, 0,
+
+                LAYOUT_AddChild, win->thumbnail_borders_chooser_obj,
+                CHILD_WeightedWidth, 100,
+            LayoutEnd,
             CHILD_WeightedHeight, 0,
-            
+
             LAYOUT_AddChild, win->text_preview_checkbox,
             CHILD_WeightedHeight, 0,
             
@@ -819,6 +840,7 @@ static void cleanup_window(DefIconsCreationWindow *win)
     /* Free chooser lists */
     free_chooser_list(win->folder_mode_list);
     free_chooser_list(win->icon_size_list);
+    free_chooser_list(win->thumbnail_borders_list);
     free_chooser_list(win->max_colors_list);
     free_chooser_list(win->dither_method_list);
     free_chooser_list(win->lowcolor_mapping_list);

@@ -1,0 +1,5 @@
+delete PC:Programming/iTidy/Bin/Amiga/Tests/images/#?.info
+delete PC:Programming/iTidy/Bin/Amiga/Tests/images/png/#?.info
+delete PC:Programming/iTidy/Bin/Amiga/Tests/images/JPeg/#?.info
+delete PC:Programming/iTidy/Bin/Amiga/Tests/images/gif/#?.info
+delete PC:Programming/iTidy/Bin/Amiga/Tests/TextIcons/#?.info

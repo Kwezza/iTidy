@@ -208,7 +208,7 @@ typedef struct {
     BOOL deficons_skip_system_assigns;         /* TRUE = skip SYS:, C:, S:, DEVS:, LIBS:, etc. */
     BOOL deficons_log_created_icons;           /* TRUE = log all created .info files to dedicated log (for testing/delete scripts) */
     UWORD deficons_icon_size_mode;              /* 0=Small(48), 1=Medium(64), 2=Large(100) — IFF thumbnail size */
-    BOOL deficons_enable_thumbnail_borders;     /* TRUE = enable borders/frames on image thumbnails, FALSE = frameless (edge-to-edge) */
+    UWORD deficons_thumbnail_border_mode;        /* ITIDY_THUMB_BORDER_NEVER/AUTO/ALWAYS — border mode for image thumbnails */
     BOOL deficons_enable_text_previews;         /* TRUE = enable text file content preview rendering on icons */
     BOOL deficons_enable_picture_previews;      /* TRUE = enable picture file thumbnail rendering on icons */
     
@@ -297,7 +297,11 @@ typedef struct {
 #define DEFAULT_DEFICONS_SKIP_SYSTEM_ASSIGNS               TRUE    /* Skip system directories by default */
 #define DEFAULT_DEFICONS_LOG_CREATED_ICONS                 TRUE    /* Log created icons to separate file (useful for testing) */
 #define DEFAULT_DEFICONS_ICON_SIZE_MODE                     1       /* 0=Small(48), 1=Medium(64), 2=Large(100) */
-#define DEFAULT_DEFICONS_ENABLE_THUMBNAIL_BORDERS           TRUE    /* Default: Borders enabled (frameless=FALSE) */
+/* Thumbnail border mode constants (used with deficons_thumbnail_border_mode) */
+#define ITIDY_THUMB_BORDER_NEVER    0   /* Always frameless — edge-to-edge thumbnail, no Workbench frame */
+#define ITIDY_THUMB_BORDER_AUTO     1   /* Smart: borders only if image is opaque (no alpha/transparency) */
+#define ITIDY_THUMB_BORDER_ALWAYS   2   /* Always draw Workbench border frame around thumbnail */
+#define DEFAULT_DEFICONS_THUMBNAIL_BORDER_MODE              ITIDY_THUMB_BORDER_AUTO  /* Default: smart border (opaque=framed, transparent=frameless) */
 #define DEFAULT_DEFICONS_ENABLE_TEXT_PREVIEWS               TRUE    /* Default: Text content previews enabled */
 #define DEFAULT_DEFICONS_ENABLE_PICTURE_PREVIEWS            TRUE    /* Default: Picture thumbnails enabled */
 #define DEFAULT_DEFICONS_UPSCALE_THUMBNAILS                 FALSE   /* Default: Do NOT upscale small images to icon size */

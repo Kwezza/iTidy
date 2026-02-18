@@ -9,7 +9,12 @@
 
 ## Overview
 
-iTidy now supports **type-specific text preview templates** for ASCII file icons. Previously, all ASCII file types (C source, Rexx scripts, HTML files, etc.) used a single hardcoded template (`text_template.info`). Now the system implements a three-level fallback chain that allows custom templates per file type while maintaining robust fallback behavior.
+iTidy supports **type-specific text preview templates** for ASCII file icons.
+Previously, all ASCII file types (C source, Rexx scripts, HTML files, etc.)
+used a single hardcoded template (`text_template.info`). Now the system
+implements a two-level fallback chain that allows custom templates per file
+type. If no template is found, rendering is skipped and the file keeps the
+plain DefIcons system icon — no preview is forced.
 
 ---
 
@@ -31,12 +36,17 @@ Allows customization per DefIcons type token. Each template can have unique:
 ### 2. Generic ASCII Template
 **Path:** `PROGDIR:Icons/def_ascii.info`
 
-Fallback for ASCII types that don't have a specific template. Provides consistent appearance for uncommon text types (`.readme`, `.doc`, `.guide`, etc.).
+Fallback for ASCII types that don't have a specific template. Provides
+consistent appearance for uncommon text types (`.readme`, `.doc`, etc.).
 
-### 3. Ultimate Fallback
-**Path:** `PROGDIR:Icons/text_template.info`
+### No Template Found
+If neither template exists, text preview rendering is **skipped entirely**.
+The file receives the plain DefIcons system icon (already copied by the
+pipeline). `ITIDY_PREVIEW_NOT_APPLICABLE` is returned — this is not an error.
 
-Always exists. Used when neither type-specific nor generic ASCII templates are found. Ensures preview rendering never fails due to missing templates.
+This means `def_ascii.info` is effectively the minimum requirement for any
+text preview to work. A fresh install with no `Icons/` drawer simply skips
+previews, rather than failing or using a hardcoded fallback.
 
 ---
 

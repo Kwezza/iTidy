@@ -44,26 +44,22 @@
 /*========================================================================*/
 
 /**
- * Path to the generic text preview image template (ultimate fallback).
- *
- * This is iTidy's own palette-mapped color icon that provides the pixel
- * data for text preview rendering when no type-specific template exists.
- * It lives in the program's Icons drawer, separate from the Workbench
- * default icons in ENVARC:Sys/.
+ * Template resolution order for text preview icons.
  *
  * The DefIcons pipeline copies the Workbench default icon (for metadata:
- * default tool, tooltypes, icon type), then an image template supplies
- * the color pixel data that gets the text preview rendered into it.
+ * default tool, tooltypes, icon type), then an image template from
+ * PROGDIR:Icons/ supplies the palette-mapped pixel data that gets the
+ * text preview rendered into it.
  *
  * Template resolution order:
- *   1. PROGDIR:Icons/def_<type>     (e.g., def_c, def_rexx)
- *   2. PROGDIR:Icons/def_ascii      (generic ASCII fallback)
- *   3. PROGDIR:Icons/text_template  (ultimate fallback, always exists)
+ *   1. PROGDIR:Icons/def_<type>   (e.g., def_c.info, def_rexx.info)
+ *   2. PROGDIR:Icons/def_ascii    (generic ASCII fallback)
  *
- * Host path:  Bin\Amiga\Icons\text_template.info
- * Amiga path: PROGDIR:Icons/text_template
+ * If neither template exists, text preview rendering is skipped and the
+ * file keeps the plain DefIcons system icon — no ITIDY_TEXT_TEMPLATE_FALLBACK
+ * is used. This avoids silently overriding icon artwork with a generic
+ * render when the user has not provided any template icons.
  */
-#define ITIDY_TEXT_TEMPLATE_FALLBACK    "PROGDIR:Icons/text_template"
 
 /*========================================================================*/
 /* IFF Thumbnail Icon Sizes                                               */

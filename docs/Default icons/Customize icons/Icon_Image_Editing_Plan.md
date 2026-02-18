@@ -2,7 +2,7 @@
 
 **Version:** 2.0  
 **Created:** 2026-02-09  
-**Last updated:** 2026-02-18  
+**Last updated:** 2026-02-18 (border mode chooser added)  
 **Status:** Implemented (Phases 1–4 complete)  
 **Relates to:** `docs/iTidy_Future_Content_Aware_Icons_TODO.md`
 
@@ -15,6 +15,7 @@
 3. [Phase 1 — Icon Image Access Module (Reusable Core)](#3-phase-1--icon-image-access-module-reusable-core)
 4. [Phase 2 — ASCII Text-to-Pixel Renderer](#4-phase-2--ascii-text-to-pixel-renderer)
 5. [Phase 3 — Integration with DefIcons Pipeline](#5-phase-3--integration-with-deficons-pipeline)
+   - [5.4 Type-Specific Template Resolution Chain](#54-type-specific-template-resolution-chain)
 6. [Template Icon ToolType Conventions](#6-template-icon-tooltype-conventions)
 7. [Output Format Decision](#7-output-format-decision)
 8. [Selected Image Handling](#8-selected-image-handling)
@@ -31,6 +32,7 @@
 19. [Text Downscaling — Fitting 80-Column Documents into Tiny Icons](#19-text-downscaling--fitting-80-column-documents-into-tiny-icons)
 20. [Template Icon ToolType Reference (For Icon Designers)](#20-template-icon-tooltype-reference-for-icon-designers)
 21. [Phase 4 — Picture Datatype Pipeline (PNG, GIF, JPEG, BMP)](#21-phase-4--picture-datatype-pipeline-png-gif-jpeg-bmp)
+22. [Thumbnail Border Mode — Never / Auto / Always](#22-thumbnail-border-mode--never--auto--always)
 
 ---
 
@@ -115,14 +117,16 @@ rectangle, and paint into it. They never need to know about icon formats.
 
 ### Template Icon Location
 
-The built-in text preview template is shipped at:
+Text preview templates live in `PROGDIR:Icons/` (host: `Bin\Amiga\Icons\`).
+There is no single hardcoded template — the system resolves which template
+to use at runtime via a two-level fallback chain (see Section 5.4):
 
-- **Host path:** `Bin\Amiga\Icons\text_template.info`
-- **Amiga path:** `PROGDIR:Icons/text_template.info`
+1. `PROGDIR:Icons/def_<type>.info` — type-specific (e.g. `def_c.info`, `def_rexx.info`)
+2. `PROGDIR:Icons/def_ascii.info` — generic ASCII fallback
 
-The DefIcons pipeline copies this template to the target location before
-the icon image editing step begins. Future template icons for other preview
-types (IFF, font, etc.) will also live in `PROGDIR:Icons/`.
+If neither template exists, text preview rendering is skipped entirely and
+the file keeps the plain DefIcons system icon. Future template icons for
+other preview types (IFF, font, etc.) will also live in `PROGDIR:Icons/`.
 
 ---
 
@@ -468,11 +472,91 @@ This allows project-specific or temporary directories to be skipped during
 recursive icon creation. See `docs/layout_preferences.h` for the preference
 storage details.
 
+### 5.4 Type-Specific Template Resolution Chain
+
+When rendering a text preview, iTidy resolves the image template through
+a **two-level fallback chain**, checking each level with `Lock()` before
+trying the next. If no template is found at either level, rendering is
+skipped and the file keeps the plain DefIcons system icon — no text
+preview is applied.
+
+**Purpose:** This lets you create custom-styled icons for specific file types
+(e.g. a blue-tinted `def_c.info` for C source, a green-tinted `def_rexx.info`
+for Rexx scripts) while falling back gracefully to the generic ASCII template
+when a type-specific one has not been created.
+
+#### Fallback Levels
+
+| Level | Path | When used |
+|-------|------|-----------|
+| 1 | `PROGDIR:Icons/def_<type>.info` | Custom template exists for this exact DefIcons type token |
+| 2 | `PROGDIR:Icons/def_ascii.info` | No type-specific template; generic ASCII template present |
+| — | *(none)* | Neither found — text preview skipped, default DefIcons icon used |
+
+**Examples:**
+- `.c` file → tries `def_c.info` first, falls back to `def_ascii.info`
+- `.rexx` file → tries `def_rexx.info` first, falls back to `def_ascii.info`
+- `.readme` file → tries `def_readme.info` (likely missing), uses `def_ascii.info`
+- `.c` file on a fresh install with no Icons drawer → preview skipped, plain DefIcons icon used
+
+**Minimum requirement:** `def_ascii.info` must exist in `PROGDIR:Icons/` for
+any text preview to render. Without it, only files that have their own
+type-specific template will get a preview.
+
+#### How to Add a Type-Specific Template
+
+1. Copy an existing template (e.g. `Bin/Amiga/Icons/def_ascii.info`) to a new
+   file named after the DefIcons type token, e.g. `def_c.info` or `def_rexx.info`.
+2. Open it in an icon editor and adjust the ToolTypes to customise the safe area,
+   colours, character width etc. (see Section 6 for all available ToolTypes).
+3. Place the finished `.info` file in `PROGDIR:Icons/` (i.e. `Bin/Amiga/Icons/`
+   on the host machine, which is shared into WinUAE).
+4. Run iTidy — logs will confirm which template was selected for each file type:
+
+```
+[LOG_ICONS] Using type-specific preview template: PROGDIR:Icons/def_c for type=c
+[LOG_ICONS] Using generic ASCII preview template: PROGDIR:Icons/def_ascii for type=readme
+[LOG_ICONS] No preview template found for type=unknown (...) -- skipping text preview
+```
+
+#### EXCLUDETYPE — Opting Specific Types Out of Text Preview
+
+The `def_ascii.info` template icon may carry an `EXCLUDETYPE` ToolType listing
+DefIcons type tokens that should **skip** text preview rendering entirely and
+keep the plain template image instead.
+
+```
+EXCLUDETYPE=amigaguide,html,install
+```
+
+- The list is **comma-separated** and **case-insensitive**.
+- Leading and trailing whitespace around each token is trimmed.
+- iTidy reads this ToolType from `PROGDIR:Icons/def_ascii.info` before
+  deciding whether to render a preview for a given file.
+- If the file's type token appears in the list, the file receives the plain
+  copied template icon with no preview painted onto it.
+- This is useful for types that are technically classified as `ascii` by
+  DefIcons but have their own dedicated icon artwork that should not be
+  overwritten with a text preview (e.g. AmigaGuide documents, HTML pages,
+  installer scripts).
+
+See also Section 6.4 for the full ToolType specification.
+
+#### Implementation Reference
+
+The resolution logic lives in `itidy_resolve_preview_template()` in
+`src/icon_edit/icon_content_preview.c`. The EXCLUDETYPE check is performed by
+`is_excluded_from_text_preview()` in the same file, called before any
+template loading begins.
+
+For the complete implementation notes and testing checklist see
+`docs/Type_Specific_Text_Preview_Templates.md`.
+
 ---
 
 ## 6. Template Icon ToolType Conventions
 
-Template icons (e.g. `ENVARC:Sys/def_ascii.info`) may contain ToolTypes
+Template icons (e.g. `PROGDIR:Icons/def_ascii.info`) may contain ToolTypes
 that control the preview rendering area. These are **optional** — sensible
 defaults apply if they are absent.
 
@@ -512,6 +596,44 @@ in `docs/iTidy_Future_Content_Aware_Icons_TODO.md`):
 These allow iTidy to detect its own generated icons and decide whether
 regeneration is needed (e.g. source file changed) or whether to skip
 (source unchanged, icon already current).
+
+### 6.4 EXCLUDETYPE ToolType (in `def_ascii.info`)
+
+The `EXCLUDETYPE` ToolType is placed in `PROGDIR:Icons/def_ascii.info` and
+contains a comma-separated list of DefIcons type tokens that should **not**
+receive a text preview, even though they are classified as ASCII by DefIcons.
+
+| Detail | Value |
+|--------|-------|
+| **ToolType name** | `EXCLUDETYPE` |
+| **Format** | Comma-separated type tokens, e.g. `amigaguide,html,install` |
+| **Case sensitivity** | Case-insensitive matching |
+| **Whitespace** | Leading/trailing spaces around each token are trimmed |
+| **Location** | ToolTypes of `PROGDIR:Icons/def_ascii.info` |
+| **Read by** | `is_excluded_from_text_preview()` in `src/icon_edit/icon_content_preview.c` |
+
+**Example ToolType value:**
+```
+EXCLUDETYPE=amigaguide,html,install
+```
+
+**Behaviour when a type is excluded:**
+- The file still receives an icon (the plain template is copied as normal).
+- The text preview rendering step is skipped entirely.
+- The icon is saved without any `ITIDY_KIND` or `ITIDY_SRC_*` stamp ToolTypes
+  (because no rendering was done).
+- The log records: `Type '<token>' excluded from text preview via EXCLUDETYPE tooltype`
+
+**Typical use cases:**
+- `amigaguide` — AmigaGuide documents have their own distinctive system icon and
+  the guide markup syntax would look messy as a raw text preview.
+- `html` — HTML source contains angle-bracket tags; the raw markup preview is
+  not very informative and HTML files often have dedicated artwork.
+- `install` — Installer scripts are binary-ish and their preview adds no value.
+
+**Note:** `EXCLUDETYPE` is read from `def_ascii.info` regardless of which
+template level is ultimately selected for the file. It acts as a global
+exclusion list for the entire text preview system.
 
 ---
 
@@ -2058,8 +2180,9 @@ balance between text legibility and ruled paper visibility.
 *This document was last updated on 2026-02-18 after implementing the
 picture.datatype thumbnail pipeline (Phase 4: PNG, GIF, JPEG, BMP support),
 Ultra mode pre-quantization RGB24 transfer, 5-bit histogram palette sampling,
-and format-aware transparency handling. It will continue to be updated as
-new renderers are added and issues are discovered.*
+format-aware transparency handling, and the thumbnail border mode chooser
+(Never/Auto/Always). It will continue to be updated as new renderers are
+added and issues are discovered.*
 
 ---
 
@@ -2340,3 +2463,104 @@ typedef struct {
 | 26 | Ultra mode: expand indexed back to RGB24, or transfer pre-quantization buffer? | **Transfer pre-quantization buffer.** `raw_rgb24_out` mechanism in `iTidy_IFFRenderParams`. Post-quantization expansion yields only ~30 muted colours; pre-quantization buffer gives true continuous-tone RGB24. | 2026-02-18 |
 | 27 | Ultra histogram: exact-colour matching or approximate-colour buckets? | **5-bit bucket keys** (`r & 0xF8`). Exact-colour matching causes first-256-seen bias on continuous-tone photographs. 5-bit buckets with per-bucket averaging give fair full-image coverage. | 2026-02-18 |
 | 28 | Should small images be upscaled to fill the thumbnail? | **User-configurable** via `deficons_upscale_thumbnails` preference + GUI checkbox. Default ON. When OFF, images are centred at natural size. | 2026-02-18 |
+| 29 | The old boolean "enable borders" was too coarse — opaque images look odd without a frame, but forcing borders on transparent PNGs is also wrong. How to reconcile? | **Three-way chooser: Never / Auto (smart) / Always.** `ITIDY_THUMB_BORDER_NEVER`=0, `ITIDY_THUMB_BORDER_AUTO`=1, `ITIDY_THUMB_BORDER_ALWAYS`=2. Stored as `UWORD deficons_thumbnail_border_mode`. Auto (default) consults `src_has_alpha`: opaque images get a border, transparent ones are frameless. JPEG/BMP always get borders regardless of user setting. See Section 21.10. | 2026-02-18 |
+
+---
+
+## 22. Thumbnail Border Mode — Never / Auto / Always
+
+### 22.1 Why the Boolean Was Not Enough
+
+The original border preference was a single checkbox: "Enable borders on
+image thumbnails" (`BOOL deficons_enable_thumbnail_borders`). This was a
+reasonable starting point, but produced unsatisfactory results in practice:
+
+- **Checked (borders on):** Transparent PNG thumbnails got a Workbench
+  border frame drawn around them. Because the icon has no background fill,
+  the frame appears to float in space — or worse, sits against the wrong
+  Workbench background colour. The edge-to-edge transparency is the whole
+  point of the thumbnail for such images.
+
+- **Unchecked (borders off):** Opaque images like IFF ILBM waterfall
+  photographs and JPEG thumbnails were rendered frameless. These images
+  fill every pixel of the icon and have no transparency, so they look like
+  a raw pixels rectangle with no visual anchoring on the Workbench. A
+  border frame is exactly what makes them look like proper icons.
+
+The boolean could never satisfy both cases simultaneously — the right
+answer is different depending on whether the image actually has
+transparency.
+
+### 22.2 The Three Modes
+
+The preference was replaced with a `UWORD` field and a Chooser gadget
+offering three options:
+
+| Value | Constant | Label | Behaviour |
+|-------|----------|-------|-----------|
+| 0 | `ITIDY_THUMB_BORDER_NEVER` | Never | Always frameless. Every thumbnail is edge-to-edge with no Workbench border frame, regardless of content. |
+| 1 | `ITIDY_THUMB_BORDER_AUTO` | Auto (smart) | **Default.** Workbench border drawn only when the image is opaque. Transparent images (those that have a transparent palette index) remain frameless so the transparency is visible. |
+| 2 | `ITIDY_THUMB_BORDER_ALWAYS` | Always | Border drawn on every thumbnail unconditionally, even for transparent images. |
+
+**Implementation:** `UWORD deficons_thumbnail_border_mode` in
+`LayoutPreferences` (was `BOOL deficons_enable_thumbnail_borders`).
+Default: `ITIDY_THUMB_BORDER_AUTO`.
+
+### 22.3 How Auto Mode Decides
+
+Auto mode consults the `src_has_alpha` field that the picture.datatype
+renderer fills in `iTidy_IFFRenderParams`. The decision is made at the
+`is_frameless` assignment in `apply_picture_preview()`:
+
+```
+if format is always opaque (JPEG, BMP):
+    is_frameless = FALSE   <- borders forced on regardless of user setting
+
+else (format can potentially be transparent):
+    if AUTO:
+        is_frameless = src_has_alpha    <- transparent -> frameless; opaque -> framed
+    if ALWAYS:
+        is_frameless = FALSE            <- always framed
+    if NEVER:
+        is_frameless = TRUE             <- always frameless
+```
+
+`src_has_alpha` is set to TRUE when either:
+- `GetDTAttrs(PDTA_AlphaChannel)` reported TRUE (real alpha channel) — the
+  RGBA render path was used, and the quantizer found pixels with A < 255
+- The magenta key sweep found magenta pixels and set transparent index 0
+
+**Format-specific overrides always take priority over the user setting:**
+JPEG and BMP are unconditionally opaque (border forced on even in Never
+mode). This mirrors the existing `itidy_format_can_be_transparent()` logic.
+
+### 22.4 IFF ILBM Path
+
+The IFF renderer (`apply_iff_preview`) uses its own internal path that
+does not go through `picture.datatype`. It has no `src_has_alpha` field.
+IFF ILBM files processed here always have `mask=0` in the BMHD chunk —
+they are definitively opaque.
+
+The border logic for this path is therefore simpler:
+
+```
+if NEVER  -> frameless
+if AUTO   -> framed   (opaque by definition; same result as JPEG/BMP)
+if ALWAYS -> framed
+```
+
+Only `NEVER` produces a frameless result on the IFF path.
+
+### 22.5 Code Locations
+
+| Symbol | File | Notes |
+|--------|------|-------|
+| `ITIDY_THUMB_BORDER_NEVER` / `_AUTO` / `_ALWAYS` | `src/layout_preferences.h` | Constants 0, 1, 2 |
+| `deficons_thumbnail_border_mode` | `src/layout_preferences.h` | `UWORD` field in `LayoutPreferences` |
+| `DEFAULT_DEFICONS_THUMBNAIL_BORDER_MODE` | `src/layout_preferences.h` | = `ITIDY_THUMB_BORDER_AUTO` |
+| `init_default_preferences()` | `src/layout_preferences.c` | Sets field to default |
+| `is_frameless` assignment (picture path) | `src/icon_edit/icon_content_preview.c` | Three-way switch in `apply_picture_preview()` |
+| `is_frameless` assignment (IFF path) | `src/icon_edit/icon_content_preview.c` | Simpler `NEVER`-only check in `apply_iff_preview()` |
+| `GID_THUMBNAIL_BORDERS_CHOOSER` | `src/GUI/deficons_creation_window.c` | Replaces old `GID_THUMBNAIL_BORDERS_CHECKBOX` |
+| `thumbnail_borders_chooser_obj` | `src/GUI/deficons_creation_window.c` | Replaces old `thumbnail_borders_checkbox` Object pointer |
+| `thumbnail_borders_list` | `src/GUI/deficons_creation_window.c` | Chooser node list for the three labels |

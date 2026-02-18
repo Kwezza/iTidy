@@ -133,20 +133,19 @@ static BOOL is_excluded_from_text_preview(const char *type_token)
 /**
  * @brief Resolve the preview template path for a given DefIcons type.
  *
- * Implements three-level fallback chain:
+ * Implements two-level fallback chain:
  *   1. PROGDIR:Icons/def_<type_token>  (type-specific template)
  *   2. PROGDIR:Icons/def_ascii         (generic ASCII category template)
- *   3. PROGDIR:Icons/text_template     (ultimate fallback, always exists)
  *
  * Each level is checked for existence via Lock() before proceeding to
- * the next fallback level. This allows users to create custom templates
- * for specific text types (e.g., def_c.info for C source files) while
- * automatically falling back to sensible defaults.
+ * the next fallback level. If neither template exists, returns FALSE so
+ * the caller can skip rendering and let the normal DefIcons system handle
+ * the icon — no text preview is applied.
  *
  * @param type_token    DefIcons type token (e.g., "c", "rexx", "html")
  * @param path_buf      Output buffer for resolved template path
  * @param buf_size      Size of path_buf in bytes
- * @return TRUE if a template was resolved (always succeeds with fallback)
+ * @return TRUE if a usable template was found, FALSE if none exist
  *
  * @note The returned path does NOT include the .info extension
  * @note All logging to LOG_ICONS at info level for template selection tracking
@@ -207,19 +206,15 @@ static BOOL itidy_resolve_preview_template(const char *type_token,
     }
     
     /*--------------------------------------------------------------------*/
-    /* Level 3: Ultimate fallback to text_template (always exists)        */
+    /* No template found — caller should skip rendering and use the       */
+    /* normal DefIcons system icon for this file type instead.            */
     /*--------------------------------------------------------------------*/
     
-    log_debug(LOG_ICONS, "Generic ASCII template not found, falling back to: %s\n",
-              ITIDY_TEXT_TEMPLATE_FALLBACK);
+    log_info(LOG_ICONS, "No preview template found for type=%s "
+             "(neither def_%s.info nor def_ascii.info exists) — "
+             "skipping text preview\n", type_token, type_token);
     
-    strncpy(path_buf, ITIDY_TEXT_TEMPLATE_FALLBACK, buf_size - 1);
-    path_buf[buf_size - 1] = '\0';
-    
-    log_info(LOG_ICONS, "Using fallback preview template: %s for type=%s\n",
-             path_buf, type_token);
-    
-    return TRUE;
+    return FALSE;
 }
 
 /*========================================================================*/
@@ -904,10 +899,17 @@ static int apply_iff_preview(const char *source_path,
         img.transparent_color_normal = -1;
         img.transparent_color_selected = -1;
 
-        // Frameless setting — controlled by user preference
-        // If borders enabled (TRUE), set frameless to FALSE so Workbench draws borders
-        // If borders disabled (FALSE), set frameless to TRUE for edge-to-edge thumbnails
-        img.is_frameless = prefs ? !prefs->deficons_enable_thumbnail_borders : FALSE;
+        // Frameless setting for IFF thumbnails — controlled by border mode preference.
+        // IFF ILBM files processed by this path are always opaque (mask=0). There is
+        // no alpha channel information available here, so Auto mode treats them the
+        // same as any opaque format: borders on. Only NEVER suppresses borders.
+        // NEVER  -> always frameless
+        // AUTO   -> framed (opaque image — same behaviour as a JPEG/BMP)
+        // ALWAYS -> always framed
+        {
+            UWORD bmode = prefs ? prefs->deficons_thumbnail_border_mode : ITIDY_THUMB_BORDER_AUTO;
+            img.is_frameless = (bmode == ITIDY_THUMB_BORDER_NEVER);
+        }
 
         log_info(LOG_ICONS, "apply_iff_preview: cropped to tight %ux%u, "
                  "transparency disabled, frameless=%s\n",
@@ -1440,7 +1442,7 @@ static int apply_picture_preview(const char *source_path,
 
             if (!fmt_can_be_transparent)
             {
-                /* Opaque format: force borders on so icon has a visible frame */
+                /* Opaque format (JPEG/BMP): force borders on regardless of user setting */
                 img.is_frameless = FALSE;
                 log_info(LOG_ICONS,
                          "apply_picture_preview: "
@@ -1448,7 +1450,24 @@ static int apply_picture_preview(const char *source_path,
             }
             else
             {
-                img.is_frameless = prefs ? !prefs->deficons_enable_thumbnail_borders : FALSE;
+                /* Format can be transparent: apply the three-way border mode */
+                UWORD bmode = prefs ? prefs->deficons_thumbnail_border_mode : ITIDY_THUMB_BORDER_AUTO;
+                if (bmode == ITIDY_THUMB_BORDER_ALWAYS)
+                {
+                    /* Always: draw borders regardless of transparency */
+                    img.is_frameless = FALSE;
+                }
+                else if (bmode == ITIDY_THUMB_BORDER_NEVER)
+                {
+                    /* Never: always frameless */
+                    img.is_frameless = TRUE;
+                }
+                else
+                {
+                    /* Auto: frameless only when image actually has transparency;
+                     * opaque images (no alpha, no magenta key) get borders */
+                    img.is_frameless = iff_params.src_has_alpha ? TRUE : FALSE;
+                }
             }
 
             log_info(LOG_ICONS, "apply_picture_preview: cropped to %ux%u, "
@@ -1784,10 +1803,11 @@ int itidy_apply_content_preview(const char *source_path,
 
     /*--------------------------------------------------------------------*/
     /* Step 2: Resolve and load the IMAGE TEMPLATE (separate from target  */
-    /*         icon). Template selection follows a three-level fallback:  */
+    /*         icon). Template selection follows a two-level fallback:    */
     /*           1. PROGDIR:Icons/def_<type>  (type-specific)             */
-    /*           2. PROGDIR:Icons/def_ascii   (generic ASCII)             */
-    /*           3. PROGDIR:Icons/text_template (ultimate fallback)       */
+    /*           2. PROGDIR:Icons/def_ascii   (generic ASCII fallback)    */
+    /*         If neither exists, rendering is skipped and the normal     */
+    /*         DefIcons icon copy is used unchanged.                      */
     /*                                                                     */
     /*         This is separate from the Workbench default — it is        */
     /*         iTidy's own palette-mapped icon designed for content       */
@@ -1813,10 +1833,14 @@ int itidy_apply_content_preview(const char *source_path,
         if (!itidy_resolve_preview_template(type_token, template_path,
                                             sizeof(template_path)))
         {
-            log_error(LOG_ICONS, "itidy_apply_content_preview: "
-                      "template resolution failed for type=%s\n", type_token);
+            /* Neither def_<type>.info nor def_ascii.info found.
+             * Skip text preview — the normal DefIcons icon copy (already done
+             * by the caller) will be used unchanged. This is not an error. */
+            log_info(LOG_ICONS, "itidy_apply_content_preview: "
+                     "no preview template available for type=%s — "
+                     "using default DefIcons icon\n", type_token);
             FreeDiskObject(target_icon);
-            return ITIDY_PREVIEW_FAILED;
+            return ITIDY_PREVIEW_NOT_APPLICABLE;
         }
         
         get_template_tags[0].ti_Tag  = ICONGETA_RemapIcon;
