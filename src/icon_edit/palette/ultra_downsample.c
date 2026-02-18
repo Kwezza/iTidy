@@ -160,34 +160,64 @@ BOOL itidy_ultra_generate_palette(const UBYTE *rgb24, ULONG pixel_count,
                                   struct ColorRegister *out_palette,
                                   UWORD *out_pal_size)
 {
-    /* Build a histogram directly from RGB24 data.
-     * Since we can have up to 256*256*256 unique colors in RGB24,
-     * but AmigaOS icons are small (max ~100x100 = 10,000 pixels),
-     * we build the histogram by scanning unique colors directly. */
+    /* Build a histogram from RGB24 data, but use 5-bit precision per channel
+     * (mask bottom 3 bits: r & 0xF8) as the histogram key.  This limits the
+     * number of unique buckets to at most 32*32*32 = 32768, but in practice
+     * a 64x64 photo thumbnail produces 80-200 distinct 5-bit clusters --
+     * well within the 256-entry histogram array.
+     *
+     * Without this pre-quantization the first 256 arbitrarily-encountered
+     * exact-match colours fill the histogram; subsequent colours are just
+     * nearest-neighbour mapped, so regions that happen to be scanned early
+     * (e.g. a dark table area) dominate the palette and later regions
+     * (bright fruits, sky) lose fidelity.
+     *
+     * Each histogram bucket accumulates the AVERAGE of all contributing
+     * full-precision pixel values, so the final palette entries use the
+     * true per-cluster mean colour rather than the coarsely-quantized key. */
     iTidy_ColorEntry histogram[256];
+    /* Accumulator arrays for full-precision averaging within each bucket.
+     * Uses ULONG to avoid overflow (max 3072 pixels * 255 = ~780K per channel,
+     * fits in 32 bits comfortably). */
+    ULONG r_sum[256];
+    ULONG g_sum[256];
+    ULONG b_sum[256];
+    ULONG counts[256];
     UWORD hist_count = 0;
     ULONG i;
+    UWORD j;
 
     if (rgb24 == NULL || out_palette == NULL || out_pal_size == NULL)
         return FALSE;
 
-    /* Build histogram from RGB24 data.
-     * For small icon sizes, we can afford a simple O(n*m) scan
-     * where n = pixels and m = unique colors found so far. */
+    memset(r_sum,  0, sizeof(r_sum));
+    memset(g_sum,  0, sizeof(g_sum));
+    memset(b_sum,  0, sizeof(b_sum));
+    memset(counts, 0, sizeof(counts));
+
     for (i = 0; i < pixel_count; i++)
     {
-        UBYTE r = rgb24[i * 3 + 0];
-        UBYTE g = rgb24[i * 3 + 1];
-        UBYTE b = rgb24[i * 3 + 2];
-        UWORD j;
-        BOOL found = FALSE;
+        UBYTE r     = rgb24[i * 3 + 0];
+        UBYTE g     = rgb24[i * 3 + 1];
+        UBYTE b     = rgb24[i * 3 + 2];
+        /* 5-bit key: round down to nearest multiple of 8 */
+        UBYTE r_key = r & 0xF8;
+        UBYTE g_key = g & 0xF8;
+        UBYTE b_key = b & 0xF8;
+        BOOL  found = FALSE;
 
-        /* Check if this color already exists in histogram */
+        /* Search for matching 5-bit bucket */
         for (j = 0; j < hist_count; j++)
         {
-            if (histogram[j].r == r && histogram[j].g == g &&
-                histogram[j].b == b)
+            if (histogram[j].r == r_key &&
+                histogram[j].g == g_key &&
+                histogram[j].b == b_key)
             {
+                /* Accumulate exact colour for later averaging */
+                r_sum[j]  += r;
+                g_sum[j]  += g;
+                b_sum[j]  += b;
+                counts[j]++;
                 histogram[j].count++;
                 found = TRUE;
                 break;
@@ -196,36 +226,55 @@ BOOL itidy_ultra_generate_palette(const UBYTE *rgb24, ULONG pixel_count,
 
         if (!found && hist_count < 256)
         {
-            histogram[hist_count].r = r;
-            histogram[hist_count].g = g;
-            histogram[hist_count].b = b;
-            histogram[hist_count]._pad = 0;
+            /* New bucket: store the 5-bit key, begin accumulating */
+            histogram[hist_count].r     = r_key;
+            histogram[hist_count].g     = g_key;
+            histogram[hist_count].b     = b_key;
+            histogram[hist_count]._pad  = 0;
             histogram[hist_count].count = 1;
+            r_sum[hist_count]  = r;
+            g_sum[hist_count]  = g;
+            b_sum[hist_count]  = b;
+            counts[hist_count] = 1;
             hist_count++;
         }
         else if (!found)
         {
-            /* Histogram full (256 unique colors found).
-             * Map to closest existing entry. */
-            UWORD best_j = 0;
+            /* Histogram full — map to Manhattan-closest existing 5-bit bucket */
+            UWORD best_j    = 0;
             UWORD best_dist = 0xFFFF;
 
             for (j = 0; j < hist_count; j++)
             {
                 UWORD dist = itidy_palette_manhattan_distance(
-                    r, g, b,
+                    r_key, g_key, b_key,
                     histogram[j].r, histogram[j].g, histogram[j].b);
                 if (dist < best_dist)
                 {
                     best_dist = dist;
-                    best_j = j;
+                    best_j    = j;
                 }
             }
+            r_sum[best_j]  += r;
+            g_sum[best_j]  += g;
+            b_sum[best_j]  += b;
+            counts[best_j]++;
             histogram[best_j].count++;
         }
     }
 
-    log_debug(LOG_ICONS, "ultra_downsample: %u unique colors from %lu "
+    /* Replace 5-bit keys with per-bucket colour averages for palette quality */
+    for (j = 0; j < hist_count; j++)
+    {
+        if (counts[j] > 0)
+        {
+            histogram[j].r = (UBYTE)(r_sum[j] / counts[j]);
+            histogram[j].g = (UBYTE)(g_sum[j] / counts[j]);
+            histogram[j].b = (UBYTE)(b_sum[j] / counts[j]);
+        }
+    }
+
+    log_debug(LOG_ICONS, "ultra_downsample: %u unique colors (5-bit buckets) from %lu "
               "RGB24 pixels\n",
               (unsigned)hist_count, (unsigned long)pixel_count);
 

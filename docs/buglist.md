@@ -72,6 +72,54 @@ Lines 5146-5153: Multiple .txt files got project icons without DefIcons queries
 
 ---
 
-## Resolved Bugs
+### Bug #3: Magenta Key-Colour Sweep False Positive on JPEG Icons (Black Renders as Transparent)
 
-*(No resolved bugs yet)*
+**Status:** FIXED  
+**Date Reported:** 2026-02-18  
+**Date Fixed:** 2026-02-18  
+**Severity:** High - All JPEG thumbnails had incorrect transparency applied
+
+**Description:**
+After the magenta key-colour sweep was added (Bug #2 fix), all JPEG thumbnails showed dark/black areas as transparent (grey Workbench background showing through). Palette index 0 was being incorrectly flagged as transparent for every JPEG processed.
+
+**Root Cause:**
+The 6x6x6 colour cube ALWAYS contains R=255, G=0, B=255 at index 185 regardless of the image content. The sweep scanned the palette for any entry matching the magenta threshold and always found it. When the palette was swapped (185 <-> 0), the old index 0 (black, #000000) moved to index 185, and all formerly-black pixels were remapped to index 0 (now transparent). Confirmed by log showing "magenta key colour found at palette index 185 (R=255 G=0 B=255)" for every JPEG.
+
+**Fix:**
+- Added `BOOL try_magenta_key` field to `iTidy_IFFRenderParams` (input flag).
+- Added `itidy_format_supports_transparency()` helper in `icon_content_preview.c` -- returns FALSE for jpeg/bmp, TRUE for png/gif/ilbm/acbm/other.
+- `apply_picture_preview()` sets `iff_params.try_magenta_key = itidy_format_supports_transparency(type_token)`, skipping the sweep for JPEG/BMP.
+- `apply_iff_preview()` explicitly sets `iff_params.try_magenta_key = TRUE` (ILBM/ACBM can carry magenta key transparency).
+- The sweep block in `itidy_render_via_datatype()` is gated on `params->try_magenta_key`.
+- As a design improvement, Step 7 in `apply_picture_preview()` also forces borders ON for opaque formats (JPEG/BMP) regardless of the user's border preference -- without both transparency and borders, icons blend into the Workbench window background.
+
+**Files Changed:**
+- `src/icon_edit/icon_iff_render.h` -- added `try_magenta_key` to `iTidy_IFFRenderParams`
+- `src/icon_edit/icon_iff_render.c` -- gated magenta sweep on `try_magenta_key`
+- `src/icon_edit/icon_content_preview.c` -- added helper, set flag, format-aware Step 7
+
+---
+
+### Bug #4: Ultra Mode JPEG Thumbnails Have Muted/Posterised Colours (~30 Colours Instead of 256)
+
+**Date:** 2026-02-18
+**Severity:** High - Ultra mode produced worse colour quality than standard mode for JPEG/BMP
+
+**Symptom:**
+JPEG thumbnails generated with Ultra mode enabled had heavily posterised, muted colour palettes. Log showed only 30-37 unique colours from a 64x64 pixel thumbnail, all with RGB values that were exact multiples of 51 (the 6x6x6 grid step size).
+
+**Root Cause:**
+Ultra mode in `apply_picture_preview()` built its RGB24 input by expanding the already-indexed pixel buffer back through the 6x6x6 palette. By that point every channel had already been snapped to one of {0, 51, 102, 153, 204, 255}. The actual area-average downscaled RGB24 thumbnail with smooth intermediate values had been quantized and then freed inside `itidy_render_via_datatype()`. `itidy_ultra_generate_palette()` therefore saw only ~30 of the 216 possible 6x6x6 combinations, never the true photo colours.
+
+Confirmed by log: `ultra_downsample: 30 unique colors from 4096 RGB24 pixels` with all palette entries being multiples of 0x33.
+
+**Fix:**
+Added `UBYTE **raw_rgb24_out` and `ULONG raw_rgb24_pixel_count` output fields to `iTidy_IFFRenderParams`. When `raw_rgb24_out` is non-NULL on entry, `itidy_render_via_datatype()` transfers ownership of its pre-quantization `thumb_rgb24` buffer to the caller (sets `*raw_rgb24_out`, nulls the local pointer to prevent cleanup from freeing it). `apply_picture_preview()` sets this field when Ultra mode is active and passes the received buffer directly to `itidy_ultra_generate_palette()`, bypassing the lossy indexed re-expansion entirely.
+
+**Files Changed:**
+- `src/icon_edit/icon_iff_render.h` -- added `raw_rgb24_out` and `raw_rgb24_pixel_count` to `iTidy_IFFRenderParams`
+- `src/icon_edit/icon_iff_render.c` -- added transfer-or-free logic for `thumb_rgb24` in `itidy_render_via_datatype()`
+- `src/icon_edit/icon_content_preview.c` -- wired `raw_rgb24_out`, new Ultra mode block uses pre-quantization buffer with indexed fallback
+
+---
+

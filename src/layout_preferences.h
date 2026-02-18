@@ -241,6 +241,13 @@ typedef struct {
     UWORD deficons_dither_method;               /* 0=None, 1=Ordered, 2=Floyd-Steinberg, 3=Auto */
     UWORD deficons_lowcolor_mapping;            /* 0=Grayscale, 1=WB palette, 2=Hybrid (only when max<=8) */
     BOOL deficons_ultra_mode;                   /* TRUE = 256-color detail-preserving downsample */
+
+    /* Per-format picture thumbnail enable flags (v3 fields) */
+    ULONG deficons_picture_formats_enabled;     /* Bitmask: ITIDY_PICTFMT_* bits — which formats get thumbnails */
+
+    /* Upscaling control (v3 fields) */
+    BOOL deficons_upscale_thumbnails;           /* FALSE = keep small images at natural size (default) */
+                                                /* TRUE  = scale up images smaller than icon size      */
 } LayoutPreferences;
 
 /*========================================================================*/
@@ -293,12 +300,55 @@ typedef struct {
 #define DEFAULT_DEFICONS_ENABLE_THUMBNAIL_BORDERS           TRUE    /* Default: Borders enabled (frameless=FALSE) */
 #define DEFAULT_DEFICONS_ENABLE_TEXT_PREVIEWS               TRUE    /* Default: Text content previews enabled */
 #define DEFAULT_DEFICONS_ENABLE_PICTURE_PREVIEWS            TRUE    /* Default: Picture thumbnails enabled */
+#define DEFAULT_DEFICONS_UPSCALE_THUMBNAILS                 FALSE   /* Default: Do NOT upscale small images to icon size */
 
 /* DefIcons Palette Reduction Defaults */
 #define DEFAULT_DEFICONS_MAX_ICON_COLORS                    256     /* No limit (full palette) */
 #define DEFAULT_DEFICONS_DITHER_METHOD                      3       /* Auto (smart selection by color count) */
 #define DEFAULT_DEFICONS_LOWCOLOR_MAPPING                   0       /* Grayscale (safe default for 4-8 colors) */
 #define DEFAULT_DEFICONS_ULTRA_MODE                         FALSE   /* Standard mode by default */
+
+/*========================================================================*/
+/* Picture Format Enable Bitmask Constants                               */
+/*========================================================================*/
+
+/**
+ * @brief Per-format enable bits for deficons_picture_formats_enabled.
+ *
+ * Only formats with a corresponding datatype installed in
+ * DEVS:DataTypes (or Classes/DataTypes) can produce thumbnails.
+ * If the datatype is absent, NewDTObject() returns NULL and the
+ * pipeline logs a warning and skips to the next file.
+ *
+ * Default WB 3.2 datatypes present: ilbm, png, gif, acbm, bmp, jpeg.
+ * jpeg is disabled by default due to slow decode on 68000.
+ */
+
+/* IFF ILBM (standard Amiga bitplane format — native parser + DT fallback for HAM) */
+#define ITIDY_PICTFMT_ILBM      0x0001UL
+/* PNG (WB 3.2 default — fast, supports alpha; recommended for UI art) */
+#define ITIDY_PICTFMT_PNG       0x0002UL
+/* GIF (WB 3.2 default — fast, supports 1-bit transparency; multi-frame uses frame 0) */
+#define ITIDY_PICTFMT_GIF       0x0004UL
+/* JPEG (WB 3.2 default — SLOW: can take >60s on 68000; disabled by default) */
+#define ITIDY_PICTFMT_JPEG      0x0008UL
+/* BMP (WB 3.2 default — uncompressed Windows bitmap) */
+#define ITIDY_PICTFMT_BMP       0x0010UL
+/* ACBM (Amiga Continuous BitMap — IFF variant; WB 3.2 default) */
+#define ITIDY_PICTFMT_ACBM      0x0020UL
+/* All other picture formats (tiff, targa, pcx, ico, sunraster, reko, brush, etc.) */
+/* Only works if a third-party datatype for that format is installed. */
+#define ITIDY_PICTFMT_OTHER     0x0040UL
+
+/* Convenience: all formats enabled */
+#define ITIDY_PICTFMT_ALL       (ITIDY_PICTFMT_ILBM | ITIDY_PICTFMT_PNG | ITIDY_PICTFMT_GIF | \
+                                 ITIDY_PICTFMT_JPEG | ITIDY_PICTFMT_BMP | ITIDY_PICTFMT_ACBM | \
+                                 ITIDY_PICTFMT_OTHER)
+
+/* Default: all enabled EXCEPT JPEG (slow) */
+#define DEFAULT_DEFICONS_PICTURE_FORMATS_ENABLED \
+    (ITIDY_PICTFMT_ILBM | ITIDY_PICTFMT_PNG | ITIDY_PICTFMT_GIF | \
+     ITIDY_PICTFMT_BMP  | ITIDY_PICTFMT_ACBM | ITIDY_PICTFMT_OTHER)
 
 /* Logging and Debug Defaults */
 #define DEFAULT_LOG_LEVEL                                  4       /* Default: DISABLED level (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR, 4=DISABLED) */

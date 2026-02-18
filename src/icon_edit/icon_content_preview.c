@@ -263,14 +263,73 @@ BOOL itidy_is_iff_preview_type(const char *type_token)
         return FALSE;
     }
 
-    // Direct match — only "ilbm" (standard IFF ILBM picture format)
-    // Future: could also match "acbm" or broader "picture" category
+    // Strictly ILBM only — the native iffparse.library path handles this.
+    // All other picture formats are routed through itidy_is_picture_preview_type().
     if (strcmp(type_token, "ilbm") == 0)
     {
         return TRUE;
     }
 
     return FALSE;
+}
+
+/*========================================================================*/
+/* itidy_is_picture_preview_type                                          */
+/*========================================================================*/
+
+BOOL itidy_is_picture_preview_type(const char *type_token)
+{
+    if (type_token == NULL || type_token[0] == '\0')
+    {
+        return FALSE;
+    }
+
+    // Non-ILBM picture formats handled via picture.datatype.
+    // "ilbm" is deliberately excluded here (handled by itidy_is_iff_preview_type).
+    if (strcmp(type_token, "png")       == 0) return TRUE;
+    if (strcmp(type_token, "gif")       == 0) return TRUE;
+    if (strcmp(type_token, "jpeg")      == 0) return TRUE;
+    if (strcmp(type_token, "bmp")       == 0) return TRUE;
+    if (strcmp(type_token, "acbm")      == 0) return TRUE;
+    if (strcmp(type_token, "tiff")      == 0) return TRUE;
+    if (strcmp(type_token, "targa")     == 0) return TRUE;
+    if (strcmp(type_token, "pcx")       == 0) return TRUE;
+    if (strcmp(type_token, "ico")       == 0) return TRUE;
+    if (strcmp(type_token, "sunraster") == 0) return TRUE;
+    if (strcmp(type_token, "reko")      == 0) return TRUE;
+    if (strcmp(type_token, "brush")     == 0) return TRUE;
+    if (strcmp(type_token, "PicView")   == 0) return TRUE;
+
+    return FALSE;
+}
+
+/*========================================================================*/
+/* type_token_to_format_bit — map type token to ITIDY_PICTFMT_* bit       */
+/*========================================================================*/
+
+/**
+ * @brief Return the ITIDY_PICTFMT_* bitmask bit for a type token.
+ *
+ * Used to check whether a format is enabled in
+ * prefs->deficons_picture_formats_enabled before attempting thumbnail
+ * generation. Returns ITIDY_PICTFMT_OTHER for any format not explicitly
+ * listed, so unknown/third-party formats inherit the OTHER toggle.
+ *
+ * Note: "ilbm" returns ITIDY_PICTFMT_ILBM and is checked in
+ * apply_iff_preview() rather than apply_picture_preview().
+ */
+static ULONG type_token_to_format_bit(const char *type_token)
+{
+    if (type_token == NULL) return ITIDY_PICTFMT_OTHER;
+
+    if (strcmp(type_token, "ilbm")  == 0) return ITIDY_PICTFMT_ILBM;
+    if (strcmp(type_token, "acbm")  == 0) return ITIDY_PICTFMT_ACBM;
+    if (strcmp(type_token, "png")   == 0) return ITIDY_PICTFMT_PNG;
+    if (strcmp(type_token, "gif")   == 0) return ITIDY_PICTFMT_GIF;
+    if (strcmp(type_token, "jpeg")  == 0) return ITIDY_PICTFMT_JPEG;
+    if (strcmp(type_token, "bmp")   == 0) return ITIDY_PICTFMT_BMP;
+
+    return ITIDY_PICTFMT_OTHER;
 }
 
 /*========================================================================*/
@@ -733,6 +792,8 @@ static int apply_iff_preview(const char *source_path,
     iff_params.base.safe_width = img.width;
     iff_params.base.safe_height = img.height;
     iff_params.base.bg_color_index = ITIDY_NO_BG_COLOR;
+    iff_params.allow_upscale    = prefs ? prefs->deficons_upscale_thumbnails : FALSE;
+    iff_params.try_magenta_key  = TRUE;  /* ILBM/ACBM can use magenta key transparency */
 
     log_debug(LOG_ICONS, "apply_iff_preview: params ready — "
               "buffer=%ux%u\n",
@@ -752,7 +813,8 @@ static int apply_iff_preview(const char *source_path,
                      source_path);
             
             /* Try datatype-based fallback (handles HAM, HAM8, and other formats) */
-            render_result = itidy_render_via_datatype(source_path, &iff_params, &img);
+            render_result = itidy_render_via_datatype(source_path, &iff_params, &img,
+                                                      TRUE /* ilbm_heuristics */);
             if (render_result != 0)
             {
                 log_warning(LOG_ICONS, "apply_iff_preview: "
@@ -1056,6 +1118,553 @@ static int apply_iff_preview(const char *source_path,
 }
 
 /*========================================================================*/
+/* itidy_format_supports_transparency — per-format transparency check     */
+/*========================================================================*/
+
+/**
+ * @brief Returns TRUE if the image format can carry transparency information.
+ *
+ * Used to:
+ *  - Gate the magenta key-colour sweep (JPEG/BMP never have transparency, so
+ *    the 6x6x6 palette entry #FF00FF at index 185 must NOT be treated as key).
+ *  - Force border frames on opaque-format thumbnails (without transparency a
+ *    borderless icon blends into the Workbench window background).
+ *
+ * Formats that CAN carry transparency (via PDTA_AlphaChannel or magenta key):
+ *   png, gif, ilbm, acbm, other (unknown).
+ * Formats that CANNOT: jpeg, bmp.
+ */
+static BOOL itidy_format_can_be_transparent(const char *type_token)
+{
+    if (type_token == NULL)
+        return FALSE;
+    if (Stricmp((STRPTR)type_token, (STRPTR)"jpeg") == 0) return FALSE;
+    if (Stricmp((STRPTR)type_token, (STRPTR)"jpg")  == 0) return FALSE;
+    if (Stricmp((STRPTR)type_token, (STRPTR)"bmp")  == 0) return FALSE;
+    return TRUE;  /* png, gif, ilbm, acbm, other -- format CAN be transparent */
+}
+
+/**
+ * @brief Returns TRUE if this format uses Amiga magenta (#FF00FF) as a
+ *        transparency key colour, so the palette sweep should be attempted
+ *        when picture.datatype does NOT report PDTA_AlphaChannel=TRUE.
+ *
+ * GIF transparency is reported by the GIF89a Graphic Control Extension, which
+ * a modern GIF datatype surfaces via PDTA_AlphaChannel (the RGBA path).
+ * If PDTA_AlphaChannel=FALSE for a GIF it means the datatype has confirmed
+ * the image carries NO transparency -- running the magenta sweep would be a
+ * false positive because the 6x6x6 cube always contains #FF00FF at index 185.
+ *
+ * PNG files exported from old Amiga tools sometimes use magenta as a key
+ * rather than a proper alpha channel, so PNG keeps the sweep enabled.
+ *
+ * Formats that USE magenta key: png, ilbm, acbm, other (unknown).
+ * Formats that do NOT:          jpeg, bmp, gif.
+ */
+static BOOL itidy_format_uses_magenta_key(const char *type_token)
+{
+    if (type_token == NULL)
+        return FALSE;
+    /* Formats that are always opaque -- sweep would always false-positive */
+    if (Stricmp((STRPTR)type_token, (STRPTR)"jpeg") == 0) return FALSE;
+    if (Stricmp((STRPTR)type_token, (STRPTR)"jpg")  == 0) return FALSE;
+    if (Stricmp((STRPTR)type_token, (STRPTR)"bmp")  == 0) return FALSE;
+    /* GIF: transparency only via PDTA_AlphaChannel (already handled by RGBA
+     * path).  If PDTA_AlphaChannel=FALSE the datatype confirmed no transparency
+     * exists -- the 6x6x6 cube's guaranteed #FF00FF would be a false positive. */
+    if (Stricmp((STRPTR)type_token, (STRPTR)"gif")  == 0) return FALSE;
+    return TRUE;  /* png, ilbm, acbm, other -- may use magenta key */
+}
+
+/*========================================================================*/
+/* apply_picture_preview — datatype-only thumbnail pipeline               */
+/*========================================================================*/
+
+/**
+ * @brief Render a picture thumbnail via picture.datatype for non-ILBM formats.
+ *
+ * Pipeline:
+ *   1. Check the per-format enable bitmask (graceful skip if disabled)
+ *   2. Load the target icon (Workbench metadata)
+ *   3. Create blank pixel buffer at preferred size
+ *   4. Build IFF render params (full-canvas safe area, no aspect heuristics)
+ *   5. Call itidy_render_via_datatype() — DT opens file, reads RGB(A), scales
+ *      If DT is not installed, NewDTObject() returns NULL → PREVIEW_NOT_APPLICABLE
+ *   6. Crop pixel buffer to exact thumbnail dimensions
+ *   7. Re-enable transparency if DT reported alpha (PNG, GIF etc.)
+ *   8. Palette reduction / Ultra mode (shared with IFF pipeline)
+ *   9. Apply, stamp ToolTypes, save
+ *
+ * Graceful datatype-missing handling: itidy_render_via_datatype() calls
+ * NewDTObject() which returns NULL when no matching datatype is installed.
+ * The function logs a warning and returns ITIDY_PREVIEW_NOT_SUPPORTED,
+ * which this function translates to ITIDY_PREVIEW_NOT_APPLICABLE so the
+ * file gets a standard (non-thumbnail) icon instead of an error.
+ */
+static int apply_picture_preview(const char *source_path,
+                                 const char *type_token,
+                                 ULONG source_size,
+                                 const struct DateStamp *source_date,
+                                 void (*progress_callback)(void *, const char *, ULONG, ULONG),
+                                 void *progress_user_data)
+{
+    struct DiskObject *target_icon = NULL;
+    struct DiskObject *clone = NULL;
+    iTidy_IconImageData img;
+    iTidy_IFFRenderParams iff_params;
+    const LayoutPreferences *prefs;
+    const char *source_name;
+    UWORD icon_dim;
+    ULONG format_bit;
+    int render_result;
+    int result = ITIDY_PREVIEW_FAILED;
+    UBYTE *raw_rgb24 = NULL;      /* Pre-quantization RGB24 buffer for Ultra mode */
+
+    memset(&img, 0, sizeof(img));
+    memset(&iff_params, 0, sizeof(iff_params));
+
+    log_info(LOG_ICONS, "apply_picture_preview: '%s' (type=%s)\n",
+             source_path, type_token);
+
+    prefs = GetGlobalPreferences();
+
+    /*--------------------------------------------------------------------*/
+    /* Step 1: Per-format enable check                                     */
+    /*--------------------------------------------------------------------*/
+
+    format_bit = type_token_to_format_bit(type_token);
+    if (prefs != NULL &&
+        (prefs->deficons_picture_formats_enabled & format_bit) == 0)
+    {
+        log_info(LOG_ICONS, "apply_picture_preview: format '%s' disabled "
+                 "by user preference — skipping\n", type_token);
+        return ITIDY_PREVIEW_NOT_APPLICABLE;
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 2: Load target icon (Workbench metadata)                       */
+    /*--------------------------------------------------------------------*/
+
+    target_icon = GetDiskObject((STRPTR)source_path);
+    if (target_icon == NULL)
+    {
+        log_error(LOG_ICONS, "apply_picture_preview: "
+                  "cannot load target icon for '%s'\n", source_path);
+        return ITIDY_PREVIEW_FAILED;
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 3: Create blank pixel buffer at preferred icon size            */
+    /*--------------------------------------------------------------------*/
+
+    icon_dim = itidy_get_iff_icon_dimensions(prefs);
+
+    log_info(LOG_ICONS, "apply_picture_preview: icon size=%ux%u\n",
+             (unsigned)icon_dim, (unsigned)icon_dim);
+
+    if (!itidy_icon_image_create_blank(icon_dim, icon_dim, 0, &img))
+    {
+        log_error(LOG_ICONS, "apply_picture_preview: blank image creation failed\n");
+        FreeDiskObject(target_icon);
+        return ITIDY_PREVIEW_FAILED;
+    }
+
+    /* Placeholder palette — 256 entries; DT path overwrites with 6x6x6 cube */
+    {
+        ULONG pal_entries = 256;
+        img.palette_size_normal = pal_entries;
+        img.palette_normal = (struct ColorRegister *)whd_malloc(
+            pal_entries * sizeof(struct ColorRegister));
+        if (img.palette_normal == NULL)
+        {
+            log_error(LOG_ICONS, "apply_picture_preview: palette alloc failed\n");
+            itidy_icon_image_free(&img);
+            FreeDiskObject(target_icon);
+            return ITIDY_PREVIEW_FAILED;
+        }
+        memset(img.palette_normal, 0, pal_entries * sizeof(struct ColorRegister));
+        img.palette_normal[0].red   = 0xAA;
+        img.palette_normal[0].green = 0xAA;
+        img.palette_normal[0].blue  = 0xAA;
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 4: Build render parameters                                     */
+    /*--------------------------------------------------------------------*/
+
+    iff_params.progress_callback  = (iTidy_ProgressCallback)progress_callback;
+    iff_params.progress_user_data = progress_user_data;
+    iff_params.last_progress_ticks = 0;
+
+    if (progress_user_data != NULL)
+    {
+        struct iTidyMainProgressWindow *pw =
+            (struct iTidyMainProgressWindow *)progress_user_data;
+        iff_params.cancel_flag = &pw->cancel_requested;
+    }
+    else
+    {
+        iff_params.cancel_flag = NULL;
+    }
+
+    iff_params.base.pixel_buffer  = img.pixel_data_normal;
+    iff_params.base.buffer_width  = img.width;
+    iff_params.base.buffer_height = img.height;
+    iff_params.base.safe_left   = 0;
+    iff_params.base.safe_top    = 0;
+    iff_params.base.safe_width  = img.width;
+    iff_params.base.safe_height = img.height;
+    iff_params.base.bg_color_index = ITIDY_NO_BG_COLOR;
+    iff_params.allow_upscale   = prefs ? prefs->deficons_upscale_thumbnails : FALSE;
+    iff_params.try_magenta_key = itidy_format_uses_magenta_key(type_token);
+
+    /* Request raw pre-quantization RGB24 when Ultra mode is active.       */
+    /* The render function will transfer ownership of its thumb_rgb24      */
+    /* buffer here rather than freeing it, giving Ultra mode the true      */
+    /* pixel values before 6x6x6 snapping degrades them to ~30 colours.   */
+    if (prefs != NULL && prefs->deficons_ultra_mode)
+    {
+        iff_params.raw_rgb24_out         = &raw_rgb24;
+        iff_params.raw_rgb24_pixel_count = 0;
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 5: Render via picture.datatype                                 */
+    /*         ilbm_heuristics=FALSE: suppress Amiga interlace/hires       */
+    /*         aspect corrections — irrelevant for PNG/GIF/JPEG/BMP.      */
+    /*                                                                     */
+    /* Graceful missing-datatype handling:                                 */
+    /*   NewDTObject() returns NULL when no matching datatype is installed. */
+    /*   itidy_render_via_datatype() returns ITIDY_PREVIEW_NOT_SUPPORTED.  */
+    /*   We map that to NOT_APPLICABLE so the file gets a standard icon.  */
+    /*--------------------------------------------------------------------*/
+
+    render_result = itidy_render_via_datatype(source_path, &iff_params, &img,
+                                              FALSE /* ilbm_heuristics */);
+    if (render_result != 0)
+    {
+        if (render_result == ITIDY_PREVIEW_NOT_SUPPORTED)
+        {
+            log_warning(LOG_ICONS, "apply_picture_preview: "
+                        "datatype not available or format unrecognised for '%s' "
+                        "(type=%s) -- no thumbnail will be generated\n",
+                        source_path, type_token);
+            if (raw_rgb24) { whd_free(raw_rgb24); raw_rgb24 = NULL; }
+            itidy_icon_image_free(&img);
+            FreeDiskObject(target_icon);
+            return ITIDY_PREVIEW_NOT_APPLICABLE;
+        }
+        log_warning(LOG_ICONS, "apply_picture_preview: "
+                    "render failed for '%s' (error=%d)\n", source_path, render_result);
+        if (raw_rgb24) { whd_free(raw_rgb24); raw_rgb24 = NULL; }
+        itidy_icon_image_free(&img);
+        FreeDiskObject(target_icon);
+        return ITIDY_PREVIEW_FAILED;
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 6: Crop pixel buffer to exact thumbnail dimensions             */
+    /*--------------------------------------------------------------------*/
+
+    {
+        UWORD thumb_w  = iff_params.output_width;
+        UWORD thumb_h  = iff_params.output_height;
+        UWORD src_ox   = iff_params.output_offset_x;
+        UWORD src_oy   = iff_params.output_offset_y;
+        ULONG tight_sz = (ULONG)thumb_w * (ULONG)thumb_h;
+        UBYTE *tight_buf;
+        UWORD row;
+
+        tight_buf = (UBYTE *)whd_malloc(tight_sz);
+        if (tight_buf == NULL)
+        {
+            log_error(LOG_ICONS, "apply_picture_preview: crop alloc failed\n");
+            if (raw_rgb24) { whd_free(raw_rgb24); raw_rgb24 = NULL; }
+            itidy_icon_image_free(&img);
+            FreeDiskObject(target_icon);
+            return ITIDY_PREVIEW_FAILED;
+        }
+
+        for (row = 0; row < thumb_h; row++)
+        {
+            ULONG src_off = (ULONG)(src_oy + row) * (ULONG)img.width + (ULONG)src_ox;
+            ULONG dst_off = (ULONG)row * (ULONG)thumb_w;
+            memcpy(tight_buf + dst_off, img.pixel_data_normal + src_off, thumb_w);
+        }
+
+        whd_free(img.pixel_data_normal);
+        img.pixel_data_normal = tight_buf;
+        img.width  = thumb_w;
+        img.height = thumb_h;
+
+        if (img.pixel_data_selected != NULL)
+        {
+            whd_free(img.pixel_data_selected);
+            img.pixel_data_selected = NULL;
+        }
+        img.has_selected_image      = FALSE;
+        img.has_real_selected_image = FALSE;
+
+        /*----------------------------------------------------------------*/
+        /* Step 7: Transparency + Border decisions                         */
+        /*                                                                  */
+        /* Transparency:                                                    */
+        /*   Only enable if BOTH the datatype reported alpha/key colour    */
+        /*   AND the format is capable of carrying transparency.           */
+        /*   JPEG and BMP never have transparency -- their 6x6x6 palette   */
+        /*   always contains #FF00FF at index 185 regardless of image      */
+        /*   content, so src_has_alpha must be ignored for those formats.  */
+        /*                                                                  */
+        /* Borders:                                                         */
+        /*   For opaque formats (JPEG, BMP) always show borders regardless  */
+        /*   of the user's 'Enable borders' preference.  Without borders    */
+        /*   and without transparency the icon blends into the Workbench    */
+        /*   window background.                                             */
+        /*----------------------------------------------------------------*/
+        {
+            BOOL fmt_can_be_transparent = itidy_format_can_be_transparent(type_token);
+
+            if (iff_params.src_has_alpha && fmt_can_be_transparent)
+            {
+                img.transparent_color_normal   = 0;
+                img.transparent_color_selected = 0;
+                log_info(LOG_ICONS,
+                         "apply_picture_preview: "
+                         "alpha/key transparency enabled -- transparent_color_normal=0\n");
+            }
+            else
+            {
+                img.transparent_color_normal   = -1;
+                img.transparent_color_selected = -1;
+            }
+
+            if (!fmt_can_be_transparent)
+            {
+                /* Opaque format: force borders on so icon has a visible frame */
+                img.is_frameless = FALSE;
+                log_info(LOG_ICONS,
+                         "apply_picture_preview: "
+                         "opaque format -- borders forced on, transparent_color_normal=-1\n");
+            }
+            else
+            {
+                img.is_frameless = prefs ? !prefs->deficons_enable_thumbnail_borders : FALSE;
+            }
+
+            log_info(LOG_ICONS, "apply_picture_preview: cropped to %ux%u, "
+                     "alpha=%s, fmt_transparent=%s, frameless=%s\n",
+                     (unsigned)thumb_w, (unsigned)thumb_h,
+                     iff_params.src_has_alpha ? "yes" : "no",
+                     fmt_can_be_transparent   ? "yes" : "no",
+                     img.is_frameless         ? "yes" : "no");
+        }
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 8a: Palette reduction                                          */
+    /*--------------------------------------------------------------------*/
+
+    if (prefs != NULL && prefs->deficons_max_icon_colors < 256
+        && !prefs->deficons_ultra_mode)
+    {
+        if (!itidy_reduce_palette(&img,
+                                  prefs->deficons_max_icon_colors,
+                                  prefs->deficons_dither_method,
+                                  prefs->deficons_lowcolor_mapping))
+        {
+            log_warning(LOG_ICONS, "apply_picture_preview: "
+                        "palette reduction failed (non-fatal)\n");
+        }
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 8b: Ultra Quality mode                                         */
+    /*--------------------------------------------------------------------*/
+
+    if (prefs != NULL && prefs->deficons_ultra_mode)
+    {
+        ULONG pixel_count = (ULONG)img.width * (ULONG)img.height;
+        UBYTE *rgb24_buf  = NULL;
+        BOOL  rgb24_owned = FALSE;  /* TRUE = we allocated rgb24_buf, must free it */
+
+        log_info(LOG_ICONS, "apply_picture_preview: Ultra mode -- %ux%u\n",
+                 (unsigned)img.width, (unsigned)img.height);
+
+        /* Prefer the pre-quantization RGB24 buffer handed off by the     */
+        /* render function (params->raw_rgb24_out).  This contains the    */
+        /* true area-average-downscaled pixel values BEFORE they were     */
+        /* snapped to the coarse 6x6x6 grid, so Ultra mode sees hundreds  */
+        /* of distinct colours instead of the ~30 grid-snapped tones.     */
+        if (raw_rgb24 != NULL && iff_params.raw_rgb24_pixel_count == pixel_count)
+        {
+            rgb24_buf  = raw_rgb24;
+            raw_rgb24  = NULL;   /* owned by rgb24_buf from here */
+            rgb24_owned = TRUE;
+            log_info(LOG_ICONS, "apply_picture_preview: "
+                     "using pre-quantization RGB24 for Ultra palette generation\n");
+        }
+        else
+        {
+            /* Fallback: expand from the indexed (6x6x6) palette.        */
+            /* This path is kept for safety but should rarely be taken.  */
+            if (raw_rgb24 != NULL)
+            {
+                log_warning(LOG_ICONS, "apply_picture_preview: "
+                            "raw RGB24 pixel count mismatch "
+                            "(%lu vs %lu) -- falling back to indexed expand\n",
+                            (unsigned long)iff_params.raw_rgb24_pixel_count,
+                            (unsigned long)pixel_count);
+                whd_free(raw_rgb24);
+                raw_rgb24 = NULL;
+            }
+            rgb24_buf = (UBYTE *)whd_malloc(pixel_count * 3);
+            if (rgb24_buf != NULL)
+            {
+                ULONG i;
+                rgb24_owned = TRUE;
+                for (i = 0; i < pixel_count; i++)
+                {
+                    UBYTE idx = img.pixel_data_normal[i];
+                    if (idx < img.palette_size_normal)
+                    {
+                        rgb24_buf[i * 3 + 0] = img.palette_normal[idx].red;
+                        rgb24_buf[i * 3 + 1] = img.palette_normal[idx].green;
+                        rgb24_buf[i * 3 + 2] = img.palette_normal[idx].blue;
+                    }
+                }
+            }
+        }
+
+        if (rgb24_buf != NULL)
+        {
+            struct ColorRegister *ultra_pal;
+
+            /* Generate optimal 256-color palette from actual pixel content */
+            ultra_pal = (struct ColorRegister *)whd_malloc(
+                256 * sizeof(struct ColorRegister));
+            if (ultra_pal != NULL)
+            {
+                UWORD ultra_pal_size = 0;
+
+                if (itidy_ultra_generate_palette(rgb24_buf, pixel_count,
+                                                  256, ultra_pal, &ultra_pal_size))
+                {
+                    /* Remap pixels to the new optimal palette */
+                    itidy_ultra_remap_to_indexed(rgb24_buf, pixel_count,
+                                                 ultra_pal, ultra_pal_size,
+                                                 img.pixel_data_normal);
+
+                    /* Transfer palette ownership */
+                    whd_free(img.palette_normal);
+                    img.palette_normal      = ultra_pal;
+                    img.palette_size_normal = ultra_pal_size;
+                    ultra_pal = NULL;
+
+                    /* Re-evaluate transparency after palette rebuild */
+                    if (iff_params.src_has_alpha)
+                        img.transparent_color_normal = 0;
+
+                    log_info(LOG_ICONS, "apply_picture_preview: "
+                             "Ultra mode produced %u-color palette\n",
+                             (unsigned)ultra_pal_size);
+                }
+                else
+                {
+                    log_warning(LOG_ICONS, "apply_picture_preview: "
+                                "Ultra palette generation failed (non-fatal)\n");
+                }
+
+                if (ultra_pal != NULL)
+                    whd_free(ultra_pal);
+            }
+
+            if (rgb24_owned)
+                whd_free(rgb24_buf);
+            rgb24_buf = NULL;
+        }
+        else
+        {
+            log_warning(LOG_ICONS, "apply_picture_preview: "
+                        "Ultra RGB24 alloc failed (non-fatal)\n");
+        }
+
+        /* Ultra + Dithering: reduce further if user wants < 256 colors */
+        if (prefs->deficons_max_icon_colors < 256)
+        {
+            if (!itidy_reduce_palette(&img,
+                                      prefs->deficons_max_icon_colors,
+                                      prefs->deficons_dither_method,
+                                      prefs->deficons_lowcolor_mapping))
+            {
+                log_warning(LOG_ICONS, "apply_picture_preview: "
+                            "Ultra + reduction failed (non-fatal)\n");
+            }
+        }
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 9: Apply to DiskObject clone                                   */
+    /*--------------------------------------------------------------------*/
+
+    itidy_icon_image_dump(&img, &iff_params.base, source_path);
+
+    clone = itidy_icon_image_apply(target_icon, &img);
+    if (clone == NULL)
+    {
+        log_error(LOG_ICONS, "apply_picture_preview: image apply failed\n");
+        if (raw_rgb24) { whd_free(raw_rgb24); raw_rgb24 = NULL; }
+        itidy_iff_params_free(&iff_params);
+        itidy_icon_image_free(&img);
+        FreeDiskObject(target_icon);
+        return ITIDY_PREVIEW_FAILED;
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 10: Stamp ToolTypes                                            */
+    /*--------------------------------------------------------------------*/
+
+    source_name = (const char *)FilePart((STRPTR)source_path);
+
+    if (!itidy_stamp_created_tooltypes(clone, ITIDY_KIND_IFF_THUMBNAIL,
+                                       source_name, source_size, source_date))
+    {
+        log_warning(LOG_ICONS, "apply_picture_preview: "
+                    "ToolType stamp failed (non-fatal)\n");
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 11: Save                                                       */
+    /*--------------------------------------------------------------------*/
+
+    if (itidy_icon_image_save(source_path, clone))
+    {
+        log_info(LOG_ICONS, "apply_picture_preview: saved thumbnail for '%s'\n",
+                 source_path);
+        result = ITIDY_PREVIEW_APPLIED;
+    }
+    else
+    {
+        log_error(LOG_ICONS, "apply_picture_preview: save failed for '%s'\n",
+                  source_path);
+        result = ITIDY_PREVIEW_FAILED;
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 12: Cleanup                                                    */
+    /*--------------------------------------------------------------------*/
+
+    if (raw_rgb24) { whd_free(raw_rgb24); raw_rgb24 = NULL; }
+    itidy_iff_params_free(&iff_params);
+    FreeDiskObject(clone);
+    clone = NULL;
+    itidy_icon_image_free(&img);
+    FreeDiskObject(target_icon);
+    target_icon = NULL;
+
+    return result;
+}
+
+/*========================================================================*/
 /* itidy_apply_content_preview                                            */
 /*========================================================================*/
 
@@ -1123,10 +1732,33 @@ int itidy_apply_content_preview(const char *source_path,
                       source_path, type_token);
             return ITIDY_PREVIEW_NOT_APPLICABLE;
         }
-        
+
+        /* Check per-format ILBM bitmask */
+        if (prefs && !(prefs->deficons_picture_formats_enabled & ITIDY_PICTFMT_ILBM))
+        {
+            log_debug(LOG_ICONS, "Skipping IFF picture preview for '%s' "
+                      "(ILBM format disabled by user)\n", source_path);
+            return ITIDY_PREVIEW_NOT_APPLICABLE;
+        }
+
         return apply_iff_preview(source_path, type_token,
                                  source_size, source_date,
                                  progress_callback, progress_user_data);
+    }
+    else if (itidy_is_picture_preview_type(type_token))
+    {
+        /* Check if picture preview feature is disabled by user */
+        if (prefs && !prefs->deficons_enable_picture_previews)
+        {
+            log_debug(LOG_ICONS, "Skipping picture preview for '%s' (type=%s) - "
+                      "picture preview feature disabled by user\n",
+                      source_path, type_token);
+            return ITIDY_PREVIEW_NOT_APPLICABLE;
+        }
+
+        return apply_picture_preview(source_path, type_token,
+                                     source_size, source_date,
+                                     progress_callback, progress_user_data);
     }
     else
     {

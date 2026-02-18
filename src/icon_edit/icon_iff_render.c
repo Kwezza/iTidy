@@ -1735,7 +1735,8 @@ static void quantize_rgb24_to_cube(const UBYTE *src_rgb24,
  */
 int itidy_render_via_datatype(const char *source_path,
                                iTidy_IFFRenderParams *params,
-                               iTidy_IconImageData *dest_img)
+                               iTidy_IconImageData *dest_img,
+                               BOOL ilbm_heuristics)
 {
     Object *dt_obj = NULL;
     struct Library *DataTypesBase = NULL;
@@ -1750,6 +1751,11 @@ int itidy_render_via_datatype(const char *source_path,
     ULONG modeid;
     BOOL is_hires = FALSE;
     BOOL is_lace = FALSE;
+    BOOL dt_has_alpha = FALSE;   /* PDTA_AlphaChannel result */
+    UWORD bytes_per_pixel = 3;  /* 3 = RGB, 4 = RGBA */
+
+    if (params != NULL)
+        params->src_has_alpha = FALSE;  /* default: no alpha */
 
     log_info(LOG_ICONS, "itidy_render_via_datatype: attempting datatype fallback for '%s'\n",
              source_path);
@@ -1761,6 +1767,9 @@ int itidy_render_via_datatype(const char *source_path,
         log_error(LOG_ICONS, "itidy_render_via_datatype: failed to open datatypes.library\n");
         return ITIDY_PREVIEW_NOT_SUPPORTED;
     }
+
+    /* Progress: phase 1/3 -- starting datatype open */
+    itidy_report_progress_throttled(params, "Loading image", 0, 3, 0);
 
     /* Open the image via datatypes */
     dt_obj = NewDTObject((APTR)source_path,
@@ -1776,6 +1785,9 @@ int itidy_render_via_datatype(const char *source_path,
         CloseLibrary(DataTypesBase);
         return ITIDY_PREVIEW_NOT_SUPPORTED;
     }
+
+    /* Progress: phase 1/3 complete -- datatype opened */
+    itidy_report_progress_throttled(params, "Loading image", 1, 3, 0);
 
     /* Get bitmap header for dimensions */
     if (GetDTAttrs(dt_obj, PDTA_BitMapHeader, &bmhd, TAG_DONE) != 1 || bmhd == NULL)
@@ -1796,6 +1808,25 @@ int itidy_render_via_datatype(const char *source_path,
         goto cleanup;
     }
 
+    /* Check for alpha channel (PDTA_AlphaChannel requires picture.datatype V47+) */
+    {
+        ULONG alpha_val = 0;
+        if (GetDTAttrs(dt_obj, PDTA_AlphaChannel, &alpha_val, TAG_DONE) == 1
+            && alpha_val != 0)
+        {
+            dt_has_alpha = TRUE;
+            bytes_per_pixel = 4;
+            log_info(LOG_ICONS,
+                     "itidy_render_via_datatype: PDTA_AlphaChannel=TRUE "
+                     "-- using RGBA mode\n");
+        }
+        else
+        {
+            log_info(LOG_ICONS,
+                     "itidy_render_via_datatype: no alpha channel -- using RGB mode\n");
+        }
+    }
+
     /* Get mode ID for aspect ratio correction */
     if (GetDTAttrs(dt_obj, PDTA_ModeID, &modeid, TAG_DONE) == 1)
     {
@@ -1805,20 +1836,24 @@ int itidy_render_via_datatype(const char *source_path,
                  modeid, is_hires ? "yes" : "no", is_lace ? "yes" : "no");
     }
 
-    /* Infer hires from width if ModeID didn't indicate it (like normal IFF code) */
-    if (!is_hires && src_width >= ITIDY_HIRES_WIDTH_THRESHOLD)
+    /* Infer hires/interlace from pixel dimensions only when processing ILBM */
+    /* files where Amiga-specific screen modes apply.  PNG/JPEG/GIF/BMP use  */
+    /* square pixels and these shortcuts would corrupt their dimensions.     */
+    if (ilbm_heuristics)
     {
-        is_hires = TRUE;
-        log_info(LOG_ICONS, "itidy_render_via_datatype: inferred hires from width %lu "
-                 "(ModeID lacked HIRES flag)\n", src_width);
-    }
+        if (!is_hires && src_width >= ITIDY_HIRES_WIDTH_THRESHOLD)
+        {
+            is_hires = TRUE;
+            log_info(LOG_ICONS, "itidy_render_via_datatype: inferred hires from width %lu "
+                     "(ModeID lacked HIRES flag)\n", src_width);
+        }
 
-    /* Infer interlace from height if ModeID didn't indicate it */
-    if (!is_lace && src_height >= 400)
-    {
-        is_lace = TRUE;
-        log_info(LOG_ICONS, "itidy_render_via_datatype: inferred interlace from height %lu "
-                 "(ModeID lacked LACE flag)\n", src_height);
+        if (!is_lace && src_height >= 400)
+        {
+            is_lace = TRUE;
+            log_info(LOG_ICONS, "itidy_render_via_datatype: inferred interlace from height %lu "
+                     "(ModeID lacked LACE flag)\n", src_height);
+        }
     }
 
     /* Apply aspect ratio corrections */
@@ -1839,8 +1874,8 @@ int itidy_render_via_datatype(const char *source_path,
                   src_height, display_height);
     }
 
-    /* Allocate RGB24 buffer (3 bytes per pixel) */
-    rgb24_size = src_width * src_height * 3;
+    /* Allocate RGB/RGBA buffer */
+    rgb24_size = src_width * src_height * (ULONG)bytes_per_pixel;
     rgb24_buffer = (UBYTE *)whd_malloc(rgb24_size);
     if (rgb24_buffer == NULL)
     {
@@ -1849,21 +1884,56 @@ int itidy_render_via_datatype(const char *source_path,
         goto cleanup;
     }
 
-    /* Read pixel data as RGB24 via PDTM_READPIXELARRAY */
-    if (DoMethod(dt_obj, PDTM_READPIXELARRAY,
-                 rgb24_buffer,            /* PixelArray (APTR) */
-                 PBPAFMT_RGB,             /* PixelFormat (24-bit RGB) */
-                 src_width * 3,           /* PixelArrayMod (bytes per row) */
-                 0, 0,                    /* Left, Top */
-                 src_width, src_height)   /* Width, Height */
-        == 0)
+    /* Read pixel data: RGB24 normally, RGBA32 when DT reported alpha */
+    if (dt_has_alpha)
     {
-        log_error(LOG_ICONS, "itidy_render_via_datatype: PDTM_READPIXELARRAY failed\n");
-        goto cleanup;
+        if (DoMethod(dt_obj, PDTM_READPIXELARRAY,
+                     rgb24_buffer,
+                     PBPAFMT_RGBA,
+                     src_width * 4,
+                     0, 0,
+                     src_width, src_height)
+            == 0)
+        {
+            /* Some DTs claim PDTA_AlphaChannel but don't support RGBA readback. */
+            /* Fall back to RGB in that case.                                    */
+            log_warning(LOG_ICONS, "itidy_render_via_datatype: "
+                        "RGBA readback failed -- retrying as RGB24\n");
+            dt_has_alpha = FALSE;
+            bytes_per_pixel = 3;
+            if (DoMethod(dt_obj, PDTM_READPIXELARRAY,
+                         rgb24_buffer,
+                         PBPAFMT_RGB,
+                         src_width * 3,
+                         0, 0,
+                         src_width, src_height)
+                == 0)
+            {
+                log_error(LOG_ICONS, "itidy_render_via_datatype: PDTM_READPIXELARRAY failed\n");
+                goto cleanup;
+            }
+        }
+    }
+    else
+    {
+        if (DoMethod(dt_obj, PDTM_READPIXELARRAY,
+                     rgb24_buffer,
+                     PBPAFMT_RGB,
+                     src_width * 3,
+                     0, 0,
+                     src_width, src_height)
+            == 0)
+        {
+            log_error(LOG_ICONS, "itidy_render_via_datatype: PDTM_READPIXELARRAY failed\n");
+            goto cleanup;
+        }
     }
 
-    log_info(LOG_ICONS, "itidy_render_via_datatype: read %lux%lu RGB24 pixels (%lu bytes)\n",
-             src_width, src_height, rgb24_size);
+    /* Progress: phase 2/3 -- pixel data read */
+    itidy_report_progress_throttled(params, "Decoding image", 2, 3, 0);
+
+    log_info(LOG_ICONS, "itidy_render_via_datatype: read %lux%lu %s pixels (%lu bytes)\n",
+             src_width, src_height, dt_has_alpha ? "RGBA32" : "RGB24", rgb24_size);
 
     /*--------------------------------------------------------------------*/
     /* Calculate output thumbnail dimensions                               */
@@ -1884,6 +1954,19 @@ int itidy_render_via_datatype(const char *source_path,
         if (scale_fp == 0)
         {
             scale_fp = 1 << 16;  /* 1:1 minimum */
+        }
+
+        /* No-upscale guard: if source fits entirely within the safe area
+         * (scale_fp < 1.0) and upscaling is not requested, clamp scale to
+         * 1:1 so the output dimensions never exceed the source dimensions.
+         * The thumbnail will appear at its natural pixel size, centred in
+         * the safe area, rather than being stretched to fill it.           */
+        if (params != NULL && !params->allow_upscale && scale_fp < (1UL << 16))
+        {
+            log_debug(LOG_ICONS,
+                      "itidy_render_via_datatype: no-upscale: "
+                      "scale_fp=0x%08lX -> clamped to 1:1\n", scale_fp);
+            scale_fp = 1UL << 16;
         }
 
         /* Output dimensions at this scale */
@@ -1915,9 +1998,10 @@ int itidy_render_via_datatype(const char *source_path,
                  (unsigned)offset_x, (unsigned)offset_y);
 
         /*----------------------------------------------------------------*/
-        /* Step 1: Downscale RGB24 to thumbnail size (area-average)       */
-        /*         This processes ALL source pixels but produces only a    */
-        /*         tiny output. No per-pixel palette search needed here.  */
+        /* Step 1: Downscale to thumbnail size (area-average in RGB space) */
+        /* When RGBA, extract only the RGB component row into a separate  */
+        /* buffer for the scaler (the scaler works on packed RGB triplets).*/
+        /* We harvest alpha separately after PDTM_READPIXELARRAY.         */
         /*----------------------------------------------------------------*/
         thumb_rgb24 = (UBYTE *)whd_malloc(thumb_rgb24_size);
         if (thumb_rgb24 == NULL)
@@ -1927,40 +2011,206 @@ int itidy_render_via_datatype(const char *source_path,
             goto cleanup;
         }
 
-        rgb24_area_average_scale(rgb24_buffer,
-                                 (UWORD)src_width, (UWORD)src_height,
-                                 thumb_rgb24,
-                                 output_width, output_height,
-                                 params);
+        if (dt_has_alpha)
+        {
+            /* Strip alpha plane into a separate packed-RGB24 copy for the scaler. */
+            /* Also compute average alpha per output pixel so we can threshold it.  */
+            ULONG total_src_pixels = src_width * src_height;
+            UBYTE *rgb_only = (UBYTE *)whd_malloc(total_src_pixels * 3);
+            UBYTE *alpha_only = (UBYTE *)whd_malloc(total_src_pixels);
 
-        /* Free the large source buffer immediately to reduce memory usage */
-        whd_free(rgb24_buffer);
-        rgb24_buffer = NULL;
+            if (rgb_only == NULL || alpha_only == NULL)
+            {
+                log_error(LOG_ICONS, ""
+                          "itidy_render_via_datatype: alpha split alloc failed\n");
+                if (rgb_only) whd_free(rgb_only);
+                if (alpha_only) whd_free(alpha_only);
+                goto cleanup;
+            }
+
+            /* Deinterleave RGBA -> packed RGB + packed alpha */
+            {
+                ULONG px;
+                for (px = 0; px < total_src_pixels; px++)
+                {
+                    rgb_only[px * 3 + 0] = rgb24_buffer[px * 4 + 0];
+                    rgb_only[px * 3 + 1] = rgb24_buffer[px * 4 + 1];
+                    rgb_only[px * 3 + 2] = rgb24_buffer[px * 4 + 2];
+                    alpha_only[px]       = rgb24_buffer[px * 4 + 3];
+                }
+            }
+
+            /* Scale the RGB planes */
+            rgb24_area_average_scale(rgb_only,
+                                     (UWORD)src_width, (UWORD)src_height,
+                                     thumb_rgb24,
+                                     output_width, output_height,
+                                     params);
+
+            /* Scale the alpha plane (reuse same scaler logic via mono-component */
+            /* approach: treat single-byte data as 1-band and pass stride=1)     */
+            /* Simpler: just use nearest-neighbour for alpha threshold mask.     */
+            {
+                UBYTE *thumb_alpha = (UBYTE *)whd_malloc(thumb_pixel_count);
+                if (thumb_alpha != NULL)
+                {
+                    /* Area-average alpha the same way as RGB                     */
+                    UWORD ax, ay;
+                    ULONG x_fp = ((ULONG)src_width  << 16) / output_width;
+                    ULONG y_fp = ((ULONG)src_height << 16) / output_height;
+
+                    for (ay = 0; ay < output_height; ay++)
+                    {
+                        for (ax = 0; ax < output_width; ax++)
+                        {
+                            ULONG src_x0 = ((ULONG)ax * x_fp) >> 16;
+                            ULONG src_y0 = ((ULONG)ay * y_fp) >> 16;
+                            ULONG src_x1 = (((ULONG)(ax + 1) * x_fp) >> 16);
+                            ULONG src_y1 = (((ULONG)(ay + 1) * y_fp) >> 16);
+                            ULONG sum = 0, count = 0;
+                            ULONG sy, sx;
+
+                            if (src_x1 <= src_x0) src_x1 = src_x0 + 1;
+                            if (src_y1 <= src_y0) src_y1 = src_y0 + 1;
+                            if (src_x1 > src_width) src_x1 = src_width;
+                            if (src_y1 > src_height) src_y1 = src_height;
+
+                            for (sy = src_y0; sy < src_y1; sy++)
+                            {
+                                for (sx = src_x0; sx < src_x1; sx++)
+                                {
+                                    sum += alpha_only[sy * src_width + sx];
+                                    count++;
+                                }
+                            }
+
+                            thumb_alpha[ay * output_width + ax] =
+                                (count > 0) ? (UBYTE)(sum / count) : 0;
+                        }
+                    }
+
+                    /* Ensure palette index 0 is the transparent colour (already   */
+                    /* set to mid-grey by placeholder palette; stays transparent).  */
+                    /* Then remap any fully-transparent pixel to index 0.          */
+                    /* NOTE: we remap AFTER quantize in Step 3, stored temporarily */
+                    /* in thumb_alpha which we keep until after quantize.          */
+                    /* Store pointer for use in the post-quantize alpha sweep.     */
+
+                    /* Quantize now, then sweep, then free alpha buffer */
+                    thumb_chunky = (UBYTE *)whd_malloc(thumb_pixel_count);
+                    if (thumb_chunky == NULL)
+                    {
+                        log_error(LOG_ICONS,
+                                  "itidy_render_via_datatype: failed to allocate thumbnail chunky\n");
+                        whd_free(thumb_alpha);
+                        whd_free(rgb_only);
+                        whd_free(alpha_only);
+                        goto cleanup;
+                    }
+
+                    quantize_rgb24_to_cube(thumb_rgb24, thumb_chunky,
+                                           thumb_pixel_count,
+                                           dest_img->palette_size_normal);
+
+                    log_info(LOG_ICONS,
+                             "itidy_render_via_datatype: quantized %lu pixels; "
+                             "alpha sweep (threshold=128)\n", thumb_pixel_count);
+
+                    /* Alpha sweep: pixels with average alpha <= 128 get    */
+                    /* mapped to palette index 0 (transparent placeholder). */
+                    /* Palette index 0 was set to mid-grey by the blank     */
+                    /* image init; we leave its RGB unchanged.              */
+                    {
+                        ULONG px;
+                        BOOL found_transparent = FALSE;
+                        for (px = 0; px < thumb_pixel_count; px++)
+                        {
+                            if (thumb_alpha[px] <= 128)
+                            {
+                                thumb_chunky[px] = 0;
+                                found_transparent = TRUE;
+                            }
+                        }
+                        if (found_transparent && params != NULL)
+                        {
+                            params->src_has_alpha = TRUE;
+                            log_info(LOG_ICONS,
+                                     "itidy_render_via_datatype: "
+                                     "transparent pixels found -- src_has_alpha=TRUE\n");
+                        }
+                    }
+
+                    whd_free(thumb_alpha);
+                }
+                else
+                {
+                    /* Alpha buffer alloc failed -- treat as opaque */
+                    log_warning(LOG_ICONS,
+                                "itidy_render_via_datatype: "
+                                "alpha thumbnail alloc failed -- alpha ignored\n");
+                    thumb_chunky = (UBYTE *)whd_malloc(thumb_pixel_count);
+                    if (thumb_chunky == NULL)
+                    {
+                        log_error(LOG_ICONS,
+                                  "itidy_render_via_datatype: "
+                                  "failed to allocate thumbnail chunky\n");
+                        whd_free(rgb_only);
+                        whd_free(alpha_only);
+                        goto cleanup;
+                    }
+                    quantize_rgb24_to_cube(thumb_rgb24, thumb_chunky,
+                                           thumb_pixel_count,
+                                           dest_img->palette_size_normal);
+                }
+            }
+
+            whd_free(alpha_only);
+            whd_free(rgb_only);
+        }
+        else
+        {
+            /* No alpha: straightforward RGB scale then quantize */
+            rgb24_area_average_scale(rgb24_buffer,
+                                     (UWORD)src_width, (UWORD)src_height,
+                                     thumb_rgb24,
+                                     output_width, output_height,
+                                     params);
+
+            /* thumb_chunky allocated + quantized in the non-alpha block below */
+        }
 
         log_info(LOG_ICONS, "itidy_render_via_datatype: RGB24 downscaled to %ux%u (%lu pixels)\n",
                  (unsigned)output_width, (unsigned)output_height, thumb_pixel_count);
 
         /*----------------------------------------------------------------*/
         /* Step 2: Build 6x6x6 color cube palette + grayscale ramp       */
+        /* Index 0 is reserved for transparent pixels when alpha present. */
         /*----------------------------------------------------------------*/
         {
             ULONG pal_idx = 0;
             ULONG r_step, g_step, b_step;
 
-            /* Generate 6x6x6 RGB color cube (216 colors) */
-            for (r_step = 0; r_step < 6; r_step++)
+            /* Index 0: transparent placeholder (mid-grey; RGB unchanged) */
+            /* Only visible if src_has_alpha=TRUE and transparent_color_normal=0 */
+            if (dt_has_alpha)
             {
-                for (g_step = 0; g_step < 6; g_step++)
+                dest_img->palette_normal[0].red   = 0xAA;
+                dest_img->palette_normal[0].green = 0xAA;
+                dest_img->palette_normal[0].blue  = 0xAA;
+                pal_idx = 1;  /* Start cube from index 1 */
+            }
+
+            /* Generate 6x6x6 RGB color cube */
+            for (r_step = 0; r_step < 6 && pal_idx < dest_img->palette_size_normal; r_step++)
+            {
+                for (g_step = 0; g_step < 6 && pal_idx < dest_img->palette_size_normal; g_step++)
                 {
-                    for (b_step = 0; b_step < 6; b_step++)
+                    for (b_step = 0; b_step < 6 && pal_idx < dest_img->palette_size_normal; b_step++)
                     {
-                        if (pal_idx < dest_img->palette_size_normal)
-                        {
-                            dest_img->palette_normal[pal_idx].red   = (r_step * 255) / 5;
-                            dest_img->palette_normal[pal_idx].green = (g_step * 255) / 5;
-                            dest_img->palette_normal[pal_idx].blue  = (b_step * 255) / 5;
-                            pal_idx++;
-                        }
+                        dest_img->palette_normal[pal_idx].red   = (r_step * 255) / 5;
+                        dest_img->palette_normal[pal_idx].green = (g_step * 255) / 5;
+                        dest_img->palette_normal[pal_idx].blue  = (b_step * 255) / 5;
+                        pal_idx++;
                     }
                 }
             }
@@ -1968,40 +2218,171 @@ int itidy_render_via_datatype(const char *source_path,
             /* Fill remaining with grayscale ramp */
             while (pal_idx < dest_img->palette_size_normal)
             {
-                UBYTE gray = (UBYTE)((pal_idx - 216) * 255 / (dest_img->palette_size_normal - 216));
+                UBYTE gray = (UBYTE)((pal_idx * 255) / (dest_img->palette_size_normal - 1));
                 dest_img->palette_normal[pal_idx].red   = gray;
                 dest_img->palette_normal[pal_idx].green = gray;
                 dest_img->palette_normal[pal_idx].blue  = gray;
                 pal_idx++;
             }
 
-            log_info(LOG_ICONS, "itidy_render_via_datatype: built %u-color palette (6x6x6 cube + grays)\n",
-                     (unsigned)dest_img->palette_size_normal);
+            log_info(LOG_ICONS, "itidy_render_via_datatype: built %u-color palette "
+                     "(6x6x6 cube + grays%s)\n",
+                     (unsigned)dest_img->palette_size_normal,
+                     dt_has_alpha ? ", index 0 reserved for alpha" : "");
         }
 
         /*----------------------------------------------------------------*/
         /* Step 3: Quantize the tiny thumbnail (direct cube index calc)   */
-        /*         Only ~2,688 pixels instead of ~148,512 — ~55x less     */
-        /*         Plus direct index calc instead of 256-entry search     */
-        /*         Combined speedup: ~5,000x on 68000                     */
+        /* For the non-alpha path only — alpha path already quantized.    */
+        /* Also, progress: phase 3/3 -- scaling/quantizing complete.      */
         /*----------------------------------------------------------------*/
-        thumb_chunky = (UBYTE *)whd_malloc(thumb_pixel_count);
-        if (thumb_chunky == NULL)
+        if (!dt_has_alpha)
         {
-            log_error(LOG_ICONS, "itidy_render_via_datatype: failed to allocate thumbnail chunky\n");
-            goto cleanup;
+            thumb_chunky = (UBYTE *)whd_malloc(thumb_pixel_count);
+            if (thumb_chunky == NULL)
+            {
+                log_error(LOG_ICONS, "itidy_render_via_datatype: "
+                          "failed to allocate thumbnail chunky\n");
+                goto cleanup;
+            }
+
+            quantize_rgb24_to_cube(thumb_rgb24, thumb_chunky,
+                                   thumb_pixel_count,
+                                   dest_img->palette_size_normal);
+
+            log_info(LOG_ICONS, "itidy_render_via_datatype: quantized %lu thumbnail pixels "
+                     "to %u-color palette\n",
+                     thumb_pixel_count, (unsigned)dest_img->palette_size_normal);
+
+            /* ---------------------------------------------------------------
+             * Magenta key-colour transparency detection.
+             *
+             * Many Amiga PNG/GIF icons use solid magenta (#FF00FF) as a
+             * transparency key colour instead of a proper alpha channel.
+             * picture.datatype does NOT report PDTA_AlphaChannel=TRUE for
+             * these files, so the RGBA path above is never entered.
+             *
+             * After quantization, scan the palette for an entry matching
+             * magenta (R>=240, G<=15, B>=240).  If found:
+             *   1. Swap that palette entry with index 0.
+             *   2. Remap all pixel indices accordingly.
+             *   3. Set src_has_alpha=TRUE so the caller enables transparency.
+             *
+             * The 6x6x6 cube ALWAYS contains #FF00FF at index 185 (r=5,g=0,b=5)
+             * regardless of image content.  For formats that can never carry
+             * transparency (JPEG, BMP), skip this sweep entirely -- otherwise
+             * every JPEG with dark pixels will be mistakenly treated as
+             * transparent, making index 0 (black) invisible.
+             *
+             * The caller sets params->try_magenta_key=FALSE for JPEG/BMP.
+             * --------------------------------------------------------------- */
+            if (params == NULL || params->try_magenta_key)
+            {
+                UWORD mi;
+                BOOL found_magenta = FALSE;
+                UBYTE magenta_idx = 0;
+
+                for (mi = 0; mi < (UWORD)dest_img->palette_size_normal; mi++)
+                {
+                    if (dest_img->palette_normal[mi].red   >= 240 &&
+                        dest_img->palette_normal[mi].green <= 15  &&
+                        dest_img->palette_normal[mi].blue  >= 240)
+                    {
+                        magenta_idx = (UBYTE)mi;
+                        found_magenta = TRUE;
+                        log_info(LOG_ICONS,
+                                 "itidy_render_via_datatype: "
+                                 "magenta key colour found at palette index %u "
+                                 "(R=%u G=%u B=%u)\n",
+                                 (unsigned)magenta_idx,
+                                 (unsigned)dest_img->palette_normal[mi].red,
+                                 (unsigned)dest_img->palette_normal[mi].green,
+                                 (unsigned)dest_img->palette_normal[mi].blue);
+                        break;
+                    }
+                }
+
+                if (found_magenta && magenta_idx != 0)
+                {
+                    /* Swap palette entries 0 and magenta_idx */
+                    struct ColorRegister tmp_col;
+                    ULONG px;
+
+                    tmp_col = dest_img->palette_normal[0];
+                    dest_img->palette_normal[0] = dest_img->palette_normal[magenta_idx];
+                    dest_img->palette_normal[magenta_idx] = tmp_col;
+
+                    /* Remap pixels: magenta_idx -> 0 and 0 -> magenta_idx */
+                    for (px = 0; px < thumb_pixel_count; px++)
+                    {
+                        if (thumb_chunky[px] == magenta_idx)
+                            thumb_chunky[px] = 0;
+                        else if (thumb_chunky[px] == 0)
+                            thumb_chunky[px] = magenta_idx;
+                    }
+
+                    if (params != NULL)
+                        params->src_has_alpha = TRUE;
+
+                    log_info(LOG_ICONS,
+                             "itidy_render_via_datatype: "
+                             "magenta key transparency applied -- "
+                             "index 0 is now transparent, src_has_alpha=TRUE\n");
+                }
+                else if (found_magenta && magenta_idx == 0)
+                {
+                    /* Magenta is already at index 0 — just flag alpha */
+                    if (params != NULL)
+                        params->src_has_alpha = TRUE;
+
+                    log_info(LOG_ICONS,
+                             "itidy_render_via_datatype: "
+                             "magenta key at index 0 -- src_has_alpha=TRUE\n");
+                }
+                else
+                {
+                    log_debug(LOG_ICONS,
+                              "itidy_render_via_datatype: "
+                              "no magenta key colour found in palette\n");
+                }
+            } /* end if try_magenta_key */
+            else
+            {
+                log_info(LOG_ICONS,
+                         "itidy_render_via_datatype: "
+                         "magenta key sweep skipped (format not transparency-capable)\n");
+            }
+        }
+        else
+        {
+            /* Alpha path: thumb_chunky already allocated and quantized above */
+            log_info(LOG_ICONS, "itidy_render_via_datatype: quantized %lu thumbnail pixels "
+                     "to %u-color palette (alpha path)\n",
+                     thumb_pixel_count, (unsigned)dest_img->palette_size_normal);
         }
 
-        quantize_rgb24_to_cube(thumb_rgb24, thumb_chunky,
-                               thumb_pixel_count,
-                               dest_img->palette_size_normal);
+        /* Progress: phase 3/3 -- complete */
+        itidy_report_progress_throttled(params, "Scaling image", 3, 3, 0);
 
-        log_info(LOG_ICONS, "itidy_render_via_datatype: quantized %lu thumbnail pixels to %u-color palette\n",
-                 thumb_pixel_count, (unsigned)dest_img->palette_size_normal);
-
-        /* Free thumbnail RGB24 - no longer needed */
-        whd_free(thumb_rgb24);
-        thumb_rgb24 = NULL;
+        /* Free thumbnail RGB24 - no longer needed, unless caller requested it.
+         * When params->raw_rgb24_out is non-NULL the caller (e.g. Ultra mode)
+         * needs the pre-quantization RGB24 data.  Transfer ownership to the
+         * caller instead of freeing; caller must whd_free() the buffer. */
+        if (params != NULL && params->raw_rgb24_out != NULL)
+        {
+            *params->raw_rgb24_out      = thumb_rgb24;
+            params->raw_rgb24_pixel_count = thumb_pixel_count;
+            thumb_rgb24 = NULL;  /* Prevent cleanup path from freeing it */
+            log_debug(LOG_ICONS,
+                      "itidy_render_via_datatype: "
+                      "transferred raw RGB24 (%lu pixels) to caller\n",
+                      (unsigned long)thumb_pixel_count);
+        }
+        else
+        {
+            whd_free(thumb_rgb24);
+            thumb_rgb24 = NULL;
+        }
 
         /*----------------------------------------------------------------*/
         /* Step 4: Copy quantized thumbnail into destination icon buffer  */

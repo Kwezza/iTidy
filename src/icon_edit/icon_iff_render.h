@@ -195,6 +195,36 @@ typedef struct {
     void *progress_user_data;           /* Opaque data for callback */
     ULONG last_progress_ticks;          /* Timer for throttling updates (DOS ticks) */
     BOOL *cancel_flag;                  /* Optional pointer to cancel flag (may be NULL) */
+
+    /* Alpha channel result (output from itidy_render_via_datatype) */
+    BOOL src_has_alpha;                 /* TRUE if datatype reported alpha channel */
+                                        /* When TRUE, palette index 0 = transparent */
+
+    /* Upscaling control (input to itidy_render_via_datatype) */
+    BOOL allow_upscale;                 /* TRUE = scale up small images to fill icon */
+                                        /* FALSE = keep natural size, center in safe area */
+
+    /* Magenta key transparency control (input to itidy_render_via_datatype) */
+    BOOL try_magenta_key;               /* TRUE = scan palette for #FF00FF key colour */
+                                        /* FALSE = skip sweep (use for JPEG/BMP which */
+                                        /*         never carry transparency) */
+
+    /* Raw RGB24 output (output from itidy_render_via_datatype, optional)  */
+    /*                                                                      */
+    /* When non-NULL on entry, itidy_render_via_datatype() transfers        */
+    /* ownership of the pre-quantization thumb_rgb24 buffer here instead   */
+    /* of freeing it.  Caller is responsible for whd_free()-ing it.        */
+    /*                                                                      */
+    /* Purpose: Ultra mode needs the true pixel values BEFORE they get     */
+    /* snapped to the 6x6x6 colour cube.  Set this to point at a NULL      */
+    /* UBYTE* before calling the render function, then pass the resulting   */
+    /* buffer directly to itidy_ultra_generate_palette().                  */
+    /*                                                                      */
+    /* raw_rgb24_pixel_count holds the number of pixels (width * height),  */
+    /* i.e., the buffer size is raw_rgb24_pixel_count * 3 bytes.           */
+    UBYTE **raw_rgb24_out;              /* Pointer-to-pointer; set to non-NULL to      */
+                                        /* receive buffer; caller must whd_free()      */
+    ULONG  raw_rgb24_pixel_count;       /* Number of pixels in raw_rgb24_out buffer    */
 } iTidy_IFFRenderParams;
 
 /*========================================================================*/
@@ -249,14 +279,20 @@ int itidy_render_iff_thumbnail(const char *source_path,
  * Opens the image via picture.datatype, reads decoded RGB24 pixel data,
  * quantizes to the destination palette, and scales to fit.
  *
- * @param source_path   Full Amiga path to the IFF image file
- * @param params        Render params (safe area, palette mode, etc.)
- * @param dest_img      Destination image buffer to render into
+ * @param source_path     Full Amiga path to the IFF image file
+ * @param params          Render params (safe area, palette mode, etc.)
+ * @param dest_img        Destination image buffer to render into
+ * @param ilbm_heuristics When TRUE, apply Amiga-specific heuristics:
+ *                        - infer interlace from height >= 400
+ *                        - infer hires from width >= ITIDY_HIRES_WIDTH_THRESHOLD
+ *                        Pass FALSE for PNG, GIF, JPEG, BMP etc. where these
+ *                        Amiga-specific rules would give wrong results.
  * @return 0 on success, ITIDY_PREVIEW_* error code on failure
  */
 int itidy_render_via_datatype(const char *source_path,
                                iTidy_IFFRenderParams *params,
-                               iTidy_IconImageData *dest_img);
+                               iTidy_IconImageData *dest_img,
+                               BOOL ilbm_heuristics);
 
 /**
  * @brief Free IFF-specific allocated buffers.

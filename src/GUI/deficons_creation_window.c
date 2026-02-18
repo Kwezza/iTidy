@@ -66,6 +66,15 @@ enum {
     GID_THUMBNAIL_BORDERS_CHECKBOX,
     GID_TEXT_PREVIEW_CHECKBOX,
     GID_PICTURE_PREVIEW_CHECKBOX,
+    GID_UPSCALE_THUMBNAILS_CB,
+    /* Per-format enable checkboxes */
+    GID_FMT_ILBM_CB,
+    GID_FMT_PNG_CB,
+    GID_FMT_GIF_CB,
+    GID_FMT_JPEG_CB,
+    GID_FMT_BMP_CB,
+    GID_FMT_ACBM_CB,
+    GID_FMT_OTHER_CB,
     GID_MAX_COLORS_CHOOSER,
     GID_DITHER_METHOD_CHOOSER,
     GID_LOWCOLOR_MAPPING_CHOOSER,
@@ -85,6 +94,15 @@ typedef struct {
     Object *thumbnail_borders_checkbox;
     Object *text_preview_checkbox;
     Object *picture_preview_checkbox;
+    Object *upscale_thumbnails_cb;
+    /* Per-format enable checkboxes */
+    Object *fmt_ilbm_cb;
+    Object *fmt_png_cb;
+    Object *fmt_gif_cb;
+    Object *fmt_jpeg_cb;
+    Object *fmt_bmp_cb;
+    Object *fmt_acbm_cb;
+    Object *fmt_other_cb;
     Object *max_colors_chooser_obj;
     Object *dither_method_chooser_obj;
     Object *lowcolor_mapping_chooser_obj;
@@ -291,6 +309,36 @@ static void handle_ok(DefIconsCreationWindow *win)
     win->prefs->deficons_enable_picture_previews = (BOOL)selected_value;
     log_info(LOG_GUI, "Picture preview thumbnails toggled: %s\n",
              selected_value ? "enabled" : "disabled");
+
+    /* Get upscale thumbnails checkbox state */
+    selected_value = 0;
+    GetAttr(GA_Selected, win->upscale_thumbnails_cb, &selected_value);
+    win->prefs->deficons_upscale_thumbnails = (BOOL)selected_value;
+    log_info(LOG_GUI, "Upscale thumbnails: %s\n",
+             selected_value ? "enabled" : "disabled");
+
+    /* Build per-format bitmask from the seven format checkboxes */
+    {
+        ULONG fmt_bits = 0;
+        ULONG v = 0;
+
+        GetAttr(GA_Selected, win->fmt_ilbm_cb,  &v); if (v) fmt_bits |= ITIDY_PICTFMT_ILBM;
+        v = 0;
+        GetAttr(GA_Selected, win->fmt_png_cb,   &v); if (v) fmt_bits |= ITIDY_PICTFMT_PNG;
+        v = 0;
+        GetAttr(GA_Selected, win->fmt_gif_cb,   &v); if (v) fmt_bits |= ITIDY_PICTFMT_GIF;
+        v = 0;
+        GetAttr(GA_Selected, win->fmt_jpeg_cb,  &v); if (v) fmt_bits |= ITIDY_PICTFMT_JPEG;
+        v = 0;
+        GetAttr(GA_Selected, win->fmt_bmp_cb,   &v); if (v) fmt_bits |= ITIDY_PICTFMT_BMP;
+        v = 0;
+        GetAttr(GA_Selected, win->fmt_acbm_cb,  &v); if (v) fmt_bits |= ITIDY_PICTFMT_ACBM;
+        v = 0;
+        GetAttr(GA_Selected, win->fmt_other_cb, &v); if (v) fmt_bits |= ITIDY_PICTFMT_OTHER;
+
+        win->prefs->deficons_picture_formats_enabled = fmt_bits;
+        log_info(LOG_GUI, "Picture format bitmask: 0x%08lX\n", fmt_bits);
+    }
     
     /* Get max colors chooser state */
     selected_value = 0;
@@ -430,6 +478,67 @@ static BOOL create_window(DefIconsCreationWindow *win)
         GA_Selected, win->prefs->deficons_enable_picture_previews,
         GA_RelVerify, TRUE,
     CheckBoxEnd;
+
+    win->upscale_thumbnails_cb = (Object *)CheckBoxObject,
+        GA_ID, GID_UPSCALE_THUMBNAILS_CB,
+        GA_Text, "_Upscale small images to icon size",
+        GA_Selected, win->prefs->deficons_upscale_thumbnails,
+        GA_RelVerify, TRUE,
+    CheckBoxEnd;
+
+    /* Per-format enable checkboxes */
+    {
+        ULONG fmt_bits = win->prefs->deficons_picture_formats_enabled;
+
+        win->fmt_ilbm_cb = (Object *)CheckBoxObject,
+            GA_ID, GID_FMT_ILBM_CB,
+            GA_Text, "_ILBM",
+            GA_Selected, (fmt_bits & ITIDY_PICTFMT_ILBM) ? TRUE : FALSE,
+            GA_RelVerify, TRUE,
+        CheckBoxEnd;
+
+        win->fmt_png_cb = (Object *)CheckBoxObject,
+            GA_ID, GID_FMT_PNG_CB,
+            GA_Text, "_PNG",
+            GA_Selected, (fmt_bits & ITIDY_PICTFMT_PNG) ? TRUE : FALSE,
+            GA_RelVerify, TRUE,
+        CheckBoxEnd;
+
+        win->fmt_gif_cb = (Object *)CheckBoxObject,
+            GA_ID, GID_FMT_GIF_CB,
+            GA_Text, "_GIF",
+            GA_Selected, (fmt_bits & ITIDY_PICTFMT_GIF) ? TRUE : FALSE,
+            GA_RelVerify, TRUE,
+        CheckBoxEnd;
+
+        win->fmt_jpeg_cb = (Object *)CheckBoxObject,
+            GA_ID, GID_FMT_JPEG_CB,
+            GA_Text, "_JPEG (slow)",
+            GA_Selected, (fmt_bits & ITIDY_PICTFMT_JPEG) ? TRUE : FALSE,
+            GA_RelVerify, TRUE,
+        CheckBoxEnd;
+
+        win->fmt_bmp_cb = (Object *)CheckBoxObject,
+            GA_ID, GID_FMT_BMP_CB,
+            GA_Text, "_BMP",
+            GA_Selected, (fmt_bits & ITIDY_PICTFMT_BMP) ? TRUE : FALSE,
+            GA_RelVerify, TRUE,
+        CheckBoxEnd;
+
+        win->fmt_acbm_cb = (Object *)CheckBoxObject,
+            GA_ID, GID_FMT_ACBM_CB,
+            GA_Text, "_ACBM",
+            GA_Selected, (fmt_bits & ITIDY_PICTFMT_ACBM) ? TRUE : FALSE,
+            GA_RelVerify, TRUE,
+        CheckBoxEnd;
+
+        win->fmt_other_cb = (Object *)CheckBoxObject,
+            GA_ID, GID_FMT_OTHER_CB,
+            GA_Text, "_Other",
+            GA_Selected, (fmt_bits & ITIDY_PICTFMT_OTHER) ? TRUE : FALSE,
+            GA_RelVerify, TRUE,
+        CheckBoxEnd;
+    }
     
     /* Determine initial chooser indices and ghosting from preferences */
     {
@@ -525,55 +634,88 @@ static BOOL create_window(DefIconsCreationWindow *win)
             
             LAYOUT_AddChild, win->picture_preview_checkbox,
             CHILD_WeightedHeight, 0,
+            
+            LAYOUT_AddChild, win->upscale_thumbnails_cb,
+            CHILD_WeightedHeight, 0,
         LayoutEnd,
         CHILD_WeightedHeight, 0,
-        
+
+        LAYOUT_AddChild, (Object *)VLayoutObject,
+            LAYOUT_BevelStyle, BVS_GROUP,
+            LAYOUT_Label, "Enabled Picture Formats",
+
+            LAYOUT_AddChild, (Object *)HLayoutObject,
+                /* Left column: ILBM, PNG, GIF, BMP */
+                LAYOUT_AddChild, (Object *)VLayoutObject,
+                    LAYOUT_AddChild, win->fmt_ilbm_cb,
+                    CHILD_WeightedHeight, 0,
+                    LAYOUT_AddChild, win->fmt_png_cb,
+                    CHILD_WeightedHeight, 0,
+                    LAYOUT_AddChild, win->fmt_gif_cb,
+                    CHILD_WeightedHeight, 0,
+                    LAYOUT_AddChild, win->fmt_bmp_cb,
+                    CHILD_WeightedHeight, 0,
+                LayoutEnd,
+                /* Right column: JPEG (slow), ACBM, Other */
+                LAYOUT_AddChild, (Object *)VLayoutObject,
+                    LAYOUT_AddChild, win->fmt_jpeg_cb,
+                    CHILD_WeightedHeight, 0,
+                    LAYOUT_AddChild, win->fmt_acbm_cb,
+                    CHILD_WeightedHeight, 0,
+                    LAYOUT_AddChild, win->fmt_other_cb,
+                    CHILD_WeightedHeight, 0,
+                LayoutEnd,
+            LayoutEnd,
+            CHILD_WeightedHeight, 0,
+        LayoutEnd,
+        CHILD_WeightedHeight, 0,
+
         LAYOUT_AddChild, (Object *)VLayoutObject,
             LAYOUT_BevelStyle, BVS_GROUP,
             LAYOUT_Label, "Color Reduction",
-            
+
             LAYOUT_AddChild, (Object *)HLayoutObject,
                 LAYOUT_AddChild, (Object *)LabelObject,
                     LABEL_Text, "Max Colors:",
                 LabelEnd,
                 CHILD_WeightedWidth, 0,
-                
+
                 LAYOUT_AddChild, win->max_colors_chooser_obj,
                 CHILD_WeightedWidth, 100,
             LayoutEnd,
             CHILD_WeightedHeight, 0,
-            
+
             LAYOUT_AddChild, (Object *)HLayoutObject,
                 LAYOUT_AddChild, (Object *)LabelObject,
                     LABEL_Text, "Dithering:",
                 LabelEnd,
                 CHILD_WeightedWidth, 0,
-                
+
                 LAYOUT_AddChild, win->dither_method_chooser_obj,
                 CHILD_WeightedWidth, 100,
             LayoutEnd,
             CHILD_WeightedHeight, 0,
-            
+
             LAYOUT_AddChild, (Object *)HLayoutObject,
                 LAYOUT_AddChild, (Object *)LabelObject,
                     LABEL_Text, "Low-Color Map:",
                 LabelEnd,
                 CHILD_WeightedWidth, 0,
-                
+
                 LAYOUT_AddChild, win->lowcolor_mapping_chooser_obj,
                 CHILD_WeightedWidth, 100,
             LayoutEnd,
             CHILD_WeightedHeight, 0,
         LayoutEnd,
         CHILD_WeightedHeight, 0,
-        
+
         LAYOUT_AddChild, (Object *)HLayoutObject,
             LAYOUT_AddChild, win->ok_btn,
             LAYOUT_AddChild, win->cancel_btn,
         LayoutEnd,
         CHILD_WeightedHeight, 0,
     LayoutEnd;
-    
+
     /* Create window object */
     win->window_obj = (Object *)WindowObject,
         WA_Title, "DefIcons: Icon Creation Settings",

@@ -2,8 +2,8 @@
 
 **Version:** 2.0  
 **Created:** 2026-02-09  
-**Last updated:** 2026-02-09  
-**Status:** Implemented (Phases 1–3 complete)  
+**Last updated:** 2026-02-18  
+**Status:** Implemented (Phases 1–4 complete)  
 **Relates to:** `docs/iTidy_Future_Content_Aware_Icons_TODO.md`
 
 ---
@@ -30,6 +30,7 @@
 18. [Implementation Status & Lessons Learned](#18-implementation-status--lessons-learned)
 19. [Text Downscaling — Fitting 80-Column Documents into Tiny Icons](#19-text-downscaling--fitting-80-column-documents-into-tiny-icons)
 20. [Template Icon ToolType Reference (For Icon Designers)](#20-template-icon-tooltype-reference-for-icon-designers)
+21. [Phase 4 — Picture Datatype Pipeline (PNG, GIF, JPEG, BMP)](#21-phase-4--picture-datatype-pipeline-png-gif-jpeg-bmp)
 
 ---
 
@@ -2054,6 +2055,288 @@ balance between text legibility and ruled paper visibility.
 
 ---
 
-*This document was last updated on 2026-02-10 after implementing automatic
-palette expansion and dual-level adaptive rendering. It will continue to be
-updated as new renderers are added and issues are discovered.*
+*This document was last updated on 2026-02-18 after implementing the
+picture.datatype thumbnail pipeline (Phase 4: PNG, GIF, JPEG, BMP support),
+Ultra mode pre-quantization RGB24 transfer, 5-bit histogram palette sampling,
+and format-aware transparency handling. It will continue to be updated as
+new renderers are added and issues are discovered.*
+
+---
+
+## 21. Phase 4 — Picture Datatype Pipeline (PNG, GIF, JPEG, BMP)
+
+### 21.1 Overview and Evolution
+
+Sections 14 and 15 of this document described `iTidy_IFFRenderParams` and
+`itidy_render_iff_thumbnail()` as **future** work — the planned next renderer
+after the ASCII text pipeline. Phase 4 implements that future work, and
+extends it well beyond IFF files to cover any format that has a
+`picture.datatype` subclass installed on the Amiga.
+
+The new renderer lives in two files:
+
+| File | Purpose |
+|------|---------|
+| `src/icon_edit/icon_iff_render.c` | Opens files via `picture.datatype`, reads RGB24/RGBA, scales and quantizes |
+| `src/icon_edit/icon_content_preview.c` | Orchestrates the full pipeline; dispatches to text or picture renderer |
+
+The entry point called by the DefIcons integration remains the same
+`apply_picture_preview()` function in `icon_content_preview.c`. The function
+now handles both text files (via the ASCII text renderer from Phase 3) and
+picture files (via the new datatype renderer).
+
+### 21.2 Supported Formats
+
+Any format for which the Amiga has a `picture.datatype` subclass is
+supported. The following are the primary formats targeted in iTidy's
+preference flags:
+
+| Format | Flag | Notes |
+|--------|------|-------|
+| PNG | `ITIDY_PICTFMT_PNG` | Full alpha channel support via `PDTA_AlphaChannel` |
+| GIF | `ITIDY_PICTFMT_GIF` | Transparency via `PDTA_AlphaChannel` only (see Section 21.4) |
+| JPEG | `ITIDY_PICTFMT_JPEG` | Always opaque — no alpha, no magenta key |
+| BMP | `ITIDY_PICTFMT_BMP` | Always opaque — no alpha, no magenta key |
+| IFF ILBM / ACBM | (always enabled) | Legacy Amiga formats; magenta key supported |
+
+Because the renderer uses the standard `NewDTObject()` API, **any other
+format with a picture.datatype subclass** (e.g. PCX, TIFF, JPEG 2000 if
+a third-party datatype is installed) will also work via the same code path.
+
+### 21.3 How the Pipeline Works
+
+```
+ 1. Detect source file extension -> determine type token (e.g. "png", "gif")
+ 2. Check format flag in preferences (ITIDY_PICTFMT_* enable bitmask)
+ 3. Open file via picture.datatype:
+       obj = NewDTObject(path, DTA_GroupID, GID_PICTURE, ...)
+ 4. Query alpha: GetDTAttrs(obj, PDTA_AlphaChannel, &has_alpha, ...)
+ 5. Query display mode: GetDTAttrs(obj, PDTA_ModeID, &mode_id, ...)
+ 6. Render to bitmap:
+       if (has_alpha) -> RGBA path (4 bytes per pixel)
+       else           -> RGB24 path (3 bytes per pixel)
+    using DoMethod(obj, DTM_PROCLAYOUT, NULL, 1) + direct bitmap read
+ 7. Scale to icon dimensions:
+       rgb24_area_average_scale(src, src_w, src_h, dst, dst_w, dst_h)
+ 8. Quantize to 6x6x6 colour cube (216 entries):
+       quantize_rgb24_to_cube(rgb24, pixels, indexed_out)
+       -- OR (if Ultra mode active) -- transfer raw RGB24 to caller (see 21.5)
+ 9. DisposeDTObject(obj)
+10. Continue with normal apply pipeline:
+       itidy_icon_image_apply() -> itidy_icon_image_save()
+```
+
+The 6x6x6 cube palette uses fixed RGB values: each channel can be
+{0, 51, 102, 153, 204, 255}. Every pixel is snapped to the nearest
+cube entry. The cube is compact (216 entries) and always contains a
+full range of colours, making it a reliable target for arbitrary images.
+
+**Note on palette index 185:** The 6x6x6 cube systematically places
+`#FF00FF` (magenta) at index 185. This is relevant to the transparency
+handling described in Section 21.4.
+
+### 21.4 Transparency Handling Per Format
+
+This was the most nuanced design area in Phase 4 and evolved through
+several iterations. The core issue: the 6x6x6 cube always contains
+`#FF00FF` at index 185. If the foreground image never uses that colour,
+a naive magenta sweep would find it and set it as the transparent index —
+incorrectly making parts of the image transparent.
+
+Two separate questions must be answered independently for each format:
+
+1. **CAN this format produce a transparent result?**
+   (If no, force borders on — the icon background will always show through)
+2. **Should the magenta key sweep run for this format?**
+   (If no, only the `PDTA_AlphaChannel` RGBA path is used)
+
+These are answered by two helper functions in `icon_content_preview.c`:
+
+#### `itidy_format_can_be_transparent(type_token)`
+
+Returns TRUE if the format is capable of producing a transparent icon
+(i.e., borders are NOT forced on by default):
+
+| Format | Returns | Reason |
+|--------|---------|--------|
+| `jpeg`, `jpg` | FALSE | JPEG has no alpha channel in the standard |
+| `bmp` | FALSE | BMP in its common uncompressed form has no alpha |
+| All other formats | TRUE | GIF, PNG, ILBM, ACBM, unknown types may be transparent |
+
+When FALSE is returned, the pipeline forces `ITIDY_BORDER=YES` —
+the icon will always paint over a background rather than appearing floating.
+
+#### `itidy_format_uses_magenta_key(type_token)`
+
+Returns TRUE if the magenta sweep should be run after quantization:
+
+| Format | Returns | Reason |
+|--------|---------|--------|
+| `jpeg`, `jpg` | FALSE | No transparency possible; sweep would cause false positives |
+| `bmp` | FALSE | No transparency possible |
+| `gif` | **FALSE** | GIF transparency is **exclusively** via `PDTA_AlphaChannel`. If the datatype reports no alpha channel, it has *definitively* answered "no transparency". Running the magenta sweep on the 6x6x6 cube result would find palette index 185 (#FF00FF) and incorrectly mark it transparent. |
+| All other formats | TRUE | PNG, ILBM, ACBM: transparency may be present via both `PDTA_AlphaChannel` AND magenta convention |
+
+**Why GIF is special:** GIF's transparency is stored as a specific palette
+index inside the GIF file. The picture.datatype reads this and reports it
+via `PDTA_AlphaChannel=TRUE` when transparency is present. If it reports
+`PDTA_AlphaChannel=FALSE`, that means the GIF has no transparency — full
+stop. After quantization to the 6x6x6 cube, palette index 185 is present
+for algebraic reasons (it fills a slot), not because any pixel is magenta.
+Running the sweep would swap black to transparent — a false positive.
+
+**Bug discovered:** `fire.gif` — a GIF with no transparency — was getting
+transparency incorrectly applied. The log showed:
+`no alpha channel -- using RGB mode` but the magenta sweep still ran and
+found index 185 in the cube. The fix (splitting the single
+`itidy_format_supports_transparency()` into the two functions above)
+resolved this completely.
+
+#### Format Comparison Summary
+
+| Format | Can be transparent | Uses magenta key | How transparency detected |
+|--------|--------------------|-----------------|--------------------------|
+| JPEG / JPG | No | No | N/A — always opaque |
+| BMP | No | No | N/A — always opaque |
+| GIF | Yes | **No** | `PDTA_AlphaChannel` only |
+| PNG | Yes | Yes | `PDTA_AlphaChannel` OR magenta sweep |
+| IFF ILBM | Yes | Yes | `PDTA_AlphaChannel` OR magenta sweep |
+| IFF ACBM | Yes | Yes | `PDTA_AlphaChannel` OR magenta sweep |
+| Unknown | Yes | Yes | `PDTA_AlphaChannel` OR magenta sweep |
+
+### 21.5 Ultra Mode — Pre-Quantization RGB24 Transfer
+
+Ultra mode (`deficons_ultra_mode` preference) computes a custom per-image
+palette using median-cut analysis rather than the fixed 6x6x6 cube. It
+requires raw RGB24 input.
+
+**Problem (first discovered):** The original code path quantized to the
+6x6x6 cube first, then Ultra mode expanded the indexed pixels back to RGB24
+by table lookup. Because the 6x6x6 cube channels snap to multiples of 51,
+the expanded RGB24 contained only ~30 distinct colours — all muted
+multiples-of-51. The histogram and median-cut would compute a palette from
+those 30 values, not from the original continuous-tone image data.
+
+**Solution — `raw_rgb24_out` mechanism:**
+
+A new field was added to `iTidy_IFFRenderParams`:
+
+```c
+UBYTE **raw_rgb24_out;        /* if non-NULL: transfer thumb_rgb24 before free */
+ULONG  raw_rgb24_pixel_count; /* pixel count of transferred buffer */
+```
+
+At the point in `itidy_render_via_datatype()` where `thumb_rgb24` would
+normally be freed, the function now checks:
+
+```c
+if (params->raw_rgb24_out != NULL)
+{
+    *params->raw_rgb24_out = thumb_rgb24;           /* transfer ownership */
+    params->raw_rgb24_pixel_count = thumb_pixel_count;
+    thumb_rgb24 = NULL;  /* prevent cleanup free */
+}
+else
+{
+    whd_free(thumb_rgb24);
+    thumb_rgb24 = NULL;
+}
+```
+
+The caller (`apply_picture_preview()`) sets `iff_params.raw_rgb24_out =
+&raw_rgb24` when Ultra mode is active, receives the pre-quantization buffer,
+passes it to `itidy_ultra_generate_palette()`, and frees it afterwards.
+
+Log output confirms the transfer: `transferred raw RGB24 (%lu pixels) to caller`
+and then: `using pre-quantization RGB24 for Ultra palette generation`
+
+### 21.6 Ultra Mode — 5-Bit Histogram Sampling
+
+**Problem (second discovered):** Even with pre-quantization RGB24 data,
+the histogram was capped at 256 exact-colour entries (one entry per unique
+exact RGB triplet). A continuous-tone JPEG thumbnail at 64x64 pixels (4096
+samples) may have thousands of unique exact triplets. The first 256 colours
+seen filled the table; on a typical photograph these come from the top
+portion of the image (e.g., dark background, table surface), leaving the
+main subject's colours (orange fur, gold tones, bright highlights)
+completely unrepresented.
+
+**Solution — 5-bit bucket keys:**
+
+`itidy_ultra_generate_palette()` was rewritten to use per-channel 5-bit
+approximation as the histogram key:
+
+```c
+UBYTE r_key = r & 0xF8;   /* top 5 bits -> 32 possible values per channel */
+UBYTE g_key = g & 0xF8;
+UBYTE b_key = b & 0xF8;
+```
+
+This collapses 32x32x32 = 32768 possible bucket identifiers to at most 256
+entries, but the key insight is that with 5-bit resolution, typical 64x64
+photo thumbnails produce 80-180 distinct buckets — providing far better
+coverage of the image's colour space.
+
+Each bucket accumulates the **exact** R, G, B values using ULONG
+accumulators. After scanning all pixels, each bucket's stored colour is
+replaced by the per-bucket average:
+
+```c
+histogram[j].r = (UBYTE)(r_sum[j] / counts[j]);
+histogram[j].g = (UBYTE)(g_sum[j] / counts[j]);
+histogram[j].b = (UBYTE)(b_sum[j] / counts[j]);
+```
+
+**Result:** The histogram now fairly represents the entire image rather
+than being dominated by colours from the first portion scanned. The
+palette returned by median-cut reflects the image's actual dominant colours.
+
+Log output: `ultra_downsample: %u unique colors (5-bit buckets) from %lu RGB24 pixels`
+
+### 21.7 No-Upscale Preference
+
+Small images (shorter dimension < icon thumbnail size) can optionally be
+left at their natural size and centred within the icon canvas rather than
+being stretched to fill it.
+
+This is controlled by the `deficons_upscale_thumbnails` preference flag,
+which maps to `allow_upscale` in `iTidy_IFFRenderParams`. When FALSE:
+
+- Images smaller than the thumbnail dimensions are **not scaled up**
+- They are centred within the icon canvas
+- The surrounding area uses the template background colour
+
+This prevents blocky pixel-doubled thumbnails for very small source images
+(e.g., 16x16 icons used as their own thumbnails).
+
+### 21.8 API Extensions for Phase 4
+
+The `iTidy_IFFRenderParams` struct now has the following fields (additions
+highlighted as NEW):
+
+```c
+typedef struct {
+    /* --- inherited from iTidy_RenderParams base --- */
+    UBYTE          *pixel_buffer;
+    ULONG           pixel_buffer_size;
+    iTidy_SafeArea  safe_area;
+    UBYTE           bg_color_index;
+    UBYTE           text_color_index;
+
+    /* --- IFF / picture render specifics --- */
+    BOOL            try_magenta_key;    /* NEW: run magenta sweep? */
+    BOOL            allow_upscale;      /* NEW: allow enlargement of small images */
+    BOOL            src_has_alpha;      /* NEW: output — did DT report alpha? */
+    UBYTE         **raw_rgb24_out;      /* NEW: if non-NULL, transfer thumb_rgb24 here */
+    ULONG           raw_rgb24_pixel_count; /* NEW: pixel count of transferred buffer */
+} iTidy_IFFRenderParams;
+```
+
+### 21.9 Open Questions Added by Phase 4
+
+| # | Question | Decision | Date |
+|---|----------|----------|------|
+| 25 | How to handle GIF transparency — magenta key or datatype alpha? | **Datatype alpha (`PDTA_AlphaChannel`) only for GIF.** Magenta sweep disabled. 6x6x6 cube always places #FF00FF at index 185 regardless of image content; sweep on GIF with no alpha causes false positives. | 2026-02-18 |
+| 26 | Ultra mode: expand indexed back to RGB24, or transfer pre-quantization buffer? | **Transfer pre-quantization buffer.** `raw_rgb24_out` mechanism in `iTidy_IFFRenderParams`. Post-quantization expansion yields only ~30 muted colours; pre-quantization buffer gives true continuous-tone RGB24. | 2026-02-18 |
+| 27 | Ultra histogram: exact-colour matching or approximate-colour buckets? | **5-bit bucket keys** (`r & 0xF8`). Exact-colour matching causes first-256-seen bias on continuous-tone photographs. 5-bit buckets with per-bucket averaging give fair full-image coverage. | 2026-02-18 |
+| 28 | Should small images be upscaled to fill the thumbnail? | **User-configurable** via `deficons_upscale_thumbnails` preference + GUI checkbox. Default ON. When OFF, images are centred at natural size. | 2026-02-18 |

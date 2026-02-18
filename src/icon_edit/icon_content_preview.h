@@ -117,6 +117,24 @@ BOOL itidy_is_text_preview_type(const char *type_token);
 BOOL itidy_is_iff_preview_type(const char *type_token);
 
 /**
+ * @brief Check whether a DefIcons type token is a non-ILBM picture
+ *        format that can be decoded via a picture datatype.
+ *
+ * Matches: png, gif, jpeg, bmp, acbm, tiff, targa, pcx, ico,
+ *          sunraster, reko, brush, PicView (and any other "picture"
+ *          category child not handled by the native IFF parser).
+ *
+ * These formats bypass the iffparse.library native path and go
+ * directly through itidy_render_via_datatype(). If the required
+ * datatype is not installed, NewDTObject() returns NULL and the
+ * pipeline logs a warning and returns ITIDY_PREVIEW_NOT_APPLICABLE.
+ *
+ * @param type_token    DefIcons type token (e.g., "png", "jpeg", "gif")
+ * @return TRUE if the type should be attempted via picture.datatype
+ */
+BOOL itidy_is_picture_preview_type(const char *type_token);
+
+/**
  * @brief Get IFF thumbnail pixel dimensions from size preference.
  *
  * Converts the deficons_icon_size_mode preference into actual pixel
