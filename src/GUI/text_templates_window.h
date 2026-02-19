@@ -23,26 +23,23 @@ struct Window;
 /*========================================================================*/
 
 /**
- * @brief Open the ASCII Text Template Manager window
+ * @brief Open the DefIcons Text Templates window
  *
- * Opens a modal ReAction window listing every ASCII DefIcons sub-type.
- * For each type the user can see whether a custom def_<type>.info icon
- * exists in PROGDIR:Icons/, copy def_ascii.info to create/replace it,
- * open the Workbench Information dialog for the icon via the WB ARexx
- * port, and validate the icon's ITIDY_ ToolType keys and values.
+ * Opens a non-modal ReAction window listing every ASCII DefIcons sub-type.
+ * For each type the user can see whether a custom def_<type>.info template
+ * exists in PROGDIR:Icons/, create or overwrite it from the master
+ * (def_ascii.info), open the Workbench Information dialog to edit ToolTypes,
+ * validate the ToolTypes, and revert a custom template back to the master.
  *
- * Also provides a master "Enable text preview" checkbox that mirrors
- * prefs->deficons_enable_text_previews.
+ * A "Show" filter chooser allows the list to be narrowed to
+ * "All", "Custom only", or "Missing only" entries.
  *
- * @param prefs      Pointer to LayoutPreferences to edit in-place
+ * All file actions are immediate. The window has a single Close button.
  *
- * @return TRUE  if user closed with OK (prefs->deficons_enable_text_previews
- *               may have changed).
- *         FALSE if user cancelled or window could not be opened.
+ * @param prefs  Pointer to LayoutPreferences (kept for context; future use)
  *
- * @note Window is modal - blocks until OK or Cancel pressed.
  * @note Requires g_cached_deficons_tree to be initialised.
  */
-BOOL open_text_templates_window(LayoutPreferences *prefs);
+void open_text_templates_window(LayoutPreferences *prefs);
 
 #endif /* TEXT_TEMPLATES_WINDOW_H */

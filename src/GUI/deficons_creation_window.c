@@ -18,6 +18,8 @@
 #define ButtonBase iTidy_DefIconsCreation_ButtonBase
 #define LabelBase iTidy_DefIconsCreation_LabelBase
 #define CheckBoxBase iTidy_DefIconsCreation_CheckBoxBase
+#define ClickTabBase iTidy_DefIconsCreation_ClickTabBase
+#define SpaceBase iTidy_DefIconsCreation_SpaceBase
 
 #include "deficons_creation_window.h"
 #include "text_templates_window.h"
@@ -31,6 +33,8 @@
 
 #include <exec/types.h>
 #include <exec/memory.h>
+#include <intuition/intuition.h>
+#include <libraries/gadtools.h>
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -41,12 +45,16 @@
 #include <proto/checkbox.h>
 #include <proto/label.h>
 #include <proto/utility.h>
+#include <proto/clicktab.h>
+#include <proto/space.h>
 
 #include <classes/window.h>
 #include <gadgets/layout.h>
 #include <gadgets/chooser.h>
 #include <gadgets/button.h>
 #include <gadgets/checkbox.h>
+#include <gadgets/clicktab.h>
+#include <gadgets/space.h>
 #include <images/label.h>
 
 #include <string.h>
@@ -59,10 +67,13 @@ struct Library *iTidy_DefIconsCreation_ChooserBase = NULL;
 struct Library *iTidy_DefIconsCreation_ButtonBase = NULL;
 struct Library *iTidy_DefIconsCreation_LabelBase = NULL;
 struct Library *iTidy_DefIconsCreation_CheckBoxBase = NULL;
+struct Library *iTidy_DefIconsCreation_ClickTabBase = NULL;
+struct Library *iTidy_DefIconsCreation_SpaceBase = NULL;
 
 /* Gadget IDs */
 enum {
-    GID_FOLDER_MODE_CHOOSER = 1,
+    GID_CLICKTAB = 1,
+    GID_FOLDER_MODE_CHOOSER,
     GID_ICON_SIZE_CHOOSER,
     GID_THUMBNAIL_BORDERS_CHOOSER,
     GID_TEXT_PREVIEW_CHECKBOX,
@@ -91,6 +102,8 @@ typedef struct {
     /* ReAction objects */
     Object *window_obj;
     Object *main_layout;
+    Object *clicktab_obj;
+    struct List *tab_labels;
     Object *folder_mode_chooser_obj;
     Object *icon_size_chooser_obj;
     Object *thumbnail_borders_chooser_obj;
@@ -132,9 +145,16 @@ typedef struct {
 
 /* Folder icon mode chooser labels (matches ITIDY_FOLDER_ICON_MODE_* constants) */
 static STRPTR folder_mode_labels[] = {
-    "Smart (create if visible)",
+    "Smart (if content needs icons)",
     "Always create",
     "Never create",
+    NULL
+};
+
+/* ClickTab labels */
+static STRPTR tab_label_strings[] = {
+    "Create",
+    "Rendering",
     NULL
 };
 
@@ -194,14 +214,18 @@ static BOOL open_reaction_libs(void)
     iTidy_DefIconsCreation_ChooserBase = OpenLibrary("gadgets/chooser.gadget", 44);
     iTidy_DefIconsCreation_ButtonBase = OpenLibrary("gadgets/button.gadget", 44);
     iTidy_DefIconsCreation_CheckBoxBase = OpenLibrary("gadgets/checkbox.gadget", 44);
-    iTidy_DefIconsCreation_LabelBase = OpenLibrary("gadgets/label.image", 44);
+    iTidy_DefIconsCreation_LabelBase = OpenLibrary("images/label.image", 44);
+    iTidy_DefIconsCreation_ClickTabBase = OpenLibrary("gadgets/clicktab.gadget", 44);
+    iTidy_DefIconsCreation_SpaceBase = OpenLibrary("gadgets/space.gadget", 44);
     
     if (!iTidy_DefIconsCreation_WindowBase || 
         !iTidy_DefIconsCreation_LayoutBase ||
         !iTidy_DefIconsCreation_ChooserBase ||
         !iTidy_DefIconsCreation_ButtonBase ||
         !iTidy_DefIconsCreation_CheckBoxBase ||
-        !iTidy_DefIconsCreation_LabelBase)
+        !iTidy_DefIconsCreation_LabelBase ||
+        !iTidy_DefIconsCreation_ClickTabBase ||
+        !iTidy_DefIconsCreation_SpaceBase)
     {
         log_error(LOG_GUI, "Failed to open ReAction libraries for DefIcons creation window\n");
         return FALSE;
@@ -215,6 +239,16 @@ static BOOL open_reaction_libs(void)
  */
 static void close_reaction_libs(void)
 {
+    if (iTidy_DefIconsCreation_SpaceBase)
+    {
+        CloseLibrary(iTidy_DefIconsCreation_SpaceBase);
+        iTidy_DefIconsCreation_SpaceBase = NULL;
+    }
+    if (iTidy_DefIconsCreation_ClickTabBase)
+    {
+        CloseLibrary(iTidy_DefIconsCreation_ClickTabBase);
+        iTidy_DefIconsCreation_ClickTabBase = NULL;
+    }
     if (iTidy_DefIconsCreation_CheckBoxBase)
     {
         CloseLibrary(iTidy_DefIconsCreation_CheckBoxBase);
@@ -244,6 +278,48 @@ static void close_reaction_libs(void)
     {
         CloseLibrary(iTidy_DefIconsCreation_WindowBase);
         iTidy_DefIconsCreation_WindowBase = NULL;
+    }
+}
+
+/*
+ * Helper function to create a ClickTab labels list
+ */
+static struct List *make_clicktab_list(STRPTR *labels)
+{
+    struct List *list = (struct List *)whd_malloc(sizeof(struct List));
+    if (list)
+    {
+        WORD tab_number = 0;
+        NewList(list);
+        while (*labels)
+        {
+            struct Node *node = AllocClickTabNode(TNA_Text, *labels, TNA_Number, tab_number, TAG_END);
+            if (node)
+            {
+                AddTail(list, node);
+            }
+            labels++;
+            tab_number++;
+        }
+    }
+    return list;
+}
+
+/*
+ * Helper function to free a ClickTab labels list
+ */
+static void free_clicktab_list(struct List *list)
+{
+    if (list)
+    {
+        struct Node *node, *next;
+        node = list->lh_Head;
+        while ((next = node->ln_Succ))
+        {
+            FreeClickTabNode(node);
+            node = next;
+        }
+        whd_free(list);
     }
 }
 
@@ -435,6 +511,20 @@ static void handle_gadget_up(DefIconsCreationWindow *win, ULONG gadget_id)
  */
 static BOOL create_window(DefIconsCreationWindow *win)
 {
+    UWORD max_colors_index;
+    BOOL is_ultra;
+    BOOL ghost_dither;
+    BOOL ghost_lowcolor;
+    ULONG fmt_bits;
+
+    /* Create tab labels list */
+    win->tab_labels = make_clicktab_list(tab_label_strings);
+    if (!win->tab_labels)
+    {
+        log_error(LOG_GUI, "Failed to create ClickTab labels for DefIcons creation window\n");
+        return FALSE;
+    }
+
     /* Create chooser lists (must be done before creating chooser objects) */
     win->folder_mode_list = make_chooser_list(folder_mode_labels);
     win->icon_size_list = make_chooser_list(icon_size_labels);
@@ -442,331 +532,406 @@ static BOOL create_window(DefIconsCreationWindow *win)
     win->max_colors_list = make_chooser_list(max_colors_labels);
     win->dither_method_list = make_chooser_list(dither_method_labels);
     win->lowcolor_mapping_list = make_chooser_list(lowcolor_mapping_labels);
-    
+
     if (!win->folder_mode_list || !win->icon_size_list ||
         !win->thumbnail_borders_list ||
         !win->max_colors_list || !win->dither_method_list || !win->lowcolor_mapping_list)
     {
         log_error(LOG_GUI, "Failed to create chooser lists\n");
-        /* Free any lists that were created before the failure */
         free_chooser_list(win->folder_mode_list);
         free_chooser_list(win->icon_size_list);
-        free_chooser_list(win->thumbnail_borders_list);
         free_chooser_list(win->thumbnail_borders_list);
         free_chooser_list(win->max_colors_list);
         free_chooser_list(win->dither_method_list);
         free_chooser_list(win->lowcolor_mapping_list);
+        free_clicktab_list(win->tab_labels);
+        win->tab_labels = NULL;
         return FALSE;
     }
-    
-    /* Create gadget objects */
-    win->folder_mode_chooser_obj = (Object *)ChooserObject,
-        GA_ID, GID_FOLDER_MODE_CHOOSER,
-        GA_RelVerify, TRUE,
-        CHOOSER_Labels, win->folder_mode_list,
-        CHOOSER_Selected, win->prefs->deficons_folder_icon_mode,
-    ChooserEnd;
-    
-    win->icon_size_chooser_obj = (Object *)ChooserObject,
-        GA_ID, GID_ICON_SIZE_CHOOSER,
-        GA_RelVerify, TRUE,
-        CHOOSER_Labels, win->icon_size_list,
-        CHOOSER_Selected, win->prefs->deficons_icon_size_mode,
-    ChooserEnd;
-    
-    win->thumbnail_borders_chooser_obj = (Object *)ChooserObject,
-        GA_ID, GID_THUMBNAIL_BORDERS_CHOOSER,
-        GA_RelVerify, TRUE,
-        CHOOSER_Labels, win->thumbnail_borders_list,
-        CHOOSER_Selected, (ULONG)win->prefs->deficons_thumbnail_border_mode,
-    ChooserEnd;
-    
-    win->text_preview_checkbox = (Object *)CheckBoxObject,
-        GA_ID, GID_TEXT_PREVIEW_CHECKBOX,
-        GA_Text, "Enable _text file preview thumbnails",
-        GA_Selected, win->prefs->deficons_enable_text_previews,
-        GA_RelVerify, TRUE,
-    CheckBoxEnd;
 
-    win->manage_text_templates_btn = (Object *)ButtonObject,
-        GA_ID, GID_MANAGE_TEXT_TEMPLATES,
-        GA_Text, "_Manage Text Templates...",
-        GA_RelVerify, TRUE,
-    ButtonEnd;
-
-    win->picture_preview_checkbox = (Object *)CheckBoxObject,
-        GA_ID, GID_PICTURE_PREVIEW_CHECKBOX,
-        GA_Text, "Enable _picture file preview thumbnails",
-        GA_Selected, win->prefs->deficons_enable_picture_previews,
-        GA_RelVerify, TRUE,
-    CheckBoxEnd;
-
-    win->upscale_thumbnails_cb = (Object *)CheckBoxObject,
-        GA_ID, GID_UPSCALE_THUMBNAILS_CB,
-        GA_Text, "_Upscale small images to icon size",
-        GA_Selected, win->prefs->deficons_upscale_thumbnails,
-        GA_RelVerify, TRUE,
-    CheckBoxEnd;
-
-    /* Per-format enable checkboxes */
-    {
-        ULONG fmt_bits = win->prefs->deficons_picture_formats_enabled;
-
-        win->fmt_ilbm_cb = (Object *)CheckBoxObject,
-            GA_ID, GID_FMT_ILBM_CB,
-            GA_Text, "_ILBM",
-            GA_Selected, (fmt_bits & ITIDY_PICTFMT_ILBM) ? TRUE : FALSE,
-            GA_RelVerify, TRUE,
-        CheckBoxEnd;
-
-        win->fmt_png_cb = (Object *)CheckBoxObject,
-            GA_ID, GID_FMT_PNG_CB,
-            GA_Text, "_PNG",
-            GA_Selected, (fmt_bits & ITIDY_PICTFMT_PNG) ? TRUE : FALSE,
-            GA_RelVerify, TRUE,
-        CheckBoxEnd;
-
-        win->fmt_gif_cb = (Object *)CheckBoxObject,
-            GA_ID, GID_FMT_GIF_CB,
-            GA_Text, "_GIF",
-            GA_Selected, (fmt_bits & ITIDY_PICTFMT_GIF) ? TRUE : FALSE,
-            GA_RelVerify, TRUE,
-        CheckBoxEnd;
-
-        win->fmt_jpeg_cb = (Object *)CheckBoxObject,
-            GA_ID, GID_FMT_JPEG_CB,
-            GA_Text, "_JPEG (slow)",
-            GA_Selected, (fmt_bits & ITIDY_PICTFMT_JPEG) ? TRUE : FALSE,
-            GA_RelVerify, TRUE,
-        CheckBoxEnd;
-
-        win->fmt_bmp_cb = (Object *)CheckBoxObject,
-            GA_ID, GID_FMT_BMP_CB,
-            GA_Text, "_BMP",
-            GA_Selected, (fmt_bits & ITIDY_PICTFMT_BMP) ? TRUE : FALSE,
-            GA_RelVerify, TRUE,
-        CheckBoxEnd;
-
-        win->fmt_acbm_cb = (Object *)CheckBoxObject,
-            GA_ID, GID_FMT_ACBM_CB,
-            GA_Text, "_ACBM",
-            GA_Selected, (fmt_bits & ITIDY_PICTFMT_ACBM) ? TRUE : FALSE,
-            GA_RelVerify, TRUE,
-        CheckBoxEnd;
-
-        win->fmt_other_cb = (Object *)CheckBoxObject,
-            GA_ID, GID_FMT_OTHER_CB,
-            GA_Text, "_Other",
-            GA_Selected, (fmt_bits & ITIDY_PICTFMT_OTHER) ? TRUE : FALSE,
-            GA_RelVerify, TRUE,
-        CheckBoxEnd;
-    }
-    
     /* Determine initial chooser indices and ghosting from preferences */
+    is_ultra = win->prefs->deficons_ultra_mode;
+    if (is_ultra)
+        max_colors_index = ITIDY_MAX_COLORS_ULTRA_INDEX;
+    else
+        max_colors_index = itidy_max_colors_to_index(win->prefs->deficons_max_icon_colors);
+
+    /* Ghost dither when 256 colors or Ultra (no reduction needed) */
+    ghost_dither   = (win->prefs->deficons_max_icon_colors >= 256) || is_ultra;
+    /* Ghost lowcolor when max colors > 8 */
+    ghost_lowcolor = (win->prefs->deficons_max_icon_colors > 8) || is_ultra;
+
+    fmt_bits = win->prefs->deficons_picture_formats_enabled;
+
+    /* ---------------------------------------------------------------
+     * Build the full window object with ClickTab-based tabbed layout:
+     *
+     *  [Tab: Create   | Tab: Rendering]
+     *  +--[ Create page ]-------------------------------------------+
+     *  |  Folder icons: [chooser         ]                          |
+     *  |  [x] Text file previews   [Manage templates...]            |
+     *  |  [x] Picture file previews                                 |
+     *  |  Picture formats:                                          |
+     *  |   ILBM  PNG  GIF  BMP                                      |
+     *  |   JPEG  ACBM Other                                         |
+     *  +------------------------------------------------------------+
+     *  +--[ Rendering page ]----------------------------------------+
+     *  |  Preview size:    [chooser  ]                              |
+     *  |  Thumbnail frame: [chooser  ]                              |
+     *  |  [x] Upscale small images to icon size                     |
+     *  |  -- Colour reduction --                                    |
+     *  |  Max colours:    [chooser  ]                               |
+     *  |  Dithering:      [chooser  ]                               |
+     *  |  Low-col palette:[chooser  ]                               |
+     *  +------------------------------------------------------------+
+     *  [ OK ]  [ Cancel ]
+     * --------------------------------------------------------------- */
+    /* Hint/tooltip info for all interactive gadgets in this window */
+    static struct HintInfo hintInfo[] =
     {
-        UWORD max_colors_index;
-        BOOL is_ultra = win->prefs->deficons_ultra_mode;
-        BOOL ghost_dither;
-        BOOL ghost_lowcolor;
+        {GID_CLICKTAB,                -1, "", 0},
+        {GID_FOLDER_MODE_CHOOSER,     -1, "Creates missing drawer icons. Smart will scan the sub folder to see if it contains icons or content that needs icons. If it does, it creates a drawer icon.", 0},
+        {GID_TEXT_PREVIEW_CHECKBOX,   -1, "When enabled, iTidy can create thumbnail-style icons for text files by rendering the file contents onto the icon.", 0},
+        {GID_MANAGE_TEXT_TEMPLATES,   -1, "Open the Text Templates window to edit how text previews are rendered.", 0},
+        {GID_PICTURE_PREVIEW_CHECKBOX,-1, "Create thumbnail icons for recognised picture files (formats selected below).", 0},
+        {GID_FMT_ILBM_CB,             -1, "Amiga IFF ILBM/PBM thumbnails.", 0},
+        {GID_FMT_JPEG_CB,             -1, "JPEG thumbnails (slow to decode on 68k - can take over 60s per file on older hardware).", 0},
+        {GID_FMT_PNG_CB,              -1, "PNG thumbnails, also supports transparency.", 0},
+        {GID_FMT_ACBM_CB,             -1, "ACBM (Amiga Continuous Bitmap) thumbnails. A rare Amiga bitmap format, often seen in older demos or game assets.", 0},
+        {GID_FMT_GIF_CB,              -1, "GIF thumbnails, also supports transparency.", 0},
+        {GID_FMT_OTHER_CB,            -1, "Other image formats (not covered above) if supported by installed DataTypes.", 0},
+        {GID_FMT_BMP_CB,              -1, "BMP thumbnails.", 0},
+        {GID_ICON_SIZE_CHOOSER,       -1, "Sets the thumbnail canvas size used inside generated icons.", 0},
+        {GID_THUMBNAIL_BORDERS_CHOOSER,-1, "Controls whether a Workbench-style frame is drawn around the thumbnail.", 0},
+        {GID_UPSCALE_THUMBNAILS_CB,   -1, "If enabled, small images are scaled up to fill the thumbnail area.", 0},
+        {GID_MAX_COLORS_CHOOSER,      -1, "Limits the number of colours used in thumbnails. Lower is faster; higher looks better.", 0},
+        {GID_DITHER_METHOD_CHOOSER,   -1, "Selects dithering when reducing colours.", 0},
+        {GID_LOWCOLOR_MAPPING_CHOOSER,-1, "Palette mapping used at 4 or 8 colours (disabled above 8 colours / Ultra).", 0},
+        {GID_OK,                      -1, "Saves changes and closes the window.", 0},
+        {GID_CANCEL,                  -1, "Closes the window without saving changes.", 0},
+        {-1, -1, NULL, 0}
+    };
 
-        if (is_ultra)
-        {
-            max_colors_index = ITIDY_MAX_COLORS_ULTRA_INDEX;  /* 7 = Ultra */
-        }
-        else
-        {
-            max_colors_index = itidy_max_colors_to_index(win->prefs->deficons_max_icon_colors);
-        }
-
-        /* Ghost dither when 256 colors or Ultra (no reduction needed) */
-        ghost_dither = (win->prefs->deficons_max_icon_colors >= 256) || is_ultra;
-        /* Ghost lowcolor when max colors > 8 */
-        ghost_lowcolor = (win->prefs->deficons_max_icon_colors > 8) || is_ultra;
-
-        win->max_colors_chooser_obj = (Object *)ChooserObject,
-            GA_ID, GID_MAX_COLORS_CHOOSER,
-            GA_RelVerify, TRUE,
-            GA_Disabled, FALSE,
-            CHOOSER_Labels, win->max_colors_list,
-            CHOOSER_Selected, max_colors_index,
-        ChooserEnd;
-
-        win->dither_method_chooser_obj = (Object *)ChooserObject,
-            GA_ID, GID_DITHER_METHOD_CHOOSER,
-            GA_RelVerify, TRUE,
-            GA_Disabled, ghost_dither,
-            CHOOSER_Labels, win->dither_method_list,
-            CHOOSER_Selected, win->prefs->deficons_dither_method,
-        ChooserEnd;
-
-        win->lowcolor_mapping_chooser_obj = (Object *)ChooserObject,
-            GA_ID, GID_LOWCOLOR_MAPPING_CHOOSER,
-            GA_RelVerify, TRUE,
-            GA_Disabled, ghost_lowcolor,
-            CHOOSER_Labels, win->lowcolor_mapping_list,
-            CHOOSER_Selected, win->prefs->deficons_lowcolor_mapping,
-        ChooserEnd;
-    }
-    
-    win->ok_btn = (Object *)ButtonObject,
-        GA_ID, GID_OK,
-        GA_Text, "_OK",
-        GA_RelVerify, TRUE,
-    ButtonEnd;
-    
-    win->cancel_btn = (Object *)ButtonObject,
-        GA_ID, GID_CANCEL,
-        GA_Text, "_Cancel",
-        GA_RelVerify, TRUE,
-    ButtonEnd;
-    
-    /* Build layout */
-    win->main_layout = (Object *)VLayoutObject,
-        LAYOUT_AddChild, (Object *)VLayoutObject,
-            LAYOUT_BevelStyle, BVS_GROUP,
-            LAYOUT_Label, "Icon Creation Options",
-            
-            LAYOUT_AddChild, (Object *)HLayoutObject,
-                LAYOUT_AddChild, (Object *)LabelObject,
-                    LABEL_Text, "Folder Icons:",
-                LabelEnd,
-                CHILD_WeightedWidth, 0,
-                
-                LAYOUT_AddChild, win->folder_mode_chooser_obj,
-                CHILD_WeightedWidth, 100,
-            LayoutEnd,
-            CHILD_WeightedHeight, 0,
-            
-            LAYOUT_AddChild, (Object *)HLayoutObject,
-                LAYOUT_AddChild, (Object *)LabelObject,
-                    LABEL_Text, "Icon Size:",
-                LabelEnd,
-                CHILD_WeightedWidth, 0,
-                
-                LAYOUT_AddChild, win->icon_size_chooser_obj,
-                CHILD_WeightedWidth, 100,
-            LayoutEnd,
-            CHILD_WeightedHeight, 0,
-
-            LAYOUT_AddChild, (Object *)HLayoutObject,
-                LAYOUT_AddChild, (Object *)LabelObject,
-                    LABEL_Text, "_Thumbnail borders:",
-                LabelEnd,
-                CHILD_WeightedWidth, 0,
-
-                LAYOUT_AddChild, win->thumbnail_borders_chooser_obj,
-                CHILD_WeightedWidth, 100,
-            LayoutEnd,
-            CHILD_WeightedHeight, 0,
-
-            LAYOUT_AddChild, win->text_preview_checkbox,
-            CHILD_WeightedHeight, 0,
-
-            LAYOUT_AddChild, win->manage_text_templates_btn,
-            CHILD_WeightedHeight, 0,
-
-            LAYOUT_AddChild, win->picture_preview_checkbox,
-            CHILD_WeightedHeight, 0,
-            
-            LAYOUT_AddChild, win->upscale_thumbnails_cb,
-            CHILD_WeightedHeight, 0,
-        LayoutEnd,
-        CHILD_WeightedHeight, 0,
-
-        LAYOUT_AddChild, (Object *)VLayoutObject,
-            LAYOUT_BevelStyle, BVS_GROUP,
-            LAYOUT_Label, "Enabled Picture Formats",
-
-            LAYOUT_AddChild, (Object *)HLayoutObject,
-                /* Left column: ILBM, PNG, GIF, BMP */
-                LAYOUT_AddChild, (Object *)VLayoutObject,
-                    LAYOUT_AddChild, win->fmt_ilbm_cb,
-                    CHILD_WeightedHeight, 0,
-                    LAYOUT_AddChild, win->fmt_png_cb,
-                    CHILD_WeightedHeight, 0,
-                    LAYOUT_AddChild, win->fmt_gif_cb,
-                    CHILD_WeightedHeight, 0,
-                    LAYOUT_AddChild, win->fmt_bmp_cb,
-                    CHILD_WeightedHeight, 0,
-                LayoutEnd,
-                /* Right column: JPEG (slow), ACBM, Other */
-                LAYOUT_AddChild, (Object *)VLayoutObject,
-                    LAYOUT_AddChild, win->fmt_jpeg_cb,
-                    CHILD_WeightedHeight, 0,
-                    LAYOUT_AddChild, win->fmt_acbm_cb,
-                    CHILD_WeightedHeight, 0,
-                    LAYOUT_AddChild, win->fmt_other_cb,
-                    CHILD_WeightedHeight, 0,
-                LayoutEnd,
-            LayoutEnd,
-            CHILD_WeightedHeight, 0,
-        LayoutEnd,
-        CHILD_WeightedHeight, 0,
-
-        LAYOUT_AddChild, (Object *)VLayoutObject,
-            LAYOUT_BevelStyle, BVS_GROUP,
-            LAYOUT_Label, "Color Reduction",
-
-            LAYOUT_AddChild, (Object *)HLayoutObject,
-                LAYOUT_AddChild, (Object *)LabelObject,
-                    LABEL_Text, "Max Colors:",
-                LabelEnd,
-                CHILD_WeightedWidth, 0,
-
-                LAYOUT_AddChild, win->max_colors_chooser_obj,
-                CHILD_WeightedWidth, 100,
-            LayoutEnd,
-            CHILD_WeightedHeight, 0,
-
-            LAYOUT_AddChild, (Object *)HLayoutObject,
-                LAYOUT_AddChild, (Object *)LabelObject,
-                    LABEL_Text, "Dithering:",
-                LabelEnd,
-                CHILD_WeightedWidth, 0,
-
-                LAYOUT_AddChild, win->dither_method_chooser_obj,
-                CHILD_WeightedWidth, 100,
-            LayoutEnd,
-            CHILD_WeightedHeight, 0,
-
-            LAYOUT_AddChild, (Object *)HLayoutObject,
-                LAYOUT_AddChild, (Object *)LabelObject,
-                    LABEL_Text, "Low-Color Map:",
-                LabelEnd,
-                CHILD_WeightedWidth, 0,
-
-                LAYOUT_AddChild, win->lowcolor_mapping_chooser_obj,
-                CHILD_WeightedWidth, 100,
-            LayoutEnd,
-            CHILD_WeightedHeight, 0,
-        LayoutEnd,
-        CHILD_WeightedHeight, 0,
-
-        LAYOUT_AddChild, (Object *)HLayoutObject,
-            LAYOUT_AddChild, win->ok_btn,
-            LAYOUT_AddChild, win->cancel_btn,
-        LayoutEnd,
-        CHILD_WeightedHeight, 0,
-    LayoutEnd;
-
-    /* Create window object */
     win->window_obj = (Object *)WindowObject,
-        WA_Title, "DefIcons: Icon Creation Settings",
-        WA_Activate, TRUE,
-        WA_DepthGadget, TRUE,
-        WA_DragBar, TRUE,
-        WA_CloseGadget, TRUE,
-        WA_SizeGadget, FALSE,
-        WINDOW_Position, WPOS_CENTERSCREEN,
-        WINDOW_Layout, win->main_layout,
+        WA_Title,              "iTidy: Icon creation settings",
+        WA_Activate,           TRUE,
+        WA_DepthGadget,        TRUE,
+        WA_DragBar,            TRUE,
+        WA_CloseGadget,        TRUE,
+        WA_SizeGadget,         TRUE,
+        WA_MinWidth,           300,
+        WA_MinHeight,          200,
+        WA_MaxWidth,           8192,
+        WA_MaxHeight,          8192,
+        WINDOW_Position,       WPOS_CENTERSCREEN,
+        WINDOW_HintInfo,       hintInfo,
+        WINDOW_GadgetHelp,     TRUE,
+        WINDOW_ParentGroup, (Object *)VLayoutObject,
+            LAYOUT_SpaceOuter,  TRUE,
+            LAYOUT_DeferLayout, TRUE,
+
+            /* ---- ClickTab row ---- */
+            LAYOUT_AddChild, win->clicktab_obj = (Object *)ClickTabObject,
+                GA_ID,          GID_CLICKTAB,
+                GA_RelVerify,   TRUE,
+                GA_TabCycle,    TRUE,
+                CLICKTAB_Labels, win->tab_labels,
+                CLICKTAB_PageGroup, (Object *)PageObject,
+                    LAYOUT_DeferLayout, TRUE,
+
+                    /* ============ Page 0: Create ============ */
+                    PAGE_Add, (Object *)VLayoutObject,
+                        LAYOUT_LeftSpacing,   4,
+                        LAYOUT_RightSpacing,  4,
+                        LAYOUT_TopSpacing,    4,
+                        LAYOUT_BottomSpacing, 4,
+
+                        /* Folder icons chooser */
+                        LAYOUT_AddChild, win->folder_mode_chooser_obj = (Object *)ChooserObject,
+                            GA_ID,             GID_FOLDER_MODE_CHOOSER,
+                            GA_RelVerify,      TRUE,
+                            GA_TabCycle,       TRUE,
+                            CHOOSER_PopUp,     TRUE,
+                            CHOOSER_Labels,    win->folder_mode_list,
+                            CHOOSER_Selected,  win->prefs->deficons_folder_icon_mode,
+                        ChooserEnd,
+                        CHILD_Label, (Object *)LabelObject,
+                            LABEL_Text, "Folder icons:",
+                        LabelEnd,
+                        CHILD_WeightedHeight, 0,
+
+                        /* Spacer */
+                        LAYOUT_AddChild, (Object *)SpaceObject,
+                        SpaceEnd,
+                        CHILD_WeightedHeight, 0,
+
+                        /* Text preview row: checkbox + Manage Templates button */
+                        LAYOUT_AddChild, (Object *)HLayoutObject,
+                            LAYOUT_AddChild, win->text_preview_checkbox = (Object *)CheckBoxObject,
+                                GA_ID,                 GID_TEXT_PREVIEW_CHECKBOX,
+                                GA_Text,               "Text file previews",
+                                GA_Selected,           win->prefs->deficons_enable_text_previews,
+                                GA_RelVerify,          TRUE,
+                                GA_TabCycle,           TRUE,
+                                CHECKBOX_TextPlace,    PLACETEXT_RIGHT,
+                            CheckBoxEnd,
+                            LAYOUT_AddChild, win->manage_text_templates_btn = (Object *)ButtonObject,
+                                GA_ID,        GID_MANAGE_TEXT_TEMPLATES,
+                                GA_Text,      "Manage templates...",
+                                GA_RelVerify, TRUE,
+                                GA_TabCycle,  TRUE,
+                            ButtonEnd,
+                        LayoutEnd,
+                        CHILD_WeightedHeight, 0,
+
+                        /* Picture preview checkbox row */
+                        LAYOUT_AddChild, (Object *)HLayoutObject,
+                            LAYOUT_AddChild, win->picture_preview_checkbox = (Object *)CheckBoxObject,
+                                GA_ID,              GID_PICTURE_PREVIEW_CHECKBOX,
+                                GA_Text,            "Picture file previews",
+                                GA_Selected,        win->prefs->deficons_enable_picture_previews,
+                                GA_RelVerify,       TRUE,
+                                GA_TabCycle,        TRUE,
+                                CHECKBOX_TextPlace, PLACETEXT_RIGHT,
+                            CheckBoxEnd,
+                        LayoutEnd,
+                        CHILD_WeightedHeight, 0,
+
+                        /* Spacer */
+                        LAYOUT_AddChild, (Object *)SpaceObject,
+                        SpaceEnd,
+                        CHILD_WeightedHeight, 0,
+
+                        /* Picture formats label */
+                        LAYOUT_AddImage, (Object *)LabelObject,
+                            LABEL_Text, "Picture formats:",
+                        LabelEnd,
+
+                        /* Picture format checkboxes: 4 columns */
+                        LAYOUT_AddChild, (Object *)HLayoutObject,
+                            /* Column 1: ILBM, JPEG */
+                            LAYOUT_AddChild, (Object *)VLayoutObject,
+                                LAYOUT_AddChild, win->fmt_ilbm_cb = (Object *)CheckBoxObject,
+                                    GA_ID,              GID_FMT_ILBM_CB,
+                                    GA_Text,            "ILBM (IFF)",
+                                    GA_Selected,        (fmt_bits & ITIDY_PICTFMT_ILBM) ? TRUE : FALSE,
+                                    GA_RelVerify,       TRUE,
+                                    GA_TabCycle,        TRUE,
+                                    CHECKBOX_TextPlace, PLACETEXT_RIGHT,
+                                CheckBoxEnd,
+                                CHILD_WeightedHeight, 0,
+                                LAYOUT_AddChild, win->fmt_jpeg_cb = (Object *)CheckBoxObject,
+                                    GA_ID,              GID_FMT_JPEG_CB,
+                                    GA_Text,            "JPEG (Slow)",
+                                    GA_Selected,        (fmt_bits & ITIDY_PICTFMT_JPEG) ? TRUE : FALSE,
+                                    GA_RelVerify,       TRUE,
+                                    GA_TabCycle,        TRUE,
+                                    CHECKBOX_TextPlace, PLACETEXT_RIGHT,
+                                CheckBoxEnd,
+                                CHILD_WeightedHeight, 0,
+                            LayoutEnd,
+                            /* Column 2: PNG, ACBM */
+                            LAYOUT_AddChild, (Object *)VLayoutObject,
+                                LAYOUT_AddChild, win->fmt_png_cb = (Object *)CheckBoxObject,
+                                    GA_ID,              GID_FMT_PNG_CB,
+                                    GA_Text,            "PNG",
+                                    GA_Selected,        (fmt_bits & ITIDY_PICTFMT_PNG) ? TRUE : FALSE,
+                                    GA_RelVerify,       TRUE,
+                                    GA_TabCycle,        TRUE,
+                                    CHECKBOX_TextPlace, PLACETEXT_RIGHT,
+                                CheckBoxEnd,
+                                CHILD_WeightedHeight, 0,
+                                LAYOUT_AddChild, win->fmt_acbm_cb = (Object *)CheckBoxObject,
+                                    GA_ID,              GID_FMT_ACBM_CB,
+                                    GA_Text,            "ACBM",
+                                    GA_Selected,        (fmt_bits & ITIDY_PICTFMT_ACBM) ? TRUE : FALSE,
+                                    GA_RelVerify,       TRUE,
+                                    GA_TabCycle,        TRUE,
+                                    CHECKBOX_TextPlace, PLACETEXT_RIGHT,
+                                CheckBoxEnd,
+                                CHILD_WeightedHeight, 0,
+                            LayoutEnd,
+                            /* Column 3: GIF, Other */
+                            LAYOUT_AddChild, (Object *)VLayoutObject,
+                                LAYOUT_AddChild, win->fmt_gif_cb = (Object *)CheckBoxObject,
+                                    GA_ID,              GID_FMT_GIF_CB,
+                                    GA_Text,            "GIF",
+                                    GA_Selected,        (fmt_bits & ITIDY_PICTFMT_GIF) ? TRUE : FALSE,
+                                    GA_RelVerify,       TRUE,
+                                    GA_TabCycle,        TRUE,
+                                    CHECKBOX_TextPlace, PLACETEXT_RIGHT,
+                                CheckBoxEnd,
+                                CHILD_WeightedHeight, 0,
+                                LAYOUT_AddChild, win->fmt_other_cb = (Object *)CheckBoxObject,
+                                    GA_ID,              GID_FMT_OTHER_CB,
+                                    GA_Text,            "Other",
+                                    GA_Selected,        (fmt_bits & ITIDY_PICTFMT_OTHER) ? TRUE : FALSE,
+                                    GA_RelVerify,       TRUE,
+                                    GA_TabCycle,        TRUE,
+                                    CHECKBOX_TextPlace, PLACETEXT_RIGHT,
+                                CheckBoxEnd,
+                                CHILD_WeightedHeight, 0,
+                            LayoutEnd,
+                            /* Column 4: BMP */
+                            LAYOUT_AddChild, (Object *)VLayoutObject,
+                                LAYOUT_AddChild, win->fmt_bmp_cb = (Object *)CheckBoxObject,
+                                    GA_ID,              GID_FMT_BMP_CB,
+                                    GA_Text,            "BMP",
+                                    GA_Selected,        (fmt_bits & ITIDY_PICTFMT_BMP) ? TRUE : FALSE,
+                                    GA_RelVerify,       TRUE,
+                                    GA_TabCycle,        TRUE,
+                                    CHECKBOX_TextPlace, PLACETEXT_RIGHT,
+                                CheckBoxEnd,
+                                CHILD_WeightedHeight, 0,
+                            LayoutEnd,
+                        LayoutEnd,
+                        CHILD_WeightedHeight, 0,
+
+                        /* Bottom spacer */
+                        LAYOUT_AddChild, (Object *)SpaceObject,
+                        SpaceEnd,
+                    LayoutEnd, /* end Create page */
+
+                    /* ============ Page 1: Rendering ============ */
+                    PAGE_Add, (Object *)VLayoutObject,
+
+                        /* Size / border / upscale group */
+                        LAYOUT_AddChild, (Object *)VLayoutObject,
+                            LAYOUT_LeftSpacing,   4,
+                            LAYOUT_RightSpacing,  4,
+                            LAYOUT_TopSpacing,    4,
+                            LAYOUT_BottomSpacing, 4,
+
+                            LAYOUT_AddChild, win->icon_size_chooser_obj = (Object *)ChooserObject,
+                                GA_ID,            GID_ICON_SIZE_CHOOSER,
+                                GA_RelVerify,     TRUE,
+                                GA_TabCycle,      TRUE,
+                                CHOOSER_PopUp,    TRUE,
+                                CHOOSER_Labels,   win->icon_size_list,
+                                CHOOSER_Selected, win->prefs->deficons_icon_size_mode,
+                            ChooserEnd,
+                            CHILD_Label, (Object *)LabelObject,
+                                LABEL_Text, "Preview size:",
+                            LabelEnd,
+                            CHILD_WeightedHeight, 0,
+
+                            LAYOUT_AddChild, win->thumbnail_borders_chooser_obj = (Object *)ChooserObject,
+                                GA_ID,            GID_THUMBNAIL_BORDERS_CHOOSER,
+                                GA_RelVerify,     TRUE,
+                                GA_TabCycle,      TRUE,
+                                CHOOSER_PopUp,    TRUE,
+                                CHOOSER_Labels,   win->thumbnail_borders_list,
+                                CHOOSER_Selected, (ULONG)win->prefs->deficons_thumbnail_border_mode,
+                            ChooserEnd,
+                            CHILD_Label, (Object *)LabelObject,
+                                LABEL_Text, "Thumbnail frame:",
+                            LabelEnd,
+                            CHILD_WeightedHeight, 0,
+
+                            LAYOUT_AddChild, win->upscale_thumbnails_cb = (Object *)CheckBoxObject,
+                                GA_ID,              GID_UPSCALE_THUMBNAILS_CB,
+                                GA_Text,            "Upscale small images to icon size",
+                                GA_Selected,        win->prefs->deficons_upscale_thumbnails,
+                                GA_RelVerify,       TRUE,
+                                GA_TabCycle,        TRUE,
+                                CHECKBOX_TextPlace, PLACETEXT_LEFT,
+                            CheckBoxEnd,
+                            CHILD_WeightedHeight, 0,
+                        LayoutEnd,
+                        CHILD_WeightedHeight, 0,
+
+                        /* Spacer between sections */
+                        LAYOUT_AddChild, (Object *)SpaceObject,
+                        SpaceEnd,
+                        CHILD_WeightedHeight, 0,
+
+                        /* Colour reduction group */
+                        LAYOUT_AddChild, (Object *)VLayoutObject,
+                            LAYOUT_LeftSpacing,   4,
+                            LAYOUT_RightSpacing,  4,
+                            LAYOUT_TopSpacing,    4,
+                            LAYOUT_BottomSpacing, 4,
+                            LAYOUT_LabelPlace,    BVJ_TOP_LEFT,
+
+                            LAYOUT_AddImage, (Object *)LabelObject,
+                                LABEL_Text, "Colour reduction:",
+                            LabelEnd,
+
+                            LAYOUT_AddChild, win->max_colors_chooser_obj = (Object *)ChooserObject,
+                                GA_ID,            GID_MAX_COLORS_CHOOSER,
+                                GA_RelVerify,     TRUE,
+                                GA_TabCycle,      TRUE,
+                                GA_Disabled,      FALSE,
+                                CHOOSER_PopUp,    TRUE,
+                                CHOOSER_Labels,   win->max_colors_list,
+                                CHOOSER_Selected, (ULONG)max_colors_index,
+                            ChooserEnd,
+                            CHILD_Label, (Object *)LabelObject,
+                                LABEL_Text, "Max colours:",
+                            LabelEnd,
+                            CHILD_WeightedHeight, 0,
+
+                            LAYOUT_AddChild, win->dither_method_chooser_obj = (Object *)ChooserObject,
+                                GA_ID,            GID_DITHER_METHOD_CHOOSER,
+                                GA_RelVerify,     TRUE,
+                                GA_TabCycle,      TRUE,
+                                GA_Disabled,      ghost_dither,
+                                CHOOSER_PopUp,    TRUE,
+                                CHOOSER_Labels,   win->dither_method_list,
+                                CHOOSER_Selected, win->prefs->deficons_dither_method,
+                            ChooserEnd,
+                            CHILD_Label, (Object *)LabelObject,
+                                LABEL_Text, "Dithering:",
+                            LabelEnd,
+                            CHILD_WeightedHeight, 0,
+
+                            LAYOUT_AddChild, win->lowcolor_mapping_chooser_obj = (Object *)ChooserObject,
+                                GA_ID,            GID_LOWCOLOR_MAPPING_CHOOSER,
+                                GA_RelVerify,     TRUE,
+                                GA_TabCycle,      TRUE,
+                                GA_Disabled,      ghost_lowcolor,
+                                CHOOSER_PopUp,    TRUE,
+                                CHOOSER_Labels,   win->lowcolor_mapping_list,
+                                CHOOSER_Selected, win->prefs->deficons_lowcolor_mapping,
+                            ChooserEnd,
+                            CHILD_Label, (Object *)LabelObject,
+                                LABEL_Text, "Low-col palette:",
+                            LabelEnd,
+                            CHILD_WeightedHeight, 0,
+                        LayoutEnd,
+                        CHILD_WeightedHeight, 0,
+
+                    LayoutEnd, /* end Rendering page */
+
+                PageEnd, /* end PageObject */
+            ClickTabEnd, /* end ClickTab */
+
+            /* ---- OK / Cancel button row (outside tabs) ---- */
+            LAYOUT_AddChild, (Object *)HLayoutObject,
+                LAYOUT_AddChild, win->ok_btn = (Object *)ButtonObject,
+                    GA_ID,        GID_OK,
+                    GA_Text,      "_OK",
+                    GA_RelVerify, TRUE,
+                    GA_TabCycle,  TRUE,
+                ButtonEnd,
+                LAYOUT_AddChild, win->cancel_btn = (Object *)ButtonObject,
+                    GA_ID,        GID_CANCEL,
+                    GA_Text,      "_Cancel",
+                    GA_RelVerify, TRUE,
+                    GA_TabCycle,  TRUE,
+                ButtonEnd,
+            LayoutEnd,
+            CHILD_WeightedHeight, 0,
+
+        LayoutEnd, /* end WINDOW_ParentGroup */
     WindowEnd;
-    
+
     if (win->window_obj == NULL)
     {
         log_error(LOG_GUI, "Failed to create DefIcons creation window object\n");
         return FALSE;
     }
-    
+
     /* Open the window */
     win->window = (struct Window *)RA_OpenWindow(win->window_obj);
     if (win->window == NULL)
@@ -776,7 +941,7 @@ static BOOL create_window(DefIconsCreationWindow *win)
         win->window_obj = NULL;
         return FALSE;
     }
-    
+
     log_info(LOG_GUI, "DefIcons creation settings window opened\n");
     return TRUE;
 }
@@ -852,7 +1017,14 @@ static void cleanup_window(DefIconsCreationWindow *win)
         DisposeObject(win->window_obj);
         win->window_obj = NULL;
     }
-    
+
+    /* Free ClickTab labels */
+    if (win->tab_labels)
+    {
+        free_clicktab_list(win->tab_labels);
+        win->tab_labels = NULL;
+    }
+
     /* Free chooser lists */
     free_chooser_list(win->folder_mode_list);
     free_chooser_list(win->icon_size_list);

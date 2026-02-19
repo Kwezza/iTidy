@@ -14,7 +14,7 @@
 #define LayoutBase    iTidy_TextTemplates_LayoutBase
 #define ListBrowserBase iTidy_TextTemplates_ListBrowserBase
 #define ButtonBase    iTidy_TextTemplates_ButtonBase
-#define CheckBoxBase  iTidy_TextTemplates_CheckBoxBase
+#define ChooserBase   iTidy_TextTemplates_ChooserBase
 #define LabelBase     iTidy_TextTemplates_LabelBase
 #define RequesterBase iTidy_TextTemplates_RequesterBase
 
@@ -38,7 +38,7 @@
 #include <proto/layout.h>
 #include <proto/listbrowser.h>
 #include <proto/button.h>
-#include <proto/checkbox.h>
+#include <proto/chooser.h>
 #include <proto/label.h>
 #include <proto/requester.h>
 #include <proto/dos.h>
@@ -50,7 +50,7 @@
 #include <gadgets/layout.h>
 #include <gadgets/listbrowser.h>
 #include <gadgets/button.h>
-#include <gadgets/checkbox.h>
+#include <gadgets/chooser.h>
 #include <images/label.h>
 
 /* ARexx for WB Info command */
@@ -71,7 +71,7 @@ struct Library *iTidy_TextTemplates_WindowBase    = NULL;
 struct Library *iTidy_TextTemplates_LayoutBase    = NULL;
 struct Library *iTidy_TextTemplates_ListBrowserBase = NULL;
 struct Library *iTidy_TextTemplates_ButtonBase    = NULL;
-struct Library *iTidy_TextTemplates_CheckBoxBase  = NULL;
+struct Library *iTidy_TextTemplates_ChooserBase   = NULL;
 struct Library *iTidy_TextTemplates_LabelBase     = NULL;
 struct Library *iTidy_TextTemplates_RequesterBase = NULL;
 
@@ -87,16 +87,19 @@ struct Library *iTidy_TextTemplates_RequesterBase = NULL;
 #define COL_FILE_PCT   45
 #define COL_STATUS_PCT 20
 
-/* Gadget IDs */
+/* Gadget IDs - matching testcode.c reference design */
 enum {
-    GID_TEMPLATE_LB = 1,    /* ListBrowser */
-    GID_ENABLE_CB,           /* Enable text previews checkbox */
-    GID_COPY_BTN,            /* Copy def_ascii.info -> def_<type>.info */
-    GID_CHECK_BTN,           /* Validate ToolTypes */
-    GID_WBINFO_BTN,          /* Open WB Information dialog */
-    GID_REFRESH_BTN,         /* Refresh list */
-    GID_OK,
-    GID_CANCEL
+    GID_SHOW_CHOOSER         = 9,   /* "Show" filter chooser */
+    GID_TEMPLATE_LB          = 13,  /* ListBrowser */
+    GID_SELECTED_TYPE        = 16,  /* Read-only: type name */
+    GID_SELECTED_TMPLFILE    = 17,  /* Read-only: template file */
+    GID_SELECTED_EFFECTIVE   = 19,  /* Read-only: effective file */
+    GID_SELECTED_STATUS      = 20,  /* Read-only: status */
+    GID_BTN_CREATE_OVERWRITE = 24,  /* Create/Overwrite from master */
+    GID_BTN_EDIT_TOOLTYPES   = 25,  /* Edit tooltypes (WB Info) */
+    GID_BTN_VALIDATE         = 26,  /* Validate tooltypes */
+    GID_BTN_REVERT           = 35,  /* Revert to master */
+    GID_BTN_CLOSE            = 33   /* Close window */
 };
 
 /* Column indices */
@@ -108,29 +111,66 @@ enum {
 /* Window state structure                                                */
 /*========================================================================*/
 
+/* Filter for the "Show" chooser */
+typedef enum {
+    SHOW_ALL = 0,
+    SHOW_CUSTOM_ONLY,
+    SHOW_MISSING_ONLY
+} ShowFilter;
+
 typedef struct {
     /* ReAction objects */
     Object *window_obj;
+    Object *show_chooser;
     Object *template_lb;
-    Object *enable_cb;
-    Object *copy_btn;
-    Object *check_btn;
-    Object *wbinfo_btn;
-    Object *refresh_btn;
-    Object *ok_btn;
-    Object *cancel_btn;
+    Object *selected_type;
+    Object *selected_tmplfile;
+    Object *selected_effective;
+    Object *selected_status;
+    Object *btn_create_overwrite;
+    Object *btn_edit_tooltypes;
+    Object *btn_validate;
+    Object *btn_revert;
+    Object *btn_close;
 
     struct Window *window;
-    struct List   *lb_list;     /* ListBrowser nodes */
+    struct List   *lb_list;      /* ListBrowser nodes */
+    struct List   *chooser_list; /* Chooser label list */
 
     LayoutPreferences *prefs;
 
-    BOOL user_accepted;
+    ShowFilter show_filter;
+
+    /* String buffers for the read-only display fields */
+    char buf_type[64];
+    char buf_tmplfile[256];
+    char buf_effective[256];
+    char buf_status[64];
+    char buf_create_label[64];
+
+    /* Per-window ColumnInfo buffer (must NOT be shared or static:
+     * listbrowser writes back widths when LISTBROWSER_AutoFit is used) */
+    struct ColumnInfo col_info[4];
 
     /* Cached subtype table */
     const char **subtypes;      /* from deficons_get_ascii_subtypes() */
     int          subtype_count;
+
+    /* Row-to-subtype mapping (rebuilt by rebuild_list on every filter change).
+     * subtype_map[visual_row] = actual index into win->subtypes[].
+     * LISTBROWSER_Selected returns a visual row, NOT a subtypes[] index. */
+    int subtype_map[512];
+    int visible_count;          /* number of rows currently in the listbrowser */
+
+    /* EXCLUDETYPE data loaded from PROGDIR:Icons/def_ascii.info on window open */
+    char   exclude_types[512];  /* raw EXCLUDETYPE value: "amigaguide,html,install" */
+    STRPTR exclude_list[64];    /* pointers into exclude_types[] after tokenising */
+    int    exclude_count;       /* number of entries in exclude_list[] */
 } TextTemplatesWindow;
+
+/* Forward declarations */
+static void update_selected_type_panel(TextTemplatesWindow *win, int selected_idx);
+static void rebuild_list(TextTemplatesWindow *win);
 
 /*========================================================================*/
 /* Library open / close                                                  */
@@ -142,13 +182,13 @@ static BOOL open_libs(void)
     iTidy_TextTemplates_LayoutBase     = OpenLibrary("gadgets/layout.gadget",   44);
     iTidy_TextTemplates_ListBrowserBase= OpenLibrary("gadgets/listbrowser.gadget", 44);
     iTidy_TextTemplates_ButtonBase     = OpenLibrary("gadgets/button.gadget",   44);
-    iTidy_TextTemplates_CheckBoxBase   = OpenLibrary("gadgets/checkbox.gadget", 44);
+    iTidy_TextTemplates_ChooserBase    = OpenLibrary("gadgets/chooser.gadget",  44);
     iTidy_TextTemplates_LabelBase      = OpenLibrary("images/label.image",      44);
     iTidy_TextTemplates_RequesterBase  = OpenLibrary("requester.class",         44);
 
     if (!iTidy_TextTemplates_WindowBase || !iTidy_TextTemplates_LayoutBase ||
         !iTidy_TextTemplates_ListBrowserBase || !iTidy_TextTemplates_ButtonBase ||
-        !iTidy_TextTemplates_CheckBoxBase || !iTidy_TextTemplates_LabelBase ||
+        !iTidy_TextTemplates_ChooserBase  || !iTidy_TextTemplates_LabelBase ||
         !iTidy_TextTemplates_RequesterBase)
     {
         log_error(LOG_GUI, "TextTemplates: failed to open ReAction libraries\n");
@@ -169,10 +209,10 @@ static void close_libs(void)
         CloseLibrary(iTidy_TextTemplates_LabelBase);
         iTidy_TextTemplates_LabelBase = NULL;
     }
-    if (iTidy_TextTemplates_CheckBoxBase)
+    if (iTidy_TextTemplates_ChooserBase)
     {
-        CloseLibrary(iTidy_TextTemplates_CheckBoxBase);
-        iTidy_TextTemplates_CheckBoxBase = NULL;
+        CloseLibrary(iTidy_TextTemplates_ChooserBase);
+        iTidy_TextTemplates_ChooserBase = NULL;
     }
     if (iTidy_TextTemplates_ButtonBase)
     {
@@ -197,18 +237,16 @@ static void close_libs(void)
 }
 
 /*========================================================================*/
-/* Column info (static - 3 columns)                                      */
+/* Column info initialiser                                               */
 /*========================================================================*/
 
-static struct ColumnInfo *make_column_info(void)
+/** Initialise a per-window ColumnInfo[4] buffer (terminator at index 3). */
+static void init_column_info(struct ColumnInfo *ci)
 {
-    static struct ColumnInfo ci[] = {
-        { COL_TYPE_PCT,   "Type",     0 },
-        { COL_FILE_PCT,   "Template", 0 },
-        { COL_STATUS_PCT, "Status",   0 },
-        { -1, NULL, 0 }
-    };
-    return ci;
+    ci[0].ci_Width = COL_TYPE_PCT;   ci[0].ci_Title = "Type";     ci[0].ci_Flags = 0;
+    ci[1].ci_Width = COL_FILE_PCT;   ci[1].ci_Title = "Template"; ci[1].ci_Flags = 0;
+    ci[2].ci_Width = COL_STATUS_PCT; ci[2].ci_Title = "Status";   ci[2].ci_Flags = 0;
+    ci[3].ci_Width = -1;             ci[3].ci_Title = NULL;        ci[3].ci_Flags = 0;
 }
 
 /*========================================================================*/
@@ -252,8 +290,9 @@ static void make_file_label(const char *type_token, char *buf, int buf_size)
  *
  * @param type_token  Type name (e.g., "c", "rexx", "ascii")
  * @param is_parent   TRUE for the "ascii" row itself
+ * @param is_excluded TRUE if the type appears in EXCLUDETYPE of def_ascii.info
  */
-static struct Node *make_type_node(const char *type_token, BOOL is_parent)
+static struct Node *make_type_node(const char *type_token, BOOL is_parent, BOOL is_excluded)
 {
     char display_type[64];
     char file_label[64];
@@ -265,7 +304,14 @@ static struct Node *make_type_node(const char *type_token, BOOL is_parent)
         snprintf(display_type, sizeof(display_type), "  %s", type_token);
 
     make_file_label(type_token, file_label, sizeof(file_label));
-    status = type_has_template(type_token) ? "Custom" : "None";
+    if (is_parent)
+        status = "Master";
+    else if (is_excluded)
+        status = "Excluded";
+    else if (type_has_template(type_token))
+        status = "Custom";
+    else
+        status = "Using master";
 
     return AllocListBrowserNode(3,
         LBNA_Column, COL_TYPE,
@@ -279,6 +325,109 @@ static struct Node *make_type_node(const char *type_token, BOOL is_parent)
             LBNCA_Text, status,
         TAG_DONE);
 }
+
+/*========================================================================*/
+/* EXCLUDETYPE helpers                                                   */
+/*========================================================================*/
+
+/**
+ * @brief Tokenise a comma-separated EXCLUDETYPE value into win->exclude_list[].
+ *
+ * Operates in-place on win->exclude_types[], storing pointers to each
+ * whitespace-trimmed token.  Safe to call multiple times (overwrites state).
+ */
+static void parse_exclude_types(TextTemplatesWindow *win, const char *value)
+{
+    char *p;
+    char *start;
+
+    win->exclude_count = 0;
+
+    if (!value || value[0] == '\0')
+    {
+        win->exclude_types[0] = '\0';
+        return;
+    }
+
+    strncpy(win->exclude_types, value, sizeof(win->exclude_types) - 1);
+    win->exclude_types[sizeof(win->exclude_types) - 1] = '\0';
+
+    p     = win->exclude_types;
+    start = p;
+    while (*p)
+    {
+        if (*p == ',')
+        {
+            *p = '\0';
+            /* Trim leading whitespace in token */
+            while (*start == ' ') start++;
+            if (start < p && win->exclude_count < 64)
+                win->exclude_list[win->exclude_count++] = (STRPTR)start;
+            start = p + 1;
+        }
+        p++;
+    }
+    /* Final token */
+    while (*start == ' ') start++;
+    if (*start != '\0' && win->exclude_count < 64)
+        win->exclude_list[win->exclude_count++] = (STRPTR)start;
+}
+
+/**
+ * @brief Load the EXCLUDETYPE tooltype from PROGDIR:Icons/def_ascii.info.
+ *
+ * Populates win->exclude_list[] and win->exclude_count.  Safe to call
+ * when def_ascii.info does not exist or has no EXCLUDETYPE tooltype.
+ */
+static void load_exclude_types(TextTemplatesWindow *win)
+{
+    char             icon_path[256];
+    struct DiskObject *dobj;
+    STRPTR            tt_value;
+
+    win->exclude_count   = 0;
+    win->exclude_types[0] = '\0';
+
+    snprintf(icon_path, sizeof(icon_path), "%sdef_ascii", TEMPLATE_DIR);
+    dobj = GetDiskObject((STRPTR)icon_path);
+    if (!dobj)
+    {
+        log_debug(LOG_GUI, "TextTemplates: def_ascii.info not found - no EXCLUDETYPE\n");
+        return;
+    }
+
+    tt_value = (STRPTR)FindToolType((STRPTR *)dobj->do_ToolTypes, (STRPTR)"EXCLUDETYPE");
+    if (tt_value)
+    {
+        log_info(LOG_GUI, "TextTemplates: EXCLUDETYPE=%s\n", tt_value);
+        parse_exclude_types(win, (const char *)tt_value);
+        log_info(LOG_GUI, "TextTemplates: %d type(s) excluded\n", win->exclude_count);
+    }
+    else
+    {
+        log_debug(LOG_GUI, "TextTemplates: no EXCLUDETYPE tooltype in def_ascii.info\n");
+    }
+
+    FreeDiskObject(dobj);
+}
+
+/**
+ * @brief Return TRUE if type_token appears in the EXCLUDETYPE list.
+ */
+static BOOL is_type_excluded(const TextTemplatesWindow *win, const char *type_token)
+{
+    int i;
+    for (i = 0; i < win->exclude_count; i++)
+    {
+        if (Stricmp(win->exclude_list[i], (STRPTR)type_token) == 0)
+            return TRUE;
+    }
+    return FALSE;
+}
+
+/*========================================================================*/
+/* ListBrowser population                                                */
+/*========================================================================*/
 
 /**
  * @brief Rebuild the ListBrowser contents from the subtype array
@@ -297,17 +446,39 @@ static void rebuild_list(TextTemplatesWindow *win)
     while ((node = RemHead(win->lb_list)))
         FreeListBrowserNode(node);
 
-    /* Add one node per subtype; index 0 is "ascii" itself (parent) */
+    /* Add one node per subtype; also rebuild subtype_map so that
+     * subtype_map[visual_row] == actual index into win->subtypes[].          */
+    win->visible_count = 0;
     for (i = 0; i < win->subtype_count; i++)
     {
-        node = make_type_node(win->subtypes[i], i == 0);
+        BOOL has_custom = type_has_template(win->subtypes[i]);
+
+        /* Apply "Show" filter - always include the master row (index 0) */
+        if (i > 0)
+        {
+            if (win->show_filter == SHOW_CUSTOM_ONLY  && !has_custom) continue;
+            if (win->show_filter == SHOW_MISSING_ONLY &&  has_custom) continue;
+        }
+
+        {
+            BOOL type_is_excl = is_type_excluded(win, win->subtypes[i]);
+            node = make_type_node(win->subtypes[i], i == 0, type_is_excl);
+        }
         if (node)
+        {
             AddTail(win->lb_list, node);
+            if (win->visible_count < 512)
+                win->subtype_map[win->visible_count] = i;
+            win->visible_count++;
+        }
     }
 
-    /* Reattach */
+    /* Reattach and tell AutoFit to recalculate column widths for the new content */
     SetGadgetAttrs((struct Gadget *)win->template_lb, win->window, NULL,
         LISTBROWSER_Labels, win->lb_list,
+        TAG_DONE);
+    SetGadgetAttrs((struct Gadget *)win->template_lb, win->window, NULL,
+        LISTBROWSER_AutoFit, TRUE,
         TAG_DONE);
 }
 
@@ -320,10 +491,26 @@ static const char *get_selected_type(TextTemplatesWindow *win)
     ULONG selected = 0;
 
     GetAttr(LISTBROWSER_Selected, win->template_lb, &selected);
-    if ((LONG)selected < 0 || (int)selected >= win->subtype_count)
+    if ((LONG)selected < 0 || (int)selected >= win->visible_count)
         return NULL;
 
-    return win->subtypes[(int)selected];
+    return win->subtypes[win->subtype_map[(int)selected]];
+}
+
+/**
+ * @brief Translate a ListBrowser visual row index to an actual subtypes[] index.
+ *
+ * LISTBROWSER_Selected returns the visual row (0, 1, 2...) within the
+ * currently displayed (possibly filtered) list.  This can differ from the
+ * subtypes[] index when a Show filter is active.
+ *
+ * @return Actual subtypes[] index, or -1 if visual_row is out of range.
+ */
+static int visual_to_actual(const TextTemplatesWindow *win, ULONG visual_row)
+{
+    if ((LONG)visual_row < 0 || (int)visual_row >= win->visible_count)
+        return -1;
+    return win->subtype_map[(int)visual_row];
 }
 
 /*========================================================================*/
@@ -384,15 +571,49 @@ static BOOL show_confirm_req(struct Window *parent, const char *title,
     return (result == 1);
 }
 
+/**
+ * @brief Show a requester explaining that the type is excluded via EXCLUDETYPE.
+ *
+ * Directs the user to remove the type from the EXCLUDETYPE tooltype in
+ * def_ascii.info and reopen the window to edit it.
+ */
+static void show_excluded_req(struct Window *parent, const char *type_token)
+{
+    char body[512];
+    char def_ascii_path[256];
+    BPTR lock;
+
+    /* Expand PROGDIR: to an absolute path so the user sees the real location */
+    strncpy(def_ascii_path, "PROGDIR:Icons/def_ascii.info", sizeof(def_ascii_path) - 1);
+    def_ascii_path[sizeof(def_ascii_path) - 1] = '\0';
+    lock = Lock((STRPTR)"PROGDIR:Icons/def_ascii.info", ACCESS_READ);
+    if (lock)
+    {
+        NameFromLock(lock, (STRPTR)def_ascii_path, sizeof(def_ascii_path));
+        UnLock(lock);
+    }
+
+    snprintf(body, sizeof(body),
+             "The type '%s' is excluded from receiving an icon\n"
+             "via the EXCLUDETYPE tooltype in:\n"
+             "  %s\n\n"
+             "To edit this type, remove '%s' from the\n"
+             "EXCLUDETYPE tooltype in def_ascii.info, then\n"
+             "close and reopen the Text Templates window.",
+             type_token, def_ascii_path, type_token);
+    show_info_req(parent, "Type Excluded", body, REQIMAGE_WARNING);
+}
+
 /*========================================================================*/
-/* Action: Copy                                                          */
+/* Action: Create / Overwrite from master                                */
 /*========================================================================*/
 
 /**
  * Copy PROGDIR:Icons/def_ascii.info to PROGDIR:Icons/def_<type>.info.
- * Prompts the user if the destination already exists.
+ * The dynamic button label (Create/Overwrite) already reflects intent.
+ * Prompts the user for confirmation if the destination already exists.
  */
-static void handle_copy(TextTemplatesWindow *win)
+static void handle_create_overwrite(TextTemplatesWindow *win)
 {
     const char *type_token;
     char src_path[256];
@@ -413,11 +634,18 @@ static void handle_copy(TextTemplatesWindow *win)
         return;
     }
 
+    /* Refuse action if type is excluded via EXCLUDETYPE in def_ascii.info */
+    if (is_type_excluded(win, type_token))
+    {
+        show_excluded_req(win->window, type_token);
+        return;
+    }
+
     if (strcmp(type_token, "ascii") == 0)
     {
-        show_info_req(win->window, "Copy Template",
+        show_info_req(win->window, "Create from master",
                       "The 'ascii' type is the master template itself.\n"
-                      "Select a sub-type (e.g., c, rexx) to copy it to.",
+                      "Select a sub-type (e.g., c, rexx) to create a custom template.",
                       REQIMAGE_INFO);
         return;
     }
@@ -606,16 +834,27 @@ static void handle_check_tooltypes(TextTemplatesWindow *win)
         return;
     }
 
+    /* Refuse action if type is excluded via EXCLUDETYPE in def_ascii.info */
+    if (is_type_excluded(win, type_token))
+    {
+        show_excluded_req(win->window, type_token);
+        return;
+    }
+
     /* Build path (without .info suffix - GetDiskObject adds it) */
-    snprintf(icon_path, sizeof(icon_path), "%sdef_%s", TEMPLATE_DIR, type_token);
+    /* Resolve effective template: custom if it exists, else master (def_ascii.info) */
+    {
+        const char *eff_token = type_has_template(type_token) ? type_token : "ascii";
+        snprintf(icon_path, sizeof(icon_path), "%sdef_%s", TEMPLATE_DIR, eff_token);
+    }
 
     dobj = GetDiskObject((STRPTR)icon_path);
     if (!dobj)
     {
         snprintf(report, sizeof(report),
-                 "No icon found for def_%s.info\n\n"
-                 "Use 'Copy from ascii' to create one first.", type_token);
-        show_info_req(win->window, "Check ToolTypes", report, REQIMAGE_WARNING);
+                 "No template icon found.\n\n"
+                 "Ensure def_ascii.info exists in PROGDIR:Icons/.");
+        show_info_req(win->window, "Validate ToolTypes", report, REQIMAGE_WARNING);
         return;
     }
 
@@ -902,15 +1141,25 @@ static void handle_wbinfo(TextTemplatesWindow *win)
         return;
     }
 
-    /* Build the full icon path and check it exists */
-    snprintf(full_path, sizeof(full_path), "%sdef_%s.info", TEMPLATE_DIR, type_token);
+    /* Refuse action if type is excluded via EXCLUDETYPE in def_ascii.info */
+    if (is_type_excluded(win, type_token))
+    {
+        show_excluded_req(win->window, type_token);
+        return;
+    }
+
+    /* Resolve effective template: custom if it exists, else master (def_ascii.info) */
+    {
+        const char *eff_token = type_has_template(type_token) ? type_token : "ascii";
+        snprintf(full_path, sizeof(full_path), "%sdef_%s.info", TEMPLATE_DIR, eff_token);
+    }
     lock = Lock((STRPTR)full_path, ACCESS_READ);
     if (!lock)
     {
         char body[512];
         snprintf(body, sizeof(body),
-                 "def_%s.info does not exist.\n\n"
-                 "Use 'Copy from ascii' to create it first.", type_token);
+                 "Template file not found.\n\n"
+                 "Ensure def_ascii.info exists in PROGDIR:Icons/.");
         show_info_req(win->window, "WB Information", body, REQIMAGE_WARNING);
         return;
     }
@@ -1079,14 +1328,277 @@ static void handle_wbinfo(TextTemplatesWindow *win)
 }
 
 /*========================================================================*/
+/* Selected Type panel update                                            */
+/*========================================================================*/
+
+/**
+ * @brief Update the "Selected Type" read-only info panel and button states.
+ *
+ * Called after list selection changes, after any file-level action, and
+ * on window open (with selected_idx = -1 for no-selection state).
+ *
+ * @param win          Window state
+ * @param selected_idx Index into win->subtypes[], or -1 for no selection
+ */
+static void update_selected_type_panel(TextTemplatesWindow *win, int selected_idx)
+{
+    BOOL has_selection;
+    BOOL is_master;
+    BOOL has_custom;
+
+    has_selection = (selected_idx >= 0 && selected_idx < win->subtype_count);
+
+    if (!has_selection)
+    {
+        /* No-selection state: blank all fields, disable all action buttons */
+        strncpy(win->buf_type,      "(none)", sizeof(win->buf_type) - 1);
+        strncpy(win->buf_tmplfile,  "-",      sizeof(win->buf_tmplfile) - 1);
+        strncpy(win->buf_effective, "-",      sizeof(win->buf_effective) - 1);
+        strncpy(win->buf_status,    "-",      sizeof(win->buf_status) - 1);
+
+        SetGadgetAttrs((struct Gadget *)win->selected_type,      win->window, NULL, GA_Text, win->buf_type,      TAG_DONE);
+        SetGadgetAttrs((struct Gadget *)win->selected_tmplfile,  win->window, NULL, GA_Text, win->buf_tmplfile,  TAG_DONE);
+        SetGadgetAttrs((struct Gadget *)win->selected_effective, win->window, NULL, GA_Text, win->buf_effective, TAG_DONE);
+        SetGadgetAttrs((struct Gadget *)win->selected_status,    win->window, NULL, GA_Text, win->buf_status,    TAG_DONE);
+
+        SetGadgetAttrs((struct Gadget *)win->btn_create_overwrite, win->window, NULL, GA_Disabled, TRUE, TAG_DONE);
+        SetGadgetAttrs((struct Gadget *)win->btn_edit_tooltypes,   win->window, NULL, GA_Disabled, TRUE, TAG_DONE);
+        SetGadgetAttrs((struct Gadget *)win->btn_validate,         win->window, NULL, GA_Disabled, TRUE, TAG_DONE);
+        SetGadgetAttrs((struct Gadget *)win->btn_revert,           win->window, NULL, GA_Disabled, TRUE, TAG_DONE);
+        return;
+    }
+
+    /* Resolve type attributes */
+    is_master  = (strcmp(win->subtypes[selected_idx], "ascii") == 0);
+    has_custom = type_has_template(win->subtypes[selected_idx]);
+
+    {
+        BOOL is_excluded = is_type_excluded(win, win->subtypes[selected_idx]);
+
+    /* Type name */
+    strncpy(win->buf_type, win->subtypes[selected_idx], sizeof(win->buf_type) - 1);
+    win->buf_type[sizeof(win->buf_type) - 1] = '\0';
+
+    /* Template file: the actual file on disk for this type (or "-") */
+    if (is_master)
+        strncpy(win->buf_tmplfile, "def_ascii.info", sizeof(win->buf_tmplfile) - 1);
+    else if (has_custom)
+        snprintf(win->buf_tmplfile, sizeof(win->buf_tmplfile), "def_%s.info", win->subtypes[selected_idx]);
+    else
+        strncpy(win->buf_tmplfile, "-", sizeof(win->buf_tmplfile) - 1);
+    win->buf_tmplfile[sizeof(win->buf_tmplfile) - 1] = '\0';
+
+    /* Effective file: excluded types have no effective template from iTidy's
+     * perspective, so show "-"; otherwise show the filename in use. */
+    if (is_excluded)
+        strncpy(win->buf_effective, "-", sizeof(win->buf_effective) - 1);
+    else if (has_custom || is_master)
+        snprintf(win->buf_effective, sizeof(win->buf_effective),
+                 "def_%s.info", win->subtypes[selected_idx]);
+    else
+        strncpy(win->buf_effective, "def_ascii.info", sizeof(win->buf_effective) - 1);
+    win->buf_effective[sizeof(win->buf_effective) - 1] = '\0';
+
+    /* Status */
+        if (is_master)
+            strncpy(win->buf_status, "Master", sizeof(win->buf_status) - 1);
+        else if (is_excluded)
+            strncpy(win->buf_status, "Excluded", sizeof(win->buf_status) - 1);
+        else if (has_custom)
+            strncpy(win->buf_status, "Custom", sizeof(win->buf_status) - 1);
+        else
+            strncpy(win->buf_status, "Using master", sizeof(win->buf_status) - 1);
+        win->buf_status[sizeof(win->buf_status) - 1] = '\0';
+
+    /* Update the four display buttons */
+    SetGadgetAttrs((struct Gadget *)win->selected_type,      win->window, NULL, GA_Text, win->buf_type,      TAG_DONE);
+    SetGadgetAttrs((struct Gadget *)win->selected_tmplfile,  win->window, NULL, GA_Text, win->buf_tmplfile,  TAG_DONE);
+    SetGadgetAttrs((struct Gadget *)win->selected_effective, win->window, NULL, GA_Text, win->buf_effective, TAG_DONE);
+    SetGadgetAttrs((struct Gadget *)win->selected_status,    win->window, NULL, GA_Text, win->buf_status,    TAG_DONE);
+
+    /* Dynamic Create/Overwrite label + button enabled/disabled state.
+         * When a type is excluded all action buttons are kept enabled so the
+         * user can click them and receive the "type excluded" explanation. */
+        if (is_excluded)
+        {
+            strncpy(win->buf_create_label, "Create from master", sizeof(win->buf_create_label) - 1);
+            win->buf_create_label[sizeof(win->buf_create_label) - 1] = '\0';
+
+            SetGadgetAttrs((struct Gadget *)win->btn_create_overwrite, win->window, NULL,
+                           GA_Text,     win->buf_create_label,
+                           GA_Disabled, FALSE,
+                           TAG_DONE);
+            SetGadgetAttrs((struct Gadget *)win->btn_edit_tooltypes, win->window, NULL, GA_Disabled, FALSE, TAG_DONE);
+            SetGadgetAttrs((struct Gadget *)win->btn_validate,       win->window, NULL, GA_Disabled, FALSE, TAG_DONE);
+            SetGadgetAttrs((struct Gadget *)win->btn_revert,         win->window, NULL, GA_Disabled, FALSE, TAG_DONE);
+        }
+        else
+        {
+            /* Dynamic Create/Overwrite label */
+            if (has_custom)
+                strncpy(win->buf_create_label, "Overwrite from master", sizeof(win->buf_create_label) - 1);
+            else
+                strncpy(win->buf_create_label, "Create from master", sizeof(win->buf_create_label) - 1);
+            win->buf_create_label[sizeof(win->buf_create_label) - 1] = '\0';
+
+            /* Create/Overwrite: disabled for master type */
+            SetGadgetAttrs((struct Gadget *)win->btn_create_overwrite, win->window, NULL,
+                           GA_Text,     win->buf_create_label,
+                           GA_Disabled, is_master,
+                           TAG_DONE);
+
+            /* Edit/Validate: always enabled when something is selected */
+            SetGadgetAttrs((struct Gadget *)win->btn_edit_tooltypes, win->window, NULL, GA_Disabled, FALSE, TAG_DONE);
+            SetGadgetAttrs((struct Gadget *)win->btn_validate,       win->window, NULL, GA_Disabled, FALSE, TAG_DONE);
+
+            /* Revert: only for non-master types that actually have a custom template */
+            SetGadgetAttrs((struct Gadget *)win->btn_revert, win->window, NULL,
+                           GA_Disabled, (is_master || !has_custom),
+                           TAG_DONE);
+        }
+    } /* end is_excluded scope */
+
+    log_debug(LOG_GUI, "TextTemplates: panel updated for '%s' (master=%d custom=%d excl=%d)\n",
+              win->subtypes[selected_idx], (int)is_master, (int)has_custom,
+              (int)is_type_excluded(win, win->subtypes[selected_idx]));
+}
+
+/*========================================================================*/
+/* Action: Revert to master                                              */
+/*========================================================================*/
+
+/**
+ * Delete the custom template icon for the selected type, reverting it
+ * to use the master (def_ascii.info) as its effective template.
+ */
+static void handle_revert(TextTemplatesWindow *win)
+{
+    const char *type_token;
+    char        custom_path[256];
+    char        confirm_body[512];
+    ULONG       selected = 0;
+
+    type_token = get_selected_type(win);
+    if (!type_token)
+        return;
+
+    /* Refuse action if type is excluded via EXCLUDETYPE in def_ascii.info */
+    if (is_type_excluded(win, type_token))
+    {
+        show_excluded_req(win->window, type_token);
+        return;
+    }
+
+    if (strcmp(type_token, "ascii") == 0)
+        return;  /* Button should already be disabled, but guard anyway */
+
+    if (!type_has_template(type_token))
+        return;  /* No custom template to revert */
+
+    snprintf(custom_path, sizeof(custom_path), "%sdef_%s.info", TEMPLATE_DIR, type_token);
+
+    snprintf(confirm_body, sizeof(confirm_body),
+             "Delete the custom template for type '%s'\n"
+             "and use the master template instead?\n\n"
+             "File: %s",
+             type_token, custom_path);
+
+    if (!show_confirm_req(win->window, "Revert to master",
+                          confirm_body, "_Revert|_Cancel"))
+        return;
+
+    if (!DeleteFile((STRPTR)custom_path))
+    {
+        LONG err = IoErr();
+        /* If file was already gone, treat it as a successful revert */
+        if (err != ERROR_OBJECT_NOT_FOUND)
+        {
+            char err_body[512];
+            snprintf(err_body, sizeof(err_body),
+                     "Failed to delete custom template.\n\n"
+                     "File: %s\n"
+                     "Error code: %ld\n\n"
+                     "Check the file is not write-protected or locked.",
+                     custom_path, (LONG)err);
+            show_info_req(win->window, "Revert Failed", err_body, REQIMAGE_ERROR);
+            log_error(LOG_GUI, "TextTemplates: revert failed for def_%s.info (IoErr=%ld)\n",
+                      type_token, (LONG)err);
+            return;
+        }
+    }
+
+    log_info(LOG_GUI, "TextTemplates: reverted def_%s.info - now using master\n", type_token);
+
+    /* Refresh list and update panel.
+     * Map visual row -> subtypes[] index BEFORE rebuild (rebuild resets
+     * subtype_map).  After rebuild, check whether the type is still visible
+     * (e.g. it disappears from "Custom only" view once the file is deleted). */
+    {
+        int actual_idx, j;
+        GetAttr(LISTBROWSER_Selected, win->template_lb, &selected);
+        actual_idx = visual_to_actual(win, selected);
+        rebuild_list(win);
+        for (j = 0; j < win->visible_count; j++)
+        {
+            if (win->subtype_map[j] == actual_idx) break;
+        }
+        update_selected_type_panel(win,
+            (actual_idx >= 0 && j < win->visible_count) ? actual_idx : -1);
+    }
+}
+
+/*========================================================================*/
+/* Chooser label helpers                                                 */
+/*========================================================================*/
+
+static struct List *create_chooser_labels(STRPTR *strings)
+{
+    struct List *list;
+    struct Node *node;
+
+    list = (struct List *)AllocMem(sizeof(struct List), MEMF_PUBLIC | MEMF_CLEAR);
+    if (!list)
+        return NULL;
+
+    NewList(list);
+    while (*strings)
+    {
+        node = AllocChooserNode(CNA_Text, *strings, TAG_DONE);
+        if (node)
+            AddTail(list, node);
+        strings++;
+    }
+    return list;
+}
+
+static void free_chooser_labels(struct List *list)
+{
+    struct Node *node;
+    struct Node *next;
+
+    if (!list)
+        return;
+
+    node = list->lh_Head;
+    while ((next = node->ln_Succ))
+    {
+        FreeChooserNode(node);
+        node = next;
+    }
+    FreeMem(list, sizeof(struct List));
+}
+
+/*========================================================================*/
 /* Window creation                                                       */
 /*========================================================================*/
 
 static BOOL create_window(TextTemplatesWindow *win)
 {
-    struct ColumnInfo *ci = make_column_info();
+    UBYTE *chooser_strs[] = { "All", "Custom only", "Missing only", NULL };
 
-    /* Allocate an empty list for the ListBrowser */
+    init_column_info(win->col_info);
+
+    /* Allocate the ListBrowser node list */
     win->lb_list = (struct List *)whd_malloc(sizeof(struct List));
     if (!win->lb_list)
     {
@@ -1095,133 +1607,308 @@ static BOOL create_window(TextTemplatesWindow *win)
     }
     NewList(win->lb_list);
 
-    /* --- Create gadget objects --- */
+    /* Allocate chooser labels */
+    win->chooser_list = create_chooser_labels(chooser_strs);
+    if (!win->chooser_list)
+    {
+        log_error(LOG_GUI, "TextTemplates: failed to allocate chooser labels\n");
+        whd_free(win->lb_list);
+        win->lb_list = NULL;
+        return FALSE;
+    }
 
+    /* ------------------------------------------------------------------ */
+    /* Create gadget objects (pre-allocated so we can store pointers)     */
+    /* ------------------------------------------------------------------ */
+
+    /* "Show" filter chooser */
+    win->show_chooser = NewObject(CHOOSER_GetClass(), NULL,
+        GA_ID,           GID_SHOW_CHOOSER,
+        GA_RelVerify,    TRUE,
+        GA_TabCycle,     TRUE,
+        CHOOSER_PopUp,   TRUE,
+        CHOOSER_Selected,0,
+        CHOOSER_Labels,  win->chooser_list,
+    TAG_DONE);
+
+    /* ListBrowser */
     win->template_lb = (Object *)ListBrowserObject,
         GA_ID,                     GID_TEMPLATE_LB,
         GA_RelVerify,              TRUE,
-        LISTBROWSER_ColumnInfo,    ci,
+        GA_TabCycle,               TRUE,
+        LISTBROWSER_ColumnInfo,    win->col_info,
         LISTBROWSER_ColumnTitles,  TRUE,
         LISTBROWSER_Labels,        win->lb_list,
         LISTBROWSER_Separators,    FALSE,
         LISTBROWSER_Striping,      LBS_ROWS,
-        LISTBROWSER_Selected,      -1,
-        LISTBROWSER_MultiSelect,   FALSE,
-        LISTBROWSER_ShowSelected,  TRUE,
+        LISTBROWSER_Selected,       -1,
+        LISTBROWSER_MultiSelect,    FALSE,
+        LISTBROWSER_ShowSelected,   TRUE,
+        LISTBROWSER_HorizontalProp, TRUE,
+        LISTBROWSER_AutoFit,        TRUE,
     ListBrowserEnd;
 
-    win->enable_cb = (Object *)CheckBoxObject,
-        GA_ID,       GID_ENABLE_CB,
-        GA_Text,     "Enable _text file preview thumbnails",
-        GA_Selected, win->prefs->deficons_enable_text_previews,
-        GA_RelVerify,TRUE,
-    CheckBoxEnd;
-
-    win->copy_btn = (Object *)ButtonObject,
-        GA_ID,        GID_COPY_BTN,
-        GA_Text,      "_Copy from ascii template",
-        GA_RelVerify, TRUE,
+    /* Read-only "Selected Type" display fields (transparent buttons) */
+    win->selected_type = (Object *)ButtonObject,
+        GA_ID,                GID_SELECTED_TYPE,
+        GA_Text,              "(none)",
+        GA_Underscore,        0,          /* Prevent _ from being eaten as shortcut */
+        GA_TabCycle,          TRUE,
+        BUTTON_Transparent,   TRUE,
+        BUTTON_TextPen,       1,
+        BUTTON_BackgroundPen, 0,
+        BUTTON_FillTextPen,   1,
+        BUTTON_FillPen,       3,
+        BUTTON_BevelStyle,    BVS_NONE,
+        BUTTON_Justification, BCJ_LEFT,
     ButtonEnd;
 
-    win->check_btn = (Object *)ButtonObject,
-        GA_ID,        GID_CHECK_BTN,
-        GA_Text,      "_Validate ToolTypes",
-        GA_RelVerify, TRUE,
+    win->selected_tmplfile = (Object *)ButtonObject,
+        GA_ID,                GID_SELECTED_TMPLFILE,
+        GA_Text,              "-",
+        GA_Underscore,        0,          /* Prevent _ from being eaten as shortcut */
+        GA_TabCycle,          TRUE,
+        BUTTON_Transparent,   TRUE,
+        BUTTON_TextPen,       1,
+        BUTTON_BackgroundPen, 0,
+        BUTTON_FillTextPen,   1,
+        BUTTON_FillPen,       3,
+        BUTTON_BevelStyle,    BVS_NONE,
+        BUTTON_Justification, BCJ_LEFT,
     ButtonEnd;
 
-    win->wbinfo_btn = (Object *)ButtonObject,
-        GA_ID,        GID_WBINFO_BTN,
-        GA_Text,      "WB _Information...",
-        GA_RelVerify, TRUE,
+    win->selected_effective = (Object *)ButtonObject,
+        GA_ID,                GID_SELECTED_EFFECTIVE,
+        GA_Text,              "-",
+        GA_Underscore,        0,          /* Prevent _ from being eaten as shortcut */
+        GA_TabCycle,          TRUE,
+        BUTTON_Transparent,   TRUE,
+        BUTTON_TextPen,       1,
+        BUTTON_BackgroundPen, 0,
+        BUTTON_FillTextPen,   1,
+        BUTTON_FillPen,       3,
+        BUTTON_BevelStyle,    BVS_NONE,
+        BUTTON_Justification, BCJ_LEFT,
     ButtonEnd;
 
-    win->refresh_btn = (Object *)ButtonObject,
-        GA_ID,        GID_REFRESH_BTN,
-        GA_Text,      "_Refresh List",
-        GA_RelVerify, TRUE,
+    win->selected_status = (Object *)ButtonObject,
+        GA_ID,                GID_SELECTED_STATUS,
+        GA_Text,              "-",
+        GA_Underscore,        0,          /* Prevent _ from being eaten as shortcut */
+        GA_TabCycle,          TRUE,
+        BUTTON_Transparent,   TRUE,
+        BUTTON_TextPen,       1,
+        BUTTON_BackgroundPen, 0,
+        BUTTON_FillTextPen,   1,
+        BUTTON_FillPen,       3,
+        BUTTON_BevelStyle,    BVS_NONE,
+        BUTTON_Justification, BCJ_LEFT,
     ButtonEnd;
 
-    win->ok_btn = (Object *)ButtonObject,
-        GA_ID,        GID_OK,
-        GA_Text,      "_OK",
-        GA_RelVerify, TRUE,
+    /* Template action buttons (disabled until a row is selected) */
+    win->btn_create_overwrite = (Object *)ButtonObject,
+        GA_ID,                GID_BTN_CREATE_OVERWRITE,
+        GA_Text,              "Create from master",
+        GA_RelVerify,         TRUE,
+        GA_TabCycle,          TRUE,
+        BUTTON_TextPen,       1,
+        BUTTON_BackgroundPen, 0,
+        BUTTON_FillTextPen,   1,
+        BUTTON_FillPen,       3,
+        GA_Disabled,          TRUE,
     ButtonEnd;
 
-    win->cancel_btn = (Object *)ButtonObject,
-        GA_ID,        GID_CANCEL,
-        GA_Text,      "_Cancel",
-        GA_RelVerify, TRUE,
+    win->btn_edit_tooltypes = (Object *)ButtonObject,
+        GA_ID,                GID_BTN_EDIT_TOOLTYPES,
+        GA_Text,              "Edit tooltypes...",
+        GA_RelVerify,         TRUE,
+        GA_TabCycle,          TRUE,
+        BUTTON_TextPen,       1,
+        BUTTON_BackgroundPen, 0,
+        BUTTON_FillTextPen,   1,
+        BUTTON_FillPen,       3,
+        GA_Disabled,          TRUE,
     ButtonEnd;
 
-    /* --- Layout --- */
+    win->btn_validate = (Object *)ButtonObject,
+        GA_ID,                GID_BTN_VALIDATE,
+        GA_Text,              "Validate tooltypes",
+        GA_RelVerify,         TRUE,
+        GA_TabCycle,          TRUE,
+        BUTTON_TextPen,       1,
+        BUTTON_BackgroundPen, 0,
+        BUTTON_FillTextPen,   1,
+        BUTTON_FillPen,       3,
+        GA_Disabled,          TRUE,
+    ButtonEnd;
+
+    win->btn_revert = (Object *)ButtonObject,
+        GA_ID,                GID_BTN_REVERT,
+        GA_Text,              "Revert to master",
+        GA_RelVerify,         TRUE,
+        GA_TabCycle,          TRUE,
+        BUTTON_TextPen,       1,
+        BUTTON_BackgroundPen, 0,
+        BUTTON_FillTextPen,   1,
+        BUTTON_FillPen,       3,
+        GA_Disabled,          TRUE,
+    ButtonEnd;
+
+    /* Close button */
+    win->btn_close = (Object *)ButtonObject,
+        GA_ID,                GID_BTN_CLOSE,
+        GA_Text,              "_Close",
+        GA_RelVerify,         TRUE,
+        GA_TabCycle,          TRUE,
+        BUTTON_TextPen,       1,
+        BUTTON_BackgroundPen, 0,
+        BUTTON_FillTextPen,   1,
+        BUTTON_FillPen,       3,
+    ButtonEnd;
+
+    /* ------------------------------------------------------------------ */
+    /* Assemble window layout                                             */
+    /* ------------------------------------------------------------------ */
     win->window_obj = (Object *)WindowObject,
-        WA_Title,         "DefIcons: Manage ASCII Text Templates",
+        WA_Title,         "DefIcons: Text Templates",
         WA_Activate,      TRUE,
         WA_DepthGadget,   TRUE,
         WA_DragBar,       TRUE,
         WA_CloseGadget,   TRUE,
         WA_SizeGadget,    TRUE,
-        WA_Width,         520,
-        WA_Height,        380,
+        WA_Width,         480,
+        WA_Height,        200,
+        WA_MinWidth,      420,
+        WA_MinHeight,     300,
         WINDOW_Position,  WPOS_CENTERSCREEN,
         WINDOW_Layout, (Object *)VLayoutObject,
+            LAYOUT_SpaceOuter,  TRUE,
+            LAYOUT_DeferLayout, TRUE,
 
-            /* Top group: list + action buttons side-by-side */
+            /* ---- Top row: list (left) | info + actions (right) ---- */
             LAYOUT_AddChild, (Object *)HLayoutObject,
 
-                /* Left: list + enable checkbox */
+                /* Left column: Show chooser + listbrowser */
                 LAYOUT_AddChild, (Object *)VLayoutObject,
+                    LAYOUT_BevelStyle,    BVS_FIELD,
+                    LAYOUT_LeftSpacing,   2,
+                    LAYOUT_RightSpacing,  2,
+                    LAYOUT_TopSpacing,    2,
+                    LAYOUT_BottomSpacing, 4,
+                    LAYOUT_Label,         "Icons",
 
+                    LAYOUT_AddChild, win->show_chooser,
+                    CHILD_Label, NewObject(LABEL_GetClass(), NULL,
+                        LABEL_Text, "Show",
+                    TAG_DONE),
+
+                    LAYOUT_AddChild, win->template_lb,
+                LayoutEnd,
+                CHILD_WeightedWidth, 65,
+
+                /* Right column: three sub-groups */
+                LAYOUT_AddChild, (Object *)VLayoutObject,
+                    LAYOUT_LeftSpacing, 4,
+
+                    /* "Selected Type" info group */
                     LAYOUT_AddChild, (Object *)VLayoutObject,
-                        LAYOUT_BevelStyle, BVS_GROUP,
-                        LAYOUT_Label,      "ASCII Type Templates",
-                        LAYOUT_AddChild, win->template_lb,
+                        LAYOUT_BevelStyle,    BVS_FIELD,
+                        LAYOUT_LeftSpacing,   2,
+                        LAYOUT_RightSpacing,  2,
+                        LAYOUT_TopSpacing,    2,
+                        LAYOUT_BottomSpacing, 2,
+                        LAYOUT_Label,         "Selected Type",
+
+                        LAYOUT_AddChild, win->selected_type,
+                        CHILD_WeightedHeight, 0,
+                        CHILD_Label, NewObject(LABEL_GetClass(), NULL,
+                            LABEL_Text, "Type:",
+                        TAG_DONE),
+
+                        LAYOUT_AddChild, win->selected_tmplfile,
+                        CHILD_WeightedHeight, 0,
+                        CHILD_Label, NewObject(LABEL_GetClass(), NULL,
+                            LABEL_Text, "Template file:",
+                        TAG_DONE),
+
+                        LAYOUT_AddChild, win->selected_effective,
+                        CHILD_WeightedHeight, 0,
+                        CHILD_Label, NewObject(LABEL_GetClass(), NULL,
+                            LABEL_Text, "Effective:",
+                        TAG_DONE),
+
+                        LAYOUT_AddChild, win->selected_status,
+                        CHILD_WeightedHeight, 0,
+                        CHILD_Label, NewObject(LABEL_GetClass(), NULL,
+                            LABEL_Text, "Status:",
+                        TAG_DONE),
                     LayoutEnd,
 
-                    LAYOUT_AddChild, win->enable_cb,
-                    CHILD_WeightedHeight, 0,
+                    /* Fixed 5px spacer between info and actions */
+                    LAYOUT_AddChild, (Object *)VLayoutObject,
+                    LayoutEnd,
+                    CHILD_MinHeight, 5,
+                    CHILD_MaxHeight, 5,
+
+                    /* "Template action" group */
+                    LAYOUT_AddChild, (Object *)VLayoutObject,
+                        LAYOUT_BevelStyle,    BVS_FIELD,
+                        LAYOUT_LeftSpacing,   2,
+                        LAYOUT_RightSpacing,  2,
+                        LAYOUT_TopSpacing,    2,
+                        LAYOUT_BottomSpacing, 4,
+                        LAYOUT_Label,         "Template action",
+
+                        LAYOUT_AddChild, win->btn_create_overwrite,
+                        CHILD_WeightedHeight, 0,
+                        CHILD_WeightedWidth,  100,
+
+                        LAYOUT_AddChild, win->btn_edit_tooltypes,
+                        CHILD_WeightedHeight, 0,
+                        CHILD_WeightedWidth,  100,
+
+                        LAYOUT_AddChild, win->btn_validate,
+                        CHILD_WeightedHeight, 0,
+                        CHILD_WeightedWidth,  100,
+
+                        LAYOUT_AddChild, win->btn_revert,
+                        CHILD_WeightedHeight, 0,
+                        CHILD_WeightedWidth,  100,
+                    LayoutEnd,
+
                 LayoutEnd,
+                CHILD_WeightedWidth, 35,
 
-                /* Right: action buttons */
-                LAYOUT_AddChild, (Object *)VLayoutObject,
-                    CHILD_WeightedWidth, 0,
+            LayoutEnd,  /* HLayout top row */
+            CHILD_WeightedHeight, 95,
 
-                    LAYOUT_BevelStyle, BVS_GROUP,
-                    LAYOUT_Label,      "Actions",
-
-                    LAYOUT_AddChild, win->copy_btn,
-                    CHILD_WeightedHeight, 0,
-                    CHILD_WeightedWidth,  100,
-
-                    LAYOUT_AddChild, win->check_btn,
-                    CHILD_WeightedHeight, 0,
-                    CHILD_WeightedWidth,  100,
-
-                    LAYOUT_AddChild, win->wbinfo_btn,
-                    CHILD_WeightedHeight, 0,
-                    CHILD_WeightedWidth,  100,
-
-                    LAYOUT_AddChild, win->refresh_btn,
-                    CHILD_WeightedHeight, 0,
-                    CHILD_WeightedWidth,  100,
-                LayoutEnd,
-
-            LayoutEnd,  /* HLayout */
-
-            /* Bottom: OK / Cancel */
+            /* ---- Bottom bar: spacer (left) + Close (right) ---- */
             LAYOUT_AddChild, (Object *)HLayoutObject,
-                CHILD_WeightedHeight, 0,
-                LAYOUT_AddChild, win->ok_btn,
-                LAYOUT_AddChild, win->cancel_btn,
-            LayoutEnd,
-            CHILD_WeightedHeight, 0,
+                LAYOUT_TopSpacing, 10,
 
-        LayoutEnd,  /* VLayout */
+                /* Empty spacer, takes up the left half */
+                LAYOUT_AddChild, (Object *)VLayoutObject,
+                LayoutEnd,
+                CHILD_WeightedWidth, 65,
+
+                /* Close button aligned to the right half */
+                LAYOUT_AddChild, (Object *)HLayoutObject,
+                    LAYOUT_LeftSpacing, 4,
+                    LAYOUT_AddChild, win->btn_close,
+                LayoutEnd,
+                CHILD_WeightedWidth, 35,
+
+            LayoutEnd,  /* HLayout bottom bar */
+            CHILD_WeightedHeight, 5,
+
+        LayoutEnd,  /* VLayout root */
     WindowEnd;
 
     if (!win->window_obj)
     {
         log_error(LOG_GUI, "TextTemplates: failed to create window object\n");
+        free_chooser_labels(win->chooser_list);
+        win->chooser_list = NULL;
         return FALSE;
     }
 
@@ -1231,12 +1918,15 @@ static BOOL create_window(TextTemplatesWindow *win)
         log_error(LOG_GUI, "TextTemplates: failed to open window\n");
         DisposeObject(win->window_obj);
         win->window_obj = NULL;
+        free_chooser_labels(win->chooser_list);
+        win->chooser_list = NULL;
         return FALSE;
     }
 
     log_info(LOG_GUI, "TextTemplates: window opened\n");
     return TRUE;
 }
+
 
 /*========================================================================*/
 /* Event loop                                                            */
@@ -1245,6 +1935,7 @@ static BOOL create_window(TextTemplatesWindow *win)
 static void event_loop(TextTemplatesWindow *win)
 {
     ULONG signal_mask, signals, result;
+    ULONG selected;
     UWORD code;
     BOOL done = FALSE;
 
@@ -1273,34 +1964,46 @@ static void event_loop(TextTemplatesWindow *win)
                     ULONG gid = result & WMHI_GADGETMASK;
                     switch (gid)
                     {
-                        case GID_OK:
-                        {
-                            ULONG sel = 0;
-                            GetAttr(GA_Selected, win->enable_cb, &sel);
-                            win->prefs->deficons_enable_text_previews = (BOOL)sel;
-                            win->user_accepted = TRUE;
+                        case GID_BTN_CLOSE:
                             done = TRUE;
+                            break;
+
+                        case GID_TEMPLATE_LB:
+                            /* Selection changed - translate visual row to subtypes[] index */
+                            selected = 0;
+                            GetAttr(LISTBROWSER_Selected, win->template_lb, &selected);
+                            update_selected_type_panel(win, visual_to_actual(win, selected));
+                            break;
+
+                        case GID_SHOW_CHOOSER:
+                        {
+                            /* Filter changed - rebuild list, reset panel to no-selection */
+                            ULONG filter_sel = 0;
+                            GetAttr(CHOOSER_Selected, win->show_chooser, &filter_sel);
+                            win->show_filter = (ShowFilter)filter_sel;
+                            rebuild_list(win);
+                            update_selected_type_panel(win, -1);
                             break;
                         }
 
-                        case GID_CANCEL:
-                            done = TRUE;
+                        case GID_BTN_CREATE_OVERWRITE:
+                            handle_create_overwrite(win);
+                            /* rebuild_list was called inside; subtype_map is now fresh */
+                            selected = 0;
+                            GetAttr(LISTBROWSER_Selected, win->template_lb, &selected);
+                            update_selected_type_panel(win, visual_to_actual(win, selected));
                             break;
 
-                        case GID_COPY_BTN:
-                            handle_copy(win);
-                            break;
-
-                        case GID_CHECK_BTN:
-                            handle_check_tooltypes(win);
-                            break;
-
-                        case GID_WBINFO_BTN:
+                        case GID_BTN_EDIT_TOOLTYPES:
                             handle_wbinfo(win);
                             break;
 
-                        case GID_REFRESH_BTN:
-                            rebuild_list(win);
+                        case GID_BTN_VALIDATE:
+                            handle_check_tooltypes(win);
+                            break;
+
+                        case GID_BTN_REVERT:
+                            handle_revert(win);
                             break;
 
                         default:
@@ -1327,6 +2030,13 @@ static void cleanup_window(TextTemplatesWindow *win)
         win->window_obj = NULL;
     }
 
+    /* Free chooser labels */
+    if (win->chooser_list)
+    {
+        free_chooser_labels(win->chooser_list);
+        win->chooser_list = NULL;
+    }
+
     /* Free ListBrowser nodes and list */
     if (win->lb_list)
     {
@@ -1343,19 +2053,19 @@ static void cleanup_window(TextTemplatesWindow *win)
 /* Public API                                                            */
 /*========================================================================*/
 
-BOOL open_text_templates_window(LayoutPreferences *prefs)
+void open_text_templates_window(LayoutPreferences *prefs)
 {
     TextTemplatesWindow win;
 
     if (!prefs)
     {
         log_error(LOG_GUI, "TextTemplates: NULL prefs\n");
-        return FALSE;
+        return;
     }
 
     memset(&win, 0, sizeof(TextTemplatesWindow));
-    win.prefs         = prefs;
-    win.user_accepted = FALSE;
+    win.prefs       = prefs;
+    win.show_filter = SHOW_ALL;
 
     /* Fetch subtype list (g_cached_deficons_tree must be initialised) */
     win.subtypes = deficons_get_ascii_subtypes(&win.subtype_count);
@@ -1367,23 +2077,30 @@ BOOL open_text_templates_window(LayoutPreferences *prefs)
     }
 
     if (!open_libs())
-        return FALSE;
+        return;
 
     if (!create_window(&win))
     {
         close_libs();
-        return FALSE;
+        return;
     }
 
-    /* Populate list after window is open so SetGadgetAttrs works */
+    /* Set busy pointer while loading exclusion data and populating the list.
+     * Icon reading and filesystem checks can take a moment on slow Amigas. */
+    SetWindowPointer(win.window, WA_BusyPointer, TRUE, TAG_DONE);
+
+    /* Load EXCLUDETYPE tooltype from PROGDIR:Icons/def_ascii.info */
+    load_exclude_types(&win);
+
+    /* Populate list and set clean no-selection state */
     rebuild_list(&win);
+    update_selected_type_panel(&win, -1);
+
+    /* Dismiss busy pointer now the list is fully populated */
+    SetWindowPointer(win.window, WA_BusyPointer, FALSE, TAG_DONE);
 
     event_loop(&win);
 
-    {
-        BOOL result = win.user_accepted;
-        cleanup_window(&win);
-        close_libs();
-        return result;
-    }
+    cleanup_window(&win);
+    close_libs();
 }

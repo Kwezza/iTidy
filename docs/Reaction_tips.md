@@ -9,12 +9,13 @@ This document captures hard-won lessons from implementing ReAction GUI component
 2. [ListBrowser Hierarchical Tree View](#listbrowser-hierarchical-tree-view)
 3. [ListBrowser Column Sorting](#listbrowser-column-sorting)
 4. [ListBrowser Column Resizing](#listbrowser-column-resizing)
-5. [Dynamic Text Labels](#dynamic-text-labels)
-6. [GetFile Gadget (File/Folder Selection)](#getfile-gadget-filefolder-selection)
-7. [ClickTab Gadget (Tabbed Interface)](#clicktab-gadget-tabbed-interface)
-8. [Gadget Tooltips (HintInfo)](#gadget-tooltips-hintinfo)
-9. [General ReAction Gotchas](#general-reaction-gotchas)
-10. [Memory and Type Safety](#memory-and-type-safety)
+5. [ListBrowser Column Sizing and AutoFit](#listbrowser-column-sizing-and-autofit)
+6. [Dynamic Text Labels](#dynamic-text-labels)
+7. [GetFile Gadget (File/Folder Selection)](#getfile-gadget-filefolder-selection)
+8. [ClickTab Gadget (Tabbed Interface)](#clicktab-gadget-tabbed-interface)
+9. [Gadget Tooltips (HintInfo)](#gadget-tooltips-hintinfo)
+10. [General ReAction Gotchas](#general-reaction-gotchas)
+11. [Memory and Type Safety](#memory-and-type-safety)
 
 ---
 
@@ -1350,6 +1351,142 @@ static LONG numeric_compare_hook_func(struct Hook *hook, APTR obj, struct LBSort
 
 ---
 
+## ListBrowser Column Sizing and AutoFit
+
+### ⚠️ CRITICAL: LISTBROWSER_VirtualWidth Makes ci_Width a Pixel Percentage, Not a Screen Percentage
+
+**Problem:** Adding `LISTBROWSER_HorizontalProp, TRUE` for horizontal scrolling is fine by itself, but adding `LISTBROWSER_VirtualWidth` to control the scrollable canvas size causes columns to become huge.
+
+**Root cause (from AutoDoc):**
+> *"If a virtual width is given, ci_Width will be a percentage of that virtual width."*
+
+So if you set `LISTBROWSER_VirtualWidth, 800` and a column has `ci_Width = 35`, it becomes **280 pixels** wide — not 35% of the visible gadget. With three columns at 35/45/20%, the total is 800px and the listbrowser is essentially always scrolled even on a wide screen.
+
+**Wrong (creates giant columns):**
+```c
+NewObject(ListBrowserClass, NULL,
+    ...
+    LISTBROWSER_HorizontalProp, TRUE,
+    LISTBROWSER_VirtualWidth, 800,   /* ❌ Makes ci_Width a % of 800px */
+    LISTBROWSER_ColumnInfo, col_info,
+    TAG_DONE);
+```
+
+**Correct (AutoFit sizes to content, scroll appears only when needed):**
+```c
+NewObject(ListBrowserClass, NULL,
+    ...
+    LISTBROWSER_HorizontalProp, TRUE,   /* Enable horizontal scroll bar */
+    LISTBROWSER_AutoFit,       TRUE,    /* Fit columns to content width */
+    LISTBROWSER_ColumnInfo,    col_info,
+    TAG_DONE);
+```
+
+`LISTBROWSER_AutoFit` calculates the required virtual width from the actual column content and only enables horizontal scrolling when the content is genuinely wider than the visible area. It is the correct companion to `LISTBROWSER_HorizontalProp`.
+
+---
+
+### ⚠️ CRITICAL: ColumnInfo Cannot Be Static or Shared
+
+**From the AutoDoc:**
+> *"ListBrowser may modify the contents of this structure. ColumnInfo can NOT be shared between multiple listbrowser gadgets or across window opens."*
+
+`LISTBROWSER_AutoFit` writes back into the `ColumnInfo` array after it calculates column widths. If the array is `static`, those modified values persist the next time the window opens and AutoFit gets confused.
+
+**Wrong (static array, values persist across opens):**
+```c
+static struct ColumnInfo col_info[4];  /* ❌ AutoFit values bleed into next open */
+
+static struct ColumnInfo *make_column_info(void)
+{
+    col_info[0].ci_Title = "Type";   col_info[0].ci_Width = 35;
+    col_info[1].ci_Title = "File";   col_info[1].ci_Width = 45;
+    /* ... */
+    return col_info;
+}
+```
+
+**Correct (per-window storage, freshly initialised each time):**
+```c
+/* In your window struct */
+typedef struct {
+    Object *window_obj;
+    /* ... other fields ... */
+    struct ColumnInfo col_info[4];  /* Per-window — never static */
+} MyWindow;
+
+/* Init function writes into the struct */
+static void init_column_info(struct ColumnInfo *ci)
+{
+    ci[0].ci_Title = "Type";    ci[0].ci_Width = 35; ci[0].ci_Flags = CIF_WEIGHTED;
+    ci[1].ci_Title = "File";    ci[1].ci_Width = 45; ci[1].ci_Flags = CIF_WEIGHTED;
+    ci[2].ci_Title = "Status";  ci[2].ci_Width = 20; ci[2].ci_Flags = CIF_WEIGHTED;
+    ci[3].ci_Title = NULL;      ci[3].ci_Width = ~0; ci[3].ci_Flags = -1; /* Terminator */
+}
+
+/* Use it */
+init_column_info(win->col_info);
+/* ... */
+NewObject(ListBrowserClass, NULL,
+    LISTBROWSER_ColumnInfo, win->col_info,  /* ✅ Points to per-window buffer */
+    LISTBROWSER_AutoFit,    TRUE,
+    TAG_DONE);
+```
+
+---
+
+### Re-apply AutoFit After Rebuilding the List
+
+When you detach and reattach the list (e.g., in a `rebuild_list()` function), you must re-apply `LISTBROWSER_AutoFit` after reattaching. Otherwise the column widths are not recalculated for the new content.
+
+```c
+static void rebuild_list(MyWindow *win)
+{
+    /* 1. Detach the list */
+    SetGadgetAttrs((struct Gadget *)win->listbrowser,
+        win->window, NULL,
+        LISTBROWSER_Labels, ~0,
+        TAG_DONE);
+
+    /* 2. Free old nodes and build new list */
+    /* ... */
+
+    /* 3. Reattach the list */
+    SetGadgetAttrs((struct Gadget *)win->listbrowser,
+        win->window, NULL,
+        LISTBROWSER_Labels, win->lb_list,
+        TAG_DONE);
+
+    /* 4. Re-apply AutoFit so columns resize for the new content */
+    SetGadgetAttrs((struct Gadget *)win->listbrowser,
+        win->window, NULL,
+        LISTBROWSER_AutoFit, TRUE,
+        TAG_DONE);
+}
+```
+
+> **Note:** Steps 3 and 4 can be combined into a single `SetGadgetAttrs()` call if you want to avoid any potential redraw flicker:
+> ```c
+> SetGadgetAttrs((struct Gadget *)win->listbrowser,
+>     win->window, NULL,
+>     LISTBROWSER_Labels,   win->lb_list,
+>     LISTBROWSER_AutoFit,  TRUE,
+>     TAG_DONE);
+> ```
+
+---
+
+### Summary: Column Sizing Quick Reference
+
+| Scenario | Tags to use |
+|---|---|
+| Fixed-width gadget, no scroll | `LISTBROWSER_ColumnInfo` with `CIF_WEIGHTED` (% of visible width) |
+| Horizontal scroll, columns fit to content | `LISTBROWSER_HorizontalProp, TRUE` + `LISTBROWSER_AutoFit, TRUE` |
+| Horizontal scroll, fixed pixel canvas | `LISTBROWSER_HorizontalProp, TRUE` + `LISTBROWSER_VirtualWidth, N` (ci_Width becomes % of N pixels) |
+| Want columns to never overflow visible area | `CIF_WEIGHTED` only, no VirtualWidth, no HorizontalProp |
+
+---
+
 ## Dynamic Text Labels
 
 ### ⚠️ CRITICAL: Label Images Don't Support Runtime Text Updates
@@ -1882,6 +2019,12 @@ If flags are correct but no triangles appear, the list wasn't set up before gadg
 
 ## Version History
 
+- **2026-02-19:** Added ListBrowser Column Sizing and AutoFit section
+  - CRITICAL: `LISTBROWSER_VirtualWidth` makes `ci_Width` a percentage of the virtual pixel canvas, not the visible gadget — columns become giant
+  - Use `LISTBROWSER_AutoFit, TRUE` as the correct companion to `LISTBROWSER_HorizontalProp, TRUE`
+  - CRITICAL: `ColumnInfo` arrays CANNOT be `static` or shared — ListBrowser writes back into the array; use per-window storage initialised fresh each open
+  - `LISTBROWSER_AutoFit` must be re-applied after every `rebuild_list()` reattach so columns resize to new content
+  - Summary table: which tag combination to use for each scrolling/sizing scenario
 - **2026-02-03:** Added gadget tooltips (HintInfo) section
   - CRITICAL: HintInfo array must be declared `static` or tooltips won't work
   - Must include IDCMP_MENUHELP flag in addition to WINDOW_GadgetHelp, TRUE

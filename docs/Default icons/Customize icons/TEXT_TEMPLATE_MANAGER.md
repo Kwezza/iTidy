@@ -81,7 +81,7 @@ Exclude area: (none)
 Lines: max 8, height 8, gap 1
 Char width: 6, Read: 512 bytes
 Colours: bg=0, text=1, mid=(none)
-Darken: 20%, alt 20%
+Darken: 40%, alt 20%
 Adaptive: YES, Expand palette: NO
 Exclude types: (none)
 ```
