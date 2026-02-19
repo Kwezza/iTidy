@@ -22,10 +22,10 @@ iTidy is an **AmigaOS Workbench 3.2 GUI application** that automatically tidies 
 
 **STOP AND READ THESE FIRST:**
 
-1. **`src/templates/AI_AGENT_GETTING_STARTED.md`** - Entry point for ReAction patterns
-2. **`src/templates/AI_AGENT_REACTION_GUIDE.md`** - ReAction-specific implementation guide
+1. **`support files/AI_AGENT_GETTING_STARTED.md`** - Entry point for ReAction patterns
+2. **`support files/AI_AGENT_REACTION_GUIDE.md`** - ReAction-specific implementation guide
 
-> **Note:** The archived GadTools documentation is available in `src/templates/GadTools_*.md` for reference but should NOT be used for new code.
+> **Note:** The archived GadTools documentation is available in `support files/GadTools_*.md` for reference but should NOT be used for new code.
 
 **These documents contain hard-learned lessons from actual bugs.**  
 Any section marked **CRITICAL** or **⚠️** is a **show-stopper issue**.
@@ -58,8 +58,8 @@ Any section marked **CRITICAL** or **⚠️** is a **show-stopper issue**.
 ### Archived v1.0 Templates (GadTools):
 The following files are preserved for reference but should NOT be used for v2.0 development:
 - `.github/copilot-instructions-v1-GadTools.md`
-- `src/templates/GadTools_AI_AGENT_*.md`
-- `src/templates/GadTools_amiga_window_*.c`
+- `support files/GadTools_AI_AGENT_*.md`
+- `support files/GadTools_amiga_window_*.c`
 
 ---
 
@@ -908,14 +908,14 @@ The `docs/AutoDocs/` folder contains the **official Commodore/Hyperion AutoDocs*
 **Usage:** When unsure about a ReAction tag, method, or attribute, search the relevant `.doc` file for the exact specification.
 
 ### v2.0 ReAction Documentation (TODO: Create these):
-1. **`src/templates/AI_AGENT_GETTING_STARTED.md`** - ReAction entry point
-2. **`src/templates/AI_AGENT_REACTION_GUIDE.md`** - ReAction patterns and rules
+1. **`support files/AI_AGENT_GETTING_STARTED.md`** - ReAction entry point
+2. **`support files/AI_AGENT_REACTION_GUIDE.md`** - ReAction patterns and rules
 
 ### Archived v1.0 GadTools Documentation:
 3. `.github/copilot-instructions-v1-GadTools.md` - Original GadTools instructions
-4. `src/templates/GadTools_AI_AGENT_GETTING_STARTED.md` - GadTools entry point
-5. `src/templates/GadTools_AI_AGENT_LAYOUT_GUIDE.md` - GadTools layout patterns
-6. `src/templates/GadTools_amiga_window_template.c` - GadTools window template
+4. `support files/GadTools_AI_AGENT_GETTING_STARTED.md` - GadTools entry point
+5. `support files/GadTools_AI_AGENT_LAYOUT_GUIDE.md` - GadTools layout patterns
+6. `support files/GadTools_amiga_window_template.c` - GadTools window template
 
 ### General Documentation:
 7. `docs/DEVELOPMENT_LOG.md` - Complete history of bugs, fixes, and decisions
@@ -972,9 +972,9 @@ The `docs/AutoDocs/` folder contains the **official Commodore/Hyperion AutoDocs*
 
 The following documentation and code needs to be created for v2.0:
 
-1. [ ] **`src/templates/AI_AGENT_GETTING_STARTED.md`** - Update for ReAction patterns
-2. [ ] **`src/templates/AI_AGENT_REACTION_GUIDE.md`** - New ReAction-specific guide
-3. [ ] **`src/templates/reaction_window_template.c`** - Canonical ReAction window template
+1. [ ] **`support files/AI_AGENT_GETTING_STARTED.md`** - Update for ReAction patterns
+2. [ ] **`support files/AI_AGENT_REACTION_GUIDE.md`** - New ReAction-specific guide
+3. [ ] **`support files/reaction_window_template.c`** - Canonical ReAction window template
 4. [ ] **Update `src/GUI/*.c`** - Convert existing windows from GadTools to ReAction
 5. [ ] **Update `Makefile`** - Add ReAction class library linking if needed
 6. [ ] **Test all windows** - Verify ReAction migration works on WB 3.2
