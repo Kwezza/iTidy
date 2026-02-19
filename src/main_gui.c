@@ -62,7 +62,6 @@
 #include "icon_misc.h"
 #include "dos/getDiskDetails.h"
 #include "Settings/get_fonts.h"
-#include "cli_utilities.h"
 #include "file_directory_handling.h"
 #include "layout_preferences.h"
 #include "GUI/main_window.h"

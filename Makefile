@@ -52,7 +52,6 @@ CORE_SRCS = \
 	$(SRC_DIR)/path_utilities.c \
 	$(SRC_DIR)/spinner.c \
 	$(SRC_DIR)/writeLog.c \
-	$(SRC_DIR)/cli_utilities.c \
 	$(SRC_DIR)/layout_preferences.c \
 	$(SRC_DIR)/layout_processor.c \
 	$(SRC_DIR)/aspect_ratio_layout.c \
@@ -264,7 +263,6 @@ $(OUT_DIR)/utilities.o: $(SRC_DIR)/utilities.c $(SRC_DIR)/utilities.h
 $(OUT_DIR)/path_utilities.o: $(SRC_DIR)/path_utilities.c $(SRC_DIR)/path_utilities.h
 $(OUT_DIR)/spinner.o: $(SRC_DIR)/spinner.c $(SRC_DIR)/spinner.h
 $(OUT_DIR)/writeLog.o: $(SRC_DIR)/writeLog.c $(SRC_DIR)/writeLog.h
-$(OUT_DIR)/cli_utilities.o: $(SRC_DIR)/cli_utilities.c $(SRC_DIR)/cli_utilities.h
 $(OUT_DIR)/layout_preferences.o: $(SRC_DIR)/layout_preferences.c $(SRC_DIR)/layout_preferences.h
 $(OUT_DIR)/layout_processor.o: $(SRC_DIR)/layout_processor.c $(SRC_DIR)/layout_processor.h
 $(OUT_DIR)/aspect_ratio_layout.o: $(SRC_DIR)/aspect_ratio_layout.c $(SRC_DIR)/aspect_ratio_layout.h
