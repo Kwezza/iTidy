@@ -41,15 +41,13 @@ The main list shows every known ASCII sub-type (c, rexx, html, python, etc.) wit
 
 Select a row before using any of the action buttons.
 
-### "Enable text file preview thumbnails" checkbox
-
-Master on/off switch for the entire text preview feature. When unchecked, iTidy will not attempt to render text content into icons regardless of what templates exist. This setting is saved with the iTidy preferences when you click **Save**.
-
 ---
 
 ## Action Buttons
 
-### Copy from ascii template
+Action buttons appear on the right side of the window. Select a row in the list to enable them.
+
+### Create from master
 
 Creates a copy of `def_ascii.info` as `def_<type>.info` for the selected type.
 
@@ -59,7 +57,7 @@ Creates a copy of `def_ascii.info` as `def_<type>.info` for the selected type.
 
 This is the normal starting point for customising a type: copy the master, then open it in Workbench Information to edit its ToolTypes.
 
-### Validate ToolTypes
+### Validate tooltypes
 
 Reads the ToolTypes from the selected type's template icon and performs two things:
 
@@ -88,7 +86,7 @@ Exclude types: (none)
 
 Any key not present in the icon shows a default placeholder (`?`, `(none)`, `NO`, `0`) so you can see at a glance what is configured and what is absent.
 
-### WB Information
+### Edit tooltypes...
 
 Opens the standard Workbench **Information** dialog for the selected template icon, exactly as if you had right-clicked the `.info` file on Workbench and chosen Information.
 
@@ -96,19 +94,21 @@ This lets you directly edit the ToolTypes from within the familiar Workbench int
 
 > **Note:** Workbench requires a companion file alongside the `.info` file to display the Information dialog correctly, at least when launched via ARexx. iTidy creates a zero-byte companion file automatically the first time you use this button for a given type — this is harmless and is only needed for the dialog to open.
 
-### Refresh
+### Revert to master
 
-Re-scans `PROGDIR:Icons/` and rebuilds the list. Use this after manually adding, removing, or renaming template files outside of iTidy.
+Deletes the custom `def_<type>.info` template and reverts the type to use the master `def_ascii.info` instead.
 
-### Save / Cancel
+- Only available for types that have a custom template.
+- A confirmation dialog shows the full file path before deletion.
+- After deletion, the list refreshes automatically and the status column updates (no longer shows `[Custom]`).
 
-**Save** writes the current state of the "Enable text previews" checkbox back to iTidy's preferences and closes the window.
-
-**Cancel** closes the window without saving any checkbox changes. Template files already copied or modified on disk are not affected.
+Use this if you want to discard customizations for a type and start fresh.
 
 ---
 
 ## ToolType Reference
+
+### Core Rendering Parameters
 
 The following ToolTypes are recognised in text template icons:
 
@@ -121,16 +121,28 @@ The following ToolTypes are recognised in text template icons:
 | `ITIDY_LINE_GAP` | integer >= 0 | Extra gap in pixels between lines |
 | `ITIDY_CHAR_WIDTH` | integer > 0 | Pixel width per character |
 | `ITIDY_READ_BYTES` | integer > 0 | How many bytes to read from the file |
-| `ITIDY_BG_COLOR` | 0-255 | Palette index for the background colour |
-| `ITIDY_TEXT_COLOR` | 0-255 | Palette index for the text colour |
-| `ITIDY_MID_COLOR` | 0-255 | Palette index for a mid-tone colour |
-| `ITIDY_DARKEN_PERCENT` | 0-100 | How much to darken even rows (%) |
-| `ITIDY_DARKEN_ALT_PERCENT` | 0-100 | How much to darken odd rows (%) |
-| `ITIDY_ADAPTIVE_TEXT` | `YES`/`NO` | Automatically choose text colour for contrast |
-| `ITIDY_EXPAND_PALETTE` | `YES`/`NO` | Allow palette expansion for better colour matching |
+
+### Colour and Contrast Control
+
+| ToolType | Type | Description | Notes |
+|----------|------|-------------|-------|
+| `ITIDY_BG_COLOR` | 0-255, or -1 | Palette index for the background colour | Use `-1` to preserve template pixels instead of filling background |
+| `ITIDY_TEXT_COLOR` | 0-255 | Palette index for the text colour | If not specified, auto-detected from palette luminance |
+| `ITIDY_MID_COLOR` | 0-255 | Palette index for a mid-tone colour | Used for anti-aliasing; defaults to text colour if unset |
+| `ITIDY_ADAPTIVE_TEXT` | `YES`/`NO` | Enable automatic text colour selection for contrast | **Enables and requires** `ITIDY_DARKEN_PERCENT` and `ITIDY_EXPAND_PALETTE` |
+| `ITIDY_DARKEN_PERCENT` | 0-100 | Darkening for even rows | Only active when `ITIDY_ADAPTIVE_TEXT=YES` |
+| `ITIDY_DARKEN_ALT_PERCENT` | 0-100 | Darkening for odd rows (striping effect) | Only active when `ITIDY_ADAPTIVE_TEXT=YES` |
+| `ITIDY_EXPAND_PALETTE` | `YES`/`NO` | Allow palette expansion for smooth shading | Only takes effect when `ITIDY_ADAPTIVE_TEXT=YES` and palette < 16 colors |
+
+### Advanced Filtering
+
+| ToolType | Type | Description |
+|----------|------|-------------|
 | `EXCLUDETYPE` | string | DefIcons type name to exclude from processing (can appear multiple times) |
 
-Metadata ToolTypes written by iTidy (read-only, do not edit):
+### Metadata ToolTypes (Read-Only)
+
+These ToolTypes are written by iTidy. Do not edit them manually.
 
 | ToolType | Description |
 |----------|-------------|
@@ -140,6 +152,34 @@ Metadata ToolTypes written by iTidy (read-only, do not edit):
 | `ITIDY_SRC_SIZE` | Size of the source at copy time |
 | `ITIDY_SRC_DATE` | Date of the source at copy time |
 
+### ToolType Interaction Rules
+
+**When `ITIDY_ADAPTIVE_TEXT=YES`:**
+- The `ITIDY_DARKEN_PERCENT` and `ITIDY_DARKEN_ALT_PERCENT` values are activated to create alternating row darkening
+- The `ITIDY_EXPAND_PALETTE` setting is checked:
+  - If palette has 128 or more colours, expansion is skipped (palette considered sufficiently rich)
+  - If palette has 2-127 colours and `ITIDY_EXPAND_PALETTE` is not explicitly set to `NO`, the palette is expanded with darkened colour variants
+    - For each original colour: a 70% darkened version is added, plus a 35% darkened version for row striping
+    - This preserves the original hue while adding darker shades, up to a maximum of 256 palette colours (full Amiga icon limit)
+    - Duplicate or near-identical colours (within RGB tolerance) are intelligently reused to conserve palette slots rather than wasting them on duplicates
+
+**When `ITIDY_ADAPTIVE_TEXT=NO` (default):**
+- `ITIDY_DARKEN_PERCENT` and `ITIDY_DARKEN_ALT_PERCENT` have **no effect**
+- `ITIDY_EXPAND_PALETTE` has **no effect**
+- Text is rendered in the solid colour specified by (or auto-detected for) `ITIDY_TEXT_COLOR`
+
+**When `ITIDY_BG_COLOR=-1` (special value):**
+- The background fill step is skipped entirely
+- Template artwork (like folded corners or embossed areas) is preserved
+- Text is rendered over the unmodified template pixels
+- Only `ITIDY_TEXT_AREA` defines where text is placed
+
+**Colour Auto-Detection (when colours are not manually specified):**
+- `ITIDY_BG_COLOR`: Lightest palette colour (closest to white)
+- `ITIDY_TEXT_COLOR`: Darkest palette colour (closest to black)
+- `ITIDY_MID_COLOR`: Colour closest to mid-luminance grey
+- Manual ToolType values override auto-detection
+
 ---
 
 ## Typical Workflow
@@ -147,11 +187,10 @@ Metadata ToolTypes written by iTidy (read-only, do not edit):
 1. Open **DefIcons Creation Settings** -> **Manage Text Templates...**
 2. Check the list to see which types already have custom templates (`[Custom]`).
 3. Select a type that shows no custom template (blank status).
-4. Click **Copy from ascii template** -> confirm the copy.
-5. Click **WB Information** to open the Workbench Information dialog.
+4. Click **Create from master** -> confirm the copy.
+5. Click **Edit tooltypes...** to open the Workbench Information dialog.
 6. Switch to the **Icon** tab in the Information dialog and edit the ToolTypes to suit the file type (adjust colours, text area, line settings, etc.).
-7. Click **Save** in the Information dialog.
-8. Back in iTidy, click **Validate ToolTypes** to confirm the values are all valid and review the effect summary.
+7. Click **Save** in the Information dialog to close it.
+8. Back in iTidy, the list updates automatically. Click **Validate tooltypes** to confirm the values are all valid and review the effect summary.
 9. Repeat for other types as needed.
-10. Enable the **"Enable text file preview thumbnails"** checkbox if it is not already on.
-11. Click **Save**.
+10. Click **Close** when finished. All template changes are already saved to disk.

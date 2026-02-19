@@ -750,7 +750,7 @@ static UBYTE find_lightest_luminance(const struct ColorRegister *palette, ULONG 
  * Expansion is triggered when:
  *   1. ITIDY_ADAPTIVE_TEXT=YES on template icon
  *   2. ITIDY_EXPAND_PALETTE != NO (defaults to YES)
- *   3. Palette size < 16 colors
+ *   3. Palette size < 128 colors
  *   4. Palette has at least 2 colors
  *
  * @param icon  Template DiskObject (for reading ToolTypes)
@@ -771,7 +771,7 @@ static BOOL should_expand_palette(struct DiskObject *icon, const iTidy_IconImage
     }
     
     // Check palette size constraints
-    if (img->palette_size_normal < 2 || img->palette_size_normal >= 16)
+    if (img->palette_size_normal < 2 || img->palette_size_normal >= 128)
     {
         return FALSE;
     }
@@ -907,7 +907,7 @@ static BOOL expand_palette_for_adaptive(struct ColorRegister **palette_ptr, ULON
     ULONG num_added_main = 0;
     ULONG num_added_alt = 0;
     ULONG num_reused = 0;
-    const ULONG MAX_PALETTE = 64;  // Limit to 64 colors (good Amiga compatibility)
+    const ULONG MAX_PALETTE = 256;  // Limit to 256 colors (Amiga icon maximum)
     const ULONG TOLERANCE_SQUARED = 20 * 20;  // ~20 RGB units tolerance
     
     if (palette_ptr == NULL || *palette_ptr == NULL || palette_size_ptr == NULL)
@@ -919,7 +919,7 @@ static BOOL expand_palette_for_adaptive(struct ColorRegister **palette_ptr, ULON
     old_palette = *palette_ptr;
     old_size = *palette_size_ptr;
     
-    // Allocate new palette with room to grow (up to 64 colors)
+    // Allocate new palette with room to grow (up to 256 colors)
     new_palette = (struct ColorRegister *)whd_malloc(MAX_PALETTE * sizeof(struct ColorRegister));
     if (new_palette == NULL)
     {
