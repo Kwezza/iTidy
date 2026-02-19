@@ -16,12 +16,12 @@
 #define LabelBase iTidy_DefIcons_LabelBase
 
 #include "deficons_settings_window.h"
-#include "writeLog.h"
-#include "../deficons/deficons_parser.h"
-#include "../deficons/deficons_templates.h"
-#include "../icon_types.h"
-#include "platform/platform.h"
-#include "easy_request_helper.h"
+#include "../../writeLog.h"
+#include "../../deficons/deficons_parser.h"
+#include "../../deficons/deficons_templates.h"
+#include "../../icon_types.h"
+#include "../../platform/platform.h"
+#include "../easy_request_helper.h"
 
 #include <clib/alib_protos.h>
 #include <reaction/reaction.h>

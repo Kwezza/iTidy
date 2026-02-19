@@ -23,9 +23,9 @@
 
 #include "deficons_creation_window.h"
 #include "text_templates_window.h"
-#include "writeLog.h"
-#include "icon_edit/palette/palette_reduction.h"
-#include "platform/platform.h"
+#include "../../writeLog.h"
+#include "../../icon_edit/palette/palette_reduction.h"
+#include "../../platform/platform.h"
 
 #include <clib/alib_protos.h>
 #include <reaction/reaction.h>

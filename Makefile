@@ -100,10 +100,10 @@ GUI_SRCS = \
 	$(SRC_DIR)/GUI/main_window.c \
 	$(SRC_DIR)/GUI/advanced_window.c \
 	$(SRC_DIR)/GUI/beta_options_window.c \
-	$(SRC_DIR)/GUI/deficons_settings_window.c \
-	$(SRC_DIR)/GUI/deficons_creation_window.c \
+	$(SRC_DIR)/GUI/deficons/deficons_settings_window.c \
+	$(SRC_DIR)/GUI/deficons/deficons_creation_window.c \
 	$(SRC_DIR)/GUI/exclude_paths_window.c \
-	$(SRC_DIR)/GUI/text_templates_window.c \
+	$(SRC_DIR)/GUI/deficons/text_templates_window.c \
 	$(SRC_DIR)/GUI/easy_request_helper.c \
 	$(SRC_DIR)/GUI/window_enumerator.c \
 	$(SRC_DIR)/GUI/wb_classify.c \
@@ -188,6 +188,7 @@ directories:
 	@if not exist "$(OUT_DIR)\platform" mkdir "$(OUT_DIR)\platform"
 	@if not exist "$(OUT_DIR)\helpers" mkdir "$(OUT_DIR)\helpers"
 	@if not exist "$(OUT_DIR)\GUI" mkdir "$(OUT_DIR)\GUI"
+	@if not exist "$(OUT_DIR)\GUI\deficons" mkdir "$(OUT_DIR)\GUI\deficons"
 	@if not exist "$(OUT_DIR)\icon_edit" mkdir "$(OUT_DIR)\icon_edit"
 	@if not exist "$(OUT_DIR)\icon_edit\palette" mkdir "$(OUT_DIR)\icon_edit\palette"
 	@if not exist "$(OUT_DIR)\GUI\StatusWindows" mkdir "$(OUT_DIR)\GUI\StatusWindows"

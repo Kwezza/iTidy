@@ -19,10 +19,10 @@
 #define RequesterBase iTidy_TextTemplates_RequesterBase
 
 #include "text_templates_window.h"
-#include "../writeLog.h"
-#include "../platform/platform.h"
-#include "../deficons/deficons_templates.h"
-#include "../icon_edit/icon_image_access.h"   /* ITIDY_TT_* defines */
+#include "../../writeLog.h"
+#include "../../platform/platform.h"
+#include "../../deficons/deficons_templates.h"
+#include "../../icon_edit/icon_image_access.h"   /* ITIDY_TT_* defines */
 
 #include <clib/alib_protos.h>
 #include <reaction/reaction.h>
