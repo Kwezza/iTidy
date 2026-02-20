@@ -132,4 +132,14 @@ BOOL ScanDirectoryForToolsOnlyWithProgress(struct iTidyMainProgressWindow *progr
  */
 struct iTidyMainProgressWindow *GetCurrentProgressWindow(void);
 
+/**
+ * @brief Set current progress window pointer
+ * 
+ * Allows sub-modules (e.g. tool_scanner.c) to update the active progress
+ * window stored in layout_processor.c.  Pass NULL to clear.
+ * 
+ * @param pw Pointer to progress window, or NULL to clear
+ */
+void SetCurrentProgressWindow(struct iTidyMainProgressWindow *pw);
+
 #endif /* LAYOUT_PROCESSOR_H */

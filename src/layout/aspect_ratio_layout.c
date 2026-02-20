@@ -19,7 +19,7 @@
 /* Console output abstraction - controlled by ENABLE_CONSOLE compile flag */
 #include <console_output.h>
 
-#include "aspect_ratio_layout.h"
+#include "layout/aspect_ratio_layout.h"
 #include "layout_preferences.h"
 #include "icon_management.h"
 #include "writeLog.h"

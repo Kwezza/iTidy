@@ -53,9 +53,16 @@ CORE_SRCS = \
 	$(SRC_DIR)/writeLog.c \
 	$(SRC_DIR)/layout_preferences.c \
 	$(SRC_DIR)/layout_processor.c \
-	$(SRC_DIR)/aspect_ratio_layout.c \
-	$(SRC_DIR)/folder_scanner.c \
 	$(SRC_DIR)/string_functions.c
+
+# Layout subsystem source files (extracted from layout_processor.c)
+LAYOUT_SRCS = \
+	$(SRC_DIR)/layout/aspect_ratio_layout.c \
+	$(SRC_DIR)/layout/folder_scanner.c \
+	$(SRC_DIR)/layout/icon_sorter.c \
+	$(SRC_DIR)/layout/icon_positioner.c \
+	$(SRC_DIR)/layout/block_layout.c \
+	$(SRC_DIR)/layout/tool_scanner.c
 
 # DefIcons source files
 DEFICONS_SRCS = \
@@ -133,11 +140,12 @@ PLATFORM_SRCS = $(SRC_DIR)/platform/amiga_platform.c
 MEMORY_TRACKING_SRCS = $(SRC_DIR)/platform/platform.c
 
 # All sources
-SRCS = $(CORE_SRCS) $(ICON_EDIT_SRCS) $(BACKUP_SRCS) $(GUI_SRCS) $(DEFAULT_TOOLS_SRCS) $(RESTORE_BACKUP_SRCS) $(DOS_SRCS) $(SETTINGS_SRCS) $(PLATFORM_SRCS) $(MEMORY_TRACKING_SRCS)
+SRCS = $(CORE_SRCS) $(LAYOUT_SRCS) $(ICON_EDIT_SRCS) $(BACKUP_SRCS) $(GUI_SRCS) $(DEFAULT_TOOLS_SRCS) $(RESTORE_BACKUP_SRCS) $(DOS_SRCS) $(SETTINGS_SRCS) $(PLATFORM_SRCS) $(MEMORY_TRACKING_SRCS)
 
 # Object files (in build directory)
 # Note: platform.c is in include/platform, needs special handling
 CORE_OBJS = $(CORE_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
+LAYOUT_OBJS = $(LAYOUT_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 DEFICONS_OBJS = $(DEFICONS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 ICON_EDIT_OBJS = $(ICON_EDIT_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 BACKUP_OBJS = $(BACKUP_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
@@ -149,7 +157,7 @@ SETTINGS_OBJS = $(SETTINGS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 PLATFORM_OBJS = $(PLATFORM_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 MEMORY_TRACKING_OBJS = $(OUT_DIR)/platform_memory.o
 
-OBJS = $(CORE_OBJS) $(DEFICONS_OBJS) $(ICON_EDIT_OBJS) $(BACKUP_OBJS) $(GUI_OBJS) $(DEFAULT_TOOLS_OBJS) $(RESTORE_BACKUP_OBJS) $(DOS_OBJS) $(SETTINGS_OBJS) $(PLATFORM_OBJS) $(MEMORY_TRACKING_OBJS)
+OBJS = $(CORE_OBJS) $(LAYOUT_OBJS) $(DEFICONS_OBJS) $(ICON_EDIT_OBJS) $(BACKUP_OBJS) $(GUI_OBJS) $(DEFAULT_TOOLS_OBJS) $(RESTORE_BACKUP_OBJS) $(DOS_OBJS) $(SETTINGS_OBJS) $(PLATFORM_OBJS) $(MEMORY_TRACKING_OBJS)
 
 ################################################################################
 # Build Rules
@@ -181,6 +189,7 @@ directories:
 	@if not exist "$(OUT_DIR)\GUI\StatusWindows" mkdir "$(OUT_DIR)\GUI\StatusWindows"
 	@if not exist "$(OUT_DIR)\GUI\DefaultTools" mkdir "$(OUT_DIR)\GUI\DefaultTools"
 	@if not exist "$(OUT_DIR)\GUI\RestoreBackups" mkdir "$(OUT_DIR)\GUI\RestoreBackups"
+	@if not exist "$(OUT_DIR)\layout" mkdir "$(OUT_DIR)\layout"
 	@if not exist "$(BIN_DIR)" mkdir "$(BIN_DIR)"
 
 # Link executable

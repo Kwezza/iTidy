@@ -51,7 +51,7 @@ int CalculateAverageHeight(const IconArray *iconArray);
  * @return TRUE if valid, FALSE if invalid (zero or negative)
  * 
  * @note Extreme ratios (>5000 or <200) generate warnings but are allowed
- * @note Ratio is scaled by 1000 (fixed-point): 1.777 → 1777
+ * @note Ratio is scaled by 1000 (fixed-point): 1.777 -> 1777
  */
 BOOL ValidateCustomAspectRatio(int width, int height, int *outRatio);
 
@@ -75,7 +75,7 @@ BOOL ValidateCustomAspectRatio(int width, int height, int *outRatio);
  * @param averageIconWidth Average width of icons (including text)
  * @param averageIconHeight Average height of icons (including text)
  * @param targetAspectRatio Desired width/height ratio scaled by 1000 (e.g., 1600 for 1.6)
- * @param minAllowedIconsPerRow Lower limit on columns (prevent 1×N layouts)
+ * @param minAllowedIconsPerRow Lower limit on columns (prevent 1xN layouts)
  * @param maxAllowedIconsPerRow Upper limit on columns (from maxIconsPerRow pref)
  * @return Optimal number of icons per row
  * 

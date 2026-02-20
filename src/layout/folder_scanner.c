@@ -24,7 +24,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "folder_scanner.h"
+#include "layout/folder_scanner.h"
 #include "layout_preferences.h"
 #include "writeLog.h"
 
