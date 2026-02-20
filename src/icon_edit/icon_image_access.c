@@ -286,7 +286,7 @@ BOOL itidy_icon_image_extract(struct DiskObject *icon, iTidy_IconImageData *out)
     // Store frameless setting (non-zero = frameless)
     out->is_frameless = is_frameless;
 
-    log_info(LOG_ICONS, "itidy_icon_image_extract: %ux%u, pal=%lu entries, selected=%s, real_sel=%s, trans=(%ld,%ld), gflags=0x%04x, frameless=%s\n",
+    log_debug(LOG_ICONS, "itidy_icon_image_extract: %ux%u, pal=%lu entries, selected=%s, real_sel=%s, trans=(%ld,%ld), gflags=0x%04x, frameless=%s\n",
              (unsigned)out->width, (unsigned)out->height,
              out->palette_size_normal,
              out->has_selected_image ? "yes" : "no",
@@ -414,7 +414,7 @@ struct DiskObject *itidy_icon_image_apply(struct DiskObject *icon,
         LayoutIconA(clone, NULL, layout_tags);
     }
 
-    log_info(LOG_ICONS, "itidy_icon_image_apply: applied %ux%u image to clone, gflags=0x%04x, frameless=%s, real_sel=%s\n",
+    log_debug(LOG_ICONS, "itidy_icon_image_apply: applied %ux%u image to clone, gflags=0x%04x, frameless=%s, real_sel=%s\n",
              (unsigned)data->width, (unsigned)data->height,
              (unsigned)data->gadget_flags,
              data->is_frameless ? "yes" : "no",
@@ -455,7 +455,7 @@ BOOL itidy_icon_image_save(const char *path, struct DiskObject *icon)
 
     if (result)
     {
-        log_info(LOG_ICONS, "itidy_icon_image_save: saved icon to '%s' (OS3.5 format)\n", path);
+        log_debug(LOG_ICONS, "itidy_icon_image_save: saved icon to '%s' (OS3.5 format)\n", path);
     }
     else
     {
@@ -1004,7 +1004,7 @@ static BOOL expand_palette_for_adaptive(struct ColorRegister **palette_ptr, ULON
     *palette_ptr = new_palette;
     *palette_size_ptr = current_size;
     
-    log_info(LOG_ICONS, "expand_palette_for_adaptive: expanded %lu colors -> %lu "
+    log_debug(LOG_ICONS, "expand_palette_for_adaptive: expanded %lu colors -> %lu "
              "(added %lu main + %lu alt darkened, reused %lu existing)\n",
              old_size, current_size, num_added_main, num_added_alt, num_reused);
     
@@ -1409,7 +1409,7 @@ BOOL itidy_get_render_params(struct DiskObject *icon,
         }
     }
 
-    log_info(LOG_ICONS, "itidy_get_render_params: safe=%u,%u,%u,%u bg=%u text=%u mid=%u "
+    log_debug(LOG_ICONS, "itidy_get_render_params: safe=%u,%u,%u,%u bg=%u text=%u mid=%u "
              "char_w=%u line_h=%u gap=%u read=%u adaptive=%s\n",
              (unsigned)params->base.safe_left, (unsigned)params->base.safe_top,
              (unsigned)params->base.safe_width, (unsigned)params->base.safe_height,
@@ -1547,7 +1547,7 @@ BOOL itidy_stamp_created_tooltypes(struct DiskObject *icon,
     // (typically the DiskObject is a clone that will be disposed after save).
     icon->do_ToolTypes = new_tooltypes;
 
-    log_info(LOG_ICONS, "itidy_stamp_created_tooltypes: stamped %d entries (kind=%s)\n",
+    log_debug(LOG_ICONS, "itidy_stamp_created_tooltypes: stamped %d entries (kind=%s)\n",
              dest, kind);
 
     return TRUE;

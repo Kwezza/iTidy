@@ -333,7 +333,7 @@ BOOL ProcessDirectoryWithPreferences(void)
             /* Initialize tool cache for performance */
             if (InitToolCache())
             {
-                log_info(LOG_GENERAL, "Tool cache initialized\n");
+                log_debug(LOG_GENERAL, "Tool cache initialized\n");
             }
             else
             {
@@ -388,7 +388,7 @@ BOOL ProcessDirectoryWithPreferences(void)
         log_info(LOG_GENERAL, "Exclude Paths List:\n");
         for (UWORD i = 0; i < prefs->deficons_exclude_path_count; i++)
         {
-            log_info(LOG_GENERAL, "  [%u] %s\n", i, prefs->deficons_exclude_paths[i]);
+            log_debug(LOG_GENERAL, "  [%u] %s\n", i, prefs->deficons_exclude_paths[i]);
         }
     }
     log_info(LOG_GENERAL, "========================================\n\n");
@@ -419,7 +419,7 @@ BOOL ProcessDirectoryWithPreferences(void)
         else
         {
             CONSOLE_WARNING("Warning: Failed to start backup session - continuing without backup\n");
-            append_to_log("ERROR: Failed to start backup session\n");
+            log_error(LOG_GENERAL, "ERROR: Failed to start backup session\n");
             g_backupContext = NULL;
         }
     }
@@ -493,7 +493,7 @@ BOOL ProcessDirectoryWithPreferences(void)
             else
             {
                 if (deficons_create_missing_icons_in_directory(sanitizedPath, prefs,
-                        &creation_result, g_progressWindow, g_backupContext))
+                        &creation_result, g_progressWindow, g_backupContext, FALSE))
                 {
                     log_info(LOG_ICONS, "Icon creation complete: %lu icon(s) created\n", creation_result.icons_created);
                     PROGRESS_STATUS("Created %lu icon(s) in current folder", creation_result.icons_created);
@@ -648,13 +648,13 @@ BOOL ProcessDirectoryWithPreferences(void)
     /* Free PATH search list if validation was enabled */
     if (g_ValidateDefaultTools)
     {
-        log_info(LOG_GENERAL, "\n*** Tool cache summary ***\n");
+        log_debug(LOG_GENERAL, "\n*** Tool cache summary ***\n");
         DumpToolCache();  /* Show all cached tools after processing */
         
         /* Note: Tool cache is NOT freed here - it remains available for post-processing */
-        log_info(LOG_GENERAL, "Tool cache retained for post-processing\n");
+        log_debug(LOG_GENERAL, "Tool cache retained for post-processing\n");
         
-        log_info(LOG_GENERAL, "Freeing PATH search list\n");
+        log_debug(LOG_GENERAL, "Freeing PATH search list\n");
         FreePathSearchList();
         g_ValidateDefaultTools = FALSE;
     }
@@ -1069,7 +1069,7 @@ static void PartitionIconsByWorkbenchType(const IconArray *source,
         }
     }
     
-    log_info(LOG_ICONS, "Partitioned %d icons by Workbench type\n", source->size);
+    log_debug(LOG_ICONS, "Partitioned %d icons by Workbench type\n", source->size);
     log_debug(LOG_ICONS, "  Drawers: %d, Tools: %d, Other: %d\n", dCount, tCount, oCount);
     
     /* Return results */
@@ -1117,7 +1117,7 @@ static BOOL CalculateBlockLayout(IconArray *iconArray,
     int blockIndex;
     BOOL success = FALSE;
     
-    log_info(LOG_ICONS, "CalculateBlockLayout: Processing %d icons with block grouping\n", 
+    log_debug(LOG_ICONS, "CalculateBlockLayout: Processing %d icons with block grouping\n", 
              iconArray->size);
     
     /* Partition icons into three groups by type */
@@ -1146,7 +1146,7 @@ static BOOL CalculateBlockLayout(IconArray *iconArray,
     /* ================================================================
      * PASS 1: Calculate optimal columns for each block
      * ================================================================ */
-    log_info(LOG_ICONS, "PASS 1: Calculating optimal columns for each block\n");
+log_debug(LOG_ICONS, "PASS 1: Calculating optimal columns for each block\n");
     
     {
         int blockOptimalColumns[3] = {0, 0, 0};
@@ -1215,13 +1215,13 @@ static BOOL CalculateBlockLayout(IconArray *iconArray,
             }
         }
         
-        log_info(LOG_ICONS, "Widest block: Block %d with %d columns\n", 
+        log_debug(LOG_ICONS, "Widest block: Block %d with %d columns\n", 
                 maxColumnsBlockIndex, maxColumns);
         
         /* ================================================================
          * PASS 2: Re-position all blocks using the widest block's columns
          * ================================================================ */
-        log_info(LOG_ICONS, "PASS 2: Positioning all blocks with %d columns\n", maxColumns);
+        log_debug(LOG_ICONS, "PASS 2: Positioning all blocks with %d columns\n", maxColumns);
         
         for (blockIndex = 0; blockIndex < 3; blockIndex++)
         {
@@ -1304,10 +1304,10 @@ static BOOL CalculateBlockLayout(IconArray *iconArray,
         }
     }
     
-    log_info(LOG_ICONS, "All blocks positioned with uniform width: %d pixels\n", maxBlockWidth);
+    log_debug(LOG_ICONS, "All blocks positioned with uniform width: %d pixels\n", maxBlockWidth);
     
     /* Debug: Show block width comparison */
-    log_info(LOG_ICONS, "\n=== Block Width Analysis ===\n");
+    log_debug(LOG_ICONS, "\n=== Block Width Analysis ===\n");
     for (blockIndex = 0; blockIndex < 3; blockIndex++)
     {
         if (blockCounts[blockIndex] > 0)
@@ -1315,12 +1315,12 @@ static BOOL CalculateBlockLayout(IconArray *iconArray,
             int wastedSpace = maxBlockWidth - blockWidths[blockIndex];
             int efficiencyPercent = (blockWidths[blockIndex] * 100) / maxBlockWidth;
             
-            log_info(LOG_ICONS, "Block %d: %3dpx wide (%d%% of target %dpx) → %dpx wasted space\n",
+            log_debug(LOG_ICONS, "Block %d: %3dpx wide (%d%% of target %dpx) → %dpx wasted space\n",
                      blockIndex, blockWidths[blockIndex], efficiencyPercent, maxBlockWidth, wastedSpace);
         }
     }
-    log_info(LOG_ICONS, "Target window content width: %dpx\n", maxBlockWidth);
-    log_info(LOG_ICONS, "============================\n\n");
+    log_debug(LOG_ICONS, "Target window content width: %dpx\n", maxBlockWidth);
+    log_debug(LOG_ICONS, "============================\n\n");
     
     /* ================================================================
      * PASS 3: Stack blocks vertically AND center horizontally
@@ -2204,6 +2204,7 @@ standard_layout:
             append_to_log("Aspect ratio calculation complete: %d cols × %d rows\n", 
                           finalColumns, finalRows);
 #endif
+            PROGRESS_STATUS("  Layout: %d cols x %d rows", finalColumns, finalRows);
             
             /* Choose layout algorithm based on centerIconsInColumn preference */
             if (prefs->centerIconsInColumn)

@@ -556,7 +556,7 @@ void append_to_log(const char *format, ...) {
     vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
     
-    log_message(LOG_GENERAL, LOG_LEVEL_INFO, "%s", buffer);
+    log_message(LOG_GENERAL, LOG_LEVEL_DEBUG, "%s", buffer);
 }
 
 void initialize_logfile(void) {

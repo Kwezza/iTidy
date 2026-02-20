@@ -336,7 +336,7 @@ BOOL itidy_quantize_palette(const UBYTE *pixels, ULONG pixel_count,
             out_palette[i].blue  = histogram[i].b;
         }
         *out_pal_size = hist_count;
-        log_info(LOG_ICONS, "palette_quantization: %u unique colors "
+        log_debug(LOG_ICONS, "palette_quantization: %u unique colors "
                  "<= target %u, no reduction needed\n",
                  (unsigned)hist_count, (unsigned)target_colors);
         return TRUE;

@@ -17,6 +17,7 @@
 #include <exec/types.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
+#include <dos/dosasl.h>        /* MatchFirst/MatchNext/MatchEnd for WHDLoad detection */
 #include <proto/dos.h>
 #include <proto/exec.h>
 
@@ -336,4 +337,53 @@ const char* deficons_folder_mode_to_string(UWORD mode)
         default:
             return "Unknown";
     }
+}
+
+/*========================================================================*/
+/* WHDLoad Folder Detection                                              */
+/*========================================================================*/
+
+BOOL deficons_is_whdload_folder(const char *path, const LayoutPreferences *prefs)
+{
+    struct AnchorPath *ap;
+    char pattern[520];
+    size_t path_len;
+    LONG match_result;
+    BOOL is_whdload = FALSE;
+
+    if (!path || path[0] == '\0' || !prefs)
+        return FALSE;
+
+    /* Build AmigaDOS pattern: path/#?.slave */
+    path_len = strlen(path);
+    if (path_len > 0 && path[path_len - 1] == ':')
+        snprintf(pattern, sizeof(pattern), "%s#?.slave", path);
+    else
+        snprintf(pattern, sizeof(pattern), "%s/#?.slave", path);
+
+    /* Allocate AnchorPath — 256-byte path buffer suffix (same as folder_scanner.c) */
+    ap = (struct AnchorPath *)whd_malloc(sizeof(struct AnchorPath) + 255);
+    if (!ap)
+    {
+        log_warning(LOG_ICONS, "WHDLoad check: failed to allocate AnchorPath for %s\n", path);
+        return FALSE;
+    }
+
+    ap->ap_Strlen    = 256;
+    ap->ap_BreakBits = 0;
+    ap->ap_Flags     = 0;
+
+    match_result = MatchFirst((CONST_STRPTR)pattern, ap);
+    if (match_result == 0)
+    {
+        /* At least one *.slave file found — this is a WHDLoad folder */
+        is_whdload = TRUE;
+        log_debug(LOG_ICONS, "WHDLoad folder detected (found .slave): %s\n", path);
+    }
+    /* Any other result means no match — not a WHDLoad folder */
+
+    MatchEnd(ap);
+    whd_free(ap);
+
+    return is_whdload;
 }

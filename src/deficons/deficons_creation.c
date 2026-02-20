@@ -234,7 +234,7 @@ void deficons_creation_close_log(void)
     {
         Close(g_creation_log_file);
         g_creation_log_file = 0;
-        log_info(LOG_ICONS, "Icon creation log closed\n");
+        log_debug(LOG_ICONS, "Icon creation log closed\n");
     }
 }
 
@@ -342,6 +342,14 @@ BOOL deficons_folder_has_visible_contents(const char *path,
     /* Skip system paths - they won't get icons anyway */
     if (deficons_is_system_path(path, prefs))
         return FALSE;
+
+    /* WHDLoad folder: the parent should still create a drawer icon for it,
+     * so return TRUE (has visible contents) without scanning inside. */
+    if (prefs->deficons_skip_whdload_folders && deficons_is_whdload_folder(path, prefs))
+    {
+        log_debug(LOG_ICONS, "Smart scan: WHDLoad folder, returning TRUE for drawer icon: %s\n", path);
+        return TRUE;
+    }
 
     lock = Lock((STRPTR)path, ACCESS_READ);
     if (!lock)
@@ -475,7 +483,8 @@ BOOL deficons_create_missing_icons_in_directory(
     const LayoutPreferences *prefs,
     iTidy_DefIconsCreationResult *result,
     struct iTidyMainProgressWindow *progress_window,
-    BackupContext *backup_context)
+    BackupContext *backup_context,
+    BOOL files_only)
 {
     BPTR lock = 0;
     struct FileInfoBlock *fib = NULL;
@@ -513,6 +522,15 @@ BOOL deficons_create_missing_icons_in_directory(
         return TRUE;
     }
 
+    /* WHDLoad folder: skip all icon creation inside (data, saves, etc.) */
+    if (prefs->deficons_skip_whdload_folders && deficons_is_whdload_folder(path, prefs))
+    {
+        log_info(LOG_ICONS, "WHDLoad folder detected, skipping icon creation inside: %s\n", path);
+        CREATION_STATUS(progress_window, "  Skipping WHDLoad folder: %s", path);
+        /* result already zeroed — return success with nothing created */
+        return TRUE;
+    }
+
     /* Lock directory */
     lock = Lock((STRPTR)path, ACCESS_READ);
     if (!lock)
@@ -540,6 +558,11 @@ BOOL deficons_create_missing_icons_in_directory(
     }
 
     /* Process directory entries */
+    /* Tracks the last type logged to progress window so we emit a type-change
+     * header instead of repeating "[ascii]" on every line. */
+    char last_logged_type[64];
+    last_logged_type[0] = '\0';
+
     while (ExNext(lock, fib))
     {
         CREATION_CHECK_CANCEL(progress_window);
@@ -576,34 +599,48 @@ BOOL deficons_create_missing_icons_in_directory(
         /* Handle drawers (directories) */
         if (fib->fib_DirEntryType > 0)
         {
-            BOOL should_create = FALSE;
-
-            /* Determine whether to create a drawer icon */
-            switch (prefs->deficons_folder_icon_mode)
+            if (files_only)
             {
-                case DEFICONS_FOLDER_MODE_ALWAYS:
-                    should_create = TRUE;
-                    break;
-
-                case DEFICONS_FOLDER_MODE_NEVER:
-                    should_create = FALSE;
-                    break;
-
-                case DEFICONS_FOLDER_MODE_SMART:
-                default:
-                    /* Smart mode: lightweight pre-scan of the subdirectory */
-                    should_create = deficons_folder_has_visible_contents(fullpath, prefs,
-                                                                         progress_window);
-                    break;
-            }
-
-            if (!deficons_should_create_folder_icon(fullpath, should_create, prefs))
-            {
-                log_debug(LOG_ICONS, "Folder icon not needed: %s\n", fib->fib_FileName);
+                /* Post-order mode: drawer icon decisions are handled in
+                 * deficons_create_missing_icons_recursive() after each subdir
+                 * has been fully processed.  We already checked above that no
+                 * .info exists (otherwise we would have continued there with
+                 * local_visible = TRUE), so this directory is not yet visible.
+                 * Skip it and let the recursive function decide. */
                 continue;
             }
 
-            strcpy(type_token, "drawer");
+            /* Non-recursive (single-folder) mode: pre-scan as before */
+            {
+                BOOL should_create = FALSE;
+
+                /* Determine whether to create a drawer icon */
+                switch (prefs->deficons_folder_icon_mode)
+                {
+                    case DEFICONS_FOLDER_MODE_ALWAYS:
+                        should_create = TRUE;
+                        break;
+
+                    case DEFICONS_FOLDER_MODE_NEVER:
+                        should_create = FALSE;
+                        break;
+
+                    case DEFICONS_FOLDER_MODE_SMART:
+                    default:
+                        /* Smart mode: lightweight pre-scan of the subdirectory */
+                        should_create = deficons_folder_has_visible_contents(fullpath, prefs,
+                                                                             progress_window);
+                        break;
+                }
+
+                if (!deficons_should_create_folder_icon(fullpath, should_create, prefs))
+                {
+                    log_debug(LOG_ICONS, "Folder icon not needed: %s\n", fib->fib_FileName);
+                    continue;
+                }
+
+                strcpy(type_token, "drawer");
+            }
         }
         else
         {
@@ -662,17 +699,16 @@ BOOL deficons_create_missing_icons_in_directory(
                 LogCreatedIconToManifest(backup_context, info_path);
             }
 
-            /* Apply content preview for text-type files.
-             * This renders a miniature text preview into the newly-copied
-             * icon's pixel buffer. For non-text types (drawers, music,
-             * pictures, etc.) this returns NOT_APPLICABLE immediately
-             * and the icon keeps the unmodified template image. */
+            /* Apply content preview for text-type files and image thumbnails.
+             * preview_result is declared here (not inside the if block) so
+             * the progress status line below can use it to pick the right verb. */
+            int preview_result = ITIDY_PREVIEW_NOT_APPLICABLE;
             if (fib->fib_DirEntryType <= 0)  /* Files only, not drawers */
             {
                 log_debug(LOG_ICONS, "Calling itidy_apply_content_preview: progress_window=%p, wrapper=%p\n",
                           (void*)progress_window, (void*)progress_callback_wrapper);
                 
-                int preview_result = itidy_apply_content_preview(
+                preview_result = itidy_apply_content_preview(
                     fullpath, type_token,
                     (ULONG)fib->fib_Size, &fib->fib_Date,
                     progress_callback_wrapper,
@@ -704,6 +740,37 @@ BOOL deficons_create_missing_icons_in_directory(
             {
                 itidy_main_progress_update_heartbeat(progress_window,
                                                      "Creating", local_created, 0);
+
+                /* Emit a type-change header when the icon type changes within
+                 * this directory -- avoids repeating "[ascii]" on every line.
+                 * Then show just the filename so the list stays readable. */
+                if (strcmp(type_token, last_logged_type) != 0)
+                {
+                    itidy_main_progress_window_append_status(progress_window,
+                        "--- %s ---", type_token);
+                    strncpy(last_logged_type, type_token, sizeof(last_logged_type) - 1);
+                    last_logged_type[sizeof(last_logged_type) - 1] = '\0';
+                }
+                /* Pick verb based on what the preview pipeline actually did:
+                 *   Rendering  -- bespoke text render (ascii, c, rexx, etc.)
+                 *   Generating -- image thumbnail (ilbm, tiff, iff, etc.)
+                 *   Creating   -- template copy only (music, bin, drawer, etc.) */
+                const char *action;
+                if (preview_result == ITIDY_PREVIEW_APPLIED)
+                {
+                    if (itidy_is_text_preview_type(type_token))
+                        action = "Rendering";
+                    else
+                        action = "Generating";
+                }
+                else
+                {
+                    action = "Creating";
+                }
+                itidy_main_progress_window_append_status(progress_window,
+                    "  %s icon for: %s",
+                    action,
+                    fib->fib_FileName);
             }
         }
         else
@@ -780,7 +847,7 @@ BOOL deficons_create_missing_icons_recursive(
     folder_result.has_visible_contents = FALSE;
 
     if (!deficons_create_missing_icons_in_directory(path, prefs, &folder_result,
-                                                     progress_window, backup_context))
+                                                     progress_window, backup_context, TRUE))
     {
         log_warning(LOG_ICONS, "Failed to process directory: %s\n", path);
         /* Continue with subdirectories even if current fails */
@@ -850,32 +917,34 @@ BOOL deficons_create_missing_icons_recursive(
 
             if (!info_lock)
             {
-                /* No .info exists for this folder */
-                if (prefs->deficons_folder_icon_mode == DEFICONS_FOLDER_MODE_SMART)
+                /* No .info exists for this folder. */
+                if (prefs->deficons_folder_icon_mode == DEFICONS_FOLDER_MODE_NEVER)
                 {
-                    /* Smart mode: still recurse if it has visible contents,
-                     * because icon creation phase may be about to create icons
-                     * inside it (and its drawer .info will be created by the parent). */
-                    if (!deficons_folder_has_visible_contents(subdir, prefs, progress_window))
-                    {
-                        log_debug(LOG_ICONS, "Skipping hidden folder (Smart, no visible content): %s\n",
-                                  fib->fib_FileName);
-                        continue;
-                    }
-                    /* Has visible contents — fall through and recurse */
-                    log_debug(LOG_ICONS, "Hidden folder has visible content, recursing (Smart): %s\n",
+                    /* Never mode: no drawer icon will be created regardless, so
+                     * there is nothing to gain from recursing. Skip. */
+                    log_debug(LOG_ICONS, "Skipping hidden folder (Never mode): %s\n",
                               fib->fib_FileName);
-                }
-                else
-                {
-                    log_debug(LOG_ICONS, "Skipping hidden folder: %s\n", fib->fib_FileName);
                     continue;
                 }
+                /* Smart mode: recurse and let the post-order result decide.  If the
+                 * subdir turns out to have no visible content, no drawer .info will
+                 * be created and it stays hidden -- identical outcome to the old
+                 * pre-scan but without the double-scan cost.
+                 * Always mode: recurse; a drawer icon will be created regardless. */
+                log_debug(LOG_ICONS, "No .info for folder, recursing (post-order): %s\n",
+                          fib->fib_FileName);
             }
             else
             {
                 UnLock(info_lock);
             }
+        }
+
+        /* WHDLoad subfolder: skip recursion entirely — no icons needed inside */
+        if (prefs->deficons_skip_whdload_folders && deficons_is_whdload_folder(subdir, prefs))
+        {
+            log_debug(LOG_ICONS, "WHDLoad subfolder, skipping recursion: %s\n", fib->fib_FileName);
+            continue;
         }
 
         /* Recurse into subdirectory */
@@ -890,6 +959,80 @@ BOOL deficons_create_missing_icons_recursive(
         if (child_result.has_visible_contents)
         {
             result->has_visible_contents = TRUE;
+        }
+
+        /* Post-order drawer icon creation: now that we know whether the subdir
+         * has visible contents, decide whether to create its drawer .info in
+         * the current (parent) directory. */
+        {
+            char drawer_info[520];
+            BPTR existing_info;
+
+            snprintf(drawer_info, sizeof(drawer_info), "%s.info", subdir);
+            existing_info = Lock((STRPTR)drawer_info, ACCESS_READ);
+            if (existing_info)
+            {
+                UnLock(existing_info);
+                /* .info already exists -- folder is already visible in Workbench.
+                 * Signal the grandparent that this level has visible content. */
+                result->has_visible_contents = TRUE;
+            }
+            else if (deficons_should_create_folder_icon(subdir,
+                                                        child_result.has_visible_contents,
+                                                        prefs))
+            {
+                char tmpl_path[256];
+                if (deficons_resolve_template("drawer", tmpl_path, sizeof(tmpl_path)))
+                {
+                    if (deficons_copy_icon_file(tmpl_path, drawer_info))
+                    {
+                        result->icons_created++;
+                        result->has_visible_contents = TRUE;
+                        log_info(LOG_ICONS, "Created drawer icon (post-order): %s\n", drawer_info);
+
+                        /* Log to creation file */
+                        {
+                            const LayoutPreferences *log_p = GetGlobalPreferences();
+                            if (log_p && log_p->deficons_log_created_icons)
+                            {
+                                deficons_creation_log_icon(drawer_info);
+                            }
+                        }
+
+                        /* Log to backup manifest */
+                        if (backup_context != NULL && backup_context->createdIconsOpen)
+                        {
+                            LogCreatedIconToManifest(backup_context, drawer_info);
+                        }
+
+                        /* Per-type stats */
+                        deficons_creation_increment_category("drawer");
+
+                        /* Heartbeat update + readable output line */
+                        if (progress_window)
+                        {
+                            itidy_main_progress_update_heartbeat(progress_window,
+                                                                  "Creating",
+                                                                  result->icons_created, 0);
+
+                            /* Show the folder name so the user has something to
+                             * read on slow machines.  FilePart() gives just the
+                             * final path component without a lock/FIB. */
+                            itidy_main_progress_window_append_status(progress_window,
+                                "  Creating icon for: %s/  [drawer]",
+                                FilePart((STRPTR)subdir));
+                        }
+                    }
+                    else
+                    {
+                        log_warning(LOG_ICONS, "Failed to copy drawer template: %s\n", drawer_info);
+                    }
+                }
+                else
+                {
+                    log_warning(LOG_ICONS, "No drawer template available for: %s\n", subdir);
+                }
+            }
         }
     }
 

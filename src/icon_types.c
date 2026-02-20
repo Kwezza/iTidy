@@ -1314,18 +1314,18 @@ BOOL BuildPathSearchList(void)
     {
         const char *script_name = script_files[i];
         
-        log_info(LOG_GENERAL, "BuildPathSearchList: Opening %s\n", script_name);
+        log_debug(LOG_GENERAL, "BuildPathSearchList: Opening %s\n", script_name);
         
         file = Open((CONST_STRPTR)script_name, MODE_OLDFILE);
         if (!file)
         {
             LONG error = IoErr();
-            log_info(LOG_GENERAL, "BuildPathSearchList: Could not open %s (IoErr=%ld), skipping\n", 
+            log_warning(LOG_GENERAL, "BuildPathSearchList: Could not open %s (IoErr=%ld), skipping\n", 
                      script_name, error);
             continue;  /* Try next file */
         }
         
-        log_info(LOG_GENERAL, "BuildPathSearchList: Parsing %s for PATH commands...\n", script_name);
+        log_debug(LOG_GENERAL, "BuildPathSearchList: Parsing %s for PATH commands...\n", script_name);
         
         /* Read file line by line */
         while (FGets(file, line, sizeof(line) - 1))
@@ -1355,7 +1355,7 @@ BOOL BuildPathSearchList(void)
                 continue;  /* Not a PATH command */
             }
             
-            log_info(LOG_GENERAL, "  Found PATH command: '%s'\n", trimmed);
+            log_debug(LOG_GENERAL, "  Found PATH command: '%s'\n", trimmed);
             
             /* Skip past "Path " */
             dir_start = trimmed + 5;
@@ -1401,7 +1401,7 @@ BOOL BuildPathSearchList(void)
             /* If not ADD command, clear existing paths */
             if (!is_add_command)
             {
-                log_info(LOG_GENERAL, "  -> REPLACE mode: clearing %d existing paths\n", path_count);
+                log_debug(LOG_GENERAL, "  -> REPLACE mode: clearing %d existing paths\n", path_count);
                 for (j = 0; j < path_count; j++)
                 {
                     whd_free(paths[j]);
@@ -1410,7 +1410,7 @@ BOOL BuildPathSearchList(void)
             }
             else
             {
-                log_info(LOG_GENERAL, "  -> ADD mode: appending to existing %d paths\n", path_count);
+                log_debug(LOG_GENERAL, "  -> ADD mode: appending to existing %d paths\n", path_count);
             }
             
             /* Parse directory list (space-separated) */
@@ -1445,7 +1445,7 @@ BOOL BuildPathSearchList(void)
                     if (path_copy)
                     {
                         paths[path_count] = path_copy;
-                        log_info(LOG_GENERAL, "    Added path [%d]: '%s'\n", path_count + 1, path_copy);
+                        log_debug(LOG_GENERAL, "    Added path [%d]: '%s'\n", path_count + 1, path_copy);
                         path_count++;
                     }
                 }
@@ -1455,7 +1455,7 @@ BOOL BuildPathSearchList(void)
         }
         
         Close(file);
-        log_info(LOG_GENERAL, "BuildPathSearchList: Finished parsing %s, current path count: %d\n", 
+        log_debug(LOG_GENERAL, "BuildPathSearchList: Finished parsing %s, current path count: %d\n", 
                  script_name, path_count);
     }
     
@@ -1466,7 +1466,7 @@ BOOL BuildPathSearchList(void)
         return BuildFallbackPathList();
     }
     
-    log_info(LOG_GENERAL, "BuildPathSearchList: Allocating global array for %d paths\n", path_count);
+    log_debug(LOG_GENERAL, "BuildPathSearchList: Allocating global array for %d paths\n", path_count);
     
     /* Allocate global array */
     g_PathSearchList = (char **)whd_malloc(path_count * sizeof(char *));
@@ -1483,11 +1483,11 @@ BOOL BuildPathSearchList(void)
     memset(g_PathSearchList, 0, path_count * sizeof(char *));
     
     /* Transfer paths to global array */
-    log_info(LOG_GENERAL, "BuildPathSearchList: Final PATH list:\n");
+    log_debug(LOG_GENERAL, "BuildPathSearchList: Final PATH list:\n");
     for (i = 0; i < path_count; i++)
     {
         g_PathSearchList[i] = paths[i];
-        log_info(LOG_GENERAL, "  [%d] %s\n", i + 1, g_PathSearchList[i]);
+        log_debug(LOG_GENERAL, "  [%d] %s\n", i + 1, g_PathSearchList[i]);
     }
     
     g_PathSearchCount = path_count;
@@ -1530,7 +1530,7 @@ void FreePathSearchList(void)
         g_PathSearchList = NULL;
         g_PathSearchCount = 0;
         
-        log_info(LOG_GENERAL, "FreePathSearchList: PATH list freed\n");
+        log_debug(LOG_GENERAL, "FreePathSearchList: PATH list freed\n");
     }
 #endif
 }
@@ -1564,7 +1564,7 @@ BOOL InitToolCache(void)
     memset(g_ToolCache, 0, g_ToolCacheCapacity * sizeof(ToolCacheEntry));
     
     g_ToolCacheCount = 0;
-    log_info(LOG_GENERAL, "InitToolCache: Cache initialized (capacity: %d)\n", g_ToolCacheCapacity);
+    log_debug(LOG_GENERAL, "InitToolCache: Cache initialized (capacity: %d)\n", g_ToolCacheCapacity);
     return TRUE;
 #else
     return FALSE;
@@ -2192,22 +2192,22 @@ void DumpToolCache(void)
     
     if (!g_ToolCache || g_ToolCacheCount == 0)
     {
-        log_info(LOG_GENERAL, "\n*** Tool Cache: Empty ***\n");
+        log_debug(LOG_GENERAL, "\n*** Tool Cache: Empty ***\n");
         return;
     }
     
-    log_info(LOG_GENERAL, "\n========================================\n");
-    log_info(LOG_GENERAL, "Tool Validation Cache Summary\n");
-    log_info(LOG_GENERAL, "========================================\n");
-    log_info(LOG_GENERAL, "Total tools cached: %d\n", g_ToolCacheCount);
-    log_info(LOG_GENERAL, "Cache capacity: %d\n\n", g_ToolCacheCapacity);
+    log_debug(LOG_GENERAL, "\n========================================\n");
+    log_debug(LOG_GENERAL, "Tool Validation Cache Summary\n");
+    log_debug(LOG_GENERAL, "========================================\n");
+    log_debug(LOG_GENERAL, "Total tools cached: %d\n", g_ToolCacheCount);
+    log_debug(LOG_GENERAL, "Cache capacity: %d\n\n", g_ToolCacheCapacity);
     
-    log_info(LOG_GENERAL, "Tool Name             | Hits | Status  | Files | Full Path                              | Version\n");
-    log_info(LOG_GENERAL, "----------------------|------|---------|-------|----------------------------------------|---------------------------\n");
+    log_debug(LOG_GENERAL, "Tool Name             | Hits | Status  | Files | Full Path                              | Version\n");
+    log_debug(LOG_GENERAL, "----------------------|------|---------|-------|----------------------------------------|---------------------------\n");
     
     for (i = 0; i < g_ToolCacheCount; i++)
     {
-        log_info(LOG_GENERAL, "%-21s | %4d | %-7s | %5d | %-38s | %s\n",
+        log_debug(LOG_GENERAL, "%-21s | %4d | %-7s | %5d | %-38s | %s\n",
                 g_ToolCache[i].toolName ? g_ToolCache[i].toolName : "(null)",
                 g_ToolCache[i].hitCount,
                 g_ToolCache[i].exists ? "EXISTS" : "MISSING",
@@ -2218,23 +2218,23 @@ void DumpToolCache(void)
         /* If tool has file references, dump them */
         if (g_ToolCache[i].fileCount > 0 && g_ToolCache[i].referencingFiles)
         {
-            log_info(LOG_GENERAL, "    Files using this tool:\n");
+            log_debug(LOG_GENERAL, "    Files using this tool:\n");
             for (j = 0; j < g_ToolCache[i].fileCount; j++)
             {
                 if (g_ToolCache[i].referencingFiles[j])
                 {
-                    log_info(LOG_GENERAL, "      [%3d] %s\n", j + 1, g_ToolCache[i].referencingFiles[j]);
+                    log_debug(LOG_GENERAL, "      [%3d] %s\n", j + 1, g_ToolCache[i].referencingFiles[j]);
                 }
             }
             if (g_ToolCache[i].fileCount >= TOOL_CACHE_MAX_FILES_PER_TOOL)
             {
-                log_info(LOG_GENERAL, "      (max capacity reached - %d files)\n", TOOL_CACHE_MAX_FILES_PER_TOOL);
+                log_debug(LOG_GENERAL, "      (max capacity reached - %d files)\n", TOOL_CACHE_MAX_FILES_PER_TOOL);
             }
-            log_info(LOG_GENERAL, "\n");
+            log_debug(LOG_GENERAL, "\n");
         }
     }
     
-    log_info(LOG_GENERAL, "========================================\n\n");
+    log_debug(LOG_GENERAL, "========================================\n\n");
 #endif
 }
 
@@ -2277,7 +2277,7 @@ void FreeToolCache(void)
         g_ToolCacheCount = 0;
         g_ToolCacheCapacity = 0;
         
-        log_info(LOG_GENERAL, "FreeToolCache: Tool cache freed\n");
+        log_debug(LOG_GENERAL, "FreeToolCache: Tool cache freed\n");
     }
 #endif
 }

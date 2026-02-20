@@ -248,7 +248,7 @@ static void decode_camg_flags(ULONG camg_raw, iTidy_IFFRenderParams *params)
     params->is_ham       = (camg_raw & ITIDY_CAMG_HAM) ? TRUE : FALSE;
     params->is_ehb       = (camg_raw & ITIDY_CAMG_EHB) ? TRUE : FALSE;
 
-    log_info(LOG_ICONS, "decode_camg_flags: raw=0x%08lX lace=%s hires=%s ham=%s ehb=%s\n",
+    log_debug(LOG_ICONS, "decode_camg_flags: raw=0x%08lX lace=%s hires=%s ham=%s ehb=%s\n",
              camg_raw,
              params->is_interlace ? "yes" : "no",
              params->is_hires ? "yes" : "no",
@@ -595,7 +595,7 @@ int itidy_iff_parse(const char *source_path, iTidy_IFFRenderParams *iff_params)
     iff_params->src_compression = bmhd.compression;
     iff_params->src_masking     = bmhd.masking;
 
-    log_info(LOG_ICONS, "itidy_iff_parse: BMHD %ux%u depth=%u comp=%u mask=%u '%s'\n",
+    log_debug(LOG_ICONS, "itidy_iff_parse: BMHD %ux%u depth=%u comp=%u mask=%u '%s'\n",
              (unsigned)bmhd.w, (unsigned)bmhd.h,
              (unsigned)bmhd.nPlanes, (unsigned)bmhd.compression,
              (unsigned)bmhd.masking, source_path);
@@ -610,7 +610,7 @@ int itidy_iff_parse(const char *source_path, iTidy_IFFRenderParams *iff_params)
         ULONG camg_raw;
         UBYTE *camg_bytes = (UBYTE *)camg_sp->sp_Data;
         memcpy(&camg_raw, camg_sp->sp_Data, 4);
-        log_info(LOG_ICONS, "itidy_iff_parse: CAMG bytes=%02X %02X %02X %02X (raw=0x%08lX) '%s'\n",
+        log_debug(LOG_ICONS, "itidy_iff_parse: CAMG bytes=%02X %02X %02X %02X (raw=0x%08lX) '%s'\n",
                  camg_bytes[0], camg_bytes[1], camg_bytes[2], camg_bytes[3],
                  camg_raw, source_path);
         decode_camg_flags(camg_raw, iff_params);
@@ -632,7 +632,7 @@ int itidy_iff_parse(const char *source_path, iTidy_IFFRenderParams *iff_params)
     if (!iff_params->is_hires && bmhd.w > ITIDY_HIRES_WIDTH_THRESHOLD)
     {
         iff_params->is_hires = TRUE;
-        log_info(LOG_ICONS, "itidy_iff_parse: inferred hires from width %u "
+        log_debug(LOG_ICONS, "itidy_iff_parse: inferred hires from width %u "
                  "(CAMG lacked HIRES flag) '%s'\n",
                  (unsigned)bmhd.w, source_path);
     }
@@ -908,7 +908,7 @@ int itidy_iff_parse(const char *source_path, iTidy_IFFRenderParams *iff_params)
 
     result = 0;  // Success
 
-    log_info(LOG_ICONS, "itidy_iff_parse: decoded %ux%u (%u planes) -> "
+    log_debug(LOG_ICONS, "itidy_iff_parse: decoded %ux%u (%u planes) -> "
              "display %ux%u, palette %lu colors '%s'\n",
              (unsigned)bmhd.w, (unsigned)bmhd.h, (unsigned)bmhd.nPlanes,
              (unsigned)iff_params->display_width,
@@ -1364,7 +1364,7 @@ int itidy_render_iff_thumbnail(const char *source_path,
     iff_params->output_offset_x = offset_x;
     iff_params->output_offset_y = offset_y;
 
-    log_info(LOG_ICONS, "itidy_render_iff_thumbnail: scaling %ux%u -> %ux%u "
+    log_debug(LOG_ICONS, "itidy_render_iff_thumbnail: scaling %ux%u -> %ux%u "
              "(safe %ux%u, offset %u,%u)\n",
              (unsigned)iff_params->display_width,
              (unsigned)iff_params->display_height,
@@ -1505,7 +1505,7 @@ int itidy_render_iff_thumbnail(const char *source_path,
 
     itidy_iff_params_free(iff_params);
 
-    log_info(LOG_ICONS, "itidy_render_iff_thumbnail: complete for '%s'\n", source_path);
+    log_debug(LOG_ICONS, "itidy_render_iff_thumbnail: complete for '%s'\n", source_path);
     return 0;
 }
 
@@ -1757,7 +1757,7 @@ int itidy_render_via_datatype(const char *source_path,
     if (params != NULL)
         params->src_has_alpha = FALSE;  /* default: no alpha */
 
-    log_info(LOG_ICONS, "itidy_render_via_datatype: attempting datatype fallback for '%s'\n",
+    log_debug(LOG_ICONS, "itidy_render_via_datatype: attempting datatype fallback for '%s'\n",
              source_path);
 
     /* Open datatypes.library */
@@ -1799,7 +1799,7 @@ int itidy_render_via_datatype(const char *source_path,
     src_width = bmhd->bmh_Width;
     src_height = bmhd->bmh_Height;
 
-    log_info(LOG_ICONS, "itidy_render_via_datatype: image %lux%lu depth=%u\n",
+    log_debug(LOG_ICONS, "itidy_render_via_datatype: image %lux%lu depth=%u\n",
              src_width, src_height, (unsigned)bmhd->bmh_Depth);
 
     if (src_width == 0 || src_height == 0 || src_width > 4096 || src_height > 4096)
@@ -1816,13 +1816,13 @@ int itidy_render_via_datatype(const char *source_path,
         {
             dt_has_alpha = TRUE;
             bytes_per_pixel = 4;
-            log_info(LOG_ICONS,
+            log_debug(LOG_ICONS,
                      "itidy_render_via_datatype: PDTA_AlphaChannel=TRUE "
                      "-- using RGBA mode\n");
         }
         else
         {
-            log_info(LOG_ICONS,
+            log_debug(LOG_ICONS,
                      "itidy_render_via_datatype: no alpha channel -- using RGB mode\n");
         }
     }
@@ -1832,7 +1832,7 @@ int itidy_render_via_datatype(const char *source_path,
     {
         is_hires = (modeid & 0x8000) ? TRUE : FALSE;
         is_lace = (modeid & 0x0004) ? TRUE : FALSE;
-        log_info(LOG_ICONS, "itidy_render_via_datatype: ModeID=0x%08lX hires=%s lace=%s\n",
+        log_debug(LOG_ICONS, "itidy_render_via_datatype: ModeID=0x%08lX hires=%s lace=%s\n",
                  modeid, is_hires ? "yes" : "no", is_lace ? "yes" : "no");
     }
 
@@ -1844,14 +1844,14 @@ int itidy_render_via_datatype(const char *source_path,
         if (!is_hires && src_width >= ITIDY_HIRES_WIDTH_THRESHOLD)
         {
             is_hires = TRUE;
-            log_info(LOG_ICONS, "itidy_render_via_datatype: inferred hires from width %lu "
+            log_debug(LOG_ICONS, "itidy_render_via_datatype: inferred hires from width %lu "
                      "(ModeID lacked HIRES flag)\n", src_width);
         }
 
         if (!is_lace && src_height >= 400)
         {
             is_lace = TRUE;
-            log_info(LOG_ICONS, "itidy_render_via_datatype: inferred interlace from height %lu "
+            log_debug(LOG_ICONS, "itidy_render_via_datatype: inferred interlace from height %lu "
                      "(ModeID lacked LACE flag)\n", src_height);
         }
     }
@@ -1932,7 +1932,7 @@ int itidy_render_via_datatype(const char *source_path,
     /* Progress: phase 2/3 -- pixel data read */
     itidy_report_progress_throttled(params, "Decoding image", 2, 3, 0);
 
-    log_info(LOG_ICONS, "itidy_render_via_datatype: read %lux%lu %s pixels (%lu bytes)\n",
+    log_debug(LOG_ICONS, "itidy_render_via_datatype: read %lux%lu %s pixels (%lu bytes)\n",
              src_width, src_height, dt_has_alpha ? "RGBA32" : "RGB24", rgb24_size);
 
     /*--------------------------------------------------------------------*/
@@ -1990,7 +1990,7 @@ int itidy_render_via_datatype(const char *source_path,
         thumb_pixel_count = (ULONG)output_width * (ULONG)output_height;
         thumb_rgb24_size = thumb_pixel_count * 3;
 
-        log_info(LOG_ICONS, "itidy_render_via_datatype: scaling %lux%lu -> %ux%u "
+        log_debug(LOG_ICONS, "itidy_render_via_datatype: scaling %lux%lu -> %ux%u "
                  "(display %lux%lu, safe %ux%u, offset %u,%u)\n",
                  src_width, src_height, (unsigned)output_width, (unsigned)output_height,
                  display_width, display_height,
@@ -2112,7 +2112,7 @@ int itidy_render_via_datatype(const char *source_path,
                                            thumb_pixel_count,
                                            dest_img->palette_size_normal);
 
-                    log_info(LOG_ICONS,
+                    log_debug(LOG_ICONS,
                              "itidy_render_via_datatype: quantized %lu pixels; "
                              "alpha sweep (threshold=128)\n", thumb_pixel_count);
 
@@ -2134,7 +2134,7 @@ int itidy_render_via_datatype(const char *source_path,
                         if (found_transparent && params != NULL)
                         {
                             params->src_has_alpha = TRUE;
-                            log_info(LOG_ICONS,
+                            log_debug(LOG_ICONS,
                                      "itidy_render_via_datatype: "
                                      "transparent pixels found -- src_has_alpha=TRUE\n");
                         }
@@ -2179,7 +2179,7 @@ int itidy_render_via_datatype(const char *source_path,
             /* thumb_chunky allocated + quantized in the non-alpha block below */
         }
 
-        log_info(LOG_ICONS, "itidy_render_via_datatype: RGB24 downscaled to %ux%u (%lu pixels)\n",
+        log_debug(LOG_ICONS, "itidy_render_via_datatype: RGB24 downscaled to %ux%u (%lu pixels)\n",
                  (unsigned)output_width, (unsigned)output_height, thumb_pixel_count);
 
         /*----------------------------------------------------------------*/
@@ -2225,7 +2225,7 @@ int itidy_render_via_datatype(const char *source_path,
                 pal_idx++;
             }
 
-            log_info(LOG_ICONS, "itidy_render_via_datatype: built %u-color palette "
+            log_debug(LOG_ICONS, "itidy_render_via_datatype: built %u-color palette "
                      "(6x6x6 cube + grays%s)\n",
                      (unsigned)dest_img->palette_size_normal,
                      dt_has_alpha ? ", index 0 reserved for alpha" : "");
@@ -2250,7 +2250,7 @@ int itidy_render_via_datatype(const char *source_path,
                                    thumb_pixel_count,
                                    dest_img->palette_size_normal);
 
-            log_info(LOG_ICONS, "itidy_render_via_datatype: quantized %lu thumbnail pixels "
+            log_debug(LOG_ICONS, "itidy_render_via_datatype: quantized %lu thumbnail pixels "
                      "to %u-color palette\n",
                      thumb_pixel_count, (unsigned)dest_img->palette_size_normal);
 
@@ -2290,7 +2290,7 @@ int itidy_render_via_datatype(const char *source_path,
                     {
                         magenta_idx = (UBYTE)mi;
                         found_magenta = TRUE;
-                        log_info(LOG_ICONS,
+                        log_debug(LOG_ICONS,
                                  "itidy_render_via_datatype: "
                                  "magenta key colour found at palette index %u "
                                  "(R=%u G=%u B=%u)\n",
@@ -2324,7 +2324,7 @@ int itidy_render_via_datatype(const char *source_path,
                     if (params != NULL)
                         params->src_has_alpha = TRUE;
 
-                    log_info(LOG_ICONS,
+                    log_debug(LOG_ICONS,
                              "itidy_render_via_datatype: "
                              "magenta key transparency applied -- "
                              "index 0 is now transparent, src_has_alpha=TRUE\n");
@@ -2335,7 +2335,7 @@ int itidy_render_via_datatype(const char *source_path,
                     if (params != NULL)
                         params->src_has_alpha = TRUE;
 
-                    log_info(LOG_ICONS,
+                    log_debug(LOG_ICONS,
                              "itidy_render_via_datatype: "
                              "magenta key at index 0 -- src_has_alpha=TRUE\n");
                 }
@@ -2348,7 +2348,7 @@ int itidy_render_via_datatype(const char *source_path,
             } /* end if try_magenta_key */
             else
             {
-                log_info(LOG_ICONS,
+                log_debug(LOG_ICONS,
                          "itidy_render_via_datatype: "
                          "magenta key sweep skipped (format not transparency-capable)\n");
             }
@@ -2356,7 +2356,7 @@ int itidy_render_via_datatype(const char *source_path,
         else
         {
             /* Alpha path: thumb_chunky already allocated and quantized above */
-            log_info(LOG_ICONS, "itidy_render_via_datatype: quantized %lu thumbnail pixels "
+            log_debug(LOG_ICONS, "itidy_render_via_datatype: quantized %lu thumbnail pixels "
                      "to %u-color palette (alpha path)\n",
                      thumb_pixel_count, (unsigned)dest_img->palette_size_normal);
         }
@@ -2406,7 +2406,7 @@ int itidy_render_via_datatype(const char *source_path,
         params->output_offset_y = offset_y;
     }
 
-    log_info(LOG_ICONS, "itidy_render_via_datatype: complete for '%s'\n", source_path);
+    log_debug(LOG_ICONS, "itidy_render_via_datatype: complete for '%s'\n", source_path);
     result = 0;
 
 cleanup:

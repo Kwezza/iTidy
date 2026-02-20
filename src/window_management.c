@@ -180,7 +180,7 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray,
     int bottomMargin = 0;
 
 
-    log_info(LOG_GENERAL, "resizeFolderToContents ENTRY: dirPath='%s', iconArray->size=%d\n", 
+    log_debug(LOG_GENERAL, "resizeFolderToContents ENTRY: dirPath='%s', iconArray->size=%d\n", 
                   dirPath, iconArray ? iconArray->size : -1);
 
 
@@ -215,7 +215,7 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray,
         maxHeight += bottomMargin;
         
 
-        log_info(LOG_GENERAL, "Content dimensions: %d×%d (with margins)\n",                       maxWidth, maxHeight);
+        log_debug(LOG_GENERAL, "Content dimensions: %d×%d (with margins)\n",                       maxWidth, maxHeight);
 
     }
     else
@@ -225,7 +225,7 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray,
     }
 
 
-    log_info(LOG_GENERAL, "Calculated maxWidth=%d, maxHeight=%d before calling repoistionWindow", maxWidth, maxHeight);
+    log_debug(LOG_GENERAL, "Calculated maxWidth=%d, maxHeight=%d before calling repoistionWindow", maxWidth, maxHeight);
 
 
     /* Empty folder handling: If no icons found (Show All mode with no .info files),
@@ -234,7 +234,7 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray,
     {
         maxWidth = EMPTY_FOLDER_CONTENT_WIDTH;
         maxHeight = EMPTY_FOLDER_CONTENT_HEIGHT;
-        log_info(LOG_GENERAL, "No icons in folder - using default empty folder size: %dx%d\n",
+        log_debug(LOG_GENERAL, "No icons in folder - using default empty folder size: %dx%d\n",
                  maxWidth, maxHeight);
     }
 
@@ -540,12 +540,8 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
     /* Get window position mode from preferences (default to Center Screen if NULL) */
     positionMode = (prefs != NULL) ? prefs->windowPositionMode : WINDOW_POS_CENTER_SCREEN;
     
-    log_info(LOG_GUI, "========================================\n");
-    log_info(LOG_GUI, "repoistionWindow() START\n");
-    log_info(LOG_GUI, "========================================\n");
-    log_info(LOG_GUI, "  Path: %s\n", dirPath);
-    log_info(LOG_GUI, "  Content dimensions: %d×%d (before chrome)\n", winWidth, winHeight);
-    log_info(LOG_GUI, "  Position Mode: %d (0=Center, 1=Keep, 2=Near Parent, 3=No Change)\n", positionMode);
+    log_debug(LOG_GUI, "repoistionWindow() START - Path: %s, content: %dx%d, mode: %d\n",
+              dirPath, winWidth, winHeight, positionMode);
     
 #ifdef DEBUG
     log_debug(LOG_GUI, "  Padding: %d, disableVolumeGauge: %d", 
@@ -558,8 +554,7 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
     /* WINDOW_POS_NO_CHANGE: Don't resize or move the window at all */
     if (positionMode == WINDOW_POS_NO_CHANGE)
     {
-        log_info(LOG_GUI, "  Mode: No Change - skipping window resize/reposition\n");
-        log_info(LOG_GUI, "========================================\n\n");
+        log_info(LOG_GUI, "repoistionWindow: %s -> No Change (skipped)\n", dirPath);
         return;
     }
     
@@ -569,27 +564,20 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
         hasCurrentPosition = GetFolderWindowSettings(dirPath, &currentWindowInfo, &currentViewMode);
         if (hasCurrentPosition)
         {
-            log_info(LOG_GUI, "  Current window position: left=%d, top=%d, width=%d, height=%d\n",
+            log_debug(LOG_GUI, "  Current window position: left=%d, top=%d, width=%d, height=%d\n",
                      currentWindowInfo.left, currentWindowInfo.top, 
                      currentWindowInfo.width, currentWindowInfo.height);
         }
         else
         {
-            log_info(LOG_GUI, "  Could not read current window position - will center instead\n");
+            log_debug(LOG_GUI, "  Could not read current window position - will center instead\n");
         }
     }
     
     /* Add window chrome (borders, scrollbars, etc.) to width */
-    log_info(LOG_GUI, "  Adding window chrome to width:\n");
-    log_info(LOG_GUI, "    Content width: %d\n", winWidth);
-    log_info(LOG_GUI, "    + currentLeftBarWidth: %d\n", prefsIControl.currentLeftBarWidth);
-    log_info(LOG_GUI, "    + currentBarWidth (right): %d\n", prefsIControl.currentBarWidth);
-    log_info(LOG_GUI, "    + PADDING_WIDTH * 2: %d\n", PADDING_WIDTH * 2);
-    
     finalWidth = winWidth + prefsIControl.currentBarWidth + prefsIControl.currentLeftBarWidth + (PADDING_WIDTH * 2);
-    
-    log_info(LOG_GUI, "    = Subtotal (without scrollbar): %d\n", finalWidth);
-    log_info(LOG_GUI, "    + currentBarWidth (scrollbar): %d\n", prefsIControl.currentBarWidth);
+    log_debug(LOG_GUI, "  Chrome: content=%d + leftBar=%d + rightBar=%d + padding=%d = %d (pre-scrollbar)\n",
+              winWidth, prefsIControl.currentLeftBarWidth, prefsIControl.currentBarWidth, PADDING_WIDTH * 2, finalWidth);
     
     finalWidth += prefsIControl.currentBarWidth;  /* Add space for vertical scrollbar (always present) */
     
@@ -607,43 +595,43 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
     finalHeight = winHeight + prefsIControl.currentWindowBarHeight + prefsIControl.currentBarHeight + (PADDING_HEIGHT * 2);
     finalHeight += prefsIControl.currentBarHeight;  /* Add space for horizontal scrollbar (always present) */
     
-    log_info(LOG_GUI, "  Calculated window with chrome: %d×%d\n", finalWidth, finalHeight);
+    log_debug(LOG_GUI, "  Calculated window with chrome: %dx%d\n", finalWidth, finalHeight);
     
     /* Calculate maximum usable height (account for Workbench title bar) */
     maxUsableHeight = screenHight - prefsIControl.currentTitleBarHeight;
     
-    log_info(LOG_GUI, "  Screen size: %d×%d, Max usable height: %d\n", 
+    log_debug(LOG_GUI, "  Screen size: %dx%d, Max usable height: %d\n", 
              screenWidth, screenHight, maxUsableHeight);
     
     /* Clamp window dimensions to screen size (creates scrollbars if needed) */
     if (finalWidth > screenWidth)
     {
-        log_info(LOG_GUI, "  Width %d exceeds screen %d - clamping (will have horizontal scrollbar)\n", 
-                 finalWidth, screenWidth);
+        log_info(LOG_GUI, "  repoistionWindow: %s - width clamped %d->%d (horizontal scrollbar)\n",
+                 dirPath, finalWidth, screenWidth);
         finalWidth = screenWidth;
     }
     
     if (finalHeight > maxUsableHeight)
     {
-        log_info(LOG_GUI, "  Height %d exceeds usable %d - clamping (will have vertical scrollbar)\n", 
-                 finalHeight, maxUsableHeight);
+        log_info(LOG_GUI, "  repoistionWindow: %s - height clamped %d->%d (vertical scrollbar)\n",
+                 dirPath, finalHeight, maxUsableHeight);
         finalHeight = maxUsableHeight;
     }
     
-    log_info(LOG_GUI, "  Final window dimensions: %d×%d (after clamping)\n", finalWidth, finalHeight);
+    log_debug(LOG_GUI, "  Final window dimensions: %dx%d (after clamping)\n", finalWidth, finalHeight);
     
     /* Position window vertically */
     if (finalHeight >= maxUsableHeight)
     {
         /* Tall/overflow window - position just below Workbench title bar */
         posTop = prefsIControl.currentTitleBarHeight;
-        log_info(LOG_GUI, "  Overflow height - positioning at top: %d\n", posTop);
+        log_debug(LOG_GUI, "  Overflow height - positioning at top: %d\n", posTop);
     }
     else
     {
         /* Normal window - center vertically in available space */
         posTop = (screenHight - finalHeight) / 2;
-        log_info(LOG_GUI, "  Normal height - centering vertically: %d\n", posTop);
+        log_debug(LOG_GUI, "  Normal height - centering vertically: %d\n", posTop);
     }
     
     /* Position window horizontally based on mode */
@@ -651,7 +639,7 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
     {
         /* WINDOW_POS_CENTER_SCREEN: Always center horizontally (classic behavior) */
         posLeft = (screenWidth - finalWidth) / 2;
-        log_info(LOG_GUI, "  Mode: Center Screen - centering at left=%d\n", posLeft);
+        log_debug(LOG_GUI, "  Mode: Center Screen - centering at left=%d\n", posLeft);
     }
     else if (positionMode == WINDOW_POS_KEEP_POSITION)
     {
@@ -662,7 +650,7 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
             posLeft = currentWindowInfo.left;
             posTop = currentWindowInfo.top;
             
-            log_info(LOG_GUI, "  Mode: Keep Position - using current position left=%d, top=%d\n", 
+            log_debug(LOG_GUI, "  Mode: Keep Position - using current position left=%d, top=%d\n", 
                      posLeft, posTop);
             
             /* Check if window would go off-screen and pull back if needed */
@@ -670,13 +658,13 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
             {
                 posLeft = screenWidth - finalWidth;
                 if (posLeft < 0) posLeft = 0;
-                log_info(LOG_GUI, "    Window extends beyond right edge - pulled back to left=%d\n", posLeft);
+                log_debug(LOG_GUI, "    Window extends beyond right edge - pulled back to left=%d\n", posLeft);
             }
             
             if (posLeft < 0)
             {
                 posLeft = 0;
-                log_info(LOG_GUI, "    Window extends beyond left edge - pulled back to left=%d\n", posLeft);
+                log_debug(LOG_GUI, "    Window extends beyond left edge - pulled back to left=%d\n", posLeft);
             }
             
             if (posTop + finalHeight > screenHight)
@@ -686,20 +674,20 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
                 {
                     posTop = prefsIControl.currentTitleBarHeight;
                 }
-                log_info(LOG_GUI, "    Window extends beyond bottom edge - pulled back to top=%d\n", posTop);
+                log_debug(LOG_GUI, "    Window extends beyond bottom edge - pulled back to top=%d\n", posTop);
             }
             
             if (posTop < prefsIControl.currentTitleBarHeight)
             {
                 posTop = prefsIControl.currentTitleBarHeight;
-                log_info(LOG_GUI, "    Window extends above title bar - pulled down to top=%d\n", posTop);
+                log_debug(LOG_GUI, "    Window extends above title bar - pulled down to top=%d\n", posTop);
             }
         }
         else
         {
             /* No current position available - fall back to center */
             posLeft = (screenWidth - finalWidth) / 2;
-            log_info(LOG_GUI, "  Mode: Keep Position - no current position, falling back to center at left=%d\n", 
+            log_debug(LOG_GUI, "  Mode: Keep Position - no current position, falling back to center at left=%d\n", 
                      posLeft);
         }
     }
@@ -717,20 +705,19 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
         int proposedLeft, proposedTop;
         BOOL fitsOnScreen;
         
-        log_info(LOG_GUI, "  Mode: Near Parent - attempting to position at bottom-right of parent icon\n");
+        log_debug(LOG_GUI, "  Mode: Near Parent - attempting to position at bottom-right of parent icon\n");
         
         /* Get parent directory path */
         hasParent = GetParentPath(dirPath, parentPath, sizeof(parentPath));
         
         if (!hasParent)
         {
-            log_info(LOG_GUI, "    Path is root directory - no parent exists\n");
-            log_info(LOG_GUI, "    Falling back to Center Screen mode\n");
+            log_debug(LOG_GUI, "    Path is root directory - no parent exists, falling back to Center Screen\n");
             posLeft = (screenWidth - finalWidth) / 2;
         }
         else
         {
-            log_info(LOG_GUI, "    Parent path: '%s'\n", parentPath);
+            log_debug(LOG_GUI, "    Parent path: '%s'\n", parentPath);
             
             /* Try to read parent window geometry */
             hasParentGeometry = GetFolderWindowSettings(parentPath, &parentWindowInfo, &parentViewMode);
@@ -738,7 +725,7 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
             if (!hasParentGeometry)
             {
                 log_warning(LOG_GUI, "    Parent folder has no .info file (hidden folder)\n");
-                log_info(LOG_GUI, "    Falling back to Keep Position mode\n");
+                log_debug(LOG_GUI, "    Falling back to Keep Position mode\n");
                 
                 /* Fall back to Keep Position behavior */
                 if (hasCurrentPosition)
@@ -779,7 +766,7 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
                 if (parentIsRoot)
                 {
                     volumeGaugeOffset = prefsIControl.currentCGaugeWidth;
-                    log_info(LOG_GUI, "    Parent is root directory - adding volume gauge offset: %d\n",
+                    log_debug(LOG_GUI, "    Parent is root directory - adding volume gauge offset: %d\n",
                              volumeGaugeOffset);
                 }
                 else
@@ -789,13 +776,13 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
                                                                         prefsWorkbench.embossRectangleSize);
                     contentAreaTopOffset = DRAWER_CONTENT_TOP_MARGIN(prefsWorkbench.borderless, 
                                                                       prefsWorkbench.embossRectangleSize);
-                    log_info(LOG_GUI, "    Parent is non-root drawer - adding content margins: left=%d, top=%d (borderless=%s, emboss=%d)\n",
+                    log_debug(LOG_GUI, "    Parent is non-root drawer - content margins: left=%d, top=%d (borderless=%s, emboss=%d)\n",
                              contentAreaLeftOffset, contentAreaTopOffset, 
                              prefsWorkbench.borderless ? "YES" : "NO",
                              prefsWorkbench.embossRectangleSize);
                 }
                 
-                log_info(LOG_GUI, "    Parent window: left=%d, top=%d, width=%d, height=%d (isRoot=%s)\n",
+                log_debug(LOG_GUI, "    Parent window: left=%d, top=%d, width=%d, height=%d (isRoot=%s)\n",
                          parentWindowInfo.left, parentWindowInfo.top,
                          parentWindowInfo.width, parentWindowInfo.height,
                          parentIsRoot ? "YES" : "NO");
@@ -838,7 +825,7 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
                                  parentPath, folderName);
                     }
                     
-                    log_info(LOG_GUI, "    Child icon path: '%s'\n", childIconPath);
+                    log_debug(LOG_GUI, "    Child icon path: '%s'\n", childIconPath);
                 }
                 
                 /* Read child icon details (position and size) - pass NULL for text (not needed) */
@@ -847,7 +834,7 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
                 if (!hasChildIcon)
                 {
                     log_warning(LOG_GUI, "    Unable to read child icon details from parent\n");
-                    log_info(LOG_GUI, "    Falling back to Keep Position mode\n");
+                    log_debug(LOG_GUI, "    Falling back to Keep Position mode\n");
                     
                     /* Fall back to Keep Position behavior */
                     if (hasCurrentPosition)
@@ -883,7 +870,7 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
                      * Icon position.x/y represents where the icon BITMAP starts (not including emboss)
                      * Emboss is drawn around the bitmap, so we add just the bitmap size
                      */
-                    log_info(LOG_GUI, "    Child icon in parent: x=%d, y=%d, base_w=%d, base_h=%d\n",
+                    log_debug(LOG_GUI, "    Child icon in parent: x=%d, y=%d, base_w=%d, base_h=%d\n",
                              childIconDetails.position.x, childIconDetails.position.y,
                              childIconDetails.size.width, childIconDetails.size.height);
                     
@@ -902,7 +889,7 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
                                   contentAreaTopOffset +
                                   childIconDetails.position.y + childIconDetails.size.height;
                     
-                    log_info(LOG_GUI, "    Proposed position: left=%d, top=%d (bottom-right of icon)\n",
+                    log_debug(LOG_GUI, "    Proposed position: left=%d, top=%d (bottom-right of icon)\n",
                              proposedLeft, proposedTop);
                     
                     /* Start with proposed position and clamp to screen boundaries */
@@ -914,13 +901,13 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
                     if (posLeft + finalWidth > screenWidth)
                     {
                         posLeft = screenWidth - finalWidth;
-                        log_info(LOG_GUI, "    Clamped to right edge: left=%d (was %d)\n", posLeft, proposedLeft);
+                        log_debug(LOG_GUI, "    Clamped to right edge: left=%d (was %d)\n", posLeft, proposedLeft);
                         fitsOnScreen = FALSE;
                     }
                     if (posLeft < 0)
                     {
                         posLeft = 0;
-                        log_info(LOG_GUI, "    Clamped to left edge: left=0\n");
+                        log_debug(LOG_GUI, "    Clamped to left edge: left=0\n");
                         fitsOnScreen = FALSE;
                     }
                     
@@ -928,23 +915,23 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
                     if (posTop + finalHeight > screenHight)
                     {
                         posTop = screenHight - finalHeight;
-                        log_info(LOG_GUI, "    Clamped to bottom edge: top=%d (was %d)\n", posTop, proposedTop);
+                        log_debug(LOG_GUI, "    Clamped to bottom edge: top=%d (was %d)\n", posTop, proposedTop);
                         fitsOnScreen = FALSE;
                     }
                     if (posTop < prefsIControl.currentTitleBarHeight)
                     {
                         posTop = prefsIControl.currentTitleBarHeight;
-                        log_info(LOG_GUI, "    Clamped to title bar: top=%d\n", posTop);
+                        log_debug(LOG_GUI, "    Clamped to title bar: top=%d\n", posTop);
                         fitsOnScreen = FALSE;
                     }
                     
                     if (fitsOnScreen)
                     {
-                        log_info(LOG_GUI, "    Position at icon's bottom-right fits perfectly\n");
+                        log_debug(LOG_GUI, "    Position at icon's bottom-right fits perfectly\n");
                     }
                     else
                     {
-                        log_info(LOG_GUI, "    Position adjusted to fit on screen (near parent icon)\n");
+                        log_debug(LOG_GUI, "    Position adjusted to fit on screen (near parent icon)\n");
                     }
                     
                     /* Free default tool string if allocated */
@@ -960,7 +947,7 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
     {
         /* Unknown mode - default to center */
         posLeft = (screenWidth - finalWidth) / 2;
-        log_info(LOG_GUI, "  Mode %d not recognized - using center at left=%d\n", 
+        log_debug(LOG_GUI, "  Mode %d not recognized - using center at left=%d\n", 
                  positionMode, posLeft);
     }
     
@@ -974,16 +961,10 @@ void repoistionWindow(char *dirPath, int winWidth, int winHeight, const LayoutPr
     newFolderInfo.width = finalWidth;
     newFolderInfo.height = finalHeight;
 
-    log_info(LOG_GUI, "  FINAL WINDOW GEOMETRY:\n");
-    log_info(LOG_GUI, "    Position: left=%d, top=%d\n", posLeft, posTop);
-    log_info(LOG_GUI, "    Size: width=%d, height=%d\n", finalWidth, finalHeight);
-    log_info(LOG_GUI, "  Saving to icon file...\n");
-
     SaveFolderSettings(dirPath, &newFolderInfo, 0);
     
-    log_info(LOG_GUI, "========================================\n");
-    log_info(LOG_GUI, "repoistionWindow() COMPLETE\n");
-    log_info(LOG_GUI, "========================================\n\n");
+    log_info(LOG_GUI, "repoistionWindow: %s -> %dx%d at (%d,%d)\n",
+             dirPath, finalWidth, finalHeight, posLeft, posTop);
 #else
     (void)dirPath;
     (void)winWidth;

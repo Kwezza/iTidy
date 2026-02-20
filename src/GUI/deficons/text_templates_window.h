@@ -13,7 +13,7 @@
 #define TEXT_TEMPLATES_WINDOW_H
 
 #include <exec/types.h>
-#include "../layout_preferences.h"
+#include "layout_preferences.h"
 
 /* Forward declaration - callers need not include intuition.h */
 struct Window;

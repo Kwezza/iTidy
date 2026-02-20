@@ -323,7 +323,7 @@ BOOL deficons_initialize_arexx(void)
         return TRUE;
     }
     
-    log_info(LOG_ICONS, "Initializing DefIcons ARexx communication...\n");
+    log_debug(LOG_ICONS, "Initializing DefIcons ARexx communication...\n");
     
     /* Open rexxsyslib.library */
     g_RexxSysBase = (struct RxsLib *)OpenLibrary("rexxsyslib.library", 0);
@@ -346,14 +346,14 @@ BOOL deficons_initialize_arexx(void)
         return FALSE;
     }
     
-    log_info(LOG_ICONS, "Found DEFICONS port at 0x%08lx\n", (ULONG)g_deficons_port);
+    log_debug(LOG_ICONS, "Found DEFICONS port at 0x%08lx\n", (ULONG)g_deficons_port);
     
     /* Initialize extension cache */
     g_extension_cache = NULL;
     g_extension_cache_count = 0;
     
     g_initialized = TRUE;
-    log_info(LOG_ICONS, "DefIcons ARexx initialization complete\n");
+    log_debug(LOG_ICONS, "DefIcons ARexx initialization complete\n");
     
     return TRUE;
 }
@@ -363,7 +363,7 @@ void deficons_cleanup_arexx(void)
     if (!g_initialized)
         return;
     
-    log_info(LOG_ICONS, "Cleaning up DefIcons ARexx communication...\n");
+    log_debug(LOG_ICONS, "Cleaning up DefIcons ARexx communication...\n");
     
     /* Log cache statistics */
     if (g_extension_cache && g_extension_cache_count > 0)
@@ -371,10 +371,10 @@ void deficons_cleanup_arexx(void)
         int i;
         ULONG total_hits = 0;
         
-        log_info(LOG_ICONS, "Extension cache statistics:\n");
+        log_debug(LOG_ICONS, "Extension cache statistics:\n");
         for (i = 0; i < g_extension_cache_count; i++)
         {
-            log_info(LOG_ICONS, "  %s → %s (hits: %lu)\n",
+            log_debug(LOG_ICONS, "  %s → %s (hits: %lu)\n",
                     g_extension_cache[i].extension,
                     g_extension_cache[i].token,
                     g_extension_cache[i].hit_count);
@@ -403,7 +403,7 @@ void deficons_cleanup_arexx(void)
     g_deficons_port = NULL;
     
     g_initialized = FALSE;
-    log_info(LOG_ICONS, "DefIcons ARexx cleanup complete\n");
+    log_debug(LOG_ICONS, "DefIcons ARexx cleanup complete\n");
 }
 
 /**
@@ -530,7 +530,7 @@ void deficons_clear_cache(void)
     if (!g_initialized)
         return;
     
-    log_info(LOG_ICONS, "Clearing extension cache (%d entries)\n", g_extension_cache_count);
+    log_debug(LOG_ICONS, "Clearing extension cache (%d entries)\n", g_extension_cache_count);
     
     if (g_extension_cache)
     {

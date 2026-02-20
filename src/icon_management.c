@@ -505,25 +505,25 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                                 /* Track which file uses this tool */
                                 AddFileReferenceToToolCache(iconDetails.defaultTool, fullPathAndFile);
                                 
-                                log_info(LOG_ICONS, "  Default Tool: '%s' -> %s [%s]\n", 
+                                log_debug(LOG_ICONS, "  Default Tool: '%s' -> %s [%s]\n", 
                                         iconDetails.defaultTool, fileNameNoInfo,
                                         toolExists ? "EXISTS" : "MISSING");
                             }
                             else if (iconDetails.workbenchType == WBTOOL)
                             {
                                 /* Skip validation for WBTOOL - default tool is not used by Workbench */
-                                log_info(LOG_ICONS, "  Default Tool: '%s' -> %s (WBTOOL - not validated)\n", 
+                                log_debug(LOG_ICONS, "  Default Tool: '%s' -> %s (WBTOOL - not validated)\n", 
                                         iconDetails.defaultTool, fileNameNoInfo);
                             }
                             else
                             {
-                                log_info(LOG_ICONS, "  Default Tool: '%s' -> %s\n", 
+                                log_debug(LOG_ICONS, "  Default Tool: '%s' -> %s\n", 
                                         iconDetails.defaultTool, fileNameNoInfo);
                             }
                         }
                         else
                         {
-                            log_info(LOG_ICONS, "  Default Tool: (none) -> %s\n", fileNameNoInfo);
+                            log_debug(LOG_ICONS, "  Default Tool: (none) -> %s\n", fileNameNoInfo);
                         }
                         
                         /* Determine icon type (respecting user_forceStandardIcons) */
@@ -533,19 +533,19 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                             {
                                 newIcon.icon_type = icon_type_newIcon;
                                 count_icon_type_newIcon++;
-                                log_info(LOG_ICONS, "  Icon type: NewIcon format - %s\n", fileNameNoInfo);
+                                log_debug(LOG_ICONS, "  Icon type: NewIcon format - %s\n", fileNameNoInfo);
                             }
                             else if (iconDetails.isOS35Icon)
                             {
                                 newIcon.icon_type = icon_type_os35;
                                 count_icon_type_os35++;
-                                log_info(LOG_ICONS, "  Icon type: OS3.5 format - %s\n", fileNameNoInfo);
+                                log_debug(LOG_ICONS, "  Icon type: OS3.5 format - %s\n", fileNameNoInfo);
                             }
                             else
                             {
                                 newIcon.icon_type = icon_type_standard;
                                 count_icon_type_standard++;
-                                log_info(LOG_ICONS, "  Icon type: Standard Workbench format - %s\n", fileNameNoInfo);
+                                log_debug(LOG_ICONS, "  Icon type: Standard Workbench format - %s\n", fileNameNoInfo);
                             }
                         }
                         else
@@ -553,7 +553,7 @@ IconArray *CreateIconArrayFromPath(BPTR lock, const char *dirPath)
                             /* User forcing standard icons */
                             newIcon.icon_type = icon_type_standard;
                             count_icon_type_standard++;
-                            log_info(LOG_ICONS, "  Icon type: Forced Standard format - %s\n", fileNameNoInfo);
+                            log_debug(LOG_ICONS, "  Icon type: Forced Standard format - %s\n", fileNameNoInfo);
                         }
                         
                         /* Use pre-calculated size fields from GetIconDetailsFromDisk */

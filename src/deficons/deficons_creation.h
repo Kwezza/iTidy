@@ -136,7 +136,8 @@ BOOL deficons_create_missing_icons_in_directory(
     const LayoutPreferences *prefs,
     iTidy_DefIconsCreationResult *result,
     struct iTidyMainProgressWindow *progress_window,
-    BackupContext *backup_context);
+    BackupContext *backup_context,
+    BOOL files_only);
 
 /**
  * @brief Create missing icons recursively through directory tree

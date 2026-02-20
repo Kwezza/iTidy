@@ -270,7 +270,7 @@ append_to_log("%-3d | %-4d | %-4d | %-40s\n", i, currentIcon->icon_x, currentIco
                     /* Check if user requested cancellation */
                     if (pw->cancel_requested)
                     {
-                        append_to_log("User cancelled during icon saving at %d/%d icons\n", i + 1, iconArraySize);
+                        log_warning(LOG_GENERAL, "User cancelled during icon saving at %d/%d icons\n", i + 1, iconArraySize);
                         /* Free DiskObject if we have one open */
                         if (diskObject != NULL)
                         {

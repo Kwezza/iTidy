@@ -75,7 +75,7 @@ BOOL itidy_reduce_palette(iTidy_IconImageData *img,
     unique_count = itidy_palette_count_unique(img->pixel_data_normal,
                                               pixel_count);
 
-    log_info(LOG_ICONS, "palette_reduction: %u unique colors in %ux%u icon, "
+    log_debug(LOG_ICONS, "palette_reduction: %u unique colors in %ux%u icon, "
              "max=%u\n",
              (unsigned)unique_count, (unsigned)img->width,
              (unsigned)img->height, (unsigned)max_colors);
@@ -83,7 +83,7 @@ BOOL itidy_reduce_palette(iTidy_IconImageData *img,
     /* Step 2: Check if reduction is needed */
     if (unique_count <= max_colors)
     {
-        log_info(LOG_ICONS, "palette_reduction: no reduction needed "
+        log_debug(LOG_ICONS, "palette_reduction: no reduction needed "
                  "(%u <= %u)\n",
                  (unsigned)unique_count, (unsigned)max_colors);
         return TRUE;  /* No-op */
@@ -116,7 +116,7 @@ BOOL itidy_reduce_palette(iTidy_IconImageData *img,
             reduced_pal_size = max_colors;
         }
 
-        log_info(LOG_ICONS, "palette_reduction: using %s palette (%u colors)\n",
+        log_debug(LOG_ICONS, "palette_reduction: using %s palette (%u colors)\n",
                  (lowcolor_mapping == ITIDY_LOWCOLOR_WORKBENCH) ? "Workbench" :
                  (lowcolor_mapping == ITIDY_LOWCOLOR_HYBRID) ? "Hybrid" :
                  "Grayscale",
@@ -128,7 +128,7 @@ BOOL itidy_reduce_palette(iTidy_IconImageData *img,
         itidy_grayscale_palette(reduced_palette, max_colors);
         reduced_pal_size = max_colors;
 
-        log_info(LOG_ICONS, "palette_reduction: using Grayscale palette "
+        log_debug(LOG_ICONS, "palette_reduction: using Grayscale palette "
                  "(%u colors)\n", (unsigned)reduced_pal_size);
     }
     else
@@ -186,7 +186,7 @@ BOOL itidy_reduce_palette(iTidy_IconImageData *img,
     }
     img->palette_size_normal = (ULONG)reduced_pal_size;
 
-    log_info(LOG_ICONS, "palette_reduction: reduced %u -> %u colors, "
+    log_debug(LOG_ICONS, "palette_reduction: reduced %u -> %u colors, "
              "dither=%s\n",
              (unsigned)unique_count, (unsigned)reduced_pal_size,
              (actual_dither == ITIDY_DITHER_NONE)    ? "None" :

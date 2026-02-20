@@ -120,7 +120,7 @@ static BOOL find_template_file(const char *type_token, char *template_path, int 
         {
             strncpy(template_path, test_path, path_size - 1);
             template_path[path_size - 1] = '\0';
-            log_info(LOG_ICONS, "Found template: %s → %s\n", type_token, test_path);
+            log_debug(LOG_ICONS, "Found template: %s → %s\n", type_token, test_path);
             return TRUE;
         }
     }
@@ -343,7 +343,7 @@ BOOL deficons_initialize_templates(void)
         return TRUE;
     }
     
-    log_info(LOG_ICONS, "Initializing DefIcons template system...\n");
+    log_debug(LOG_ICONS, "Initializing DefIcons template system...\n");
     
     /* Check if DefIcons tree is available */
     if (!g_cached_deficons_tree || g_cached_deficons_count == 0)
@@ -353,7 +353,7 @@ BOOL deficons_initialize_templates(void)
         return FALSE;
     }
     
-    log_info(LOG_ICONS, "DefIcons tree available: %d type nodes\n", g_cached_deficons_count);
+    log_debug(LOG_ICONS, "DefIcons tree available: %d type nodes\n", g_cached_deficons_count);
     
     /* Scan for available templates */
     g_available_templates_count = 0;
@@ -389,14 +389,14 @@ BOOL deficons_initialize_templates(void)
         return FALSE;
     }
     
-    log_info(LOG_ICONS, "Found %d common templates\n", g_available_templates_count);
+    log_debug(LOG_ICONS, "Found %d common templates\n", g_available_templates_count);
     
     /* Initialize template cache */
     g_template_cache = NULL;
     g_template_cache_count = 0;
     
     g_initialized = TRUE;
-    log_info(LOG_ICONS, "DefIcons template system initialization complete\n");
+    log_debug(LOG_ICONS, "DefIcons template system initialization complete\n");
     
     return TRUE;
 }
@@ -406,7 +406,7 @@ void deficons_cleanup_templates(void)
     if (!g_initialized)
         return;
     
-    log_info(LOG_ICONS, "Cleaning up DefIcons template system...\n");
+    log_debug(LOG_ICONS, "Cleaning up DefIcons template system...\n");
     
     /* Log cache statistics */
     if (g_template_cache && g_template_cache_count > 0)
@@ -414,10 +414,10 @@ void deficons_cleanup_templates(void)
         int i;
         ULONG total_hits = 0;
         
-        log_info(LOG_ICONS, "Template cache statistics:\n");
+        log_debug(LOG_ICONS, "Template cache statistics:\n");
         for (i = 0; i < g_template_cache_count; i++)
         {
-            log_info(LOG_ICONS, "  %s → %s (hits: %lu, fallback: %s)\n",
+            log_debug(LOG_ICONS, "  %s → %s (hits: %lu, fallback: %s)\n",
                     g_template_cache[i].type_token,
                     g_template_cache[i].template_path,
                     g_template_cache[i].hit_count,
@@ -439,7 +439,7 @@ void deficons_cleanup_templates(void)
     g_available_templates_count = 0;
     g_initialized = FALSE;
     
-    log_info(LOG_ICONS, "DefIcons template system cleanup complete\n");
+    log_debug(LOG_ICONS, "DefIcons template system cleanup complete\n");
 }
 
 BOOL deficons_resolve_template(const char *type_token, char *template_path, int path_size)
@@ -481,7 +481,7 @@ BOOL deficons_resolve_template(const char *type_token, char *template_path, int 
     {
         find_root_category(type_token, category, sizeof(category));
         add_to_template_cache(type_token, template_path, category, FALSE);
-        log_info(LOG_ICONS, "Template resolved: '%s' → %s (direct match)\n", type_token, template_path);
+        log_debug(LOG_ICONS, "Template resolved: '%s' → %s (direct match)\n", type_token, template_path);
         return TRUE;
     }
     
@@ -506,7 +506,7 @@ BOOL deficons_resolve_template(const char *type_token, char *template_path, int 
         {
             find_root_category(type_token, category, sizeof(category));
             add_to_template_cache(type_token, template_path, category, FALSE);
-            log_info(LOG_ICONS, "Template resolved: '%s' → %s (parent chain: %s)\n",
+            log_debug(LOG_ICONS, "Template resolved: '%s' \u2192 %s (parent chain: %s)\n",
                     type_token, template_path, parent);
             return TRUE;
         }
@@ -521,7 +521,7 @@ BOOL deficons_resolve_template(const char *type_token, char *template_path, int 
     if (apply_fallback_template(template_path, path_size))
     {
         add_to_template_cache(type_token, template_path, "fallback", TRUE);
-        log_info(LOG_ICONS, "Template resolved: '%s' → %s (FALLBACK - no type-specific icon)\n", type_token, template_path);
+        log_debug(LOG_ICONS, "Template resolved: '%s' \u2192 %s (FALLBACK - no type-specific icon)\n", type_token, template_path);
         return TRUE;
     }
     
@@ -678,7 +678,7 @@ void deficons_clear_template_cache(void)
     if (!g_initialized)
         return;
     
-    log_info(LOG_ICONS, "Clearing template cache (%d entries)\n", g_template_cache_count);
+    log_debug(LOG_ICONS, "Clearing template cache (%d entries)\n", g_template_cache_count);
     
     if (g_template_cache)
     {
@@ -781,7 +781,7 @@ const char **deficons_get_ascii_subtypes(int *count_out)
     /* NULL-terminate */
     s_ascii_subtypes[s_ascii_subtype_count] = NULL;
 
-    log_info(LOG_ICONS, "deficons_get_ascii_subtypes: found %d type(s) in ascii family\n",
+    log_debug(LOG_ICONS, "deficons_get_ascii_subtypes: found %d type(s) in ascii family\n",
              s_ascii_subtype_count);
 
     if (count_out) *count_out = s_ascii_subtype_count;

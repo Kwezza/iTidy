@@ -518,7 +518,7 @@ BOOL itidy_render_ascii_preview(const char *file_path,
         read_size = ITIDY_DEFAULT_READ_BYTES;
     }
 
-    log_info(LOG_ICONS, "itidy_render_ascii_preview: file='%s' safe=%ux%u "
+    log_debug(LOG_ICONS, "itidy_render_ascii_preview: file='%s' safe=%ux%u "
              "char_w=%u scale=%ux%u src_chars=%u src_lines=%u read=%lu\n",
              file_path,
              (unsigned)params->base.safe_width,
@@ -573,7 +573,7 @@ BOOL itidy_render_ascii_preview(const char *file_path,
         build_darken_table(params->palette, params->palette_size,
                           darken_67_pct, darken_table_67);
         
-        log_info(LOG_ICONS, "itidy_render_ascii_preview: adaptive text enabled, darken=%u%% (alt=%u%%, 33=%u%%, 67=%u%%)\n",
+        log_debug(LOG_ICONS, "itidy_render_ascii_preview: adaptive text enabled, darken=%u%% (alt=%u%%, 33=%u%%, 67=%u%%)\n",
                  (unsigned)darken_pct, (unsigned)darken_light_pct,
                  (unsigned)darken_33_pct, (unsigned)darken_67_pct);
     }
@@ -855,7 +855,7 @@ BOOL itidy_render_ascii_preview(const char *file_path,
 
     whd_free(read_buffer);
 
-    log_info(LOG_ICONS, "itidy_render_ascii_preview: rendered %u source lines "
+    log_debug(LOG_ICONS, "itidy_render_ascii_preview: rendered %u source lines "
              "(%ux%u scale) from '%s'\n",
              (unsigned)(current_line + 1),
              (unsigned)h_scale, (unsigned)v_scale,

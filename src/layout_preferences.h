@@ -248,6 +248,13 @@ typedef struct {
     /* Upscaling control (v3 fields) */
     BOOL deficons_upscale_thumbnails;           /* FALSE = keep small images at natural size (default) */
                                                 /* TRUE  = scale up images smaller than icon size      */
+
+    /* === NEW FIELDS BELOW THIS LINE (v4 prefs format) === */
+    /* These MUST remain at the end of the struct for backward  */
+    /* compatibility with v1-v3 preference files.               */
+
+    /* WHDLoad Integration (v4 fields) */
+    BOOL deficons_skip_whdload_folders;         /* TRUE = detect WHDLoad folders (contain *.slave) and skip icon creation inside them */
 } LayoutPreferences;
 
 /*========================================================================*/
@@ -305,6 +312,7 @@ typedef struct {
 #define DEFAULT_DEFICONS_ENABLE_TEXT_PREVIEWS               TRUE    /* Default: Text content previews enabled */
 #define DEFAULT_DEFICONS_ENABLE_PICTURE_PREVIEWS            TRUE    /* Default: Picture thumbnails enabled */
 #define DEFAULT_DEFICONS_UPSCALE_THUMBNAILS                 FALSE   /* Default: Do NOT upscale small images to icon size */
+#define DEFAULT_DEFICONS_SKIP_WHDLOAD_FOLDERS               FALSE   /* Default: OFF (opt-in) */
 
 /* DefIcons Palette Reduction Defaults */
 #define DEFAULT_DEFICONS_MAX_ICON_COLORS                    256     /* No limit (full palette) */

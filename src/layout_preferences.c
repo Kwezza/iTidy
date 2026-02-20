@@ -131,6 +131,9 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
 
     /* Upscaling control (v3 fields) */
     prefs->deficons_upscale_thumbnails = DEFAULT_DEFICONS_UPSCALE_THUMBNAILS;
+
+    /* WHDLoad Integration (v4 fields) */
+    prefs->deficons_skip_whdload_folders = DEFAULT_DEFICONS_SKIP_WHDLOAD_FOLDERS;
 }
 
 /*========================================================================*/

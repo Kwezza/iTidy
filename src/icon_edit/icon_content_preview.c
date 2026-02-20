@@ -179,7 +179,7 @@ static BOOL itidy_resolve_preview_template(const char *type_token,
         UnLock(lock);
         snprintf(path_buf, buf_size, "PROGDIR:Icons/def_%s", type_token);
         path_buf[buf_size - 1] = '\0';
-        log_info(LOG_ICONS, "Using type-specific preview template: %s for type=%s\n",
+        log_debug(LOG_ICONS, "Using type-specific preview template: %s for type=%s\n",
                  path_buf, type_token);
         return TRUE;
     }
@@ -200,7 +200,7 @@ static BOOL itidy_resolve_preview_template(const char *type_token,
         UnLock(lock);
         snprintf(path_buf, buf_size, "PROGDIR:Icons/def_ascii");
         path_buf[buf_size - 1] = '\0';
-        log_info(LOG_ICONS, "Using generic ASCII preview template: %s for type=%s\n",
+        log_debug(LOG_ICONS, "Using generic ASCII preview template: %s for type=%s\n",
                  path_buf, type_token);
         return TRUE;
     }
@@ -678,7 +678,7 @@ static int apply_iff_preview(const char *source_path,
     log_debug(LOG_ICONS, "apply_iff_preview: progress_callback=%p, progress_user_data=%p\n",
               (void*)progress_callback, progress_user_data);
 
-    log_info(LOG_ICONS, "apply_iff_preview: applying IFF thumbnail "
+    log_debug(LOG_ICONS, "apply_iff_preview: applying IFF thumbnail "
              "for '%s' (type=%s)\n", source_path, type_token);
 
     /*--------------------------------------------------------------------*/
@@ -702,7 +702,7 @@ static int apply_iff_preview(const char *source_path,
     prefs = GetGlobalPreferences();
     icon_dim = itidy_get_iff_icon_dimensions(prefs);
 
-    log_info(LOG_ICONS, "apply_iff_preview: icon size=%ux%u (mode=%u)\n",
+    log_debug(LOG_ICONS, "apply_iff_preview: icon size=%ux%u (mode=%u)\n",
              (unsigned)icon_dim, (unsigned)icon_dim,
              (unsigned)(prefs ? prefs->deficons_icon_size_mode : 1));
 
@@ -911,7 +911,7 @@ static int apply_iff_preview(const char *source_path,
             img.is_frameless = (bmode == ITIDY_THUMB_BORDER_NEVER);
         }
 
-        log_info(LOG_ICONS, "apply_iff_preview: cropped to tight %ux%u, "
+        log_debug(LOG_ICONS, "apply_iff_preview: cropped to tight %ux%u, "
                  "transparency disabled, frameless=%s\n",
                  (unsigned)thumb_w, (unsigned)thumb_h,
                  img.is_frameless ? "yes" : "no");
@@ -928,7 +928,7 @@ static int apply_iff_preview(const char *source_path,
     if (prefs != NULL && prefs->deficons_max_icon_colors < 256
         && !prefs->deficons_ultra_mode)
     {
-        log_info(LOG_ICONS, "apply_iff_preview: reducing palette to max %u colors "
+        log_debug(LOG_ICONS, "apply_iff_preview: reducing palette to max %u colors "
                  "(dither=%u, lowcolor=%u)\n",
                  (unsigned)prefs->deficons_max_icon_colors,
                  (unsigned)prefs->deficons_dither_method,
@@ -957,7 +957,7 @@ static int apply_iff_preview(const char *source_path,
         ULONG pixel_count = (ULONG)img.width * (ULONG)img.height;
         UBYTE *rgb24_buf = (UBYTE *)whd_malloc(pixel_count * 3);
 
-        log_info(LOG_ICONS, "apply_iff_preview: Ultra mode - optimizing "
+        log_debug(LOG_ICONS, "apply_iff_preview: Ultra mode - optimizing "
                  "256-color palette for %ux%u thumbnail\n",
                  (unsigned)img.width, (unsigned)img.height);
 
@@ -1004,7 +1004,7 @@ static int apply_iff_preview(const char *source_path,
                     img.palette_size_normal = ultra_pal_size;
                     ultra_pal = NULL;  // Ownership transferred
 
-                    log_info(LOG_ICONS, "apply_iff_preview: Ultra mode "
+                    log_debug(LOG_ICONS, "apply_iff_preview: Ultra mode "
                              "produced %u-color optimized palette\n",
                              (unsigned)ultra_pal_size);
                 }
@@ -1033,7 +1033,7 @@ static int apply_iff_preview(const char *source_path,
          * This combines detail-preserving palette with dithering. */
         if (prefs->deficons_max_icon_colors < 256)
         {
-            log_info(LOG_ICONS, "apply_iff_preview: Ultra + reduction to "
+            log_debug(LOG_ICONS, "apply_iff_preview: Ultra + reduction to "
                      "%u colors (dither=%u, lowcolor=%u)\n",
                      (unsigned)prefs->deficons_max_icon_colors,
                      (unsigned)prefs->deficons_dither_method,
@@ -1090,7 +1090,7 @@ static int apply_iff_preview(const char *source_path,
 
     if (itidy_icon_image_save(source_path, clone))
     {
-        log_info(LOG_ICONS, "apply_iff_preview: "
+        log_debug(LOG_ICONS, "apply_iff_preview: "
                  "saved IFF thumbnail icon for '%s'\n", source_path);
         result = ITIDY_PREVIEW_APPLIED;
     }
@@ -1225,7 +1225,7 @@ static int apply_picture_preview(const char *source_path,
     memset(&img, 0, sizeof(img));
     memset(&iff_params, 0, sizeof(iff_params));
 
-    log_info(LOG_ICONS, "apply_picture_preview: '%s' (type=%s)\n",
+    log_debug(LOG_ICONS, "apply_picture_preview: '%s' (type=%s)\n",
              source_path, type_token);
 
     prefs = GetGlobalPreferences();
@@ -1261,7 +1261,7 @@ static int apply_picture_preview(const char *source_path,
 
     icon_dim = itidy_get_iff_icon_dimensions(prefs);
 
-    log_info(LOG_ICONS, "apply_picture_preview: icon size=%ux%u\n",
+    log_debug(LOG_ICONS, "apply_picture_preview: icon size=%ux%u\n",
              (unsigned)icon_dim, (unsigned)icon_dim);
 
     if (!itidy_icon_image_create_blank(icon_dim, icon_dim, 0, &img))
@@ -1430,7 +1430,7 @@ static int apply_picture_preview(const char *source_path,
             {
                 img.transparent_color_normal   = 0;
                 img.transparent_color_selected = 0;
-                log_info(LOG_ICONS,
+                log_debug(LOG_ICONS,
                          "apply_picture_preview: "
                          "alpha/key transparency enabled -- transparent_color_normal=0\n");
             }
@@ -1444,7 +1444,7 @@ static int apply_picture_preview(const char *source_path,
             {
                 /* Opaque format (JPEG/BMP): force borders on regardless of user setting */
                 img.is_frameless = FALSE;
-                log_info(LOG_ICONS,
+                log_debug(LOG_ICONS,
                          "apply_picture_preview: "
                          "opaque format -- borders forced on, transparent_color_normal=-1\n");
             }
@@ -1470,7 +1470,7 @@ static int apply_picture_preview(const char *source_path,
                 }
             }
 
-            log_info(LOG_ICONS, "apply_picture_preview: cropped to %ux%u, "
+            log_debug(LOG_ICONS, "apply_picture_preview: cropped to %ux%u, "
                      "alpha=%s, fmt_transparent=%s, frameless=%s\n",
                      (unsigned)thumb_w, (unsigned)thumb_h,
                      iff_params.src_has_alpha ? "yes" : "no",
@@ -1506,7 +1506,7 @@ static int apply_picture_preview(const char *source_path,
         UBYTE *rgb24_buf  = NULL;
         BOOL  rgb24_owned = FALSE;  /* TRUE = we allocated rgb24_buf, must free it */
 
-        log_info(LOG_ICONS, "apply_picture_preview: Ultra mode -- %ux%u\n",
+        log_debug(LOG_ICONS, "apply_picture_preview: Ultra mode -- %ux%u\n",
                  (unsigned)img.width, (unsigned)img.height);
 
         /* Prefer the pre-quantization RGB24 buffer handed off by the     */
@@ -1519,7 +1519,7 @@ static int apply_picture_preview(const char *source_path,
             rgb24_buf  = raw_rgb24;
             raw_rgb24  = NULL;   /* owned by rgb24_buf from here */
             rgb24_owned = TRUE;
-            log_info(LOG_ICONS, "apply_picture_preview: "
+            log_debug(LOG_ICONS, "apply_picture_preview: "
                      "using pre-quantization RGB24 for Ultra palette generation\n");
         }
         else
@@ -1583,7 +1583,7 @@ static int apply_picture_preview(const char *source_path,
                     if (iff_params.src_has_alpha)
                         img.transparent_color_normal = 0;
 
-                    log_info(LOG_ICONS, "apply_picture_preview: "
+                    log_debug(LOG_ICONS, "apply_picture_preview: "
                              "Ultra mode produced %u-color palette\n",
                              (unsigned)ultra_pal_size);
                 }
@@ -1657,7 +1657,7 @@ static int apply_picture_preview(const char *source_path,
 
     if (itidy_icon_image_save(source_path, clone))
     {
-        log_info(LOG_ICONS, "apply_picture_preview: saved thumbnail for '%s'\n",
+        log_debug(LOG_ICONS, "apply_picture_preview: saved thumbnail for '%s'\n",
                  source_path);
         result = ITIDY_PREVIEW_APPLIED;
     }
@@ -1784,7 +1784,7 @@ int itidy_apply_content_preview(const char *source_path,
         return ITIDY_PREVIEW_NOT_APPLICABLE;
     }
 
-    log_info(LOG_ICONS, "itidy_apply_content_preview: applying text preview "
+    log_debug(LOG_ICONS, "itidy_apply_content_preview: applying text preview "
              "for '%s' (type=%s)\n", source_path, type_token);
 
     /*--------------------------------------------------------------------*/
@@ -1938,7 +1938,7 @@ int itidy_apply_content_preview(const char *source_path,
         iTidy_TextRenderParams selected_params;
         UBYTE *selected_darken_table = NULL;
 
-        log_info(LOG_ICONS, "itidy_apply_content_preview: template has real selected image, "
+        log_debug(LOG_ICONS, "itidy_apply_content_preview: template has real selected image, "
                  "rendering text on selected buffer for '%s'\n", source_path);
 
         // Copy the text_params structure
@@ -2071,7 +2071,7 @@ int itidy_apply_content_preview(const char *source_path,
 
     if (itidy_icon_image_save(source_path, clone))
     {
-        log_info(LOG_ICONS, "itidy_apply_content_preview: "
+        log_debug(LOG_ICONS, "itidy_apply_content_preview: "
                  "saved text preview icon for '%s'\n", source_path);
         result = ITIDY_PREVIEW_APPLIED;
     }

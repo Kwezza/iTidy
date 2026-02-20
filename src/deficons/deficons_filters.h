@@ -147,4 +147,26 @@ BOOL deficons_folder_has_info_files(const char *path);
  */
 const char* deficons_folder_mode_to_string(UWORD mode);
 
+/**
+ * @brief Check if a folder is a WHDLoad game/application folder
+ *
+ * Performs a fast pattern-match glob for "#?.slave" in the given directory.
+ * Uses MatchFirst with early exit — cost is a single filesystem call when
+ * no .slave file exists, so impact on normal folders is negligible.
+ *
+ * WHDLoad folders identified here should:
+ *  - Still receive a drawer .info from their parent (so they appear in
+ *    Workbench) — the parent's Smart check returns TRUE.
+ *  - NOT have any icons created for their internal files (data, saves, etc.).
+ *  - NOT be recursed into by the DefIcons creation pass.
+ *
+ * @param path Full path to the folder to test
+ * @param prefs Layout preferences (checked for deficons_skip_whdload_folders flag)
+ * @return TRUE if a *.slave file is found in the folder, FALSE otherwise
+ *
+ * @note prefs may be NULL — treated as FALSE (no detection)
+ * @note Caller should check prefs->deficons_skip_whdload_folders before calling
+ */
+BOOL deficons_is_whdload_folder(const char *path, const LayoutPreferences *prefs);
+
 #endif /* DEFICONS_FILTERS_H */

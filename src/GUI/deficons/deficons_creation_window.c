@@ -74,6 +74,7 @@ struct Library *iTidy_DefIconsCreation_SpaceBase = NULL;
 enum {
     GID_CLICKTAB = 1,
     GID_FOLDER_MODE_CHOOSER,
+    GID_SKIP_WHDLOAD_CB,
     GID_ICON_SIZE_CHOOSER,
     GID_THUMBNAIL_BORDERS_CHOOSER,
     GID_TEXT_PREVIEW_CHECKBOX,
@@ -105,6 +106,7 @@ typedef struct {
     Object *clicktab_obj;
     struct List *tab_labels;
     Object *folder_mode_chooser_obj;
+    Object *whdload_skip_cb;
     Object *icon_size_chooser_obj;
     Object *thumbnail_borders_chooser_obj;
     Object *text_preview_checkbox;
@@ -373,7 +375,12 @@ static void handle_ok(DefIconsCreationWindow *win)
     /* Get folder icon mode from chooser */
     GetAttr(CHOOSER_Selected, win->folder_mode_chooser_obj, &selected_value);
     win->prefs->deficons_folder_icon_mode = (UWORD)selected_value;
-    
+
+    /* Get WHDLoad skip checkbox state */
+    selected_value = 0;
+    GetAttr(GA_Selected, win->whdload_skip_cb, &selected_value);
+    win->prefs->deficons_skip_whdload_folders = (BOOL)selected_value;
+
     /* Get icon size mode from chooser */
     selected_value = 0;
     GetAttr(CHOOSER_Selected, win->icon_size_chooser_obj, &selected_value);
@@ -591,6 +598,7 @@ static BOOL create_window(DefIconsCreationWindow *win)
     {
         {GID_CLICKTAB,                -1, "", 0},
         {GID_FOLDER_MODE_CHOOSER,     -1, "Creates missing drawer icons. Smart will scan the sub folder to see if it contains icons or content that needs icons. If it does, it creates a drawer icon.", 0},
+        {GID_SKIP_WHDLOAD_CB,         -1, "When enabled, folders with a WHDLoad slave (*.slave) are skipped. The WHDLoad drawer icon is still created, but sub-folders are skipped.", 0},
         {GID_TEXT_PREVIEW_CHECKBOX,   -1, "When enabled, iTidy can create thumbnail-style icons for text files by rendering the file contents onto the icon.", 0},
         {GID_MANAGE_TEXT_TEMPLATES,   -1, "Open the Text Templates window to edit how text previews are rendered.", 0},
         {GID_PICTURE_PREVIEW_CHECKBOX,-1, "Create thumbnail icons for recognised picture files (formats selected below).", 0},
@@ -658,6 +666,17 @@ static BOOL create_window(DefIconsCreationWindow *win)
                         CHILD_Label, (Object *)LabelObject,
                             LABEL_Text, "Folder icons:",
                         LabelEnd,
+                        CHILD_WeightedHeight, 0,
+
+                        /* WHDLoad skip checkbox */
+                        LAYOUT_AddChild, win->whdload_skip_cb = (Object *)CheckBoxObject,
+                            GA_ID,              GID_SKIP_WHDLOAD_CB,
+                            GA_Text,            "Skip icon creation inside WHDLoad folders",
+                            GA_Selected,        win->prefs->deficons_skip_whdload_folders,
+                            GA_RelVerify,       TRUE,
+                            GA_TabCycle,        TRUE,
+                            CHECKBOX_TextPlace, PLACETEXT_RIGHT,
+                        CheckBoxEnd,
                         CHILD_WeightedHeight, 0,
 
                         /* Spacer */
