@@ -65,7 +65,6 @@
 #include "backups/backup_catalog.h"
 #include "backups/backup_session.h"
 #include "string_functions.h"
-#include "../easy_request_helper.h"
 
 #ifndef NewList
 VOID NewList(struct List *list);

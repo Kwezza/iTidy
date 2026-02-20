@@ -14,6 +14,7 @@
 #define ListBrowserBase iTidy_DefIcons_ListBrowserBase
 #define ButtonBase iTidy_DefIcons_ButtonBase
 #define LabelBase iTidy_DefIcons_LabelBase
+#define RequesterBase iTidy_DefIcons_RequesterBase
 
 #include "deficons_settings_window.h"
 #include "../../writeLog.h"
@@ -21,7 +22,6 @@
 #include "../../deficons/deficons_templates.h"
 #include "../../icon_types.h"
 #include "../../platform/platform.h"
-#include "../easy_request_helper.h"
 
 #include <clib/alib_protos.h>
 #include <reaction/reaction.h>
@@ -40,6 +40,8 @@
 #include <proto/utility.h>
 #include <proto/asl.h>
 #include <proto/dos.h>
+#include <proto/requester.h>
+#include <classes/requester.h>
 
 #include <classes/window.h>
 #include <libraries/asl.h>
@@ -71,6 +73,7 @@ struct Library *iTidy_DefIcons_LayoutBase = NULL;
 struct Library *iTidy_DefIcons_ListBrowserBase = NULL;
 struct Library *iTidy_DefIcons_ButtonBase = NULL;
 struct Library *iTidy_DefIcons_LabelBase = NULL;
+struct Library *iTidy_DefIcons_RequesterBase = NULL;
 
 /* Gadget IDs */
 enum {
@@ -125,11 +128,12 @@ static BOOL open_reaction_libs(void)
     iTidy_DefIcons_ListBrowserBase = OpenLibrary("gadgets/listbrowser.gadget", 44);
     iTidy_DefIcons_ButtonBase = OpenLibrary("gadgets/button.gadget", 44);
     iTidy_DefIcons_LabelBase = OpenLibrary("images/label.image", 44);
+    iTidy_DefIcons_RequesterBase = OpenLibrary("requester.class", 0);
     
     if (!iTidy_DefIcons_WindowBase || !iTidy_DefIcons_LayoutBase ||
         !iTidy_DefIcons_ListBrowserBase ||
         !iTidy_DefIcons_ButtonBase ||
-        !iTidy_DefIcons_LabelBase)
+        !iTidy_DefIcons_LabelBase || !iTidy_DefIcons_RequesterBase)
     {
         return FALSE;
     }
@@ -142,6 +146,11 @@ static BOOL open_reaction_libs(void)
  */
 static void close_reaction_libs(void)
 {
+    if (iTidy_DefIcons_RequesterBase)
+    {
+        CloseLibrary(iTidy_DefIcons_RequesterBase);
+        iTidy_DefIcons_RequesterBase = NULL;
+    }
     if (iTidy_DefIcons_LabelBase)
     {
         CloseLibrary(iTidy_DefIcons_LabelBase);
@@ -167,6 +176,42 @@ static void close_reaction_libs(void)
         CloseLibrary(iTidy_DefIcons_WindowBase);
         iTidy_DefIcons_WindowBase = NULL;
     }
+}
+
+/*------------------------------------------------------------------------*/
+/* ReAction Requester Helper                                             */
+/*------------------------------------------------------------------------*/
+
+static ULONG ShowReActionRequester(struct Window *parent_window,
+                                   CONST_STRPTR title,
+                                   CONST_STRPTR body,
+                                   CONST_STRPTR gadgets,
+                                   ULONG image_type)
+{
+    Object *req_obj;
+    struct orRequest req_msg;
+    ULONG result = 0;
+
+    if (!RequesterBase || !parent_window) return 0;
+
+    req_obj = NewObject(REQUESTER_GetClass(), NULL,
+        REQ_Type,       REQTYPE_INFO,
+        REQ_TitleText,  title,
+        REQ_BodyText,   body,
+        REQ_GadgetText, gadgets,
+        REQ_Image,      image_type,
+        TAG_DONE);
+
+    if (req_obj)
+    {
+        req_msg.MethodID  = RM_OPENREQ;
+        req_msg.or_Attrs  = NULL;
+        req_msg.or_Window = parent_window;
+        req_msg.or_Screen = NULL;
+        result = DoMethodA(req_obj, (Msg)&req_msg);
+        DisposeObject(req_obj);
+    }
+    return result;
 }
 
 /*
@@ -901,10 +946,11 @@ static void handle_change_default_tool(DefIconsSettingsWindow *win)
     GetAttr(LISTBROWSER_SelectedNode, win->tree_listbrowser, (ULONG *)&selected_node);
     if (selected_node == NULL)
     {
-        ShowEasyRequest(win->window,
+        ShowReActionRequester(win->window,
             "No Selection",
             "Please select a DefIcon type first.",
-            "OK");
+            "_OK",
+            REQIMAGE_WARNING);
         return;
     }
     
@@ -917,10 +963,11 @@ static void handle_change_default_tool(DefIconsSettingsWindow *win)
     /* Validate node */
     if (tree_node == NULL || generation < 1 || generation > 3)
     {
-        ShowEasyRequest(win->window,
+        ShowReActionRequester(win->window,
             "Invalid Selection",
             "Please select a valid DefIcon type.",
-            "OK");
+            "_OK",
+            REQIMAGE_WARNING);
         return;
     }
     
@@ -1003,10 +1050,11 @@ static void handle_change_default_tool(DefIconsSettingsWindow *win)
     
     if (!freq)
     {
-        ShowEasyRequest(win->window,
+        ShowReActionRequester(win->window,
             "Error",
             "Could not open file requester.",
-            "OK");
+            "_OK",
+            REQIMAGE_ERROR);
         return;
     }
     
@@ -1017,10 +1065,11 @@ static void handle_change_default_tool(DefIconsSettingsWindow *win)
         if (!AddPart((STRPTR)full_path, (STRPTR)freq->fr_File, sizeof(full_path)))
         {
             FreeAslRequest(freq);
-            ShowEasyRequest(win->window,
+            ShowReActionRequester(win->window,
                 "Error",
                 "File path is too long.",
-                "OK");
+                "_OK",
+                REQIMAGE_ERROR);
             return;
         }
         
@@ -1161,10 +1210,11 @@ static void handle_change_default_tool(DefIconsSettingsWindow *win)
         if (!found)
         {
             FreeAslRequest(freq);
-            ShowEasyRequest(win->window,
+            ShowReActionRequester(win->window,
                 "Error",
                 "Could not find or create\ntemplate icon for this type.",
-                "OK");
+                "_OK",
+                REQIMAGE_ERROR);
             log_error(LOG_GUI, "Template not found for type: %s\n", tree_node->type_name);
             return;
         }
@@ -1183,17 +1233,19 @@ static void handle_change_default_tool(DefIconsSettingsWindow *win)
                 handle_show_tools(win);
             }
             
-            ShowEasyRequest(win->window,
+            ShowReActionRequester(win->window,
                 "Success",
                 "Default tool updated successfully.",
-                "OK");
+                "_OK",
+                REQIMAGE_INFO);
         }
         else
         {
-            ShowEasyRequest(win->window,
+            ShowReActionRequester(win->window,
                 "Error",
                 "Failed to update default tool.",
-                "OK");
+                "_OK",
+                REQIMAGE_ERROR);
             log_error(LOG_GUI, "Failed to update default tool for: %s\n", template_path);
         }
     }

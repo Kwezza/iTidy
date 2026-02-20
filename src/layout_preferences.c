@@ -85,10 +85,6 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     /* Advanced Settings */
     prefs->skipHiddenFolders = DEFAULT_SKIP_HIDDEN_FOLDERS;
     
-    /* Beta/Experimental Features */
-    prefs->beta_openFoldersAfterProcessing = DEFAULT_BETA_OPEN_FOLDERS_AFTER_PROCESSING;
-    prefs->beta_FindWindowOnWorkbenchAndUpdate = DEFAULT_BETA_FIND_WINDOW_ON_WORKBENCH_AND_UPDATE;
-    
     /* DefIcons Icon Creation Settings */
     prefs->enable_deficons_icon_creation = DEFAULT_ENABLE_DEFICONS_ICON_CREATION;
     strcpy(prefs->deficons_disabled_types, DEFAULT_DEFICONS_DISABLED_TYPES);
@@ -105,8 +101,6 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     
     /* Logging and Debug Settings */
     prefs->logLevel = DEFAULT_LOG_LEVEL;
-    prefs->memoryLoggingEnabled = DEFAULT_MEMORY_LOGGING_ENABLED;
-    prefs->enable_performance_logging = DEFAULT_PERFORMANCE_LOGGING_ENABLED;
     
     /* Default Tool Validation Settings */
     prefs->validate_default_tools = DEFAULT_VALIDATE_DEFAULT_TOOLS;

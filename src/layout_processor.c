@@ -9,8 +9,6 @@
 #include <platform/platform_io.h>
 #include <platform/amiga_headers.h>
 
-#include <proto/wb.h>
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -97,7 +95,6 @@
 #include "backups/backup_session.h"
 #include "backups/backup_catalog.h"
 #include "path_utilities.h"
-#include "GUI/window_enumerator.h"
 
 /* DefIcons icon creation system */
 #include "deficons/deficons_identify.h"
@@ -180,12 +177,10 @@ static int CompareIconsWithPreferences(const void *a, const void *b,
 static void SortIconArrayWithPreferences(IconArray *iconArray, 
                                         const LayoutPreferences *prefs);
 static BOOL ProcessSingleDirectory(const char *path, 
-                                   const LayoutPreferences *prefs,
-                                   FolderWindowTracker *windowTracker);
+                                   const LayoutPreferences *prefs);
 static BOOL ProcessDirectoryRecursive(const char *path, 
                                      const LayoutPreferences *prefs, 
-                                     int recursion_level,
-                                     FolderWindowTracker *windowTracker);
+                                     int recursion_level);
 
 /* DefIcons icon creation functions now in deficons_creation.c */
 
@@ -249,8 +244,6 @@ BOOL ProcessDirectoryWithPreferences(void)
     BOOL success = FALSE;
     BackupContext localContext;
     BackupPreferences backupPrefs;
-    FolderWindowTracker windowTracker;
-    BOOL trackerBuilt = FALSE;
     
     /* Get global preferences */
     prefs = GetGlobalPreferences();
@@ -279,45 +272,22 @@ BOOL ProcessDirectoryWithPreferences(void)
      * Note: prefs->logLevel is set from tooltype at startup in main_gui.c
      * or from the Log mode menu selection, ensuring user choice is preserved */
     set_global_log_level((LogLevel)prefs->logLevel);
-    set_memory_logging_enabled(prefs->memoryLoggingEnabled);
-    set_performance_logging_enabled(prefs->enable_performance_logging);
+    /* Note: performance logging is controlled by PERFLOG tooltype - set at startup, not overridden here */
     
     log_info(LOG_GENERAL, "Logging preferences applied:\n");
     log_info(LOG_GENERAL, "  Log Level: %s\n",
              prefs->logLevel == 0 ? "DEBUG" :
              prefs->logLevel == 1 ? "INFO" :
              prefs->logLevel == 2 ? "WARNING" : "ERROR");
-    log_info(LOG_GENERAL, "  Memory Logging: %s\n", 
-             prefs->memoryLoggingEnabled ? "ENABLED" : "DISABLED");
-    log_info(LOG_GENERAL, "  Performance Logging: %s\n", 
-             prefs->enable_performance_logging ? "ENABLED" : "DISABLED");
+    log_info(LOG_GENERAL, "  Performance Logging: %s (PERFLOG tooltype)\n", 
+             is_performance_logging_enabled() ? "ENABLED" : "DISABLED");
     
     /* Copy and sanitize the path from preferences */
     strncpy(sanitizedPath, prefs->folder_path, sizeof(sanitizedPath) - 1);
     sanitizedPath[sizeof(sanitizedPath) - 1] = '\0';
     sanitizeAmigaPath(sanitizedPath);
     
-    /* Build window tracker if window moving is enabled (beta feature) */
-    if (prefs->beta_FindWindowOnWorkbenchAndUpdate)
-    {
-        log_info(LOG_GENERAL, "\n*** Building window tracker for open folder windows ***\n");
-        if (BuildFolderWindowList(&windowTracker))
-        {
-            trackerBuilt = TRUE;
-            log_info(LOG_GENERAL, "Window tracker built successfully: %lu window(s) tracked\n", 
-                    windowTracker.count);
-        }
-        else
-        {
-            log_warning(LOG_GENERAL, "Failed to build window tracker - window moving disabled for this run\n");
-            /* Continue without window moving - not a fatal error */
-        }
-    }
-    else
-    {
-        log_info(LOG_GENERAL, "Window moving disabled in preferences\n");
-    }
-    
+
     /* Build PATH search list for default tool validation */
     if (prefs->validate_default_tools)
     {
@@ -558,26 +528,17 @@ BOOL ProcessDirectoryWithPreferences(void)
     
     if (prefs->recursive_subdirs)
     {
-        success = ProcessDirectoryRecursive(sanitizedPath, prefs, 0, 
-                                           trackerBuilt ? &windowTracker : NULL);
+        success = ProcessDirectoryRecursive(sanitizedPath, prefs, 0);
     }
     else
     {
-        success = ProcessSingleDirectory(sanitizedPath, prefs,
-                                        trackerBuilt ? &windowTracker : NULL);
+        success = ProcessSingleDirectory(sanitizedPath, prefs);
     }
     
     /* Clear heartbeat status now that processing is complete */
     if (g_progressWindow != NULL)
     {
         itidy_main_progress_clear_heartbeat(g_progressWindow);
-    }
-    
-    /* Free window tracker if it was built */
-    if (trackerBuilt)
-    {
-        log_info(LOG_GENERAL, "Freeing window tracker\n");
-        FreeFolderWindowList(&windowTracker);
     }
     
     /* Calculate elapsed time and display statistics */
@@ -2064,8 +2025,7 @@ static void CalculateLayoutPositionsWithColumnCentering(IconArray *iconArray,
 /*========================================================================*/
 
 static BOOL ProcessSingleDirectory(const char *path, 
-                                   const LayoutPreferences *prefs,
-                                   FolderWindowTracker *windowTracker)
+                                   const LayoutPreferences *prefs)
 {
     BPTR lock = 0;
     IconArray *iconArray = NULL;
@@ -2120,7 +2080,7 @@ static BOOL ProcessSingleDirectory(const char *path,
         if (prefs->resizeWindows)
         {
             PROGRESS_STATUS("  Resizing to default empty folder size...");
-            resizeFolderToContents((char *)path, iconArray, windowTracker, prefs);
+            resizeFolderToContents((char *)path, iconArray, prefs);
         }
         
         FreeIconArray(iconArray);
@@ -2231,7 +2191,7 @@ standard_layout:
     if (prefs->resizeWindows)
     {
         PROGRESS_STATUS("  Resizing window...");
-        resizeFolderToContents((char *)path, iconArray, windowTracker, prefs);
+        resizeFolderToContents((char *)path, iconArray, prefs);
     }
     
     PUMP_AND_CHECK_CANCEL();
@@ -2251,39 +2211,6 @@ standard_layout:
         PROGRESS_STATUS("  Failed to save icon positions");
     }
     
-    /* Experimental Feature: Auto-open folders during processing
-     * When enabled, this calls Workbench's OpenWorkbenchObjectA() to open
-     * the folder window after iTidy has tidied the icons. This allows users
-     * to see the results in real-time during recursive operations.
-     */
-    if (prefs->beta_openFoldersAfterProcessing && success)
-    {
-        BOOL openResult;
-        
-#ifdef DEBUG
-        append_to_log("Opening folder window via Workbench: %s\n", path);
-#endif
-        
-        /* OpenWorkbenchObjectA() opens a folder window via Workbench.
-         * - First parameter: Full path to the folder
-         * - Second parameter: TagList (NULL for default behavior)
-         * 
-         * Note: workbench.library is auto-opened by proto/wb.h,
-         * so we don't need to manually OpenLibrary().
-         * 
-         * Returns: TRUE if successful, FALSE otherwise
-         */
-        openResult = OpenWorkbenchObjectA((CONST_STRPTR)path, NULL);
-        
-        if (!openResult)
-        {
-#ifdef DEBUG
-            append_to_log("Warning: Failed to open folder window for: %s\n", path);
-#endif
-            /* Non-fatal error - continue processing even if window open fails */
-        }
-    }
-    
     /* Print logging performance statistics */
     print_log_performance_stats();
     
@@ -2300,8 +2227,7 @@ standard_layout:
 
 static BOOL ProcessDirectoryRecursive(const char *path, 
                                      const LayoutPreferences *prefs, 
-                                     int recursion_level,
-                                     FolderWindowTracker *windowTracker)
+                                     int recursion_level)
 {
     BPTR lock = 0;
     struct FileInfoBlock *fib = NULL;
@@ -2324,7 +2250,7 @@ static BOOL ProcessDirectoryRecursive(const char *path,
     }
     
     /* Process this directory first */
-    if (!ProcessSingleDirectory(path, prefs, windowTracker))
+    if (!ProcessSingleDirectory(path, prefs))
     {
         return FALSE; /* Stop if current directory fails */
     }
@@ -2409,7 +2335,7 @@ static BOOL ProcessDirectoryRecursive(const char *path,
                     iTidy_ShortenPathWithParentDir(subdir, shortened_path, 60);
                     PROGRESS_STATUS("Entering: %s", shortened_path);
                 }
-                ProcessDirectoryRecursive(subdir, prefs, recursion_level + 1, windowTracker);
+                ProcessDirectoryRecursive(subdir, prefs, recursion_level + 1);
             }
         }
         success = TRUE;

@@ -51,7 +51,6 @@
 /* Project headers */
 #include "default_tool_backup.h"
 #include "../../helpers/exec_list_compat.h"
-#include "../easy_request_helper.h"
 #include "writeLog.h"
 #include "Settings/IControlPrefs.h"
 #include "string_functions.h"

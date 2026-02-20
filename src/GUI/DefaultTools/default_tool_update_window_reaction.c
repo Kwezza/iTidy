@@ -17,6 +17,7 @@ extern struct Library *ListBrowserBase;
 #define ButtonBase iTidy_DefaultToolUpdate_ButtonBase
 #define GetFileBase iTidy_DefaultToolUpdate_GetFileBase
 #define LabelBase iTidy_DefaultToolUpdate_LabelBase
+#define RequesterBase iTidy_DefaultToolUpdate_RequesterBase
 /* Note: ListBrowserBase is NOT isolated - it's used globally for amiga.lib stubs */
 
 #include "platform/platform.h"
@@ -29,7 +30,6 @@ extern struct Library *ListBrowserBase;
 #include "layout_preferences.h"
 #include "writeLog.h"
 #include "../../helpers/exec_list_compat.h"
-#include "../easy_request_helper.h"
 #include "../gui_utilities.h"
 
 #include <exec/memory.h>
@@ -58,6 +58,8 @@ extern struct Library *ListBrowserBase;
 #include <proto/getfile.h>
 #include <proto/label.h>
 #include <proto/listbrowser.h>
+#include <proto/requester.h>
+#include <classes/requester.h>
 
 #include <reaction/reaction_macros.h>
 
@@ -70,6 +72,7 @@ struct Library *iTidy_DefaultToolUpdate_LayoutBase = NULL;
 struct Library *iTidy_DefaultToolUpdate_ButtonBase = NULL;
 struct Library *iTidy_DefaultToolUpdate_GetFileBase = NULL;
 struct Library *iTidy_DefaultToolUpdate_LabelBase = NULL;
+struct Library *iTidy_DefaultToolUpdate_RequesterBase = NULL;
 /* ListBrowserBase declared globally above (before #defines) for amiga.lib stubs */
 
 /*------------------------------------------------------------------------*/
@@ -81,6 +84,7 @@ static void add_status_entry(struct iTidy_DefaultToolUpdateWindow_ReAction *data
                              const char *icon_path, const char *status_text);
 static BOOL init_reaction_libs(void);
 static void close_reaction_libs(void);
+static ULONG ShowReActionRequester(struct Window *parent_window, CONST_STRPTR title, CONST_STRPTR body, CONST_STRPTR gadgets, ULONG image_type);
 
 /*------------------------------------------------------------------------*/
 /* Initialize ReAction Libraries                                          */
@@ -93,8 +97,9 @@ static BOOL init_reaction_libs(void)
     GetFileBase = OpenLibrary("gadgets/getfile.gadget", 0);
     LabelBase = OpenLibrary("images/label.image", 0);
     ListBrowserBase = OpenLibrary("gadgets/listbrowser.gadget", 0);
+    RequesterBase = OpenLibrary("requester.class", 0);
     
-    if (!WindowBase || !LayoutBase || !ButtonBase || !GetFileBase || !LabelBase || !ListBrowserBase)
+    if (!WindowBase || !LayoutBase || !ButtonBase || !GetFileBase || !LabelBase || !ListBrowserBase || !RequesterBase)
     {
         log_error(LOG_GUI, "Failed to open ReAction libraries for Default Tool Update window");
         close_reaction_libs();
@@ -109,6 +114,7 @@ static BOOL init_reaction_libs(void)
 /*------------------------------------------------------------------------*/
 static void close_reaction_libs(void)
 {
+    if (RequesterBase) CloseLibrary(RequesterBase);
     if (ListBrowserBase) CloseLibrary(ListBrowserBase);
     if (LabelBase) CloseLibrary(LabelBase);
     if (GetFileBase) CloseLibrary(GetFileBase);
@@ -116,12 +122,49 @@ static void close_reaction_libs(void)
     if (LayoutBase) CloseLibrary(LayoutBase);
     if (WindowBase) CloseLibrary(WindowBase);
     
+    RequesterBase = NULL;
     ListBrowserBase = NULL;
     LabelBase = NULL;
     GetFileBase = NULL;
     ButtonBase = NULL;
     LayoutBase = NULL;
     WindowBase = NULL;
+}
+
+/*------------------------------------------------------------------------*/
+/* ReAction Requester Helper                                             */
+/*------------------------------------------------------------------------*/
+
+static ULONG ShowReActionRequester(struct Window *parent_window,
+                                   CONST_STRPTR title,
+                                   CONST_STRPTR body,
+                                   CONST_STRPTR gadgets,
+                                   ULONG image_type)
+{
+    Object *req_obj;
+    struct orRequest req_msg;
+    ULONG result = 0;
+
+    if (!RequesterBase || !parent_window) return 0;
+
+    req_obj = NewObject(REQUESTER_GetClass(), NULL,
+        REQ_Type,       REQTYPE_INFO,
+        REQ_TitleText,  title,
+        REQ_BodyText,   body,
+        REQ_GadgetText, gadgets,
+        REQ_Image,      image_type,
+        TAG_DONE);
+
+    if (req_obj)
+    {
+        req_msg.MethodID  = RM_OPENREQ;
+        req_msg.or_Attrs  = NULL;
+        req_msg.or_Window = parent_window;
+        req_msg.or_Screen = NULL;
+        result = DoMethodA(req_obj, (Msg)&req_msg);
+        DisposeObject(req_obj);
+    }
+    return result;
 }
 
 /*------------------------------------------------------------------------*/
@@ -233,12 +276,13 @@ static BOOL perform_tool_update(struct iTidy_DefaultToolUpdateWindow_ReAction *d
     /* Check if new tool path is empty */
     if (data->new_tool_path[0] == '\0')
     {
-        if (!ShowEasyRequest(data->window,
+        if (!ShowReActionRequester(data->window,
                             "Clear Default Tool",
                             "This will remove the default tool from the selected icon(s).\n"
                             "The icon(s) will no longer launch a specific program.\n\n"
                             "Are you sure you want to continue?",
-                            "Yes, Clear Tool|Cancel"))
+                            "_Yes, Clear Tool|_Cancel",
+                            REQIMAGE_QUESTION))
         {
             return FALSE;
         }
@@ -469,43 +513,16 @@ static BOOL perform_tool_update(struct iTidy_DefaultToolUpdateWindow_ReAction *d
         }
         
         /* Show completion message using ReAction requester */
+        ShowReActionRequester(data->window,
+            "Default Tool Update",
+            msg_buffer,
+            "_Ok",
+            REQIMAGE_INFO);
+
+        /* Refresh window after requester closes */
+        if (data->window)
         {
-            Object *req_obj;
-            struct Library *RequesterBase;
-            Class *RequesterClass;
-            
-            RequesterBase = OpenLibrary("requester.class", 0);
-            if (RequesterBase)
-            {
-                RequesterClass = REQUESTER_GetClass();
-                req_obj = NewObject(RequesterClass, NULL,
-                    REQ_Type, REQTYPE_INFO,
-                    REQ_TitleText, "Default Tool Update",
-                    REQ_BodyText, msg_buffer,
-                    REQ_GadgetText, "_Ok",
-                    REQ_Image, REQIMAGE_INFO,
-                    TAG_DONE);
-                
-                if (req_obj)
-                {
-                    struct orRequest req_msg;
-                    req_msg.MethodID = RM_OPENREQ;
-                    req_msg.or_Attrs = NULL;
-                    req_msg.or_Window = data->window;
-                    req_msg.or_Screen = NULL;
-                    
-                    DoMethodA(req_obj, (Msg)&req_msg);
-                    DisposeObject(req_obj);
-                }
-                
-                CloseLibrary(RequesterBase);
-            }
-            
-            /* Refresh window after requester closes */
-            if (data->window)
-            {
-                RefreshWindowFrame(data->window);
-            }
+            RefreshWindowFrame(data->window);
         }
     }
     

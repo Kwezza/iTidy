@@ -249,10 +249,14 @@ typedef struct ToolTypeSettings_tag {
     /* LOADPREFS tooltype support */
     char loadprefs_path[256];   /* Path from LOADPREFS=... */
     BOOL loadprefs_set;         /* TRUE if LOADPREFS was found in tooltypes */
+
+    /* PERFLOG tooltype support */
+    BOOL performance_log;       /* PERFLOG=YES/NO - enable performance timing logs */
+    BOOL performance_log_set;   /* TRUE if PERFLOG was found in tooltypes */
 } ToolTypeSettings;
 
 /* Global tooltype settings (initialized at startup) - exported for use by main_window.c */
-ToolTypeSettings g_tooltypes = { FALSE, 4, FALSE, "", FALSE }; /* Default: DISABLED level, no LOADPREFS */
+ToolTypeSettings g_tooltypes = { FALSE, 4, FALSE, "", FALSE, FALSE, FALSE }; /* Default: DISABLED level, no LOADPREFS, no PERFLOG */
 
 /**
  * @brief Case-insensitive string comparison (snake_case naming)
@@ -309,6 +313,8 @@ static void parse_program_tooltypes(struct WBStartup *wb_startup)
     g_tooltypes.tooltypes_loaded = FALSE;
     g_tooltypes.debug_level = 4;        /* Default: DISABLED (recommended) */
     g_tooltypes.debug_level_set = FALSE;
+    g_tooltypes.performance_log = FALSE;
+    g_tooltypes.performance_log_set = FALSE;
     
     /* If not launched from Workbench, nothing to parse */
     if (wb_startup == NULL)
@@ -411,6 +417,28 @@ static void parse_program_tooltypes(struct WBStartup *wb_startup)
                     CONSOLE_DEBUG("DEBUG: No LOADPREFS tooltype found\n");
                 }
                 
+                /* Parse PERFLOG=YES/NO */
+                tool_value = (STRPTR)FindToolType(tool_types, (STRPTR)"PERFLOG");
+                if (tool_value != NULL)
+                {
+                    if (MatchToolValue(tool_value, (STRPTR)"YES"))
+                    {
+                        g_tooltypes.performance_log = TRUE;
+                        g_tooltypes.performance_log_set = TRUE;
+                        CONSOLE_DEBUG("DEBUG: PERFLOG=YES found\n");
+                    }
+                    else if (MatchToolValue(tool_value, (STRPTR)"NO"))
+                    {
+                        g_tooltypes.performance_log = FALSE;
+                        g_tooltypes.performance_log_set = TRUE;
+                        CONSOLE_DEBUG("DEBUG: PERFLOG=NO found\n");
+                    }
+                }
+                else
+                {
+                    CONSOLE_DEBUG("DEBUG: No PERFLOG tooltype found\n");
+                }
+
                 g_tooltypes.tooltypes_loaded = TRUE;
                 CONSOLE_DEBUG("DEBUG: ToolTypes loaded successfully\n");
                 /* Logging will report tooltype status after system is initialized */
@@ -739,11 +767,10 @@ int main(int argc, char **argv)
         /* Don't log anything here - we're at DISABLED level, these would be filtered anyway */
     }
     
-    /* Disable memory logging by default (can be enabled via Beta Options) */
-    set_memory_logging_enabled(FALSE);
+    /* Disable memory logging by default (controlled by DEBUG_MEMORY_TRACKING build flag in platform.h) */
     
-    /* Disable performance logging by default (can be enabled via Beta Options) */
-    set_performance_logging_enabled(FALSE);
+    /* Apply PERFLOG tooltype (default: disabled) */
+    set_performance_logging_enabled(g_tooltypes.performance_log_set ? g_tooltypes.performance_log : FALSE);
     
     /* Dump Workbench screen palette for diagnostic purposes */
     DumpWorkbenchScreenPalette();

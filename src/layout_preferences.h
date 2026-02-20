@@ -197,10 +197,6 @@ typedef struct {
     /* Advanced Settings */
     BOOL skipHiddenFolders;          /* Skip folders without .info files (hidden) */
     
-    /* Beta/Experimental Features */
-    BOOL beta_openFoldersAfterProcessing;      /* Auto-open folders via Workbench during processing */
-    BOOL beta_FindWindowOnWorkbenchAndUpdate;  /* Find open folder windows and move/resize them to match saved geometry */
-    
     /* DefIcons Icon Creation Settings (Workbench 3.2+) */
     BOOL enable_deficons_icon_creation;        /* Master enable/disable for automatic icon creation */
     char deficons_disabled_types[256];         /* Comma-separated list of disabled root type names (e.g., "tool,font") */
@@ -220,8 +216,6 @@ typedef struct {
     
     /* Logging and Debug Settings */
     UWORD logLevel;                            /* Log level: 0=DEBUG, 1=INFO, 2=WARN, 3=ERROR */
-    BOOL memoryLoggingEnabled;                 /* Enable memory allocation logging (creates memory_*.log) */
-    BOOL enable_performance_logging;           /* Enable performance timing logging for iTidy operations */
     
     /* Default Tool Validation Settings */
     BOOL validate_default_tools;               /* Enable default tool validation using system PATH */
@@ -293,10 +287,6 @@ typedef struct {
 #define DEFAULT_ICON_SPACING_Y      8    /* 8px vertical spacing */
 #define DEFAULT_SKIP_HIDDEN_FOLDERS TRUE   /* Default: ignore hidden folders */
 
-/* Beta/Experimental Feature Defaults */
-#define DEFAULT_BETA_OPEN_FOLDERS_AFTER_PROCESSING         FALSE   /* Enable for testing */
-#define DEFAULT_BETA_FIND_WINDOW_ON_WORKBENCH_AND_UPDATE   FALSE   /* Enable for testing */
-
 /* DefIcons Feature Defaults (Workbench 3.2+) */
 #define DEFAULT_ENABLE_DEFICONS_ICON_CREATION              FALSE   /* Disabled by default (opt-in feature) */
 #define DEFAULT_DEFICONS_DISABLED_TYPES                    "tool,prefs,iff,key,kickstart"  /* Disabled types (unchecked in default UI) */
@@ -364,8 +354,6 @@ typedef struct {
 
 /* Logging and Debug Defaults */
 #define DEFAULT_LOG_LEVEL                                  4       /* Default: DISABLED level (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR, 4=DISABLED) */
-#define DEFAULT_MEMORY_LOGGING_ENABLED                     FALSE   /* Default: Disabled (can be very verbose) */
-#define DEFAULT_PERFORMANCE_LOGGING_ENABLED                FALSE   /* Default: Disabled (performance timing logs) */
 
 /* Default Tool Validation Defaults */
 #define DEFAULT_VALIDATE_DEFAULT_TOOLS                     TRUE    /* Default: Enabled (validate default tools using system PATH) */

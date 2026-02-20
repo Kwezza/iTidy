@@ -6,7 +6,8 @@
 #include "platform/platform.h"
 #include "main_progress_window.h"
 #include "writeLog.h"
-#include "../easy_request_helper.h"
+#include <proto/requester.h>
+#include <classes/requester.h>
 
 #include <clib/alib_protos.h>
 #include <reaction/reaction.h>
@@ -38,6 +39,40 @@
 
 #define ITIDY_MAIN_PROGRESS_TITLE "iTidy - Progress"
 #define ITIDY_MAIN_PROGRESS_MAX_HISTORY 50
+
+extern struct Library *RequesterBase;
+
+static ULONG ShowReActionRequester(struct Window *parent_window,
+                                   CONST_STRPTR title,
+                                   CONST_STRPTR body,
+                                   CONST_STRPTR gadgets,
+                                   ULONG image_type)
+{
+    Object *req_obj;
+    struct orRequest req_msg;
+    ULONG result = 0;
+
+    if (!RequesterBase || !parent_window) return 0;
+
+    req_obj = NewObject(REQUESTER_GetClass(), NULL,
+        REQ_Type,       REQTYPE_INFO,
+        REQ_TitleText,  title,
+        REQ_BodyText,   body,
+        REQ_GadgetText, gadgets,
+        REQ_Image,      image_type,
+        TAG_DONE);
+
+    if (req_obj)
+    {
+        req_msg.MethodID  = RM_OPENREQ;
+        req_msg.or_Attrs  = NULL;
+        req_msg.or_Window = parent_window;
+        req_msg.or_Screen = NULL;
+        result = DoMethodA(req_obj, (Msg)&req_msg);
+        DisposeObject(req_obj);
+    }
+    return result;
+}
 
 struct Library *ListBrowserBase = NULL;
 extern struct Library *WindowBase;
@@ -300,12 +335,13 @@ BOOL itidy_main_progress_window_handle_events(struct iTidyMainProgressWindow *wi
                         /* Check button text */
                         if (strcmp(window_data->cancel_button_text, "Cancel") == 0)
                         {
-                            BOOL confirmed = ShowEasyRequest(
+                            BOOL confirmed = (BOOL)ShowReActionRequester(
                                 window_data->window,
                                 "Confirm Cancel",
                                 "Are you sure you want to cancel?\n"
                                 "Changes will not be reverted.",
-                                "Yes, Cancel|No, Continue"
+                                "_Yes, Cancel|_No, Continue",
+                                REQIMAGE_QUESTION
                             );
                             
                             if (confirmed)

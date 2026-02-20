@@ -60,7 +60,6 @@
 #include "deficons/deficons_settings_window.h"
 #include "deficons/deficons_creation_window.h"
 #include "exclude_paths_window.h"
-#include "easy_request_helper.h"
 #include "layout_preferences.h"
 #include "layout_processor.h"
 #include "writeLog.h"
@@ -179,6 +178,13 @@ static void handle_main_new_menu(struct iTidyMainWindow *win_data);
 static void handle_main_open_menu(struct iTidyMainWindow *win_data);
 static void handle_main_save_menu(struct iTidyMainWindow *win_data);
 static void handle_main_save_as_menu(struct iTidyMainWindow *win_data);
+
+/* ReAction Requester Helper */
+static ULONG ShowReActionRequester(struct Window *parent_window,
+                                   CONST_STRPTR title,
+                                   CONST_STRPTR body,
+                                   CONST_STRPTR gadgets,
+                                   ULONG image_type);
 
 /*------------------------------------------------------------------------*/
 /* ReAction Library Management                                           */
@@ -405,6 +411,63 @@ static void free_chooser_labels(struct List *list)
     }
     
     FreeMem(list, sizeof(struct List));
+}
+
+/*------------------------------------------------------------------------*/
+/* ReAction Requester Helper                                             */
+/*------------------------------------------------------------------------*/
+
+/**
+ * ShowReActionRequester - Show a RequesterClass dialog on the parent window's screen
+ *
+ * Returns the button number selected (1 = first button, 0 = last/cancel button).
+ */
+static ULONG ShowReActionRequester(struct Window *parent_window,
+                                   CONST_STRPTR title,
+                                   CONST_STRPTR body,
+                                   CONST_STRPTR gadgets,
+                                   ULONG image_type)
+{
+    Object *req_obj;
+    struct orRequest req_msg;
+    ULONG result = 0;
+
+    if (!RequesterBase)
+    {
+        log_error(LOG_GUI, "ShowReActionRequester: RequesterBase is NULL\n");
+        return 0;
+    }
+
+    if (!parent_window)
+    {
+        log_error(LOG_GUI, "ShowReActionRequester: parent_window is NULL\n");
+        return 0;
+    }
+
+    req_obj = NewObject(REQUESTER_GetClass(), NULL,
+        REQ_Type,      REQTYPE_INFO,
+        REQ_TitleText, title,
+        REQ_BodyText,  body,
+        REQ_GadgetText, gadgets,
+        REQ_Image,     image_type,
+        TAG_DONE);
+
+    if (req_obj)
+    {
+        req_msg.MethodID  = RM_OPENREQ;
+        req_msg.or_Attrs  = NULL;
+        req_msg.or_Window = parent_window;
+        req_msg.or_Screen = NULL;
+
+        result = DoMethodA(req_obj, (Msg)&req_msg);
+        DisposeObject(req_obj);
+    }
+    else
+    {
+        log_error(LOG_GUI, "ShowReActionRequester: Failed to create requester object\n");
+    }
+
+    return result;
 }
 
 /*------------------------------------------------------------------------*/
@@ -1350,10 +1413,11 @@ void handle_tooltype_loadprefs(struct iTidyMainWindow *win_data)
                 "iTidy will continue with default settings.",
                 expanded_path);
         
-        ShowEasyRequest(win_data->window,
-                       "LOADPREFS Warning",
-                       error_msg,
-                       "_Continue");
+        ShowReActionRequester(win_data->window,
+                             "LOADPREFS Warning",
+                             error_msg,
+                             "_Continue",
+                             REQIMAGE_WARNING);
         return;
     }
     UnLock(lock);
@@ -1371,10 +1435,11 @@ void handle_tooltype_loadprefs(struct iTidyMainWindow *win_data)
                 "iTidy will continue with default settings.",
                 expanded_path);
         
-        ShowEasyRequest(win_data->window,
-                       "LOADPREFS Error",
-                       error_msg,
-                       "_Continue");
+        ShowReActionRequester(win_data->window,
+                             "LOADPREFS Error",
+                             error_msg,
+                             "_Continue",
+                             REQIMAGE_ERROR);
         return;
     }
     
@@ -1407,36 +1472,11 @@ void handle_tooltype_loadprefs(struct iTidyMainWindow *win_data)
                 "Preferences loaded successfully from:\n\n%s",
                 filename ? filename : expanded_path);
         
-        if (RequesterBase)
-        {
-            Object *req_obj = NewObject(REQUESTER_GetClass(), NULL,
-                REQ_Type, REQTYPE_INFO,
-                REQ_TitleText, "LOADPREFS",
-                REQ_BodyText, success_msg,
-                REQ_GadgetText, "_Ok",
-                REQ_Image, REQIMAGE_INFO,
-                TAG_DONE);
-            
-            if (req_obj)
-            {
-                struct orRequest req_msg;
-                req_msg.MethodID = RM_OPENREQ;
-                req_msg.or_Attrs = NULL;
-                req_msg.or_Window = win_data->window;
-                req_msg.or_Screen = NULL;
-                
-                DoMethodA(req_obj, (Msg)&req_msg);
-                DisposeObject(req_obj);
-            }
-        }
-        else
-        {
-            /* Fallback to ShowEasyRequest */
-            ShowEasyRequest(win_data->window,
-                           "LOADPREFS",
-                           success_msg,
-                           "_Ok");
-        }
+        ShowReActionRequester(win_data->window,
+                             "LOADPREFS",
+                             success_msg,
+                             "_Ok",
+                             REQIMAGE_INFO);
     }
 }
 
@@ -1480,10 +1520,11 @@ static void handle_main_save_menu(struct iTidyMainWindow *win_data)
     prefs = (LayoutPreferences *)GetGlobalPreferences();
     if (!prefs)
     {
-        ShowEasyRequest(win_data->window,
+        ShowReActionRequester(win_data->window,
             "Error",
             "Failed to get preferences.",
-            "OK");
+            "_OK",
+            REQIMAGE_ERROR);
         return;
     }
     
@@ -1505,10 +1546,11 @@ static void handle_main_save_menu(struct iTidyMainWindow *win_data)
     }
     else
     {
-        ShowEasyRequest(win_data->window,
+        ShowReActionRequester(win_data->window,
             "Save Failed",
             "Failed to save preferences file.",
-            "OK");
+            "_OK",
+            REQIMAGE_ERROR);
     }
 }
 
@@ -1526,10 +1568,11 @@ static void handle_main_save_as_menu(struct iTidyMainWindow *win_data)
     prefs = (LayoutPreferences *)GetGlobalPreferences();
     if (!prefs)
     {
-        ShowEasyRequest(win_data->window,
+        ShowReActionRequester(win_data->window,
             "Error",
             "Failed to get preferences.",
-            "OK");
+            "_OK",
+            REQIMAGE_ERROR);
         return;
     }
     
@@ -1565,10 +1608,11 @@ static void handle_main_save_as_menu(struct iTidyMainWindow *win_data)
     
     if (!freq)
     {
-        ShowEasyRequest(win_data->window,
+        ShowReActionRequester(win_data->window,
             "Error",
             "Could not open file requester.",
-            "OK");
+            "_OK",
+            REQIMAGE_ERROR);
         return;
     }
     
@@ -1578,10 +1622,11 @@ static void handle_main_save_as_menu(struct iTidyMainWindow *win_data)
         if (!AddPart((STRPTR)full_path, (STRPTR)freq->fr_File, sizeof(full_path)))
         {
             FreeAslRequest(freq);
-            ShowEasyRequest(win_data->window,
+            ShowReActionRequester(win_data->window,
                 "Error",
                 "File path is too long.",
-                "OK");
+                "_OK",
+                REQIMAGE_ERROR);
             return;
         }
         
@@ -1590,10 +1635,11 @@ static void handle_main_save_as_menu(struct iTidyMainWindow *win_data)
         {
             UnLock(lock);
             
-            if (!ShowEasyRequest(win_data->window,
+            if (!ShowReActionRequester(win_data->window,
                 "File Exists",
                 "File already exists.\nDo you want to replace it?",
-                "Replace|Cancel"))
+                "_Replace|_Cancel",
+                REQIMAGE_QUESTION))
             {
                 FreeAslRequest(freq);
                 return;
@@ -1608,18 +1654,20 @@ static void handle_main_save_as_menu(struct iTidyMainWindow *win_data)
             strncpy(win_data->last_save_path, full_path, sizeof(win_data->last_save_path) - 1);
             win_data->last_save_path[sizeof(win_data->last_save_path) - 1] = '\0';
             
-            ShowEasyRequest(win_data->window,
+            ShowReActionRequester(win_data->window,
                 "Save Successful",
                 "Preferences saved successfully.",
-                "OK");
+                "_OK",
+                REQIMAGE_INFO);
             log_info(LOG_GUI, "Preferences saved to: %s\n", full_path);
         }
         else
         {
-            ShowEasyRequest(win_data->window,
+            ShowReActionRequester(win_data->window,
                 "Save Failed",
                 "Failed to save preferences file.",
-                "OK");
+                "_OK",
+                REQIMAGE_ERROR);
         }
     }
     
@@ -1668,10 +1716,11 @@ static void handle_main_open_menu(struct iTidyMainWindow *win_data)
     
     if (!freq)
     {
-        ShowEasyRequest(win_data->window,
+        ShowReActionRequester(win_data->window,
             "Error",
             "Could not open file requester.",
-            "OK");
+            "_OK",
+            REQIMAGE_ERROR);
         return;
     }
     
@@ -1681,10 +1730,11 @@ static void handle_main_open_menu(struct iTidyMainWindow *win_data)
         if (!AddPart((STRPTR)full_path, (STRPTR)freq->fr_File, sizeof(full_path)))
         {
             FreeAslRequest(freq);
-            ShowEasyRequest(win_data->window,
+            ShowReActionRequester(win_data->window,
                 "Error",
                 "File path is too long.",
-                "OK");
+                "_OK",
+                REQIMAGE_ERROR);
             return;
         }
         
@@ -1692,10 +1742,11 @@ static void handle_main_open_menu(struct iTidyMainWindow *win_data)
         if (!lock)
         {
             FreeAslRequest(freq);
-            ShowEasyRequest(win_data->window,
+            ShowReActionRequester(win_data->window,
                 "File Not Found",
                 "The selected file does not exist.",
-                "OK");
+                "_OK",
+                REQIMAGE_ERROR);
             return;
         }
         UnLock(lock);
@@ -1721,18 +1772,20 @@ static void handle_main_open_menu(struct iTidyMainWindow *win_data)
             strncpy(win_data->last_save_path, full_path, sizeof(win_data->last_save_path) - 1);
             win_data->last_save_path[sizeof(win_data->last_save_path) - 1] = '\0';
             
-            ShowEasyRequest(win_data->window,
+            ShowReActionRequester(win_data->window,
                 "Load Successful",
                 "Preferences loaded successfully.",
-                "OK");
+                "_OK",
+                REQIMAGE_INFO);
             log_info(LOG_GUI, "Preferences loaded from: %s\n", full_path);
         }
         else
         {
-            ShowEasyRequest(win_data->window,
+            ShowReActionRequester(win_data->window,
                 "Load Failed",
                 "Failed to load preferences file.\nFile may be corrupted or invalid.",
-                "OK");
+                "_OK",
+                REQIMAGE_ERROR);
         }
     }
     
@@ -1846,51 +1899,16 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                     break;
                 
                 case MENU_PROJECT_ABOUT:
-                    {
-                        Object *req_obj;
-                        struct orRequest req_msg;
-                        
-                        if (RequesterBase)
-                        {
-                            req_obj = NewObject(REQUESTER_GetClass(), NULL,
-                                REQ_Type, REQTYPE_INFO,
-                                REQ_TitleText, "About iTidy",
-                                REQ_BodyText,
-                                    "iTidy v" ITIDY_VERSION "\n\n"
-                                    "Icon Cleanup Tool for AmigaOS\n"
-                                    "ReAction GUI Version (WB 3.2+)\n\n"
-                                    "Automatically arranges icon layouts\n"
-                                    "and resizes folder windows.\n\n"
-                                    "(c) 2025-2026",
-                                REQ_GadgetText, "_Ok",
-                                REQ_Image, REQIMAGE_INFO,
-                                TAG_DONE);
-                            
-                            if (req_obj)
-                            {
-                                req_msg.MethodID = RM_OPENREQ;
-                                req_msg.or_Attrs = NULL;
-                                req_msg.or_Window = win_data->window;
-                                req_msg.or_Screen = NULL;
-                                
-                                DoMethodA(req_obj, (Msg)&req_msg);
-                                DisposeObject(req_obj);
-                            }
-                        }
-                        else
-                        {
-                            /* Fallback to old EasyRequest if RequesterBase failed to open */
-                            ShowEasyRequest(win_data->window,
-                                "About iTidy",
-                                "iTidy v" ITIDY_VERSION "\n\n"
-                                "Icon Cleanup Tool for AmigaOS\n"
-                                "ReAction GUI Version (WB 3.2+)\n\n"
-                                "Automatically arranges icon layouts\n"
-                                "and resizes folder windows.\n\n"
-                                "(c) 2025-2026",
-                                "OK");
-                        }
-                    }
+                    ShowReActionRequester(win_data->window,
+                        "About iTidy",
+                        "iTidy v" ITIDY_VERSION "\n\n"
+                        "Icon Cleanup Tool for AmigaOS\n"
+                        "ReAction GUI Version (WB 3.2+)\n\n"
+                        "Automatically arranges icon layouts\n"
+                        "and resizes folder windows.\n\n"
+                        "(c) 2025-2026",
+                        "_Ok",
+                        REQIMAGE_INFO);
                     break;
                 
                 case MENU_PROJECT_CLOSE:
@@ -2115,12 +2133,13 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                 else
                 {
                     log_error(LOG_GUI, "Failed to open tool cache window\n");
-                    (void)ShowEasyRequest(
+                    (void)ShowReActionRequester(
                         win_data->window,
                         "Error",
                         "Failed to open tool cache window.\n"
                         "Check the log for details.",
-                        "OK");
+                        "_OK",
+                        REQIMAGE_ERROR);
                 }
             }
             break;
@@ -2198,12 +2217,13 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                     char lha_path[32];
                     if (!CheckLhaAvailable(lha_path))
                     {
-                        LONG result = ShowEasyRequest(win_data->window,
+                        LONG result = (LONG)ShowReActionRequester(win_data->window,
                             "LHA Not Found",
                             "LHA archiver not found.\n"
                             "Backups cannot be created.\n\n"
                             "Continue without backups?",
-                            "Continue|Cancel");
+                            "_Continue|_Cancel",
+                            REQIMAGE_WARNING);
                         
                         if (result == 0)
                         {
@@ -2218,10 +2238,11 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                 if (!itidy_main_progress_window_open(&progress_window))
                 {
                     CONSOLE_ERROR("Failed to open progress window\n");
-                    ShowEasyRequest(win_data->window,
+                    ShowReActionRequester(win_data->window,
                         "Error",
                         "Failed to open progress window",
-                        "OK");
+                        "_OK",
+                        REQIMAGE_ERROR);
                     break;
                 }
                 

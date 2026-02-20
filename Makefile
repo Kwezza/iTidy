@@ -25,7 +25,6 @@ endif
 # Output goes to Bin/Amiga/ for clean separation
 # RELEASE BUILD: Optimized for size (-O2 -size), no debug symbols, no math library (uses fixed-point)
 # Note: VBCC warnings from system headers (51: bitfield, 61: array size) cannot be suppressed
-# EASY_REQUEST_HELPER: -DBUILD_WITH_MOVEWINDOW disabled (causes flicker on slow Amigas)
 # CPU TARGET: 68000 for maximum compatibility (A500/A600/A1200)
 # CONSOLE: Add -DENABLE_CONSOLE via CONSOLE=1 to open console window for debugging
 CC = vc
@@ -93,15 +92,10 @@ BACKUP_SRCS = \
 GUI_SRCS = \
 	$(SRC_DIR)/GUI/main_window.c \
 	$(SRC_DIR)/GUI/advanced_window.c \
-	$(SRC_DIR)/GUI/beta_options_window.c \
 	$(SRC_DIR)/GUI/deficons/deficons_settings_window.c \
 	$(SRC_DIR)/GUI/deficons/deficons_creation_window.c \
 	$(SRC_DIR)/GUI/exclude_paths_window.c \
 	$(SRC_DIR)/GUI/deficons/text_templates_window.c \
-	$(SRC_DIR)/GUI/easy_request_helper.c \
-	$(SRC_DIR)/GUI/window_enumerator.c \
-	$(SRC_DIR)/GUI/wb_classify.c \
-	$(SRC_DIR)/GUI/gui_groupbox.c \
 	$(SRC_DIR)/GUI/gui_utilities.c \
 	$(SRC_DIR)/GUI/StatusWindows/progress_common.c \
 	$(SRC_DIR)/GUI/StatusWindows/progress_window.c \
@@ -282,9 +276,6 @@ $(OUT_DIR)/GUI/main_window.o: $(SRC_DIR)/GUI/main_window.c $(SRC_DIR)/GUI/main_w
 $(OUT_DIR)/GUI/advanced_window.o: $(SRC_DIR)/GUI/advanced_window.c $(SRC_DIR)/GUI/advanced_window.h
 $(OUT_DIR)/GUI/restore_window.o: $(SRC_DIR)/GUI/restore_window.c $(SRC_DIR)/GUI/restore_window.h
 $(OUT_DIR)/GUI/folder_view_window.o: $(SRC_DIR)/GUI/folder_view_window.c $(SRC_DIR)/GUI/folder_view_window.h
-$(OUT_DIR)/GUI/easy_request_helper.o: $(SRC_DIR)/GUI/easy_request_helper.c $(SRC_DIR)/GUI/easy_request_helper.h
-$(OUT_DIR)/GUI/window_enumerator.o: $(SRC_DIR)/GUI/window_enumerator.c $(SRC_DIR)/GUI/window_enumerator.h
-$(OUT_DIR)/GUI/wb_classify.o: $(SRC_DIR)/GUI/wb_classify.c $(SRC_DIR)/GUI/wb_classify.h
 
 # Platform-specific
 $(OUT_DIR)/platform/host_platform.o: $(SRC_DIR)/platform/host_platform.c $(SRC_DIR)/platform/platform.h

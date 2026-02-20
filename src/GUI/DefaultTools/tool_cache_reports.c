@@ -7,7 +7,6 @@
 
 #include "platform/platform.h"
 #include "tool_cache_reports.h"
-#include "../easy_request_helper.h"
 #include "icon_types.h"
 #include "writeLog.h"
 #include "path_utilities.h"
@@ -15,12 +14,52 @@
 #include <libraries/asl.h>
 #include <proto/dos.h>
 #include <proto/asl.h>
+#include <proto/requester.h>
+#include <classes/requester.h>
 #include <string.h>
 #include <stdio.h>
 
 /* External global tool cache */
 extern ToolCacheEntry *g_ToolCache;
 extern int g_ToolCacheCount;
+
+static ULONG ShowReActionRequester(struct Window *parent_window,
+                                   CONST_STRPTR title,
+                                   CONST_STRPTR body,
+                                   CONST_STRPTR gadgets,
+                                   ULONG image_type)
+{
+    struct Library *ReqBase;
+    Object *req_obj;
+    struct orRequest req_msg;
+    ULONG result = 0;
+
+    if (!parent_window) return 0;
+
+    ReqBase = OpenLibrary("requester.class", 0);
+    if (!ReqBase) return 0;
+
+    req_obj = NewObject(REQUESTER_GetClass(), NULL,
+        REQ_Type,       REQTYPE_INFO,
+        REQ_TitleText,  title,
+        REQ_BodyText,   body,
+        REQ_GadgetText, gadgets,
+        REQ_Image,      image_type,
+        TAG_DONE);
+
+    if (req_obj)
+    {
+        req_msg.MethodID  = RM_OPENREQ;
+        req_msg.or_Attrs  = NULL;
+        req_msg.or_Window = parent_window;
+        req_msg.or_Screen = NULL;
+        result = DoMethodA(req_obj, (Msg)&req_msg);
+        DisposeObject(req_obj);
+    }
+
+    CloseLibrary(ReqBase);
+    return result;
+}
 
 /*------------------------------------------------------------------------*/
 /* Tool Export Structures and Functions                                  */
@@ -77,10 +116,11 @@ void export_tool_list(struct Window *window, const char *folder_path)
     /* Check if there's data to export */
     if (!g_ToolCache || g_ToolCacheCount == 0)
     {
-        ShowEasyRequest(window,
+        ShowReActionRequester(window,
             "No Data to Export",
-            "The tool cache is empty.\\nPlease scan a directory first.",
-            "OK");
+            "The tool cache is empty.\nPlease scan a directory first.",
+            "_OK",
+            REQIMAGE_WARNING);
         return;
     }
     
@@ -106,10 +146,11 @@ void export_tool_list(struct Window *window, const char *folder_path)
     if (!freq)
     {
         log_error(LOG_GUI, "Failed to allocate file requester\\n");
-        ShowEasyRequest(window,
+        ShowReActionRequester(window,
             "Error",
             "Could not open file requester.",
-            "OK");
+            "_OK",
+            REQIMAGE_ERROR);
         return;
     }
     
@@ -122,10 +163,11 @@ void export_tool_list(struct Window *window, const char *folder_path)
         {
             log_error(LOG_GUI, "Path too long: %s + %s\\n", freq->fr_Drawer, freq->fr_File);
             FreeAslRequest(freq);
-            ShowEasyRequest(window,
+            ShowReActionRequester(window,
                 "Error",
                 "File path is too long.",
-                "OK");
+                "_OK",
+                REQIMAGE_ERROR);
             return;
         }
         
@@ -137,10 +179,11 @@ void export_tool_list(struct Window *window, const char *folder_path)
         {
             log_error(LOG_GUI, "Failed to create export file: %s\\n", full_path);
             FreeAslRequest(freq);
-            ShowEasyRequest(window,
+            ShowReActionRequester(window,
                 "Export Failed",
                 "Could not create export file.",
-                "OK");
+                "_OK",
+                REQIMAGE_ERROR);
             return;
         }
         
@@ -150,10 +193,11 @@ void export_tool_list(struct Window *window, const char *folder_path)
         {
             Close(file);
             FreeAslRequest(freq);
-            ShowEasyRequest(window,
+            ShowReActionRequester(window,
                 "Export Failed",
                 "Memory allocation error.",
-                "OK");
+                "_OK",
+                REQIMAGE_ERROR);
             return;
         }
         
@@ -280,10 +324,11 @@ void export_tool_list(struct Window *window, const char *folder_path)
         Close(file);
         FreeAslRequest(freq);
         
-        ShowEasyRequest(window,
+        ShowReActionRequester(window,
             "Export Successful",
             "Tool list exported successfully.",
-            "OK");
+            "_OK",
+            REQIMAGE_INFO);
         log_info(LOG_GUI, "Exported %ld unique tools to: %s\\n", (LONG)exported_count, full_path);
     }
     else
@@ -356,10 +401,11 @@ void export_files_and_tools_list(struct Window *window, const char *folder_path)
     /* Check if there's data to export */
     if (!g_ToolCache || g_ToolCacheCount == 0)
     {
-        ShowEasyRequest(window,
+        ShowReActionRequester(window,
             "No Data to Export",
             "The tool cache is empty.\nPlease scan a directory first.",
-            "OK");
+            "_OK",
+            REQIMAGE_WARNING);
         return;
     }
     
@@ -385,10 +431,11 @@ void export_files_and_tools_list(struct Window *window, const char *folder_path)
     if (!freq)
     {
         log_error(LOG_GUI, "Failed to allocate file requester\\n");
-        ShowEasyRequest(window,
+        ShowReActionRequester(window,
             "Error",
             "Could not open file requester.",
-            "OK");
+            "_OK",
+            REQIMAGE_ERROR);
         return;
     }
     
@@ -401,10 +448,11 @@ void export_files_and_tools_list(struct Window *window, const char *folder_path)
         {
             log_error(LOG_GUI, "Path too long: %s + %s\\n", freq->fr_Drawer, freq->fr_File);
             FreeAslRequest(freq);
-            ShowEasyRequest(window,
+            ShowReActionRequester(window,
                 "Error",
                 "File path is too long.",
-                "OK");
+                "_OK",
+                REQIMAGE_ERROR);
             return;
         }
         
@@ -416,10 +464,11 @@ void export_files_and_tools_list(struct Window *window, const char *folder_path)
         {
             log_error(LOG_GUI, "Failed to create export file: %s\\n", full_path);
             FreeAslRequest(freq);
-            ShowEasyRequest(window,
+            ShowReActionRequester(window,
                 "Export Failed",
                 "Could not create export file.",
-                "OK");
+                "_OK",
+                REQIMAGE_ERROR);
             return;
         }
         
@@ -434,10 +483,11 @@ void export_files_and_tools_list(struct Window *window, const char *folder_path)
         {
             Close(file);
             FreeAslRequest(freq);
-            ShowEasyRequest(window,
+            ShowReActionRequester(window,
                 "No Files to Export",
                 "No file references found in cache.",
-                "OK");
+                "_OK",
+                REQIMAGE_WARNING);
             return;
         }
         
@@ -447,10 +497,11 @@ void export_files_and_tools_list(struct Window *window, const char *folder_path)
         {
             Close(file);
             FreeAslRequest(freq);
-            ShowEasyRequest(window,
+            ShowReActionRequester(window,
                 "Export Failed",
                 "Memory allocation error.",
-                "OK");
+                "_OK",
+                REQIMAGE_ERROR);
             return;
         }
         
@@ -556,10 +607,11 @@ void export_files_and_tools_list(struct Window *window, const char *folder_path)
         Close(file);
         FreeAslRequest(freq);
         
-        ShowEasyRequest(window,
+        ShowReActionRequester(window,
             "Export Successful",
             "Files and tools list exported successfully.",
-            "OK");
+            "_OK",
+            REQIMAGE_INFO);
         log_info(LOG_GUI, "Exported %ld file entries to: %s\\n", (LONG)exported_count, full_path);
     }
     else

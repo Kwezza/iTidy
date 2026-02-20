@@ -57,7 +57,6 @@
 #include "default_tool_update_window_reaction.h"
 #include "GUI/RestoreBackups/restore_window.h"
 #include "default_tool_backup.h"
-#include "../easy_request_helper.h"
 #include "GUI/StatusWindows/main_progress_window.h"
 #include "GUI/gui_utilities.h"
 #include "../../helpers/exec_list_compat.h"

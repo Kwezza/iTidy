@@ -169,7 +169,6 @@ static void ExtractFolderNameFromPath(const char *path, char *folderName, size_t
 }
 
 void resizeFolderToContents(char *dirPath, IconArray *iconArray,
-                           FolderWindowTracker *windowTracker,
                            const LayoutPreferences *prefs)
 {
 #if PLATFORM_AMIGA
@@ -241,56 +240,9 @@ void resizeFolderToContents(char *dirPath, IconArray *iconArray,
     /* Note: repoistionWindow will clamp to screen size and add chrome */
     repoistionWindow(dirPath, maxWidth, maxHeight, prefs);
     
-    /* Move any open windows to match the newly saved geometry (if beta feature enabled) */
-    if (prefs && prefs->beta_FindWindowOnWorkbenchAndUpdate)
-    {
-        char folderName[256];
-        folderWindowSize savedGeometry;
-        UWORD viewMode;  /* Not used, but required by GetFolderWindowSettings */
-        struct Window *targetWindow;
-        
-        /* Get the geometry that was just saved by repoistionWindow */
-        if (GetFolderWindowSettings(dirPath, &savedGeometry, &viewMode))
-        {
-            /* Extract folder name from path for window title matching */
-            ExtractFolderNameFromPath(dirPath, folderName, sizeof(folderName));
-
-            log_info(LOG_GENERAL, "Looking for open window matching folder: '%s'\n", folderName);
-
-            /* Find the window by title using a fresh window search.
-             * This is safer than using cached pointers which may have become stale. */
-            targetWindow = FindWindowByTitle(folderName);
-            
-            if (targetWindow)
-            {
-                log_info(LOG_GENERAL, "Found matching window '%s' - applying new geometry\n", folderName);
-                log_info(LOG_GENERAL, "  Path: '%s', Depth: %d\n", dirPath, CountPathDepth(dirPath));
-
-                if (ApplyWindowGeometry(targetWindow,
-                                      (WORD)savedGeometry.left, (WORD)savedGeometry.top,
-                                      (WORD)savedGeometry.width, (WORD)savedGeometry.height))
-                {
-                    log_info(LOG_GENERAL, "Successfully moved window '%s' to match saved geometry\n", folderName);
-                }
-                else
-                {
-                    log_info(LOG_GENERAL, "Failed to apply geometry to window '%s'\n", folderName);
-                }
-            }
-            else
-            {
-                log_debug(LOG_GENERAL, "No open window found for '%s' - window may not be open\n", folderName);
-            }
-        }
-        else
-        {
-            log_warning(LOG_GENERAL, "Failed to read saved geometry for '%s'\n", dirPath);
-        }
-    }
 #else
     (void)dirPath;
     (void)iconArray;
-    (void)windowTracker;
     (void)prefs;
 #endif
 }
