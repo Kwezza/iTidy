@@ -24,8 +24,8 @@
 
 #include "icon_content_preview.h"
 #include "icon_image_access.h"
-#include "icon_text_render.h"
-#include "icon_iff_render.h"
+#include "ASCII/icon_text_render.h"
+#include "Image/icon_iff_render.h"
 #include "palette/palette_reduction.h"
 #include "palette/ultra_downsample.h"
 #include "../deficons/deficons_templates.h"

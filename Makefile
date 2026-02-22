@@ -42,7 +42,11 @@ BIN = $(BIN_DIR)/$(PROJECT)
 # GUI MIGRATION NOTE: Changed from main.c to main_gui.c for GUI version
 CORE_SRCS = \
 	$(SRC_DIR)/main_gui.c \
-	$(SRC_DIR)/icon_types.c \
+	$(SRC_DIR)/icon_types/format.c \
+	$(SRC_DIR)/icon_types/reader.c \
+	$(SRC_DIR)/icon_types/writer.c \
+	$(SRC_DIR)/icon_types/path_manager.c \
+	$(SRC_DIR)/icon_types/tool_cache.c \
 	$(SRC_DIR)/icon_misc.c \
 	$(SRC_DIR)/icon_management.c \
 	$(SRC_DIR)/file_directory_handling.c \
@@ -75,8 +79,11 @@ DEFICONS_SRCS = \
 # Icon editing / content-aware preview source files
 ICON_EDIT_SRCS = \
 	$(SRC_DIR)/icon_edit/icon_image_access.c \
-	$(SRC_DIR)/icon_edit/icon_text_render.c \
-	$(SRC_DIR)/icon_edit/icon_iff_render.c \
+	$(SRC_DIR)/icon_edit/ASCII/icon_text_render.c \
+	$(SRC_DIR)/icon_edit/Image/icon_iff_render.c \
+	$(SRC_DIR)/icon_edit/Image/icon_iff_decode.c \
+	$(SRC_DIR)/icon_edit/Image/icon_image_scale.c \
+	$(SRC_DIR)/icon_edit/Image/icon_datatype_render.c \
 	$(SRC_DIR)/icon_edit/icon_content_preview.c \
 	$(SRC_DIR)/icon_edit/palette/palette_mapping.c \
 	$(SRC_DIR)/icon_edit/palette/palette_quantization.c \
@@ -176,6 +183,7 @@ amiga: all
 # GUI MIGRATION NOTE: Added GUI subdirectory for GUI window source files
 directories:
 	@if not exist "$(OUT_DIR)" mkdir "$(OUT_DIR)"
+	@if not exist "$(OUT_DIR)\icon_types" mkdir "$(OUT_DIR)\icon_types"
 	@if not exist "$(OUT_DIR)\deficons" mkdir "$(OUT_DIR)\deficons"
 	@if not exist "$(OUT_DIR)\backups" mkdir "$(OUT_DIR)\backups"
 	@if not exist "$(OUT_DIR)\DOS" mkdir "$(OUT_DIR)\DOS"
@@ -186,6 +194,8 @@ directories:
 	@if not exist "$(OUT_DIR)\GUI\deficons" mkdir "$(OUT_DIR)\GUI\deficons"
 	@if not exist "$(OUT_DIR)\icon_edit" mkdir "$(OUT_DIR)\icon_edit"
 	@if not exist "$(OUT_DIR)\icon_edit\palette" mkdir "$(OUT_DIR)\icon_edit\palette"
+	@if not exist "$(OUT_DIR)\icon_edit\Image" mkdir "$(OUT_DIR)\icon_edit\Image"
+	@if not exist "$(OUT_DIR)\icon_edit\ASCII" mkdir "$(OUT_DIR)\icon_edit\ASCII"
 	@if not exist "$(OUT_DIR)\GUI\StatusWindows" mkdir "$(OUT_DIR)\GUI\StatusWindows"
 	@if not exist "$(OUT_DIR)\GUI\DefaultTools" mkdir "$(OUT_DIR)\GUI\DefaultTools"
 	@if not exist "$(OUT_DIR)\GUI\RestoreBackups" mkdir "$(OUT_DIR)\GUI\RestoreBackups"
@@ -257,7 +267,12 @@ help:
 # Core dependencies (simplified - expand as needed)
 # GUI MIGRATION NOTE: Changed from main.o to main_gui.o
 $(OUT_DIR)/main_gui.o: $(SRC_DIR)/main_gui.c $(SRC_DIR)/GUI/main_window.h
-$(OUT_DIR)/icon_types.o: $(SRC_DIR)/icon_types.c $(SRC_DIR)/icon_types.h
+# Icon types subsystem dependencies (refactored into modular structure)
+$(OUT_DIR)/format.o: $(SRC_DIR)/icon_types/format.c $(SRC_DIR)/icon_types/format.h $(SRC_DIR)/icon_types/icon_types_internal.h
+$(OUT_DIR)/reader.o: $(SRC_DIR)/icon_types/reader.c $(SRC_DIR)/icon_types/reader.h $(SRC_DIR)/icon_types/format.h $(SRC_DIR)/icon_types/icon_types_internal.h
+$(OUT_DIR)/writer.o: $(SRC_DIR)/icon_types/writer.c $(SRC_DIR)/icon_types/writer.h
+$(OUT_DIR)/path_manager.o: $(SRC_DIR)/icon_types/path_manager.c $(SRC_DIR)/icon_types/path_manager.h $(SRC_DIR)/icon_types/icon_types_internal.h
+$(OUT_DIR)/tool_cache.o: $(SRC_DIR)/icon_types/tool_cache.c $(SRC_DIR)/icon_types/tool_cache.h $(SRC_DIR)/icon_types/path_manager.h $(SRC_DIR)/icon_types/icon_types_internal.h
 $(OUT_DIR)/icon_misc.o: $(SRC_DIR)/icon_misc.c $(SRC_DIR)/icon_misc.h
 $(OUT_DIR)/icon_management.o: $(SRC_DIR)/icon_management.c $(SRC_DIR)/icon_management.h
 $(OUT_DIR)/file_directory_handling.o: $(SRC_DIR)/file_directory_handling.c $(SRC_DIR)/file_directory_handling.h
@@ -292,9 +307,12 @@ $(OUT_DIR)/platform/amiga_platform.o: $(SRC_DIR)/platform/amiga_platform.c $(SRC
 
 # Icon editing module
 $(OUT_DIR)/icon_edit/icon_image_access.o: $(SRC_DIR)/icon_edit/icon_image_access.c $(SRC_DIR)/icon_edit/icon_image_access.h
-$(OUT_DIR)/icon_edit/icon_text_render.o: $(SRC_DIR)/icon_edit/icon_text_render.c $(SRC_DIR)/icon_edit/icon_text_render.h $(SRC_DIR)/icon_edit/icon_image_access.h
-$(OUT_DIR)/icon_edit/icon_iff_render.o: $(SRC_DIR)/icon_edit/icon_iff_render.c $(SRC_DIR)/icon_edit/icon_iff_render.h $(SRC_DIR)/icon_edit/icon_image_access.h
-$(OUT_DIR)/icon_edit/icon_content_preview.o: $(SRC_DIR)/icon_edit/icon_content_preview.c $(SRC_DIR)/icon_edit/icon_content_preview.h $(SRC_DIR)/icon_edit/icon_image_access.h $(SRC_DIR)/icon_edit/icon_text_render.h
+$(OUT_DIR)/icon_edit/ASCII/icon_text_render.o: $(SRC_DIR)/icon_edit/ASCII/icon_text_render.c $(SRC_DIR)/icon_edit/ASCII/icon_text_render.h $(SRC_DIR)/icon_edit/icon_image_access.h
+$(OUT_DIR)/icon_edit/Image/icon_iff_render.o: $(SRC_DIR)/icon_edit/Image/icon_iff_render.c $(SRC_DIR)/icon_edit/Image/icon_iff_render.h $(SRC_DIR)/icon_edit/Image/icon_image_scale.h $(SRC_DIR)/icon_edit/icon_image_access.h
+$(OUT_DIR)/icon_edit/Image/icon_iff_decode.o: $(SRC_DIR)/icon_edit/Image/icon_iff_decode.c $(SRC_DIR)/icon_edit/Image/icon_iff_render.h $(SRC_DIR)/icon_edit/icon_image_access.h
+$(OUT_DIR)/icon_edit/Image/icon_image_scale.o: $(SRC_DIR)/icon_edit/Image/icon_image_scale.c $(SRC_DIR)/icon_edit/Image/icon_image_scale.h $(SRC_DIR)/icon_edit/Image/icon_iff_render.h
+$(OUT_DIR)/icon_edit/Image/icon_datatype_render.o: $(SRC_DIR)/icon_edit/Image/icon_datatype_render.c $(SRC_DIR)/icon_edit/Image/icon_iff_render.h $(SRC_DIR)/icon_edit/Image/icon_image_scale.h $(SRC_DIR)/icon_edit/icon_image_access.h
+$(OUT_DIR)/icon_edit/icon_content_preview.o: $(SRC_DIR)/icon_edit/icon_content_preview.c $(SRC_DIR)/icon_edit/icon_content_preview.h $(SRC_DIR)/icon_edit/icon_image_access.h $(SRC_DIR)/icon_edit/ASCII/icon_text_render.h
 
 # Palette reduction module
 $(OUT_DIR)/icon_edit/palette/palette_mapping.o: $(SRC_DIR)/icon_edit/palette/palette_mapping.c $(SRC_DIR)/icon_edit/palette/palette_mapping.h $(SRC_DIR)/icon_edit/palette/palette_dithering.h

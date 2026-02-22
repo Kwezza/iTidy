@@ -1,186 +1,105 @@
 #ifndef ICON_TYPES_H
 #define ICON_TYPES_H
 
+/**
+ * @file icon_types.h
+ * @brief Public API for icon type detection, validation, and metadata operations
+ * 
+ * This is the umbrella header for the icon_types subsystem. All functionality
+ * is now modularized into separate focused modules:
+ * 
+ * - format.h/c:       Icon format detection and size extraction
+ * - reader.h/c:       Optimized icon metadata reader (GetIconDetailsFromDisk)
+ * - writer.h/c:       Icon modification (SetIconDefaultTool)
+ * - path_manager.h/c: System PATH management for tool validation
+ * - tool_cache.h/c:   Tool validation and caching system
+ * 
+ * This header maintains the same public API as before the refactoring,
+ * ensuring backward compatibility with all dependent files. Simply include
+ * this header and all icon_types functionality will be available.
+ * 
+ * IMPLEMENTATION NOTE:
+ * The original 2,284-line icon_types.c has been split into 5 focused modules
+ * within the src/icon_types/ directory. This improves maintainability,
+ * build times, and code organization while preserving performance.
+ */
+
 #include <exec/types.h>
-#include <libraries/dos.h>
 #include <workbench/workbench.h>
 #include <workbench/icon.h>
-#include <proto/exec.h>
-#include <proto/dos.h>
-#include <proto/icon.h>
-#include <proto/intuition.h>
-#include <proto/graphics.h>
-#include <stddef.h>
-#include <exec/memory.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include <proto/icon.h>  /* For GetDiskObject, PutDiskObject, FreeDiskObject */
 
-#include "itidy_types.h"
-#include "utilities.h"
-#include "writeLog.h"
-#include "icon_misc.h"
-
-/* Structure to hold comprehensive icon details from a single disk read */
-typedef struct {
-    IconPosition position;      /* Icon X,Y coordinates */
-    IconSize size;              /* Icon width and height (base bitmap only) */
-    int iconType;               /* Icon format: standard, NewIcon, or OS3.5 */
-    UBYTE workbenchType;        /* Workbench icon type: WBTOOL, WBPROJECT, WBDRAWER, etc. */
-    BOOL hasFrame;              /* Whether icon has a border/frame */
-    char *defaultTool;          /* Default tool path (caller must free) */
-    BOOL isNewIcon;             /* TRUE if NewIcon format detected */
-    BOOL isOS35Icon;            /* TRUE if OS3.5 format detected */
-    
-    /* Calculated size fields (require emboss settings and optional text) */
-    int borderWidth;            /* Actual border width (0 if frameless, embossSize otherwise) */
-    IconSize iconWithEmboss;    /* Bitmap + one-side emboss (e.g., 38+3=41, 11+3=14) */
-    IconSize iconVisualSize;    /* Full visual footprint with borders both sides (e.g., 44x17) */
-    IconSize textSize;          /* Text label dimensions (0x0 if text not provided) */
-    IconSize totalDisplaySize;  /* Icon + text + gap (complete display rectangle) */
-} IconDetailsFromDisk;
-
-/* Optimized function to read ALL icon details in a single disk operation */
-BOOL GetIconDetailsFromDisk(const char *filePath, IconDetailsFromDisk *details, const char *iconTextForFont);
-
-/* Legacy functions - still available but less efficient */
-void GetNewIconSizePath(const char *filePath, IconSize *newIconSize);
-BOOL GetStandardIconSize(const char *filePath, IconSize *iconSize);
-IconPosition GetIconPositionFromPath(const char *iconPath);
-BOOL IsNewIconPath(const STRPTR filePath);
-int isOS35IconFormat(const char *filename);
-BOOL IsNewIcon(struct DiskObject *diskObject);
-int getOS35IconSize(const char *filename, IconSize *size);
-int isIconTypeDisk(const char *filename,long fib_DirEntryType);
-BOOL GetIconSizeFromFile(const char *filePath, IconSize *iconSize);
-
-/* Function to set/update default tool */
-BOOL SetIconDefaultTool(const char *iconPath, const char *newDefaultTool);
-
-/* Function to validate if a default tool exists */
-BOOL ValidateDefaultTool(const char *defaultTool);
+/* 
+ * Include all icon_types subsystem modules
+ * These provide the complete public API
+ */
+#include "icon_types/format.h"         /* Icon format detection and size extraction */
+#include "icon_types/reader.h"         /* Optimized icon reader (GetIconDetailsFromDisk) */
+#include "icon_types/writer.h"         /* Icon modification (SetIconDefaultTool) */
+#include "icon_types/path_manager.h"   /* PATH management */
+#include "icon_types/tool_cache.h"     /* Tool validation and caching */
 
 /*========================================================================*/
-/* PATH Search List - System PATH-based tool validation                  */
+/* Public API Summary (exported from subsystem modules)                   */
 /*========================================================================*/
 
-/* Global PATH search list (built from Process->pr_Path at startup) */
+/*
+ * FORMAT DETECTION (format.h):
+ * - BOOL IsNewIcon(struct DiskObject *diskObject)
+ * - BOOL IsNewIconPath(const STRPTR filePath)
+ * - int isOS35IconFormat(const char *filename)
+ * - int isIconTypeDisk(const char *filename, long fib_DirEntryType)
+ * 
+ * SIZE EXTRACTION (format.h):
+ * - void GetNewIconSizePath(const char *filePath, IconSize *newIconSize)
+ * - BOOL GetStandardIconSize(const char *filePath, IconSize *iconSize)
+ * - int getOS35IconSize(const char *filename, IconSize *size)
+ * - BOOL GetIconSizeFromFile(const char *filePath, IconSize *iconSize)
+ * - IconPosition GetIconPositionFromPath(const char *iconPath)
+ * 
+ * OPTIMIZED ICON READER (reader.h):
+ * - BOOL GetIconDetailsFromDisk(const char *filePath, IconDetailsFromDisk *details, const char *iconTextForFont)
+ *   ** CRITICAL PERFORMANCE FUNCTION - Single disk read for all icon metadata **
+ * 
+ * ICON MODIFICATION (writer.h):
+ * - BOOL SetIconDefaultTool(const char *iconPath, const char *newDefaultTool)
+ * 
+ * PATH MANAGEMENT (path_manager.h):
+ * - BOOL BuildPathSearchList(void)              [Call at startup]
+ * - void FreePathSearchList(void)               [Call at shutdown]
+ * 
+ * TOOL VALIDATION & CACHING (tool_cache.h):
+ * - BOOL InitToolCache(void)                    [Call at startup]
+ * - void FreeToolCache(void)                    [Call at shutdown]
+ * - BOOL ValidateDefaultTool(const char *defaultTool)
+ * - BOOL AddFileReferenceToToolCache(const char *toolName, const char *filePath)
+ * - BOOL RemoveFileReferenceFromToolCache(const char *toolName, const char *filePath)
+ * - BOOL UpdateToolCacheForFileChange(const char *filePath, const char *oldTool, const char *newTool)
+ * - void DumpToolCache(void)
+ */
+
+/*========================================================================*/
+/* Global Variables (extern declarations for dependent code)              */
+/*========================================================================*/
+
+/**
+ * PATH search list - populated by BuildPathSearchList()
+ * Managed by path_manager.c
+ */
 extern char **g_PathSearchList;
 extern int g_PathSearchCount;
 
 /**
- * @brief Build PATH search list from AmigaDOS Process->pr_Path
- * 
- * Reads the system PATH from the current process's pr_Path linked list
- * and builds a global array of search directories. This should be called
- * once at program startup.
- * 
- * @return TRUE if PATH list was built successfully, FALSE on error
+ * Tool validation cache - populated by ValidateDefaultTool()
+ * Managed by tool_cache.c
  */
-BOOL BuildPathSearchList(void);
-
-/**
- * @brief Free the PATH search list
- * 
- * Releases all memory allocated by BuildPathSearchList(). Should be
- * called at program shutdown.
- */
-void FreePathSearchList(void);
-
-/*========================================================================*/
-/* Tool Cache - Validated tool information cache                         */
-/*========================================================================*/
-
-/* Maximum number of file references to store per tool */
-#define TOOL_CACHE_MAX_FILES_PER_TOOL  200
-
-/**
- * @brief Cache entry for a validated default tool
- * 
- * Stores information about a tool that has been validated, including
- * its existence, location, version, and list of files that use it.
- * This prevents repeated disk access for the same tool.
- */
-typedef struct {
-    char *toolName;        /* Simple tool name (e.g., "MultiView") */
-    BOOL exists;           /* TRUE if tool was found */
-    char *fullPath;        /* Full path where found (e.g., "Workbench:Utilities/MultiView") or NULL if not found */
-    char *versionString;   /* Version info (e.g., "MultiView 47.17") or NULL if unavailable */
-    int hitCount;          /* Number of times this cache entry was accessed */
-    
-    /* NEW: File reference tracking */
-    char **referencingFiles;  /* Array of file paths that use this tool */
-    int fileCount;            /* Number of files currently stored */
-    int fileCapacity;         /* Allocated capacity for files array */
-} ToolCacheEntry;
-
-/* Global tool cache */
 extern ToolCacheEntry *g_ToolCache;
 extern int g_ToolCacheCount;
 extern int g_ToolCacheCapacity;
 
 /**
- * @brief Initialize the tool cache
- * 
- * Allocates initial capacity for the tool cache. Should be called
- * at program startup.
- * 
- * @return TRUE if cache initialized successfully, FALSE on error
+ * Tool cache capacity constant
  */
-BOOL InitToolCache(void);
-
-/**
- * @brief Free the tool cache
- * 
- * Releases all memory allocated for the tool cache. Should be called
- * at program shutdown.
- */
-void FreeToolCache(void);
-
-/**
- * @brief Add a file reference to a tool cache entry
- * 
- * Tracks which files use a particular default tool. This builds up a list
- * of file paths that reference each tool, up to TOOL_CACHE_MAX_FILES_PER_TOOL.
- * 
- * @param toolName The tool name to add a file reference for
- * @param filePath The file path that uses this tool
- * @return TRUE if added successfully, FALSE on error or if limit reached
- */
-BOOL AddFileReferenceToToolCache(const char *toolName, const char *filePath);
-
-/**
- * @brief Remove a file reference from a tool cache entry
- * 
- * Removes a specific file path from a tool's referencing files list.
- * This is used when a file's default tool changes.
- * 
- * @param toolName The tool name to remove the file reference from
- * @param filePath The file path to remove
- * @return TRUE if removed successfully, FALSE if not found
- */
-BOOL RemoveFileReferenceFromToolCache(const char *toolName, const char *filePath);
-
-/**
- * @brief Update tool cache when a file's default tool changes
- * 
- * Atomically moves a file reference from one tool to another in the cache.
- * This removes the file from oldTool's list and adds it to newTool's list,
- * creating the newTool cache entry if needed.
- * 
- * @param filePath The .info file path being updated
- * @param oldTool The previous default tool name (NULL or empty if none)
- * @param newTool The new default tool name (NULL or empty to clear)
- * @return TRUE if cache updated successfully
- */
-BOOL UpdateToolCacheForFileChange(const char *filePath, const char *oldTool, const char *newTool);
-
-/**
- * @brief Dump tool cache contents to log
- * 
- * Outputs all cached tool information to the log for debugging and
- * reporting purposes.
- */
-void DumpToolCache(void);
+#define TOOL_CACHE_MAX_FILES_PER_TOOL  200
 
 #endif /* ICON_TYPES_H */

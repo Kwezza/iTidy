@@ -12,6 +12,8 @@
 #include "path_utilities.h"
 
 #include <libraries/asl.h>
+#include <proto/exec.h>
+#include <proto/intuition.h>
 #include <proto/dos.h>
 #include <proto/asl.h>
 #include <proto/requester.h>

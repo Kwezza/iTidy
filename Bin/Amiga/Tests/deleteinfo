@@ -1,7 +1,7 @@
-delete PC:Programming/iTidy/Bin/Amiga/Tests/images/#?.info
-delete PC:Programming/iTidy/Bin/Amiga/Tests/#?.info
-delete PC:Programming/iTidy/Bin/Amiga/Tests/images/png/#?.info
-delete PC:Programming/iTidy/Bin/Amiga/Tests/png/#?.info 
-delete PC:Programming/iTidy/Bin/Amiga/Tests/images/JPeg/#?.info
-delete PC:Programming/iTidy/Bin/Amiga/Tests/images/gif/#?.info
-delete PC:Programming/iTidy/Bin/Amiga/Tests/TextIcons/#?.info
+delete  images/#?.info
+delete  #?.info
+delete  images/png/#?.info
+delete  png/#?.info 
+delete  images/JPeg/#?.info
+delete  images/gif/#?.info
+delete  TextIcons/#?.info
