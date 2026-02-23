@@ -84,6 +84,7 @@ ICON_EDIT_SRCS = \
 	$(SRC_DIR)/icon_edit/Image/icon_iff_decode.c \
 	$(SRC_DIR)/icon_edit/Image/icon_image_scale.c \
 	$(SRC_DIR)/icon_edit/Image/icon_datatype_render.c \
+	$(SRC_DIR)/icon_edit/Image/icon_image_bevel.c \
 	$(SRC_DIR)/icon_edit/icon_content_preview.c \
 	$(SRC_DIR)/icon_edit/palette/palette_mapping.c \
 	$(SRC_DIR)/icon_edit/palette/palette_quantization.c \
@@ -312,7 +313,8 @@ $(OUT_DIR)/icon_edit/Image/icon_iff_render.o: $(SRC_DIR)/icon_edit/Image/icon_if
 $(OUT_DIR)/icon_edit/Image/icon_iff_decode.o: $(SRC_DIR)/icon_edit/Image/icon_iff_decode.c $(SRC_DIR)/icon_edit/Image/icon_iff_render.h $(SRC_DIR)/icon_edit/icon_image_access.h
 $(OUT_DIR)/icon_edit/Image/icon_image_scale.o: $(SRC_DIR)/icon_edit/Image/icon_image_scale.c $(SRC_DIR)/icon_edit/Image/icon_image_scale.h $(SRC_DIR)/icon_edit/Image/icon_iff_render.h
 $(OUT_DIR)/icon_edit/Image/icon_datatype_render.o: $(SRC_DIR)/icon_edit/Image/icon_datatype_render.c $(SRC_DIR)/icon_edit/Image/icon_iff_render.h $(SRC_DIR)/icon_edit/Image/icon_image_scale.h $(SRC_DIR)/icon_edit/icon_image_access.h
-$(OUT_DIR)/icon_edit/icon_content_preview.o: $(SRC_DIR)/icon_edit/icon_content_preview.c $(SRC_DIR)/icon_edit/icon_content_preview.h $(SRC_DIR)/icon_edit/icon_image_access.h $(SRC_DIR)/icon_edit/ASCII/icon_text_render.h
+$(OUT_DIR)/icon_edit/Image/icon_image_bevel.o: $(SRC_DIR)/icon_edit/Image/icon_image_bevel.c $(SRC_DIR)/icon_edit/Image/icon_image_bevel.h $(SRC_DIR)/icon_edit/icon_image_access.h
+$(OUT_DIR)/icon_edit/icon_content_preview.o: $(SRC_DIR)/icon_edit/icon_content_preview.c $(SRC_DIR)/icon_edit/icon_content_preview.h $(SRC_DIR)/icon_edit/icon_image_access.h $(SRC_DIR)/icon_edit/ASCII/icon_text_render.h $(SRC_DIR)/icon_edit/Image/icon_image_bevel.h
 
 # Palette reduction module
 $(OUT_DIR)/icon_edit/palette/palette_mapping.o: $(SRC_DIR)/icon_edit/palette/palette_mapping.c $(SRC_DIR)/icon_edit/palette/palette_mapping.h $(SRC_DIR)/icon_edit/palette/palette_dithering.h

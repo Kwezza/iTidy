@@ -26,6 +26,7 @@
 #include "icon_image_access.h"
 #include "ASCII/icon_text_render.h"
 #include "Image/icon_iff_render.h"
+#include "Image/icon_image_bevel.h"
 #include "palette/palette_reduction.h"
 #include "palette/ultra_downsample.h"
 #include "../deficons/deficons_templates.h"
@@ -670,6 +671,7 @@ static int apply_iff_preview(const char *source_path,
     UWORD icon_dim;
     int render_result;
     int result = ITIDY_PREVIEW_FAILED;
+    BOOL want_bevel = FALSE;  /* Set by border section; controls bevel application */
 
     memset(&img, 0, sizeof(img));
     memset(&iff_params, 0, sizeof(iff_params));
@@ -899,16 +901,21 @@ static int apply_iff_preview(const char *source_path,
         img.transparent_color_normal = -1;
         img.transparent_color_selected = -1;
 
-        // Frameless setting for IFF thumbnails — controlled by border mode preference.
-        // IFF ILBM files processed by this path are always opaque (mask=0). There is
-        // no alpha channel information available here, so Auto mode treats them the
-        // same as any opaque format: borders on. Only NEVER suppresses borders.
-        // NEVER  -> always frameless
-        // AUTO   -> framed (opaque image — same behaviour as a JPEG/BMP)
-        // ALWAYS -> always framed
+        // Frameless/bevel setting for IFF thumbnails.
+        // IFF images processed here are always opaque (mask=0, no alpha channel),
+        // so BEVEL_AUTO and BEVEL_ALWAYS behave identically.
+        // NONE         -> frameless, no bevel
+        // WB_AUTO      -> Workbench frame (IFF is always opaque)
+        // WB_ALWAYS    -> Workbench frame
+        // BEVEL_AUTO   -> frameless, bevel applied (IFF is always opaque)
+        // BEVEL_ALWAYS -> frameless, bevel applied
         {
-            UWORD bmode = prefs ? prefs->deficons_thumbnail_border_mode : ITIDY_THUMB_BORDER_AUTO;
-            img.is_frameless = (bmode == ITIDY_THUMB_BORDER_NEVER);
+            UWORD bmode = prefs ? prefs->deficons_thumbnail_border_mode : ITIDY_THUMB_BORDER_WB_AUTO;
+            img.is_frameless = (bmode == ITIDY_THUMB_BORDER_NONE
+                             || bmode == ITIDY_THUMB_BORDER_BEVEL_AUTO
+                             || bmode == ITIDY_THUMB_BORDER_BEVEL_ALWAYS);
+            want_bevel = (bmode == ITIDY_THUMB_BORDER_BEVEL_AUTO
+                       || bmode == ITIDY_THUMB_BORDER_BEVEL_ALWAYS);
         }
 
         log_debug(LOG_ICONS, "apply_iff_preview: cropped to tight %ux%u, "
@@ -991,7 +998,8 @@ static int apply_iff_preview(const char *source_path,
                 UWORD ultra_pal_size = 0;
 
                 if (itidy_ultra_generate_palette(rgb24_buf, pixel_count,
-                                                  256, ultra_pal, &ultra_pal_size))
+                                                  256U - BEVEL_PALETTE_RESERVED,
+                                                  ultra_pal, &ultra_pal_size))
                 {
                     // Remap pixels to the new optimal palette
                     itidy_ultra_remap_to_indexed(rgb24_buf, pixel_count,
@@ -1048,6 +1056,23 @@ static int apply_iff_preview(const char *source_path,
                             "Ultra + reduction failed (non-fatal)\n");
             }
         }
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 6e: Thumbnail bevel (top-left lit, bottom-right shadowed)     */
+    /*          Applied here — after all palette operations — so there    */
+    /*          are always free palette slots for the blend variants.      */
+    /*          Only applied when want_bevel is TRUE (set in border        */
+    /*          section to TRUE only for BEVEL_AUTO and BEVEL_ALWAYS).    */
+    /*--------------------------------------------------------------------*/
+    if (want_bevel)
+    {
+        iTidy_RenderParams bevel_rp;
+        bevel_rp.safe_left   = 0;
+        bevel_rp.safe_top    = 0;
+        bevel_rp.safe_width  = img.width;
+        bevel_rp.safe_height = img.height;
+        itidy_apply_thumbnail_bevel(&img, &bevel_rp);
     }
 
     /*--------------------------------------------------------------------*/
@@ -1221,6 +1246,7 @@ static int apply_picture_preview(const char *source_path,
     int render_result;
     int result = ITIDY_PREVIEW_FAILED;
     UBYTE *raw_rgb24 = NULL;      /* Pre-quantization RGB24 buffer for Ultra mode */
+    BOOL want_bevel = FALSE;      /* Set by border section; controls bevel application */
 
     memset(&img, 0, sizeof(img));
     memset(&iff_params, 0, sizeof(iff_params));
@@ -1440,42 +1466,62 @@ static int apply_picture_preview(const char *source_path,
                 img.transparent_color_selected = -1;
             }
 
-            if (!fmt_can_be_transparent)
             {
-                /* Opaque format (JPEG/BMP): force borders on regardless of user setting */
-                img.is_frameless = FALSE;
-                log_debug(LOG_ICONS,
-                         "apply_picture_preview: "
-                         "opaque format -- borders forced on, transparent_color_normal=-1\n");
-            }
-            else
-            {
-                /* Format can be transparent: apply the three-way border mode */
-                UWORD bmode = prefs ? prefs->deficons_thumbnail_border_mode : ITIDY_THUMB_BORDER_AUTO;
-                if (bmode == ITIDY_THUMB_BORDER_ALWAYS)
+                UWORD bmode = prefs ? prefs->deficons_thumbnail_border_mode : ITIDY_THUMB_BORDER_WB_AUTO;
+                BOOL  is_bevel_mode = (bmode == ITIDY_THUMB_BORDER_BEVEL_AUTO
+                                    || bmode == ITIDY_THUMB_BORDER_BEVEL_ALWAYS);
+
+                if (!fmt_can_be_transparent)
                 {
-                    /* Always: draw borders regardless of transparency */
-                    img.is_frameless = FALSE;
-                }
-                else if (bmode == ITIDY_THUMB_BORDER_NEVER)
-                {
-                    /* Never: always frameless */
-                    img.is_frameless = TRUE;
+                    /* Opaque format (JPEG/BMP): no transparency to worry about.
+                     * WB modes: Workbench frame.  NONE: frameless.
+                     * Bevel modes: frameless (bevel IS the border). */
+                    img.is_frameless = (bmode == ITIDY_THUMB_BORDER_NONE || is_bevel_mode);
+                    want_bevel = is_bevel_mode;
+                    log_debug(LOG_ICONS,
+                             "apply_picture_preview: "
+                             "opaque format -- frameless=%s, bevel=%s\n",
+                             img.is_frameless ? "yes" : "no",
+                             want_bevel       ? "yes" : "no");
                 }
                 else
                 {
-                    /* Auto: frameless only when image actually has transparency;
-                     * opaque images (no alpha, no magenta key) get borders */
-                    img.is_frameless = iff_params.src_has_alpha ? TRUE : FALSE;
+                    /* Format can be transparent (PNG/GIF/IFF with mask): apply style. */
+                    switch (bmode)
+                    {
+                        case ITIDY_THUMB_BORDER_WB_ALWAYS:
+                            /* WB frame always, even for transparent images */
+                            img.is_frameless = FALSE;
+                            break;
+                        case ITIDY_THUMB_BORDER_BEVEL_AUTO:
+                            /* Bevel only for opaque images — on transparent images the
+                             * bevel edge pixels would merge with the desktop background */
+                            img.is_frameless = TRUE;
+                            want_bevel = !iff_params.src_has_alpha;
+                            break;
+                        case ITIDY_THUMB_BORDER_BEVEL_ALWAYS:
+                            img.is_frameless = TRUE;
+                            want_bevel = TRUE;
+                            break;
+                        case ITIDY_THUMB_BORDER_NONE:
+                            img.is_frameless = TRUE;
+                            break;
+                        case ITIDY_THUMB_BORDER_WB_AUTO:
+                        default:
+                            /* Smart: frameless only when image has transparency */
+                            img.is_frameless = iff_params.src_has_alpha ? TRUE : FALSE;
+                            break;
+                    }
                 }
             }
 
             log_debug(LOG_ICONS, "apply_picture_preview: cropped to %ux%u, "
-                     "alpha=%s, fmt_transparent=%s, frameless=%s\n",
+                     "alpha=%s, fmt_transparent=%s, frameless=%s, bevel=%s\n",
                      (unsigned)thumb_w, (unsigned)thumb_h,
                      iff_params.src_has_alpha ? "yes" : "no",
                      fmt_can_be_transparent   ? "yes" : "no",
-                     img.is_frameless         ? "yes" : "no");
+                     img.is_frameless         ? "yes" : "no",
+                     want_bevel               ? "yes" : "no");
         }
     }
 
@@ -1566,7 +1612,8 @@ static int apply_picture_preview(const char *source_path,
                 UWORD ultra_pal_size = 0;
 
                 if (itidy_ultra_generate_palette(rgb24_buf, pixel_count,
-                                                  256, ultra_pal, &ultra_pal_size))
+                                                  256U - BEVEL_PALETTE_RESERVED,
+                                                  ultra_pal, &ultra_pal_size))
                 {
                     /* Remap pixels to the new optimal palette */
                     itidy_ultra_remap_to_indexed(rgb24_buf, pixel_count,
@@ -1619,6 +1666,23 @@ static int apply_picture_preview(const char *source_path,
                             "Ultra + reduction failed (non-fatal)\n");
             }
         }
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Step 8c: Thumbnail bevel                                            */
+    /*          Applied after all palette operations so there are always   */
+    /*          free palette slots for the blend variants.                 */
+    /*          Only applied when want_bevel is TRUE (set in border        */
+    /*          section to TRUE only for BEVEL_AUTO and BEVEL_ALWAYS).    */
+    /*--------------------------------------------------------------------*/
+    if (want_bevel)
+    {
+        iTidy_RenderParams bevel_rp;
+        bevel_rp.safe_left   = 0;
+        bevel_rp.safe_top    = 0;
+        bevel_rp.safe_width  = img.width;
+        bevel_rp.safe_height = img.height;
+        itidy_apply_thumbnail_bevel(&img, &bevel_rp);
     }
 
     /*--------------------------------------------------------------------*/

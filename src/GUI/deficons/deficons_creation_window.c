@@ -168,11 +168,13 @@ static STRPTR icon_size_labels[] = {
     NULL
 };
 
-/* Thumbnail border mode chooser labels (matches ITIDY_THUMB_BORDER_* constants) */
+/* Thumbnail border/bevel style chooser labels (matches ITIDY_THUMB_BORDER_* constants 0-4) */
 static STRPTR thumbnail_border_labels[] = {
-    "Never",
-    "Auto (smart)",
-    "Always",
+    "None",
+    "Workbench (Smart)",
+    "Workbench (Always)",
+    "Bevel (Smart)",
+    "Bevel (Always)",
     NULL
 };
 
@@ -610,7 +612,7 @@ static BOOL create_window(DefIconsCreationWindow *win)
         {GID_FMT_OTHER_CB,            -1, "Other image formats (not covered above) if supported by installed DataTypes.", 0},
         {GID_FMT_BMP_CB,              -1, "BMP thumbnails.", 0},
         {GID_ICON_SIZE_CHOOSER,       -1, "Sets the thumbnail canvas size used inside generated icons.", 0},
-        {GID_THUMBNAIL_BORDERS_CHOOSER,-1, "Controls whether a Workbench-style frame is drawn around the thumbnail.", 0},
+        {GID_THUMBNAIL_BORDERS_CHOOSER,-1, "Border style for thumbnail icons. Workbench: classic WB frame around the icon. Bevel: inner highlight drawn onto the image pixels (top-left bright, bottom-right dark). Smart modes skip the effect for transparent images.", 0},
         {GID_UPSCALE_THUMBNAILS_CB,   -1, "If enabled, small images are scaled up to fill the thumbnail area.", 0},
         {GID_MAX_COLORS_CHOOSER,      -1, "Limits the number of colours used in thumbnails. Lower is faster; higher looks better.", 0},
         {GID_DITHER_METHOD_CHOOSER,   -1, "Selects dithering when reducing colours.", 0},
@@ -843,7 +845,7 @@ static BOOL create_window(DefIconsCreationWindow *win)
                                 CHOOSER_Selected, (ULONG)win->prefs->deficons_thumbnail_border_mode,
                             ChooserEnd,
                             CHILD_Label, (Object *)LabelObject,
-                                LABEL_Text, "Thumbnail frame:",
+                                LABEL_Text, "Thumbnail border:",
                             LabelEnd,
                             CHILD_WeightedHeight, 0,
 

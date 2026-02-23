@@ -294,11 +294,18 @@ typedef struct {
 #define DEFAULT_DEFICONS_SKIP_SYSTEM_ASSIGNS               TRUE    /* Skip system directories by default */
 #define DEFAULT_DEFICONS_LOG_CREATED_ICONS                 TRUE    /* Log created icons to separate file (useful for testing) */
 #define DEFAULT_DEFICONS_ICON_SIZE_MODE                     1       /* 0=Small(48), 1=Medium(64), 2=Large(100) */
-/* Thumbnail border mode constants (used with deficons_thumbnail_border_mode) */
-#define ITIDY_THUMB_BORDER_NEVER    0   /* Always frameless — edge-to-edge thumbnail, no Workbench frame */
-#define ITIDY_THUMB_BORDER_AUTO     1   /* Smart: borders only if image is opaque (no alpha/transparency) */
-#define ITIDY_THUMB_BORDER_ALWAYS   2   /* Always draw Workbench border frame around thumbnail */
-#define DEFAULT_DEFICONS_THUMBNAIL_BORDER_MODE              ITIDY_THUMB_BORDER_AUTO  /* Default: smart border (opaque=framed, transparent=frameless) */
+/* Thumbnail border/bevel style constants (used with deficons_thumbnail_border_mode)         */
+/* Values 0-2 are backward-compatible with preferences saved by earlier versions of iTidy.  */
+#define ITIDY_THUMB_BORDER_NONE         0   /* No border, no bevel — edge-to-edge frameless thumbnail */
+#define ITIDY_THUMB_BORDER_WB_AUTO      1   /* Smart: Workbench frame only if image is opaque */
+#define ITIDY_THUMB_BORDER_WB_ALWAYS    2   /* Workbench frame always, regardless of transparency */
+#define ITIDY_THUMB_BORDER_BEVEL_AUTO   3   /* Smart: inner bevel highlight only if image is opaque */
+#define ITIDY_THUMB_BORDER_BEVEL_ALWAYS 4   /* Inner bevel highlight always, regardless of transparency */
+/* Backward-compatible aliases for the original three-value names */
+#define ITIDY_THUMB_BORDER_NEVER    ITIDY_THUMB_BORDER_NONE
+#define ITIDY_THUMB_BORDER_AUTO     ITIDY_THUMB_BORDER_WB_AUTO
+#define ITIDY_THUMB_BORDER_ALWAYS   ITIDY_THUMB_BORDER_WB_ALWAYS
+#define DEFAULT_DEFICONS_THUMBNAIL_BORDER_MODE  ITIDY_THUMB_BORDER_BEVEL_AUTO  /* Default: smart bevel (opaque=bevel, transparent=frameless) */
 #define DEFAULT_DEFICONS_ENABLE_TEXT_PREVIEWS               TRUE    /* Default: Text content previews enabled */
 #define DEFAULT_DEFICONS_ENABLE_PICTURE_PREVIEWS            TRUE    /* Default: Picture thumbnails enabled */
 #define DEFAULT_DEFICONS_UPSCALE_THUMBNAILS                 FALSE   /* Default: Do NOT upscale small images to icon size */
