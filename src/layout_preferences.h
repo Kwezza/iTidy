@@ -249,6 +249,14 @@ typedef struct {
 
     /* WHDLoad Integration (v4 fields) */
     BOOL deficons_skip_whdload_folders;         /* TRUE = detect WHDLoad folders (contain *.slave) and skip icon creation inside them */
+
+    /* === NEW FIELDS BELOW THIS LINE (v5 prefs format) === */
+    /* These MUST remain at the end of the struct for backward  */
+    /* compatibility with v1-v4 preference files.               */
+
+    /* Replace-iTidy-icons options (v5 fields) */
+    BOOL deficons_replace_itidy_thumbnails;     /* TRUE = replace existing iTidy-created image thumbnail icons on re-run */
+    BOOL deficons_replace_itidy_text_previews;  /* TRUE = replace existing iTidy-created text preview icons on re-run */
 } LayoutPreferences;
 
 /*========================================================================*/
@@ -310,6 +318,8 @@ typedef struct {
 #define DEFAULT_DEFICONS_ENABLE_PICTURE_PREVIEWS            TRUE    /* Default: Picture thumbnails enabled */
 #define DEFAULT_DEFICONS_UPSCALE_THUMBNAILS                 FALSE   /* Default: Do NOT upscale small images to icon size */
 #define DEFAULT_DEFICONS_SKIP_WHDLOAD_FOLDERS               FALSE   /* Default: OFF (opt-in) */
+#define DEFAULT_DEFICONS_REPLACE_ITIDY_THUMBNAILS            FALSE   /* Default: OFF - do not overwrite existing iTidy image thumbnails */
+#define DEFAULT_DEFICONS_REPLACE_ITIDY_TEXT_PREVIEWS         FALSE   /* Default: OFF - do not overwrite existing iTidy text previews */
 
 /* DefIcons Palette Reduction Defaults */
 #define DEFAULT_DEFICONS_MAX_ICON_COLORS                    256     /* No limit (full palette) */

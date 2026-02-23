@@ -92,6 +92,8 @@ enum {
     GID_MAX_COLORS_CHOOSER,
     GID_DITHER_METHOD_CHOOSER,
     GID_LOWCOLOR_MAPPING_CHOOSER,
+    GID_REPLACE_THUMBNAILS_CB,
+    GID_REPLACE_TEXT_PREVIEWS_CB,
     GID_OK,
     GID_CANCEL
 };
@@ -107,6 +109,8 @@ typedef struct {
     struct List *tab_labels;
     Object *folder_mode_chooser_obj;
     Object *whdload_skip_cb;
+    Object *replace_thumbnails_cb;
+    Object *replace_text_previews_cb;
     Object *icon_size_chooser_obj;
     Object *thumbnail_borders_chooser_obj;
     Object *text_preview_checkbox;
@@ -414,6 +418,20 @@ static void handle_ok(DefIconsCreationWindow *win)
     log_info(LOG_GUI, "Upscale thumbnails: %s\n",
              selected_value ? "enabled" : "disabled");
 
+    /* Get replace image thumbnails checkbox state */
+    selected_value = 0;
+    GetAttr(GA_Selected, win->replace_thumbnails_cb, &selected_value);
+    win->prefs->deficons_replace_itidy_thumbnails = (BOOL)selected_value;
+    log_info(LOG_GUI, "Replace iTidy image thumbnails: %s\n",
+             selected_value ? "enabled" : "disabled");
+
+    /* Get replace text previews checkbox state */
+    selected_value = 0;
+    GetAttr(GA_Selected, win->replace_text_previews_cb, &selected_value);
+    win->prefs->deficons_replace_itidy_text_previews = (BOOL)selected_value;
+    log_info(LOG_GUI, "Replace iTidy text previews: %s\n",
+             selected_value ? "enabled" : "disabled");
+
     /* Build per-format bitmask from the seven format checkboxes */
     {
         ULONG fmt_bits = 0;
@@ -611,6 +629,8 @@ static BOOL create_window(DefIconsCreationWindow *win)
         {GID_FMT_GIF_CB,              -1, "GIF thumbnails, also supports transparency.", 0},
         {GID_FMT_OTHER_CB,            -1, "Other image formats (not covered above) if supported by installed DataTypes.", 0},
         {GID_FMT_BMP_CB,              -1, "BMP thumbnails.", 0},
+        {GID_REPLACE_THUMBNAILS_CB,   -1, "When enabled, iTidy will delete and recreate any image thumbnail icons it previously made (identified by the ITIDY_CREATED tool type). User-placed icons are never affected.", 0},
+        {GID_REPLACE_TEXT_PREVIEWS_CB,-1, "When enabled, iTidy will delete and recreate any text preview icons it previously made. Useful when changing rendering settings. User-placed icons are never affected.", 0},
         {GID_ICON_SIZE_CHOOSER,       -1, "Sets the thumbnail canvas size used inside generated icons.", 0},
         {GID_THUMBNAIL_BORDERS_CHOOSER,-1, "Border style for thumbnail icons. Workbench: classic WB frame around the icon. Bevel: inner highlight drawn onto the image pixels (top-left bright, bottom-right dark). Smart modes skip the effect for transparent images.", 0},
         {GID_UPSCALE_THUMBNAILS_CB,   -1, "If enabled, small images are scaled up to fill the thumbnail area.", 0},
@@ -806,6 +826,38 @@ static BOOL create_window(DefIconsCreationWindow *win)
                                 CHILD_WeightedHeight, 0,
                             LayoutEnd,
                         LayoutEnd,
+                        CHILD_WeightedHeight, 0,
+
+                        /* Spacer before replace options */
+                        LAYOUT_AddChild, (Object *)SpaceObject,
+                        SpaceEnd,
+                        CHILD_WeightedHeight, 0,
+
+                        /* Replace section label */
+                        LAYOUT_AddImage, (Object *)LabelObject,
+                            LABEL_Text, "Re-run / refresh options:",
+                        LabelEnd,
+
+                        /* Replace image thumbnails checkbox */
+                        LAYOUT_AddChild, win->replace_thumbnails_cb = (Object *)CheckBoxObject,
+                            GA_ID,              GID_REPLACE_THUMBNAILS_CB,
+                            GA_Text,            "Replace existing image thumbnails created by iTidy",
+                            GA_Selected,        win->prefs->deficons_replace_itidy_thumbnails,
+                            GA_RelVerify,       TRUE,
+                            GA_TabCycle,        TRUE,
+                            CHECKBOX_TextPlace, PLACETEXT_RIGHT,
+                        CheckBoxEnd,
+                        CHILD_WeightedHeight, 0,
+
+                        /* Replace text previews checkbox */
+                        LAYOUT_AddChild, win->replace_text_previews_cb = (Object *)CheckBoxObject,
+                            GA_ID,              GID_REPLACE_TEXT_PREVIEWS_CB,
+                            GA_Text,            "Replace existing text previews created by iTidy",
+                            GA_Selected,        win->prefs->deficons_replace_itidy_text_previews,
+                            GA_RelVerify,       TRUE,
+                            GA_TabCycle,        TRUE,
+                            CHECKBOX_TextPlace, PLACETEXT_RIGHT,
+                        CheckBoxEnd,
                         CHILD_WeightedHeight, 0,
 
                         /* Bottom spacer */

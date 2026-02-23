@@ -128,6 +128,10 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
 
     /* WHDLoad Integration (v4 fields) */
     prefs->deficons_skip_whdload_folders = DEFAULT_DEFICONS_SKIP_WHDLOAD_FOLDERS;
+
+    /* Replace-iTidy-icons options (v5 fields) */
+    prefs->deficons_replace_itidy_thumbnails    = DEFAULT_DEFICONS_REPLACE_ITIDY_THUMBNAILS;
+    prefs->deficons_replace_itidy_text_previews = DEFAULT_DEFICONS_REPLACE_ITIDY_TEXT_PREVIEWS;
 }
 
 /*========================================================================*/

@@ -1,7 +1,39 @@
 Compiling [build/amiga/layout_preferences.o] from src/layout_preferences.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/layout_preferences.c -o build/amiga/layout_preferences.o
 >        if (Stricmp(prefs->deficons_exclude_paths[i], path) == 0)
-warning 161 in line 700 of "src\layout_preferences.c": implicit declaration of function <Stricmp>
+warning 161 in line 704 of "src\layout_preferences.c": implicit declaration of function <Stricmp>
+Compiling [build/amiga/deficons/deficons_creation.o] from src/deficons/deficons_creation.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/deficons/deficons_creation.c -o build/amiga/deficons/deficons_creation.o
+>        CREATION_STATUS(progress_window, "  Skipping system path: %s", path)
+warning 153 in line 514 of "src\deficons\deficons_creation.c": statement has no effect
+>        CREATION_STATUS(progress_window, "  Skipping excluded path: %s", path)
+warning 153 in line 522 of "src\deficons\deficons_creation.c": statement has no effect
+>        CREATION_STATUS(progress_window, "  Skipping WHDLoad folder: %s", path)
+warning 153 in line 530 of "src\deficons\deficons_creation.c": statement has no effect
+>        CREATION_CHECK_CANCEL(progress_window)
+warning 153 in line 569 of "src\deficons\deficons_creation.c": statement has no effect
+>    CREATION_CHECK_CANCEL(progress_window)
+warning 153 in line 892 of "src\deficons\deficons_creation.c": statement has no effect
+>    CREATION_STATUS(progress_window, "  Creating icons: %s", path)
+warning 153 in line 900 of "src\deficons\deficons_creation.c": statement has no effect
+>        CREATION_CHECK_CANCEL(progress_window)
+warning 153 in line 950 of "src\deficons\deficons_creation.c": statement has no effect
+Compiling [build/amiga/icon_edit/icon_image_access.o] from src/icon_edit/icon_image_access.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_edit/icon_image_access.c -o build/amiga/icon_edit/icon_image_access.o
+Compiling [build/amiga/icon_edit/ASCII/icon_text_render.o] from src/icon_edit/ASCII/icon_text_render.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_edit/ASCII/icon_text_render.c -o build/amiga/icon_edit/ASCII/icon_text_render.o
+Compiling [build/amiga/icon_edit/Image/icon_iff_render.o] from src/icon_edit/Image/icon_iff_render.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_edit/Image/icon_iff_render.c -o build/amiga/icon_edit/Image/icon_iff_render.o
+Compiling [build/amiga/icon_edit/Image/icon_iff_decode.o] from src/icon_edit/Image/icon_iff_decode.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_edit/Image/icon_iff_decode.c -o build/amiga/icon_edit/Image/icon_iff_decode.o
+>    (void)total_planar_size;
+warning 153 in line 606 of "src\icon_edit\Image\icon_iff_decode.c": statement has no effect
+Compiling [build/amiga/icon_edit/Image/icon_datatype_render.o] from src/icon_edit/Image/icon_datatype_render.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_edit/Image/icon_datatype_render.c -o build/amiga/icon_edit/Image/icon_datatype_render.o
+>            == 0)
+warning 161 in line 229 of "src\icon_edit\Image\icon_datatype_render.c": implicit declaration of function <DoMethod>
+Compiling [build/amiga/icon_edit/Image/icon_image_bevel.o] from src/icon_edit/Image/icon_image_bevel.c
+vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_edit/Image/icon_image_bevel.c -o build/amiga/icon_edit/Image/icon_image_bevel.o
 Compiling [build/amiga/icon_edit/icon_content_preview.o] from src/icon_edit/icon_content_preview.c
 vc +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG  -c src/icon_edit/icon_content_preview.c -o build/amiga/icon_edit/icon_content_preview.o
 >        exclude_list = (char *)FindToolType(tooltypes, "EXCLUDETYPE");

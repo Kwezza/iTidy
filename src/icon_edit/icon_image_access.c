@@ -28,6 +28,7 @@
 #include "icon_image_access.h"
 #include "../writeLog.h"
 #include "../icon_types.h"
+#include "../version_info.h"
 
 /*========================================================================*/
 /* Internal Helper Prototypes                                             */
@@ -1439,6 +1440,7 @@ BOOL itidy_stamp_created_tooltypes(struct DiskObject *icon,
     int i;
     int dest;
     char stamp_created[32];
+    char stamp_version[32];
     char stamp_kind[80];
     char stamp_src[256];
     char stamp_size[64];
@@ -1451,6 +1453,7 @@ BOOL itidy_stamp_created_tooltypes(struct DiskObject *icon,
 
     // Build the new ToolType strings
     snprintf(stamp_created, sizeof(stamp_created), "%s=%s", ITIDY_TT_CREATED, "1");
+    snprintf(stamp_version, sizeof(stamp_version), "%s=%s", ITIDY_TT_VERSION, ITIDY_VERSION);
     snprintf(stamp_kind, sizeof(stamp_kind), "%s=%s", ITIDY_TT_KIND, kind);
 
     if (source_name != NULL)
@@ -1488,8 +1491,8 @@ BOOL itidy_stamp_created_tooltypes(struct DiskObject *icon,
         }
     }
 
-    // Allocate new array: old entries (filtered) + up to 5 new ITIDY_ entries + NULL
-    new_count = old_count + 5 + 1;  // worst case
+    // Allocate new array: old entries (filtered) + up to 6 new ITIDY_ entries + NULL
+    new_count = old_count + 6 + 1;  // worst case
     new_tooltypes = (STRPTR *)whd_malloc(new_count * sizeof(STRPTR));
     if (new_tooltypes == NULL)
     {
@@ -1518,6 +1521,9 @@ BOOL itidy_stamp_created_tooltypes(struct DiskObject *icon,
 
     // Add our stamp entries
     new_tooltypes[dest] = whd_strdup(stamp_created);
+    if (new_tooltypes[dest] != NULL) dest++;
+
+    new_tooltypes[dest] = whd_strdup(stamp_version);
     if (new_tooltypes[dest] != NULL) dest++;
 
     new_tooltypes[dest] = whd_strdup(stamp_kind);

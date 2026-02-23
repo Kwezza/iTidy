@@ -34,6 +34,7 @@
 
 /* Content-aware icon preview (Phase 3 integration) */
 #include "../icon_edit/icon_content_preview.h"
+#include "../icon_edit/icon_image_access.h"
 
 /* Progress window integration */
 #include "../GUI/StatusWindows/main_progress_window.h"
@@ -583,16 +584,74 @@ BOOL deficons_create_missing_icons_in_directory(
         /* Build .info path */
         snprintf(info_path, sizeof(info_path), "%s.info", fullpath);
 
-        /* Skip if .info already exists (never overwrite user icons) */
+        /* Skip if .info already exists (never overwrite user icons). */
+        /* Exception: if replace mode is active, iTidy-created icons    */
+        /* (identified by ITIDY_CREATED tool type) may be deleted and   */
+        /* recreated, giving the user a quick re-render on settings     */
+        /* changes without manually deleting icons first.               */
         {
             BPTR info_lock = Lock((STRPTR)info_path, ACCESS_READ);
             if (info_lock)
             {
+                BOOL do_replace = FALSE;
                 UnLock(info_lock);
-                log_debug(LOG_ICONS, "Icon already exists, skipping: %s\n", fib->fib_FileName);
-                /* Existing .info means this folder has visible content */
-                local_visible = TRUE;
-                continue;
+
+                /* Only inspect the icon when a replace mode is active */
+                if (prefs->deficons_replace_itidy_thumbnails ||
+                    prefs->deficons_replace_itidy_text_previews)
+                {
+                    struct DiskObject *existing = GetDiskObject((STRPTR)fullpath);
+                    if (existing != NULL)
+                    {
+                        STRPTR *tts = (STRPTR *)existing->do_ToolTypes;
+                        STRPTR created_val = (STRPTR)FindToolType(tts, (STRPTR)ITIDY_TT_CREATED);
+                        if (created_val != NULL)
+                        {
+                            /* It is an iTidy-made icon - check the kind */
+                            STRPTR kind_val = (STRPTR)FindToolType(tts, (STRPTR)ITIDY_TT_KIND);
+                            if (kind_val != NULL &&
+                                strcmp((const char *)kind_val, ITIDY_KIND_TEXT_PREVIEW) == 0)
+                            {
+                                if (prefs->deficons_replace_itidy_text_previews)
+                                    do_replace = TRUE;
+                            }
+                            else
+                            {
+                                /* iff_thumbnail, font_preview, or any other iTidy kind */
+                                if (prefs->deficons_replace_itidy_thumbnails)
+                                    do_replace = TRUE;
+                            }
+                        }
+                        FreeDiskObject(existing);
+                    }
+                }
+
+                if (do_replace)
+                {
+                    /* Remove the old iTidy icon so creation proceeds normally */
+                    if (DeleteFile((STRPTR)info_path))
+                    {
+                        log_info(LOG_ICONS, "Deleted iTidy icon for replacement: %s\n",
+                                 fib->fib_FileName);
+                        /* Fall through - icon is gone, creation loop will remake it */
+                    }
+                    else
+                    {
+                        log_warning(LOG_ICONS, "Could not delete iTidy icon for replacement: %s\n",
+                                    fib->fib_FileName);
+                        /* Leave the existing icon in place */
+                        local_visible = TRUE;
+                        continue;
+                    }
+                }
+                else
+                {
+                    log_debug(LOG_ICONS, "Icon already exists, skipping: %s\n",
+                              fib->fib_FileName);
+                    /* Existing .info means this folder has visible content */
+                    local_visible = TRUE;
+                    continue;
+                }
             }
         }
 

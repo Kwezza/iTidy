@@ -2653,3 +2653,99 @@ Six classic Amiga IFF ILBM images in `Bin/Amiga/Tests/images/`:
 | 42 | Ultra mode performance vs standard 64-color? | Similar or slightly faster! Detail-preserving scan adds ~0.01-0.02s. Palette generation to 256 colors takes ~0.03s (vs 0.02s for 64 colors). No dithering needed (saves 0.05s). Net: ~0.17-0.19s vs ~0.20s for 64-color + dither. Comparable speed with better quality. See section 12e performance table. | 2026-02-15 || 43 | Ultra + Dithering workflow: Should GUI auto-enable dithering? | When Ultra mode + low color count (<64) selected, should dithering be automatically enabled (override "Ultra disables dithering" rule)? Or leave it manual? Auto-enable is user-friendly (preserves details THEN dithers them), but may confuse users expecting Ultra = no dither. Recommend: Auto-enable with tooltip explaining the pipeline. See section 12e "Ultra + Dithering Workflow". | 2026-02-15 |
 | 44 | Ultra + Dithering: Order-of-operations critical? | YES. Must preserve details FIRST (Ultra downsample), THEN reduce colors + dither. Standard pipeline averages away hair strands/stars, then dithering just patterns the blur. Ultra + Dither pipeline keeps details during downsampling, then dithers them into 16-32 color patterns (strands visible!). Key insight: Dithering can only dither what's in the image. If details averaged away, dithering can't restore them. See section 12e comparison table. | 2026-02-15 |
 | 45 | Ultra + Dithering performance impact? | Slightly slower than Ultra alone: detail-scan ~0.01-0.02s, palette generation to 16-32 colors ~0.01s, dithering ~0.05s. Total ~0.23-0.26s vs ~0.17-0.19s for Ultra alone. But produces Chipset-compatible 16-32 color icons with preserved texture (hair strands, fabric weave) that standard 16-color + dither cannot achieve. Worth the extra ~0.06s for OCS artwork use case. See section 12e. | 2026-02-15 |
+| 46 | How should re-run / refresh of existing iTidy icons work? | Added `ITIDY_VERSION=x.y` to the stamp written by `itidy_stamp_created_tooltypes()`. Added two `LayoutPreferences` BOOL fields (`deficons_replace_itidy_thumbnails`, `deficons_replace_itidy_text_previews`, both default FALSE) controlled by two checkboxes in the Create tab. The skip guard in `deficons_creation.c` remains a cheap Lock/Unlock test when both options are off. When either is enabled it calls `GetDiskObject` on the existing icon, checks for `ITIDY_CREATED=1` (user icons are never touched), reads `ITIDY_KIND` to route to the correct replace flag, then `DeleteFile`s the icon and falls through to normal creation. See section 23. | 2026-02-23 |
+| 47 | Separate replace options for image thumbnails vs. text previews? | Yes — separate checkboxes. `ITIDY_KIND=iff_thumbnail` (and other non-text kinds) maps to `deficons_replace_itidy_thumbnails`; `ITIDY_KIND=text_preview` maps to `deficons_replace_itidy_text_previews`. Allows users with large numbers of text files to re-render only image thumbnails (e.g. after changing dither settings) without touching text previews, or vice versa. | 2026-02-23 |
+
+---
+
+## 23. iTidy Icon Provenance and Re-run Refresh
+
+### Overview
+
+Every icon created by iTidy has a set of **provenance tool types** stamped into it by `itidy_stamp_created_tooltypes()` in `src/icon_edit/icon_image_access.c`. These serve two purposes:
+
+1. **Cache validation** — freshness check at the start of `itidy_apply_content_preview()` to skip re-rendering when the source file has not changed.
+2. **Replace-on-re-run** — the skip guard in `deficons_creation.c` can identify and delete iTidy-made icons before recreating them, letting the user rapidly iterate on settings (palette depth, dithering, icon size, etc.) without manually deleting icons first.
+
+User-placed icons (no `ITIDY_CREATED` tool type) are **never touched** regardless of settings.
+
+### Stamped Tool Types
+
+All constants are defined in `src/icon_edit/icon_image_access.h`.
+
+| Tool Type | Example Value | Purpose |
+|-----------|--------------|---------|
+| `ITIDY_CREATED` | `ITIDY_CREATED=1` | Marks icon as iTidy-generated. Absence = user icon, never replaced. |
+| `ITIDY_VERSION` | `ITIDY_VERSION=2.0` | iTidy version that created the icon. From `ITIDY_VERSION` in `version_info.h`. Added 2026-02-23. |
+| `ITIDY_KIND` | `ITIDY_KIND=iff_thumbnail` | Rendering type: `iff_thumbnail`, `text_preview`, or `font_preview`. Used to route replacement to the correct option. |
+| `ITIDY_SRC` | `ITIDY_SRC=picture.iff` | Source filename (without path). |
+| `ITIDY_SRC_SIZE` | `ITIDY_SRC_SIZE=45312` | Source file size in bytes at creation time. Used for cache freshness. |
+| `ITIDY_SRC_DATE` | `ITIDY_SRC_DATE=15000,720,0` | Source file datestamp (days, minutes, ticks). Used for cache freshness. |
+
+`ITIDY_VERSION` was added in iTidy 2.0 (2026-02-23). Icons created by earlier versions will have `ITIDY_CREATED=1` but no `ITIDY_VERSION` tag — the replace logic handles this correctly since replacement is triggered by the presence of `ITIDY_CREATED`, not by version comparison.
+
+### Preference Fields
+
+In `src/layout_preferences.h` (v5 fields, must remain at end of struct):
+
+```c
+/* Replace-iTidy-icons options (v5 fields) */
+BOOL deficons_replace_itidy_thumbnails;     /* TRUE = replace ITIDY_KIND != text_preview */
+BOOL deficons_replace_itidy_text_previews;  /* TRUE = replace ITIDY_KIND == text_preview */
+```
+
+Both default to `FALSE`. Defined in `DEFAULT_DEFICONS_REPLACE_ITIDY_THUMBNAILS` and `DEFAULT_DEFICONS_REPLACE_ITIDY_TEXT_PREVIEWS`.
+
+### GUI
+
+Two checkboxes under a "Re-run / refresh options:" label in the **Create tab** of the DefIcons creation window (`src/GUI/deficons/deficons_creation_window.c`), positioned after the picture format checkboxes:
+
+- **Replace existing image thumbnails created by iTidy** — maps to `deficons_replace_itidy_thumbnails`
+- **Replace existing text previews created by iTidy** — maps to `deficons_replace_itidy_text_previews`
+
+Both are unchecked by default.
+
+### Skip Guard Logic (`deficons_creation.c`)
+
+The skip guard runs once per file in the main `ExNext` loop. Performance impact when both options are `FALSE` is **zero** — identical to before this feature was added:
+
+```
+Lock(info_path)
+  -> fails (no .info)  => fall through to creation (normal path)
+  -> succeeds          => do_replace = FALSE (options disabled, skip inspect block)
+                          UnLock(); local_visible = TRUE; continue;
+```
+
+When either option is `TRUE` the additional path is:
+
+```
+Lock(info_path)
+  -> succeeds
+     UnLock()
+     GetDiskObject(fullpath)
+       -> returns NULL (corrupt/foreign icon)  => skip normally
+       -> returns icon
+          FindToolType("ITIDY_CREATED")
+            -> NULL (user icon)  => FreeDiskObject; skip normally
+            -> "1"  (iTidy icon)
+               FindToolType("ITIDY_KIND")
+                 -> "text_preview"  => check deficons_replace_itidy_text_previews
+                 -> anything else   => check deficons_replace_itidy_thumbnails
+               FreeDiskObject()
+               do_replace = TRUE / FALSE
+
+  do_replace == TRUE  => DeleteFile(info_path) => fall through to creation
+  do_replace == FALSE => local_visible = TRUE; continue (skip as before)
+```
+
+`GetDiskObject` is only called when at least one replace option is active **and** a `.info` already exists. For a clean folder (no existing icons) there is no overhead even with replace enabled.
+
+### Use Case: Iterating on Rendering Settings
+
+The primary use case is rapid iteration. A user testing different combinations of palette depth, dithering, or icon size on a test folder can:
+
+1. Run iTidy with the new settings
+2. Check the results in Workbench
+3. Without manually deleting icons, change settings and run again
+
+Previously this required `delete #?.info` in a Shell window for each test folder. With replace mode enabled, iTidy handles the cleanup automatically on each run. Because only `ITIDY_CREATED`-stamped icons are deleted, any icons the user placed manually in the same folder are preserved.

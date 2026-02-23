@@ -214,6 +214,7 @@ typedef struct {
 
 /* Stamped ToolTypes on generated icons */
 #define ITIDY_TT_CREATED        "ITIDY_CREATED"
+#define ITIDY_TT_VERSION        "ITIDY_VERSION"
 #define ITIDY_TT_KIND           "ITIDY_KIND"
 #define ITIDY_TT_SRC            "ITIDY_SRC"
 #define ITIDY_TT_SRC_SIZE       "ITIDY_SRC_SIZE"
