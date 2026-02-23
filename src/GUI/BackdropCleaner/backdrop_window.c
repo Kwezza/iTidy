@@ -708,23 +708,35 @@ static void perform_tidy_layout(struct iTidyBackdropWindow *bd_data)
         return;
     }
 
-    if (result.changed_count == 0)
+    if (result.count == 0)
     {
         show_requester(bd_data->window,
-                       "No Changes",
-                       "All icons are already in their target positions.",
+                       "No Icons",
+                       "No valid icons found to layout.",
                        "_OK",
                        REQIMAGE_INFO);
         itidy_free_wb_layout_result(&result);
         return;
     }
 
-    /* Confirm with user */
-    sprintf(msg_buf,
-            "Reposition %d Workbench icons into a tidy grid?\n\n"
-            "This will update icon positions on disk.\n"
-            "Use Workbench -> Update All to see changes.",
-            result.changed_count);
+    /* Confirm with user - always write all icons to ensure
+     * Workbench refreshes backdrop icon positions via
+     * ICONPUTA_NotifyWorkbench notification. */
+    if (result.changed_count > 0)
+    {
+        sprintf(msg_buf,
+                "Layout %d Workbench icons into a tidy grid?\n"
+                "(%d icons need repositioning)\n\n"
+                "Icon positions will be saved to disk.",
+                result.count, result.changed_count);
+    }
+    else
+    {
+        sprintf(msg_buf,
+                "All %d icons are already at target positions.\n\n"
+                "Re-apply layout to refresh Workbench display?",
+                result.count);
+    }
 
     if (show_requester(bd_data->window,
                        "Confirm Layout",
@@ -751,11 +763,15 @@ static void perform_tidy_layout(struct iTidyBackdropWindow *bd_data)
 
     if (applied > 0)
     {
-        char result_buf[128];
+        char result_buf[196];
 
         bd_data->changes_made = TRUE;
 
-        sprintf(result_buf, "Repositioned %d icons.", applied);
+        sprintf(result_buf,
+                "Updated %d icons.\n"
+                "Use Workbench -> Update All\n"
+                "if icons don't move immediately.",
+                applied);
         update_status_label(bd_data, result_buf);
 
         show_requester(bd_data->window,

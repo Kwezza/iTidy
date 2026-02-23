@@ -3,10 +3,13 @@
  * Calculates and applies icon positions for the Workbench screen
  * (device icons and left-out icons)
  *
- * Layout algorithm:
- *   Row 1+: Device icons sorted alphabetically by name, left-to-right
- *   Below:  Left-out icons sorted by type (Tool, Project, other) then name
- *   Wraps to next row when exceeding screen width minus margin
+ * v2.0 algorithm (reuses main iTidy layout engine):
+ *   1. Build IconArray from BackdropList via GetIconDetailsFromDisk()
+ *   2. Pre-partition: device icons (WBDISK) separate from left-outs
+ *   3. Device icons: sorted by name, laid out in top row(s)
+ *   4. Left-out icons: sorted & grouped by type via CalculateBlockLayout()
+ *      (Drawers, Tools, Other) with variable-width columns
+ *   5. Groups stacked vertically below device row
  */
 
 #include <platform/platform.h>
@@ -28,64 +31,121 @@
 #include "workbench_layout.h"
 #include "writeLog.h"
 
+/* Main layout engine components */
+#include "icon_types.h"
+#include "icon_management.h"
+#include "layout_preferences.h"
+#include "layout/icon_sorter.h"
+#include "layout/icon_positioner.h"
+#include "layout/aspect_ratio_layout.h"
+#include "layout/block_layout.h"
+
 /*------------------------------------------------------------------------*/
 /* Internal Helpers                                                       */
 /*------------------------------------------------------------------------*/
 
 /**
- * Compare two backdrop entries for sorting.
- * Device icons sort first, then by type (Tool > Project > other),
- * then alphabetically by full_path.
+ * Build a FullIconDetails entry from a BackdropEntry by calling
+ * GetIconDetailsFromDisk().  Returns TRUE if the icon was loaded
+ * successfully, FALSE if it should be skipped (no .info file).
+ *
+ * The caller takes ownership of icon->icon_text and icon->icon_full_path
+ * (allocated via whd_malloc).  FreeIconArray() will free them.
  */
-static int compare_entries(const iTidy_BackdropEntry *a,
-                            const iTidy_BackdropEntry *b)
+static BOOL build_icon_detail(const iTidy_BackdropEntry *entry,
+                               FullIconDetails *icon)
 {
-    /* Device icons always come first */
-    if (a->status == ITIDY_ENTRY_DEVICE_ICON &&
-        b->status != ITIDY_ENTRY_DEVICE_ICON)
-        return -1;
-    if (a->status != ITIDY_ENTRY_DEVICE_ICON &&
-        b->status == ITIDY_ENTRY_DEVICE_ICON)
-        return 1;
+    IconDetailsFromDisk details;
+    char *name_copy = NULL;
+    char *path_copy = NULL;
 
-    /* Within same category, sort by type priority */
-    if (a->icon_type != b->icon_type)
+    memset(icon, 0, sizeof(FullIconDetails));
+
+    /* Read all icon metadata in a single disk operation */
+    if (!GetIconDetailsFromDisk(entry->full_path, &details,
+                                entry->display_name))
     {
-        /* WBTOOL (3) before WBPROJECT (4) before others */
-        int pri_a = (a->icon_type == 3) ? 0 :
-                    (a->icon_type == 4) ? 1 : 2;
-        int pri_b = (b->icon_type == 3) ? 0 :
-                    (b->icon_type == 4) ? 1 : 2;
-        if (pri_a != pri_b)
-            return pri_a - pri_b;
+        return FALSE;
     }
 
-    /* Within same type, sort alphabetically */
-    return Stricmp(a->full_path, b->full_path);
+    /* Allocate display name */
+    name_copy = (char *)whd_malloc(strlen(entry->display_name) + 1);
+    if (!name_copy)
+    {
+        if (details.defaultTool)
+            whd_free(details.defaultTool);
+        return FALSE;
+    }
+    strcpy(name_copy, entry->display_name);
+
+    /* Allocate full path (the save function uses this) */
+    path_copy = (char *)whd_malloc(strlen(entry->full_path) + 1);
+    if (!path_copy)
+    {
+        whd_free(name_copy);
+        if (details.defaultTool)
+            whd_free(details.defaultTool);
+        return FALSE;
+    }
+    strcpy(path_copy, entry->full_path);
+
+    /* Map fields exactly as icon_management.c does */
+    icon->icon_x         = details.position.x;
+    icon->icon_y         = details.position.y;
+    icon->icon_width     = details.iconWithEmboss.width;
+    icon->icon_height    = details.iconWithEmboss.height;
+    icon->border_width   = details.borderWidth;
+    icon->text_width     = details.textSize.width;
+    icon->text_height    = details.textSize.height;
+    icon->icon_max_width = details.totalDisplaySize.width;
+    icon->icon_max_height = details.totalDisplaySize.height;
+    icon->workbench_type = details.workbenchType;
+    icon->default_tool   = details.defaultTool; /* ownership transferred */
+    icon->icon_text      = name_copy;
+    icon->icon_full_path = path_copy;
+    icon->icon_type      = details.isNewIcon  ? icon_type_newIcon :
+                           details.isOS35Icon ? icon_type_os35 :
+                           icon_type_standard;
+    icon->is_folder      = (details.workbenchType == WBDRAWER ||
+                            details.workbenchType == WBDISK);
+    icon->is_write_protected = FALSE;
+    icon->file_size      = 0;
+    memset(&icon->file_date, 0, sizeof(struct DateStamp));
+
+    return TRUE;
 }
 
 /**
- * Simple insertion sort for the index array.
- * We're sorting an index array, not the entries directly.
+ * Build LayoutPreferences tuned for Workbench screen layout.
+ * Uses block grouping by type, sort by name, full-screen width.
  */
-static void sort_indices(int *indices, int count,
-                          const iTidy_BackdropEntry *entries)
+static void build_wb_prefs(LayoutPreferences *prefs)
 {
-    int i, j, temp;
+    memset(prefs, 0, sizeof(LayoutPreferences));
 
-    for (i = 1; i < count; i++)
-    {
-        temp = indices[i];
-        j = i - 1;
-        while (j >= 0 &&
-               compare_entries(&entries[indices[j]],
-                               &entries[temp]) > 0)
-        {
-            indices[j + 1] = indices[j];
-            j--;
-        }
-        indices[j + 1] = temp;
-    }
+    prefs->layoutMode               = LAYOUT_MODE_ROW;
+    prefs->sortOrder                = SORT_ORDER_HORIZONTAL;
+    prefs->sortPriority             = SORT_PRIORITY_MIXED;
+    prefs->sortBy                   = SORT_BY_NAME;
+    prefs->reverseSort              = FALSE;
+
+    prefs->centerIconsInColumn      = TRUE;
+    prefs->useColumnWidthOptimization = TRUE;
+    prefs->textAlignment            = TEXT_ALIGN_TOP;
+
+    prefs->blockGroupMode           = BLOCK_GROUP_BY_TYPE;
+    prefs->blockGapSize             = BLOCK_GAP_MEDIUM;
+
+    prefs->resizeWindows            = FALSE;
+    prefs->minIconsPerRow           = 2;
+    prefs->maxIconsPerRow           = 0;   /* auto */
+    prefs->maxWindowWidthPct        = 100; /* full screen */
+    prefs->aspectRatio              = 5000; /* wide desktop */
+    prefs->overflowMode             = OVERFLOW_HORIZONTAL;
+    prefs->windowPositionMode       = WINDOW_POS_NO_CHANGE;
+
+    prefs->iconSpacingX             = ITIDY_WB_MARGIN_LEFT;
+    prefs->iconSpacingY             = 8;
 }
 
 /**
@@ -116,6 +176,23 @@ static BOOL grow_layout_result(iTidy_WBLayoutResult *result)
     result->entries = new_entries;
     result->capacity = new_capacity;
     return TRUE;
+}
+
+/**
+ * Find the backdrop list entry index matching a given full path.
+ * Used after sorting/positioning to correctly map icons back to entries.
+ */
+static int find_entry_by_path(const iTidy_BackdropList *list,
+                              const char *full_path)
+{
+    int i;
+    for (i = 0; i < list->count; i++)
+    {
+        if (Stricmp((STRPTR)list->entries[i].full_path,
+                    (STRPTR)full_path) == 0)
+            return i;
+    }
+    return -1;
 }
 
 /*------------------------------------------------------------------------*/
@@ -169,11 +246,19 @@ BOOL itidy_calculate_wb_layout(const iTidy_WBLayoutParams *params,
                                 const iTidy_BackdropList *list,
                                 iTidy_WBLayoutResult *result)
 {
-    int *sorted_indices;
-    int layoutable_count = 0;
+    IconArray *device_icons = NULL;
+    IconArray *leftout_icons = NULL;
+    LayoutPreferences wb_prefs;
+    int device_count = 0;
+    int leftout_count = 0;
+    int device_row_height = 0;
+    int device_columns = 0;
+    int device_rows = 0;
+    int leftout_width = 0;
+    int leftout_height = 0;
+    int old_screen_width;
     int i;
-    LONG cur_x, cur_y;
-    LONG max_x;
+    BOOL ok = FALSE;
 
     if (!params || !list || !result)
         return FALSE;
@@ -183,82 +268,264 @@ BOOL itidy_calculate_wb_layout(const iTidy_WBLayoutParams *params,
     if (list->count == 0)
         return TRUE;
 
-    /* Build array of indices for layoutable entries
-     * (skip orphans and unverifiable entries) */
-    sorted_indices = (int *)whd_malloc(list->count * sizeof(int));
-    if (!sorted_indices)
-        return FALSE;
+    /* Temporarily set the global screenWidth for the layout engine */
+    old_screen_width = screenWidth;
+    screenWidth = params->screen_width;
 
-    for (i = 0; i < list->count; i++)
+    /* Build preset preferences for desktop layout */
+    build_wb_prefs(&wb_prefs);
+
+    /* Create two IconArrays: one for device icons, one for left-outs */
+    device_icons = CreateIconArray();
+    leftout_icons = CreateIconArray();
+    if (!device_icons || !leftout_icons)
+        goto cleanup;
+
+    /* Suppress DOS requesters during icon loading */
     {
-        const iTidy_BackdropEntry *entry = &list->entries[i];
+        struct Process *proc = (struct Process *)FindTask(NULL);
+        APTR old_window_ptr = proc->pr_WindowPtr;
+        proc->pr_WindowPtr = (APTR)-1;
 
-        /* Only layout valid entries and device icons */
-        if (entry->status == ITIDY_ENTRY_VALID ||
-            entry->status == ITIDY_ENTRY_DEVICE_ICON)
+        for (i = 0; i < list->count; i++)
         {
-            sorted_indices[layoutable_count] = i;
-            layoutable_count++;
-        }
-    }
+            const iTidy_BackdropEntry *entry = &list->entries[i];
+            FullIconDetails icon;
 
-    if (layoutable_count == 0)
-    {
-        whd_free(sorted_indices);
-        return TRUE;
-    }
+            /* Only layout valid entries and device icons */
+            if (entry->status != ITIDY_ENTRY_VALID &&
+                entry->status != ITIDY_ENTRY_DEVICE_ICON)
+                continue;
 
-    /* Sort: device icons first, then by type, then alphabetically */
-    sort_indices(sorted_indices, layoutable_count, list->entries);
+            /* Try to load icon details from disk */
+            if (!build_icon_detail(entry, &icon))
+            {
+                log_info(LOG_GENERAL,
+                         "Skipping (no .info): %s\n", entry->full_path);
+                continue;
+            }
 
-    /* Calculate positions in horizontal rows */
-    cur_x = params->margin_left;
-    cur_y = params->margin_top;
-    max_x = params->screen_width - params->margin_right - params->grid_x;
-
-    for (i = 0; i < layoutable_count; i++)
-    {
-        int entry_idx = sorted_indices[i];
-        const iTidy_BackdropEntry *entry = &list->entries[entry_idx];
-        iTidy_WBLayoutEntry layout_entry;
-
-        /* Wrap to next row if past right edge */
-        if (cur_x > max_x && i > 0)
-        {
-            cur_x = params->margin_left;
-            cur_y += params->grid_y;
-        }
-
-        layout_entry.entry_index = entry_idx;
-        layout_entry.new_x = cur_x;
-        layout_entry.new_y = cur_y;
-        layout_entry.old_x = entry->icon_x;
-        layout_entry.old_y = entry->icon_y;
-        layout_entry.changed = (cur_x != entry->icon_x ||
-                                 cur_y != entry->icon_y);
-
-        if (layout_entry.changed)
-            result->changed_count++;
-
-        if (!grow_layout_result(result))
-        {
-            whd_free(sorted_indices);
-            return FALSE;
+            /* Partition into device vs left-out */
+            if (entry->status == ITIDY_ENTRY_DEVICE_ICON)
+            {
+                if (AddIconToArray(device_icons, &icon))
+                {
+                    device_count++;
+                }
+                else
+                {
+                    /* AddIconToArray failed - clean up the icon strings */
+                    if (icon.icon_text) whd_free(icon.icon_text);
+                    if (icon.icon_full_path) whd_free(icon.icon_full_path);
+                    if (icon.default_tool) whd_free(icon.default_tool);
+                }
+            }
+            else
+            {
+                if (AddIconToArray(leftout_icons, &icon))
+                {
+                    leftout_count++;
+                }
+                else
+                {
+                    if (icon.icon_text) whd_free(icon.icon_text);
+                    if (icon.icon_full_path) whd_free(icon.icon_full_path);
+                    if (icon.default_tool) whd_free(icon.default_tool);
+                }
+            }
         }
 
-        result->entries[result->count] = layout_entry;
-        result->count++;
-
-        cur_x += params->grid_x;
+        proc->pr_WindowPtr = old_window_ptr;
     }
-
-    whd_free(sorted_indices);
 
     log_info(LOG_GENERAL,
-             "Layout calculated: %d icons, %d changed positions\n",
-             result->count, result->changed_count);
+             "WB layout: %d device icons, %d left-out icons loaded\n",
+             device_count, leftout_count);
 
-    return TRUE;
+    if (device_count == 0 && leftout_count == 0)
+    {
+        ok = TRUE;
+        goto cleanup;
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Phase 1: Layout device icons in top row(s)                         */
+    /*--------------------------------------------------------------------*/
+    if (device_count > 0)
+    {
+        /* Sort device icons by name */
+        SortIconArrayWithPreferences(device_icons, &wb_prefs);
+
+        /* Calculate optimal columns for device row */
+        CalculateLayoutWithAspectRatio(device_icons, &wb_prefs,
+                                       &device_columns, &device_rows);
+
+        /* Position device icons starting at margin_top */
+        /* Temporarily set iconSpacingY to margin_top for the first row */
+        wb_prefs.iconSpacingY = params->margin_top;
+        CalculateLayoutPositions(device_icons, &wb_prefs, device_columns);
+        wb_prefs.iconSpacingY = 8; /* restore */
+
+        /* Measure device row height */
+        device_row_height = 0;
+        for (i = 0; i < (int)device_icons->size; i++)
+        {
+            int bottom = device_icons->array[i].icon_y +
+                         device_icons->array[i].icon_max_height;
+            if (bottom > device_row_height)
+                device_row_height = bottom;
+        }
+
+        /* Add result entries for device icons.
+         * Match by icon_full_path since sorting reordered the array. */
+        for (i = 0; i < (int)device_icons->size; i++)
+        {
+            iTidy_WBLayoutEntry le;
+            int entry_idx = find_entry_by_path(
+                list, device_icons->array[i].icon_full_path);
+
+            if (entry_idx < 0)
+                continue;
+
+            le.entry_index = entry_idx;
+            le.new_x = device_icons->array[i].icon_x;
+            le.new_y = device_icons->array[i].icon_y;
+            le.old_x = list->entries[entry_idx].icon_x;
+            le.old_y = list->entries[entry_idx].icon_y;
+            le.changed = (le.new_x != le.old_x || le.new_y != le.old_y);
+
+            if (le.changed)
+                result->changed_count++;
+
+            if (!grow_layout_result(result))
+                goto cleanup;
+
+            result->entries[result->count] = le;
+            result->count++;
+        }
+    }
+
+    /*--------------------------------------------------------------------*/
+    /* Phase 2: Layout left-out icons grouped by type below devices       */
+    /*--------------------------------------------------------------------*/
+    if (leftout_count > 0)
+    {
+        int y_offset;
+
+        /* Calculate Y offset: below device row + gap */
+        if (device_row_height > 0)
+            y_offset = device_row_height + BLOCK_GAP_MEDIUM_PX;
+        else
+            y_offset = params->margin_top;
+
+        /* Use block layout (groups: Drawers, Tools, Other) */
+        if (wb_prefs.blockGroupMode == BLOCK_GROUP_BY_TYPE)
+        {
+            CalculateBlockLayout(leftout_icons, &wb_prefs,
+                                 &leftout_width, &leftout_height);
+        }
+        else
+        {
+            int cols, rows;
+            SortIconArrayWithPreferences(leftout_icons, &wb_prefs);
+            CalculateLayoutWithAspectRatio(leftout_icons, &wb_prefs,
+                                           &cols, &rows);
+            CalculateLayoutPositionsWithColumnCentering(leftout_icons,
+                                                        &wb_prefs, cols);
+        }
+
+        /* Debug: dump positions after CalculateBlockLayout */
+        log_debug(LOG_GENERAL,
+                  "After block layout, left-out positions (%d icons):\n",
+                  (int)leftout_icons->size);
+        for (i = 0; i < (int)leftout_icons->size; i++)
+        {
+            log_debug(LOG_GENERAL,
+                      "  [%d] %-20s X=%-4d Y=%-4d maxH=%-3d path=%s\n",
+                      i,
+                      leftout_icons->array[i].icon_text,
+                      leftout_icons->array[i].icon_x,
+                      leftout_icons->array[i].icon_y,
+                      leftout_icons->array[i].icon_max_height,
+                      leftout_icons->array[i].icon_full_path);
+        }
+
+        /* Apply Y offset — shift all left-out icons down below device row.
+         * The positioning functions start layout from (spacingX, spacingY),
+         * so we add (y_offset - spacingY) to move them below devices. */
+        {
+            int shift_y = y_offset - wb_prefs.iconSpacingY;
+
+            log_debug(LOG_GENERAL,
+                      "Y-shift: y_offset=%d, spacingY=%d, shift=%d\n",
+                      y_offset, wb_prefs.iconSpacingY, shift_y);
+
+            for (i = 0; i < (int)leftout_icons->size; i++)
+            {
+                leftout_icons->array[i].icon_y += shift_y;
+            }
+        }
+
+        /* Debug: dump final positions after Y-shift */
+        log_debug(LOG_GENERAL, "Final left-out positions after Y-shift:\n");
+        for (i = 0; i < (int)leftout_icons->size; i++)
+        {
+            log_debug(LOG_GENERAL,
+                      "  [%d] %-20s X=%-4d Y=%-4d\n",
+                      i,
+                      leftout_icons->array[i].icon_text,
+                      leftout_icons->array[i].icon_x,
+                      leftout_icons->array[i].icon_y);
+        }
+
+        /* Add result entries for left-out icons.
+         * Match by icon_full_path since sorting/block layout
+         * reordered the array. */
+        for (i = 0; i < (int)leftout_icons->size; i++)
+        {
+            iTidy_WBLayoutEntry le;
+            int entry_idx = find_entry_by_path(
+                list, leftout_icons->array[i].icon_full_path);
+
+            if (entry_idx < 0)
+                continue;
+
+            le.entry_index = entry_idx;
+            le.new_x = leftout_icons->array[i].icon_x;
+            le.new_y = leftout_icons->array[i].icon_y;
+            le.old_x = list->entries[entry_idx].icon_x;
+            le.old_y = list->entries[entry_idx].icon_y;
+            le.changed = (le.new_x != le.old_x || le.new_y != le.old_y);
+
+            if (le.changed)
+                result->changed_count++;
+
+            if (!grow_layout_result(result))
+                goto cleanup;
+
+            result->entries[result->count] = le;
+            result->count++;
+        }
+    }
+
+    log_info(LOG_GENERAL,
+             "Layout calculated: %d icons (%d device + %d left-out), "
+             "%d changed positions\n",
+             result->count, device_count, leftout_count,
+             result->changed_count);
+
+    ok = TRUE;
+
+cleanup:
+    /* Restore global screenWidth */
+    screenWidth = old_screen_width;
+
+    /* Free temporary IconArrays (FreeIconArray frees strings too) */
+    if (device_icons)
+        FreeIconArray(device_icons);
+    if (leftout_icons)
+        FreeIconArray(leftout_icons);
+    return ok;
 }
 
 int itidy_apply_wb_layout(const iTidy_BackdropList *list,
@@ -283,13 +550,20 @@ int itidy_apply_wb_layout(const iTidy_BackdropList *list,
         const iTidy_BackdropEntry *entry;
         struct DiskObject *dobj;
 
-        if (!le->changed)
-            continue;
+        /* Write ALL icons, not just changed ones.
+         * This ensures ICONPUTA_NotifyWorkbench fires for every icon,
+         * forcing Workbench to refresh backdrop icon positions. */
 
         if (le->entry_index < 0 || le->entry_index >= list->count)
             continue;
 
         entry = &list->entries[le->entry_index];
+
+        log_debug(LOG_GENERAL,
+                  "Saving icon [%d]: path='%s' pos=(%ld,%ld)%s\n",
+                  i, entry->full_path,
+                  (long)le->new_x, (long)le->new_y,
+                  le->changed ? " (CHANGED)" : " (unchanged)");
 
         /* Load the icon */
         dobj = GetDiskObject((STRPTR)entry->full_path);
@@ -316,11 +590,21 @@ int itidy_apply_wb_layout(const iTidy_BackdropList *list,
             if (PutIconTagList((STRPTR)entry->full_path, dobj, put_tags))
             {
                 success_count++;
-                log_info(LOG_GENERAL,
-                         "Repositioned: %s (%ld,%ld) -> (%ld,%ld)\n",
-                         entry->full_path,
-                         (long)le->old_x, (long)le->old_y,
-                         (long)le->new_x, (long)le->new_y);
+                if (le->changed)
+                {
+                    log_info(LOG_GENERAL,
+                             "Repositioned: %s (%ld,%ld) -> (%ld,%ld)\n",
+                             entry->full_path,
+                             (long)le->old_x, (long)le->old_y,
+                             (long)le->new_x, (long)le->new_y);
+                }
+                else
+                {
+                    log_info(LOG_GENERAL,
+                             "Refreshed (pos unchanged): %s (%ld,%ld)\n",
+                             entry->full_path,
+                             (long)le->new_x, (long)le->new_y);
+                }
             }
             else
             {
@@ -337,8 +621,8 @@ int itidy_apply_wb_layout(const iTidy_BackdropList *list,
     proc->pr_WindowPtr = old_window_ptr;
 
     log_info(LOG_GENERAL,
-             "Layout applied: %d of %d icons repositioned\n",
-             success_count, result->changed_count);
+             "Layout applied: %d of %d icons written (%d had new positions)\n",
+             success_count, result->count, result->changed_count);
 
     return success_count;
 }
