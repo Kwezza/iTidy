@@ -28,6 +28,7 @@
 #include "Image/icon_iff_render.h"
 #include "Image/icon_image_bevel.h"
 #include "palette/palette_reduction.h"
+#include "palette/palette_harmonised.h"
 #include "palette/ultra_downsample.h"
 #include "../deficons/deficons_templates.h"
 #include "../writeLog.h"
@@ -929,11 +930,12 @@ static int apply_iff_preview(const char *source_path,
     /*          Reduces the colour count if user has configured a limit    */
     /*          below the current unique-colour count.  Dithering and      */
     /*          low-colour mapping are applied as configured.              */
-    /*          Skipped when Ultra mode is active (Step 6d handles it).    */
+    /*          Skipped when Ultra or Harmonised mode is active.           */
     /*--------------------------------------------------------------------*/
 
     if (prefs != NULL && prefs->deficons_max_icon_colors < 256
-        && !prefs->deficons_ultra_mode)
+        && !prefs->deficons_ultra_mode
+        && !prefs->deficons_harmonised_palette)
     {
         log_debug(LOG_ICONS, "apply_iff_preview: reducing palette to max %u colors "
                  "(dither=%u, lowcolor=%u)\n",
@@ -948,6 +950,21 @@ static int apply_iff_preview(const char *source_path,
         {
             log_warning(LOG_ICONS, "apply_iff_preview: "
                         "palette reduction failed (non-fatal)\n");
+        }
+    }
+    else if (prefs != NULL && prefs->deficons_harmonised_palette)
+    {
+        /*--------------------------------------------------------------*/
+        /* Step 6c (Harmonised): Force fixed 29-colour GlowIcons palette */
+        /*--------------------------------------------------------------*/
+        log_debug(LOG_ICONS, "apply_iff_preview: applying GlowIcons "
+                 "harmonised palette (dither=%u)\n",
+                 (unsigned)prefs->deficons_dither_method);
+
+        if (!itidy_apply_harmonised_palette(&img, prefs->deficons_dither_method))
+        {
+            log_warning(LOG_ICONS, "apply_iff_preview: "
+                        "harmonised palette failed (non-fatal)\n");
         }
     }
 
@@ -1527,10 +1544,12 @@ static int apply_picture_preview(const char *source_path,
 
     /*--------------------------------------------------------------------*/
     /* Step 8a: Palette reduction                                          */
+    /*          Skipped when Ultra or Harmonised mode is active.           */
     /*--------------------------------------------------------------------*/
 
     if (prefs != NULL && prefs->deficons_max_icon_colors < 256
-        && !prefs->deficons_ultra_mode)
+        && !prefs->deficons_ultra_mode
+        && !prefs->deficons_harmonised_palette)
     {
         if (!itidy_reduce_palette(&img,
                                   prefs->deficons_max_icon_colors,
@@ -1539,6 +1558,21 @@ static int apply_picture_preview(const char *source_path,
         {
             log_warning(LOG_ICONS, "apply_picture_preview: "
                         "palette reduction failed (non-fatal)\n");
+        }
+    }
+    else if (prefs != NULL && prefs->deficons_harmonised_palette)
+    {
+        /*--------------------------------------------------------------*/
+        /* Step 8a (Harmonised): Force fixed 29-colour GlowIcons palette */
+        /*--------------------------------------------------------------*/
+        log_debug(LOG_ICONS, "apply_picture_preview: applying GlowIcons "
+                 "harmonised palette (dither=%u)\n",
+                 (unsigned)prefs->deficons_dither_method);
+
+        if (!itidy_apply_harmonised_palette(&img, prefs->deficons_dither_method))
+        {
+            log_warning(LOG_ICONS, "apply_picture_preview: "
+                        "harmonised palette failed (non-fatal)\n");
         }
     }
 

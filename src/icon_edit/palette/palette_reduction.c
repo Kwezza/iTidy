@@ -21,9 +21,11 @@
 /* Chooser Index Mapping                                                  */
 /*========================================================================*/
 
-/** Chooser index to color count lookup table */
+/** Chooser index to color count lookup table.
+ *  Index 3 is the GlowIcons harmonised palette (29 colours).
+ *  ITIDY_MAX_COLORS_CHOOSER_COUNT must equal the number of entries here. */
 static const UWORD color_count_table[] = {
-    4, 8, 16, 32, 64, 128, 256
+    4, 8, 16, 29, 32, 64, 128, 256
 };
 
 UWORD itidy_max_colors_from_index(UWORD chooser_index)

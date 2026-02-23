@@ -56,6 +56,7 @@
 #include "version_info.h"
 #include "advanced_window.h"
 #include "RestoreBackups/restore_window.h"
+#include "BackdropCleaner/backdrop_window.h"
 #include "DefaultTools/tool_cache_window.h"
 #include "deficons/deficons_settings_window.h"
 #include "deficons/deficons_creation_window.h"
@@ -576,6 +577,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
         {ITIDY_GAID_ADVANCED_BUTTON, -1, "Opens Advanced Settings for finer control over layout and sizing.", 0},
         {ITIDY_GAID_DEFAULT_TOOLS_BUTTON, -1, "Scans icons for missing or invalid default tools. Lets you fix them, or batch-replace one tool with another", 0},
         {ITIDY_GAID_RESTORE_BUTTON, -1, "Restores icon positions and window snapshots from iTidy backups. Only available if you previously enabled backups.", 0},
+        {ITIDY_GAID_BACKDROP_BUTTON, -1, "Opens the Workbench Screen Manager. Audits .backdrop files, removes orphaned entries, and tidies device/left-out icon positions.", 0},
         {ITIDY_GAID_BUTTONS_LAYOUT, -1, "", 0},
         {ITIDY_GAID_START_BUTTON, -1, "Starts tidying the selected folder using the current settings.", 0},
         {ITIDY_GAID_EXIT_BUTTON, -1, "Closes iTidy.", 0},
@@ -791,6 +793,14 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                         NewObject(BUTTON_GetClass(), NULL,
                         GA_ID, ITIDY_GAID_RESTORE_BUTTON,
                         GA_Text, "Restore backups...",
+                        GA_RelVerify, TRUE,
+                        GA_TabCycle, TRUE,
+                    TAG_END),
+                    
+                    LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_BACKDROP_BUTTON] = 
+                        NewObject(BUTTON_GetClass(), NULL,
+                        GA_ID, ITIDY_GAID_BACKDROP_BUTTON,
+                        GA_Text, "WB Screen...",
                         GA_RelVerify, TRUE,
                         GA_TabCycle, TRUE,
                     TAG_END),
@@ -2176,6 +2186,42 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                     safe_set_window_pointer(win_data->window, FALSE);
                     
                     CONSOLE_ERROR("Failed to open Restore window\n");
+                }
+            }
+            break;
+        
+        case ITIDY_GAID_BACKDROP_BUTTON:
+            {
+                struct iTidyBackdropWindow backdrop_data;
+                
+                CONSOLE_STATUS("WB Screen button clicked - opening Backdrop window\n");
+                
+                /* Set busy pointer on main window */
+                safe_set_window_pointer(win_data->window, TRUE);
+                
+                /* Open backdrop window (modal) */
+                if (open_backdrop_window(&backdrop_data))
+                {
+                    /* Clear busy pointer - backdrop window is now open */
+                    safe_set_window_pointer(win_data->window, FALSE);
+                    
+                    /* Run backdrop window event loop (Wait is inside handler) */
+                    while (handle_backdrop_window_events(&backdrop_data))
+                    {
+                        /* Event handler includes Wait() - no need to wait here */
+                    }
+                    
+                    /* Close backdrop window */
+                    close_backdrop_window(&backdrop_data);
+                    
+                    CONSOLE_DEBUG("Backdrop window closed\n");
+                }
+                else
+                {
+                    /* Clear busy pointer on error */
+                    safe_set_window_pointer(win_data->window, FALSE);
+                    
+                    CONSOLE_ERROR("Failed to open Backdrop window\n");
                 }
             }
             break;

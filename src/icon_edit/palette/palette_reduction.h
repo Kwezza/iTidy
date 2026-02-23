@@ -33,11 +33,14 @@
 #define ITIDY_MAX_COLORS_128 128
 #define ITIDY_MAX_COLORS_256 256   /* No limit (full palette) */
 
-/** Number of entries in the max colors chooser (excluding Ultra) */
-#define ITIDY_MAX_COLORS_CHOOSER_COUNT  7
+/** Number of entries in the max colors chooser (excluding Ultra and Harmonised) */
+#define ITIDY_MAX_COLORS_CHOOSER_COUNT  8
 
-/** Ultra mode chooser index (last entry, index 7) */
-#define ITIDY_MAX_COLORS_ULTRA_INDEX    7
+/** GlowIcons harmonised palette chooser index (between 16 and 32, index 3) */
+#define ITIDY_MAX_COLORS_HARMONISED_INDEX  3
+
+/** Ultra mode chooser index (last entry, index 8) */
+#define ITIDY_MAX_COLORS_ULTRA_INDEX    8
 
 /*========================================================================*/
 /* Chooser Index Mapping                                                  */
@@ -46,10 +49,11 @@
 /**
  * @brief Convert chooser index to actual color count value.
  *
- * Maps:  0->4, 1->8, 2->16, 3->32, 4->64, 5->128, 6->256, 7->256(Ultra)
+ * Maps:  0->4, 1->8, 2->16, 3->29(Harmonised), 4->32, 5->64,
+ *         6->128, 7->256, 8->256(Ultra)
  *
- * @param chooser_index  Index from the Max Colors chooser gadget (0-7)
- * @return Actual color count (4, 8, 16, 32, 64, 128, or 256)
+ * @param chooser_index  Index from the Max Colors chooser gadget (0-8)
+ * @return Actual color count (4, 8, 16, 29, 32, 64, 128, or 256)
  */
 UWORD itidy_max_colors_from_index(UWORD chooser_index);
 

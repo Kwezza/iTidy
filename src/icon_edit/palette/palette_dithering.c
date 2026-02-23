@@ -204,6 +204,8 @@ UWORD itidy_dither_auto_select(UWORD target_colors)
 {
     if (target_colors >= 64)
         return ITIDY_DITHER_NONE;
+    else if (target_colors == 29)
+        return ITIDY_DITHER_FLOYD;  /* GlowIcons harmonised palette: fixed gamut benefits from Floyd-Steinberg */
     else if (target_colors >= 16)
         return ITIDY_DITHER_ORDERED;
     else

@@ -182,16 +182,17 @@ static STRPTR thumbnail_border_labels[] = {
     NULL
 };
 
-/* Max icon colors chooser labels (indices 0-7) */
+/* Max icon colors chooser labels (indices 0-8) */
 static STRPTR max_colors_labels[] = {
     "4 colors",
     "8 colors",
     "16 colors",
+    "GlowIcons palette (29 colours)",    /* ITIDY_MAX_COLORS_HARMONISED_INDEX */
     "32 colors",
     "64 colors",
     "128 colors",
     "256 colors (full)",
-    "Ultra (256 + detail boost)",
+    "Ultra (256 + detail boost)",         /* ITIDY_MAX_COLORS_ULTRA_INDEX */
     NULL
 };
 
@@ -460,13 +461,21 @@ static void handle_ok(DefIconsCreationWindow *win)
     GetAttr(CHOOSER_Selected, win->max_colors_chooser_obj, &selected_value);
     if (selected_value == ITIDY_MAX_COLORS_ULTRA_INDEX)
     {
-        win->prefs->deficons_ultra_mode = TRUE;
-        win->prefs->deficons_max_icon_colors = 256;
+        win->prefs->deficons_ultra_mode        = TRUE;
+        win->prefs->deficons_harmonised_palette = FALSE;
+        win->prefs->deficons_max_icon_colors   = 256;
+    }
+    else if (selected_value == ITIDY_MAX_COLORS_HARMONISED_INDEX)
+    {
+        win->prefs->deficons_harmonised_palette = TRUE;
+        win->prefs->deficons_ultra_mode        = FALSE;
+        win->prefs->deficons_max_icon_colors   = 29;  /* informational only */
     }
     else
     {
-        win->prefs->deficons_ultra_mode = FALSE;
-        win->prefs->deficons_max_icon_colors = itidy_max_colors_from_index((UWORD)selected_value);
+        win->prefs->deficons_ultra_mode        = FALSE;
+        win->prefs->deficons_harmonised_palette = FALSE;
+        win->prefs->deficons_max_icon_colors   = itidy_max_colors_from_index((UWORD)selected_value);
     }
     
     /* Get dither method chooser state */
@@ -481,7 +490,7 @@ static void handle_ok(DefIconsCreationWindow *win)
     
     log_info(LOG_GUI, "DefIcons creation settings saved: folder_mode=%d, icon_size=%d, "
              "border_mode=%d, text_preview=%d, picture_preview=%d, max_colors=%d, "
-             "ultra=%d, dither=%d, lowcolor=%d\n",
+             "ultra=%d, harmonised=%d, dither=%d, lowcolor=%d\n",
              win->prefs->deficons_folder_icon_mode,
              win->prefs->deficons_icon_size_mode,
              win->prefs->deficons_thumbnail_border_mode,
@@ -489,6 +498,7 @@ static void handle_ok(DefIconsCreationWindow *win)
              win->prefs->deficons_enable_picture_previews,
              win->prefs->deficons_max_icon_colors,
              win->prefs->deficons_ultra_mode,
+             win->prefs->deficons_harmonised_palette,
              win->prefs->deficons_dither_method,
              win->prefs->deficons_lowcolor_mapping);
     
@@ -513,10 +523,13 @@ static void handle_gadget_up(DefIconsCreationWindow *win, ULONG gadget_id)
             GetAttr(CHOOSER_Selected, win->max_colors_chooser_obj, &sel);
             max_col = itidy_max_colors_from_index((UWORD)sel);
 
-            /* Ultra (index 7) or 256 -> no reduction, ghost dither */
+            /* Ultra (index 8) or 256 -> no reduction, ghost dither */
             ghost_dither = (sel == ITIDY_MAX_COLORS_ULTRA_INDEX) || (max_col >= 256);
-            /* Lowcolor mapping only relevant for <= 8 colors */
-            ghost_lowcolor = (sel == ITIDY_MAX_COLORS_ULTRA_INDEX) || (max_col > 8);
+            /* Lowcolor mapping only relevant for <= 8 colors;
+             * also ghosted for Harmonised (fixed palette, mapping N/A) */
+            ghost_lowcolor = (sel == ITIDY_MAX_COLORS_ULTRA_INDEX)
+                          || (sel == ITIDY_MAX_COLORS_HARMONISED_INDEX)
+                          || (max_col > 8);
 
             SetGadgetAttrs((struct Gadget *)win->dither_method_chooser_obj,
                 win->window, NULL,
@@ -580,6 +593,8 @@ static BOOL create_window(DefIconsCreationWindow *win)
     is_ultra = win->prefs->deficons_ultra_mode;
     if (is_ultra)
         max_colors_index = ITIDY_MAX_COLORS_ULTRA_INDEX;
+    else if (win->prefs->deficons_harmonised_palette)
+        max_colors_index = ITIDY_MAX_COLORS_HARMONISED_INDEX;
     else
         max_colors_index = itidy_max_colors_to_index(win->prefs->deficons_max_icon_colors);
 

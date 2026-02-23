@@ -119,6 +119,7 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     prefs->deficons_dither_method = DEFAULT_DEFICONS_DITHER_METHOD;
     prefs->deficons_lowcolor_mapping = DEFAULT_DEFICONS_LOWCOLOR_MAPPING;
     prefs->deficons_ultra_mode = DEFAULT_DEFICONS_ULTRA_MODE;
+    prefs->deficons_harmonised_palette = DEFAULT_DEFICONS_HARMONISED_PALETTE;
 
     /* Per-format picture thumbnail enable bitmask (v3 fields - must be last) */
     prefs->deficons_picture_formats_enabled = DEFAULT_DEFICONS_PICTURE_FORMATS_ENABLED;

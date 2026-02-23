@@ -231,10 +231,11 @@ typedef struct {
     /* compatibility with v1 preference files.                  */
     
     /* DefIcons Palette Reduction Settings (Workbench 3.2+) */
-    UWORD deficons_max_icon_colors;             /* Max palette colors: 4,8,16,32,64,128,256 */
+    UWORD deficons_max_icon_colors;             /* Max palette colors: 4,8,16,29,32,64,128,256 */
     UWORD deficons_dither_method;               /* 0=None, 1=Ordered, 2=Floyd-Steinberg, 3=Auto */
     UWORD deficons_lowcolor_mapping;            /* 0=Grayscale, 1=WB palette, 2=Hybrid (only when max<=8) */
     BOOL deficons_ultra_mode;                   /* TRUE = 256-color detail-preserving downsample */
+    BOOL deficons_harmonised_palette;           /* TRUE = force fixed 29-colour GlowIcons palette */
 
     /* Per-format picture thumbnail enable flags (v3 fields) */
     ULONG deficons_picture_formats_enabled;     /* Bitmask: ITIDY_PICTFMT_* bits — which formats get thumbnails */
@@ -326,6 +327,7 @@ typedef struct {
 #define DEFAULT_DEFICONS_DITHER_METHOD                      3       /* Auto (smart selection by color count) */
 #define DEFAULT_DEFICONS_LOWCOLOR_MAPPING                   0       /* Grayscale (safe default for 4-8 colors) */
 #define DEFAULT_DEFICONS_ULTRA_MODE                         FALSE   /* Standard mode by default */
+#define DEFAULT_DEFICONS_HARMONISED_PALETTE                 FALSE   /* Standard mode by default */
 
 /*========================================================================*/
 /* Picture Format Enable Bitmask Constants                               */
