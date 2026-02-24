@@ -34,6 +34,7 @@ struct iTidyBackdropWindow
     Object *scan_btn;                   /* Scan button */
     Object *remove_btn;                 /* Remove Selected button */
     Object *tidy_btn;                   /* Tidy Layout button */
+    Object *test_btn;                   /* TEST: Update+Redraw All button */
     Object *close_btn;                  /* Close button */
     Object *status_label_obj;           /* Status label (dynamic text) */
 
@@ -48,6 +49,14 @@ struct iTidyBackdropWindow
     LONG selected_index;                /* Currently selected (-1 = none) */
     BOOL scan_performed;                /* TRUE after first scan */
     BOOL changes_made;                  /* TRUE if any removals or tidy done */
+
+    /* Column sorting state */
+    ULONG sort_column;                  /* Last column sorted (0-based) */
+    ULONG sort_direction;               /* LBMSORT_FORWARD or LBMSORT_REVERSE */
+
+    /* Menu */
+    struct Menu *menu_strip;            /* GadTools menu strip */
+    APTR         visual_info;           /* VisualInfo for LayoutMenus */
 };
 
 /*------------------------------------------------------------------------*/

@@ -34,6 +34,7 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/dos.h>
+#include <dos/dostags.h>
 #include <proto/utility.h>
 #include <string.h>
 #include <stdio.h>
@@ -58,7 +59,16 @@
 /* Console output abstraction */
 #include <console_output.h>
 
+/* GadTools for menus - use global base auto-opened by -lauto */
+#include <libraries/gadtools.h>
+#include <proto/gadtools.h>
+
+/* ASL file requester */
+#include <libraries/asl.h>
+#include <proto/asl.h>
+
 #include "backdrop_window.h"
+#include "utilities.h"
 #include "DOS/device_scanner.h"
 #include "backups/backdrop_parser.h"
 #include "layout/workbench_layout.h"
@@ -85,6 +95,21 @@ struct Library *iTidy_Backdrop_RequesterBase   = NULL;
 #define BACKDROP_WINDOW_TITLE "iTidy - Workbench Screen Manager"
 
 /*------------------------------------------------------------------------*/
+/* Menu Item IDs                                                          */
+/*------------------------------------------------------------------------*/
+#define MENU_BD_PROJECT_SAVE_AS  1
+
+/*------------------------------------------------------------------------*/
+/* Menu Template                                                          */
+/*------------------------------------------------------------------------*/
+static struct NewMenu backdrop_menu_template[] =
+{
+    { NM_TITLE, "Project",         NULL, 0, 0, NULL },
+    { NM_ITEM,  "Save list as...", NULL, 0, 0, (APTR)MENU_BD_PROJECT_SAVE_AS },
+    { NM_END,   NULL,              NULL, 0, 0, NULL }
+};
+
+/*------------------------------------------------------------------------*/
 /* Gadget IDs                                                             */
 /*------------------------------------------------------------------------*/
 enum {
@@ -96,6 +121,7 @@ enum {
     GID_BD_SCAN_BUTTON,
     GID_BD_REMOVE_BUTTON,
     GID_BD_TIDY_BUTTON,
+    GID_BD_TEST_BUTTON,
     GID_BD_CLOSE_BUTTON
 };
 
@@ -119,6 +145,7 @@ enum {
 /*------------------------------------------------------------------------*/
 static BOOL open_reaction_classes(void);
 static void close_reaction_classes(void);
+static BOOL init_backdrop_column_info(void);
 static void free_listbrowser_list(struct List *list);
 static void populate_listbrowser(struct iTidyBackdropWindow *bd_data);
 static void update_status_label(struct iTidyBackdropWindow *bd_data,
@@ -126,6 +153,7 @@ static void update_status_label(struct iTidyBackdropWindow *bd_data,
 static void perform_scan(struct iTidyBackdropWindow *bd_data);
 static void perform_remove_selected(struct iTidyBackdropWindow *bd_data);
 static void perform_tidy_layout(struct iTidyBackdropWindow *bd_data);
+static void perform_save_list_as(struct iTidyBackdropWindow *bd_data);
 static ULONG show_requester(struct Window *parent_window,
                              CONST_STRPTR title,
                              CONST_STRPTR body,
@@ -187,21 +215,73 @@ static void free_listbrowser_list(struct List *list)
     FreeMem(list, sizeof(struct List));
 }
 
-/**
- * Column info for the backdrop ListBrowser.
- * NOT static: AutoFit writes back into the array, so each window
- * needs its own mutable copy.
+/*
+ * Column info for the backdrop ListBrowser - allocated dynamically via
+ * AllocLBColumnInfo() to enable sortable column headers.
+ * Static arrays cannot be used with SetLBColumnInfoAttrs() and produce
+ * garbage values (see docs/Reaction_tips.md - ListBrowser Column Sorting).
  */
-static struct ColumnInfo backdrop_column_info[] = {
-    { 15, "Name",   0 },
-    { 10, "Status", 0 },
-    {  9, "Device", 0 },
-    { 28, "Path",   0 },
-    {  9, "Type",   0 },
-    {  6, "X",      0 },
-    {  6, "Y",      0 },
-    { -1, (STRPTR)~0, -1 }
-};
+static struct ColumnInfo *backdrop_column_info = NULL;
+
+/*------------------------------------------------------------------------*/
+/* Allocate and Initialise Column Info                                   */
+/*------------------------------------------------------------------------*/
+
+static BOOL init_backdrop_column_info(void)
+{
+    log_debug(LOG_GUI, "Allocating backdrop column info\n");
+
+    backdrop_column_info = AllocLBColumnInfo(NUM_COLUMNS,
+        LBCIA_Column, COL_NAME,
+            LBCIA_Title,     "Name",
+            LBCIA_Weight,    15,
+            LBCIA_Sortable,  TRUE,
+            LBCIA_SortArrow, TRUE,
+            LBCIA_Flags,     CIF_SORTABLE | CIF_DRAGGABLE,
+        LBCIA_Column, COL_STATUS,
+            LBCIA_Title,     "Status",
+            LBCIA_Weight,    10,
+            LBCIA_Sortable,  TRUE,
+            LBCIA_SortArrow, TRUE,
+            LBCIA_Flags,     CIF_SORTABLE | CIF_DRAGGABLE,
+        LBCIA_Column, COL_DEVICE,
+            LBCIA_Title,     "Device",
+            LBCIA_Weight,     9,
+            LBCIA_Sortable,  TRUE,
+            LBCIA_SortArrow, TRUE,
+            LBCIA_Flags,     CIF_SORTABLE | CIF_DRAGGABLE,
+        LBCIA_Column, COL_PATH,
+            LBCIA_Title,     "Path",
+            LBCIA_Weight,    28,
+            LBCIA_Sortable,  TRUE,
+            LBCIA_SortArrow, TRUE,
+            LBCIA_Flags,     CIF_SORTABLE | CIF_DRAGGABLE,
+        LBCIA_Column, COL_TYPE,
+            LBCIA_Title,     "Type",
+            LBCIA_Weight,     9,
+            LBCIA_Sortable,  TRUE,
+            LBCIA_SortArrow, TRUE,
+            LBCIA_Flags,     CIF_SORTABLE | CIF_DRAGGABLE,
+        LBCIA_Column, COL_POS_X,
+            LBCIA_Title,     "X",
+            LBCIA_Weight,     6,
+            LBCIA_Sortable,  FALSE,
+            LBCIA_SortArrow, FALSE,
+        LBCIA_Column, COL_POS_Y,
+            LBCIA_Title,     "Y",
+            LBCIA_Weight,     6,
+            LBCIA_Sortable,  FALSE,
+            LBCIA_SortArrow, FALSE,
+        TAG_DONE);
+
+    if (backdrop_column_info == NULL)
+    {
+        log_error(LOG_GUI, "Failed to allocate backdrop column info\n");
+        return FALSE;
+    }
+
+    return TRUE;
+}
 
 /**
  * Build ListBrowser nodes from the current backdrop_list.
@@ -667,6 +747,134 @@ static void perform_remove_selected(struct iTidyBackdropWindow *bd_data)
 }
 
 /*------------------------------------------------------------------------*/
+/* WB Snapshot via ARexx                                                 */
+/*------------------------------------------------------------------------*/
+
+/*
+ * Write a tiny ARexx script to T: and run it synchronously via 'RX'.
+ * This replicates the manual sequence:
+ *   Workbench -> Update All
+ *   Workbench -> Redraw All
+ *   Workbench -> Snapshot -> All
+ *
+ * Running Snapshot All after iTidy has written new positions ensures that
+ * WB's in-memory state (correct, because all devices are now mounted) is
+ * flushed back to the .info files.  On the next reboot every icon loads
+ * from those pre-correct coordinates and WB's boot-time collision-
+ * avoidance logic never fires.
+ *
+ * Must be called after itidy_apply_wb_layout() has written positions.
+ */
+static void run_wb_snapshot_arexx(void)
+{
+    static const char *script_path = "T:iTidy_SnapWB.rexx";
+    static const char *script_content =
+        "/* iTidy - Workbench Snapshot */\n"
+        "/* Update All */\n"
+        "MENU INVOKE WORKBENCH.UPDATEALL\n"
+        "/* Redraw All */\n"
+        "MENU INVOKE WORKBENCH.REDRAWALL\n"
+        "ADDRESS WORKBENCH\n"
+        "WINDOW ROOT ACTIVATE\n"
+        "MENU INVOKE WINDOW.SNAPSHOT.ALL\n";
+
+    BPTR fh;
+
+    /* Write script to T: */
+    fh = Open((STRPTR)script_path, MODE_NEWFILE);
+    if (!fh)
+    {
+        log_warning(LOG_GUI,
+                    "run_wb_snapshot_arexx: cannot write %s\n",
+                    script_path);
+        return;
+    }
+    Write(fh, (APTR)script_content, (LONG)strlen(script_content));
+    Close(fh);
+
+    log_info(LOG_GUI, "Running WB Snapshot ARexx script...\n");
+
+    /* Run synchronously - blocks until Snapshot All completes */
+    /* Both handles must be valid - RX requires a real input stream */
+    {
+        BPTR in_fh  = Open((STRPTR)"NIL:", MODE_OLDFILE);
+        BPTR out_fh = Open((STRPTR)"NIL:", MODE_NEWFILE);
+        LONG rc;
+
+        rc = SystemTags((STRPTR)"SYS:RexxC/RX T:iTidy_SnapWB.rexx",
+                       SYS_Input,  in_fh,
+                       SYS_Output, out_fh,
+                       SYS_Asynch, FALSE,
+                       TAG_DONE);
+
+        if (in_fh)  Close(in_fh);
+        if (out_fh) Close(out_fh);
+
+        if (rc != 0)
+            log_warning(LOG_GUI,
+                        "WB Snapshot: RX returned error %ld\n", (long)rc);
+    }
+
+    /* Remove temp script */
+    DeleteFile((STRPTR)script_path);
+
+    log_info(LOG_GUI, "WB Snapshot ARexx script complete.\n");
+}
+
+/*
+ * Update All + Redraw All only - no Snapshot.
+ * Used by the TEST button to verify ARexx menu commands work on this system
+ * without committing a snapshot.
+ */
+static void run_wb_update_redraw_arexx(void)
+{
+    static const char *script_path = "T:iTidy_UpdWB.rexx";
+    static const char *script_content =
+        "/* iTidy - WB Update+Redraw test */\n"
+        "MENU INVOKE WORKBENCH.UPDATEALL\n"
+        "MENU INVOKE WORKBENCH.REDRAWALL\n";
+
+    BPTR fh;
+    BPTR in_fh;
+    BPTR out_fh;
+    LONG rc;
+
+    fh = Open((STRPTR)script_path, MODE_NEWFILE);
+    if (!fh)
+    {
+        log_warning(LOG_GUI,
+                    "run_wb_update_redraw_arexx: cannot write %s\n",
+                    script_path);
+        return;
+    }
+    Write(fh, (APTR)script_content, (LONG)strlen(script_content));
+    Close(fh);
+
+    log_info(LOG_GUI, "Running WB Update+Redraw ARexx script...\n");
+
+    /* Both handles must be valid - RX requires a real input stream */
+    in_fh  = Open((STRPTR)"NIL:", MODE_OLDFILE);
+    out_fh = Open((STRPTR)"NIL:", MODE_NEWFILE);
+
+    rc = SystemTags((STRPTR)"SYS:RexxC/RX T:iTidy_UpdWB.rexx",
+                   SYS_Input,  in_fh,
+                   SYS_Output, out_fh,
+                   SYS_Asynch, FALSE,
+                   TAG_DONE);
+
+    if (in_fh)  Close(in_fh);
+    if (out_fh) Close(out_fh);
+
+    DeleteFile((STRPTR)script_path);
+
+    if (rc != 0)
+        log_warning(LOG_GUI,
+                    "WB Update+Redraw: RX returned error %ld\n", (long)rc);
+    else
+        log_info(LOG_GUI, "WB Update+Redraw ARexx script complete.\n");
+}
+
+/*------------------------------------------------------------------------*/
 /* Tidy Layout                                                            */
 /*------------------------------------------------------------------------*/
 
@@ -767,10 +975,15 @@ static void perform_tidy_layout(struct iTidyBackdropWindow *bd_data)
 
         bd_data->changes_made = TRUE;
 
+        /* Snapshot All - flush correct positions to disk before WB can
+         * clobber them with its in-memory state on the next Snapshot. */
+        update_status_label(bd_data, "Snapshotting Workbench...");
+        run_wb_snapshot_arexx();
+
         sprintf(result_buf,
                 "Updated %d icons.\n"
-                "Use Workbench -> Update All\n"
-                "if icons don't move immediately.",
+                "Workbench has been snapshotted.\n"
+                "Positions will survive a reboot.",
                 applied);
         update_status_label(bd_data, result_buf);
 
@@ -810,6 +1023,8 @@ BOOL open_backdrop_window(struct iTidyBackdropWindow *bd_data)
     /* Initialize structure */
     memset(bd_data, 0, sizeof(struct iTidyBackdropWindow));
     bd_data->selected_index = -1;
+    bd_data->sort_column    = ~0UL;       /* ~0 = no column sorted yet */
+    bd_data->sort_direction = LBMSORT_FORWARD;
 
     /* Open ReAction classes */
     if (!open_reaction_classes())
@@ -818,16 +1033,49 @@ BOOL open_backdrop_window(struct iTidyBackdropWindow *bd_data)
         return FALSE;
     }
 
+    /* Allocate column info with sorting support */
+    if (!init_backdrop_column_info())
+    {
+        log_error(LOG_GUI, "Failed to initialise backdrop column info\n");
+        close_reaction_classes();
+        return FALSE;
+    }
+
     /* Get Workbench screen */
     screen = LockPubScreen(NULL);
     if (screen == NULL)
     {
         log_error(LOG_GUI, "ERROR: Failed to lock Workbench screen\n");
+        FreeLBColumnInfo(backdrop_column_info);
+        backdrop_column_info = NULL;
         close_reaction_classes();
         return FALSE;
     }
 
     bd_data->screen = screen;
+
+    /* Get visual info for menus */
+    bd_data->visual_info = GetVisualInfo(screen, TAG_END);
+    if (!bd_data->visual_info)
+    {
+        log_warning(LOG_GUI, "Backdrop window: Failed to get visual info - menus disabled\n");
+    }
+
+    /* Create menus */
+    if (bd_data->visual_info)
+    {
+        bd_data->menu_strip = CreateMenus(backdrop_menu_template, TAG_END);
+        if (bd_data->menu_strip)
+        {
+            LayoutMenus(bd_data->menu_strip, bd_data->visual_info,
+                GTMN_NewLookMenus, TRUE,
+                TAG_END);
+        }
+        else
+        {
+            log_warning(LOG_GUI, "Backdrop window: Failed to create menus\n");
+        }
+    }
 
     /* Create the ReAction window object */
     bd_data->window_obj = NewObject(WINDOW_GetClass(), NULL,
@@ -849,7 +1097,7 @@ BOOL open_backdrop_window(struct iTidyBackdropWindow *bd_data)
         WA_Activate,     TRUE,
         WA_NoCareRefresh, TRUE,
         WINDOW_Position, WPOS_CENTERSCREEN,
-        WA_IDCMP, IDCMP_GADGETDOWN | IDCMP_GADGETUP | IDCMP_CLOSEWINDOW | IDCMP_NEWSIZE,
+        WA_IDCMP, IDCMP_GADGETDOWN | IDCMP_GADGETUP | IDCMP_CLOSEWINDOW | IDCMP_NEWSIZE | IDCMP_MENUPICK,
 
         WINDOW_ParentGroup, NewObject(LAYOUT_GetClass(), NULL,
             LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
@@ -925,6 +1173,14 @@ BOOL open_backdrop_window(struct iTidyBackdropWindow *bd_data)
                         GA_Disabled,  TRUE,
                     TAG_END),
 
+                    LAYOUT_AddChild, bd_data->test_btn =
+                        NewObject(BUTTON_GetClass(), NULL,
+                        GA_ID,        GID_BD_TEST_BUTTON,
+                        GA_Text,      "TEST Upd/Redraw",
+                        GA_RelVerify, TRUE,
+                        GA_TabCycle,  TRUE,
+                    TAG_END),
+
                     LAYOUT_AddChild, bd_data->close_btn =
                         NewObject(BUTTON_GetClass(), NULL,
                         GA_ID,        GID_BD_CLOSE_BUTTON,
@@ -942,6 +1198,8 @@ BOOL open_backdrop_window(struct iTidyBackdropWindow *bd_data)
     if (bd_data->window_obj == NULL)
     {
         log_error(LOG_GUI, "ERROR: Failed to create backdrop window object\n");
+        FreeLBColumnInfo(backdrop_column_info);
+        backdrop_column_info = NULL;
         UnlockPubScreen(NULL, screen);
         close_reaction_classes();
         return FALSE;
@@ -954,13 +1212,33 @@ BOOL open_backdrop_window(struct iTidyBackdropWindow *bd_data)
         log_error(LOG_GUI, "ERROR: Failed to open backdrop window\n");
         DisposeObject(bd_data->window_obj);
         bd_data->window_obj = NULL;
+        FreeLBColumnInfo(backdrop_column_info);
+        backdrop_column_info = NULL;
         UnlockPubScreen(NULL, screen);
         close_reaction_classes();
         return FALSE;
     }
 
+    /* Attach menus */
+    if (bd_data->menu_strip)
+    {
+        SetMenuStrip(bd_data->window, bd_data->menu_strip);
+    }
+
     bd_data->window_open = TRUE;
     log_info(LOG_GUI, "Backdrop window opened successfully\n");
+
+    /* Set LISTBROWSER_TitleClickable AFTER window is opened.
+     * Setting it in NewObject() is silently ignored (see Reaction_tips.md,
+     * "LISTBROWSER_TitleClickable Must Be Set AFTER Window Opens"). */
+    if (bd_data->listbrowser_obj && bd_data->window)
+    {
+        log_debug(LOG_GUI, "Setting LISTBROWSER_TitleClickable to TRUE\n");
+        SetGadgetAttrs((struct Gadget *)bd_data->listbrowser_obj,
+                       bd_data->window, NULL,
+                       LISTBROWSER_TitleClickable, TRUE,
+                       TAG_DONE);
+    }
 
     return TRUE;
 }
@@ -975,6 +1253,12 @@ void close_backdrop_window(struct iTidyBackdropWindow *bd_data)
         return;
 
     log_info(LOG_GUI, "close_backdrop_window: Starting cleanup\n");
+
+    /* Remove menus before disposing window */
+    if (bd_data->window && bd_data->menu_strip)
+    {
+        ClearMenuStrip(bd_data->window);
+    }
 
     /* Detach ListBrowser list before disposing window */
     if (bd_data->window && bd_data->listbrowser_obj)
@@ -1021,6 +1305,27 @@ void close_backdrop_window(struct iTidyBackdropWindow *bd_data)
         bd_data->device_list = NULL;
     }
 
+    /* Free column info (must be done before close_reaction_classes) */
+    if (backdrop_column_info != NULL)
+    {
+        FreeLBColumnInfo(backdrop_column_info);
+        backdrop_column_info = NULL;
+    }
+
+    /* Free menu strip */
+    if (bd_data->menu_strip)
+    {
+        FreeMenus(bd_data->menu_strip);
+        bd_data->menu_strip = NULL;
+    }
+
+    /* Free visual info */
+    if (bd_data->visual_info)
+    {
+        FreeVisualInfo(bd_data->visual_info);
+        bd_data->visual_info = NULL;
+    }
+
     /* Unlock screen */
     if (bd_data->screen)
     {
@@ -1034,6 +1339,198 @@ void close_backdrop_window(struct iTidyBackdropWindow *bd_data)
     bd_data->window_open = FALSE;
 
     log_info(LOG_GUI, "Backdrop window closed successfully\n");
+}
+
+/*------------------------------------------------------------------------*/
+/* Save List As                                                           */
+/*------------------------------------------------------------------------*/
+
+/**
+ * perform_save_list_as - Dump the current ListBrowser contents to a text
+ * file chosen via an ASL save requester.  Intended for AI agent validation.
+ */
+static void perform_save_list_as(struct iTidyBackdropWindow *bd_data)
+{
+    struct FileRequester *freq;
+    char full_path[512];
+    BPTR out_file;
+    int i;
+    char line_buf[512];
+
+    if (!bd_data || !bd_data->window)
+        return;
+
+    if (!bd_data->scan_performed || !bd_data->backdrop_list)
+    {
+        show_requester(bd_data->window,
+                       "No Data",
+                       "No scan data to save.\nPlease click Scan first.",
+                       "_OK",
+                       REQIMAGE_INFO);
+        return;
+    }
+
+    /* Expand PROGDIR: to the real directory path for the file requester */
+    {
+        char expanded_dir[512];
+        if (!ExpandProgDir("PROGDIR:", expanded_dir, sizeof(expanded_dir)))
+        {
+            log_warning(LOG_GUI, "perform_save_list_as: ExpandProgDir failed, falling back to PROGDIR:\n");
+            strcpy(expanded_dir, "PROGDIR:");
+        }
+        log_info(LOG_GUI, "Save list as: initial drawer: %s\n", expanded_dir);
+
+        /* Open ASL save file requester */
+        freq = (struct FileRequester *)AllocAslRequestTags(ASL_FileRequest,
+            ASLFR_TitleText,     "Save List As...",
+            ASLFR_InitialDrawer, expanded_dir,
+            ASLFR_InitialFile,   "backdrop_list.txt",
+            ASLFR_DoSaveMode,    TRUE,
+            ASLFR_RejectIcons,   TRUE,
+            ASLFR_Window,        bd_data->window,
+            TAG_DONE);
+    } /* end expanded_dir scope */
+
+    if (!freq)
+    {
+        show_requester(bd_data->window,
+                       "Error",
+                       "Could not open file requester.",
+                       "_OK",
+                       REQIMAGE_ERROR);
+        return;
+    }
+
+    if (!AslRequest(freq, NULL))
+    {
+        /* User cancelled */
+        FreeAslRequest(freq);
+        return;
+    }
+
+    /* Build full file path */
+    strcpy(full_path, freq->fr_Drawer);
+    if (!AddPart((STRPTR)full_path, (STRPTR)freq->fr_File, sizeof(full_path)))
+    {
+        FreeAslRequest(freq);
+        show_requester(bd_data->window,
+                       "Error",
+                       "File path is too long.",
+                       "_OK",
+                       REQIMAGE_ERROR);
+        return;
+    }
+
+    FreeAslRequest(freq);
+
+    /* Open file for writing */
+    out_file = Open((STRPTR)full_path, MODE_NEWFILE);
+    if (!out_file)
+    {
+        show_requester(bd_data->window,
+                       "Error",
+                       "Could not create output file.",
+                       "_OK",
+                       REQIMAGE_ERROR);
+        return;
+    }
+
+    /* Write file header */
+    sprintf(line_buf, "iTidy Backdrop Window - List Contents\n");
+    Write(out_file, line_buf, strlen(line_buf));
+    sprintf(line_buf, "Generated by: Save list as... (Project menu)\n");
+    Write(out_file, line_buf, strlen(line_buf));
+    sprintf(line_buf, "Total entries: %d\n", bd_data->backdrop_list->count);
+    Write(out_file, line_buf, strlen(line_buf));
+    sprintf(line_buf, "\n");
+    Write(out_file, line_buf, strlen(line_buf));
+
+    /* Column header */
+    sprintf(line_buf, "%-32s  %-12s  %-10s  %-40s  %-12s  %-8s  %-8s\n",
+            "Name", "Status", "Device", "Path", "Type", "X", "Y");
+    Write(out_file, line_buf, strlen(line_buf));
+
+    /* Separator */
+    sprintf(line_buf,
+            "------------------------------  ----------  --------  "
+            "--------------------------------------  ----------  ------  ------\n");
+    Write(out_file, line_buf, strlen(line_buf));
+
+    /* Write each entry */
+    for (i = 0; i < bd_data->backdrop_list->count; i++)
+    {
+        const iTidy_BackdropEntry *entry = &bd_data->backdrop_list->entries[i];
+        const char *status_str;
+        const char *type_str;
+        char x_buf[16];
+        char y_buf[16];
+
+        switch (entry->status)
+        {
+            case ITIDY_ENTRY_VALID:         status_str = "OK";          break;
+            case ITIDY_ENTRY_ORPHAN:        status_str = "ORPHAN";      break;
+            case ITIDY_ENTRY_CANNOT_VERIFY: status_str = "No media";    break;
+            case ITIDY_ENTRY_DEVICE_ICON:   status_str = "Device";      break;
+            default:                        status_str = "?";           break;
+        }
+
+        type_str = itidy_icon_type_name(entry->icon_type);
+
+        if (entry->icon_x == NO_ICON_POSITION)
+            strcpy(x_buf, "Not set");
+        else
+            sprintf(x_buf, "%ld", (long)entry->icon_x);
+
+        if (entry->icon_y == NO_ICON_POSITION)
+            strcpy(y_buf, "Not set");
+        else
+            sprintf(y_buf, "%ld", (long)entry->icon_y);
+
+        sprintf(line_buf, "%-32s  %-12s  %-10s  %-40s  %-12s  %-8s  %-8s\n",
+                entry->display_name,
+                status_str,
+                entry->device_name,
+                entry->entry_path,
+                type_str,
+                x_buf,
+                y_buf);
+        Write(out_file, line_buf, strlen(line_buf));
+    }
+
+    /* Write summary */
+    {
+        int valid = 0, orphan = 0, device_ct = 0, cannot_verify = 0;
+        for (i = 0; i < bd_data->backdrop_list->count; i++)
+        {
+            switch (bd_data->backdrop_list->entries[i].status)
+            {
+                case ITIDY_ENTRY_VALID:         valid++;         break;
+                case ITIDY_ENTRY_ORPHAN:        orphan++;        break;
+                case ITIDY_ENTRY_DEVICE_ICON:   device_ct++;     break;
+                case ITIDY_ENTRY_CANNOT_VERIFY: cannot_verify++; break;
+            }
+        }
+        sprintf(line_buf, "\nSummary: %d total, %d OK, %d devices, %d orphans, %d unverified\n",
+                bd_data->backdrop_list->count, valid, device_ct, orphan, cannot_verify);
+        Write(out_file, line_buf, strlen(line_buf));
+    }
+
+    Close(out_file);
+
+    /* Success message */
+    {
+        char msg[64];
+        const char *filename = FilePart((STRPTR)full_path);
+        sprintf(msg, "List saved to:\n%s", filename ? filename : full_path);
+        show_requester(bd_data->window,
+                       "Saved",
+                       msg,
+                       "_OK",
+                       REQIMAGE_INFO);
+    }
+
+    log_info(LOG_GUI, "Backdrop list saved to: %s (%d entries)\n",
+             full_path, bd_data->backdrop_list->count);
 }
 
 /*------------------------------------------------------------------------*/
@@ -1072,26 +1569,111 @@ BOOL handle_backdrop_window_events(struct iTidyBackdropWindow *bd_data)
                 continue_running = FALSE;
                 break;
 
+            case WMHI_MENUPICK:
+            {
+                struct MenuItem *item;
+                ULONG menu_number = (ULONG)code;
+
+                while (menu_number != MENUNULL)
+                {
+                    item = ItemAddress(bd_data->menu_strip, menu_number);
+                    if (!item)
+                        break;
+
+                    switch ((ULONG)GTMENUITEM_USERDATA(item))
+                    {
+                        case MENU_BD_PROJECT_SAVE_AS:
+                            perform_save_list_as(bd_data);
+                            break;
+                    }
+
+                    menu_number = item->NextSelect;
+                }
+                break;
+            }
+
             case WMHI_GADGETUP:
                 switch (result & WMHI_GADGETMASK)
                 {
                     case GID_BD_LISTBROWSER:
                     {
-                        ULONG selected = ~0;
+                        ULONG rel_event = LBRE_NORMAL;
 
-                        GetAttr(LISTBROWSER_Selected,
+                        GetAttr(LISTBROWSER_RelEvent,
                                 bd_data->listbrowser_obj,
-                                &selected);
+                                &rel_event);
 
-                        if (selected != ~0 &&
-                            bd_data->backdrop_list &&
-                            (int)selected < bd_data->backdrop_list->count)
+                        if (rel_event == LBRE_TITLECLICK)
                         {
-                            bd_data->selected_index = (LONG)selected;
+                            /* 'code' holds the clicked column number */
+                            ULONG sort_column = (ULONG)code;
+                            ULONG direction;
+
+                            /* Toggle direction when clicking the same column */
+                            if (sort_column == bd_data->sort_column)
+                            {
+                                direction = (bd_data->sort_direction == LBMSORT_FORWARD)
+                                            ? LBMSORT_REVERSE : LBMSORT_FORWARD;
+                            }
+                            else
+                            {
+                                direction = LBMSORT_FORWARD;
+                            }
+
+                            bd_data->sort_column    = sort_column;
+                            bd_data->sort_direction = direction;
+
+                            log_debug(LOG_GUI, "Column sort: col=%lu dir=%s\n",
+                                      sort_column,
+                                      (direction == LBMSORT_FORWARD) ? "FWD" : "REV");
+
+                            /* List must be ATTACHED when calling LBM_SORT */
+                            if (bd_data->list_nodes)
+                            {
+                                LONG sort_result;
+
+                                sort_result = DoGadgetMethod(
+                                    (struct Gadget *)bd_data->listbrowser_obj,
+                                    bd_data->window, NULL,
+                                    LBM_SORT, bd_data->list_nodes,
+                                    sort_column, direction, NULL);
+
+                                log_debug(LOG_GUI, "LBM_SORT returned: %ld\n", sort_result);
+
+                                /* Update sort arrow to show active column */
+                                SetGadgetAttrs(
+                                    (struct Gadget *)bd_data->listbrowser_obj,
+                                    bd_data->window, NULL,
+                                    LISTBROWSER_SortColumn, sort_column,
+                                    TAG_DONE);
+
+                                RefreshGadgets(
+                                    (struct Gadget *)bd_data->listbrowser_obj,
+                                    bd_data->window, NULL);
+                            }
+                        }
+                        else if (rel_event == LBRE_COLUMNADJUST)
+                        {
+                            /* Column resize - handled automatically, no action needed */
                         }
                         else
                         {
-                            bd_data->selected_index = -1;
+                            ULONG selected = ~0;
+
+                            GetAttr(LISTBROWSER_Selected,
+                                    bd_data->listbrowser_obj,
+                                    &selected);
+
+                            if (selected != ~0 &&
+                                bd_data->backdrop_list &&
+                                (int)selected < bd_data->backdrop_list->count)
+                            {
+                                bd_data->selected_index = (LONG)selected;
+                            }
+                            else
+                            {
+                                bd_data->selected_index = -1;
+                            }
                         }
                         break;
                     }
@@ -1106,6 +1688,12 @@ BOOL handle_backdrop_window_events(struct iTidyBackdropWindow *bd_data)
 
                     case GID_BD_TIDY_BUTTON:
                         perform_tidy_layout(bd_data);
+                        break;
+
+                    case GID_BD_TEST_BUTTON:
+                        update_status_label(bd_data, "Running Update All + Redraw All...");
+                        run_wb_update_redraw_arexx();
+                        update_status_label(bd_data, "Update+Redraw done. Did icons move?");
                         break;
 
                     case GID_BD_CLOSE_BUTTON:

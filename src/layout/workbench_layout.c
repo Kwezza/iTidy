@@ -22,6 +22,7 @@
 #include <proto/utility.h>
 #include <workbench/workbench.h>
 #include <workbench/icon.h>
+
 #include <string.h>
 #include <stdio.h>
 
@@ -43,6 +44,9 @@
 /*------------------------------------------------------------------------*/
 /* Internal Helpers                                                       */
 /*------------------------------------------------------------------------*/
+
+/* Forward declaration - defined near itidy_apply_wb_layout() */
+static BOOL ensure_device_disk_info(const char *device_disk_path);
 
 /**
  * Build a FullIconDetails entry from a BackdropEntry by calling
@@ -297,6 +301,13 @@ BOOL itidy_calculate_wb_layout(const iTidy_WBLayoutParams *params,
                 entry->status != ITIDY_ENTRY_DEVICE_ICON)
                 continue;
 
+            /* For device icons with no Disk.info, bootstrap one from the
+             * system default before attempting to load icon details.
+             * Without this, md2/WHD-style volumes that were never
+             * snapshotted by WB are silently skipped. */
+            if (entry->status == ITIDY_ENTRY_DEVICE_ICON)
+                ensure_device_disk_info(entry->full_path);
+
             /* Try to load icon details from disk */
             if (!build_icon_detail(entry, &icon))
             {
@@ -528,6 +539,103 @@ cleanup:
     return ok;
 }
 
+/*
+ * Ensure <device>:Disk.info exists for a device icon.
+ *
+ * Workbench uses a built-in placeholder for devices that have no Disk.info,
+ * which means GetDiskObject() returns NULL (or the system default with no
+ * stored position) and position writes have no effect.  This happens for
+ * any device that has never been "Snapshot"ed by the user.
+ *
+ * When WB snapshots such a device it copies ENV:Sys/def_disk.info (the
+ * default disk icon) to <device>:Disk.info and then writes the position.
+ * We do exactly the same thing here so that PutDiskObject has a target.
+ *
+ * Callers must already have pr_WindowPtr = (APTR)-1 to suppress requesters.
+ *
+ * @param device_disk_path  Full path WITHOUT .info, e.g. "WHD:Disk"
+ * @return TRUE if Disk.info now exists (already existed or was just created)
+ */
+static BOOL ensure_device_disk_info(const char *device_disk_path)
+{
+    char info_path[512]; /* <device>:Disk.info */
+    BPTR lock;
+    BPTR src_file, dst_file;
+    char copy_buf[512];
+    LONG bytes_read;
+    BOOL copy_ok;
+    int s;
+
+    /* src candidates: ENV: is the in-memory (current) copy; ENVARC: is
+     * the persistent on-disk copy.  Try ENV: first. */
+    static const char * const sources[] = {
+        "ENV:Sys/def_disk.info",
+        "ENVARC:Sys/def_disk.info",
+        NULL
+    };
+
+    snprintf(info_path, sizeof(info_path), "%s.info", device_disk_path);
+
+    /* Already exists - nothing to do */
+    lock = Lock((STRPTR)info_path, ACCESS_READ);
+    if (lock)
+    {
+        UnLock(lock);
+        return TRUE;
+    }
+
+    /* Try each source in turn */
+    for (s = 0; sources[s] != NULL; s++)
+    {
+        lock = Lock((STRPTR)sources[s], ACCESS_READ);
+        if (!lock)
+            continue;
+        UnLock(lock);
+
+        src_file = Open((STRPTR)sources[s], MODE_OLDFILE);
+        if (!src_file)
+            continue;
+
+        dst_file = Open((STRPTR)info_path, MODE_NEWFILE);
+        if (!dst_file)
+        {
+            Close(src_file);
+            continue;
+        }
+
+        copy_ok = TRUE;
+        while ((bytes_read = Read(src_file, copy_buf,
+                                  sizeof(copy_buf))) > 0)
+        {
+            if (Write(dst_file, copy_buf, bytes_read) != bytes_read)
+            {
+                copy_ok = FALSE;
+                break;
+            }
+        }
+        Close(dst_file);
+        Close(src_file);
+
+        if (copy_ok)
+        {
+            log_info(LOG_GENERAL,
+                     "Created %s from %s\n",
+                     info_path, sources[s]);
+            return TRUE;
+        }
+
+        /* Partial write - remove the broken file before trying next source */
+        DeleteFile((STRPTR)info_path);
+    }
+
+    log_warning(LOG_GENERAL,
+                "Cannot create %s: "
+                "ENV:Sys/def_disk.info and ENVARC:Sys/def_disk.info "
+                "not found - device icon will be skipped\n",
+                info_path);
+    return FALSE;
+}
+
 int itidy_apply_wb_layout(const iTidy_BackdropList *list,
                            const iTidy_WBLayoutResult *result)
 {
@@ -564,6 +672,23 @@ int itidy_apply_wb_layout(const iTidy_BackdropList *list,
                   i, entry->full_path,
                   (long)le->new_x, (long)le->new_y,
                   le->changed ? " (CHANGED)" : " (unchanged)");
+
+        /* For device icons: ensure Disk.info exists before trying to load it.
+         * Devices that have never been "Snapshot"ed in WB have no Disk.info;
+         * WB uses an internal placeholder image and GetDiskObject() returns
+         * NULL/default with no stored position.  Creating Disk.info from the
+         * system default (ENV:Sys/def_disk.info) mirrors exactly what WB
+         * does on a manual Snapshot and gives PutDiskObject a target file. */
+        if (entry->status == ITIDY_ENTRY_DEVICE_ICON)
+        {
+            if (!ensure_device_disk_info(entry->full_path))
+            {
+                log_warning(LOG_GENERAL,
+                            "Skipping device icon (no Disk.info): %s\n",
+                            entry->full_path);
+                continue;
+            }
+        }
 
         /* Load the icon */
         dobj = GetDiskObject((STRPTR)entry->full_path);

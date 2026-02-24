@@ -66,8 +66,7 @@ LAYOUT_SRCS = \
 	$(SRC_DIR)/layout/icon_sorter.c \
 	$(SRC_DIR)/layout/icon_positioner.c \
 	$(SRC_DIR)/layout/block_layout.c \
-	$(SRC_DIR)/layout/tool_scanner.c \
-	$(SRC_DIR)/layout/workbench_layout.c
+	$(SRC_DIR)/layout/tool_scanner.c
 
 # DefIcons source files
 DEFICONS_SRCS = \
@@ -133,10 +132,6 @@ RESTORE_BACKUP_SRCS = \
 	$(SRC_DIR)/GUI/RestoreBackups/restore_window.c \
 	$(SRC_DIR)/GUI/RestoreBackups/folder_view_window.c
 
-# Backdrop/WB Screen Manager window subsystem source files
-BACKDROP_GUI_SRCS = \
-	$(SRC_DIR)/GUI/BackdropCleaner/backdrop_window.c
-
 # DOS subdirectory sources
 DOS_SRCS = \
 	$(SRC_DIR)/DOS/getDiskDetails.c \
@@ -156,7 +151,7 @@ PLATFORM_SRCS = $(SRC_DIR)/platform/amiga_platform.c
 MEMORY_TRACKING_SRCS = $(SRC_DIR)/platform/platform.c
 
 # All sources
-SRCS = $(CORE_SRCS) $(LAYOUT_SRCS) $(ICON_EDIT_SRCS) $(BACKUP_SRCS) $(GUI_SRCS) $(DEFAULT_TOOLS_SRCS) $(RESTORE_BACKUP_SRCS) $(BACKDROP_GUI_SRCS) $(DOS_SRCS) $(SETTINGS_SRCS) $(PLATFORM_SRCS) $(MEMORY_TRACKING_SRCS)
+SRCS = $(CORE_SRCS) $(LAYOUT_SRCS) $(ICON_EDIT_SRCS) $(BACKUP_SRCS) $(GUI_SRCS) $(DEFAULT_TOOLS_SRCS) $(RESTORE_BACKUP_SRCS) $(DOS_SRCS) $(SETTINGS_SRCS) $(PLATFORM_SRCS) $(MEMORY_TRACKING_SRCS)
 
 # Object files (in build directory)
 # Note: platform.c is in include/platform, needs special handling
@@ -168,13 +163,12 @@ BACKUP_OBJS = $(BACKUP_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 GUI_OBJS = $(GUI_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 DEFAULT_TOOLS_OBJS = $(DEFAULT_TOOLS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 RESTORE_BACKUP_OBJS = $(RESTORE_BACKUP_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
-BACKDROP_GUI_OBJS = $(BACKDROP_GUI_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 DOS_OBJS = $(DOS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 SETTINGS_OBJS = $(SETTINGS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 PLATFORM_OBJS = $(PLATFORM_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 MEMORY_TRACKING_OBJS = $(OUT_DIR)/platform_memory.o
 
-OBJS = $(CORE_OBJS) $(LAYOUT_OBJS) $(DEFICONS_OBJS) $(ICON_EDIT_OBJS) $(BACKUP_OBJS) $(GUI_OBJS) $(DEFAULT_TOOLS_OBJS) $(RESTORE_BACKUP_OBJS) $(BACKDROP_GUI_OBJS) $(DOS_OBJS) $(SETTINGS_OBJS) $(PLATFORM_OBJS) $(MEMORY_TRACKING_OBJS)
+OBJS = $(CORE_OBJS) $(LAYOUT_OBJS) $(DEFICONS_OBJS) $(ICON_EDIT_OBJS) $(BACKUP_OBJS) $(GUI_OBJS) $(DEFAULT_TOOLS_OBJS) $(RESTORE_BACKUP_OBJS) $(DOS_OBJS) $(SETTINGS_OBJS) $(PLATFORM_OBJS) $(MEMORY_TRACKING_OBJS)
 
 ################################################################################
 # Build Rules

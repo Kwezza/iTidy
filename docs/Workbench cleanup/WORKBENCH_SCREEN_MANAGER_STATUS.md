@@ -2,7 +2,7 @@
 
 **Date**: 2026-02-23
 **Branch**: Dev
-**Status**: PARTIALLY WORKING - layout positioning has a display refresh issue
+**Status**: AWAITING TEST - UpdateWorkbench remove+add fix applied for left-out icon positions
 
 ---
 
@@ -232,7 +232,10 @@ iconSpacingY        = 8
 **Problem**: `apply_row_vertical_alignment()` with `TEXT_ALIGN_BOTTOM` adds `maxRowHeight - thisIcon->icon_max_height` to each icon's Y position. Since icons have wildly different heights (Roadie=3px image, Rebuild=81px image), icons in the same row ended up at very different Y values.
 **Solution**: Changed `textAlignment` to `TEXT_ALIGN_TOP` in `build_wb_prefs()`.
 
-### Fix 3: "0 Changed" Skip (2026-02-23)
+### Fix 4: UpdateWorkbench Remove+Add For Left-Out Icon Visual Refresh (2026-02-23)
+**Problem**: `ICONPUTA_NotifyWorkbench` updates the icon's appearance in-place but does not physically move a left-out (backdrop) icon to a new screen position. Workbench keeps on-screen positions in its internal state and overwrites the `.info` file during shutdown, undoing iTidy's changes. This is why even rebooting did not help - WB snapshots the old on-screen position back to disk on exit.
+**Solution**: Added `UpdateWorkbench(filename, parent_lock, UPDATEWB_ObjectRemoved)` + `UpdateWorkbench(filename, parent_lock, UPDATEWB_ObjectAdded)` cycle (V37 workbench.library) immediately after each successful `PutIconTagList()` for non-device icons. The Remove call evicts the icon from WB's internal state; the Add call forces WB to re-read the `.info` file (with the new X/Y) and redisplay the icon at the correct position. Device icons are excluded because `UPDATEWB_ObjectRemoved` is documented as a no-op for disk icons and the existing `ICONPUTA_NotifyWorkbench` path already handles them correctly.
+**Files changed**: `src/layout/workbench_layout.c` - added `#define WorkbenchBase` isolation, `#include <proto/wb.h>`, `split_amiga_path()` helper, and the UpdateWorkbench remove+add cycle in `itidy_apply_wb_layout()`.
 **Problem**: When all .info files already contained the correct positions (from a previous tidy run), `changed_count == 0` caused the GUI to show "All icons are already in their target positions" and skip the write entirely. Since `ICONPUTA_NotifyWorkbench` was never fired, Workbench never refreshed its display.
 **Solution**: Removed the early exit. Now writes ALL icons regardless of whether positions changed, always triggering `ICONPUTA_NotifyWorkbench`. Changed confirm dialog to show "Re-apply layout to refresh Workbench display?" when 0 changes detected.
 
