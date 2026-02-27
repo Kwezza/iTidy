@@ -7,47 +7,48 @@
 #define ITIDY_MAIN_WINDOW_REACTION_H
 
 /*------------------------------------------------------------------------*/
-/* ReAction Gadget Array Indices                                          */
-/* These indices are used to access gadgets in the win_data->gadgets[]   */
-/* array. Each index corresponds to a specific gadget or layout object.  */
+/* Gadget Array Indices - match ReBuild designer enum names exactly      */
+/* from Tests/ReActon/testcode.c (void main_window, enum main_window_idx)*/
+/* IMPORTANT: Values are explicit to preserve current storage slots.     */
+/* Do NOT reorder without updating all gadgets[] accesses in main_window.c*/
 /*------------------------------------------------------------------------*/
 
-enum iTidyReActionGadgetIndex
+enum main_window_idx
 {
     /* Layout containers */
-    ITIDY_GAD_IDX_MASTER_LAYOUT = 0,
-    ITIDY_GAD_IDX_FOLDER_LAYOUT,
-    ITIDY_GAD_IDX_OPTIONS_LAYOUT,
-    ITIDY_GAD_IDX_LEFT_COLUMN,
-    ITIDY_GAD_IDX_RIGHT_COLUMN,
-    ITIDY_GAD_IDX_TOOLS_LAYOUT,
-    ITIDY_GAD_IDX_BUTTONS_LAYOUT,
-    
-    /* Folder selection gadgets */
-    ITIDY_GAD_IDX_FOLDER_GETFILE,
-    
-    /* Tidy options gadgets - Left column */
-    ITIDY_GAD_IDX_ORDER_CHOOSER,
-    ITIDY_GAD_IDX_RECURSIVE_CHECKBOX,
-    ITIDY_GAD_IDX_POSITION_CHOOSER,
-    
-    /* Tidy options gadgets - Right column */
-    ITIDY_GAD_IDX_SORTBY_CHOOSER,
-    ITIDY_GAD_IDX_BACKUP_CHECKBOX,
-    ITIDY_GAD_IDX_CREATE_NEW_ICONS,
-    
+    main_root_layout             = 0,   /* master vertical container    */
+    main_target_path_layout      = 1,   /* folder selection group       */
+    main_options_layout          = 2,   /* options horizontal group     */
+    main_options_left_col_layout = 3,   /* left column (choosers)       */
+    main_options_right_col_layout= 4,   /* right column (checkboxes)    */
+    main_tools_layout            = 5,   /* tool buttons group           */
+    main_action_buttons_layout   = 6,   /* Start / Exit buttons group   */
+
+    /* Folder selection gadget */
+    main_gf_target_path          = 7,   /* GetFile gadget               */
+
+    /* Left column gadgets */
+    main_ch_sort_primary         = 8,   /* "Grouping" chooser           */
+    main_cb_cleanup_subfolders   = 9,   /* "Include Subfolders" checkbox */
+    main_ch_positioning          = 10,  /* "Window Position" chooser    */
+
+    /* Right column gadgets */
+    main_ch_sort_secondary       = 11,  /* "Sort By" chooser            */
+    main_cb_backup_icons         = 12,  /* "Back Up Layout" checkbox    */
+    main_cb_create_new_icons     = 13,  /* "Create Icons" checkbox      */
+
     /* Tool buttons */
-    ITIDY_GAD_IDX_ADVANCED_BUTTON,
-    ITIDY_GAD_IDX_DEFAULT_TOOLS_BUTTON,
-    ITIDY_GAD_IDX_RESTORE_BUTTON,
-    ITIDY_GAD_IDX_ICON_CREATION_BUTTON,
-    
+    main_btn_advanced            = 14,  /* "Advanced..." button         */
+    main_btn_default_tools       = 15,  /* "Fix Default Tools..." button*/
+    main_btn_restore_backups     = 16,  /* "Restore Backups..." button  */
+    main_btn_icon_settings       = 17,  /* "Icon Creation..." button    */
+
     /* Action buttons */
-    ITIDY_GAD_IDX_START_BUTTON,
-    ITIDY_GAD_IDX_EXIT_BUTTON,
-    
-    /* Count of gadget indices (must be last) */
-    ITIDY_GAD_IDX_COUNT
+    main_btn_start               = 18,  /* "Start" button               */
+    main_btn_exit                = 19,  /* "Exit" button                */
+
+    /* Array size sentinel (must be last) */
+    MAIN_WINDOW_GAD_COUNT        = 20
 };
 
 /*------------------------------------------------------------------------*/
@@ -69,33 +70,6 @@ enum iTidyReActionGadgetIndex
 #define GID_MAIN_ICON_CREATION_BTN  1012
 #define GID_MAIN_START_BUTTON       1010
 #define GID_MAIN_EXIT_BUTTON        1011
-
-/*------------------------------------------------------------------------*/
-/* ReAction Gadget IDs (ITIDY_GAID_* aliases for hint system)           */
-/* These are used with GA_ID tags during gadget creation                 */
-/*------------------------------------------------------------------------*/
-
-#define ITIDY_GAID_MASTER_LAYOUT        1100
-#define ITIDY_GAID_FOLDER_LAYOUT        1101
-#define ITIDY_GAID_OPTIONS_LAYOUT       1102
-#define ITIDY_GAID_LEFT_COLUMN          1103
-#define ITIDY_GAID_RIGHT_COLUMN         1104
-#define ITIDY_GAID_TOOLS_LAYOUT         1105
-#define ITIDY_GAID_BUTTONS_LAYOUT       1106
-
-#define ITIDY_GAID_FOLDER_GETFILE       GID_MAIN_FOLDER_GETFILE
-#define ITIDY_GAID_ORDER_CHOOSER        GID_MAIN_ORDER_CHOOSER
-#define ITIDY_GAID_SORTBY_CHOOSER       GID_MAIN_SORTBY_CHOOSER
-#define ITIDY_GAID_RECURSIVE_CHECKBOX   GID_MAIN_RECURSIVE_CHECKBOX
-#define ITIDY_GAID_BACKUP_CHECKBOX      GID_MAIN_BACKUP_CHECKBOX
-#define ITIDY_GAID_CREATE_NEW_ICONS     GID_MAIN_CREATE_NEW_ICONS
-#define ITIDY_GAID_POSITION_CHOOSER     GID_MAIN_POSITION_CHOOSER
-#define ITIDY_GAID_ADVANCED_BUTTON      GID_MAIN_ADVANCED_BUTTON
-#define ITIDY_GAID_DEFAULT_TOOLS_BUTTON GID_MAIN_DEFAULT_TOOLS_BTN
-#define ITIDY_GAID_RESTORE_BUTTON           GID_MAIN_RESTORE_BUTTON
-#define ITIDY_GAID_ICON_CREATION_BUTTON     GID_MAIN_ICON_CREATION_BTN
-#define ITIDY_GAID_START_BUTTON             GID_MAIN_START_BUTTON
-#define ITIDY_GAID_EXIT_BUTTON              GID_MAIN_EXIT_BUTTON
 
 /*------------------------------------------------------------------------*/
 /* Menu Item IDs                                                         */

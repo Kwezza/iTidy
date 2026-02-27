@@ -1594,7 +1594,7 @@ static void free_chooser_labels(struct List *list)
 
 static BOOL create_window(TextTemplatesWindow *win)
 {
-    UBYTE *chooser_strs[] = { "All", "Custom only", "Missing only", NULL };
+    UBYTE *chooser_strs[] = { "All", "Custom Only", "Missing Only", NULL };
 
     init_column_info(win->col_info);
 
@@ -1769,18 +1769,38 @@ static BOOL create_window(TextTemplatesWindow *win)
     /* ------------------------------------------------------------------ */
     /* Assemble window layout                                             */
     /* ------------------------------------------------------------------ */
+
+    /* Gadget help hints - must remain in scope for the lifetime of the window */
+    static const struct HintInfo s_hint_info[] =
+    {
+        { GID_SHOW_CHOOSER,         -1, "Choose which template types to show in the list (\"All\", \"Custom Only\", or \"Missing Only\").", 0 },
+        { GID_TEMPLATE_LB,          -1, "Select a file type to see which template icon it uses and to manage its template.", 0 },
+        { GID_SELECTED_TYPE,        -1, "The file type currently selected in the list.", 0 },
+        { GID_SELECTED_TMPLFILE,    -1, "The custom template icon file for this type, if one exists.", 0 },
+        { GID_SELECTED_EFFECTIVE,   -1, "The template icon that will actually be used (custom template, or the master template if none exists).", 0 },
+        { GID_SELECTED_STATUS,      -1, "Shows whether this type uses a custom template or falls back to the master template.", 0 },
+        { GID_BTN_CREATE_OVERWRITE, -1, "Create a custom template for the selected type by copying the master template. If a custom template already exists, it will be overwritten.", 0 },
+        { GID_BTN_EDIT_TOOLTYPES,   -1, "Open the selected template in Workbench Information so you can edit ToolTypes. Changes are saved by Workbench when you click \"Save\".", 0 },
+        { GID_BTN_VALIDATE,         -1, "Check the selected template's ToolTypes for common mistakes and report any issues found.", 0 },
+        { GID_BTN_REVERT,           -1, "Remove the custom template for the selected type so it uses the master template again. This deletes the type's template icon file.", 0 },
+        { -1, -1, NULL, 0 }
+    };
+
     win->window_obj = (Object *)WindowObject,
-        WA_Title,         "DefIcons: Text Templates",
-        WA_Activate,      TRUE,
-        WA_DepthGadget,   TRUE,
-        WA_DragBar,       TRUE,
-        WA_CloseGadget,   TRUE,
-        WA_SizeGadget,    TRUE,
-        WA_Width,         480,
-        WA_Height,        200,
-        WA_MinWidth,      420,
-        WA_MinHeight,     300,
-        WINDOW_Position,  WPOS_CENTERSCREEN,
+        WA_Title,             "iTidy - DefIcons Text Templates",
+        WA_Activate,          TRUE,
+        WA_DepthGadget,       TRUE,
+        WA_DragBar,           TRUE,
+        WA_CloseGadget,       TRUE,
+        WA_SizeGadget,        TRUE,
+        WA_Width,             480,
+        WA_Height,            200,
+        WA_MinWidth,          420,
+        WA_MinHeight,         300,
+        WINDOW_Position,      WPOS_CENTERSCREEN,
+        WINDOW_IconTitle,     "DefIcons Text Templates",
+        WINDOW_GadgetHelp,    TRUE,
+        WINDOW_HintInfo,      (struct HintInfo *)s_hint_info,
         WINDOW_Layout, (Object *)VLayoutObject,
             LAYOUT_SpaceOuter,  TRUE,
             LAYOUT_DeferLayout, TRUE,
@@ -1857,7 +1877,7 @@ static BOOL create_window(TextTemplatesWindow *win)
                         LAYOUT_RightSpacing,  2,
                         LAYOUT_TopSpacing,    2,
                         LAYOUT_BottomSpacing, 4,
-                        LAYOUT_Label,         "Template action",
+                        LAYOUT_Label,         "Template Action",
 
                         LAYOUT_AddChild, win->btn_create_overwrite,
                         CHILD_WeightedHeight, 0,

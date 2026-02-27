@@ -623,7 +623,7 @@ static BOOL create_window(DefIconsSettingsWindow *win)
     
     win->select_all_btn = (Object *)ButtonObject,
         GA_ID, GID_SELECT_ALL,
-        GA_Text, "Select all",
+        GA_Text, "Select All",
         GA_RelVerify, TRUE,
         GA_TabCycle, TRUE,
         BUTTON_TextPen, 1,
@@ -634,7 +634,7 @@ static BOOL create_window(DefIconsSettingsWindow *win)
     
     win->select_none_btn = (Object *)ButtonObject,
         GA_ID, GID_SELECT_NONE,
-        GA_Text, "Select none",
+        GA_Text, "Select None",
         GA_RelVerify, TRUE,
         GA_TabCycle, TRUE,
         BUTTON_TextPen, 1,
@@ -645,7 +645,7 @@ static BOOL create_window(DefIconsSettingsWindow *win)
     
     win->show_tools_btn = (Object *)ButtonObject,
         GA_ID, GID_SHOW_TOOLS,
-        GA_Text, "Show default tools",
+        GA_Text, "Show Default Tools",
         GA_RelVerify, TRUE,
         GA_TabCycle, TRUE,
         BUTTON_TextPen, 1,
@@ -656,7 +656,7 @@ static BOOL create_window(DefIconsSettingsWindow *win)
     
     win->change_default_tool_btn = (Object *)ButtonObject,
         GA_ID, GID_CHANGE_DEFAULT_TOOL,
-        GA_Text, "Change default tool",
+        GA_Text, "Change Default Tool...",
         GA_RelVerify, TRUE,
         GA_TabCycle, TRUE,
         BUTTON_TextPen, 1,
@@ -699,7 +699,7 @@ static BOOL create_window(DefIconsSettingsWindow *win)
             LAYOUT_RightSpacing, 2,
             LAYOUT_TopSpacing, 2,
             LAYOUT_BottomSpacing, 2,
-            LAYOUT_Label, "Select file types to create icons for:",
+            LAYOUT_Label, "Select File Types To Create Icons For:",
             
             /* ListBrowser container */
             LAYOUT_AddChild, (Object *)VLayoutObject,
@@ -740,7 +740,7 @@ static BOOL create_window(DefIconsSettingsWindow *win)
     
     /* Create window */
     win->window_obj = (Object *)WindowObject,
-        WA_Title, "DefIcons: Icon creation setup",
+        WA_Title, "DefIcons: Icon Creation Setup",
         WA_Left, 5,
         WA_Top, 20,
         WA_Width, 400,

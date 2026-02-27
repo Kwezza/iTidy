@@ -951,7 +951,7 @@ struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_
                     /* Session label */
                     LAYOUT_AddImage, NewObject(LABEL_GetClass(), NULL,
                         GA_ID, GID_RESTORE_LISTBROWSER_LABEL,
-                        LABEL_Text, "Backup sessions:",
+                        LABEL_Text, "Backup Sessions:",
                         LABEL_Justification, LJ_CENTER,
                         TAG_DONE),
                     
@@ -977,7 +977,7 @@ struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_
                     /* Changes label */
                     LAYOUT_AddImage, NewObject(LABEL_GetClass(), NULL,
                         GA_ID, GID_TOOL_CHANGES_LABEL,
-                        LABEL_Text, "Tool changes in session",
+                        LABEL_Text, "Tool Changes in Session",
                         TAG_DONE),
                     
                     /* Changes ListBrowser */

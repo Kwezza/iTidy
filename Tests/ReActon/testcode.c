@@ -131,19 +131,20 @@ enum deficons_setup_idx { dfs_root_layout, dfs_list_container_layout, dfs_list_l
   dfs_btn_ok, dfs_btn_cancel };
 //deficons_creation_options gadgets
 enum deficons_creation_options_idx { dco_root_layout, dco_ctab, dco_pg_general_layout, dco_sp_top, 
-  dco_mode_folder_icons, dco_sp_after_folder_icons, dco_text_previews_layout, 
-  dco_cb_text_previews, dco_btn_manage_templates, dco_picture_previews_layout, 
-  dco_cb_picture_previews, dco_sp_before_formats, dco_lbl_picture_types, 
-  dco_picture_formats_layout, dco_pic_col1_layout, dco_cb_pic_ilbm, 
-  dco_cb_pic_jpeg, dco_pic_col2_layout, dco_cb_pic_png, dco_cb_pic_acbm, 
-  dco_pic_col3_layout, dco_cb_pic_gif, dco_cb_pic_other, dco_pic_col4_layout, 
-  dco_cb_pic_bmp, dco_sp_after_formats, dco_refresh_options_layout, 
+  dco_mode_folder_icons, dco_cb_skip_whdload_folders, dco_sp_after_folder_icons, 
+  dco_text_previews_layout, dco_cb_text_previews, dco_btn_manage_templates, 
+  dco_picture_previews_layout, dco_cb_picture_previews, dco_sp_before_formats, 
+  dco_lbl_picture_types, dco_picture_formats_layout, dco_pic_col1_layout, 
+  dco_cb_pic_ilbm, dco_cb_pic_jpeg, dco_pic_col2_layout, dco_cb_pic_png, 
+  dco_cb_pic_acbm, dco_pic_col3_layout, dco_cb_pic_gif, dco_cb_pic_other, 
+  dco_pic_col4_layout, dco_cb_pic_bmp, dco_sp_after_formats, dco_refresh_options_layout, 
   dco_lbl_refresh_options, dco_cb_replace_image_thumbnails, dco_cb_replace_text_previews, 
   dco_pg_quality_layout, dco_size_layout, dco_mode_preview_size, 
-  dco_mode_thumbnail_frame, dco_cb_upscale_thumbnails, dco_sp_before_color, 
-  dco_color_layout, dco_lbl_color_settings, dco_mode_max_colors, 
-  dco_mode_dither, dco_mode_lowcolor_mapping, dco_buttons_layout, 
-  dco_btn_ok, dco_btn_cancel };
+  dco_mode_thumbnail_frame, dco_cb_upscale_thumbnails, dco_color_layout, 
+  dco_lbl_color_settings, dco_mode_max_colors, dco_mode_dither, 
+  dco_mode_lowcolor_mapping, dco_pg_deficons, space_419, space_416, 
+  dco_btn_creation_setup, dco_btn_exclude_paths, space_417, space_418, 
+  dco_buttons_layout, dco_btn_ok, dco_btn_cancel };
 
 void main_window( void )
 {
@@ -164,8 +165,8 @@ void main_window( void )
     { NM_SUB, "DefIcons Categories...", 0, 0, 26, NULL },
     { NM_SUB, "Preview Icons...", 0, 0, 22, NULL },
     { NM_SUB, "DefIcons Excluded Folders...", 0, 0, 14, NULL },
-    { NM_ITEM, "Backups...", 0, 0, 64, NULL },
-    { NM_SUB, "Back Up Layouts Before Changes", 0, CHECKIT, 32, NULL },
+    { NM_ITEM, "Backups...", 0, 0, 0, NULL },
+    { NM_SUB, "Back Up Layouts Before Changes", 0, CHECKIT | MENUTOGGLE, 0, NULL },
     { NM_ITEM, "Logging", 0, 0, 8193, NULL },
     { NM_SUB, "Disabled (Recommended)", 0, CHECKIT | CHECKED, 7680, NULL },
     { NM_SUB, "Debug", 0, CHECKIT, 7424, NULL },
@@ -173,8 +174,7 @@ void main_window( void )
     { NM_SUB, "Warning", 0, CHECKIT, 5888, NULL },
     { NM_SUB, "Error", 0, CHECKIT, 3840, NULL },
     { NM_SUB, NM_BARLABEL, 0, 0, 129, NULL },
-    { NM_SUB, "Open Log Folder", 0, 0, 32768, NULL },
-    { NM_SUB, "Archive Logs To RAM", 0, 0, 16384, NULL },
+    { NM_SUB, "Open Log Folder", 0, 0, 0, NULL },
     { NM_TITLE, "Tools", 0, 0, 0, NULL },
     { NM_ITEM, "Restore...", 0, 0, 0, NULL },
     { NM_SUB, "Restore Layouts...", 0, 0, 4, NULL },
@@ -1168,7 +1168,7 @@ void recursive_progress_window( void )
         LAYOUT_AddChild, main_gadgets[rp_gauge_main] = NewObject( FUELGAUGE_GetClass(), NULL, 
           GA_ID, rp_gauge_main,
           GA_RelVerify, TRUE,
-          GA_Text, 1079386956,
+          GA_Text, 1081535764,
           FUELGAUGE_Min, 0,
           FUELGAUGE_Max, 0,
           FUELGAUGE_Level, 0,
@@ -1184,7 +1184,7 @@ void recursive_progress_window( void )
         LAYOUT_AddChild, main_gadgets[rp_gauge_sub] = NewObject( FUELGAUGE_GetClass(), NULL, 
           GA_ID, rp_gauge_sub,
           GA_RelVerify, TRUE,
-          GA_Text, 1079388036,
+          GA_Text, 1081536844,
           FUELGAUGE_Min, 0,
           FUELGAUGE_Max, 0,
           FUELGAUGE_Level, 0,
@@ -1876,7 +1876,7 @@ void deficons_setup( void )
               TAG_END),
               LAYOUT_AddChild, main_gadgets[dfs_btn_show_default_tools] = NewObject( BUTTON_GetClass(), NULL, 
                 GA_ID, dfs_btn_show_default_tools,
-                GA_Text, "Show Default Tools...",
+                GA_Text, "Show Default Tools",
                 GA_RelVerify, TRUE,
                 GA_TabCycle, TRUE,
                 BUTTON_TextPen, 1,
@@ -1945,7 +1945,7 @@ void deficons_setup( void )
 
 void deficons_creation_options( void )
 {
-  struct Gadget	*main_gadgets[ 45 ];
+  struct Gadget	*main_gadgets[ 52 ];
   Object *window_object = NULL;
   struct HintInfo hintInfo[] =
   {
@@ -1954,6 +1954,7 @@ void deficons_creation_options( void )
     {dco_pg_general_layout,-1,"",0},
     {dco_sp_top,-1,"",0},
     {dco_mode_folder_icons,-1,"Creates missing drawer icons. "Smart" scans the subfolder to see whether it contains icons or content that needs icons. If it does, it creates a drawer icon.",0},
+    {dco_cb_skip_whdload_folders,-1,"Selecting this will prevent iTidy cluttering up an WHDLoad game folder with new icons.",0},
     {dco_sp_after_folder_icons,-1,"",0},
     {dco_text_previews_layout,-1,"",0},
     {dco_cb_text_previews,-1,"When enabled, iTidy can create thumbnail-style icons for text files by rendering the file contents onto the icon.",0},
@@ -1984,12 +1985,18 @@ void deficons_creation_options( void )
     {dco_mode_preview_size,-1,"Sets the thumbnail canvas size used inside generated icons.",0},
     {dco_mode_thumbnail_frame,-1,"Border style for thumbnail icons. Workbench: classic WB frame around the icon. Bevel: inner highlight drawn onto the image pixels (top-left bright, bottom-right dark)
     {dco_cb_upscale_thumbnails,-1,"If enabled, small images are scaled up to fill the thumbnail area.",0},
-    {dco_sp_before_color,-1,"",0},
     {dco_color_layout,-1,"",0},
     {dco_lbl_color_settings,-1,"",0},
     {dco_mode_max_colors,-1,"Limits the number of colours used in thumbnails. Lower is faster; higher looks better.",0},
     {dco_mode_dither,-1,"Selects the dithering method used when reducing colours.",0},
     {dco_mode_lowcolor_mapping,-1,"Palette mapping used at 4 or 8 colours (disabled above 8 colours or in Ultra).",0},
+    {dco_pg_deficons,-1,"",0},
+    {space_419,-1,"",0},
+    {space_416,-1,"",0},
+    {dco_btn_creation_setup,-1,"",0},
+    {dco_btn_exclude_paths,-1,"",0},
+    {space_417,-1,"",0},
+    {space_418,-1,"",0},
     {dco_buttons_layout,-1,"",0},
     {dco_btn_ok,-1,"",0},
     {dco_btn_cancel,-1,"",0},
@@ -2000,16 +2007,17 @@ void deficons_creation_options( void )
   struct List *labels381;
   UBYTE *labels381_str[] = { "Small (48x48)", "Medium (64x64)", "Large (100x100)",  NULL };
   struct List *labels382;
-  UBYTE *labels382_str[] = { "Smart (Create Folder If It Has Icons Inside)", "Always Create", "Never Create",  NULL };
+  UBYTE *labels382_str[] = { "None", "Workbench (Smart)", "Workbench (Always)", "Bevel (Smart)", "Bevel (Always)",  NULL };
   struct List *labels386;
-  UBYTE *labels386_str[] = { "4", "8", "16", "32", "64", "128", "256", "Ultra (256 + Detail Boost)",  NULL };
+  UBYTE *labels386_str[] = { "4", "8", "16", "32", "64", "128", "256", "Ultra (256 + Detail Boost)", "GlowIcons palette (29 colours)", 
+     NULL };
   struct List *labels387;
   UBYTE *labels387_str[] = { "None", "Ordered (Bayer 4x4)", "Error Diffusion (Floyd-Steinberg)", "Auto (Based On Colour Count)", 
      NULL };
   struct List *labels388;
   UBYTE *labels388_str[] = { "Greyscale", "Workbench Palette", "Hybrid (Grays + WB Accents)",  NULL };
   struct List *labels353;
-  UBYTE *labels353_str[] = { "Create", "Rendering",  NULL };
+  UBYTE *labels353_str[] = { "Create", "Rendering", "DefIcons",  NULL };
   labels355 = ChooserLabelsA( labels355_str );
   labels381 = ChooserLabelsA( labels381_str );
   labels382 = ChooserLabelsA( labels382_str );
@@ -2076,6 +2084,13 @@ void deficons_creation_options( void )
               TAG_END),
               CHILD_Label, NewObject( LABEL_GetClass(), NULL, 
                 LABEL_Text, "Folder Icons:",
+              TAG_END),
+              LAYOUT_AddChild, main_gadgets[dco_cb_skip_whdload_folders] = NewObject( CHECKBOX_GetClass(), NULL, 
+                GA_ID, dco_cb_skip_whdload_folders,
+                GA_Text, "Skip Icon Creation Inside WHDLoad Folders",
+                GA_RelVerify, TRUE,
+                GA_TabCycle, TRUE,
+                CHECKBOX_TextPlace, PLACETEXT_RIGHT,
               TAG_END),
               LAYOUT_AddChild, main_gadgets[dco_sp_after_folder_icons] = NewObject( SPACE_GetClass(), NULL, 
                 GA_ID, dco_sp_after_folder_icons,
@@ -2199,18 +2214,18 @@ void deficons_creation_options( void )
                 LAYOUT_AddImage, main_gadgets[dco_lbl_refresh_options] = NewObject( LABEL_GetClass(), NULL, 
                   GA_ID, dco_lbl_refresh_options,
                   LABEL_DrawInfo, gDrawInfo,
-                  LABEL_Text, "Re-Run and Refresh Options:",
+                  LABEL_Text, "When Re-Running (iTidy Previews Only):",
                 TAG_END),
                 LAYOUT_AddChild, main_gadgets[dco_cb_replace_image_thumbnails] = NewObject( CHECKBOX_GetClass(), NULL, 
                   GA_ID, dco_cb_replace_image_thumbnails,
-                  GA_Text, "Replace Existing Image Thumbnails Created by iTidy",
+                  GA_Text, "Replace Existing Image Thumbnails",
                   GA_RelVerify, TRUE,
                   GA_TabCycle, TRUE,
                   CHECKBOX_TextPlace, PLACETEXT_RIGHT,
                 TAG_END),
                 LAYOUT_AddChild, main_gadgets[dco_cb_replace_text_previews] = NewObject( CHECKBOX_GetClass(), NULL, 
                   GA_ID, dco_cb_replace_text_previews,
-                  GA_Text, "Replace Existing Text Previews Created by iTidy",
+                  GA_Text, "Replace Existing Text Previews",
                   GA_RelVerify, TRUE,
                   GA_TabCycle, TRUE,
                   CHECKBOX_TextPlace, PLACETEXT_RIGHT,
@@ -2256,9 +2271,6 @@ void deficons_creation_options( void )
                   GA_TabCycle, TRUE,
                   CHECKBOX_TextPlace, PLACETEXT_LEFT,
                 TAG_END),
-              TAG_END),
-              LAYOUT_AddChild, main_gadgets[dco_sp_before_color] = NewObject( SPACE_GetClass(), NULL, 
-                GA_ID, dco_sp_before_color,
               TAG_END),
               LAYOUT_AddChild, main_gadgets[dco_color_layout] = NewObject( LAYOUT_GetClass(), NULL, 
                 GA_ID, dco_color_layout,
@@ -2308,6 +2320,42 @@ void deficons_creation_options( void )
                 TAG_END),
               TAG_END),
             TAG_END),
+            PAGE_Add, main_gadgets[dco_pg_deficons] = NewObject( LAYOUT_GetClass(), NULL, 
+              GA_ID, dco_pg_deficons,
+              LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+              LAYOUT_AddChild, main_gadgets[space_419] = NewObject( SPACE_GetClass(), NULL, 
+                GA_ID, space_419,
+              TAG_END),
+              LAYOUT_AddChild, main_gadgets[space_416] = NewObject( SPACE_GetClass(), NULL, 
+                GA_ID, space_416,
+              TAG_END),
+              LAYOUT_AddChild, main_gadgets[dco_btn_creation_setup] = NewObject( BUTTON_GetClass(), NULL, 
+                GA_ID, dco_btn_creation_setup,
+                GA_Text, "Icon Creation Setup...",
+                GA_RelVerify, TRUE,
+                GA_TabCycle, TRUE,
+                BUTTON_TextPen, 1,
+                BUTTON_BackgroundPen, 0,
+                BUTTON_FillTextPen, 1,
+                BUTTON_FillPen, 3,
+              TAG_END),
+              LAYOUT_AddChild, main_gadgets[dco_btn_exclude_paths] = NewObject( BUTTON_GetClass(), NULL, 
+                GA_ID, dco_btn_exclude_paths,
+                GA_Text, "Exclude Paths...",
+                GA_RelVerify, TRUE,
+                GA_TabCycle, TRUE,
+                BUTTON_TextPen, 1,
+                BUTTON_BackgroundPen, 0,
+                BUTTON_FillTextPen, 1,
+                BUTTON_FillPen, 3,
+              TAG_END),
+              LAYOUT_AddChild, main_gadgets[space_417] = NewObject( SPACE_GetClass(), NULL, 
+                GA_ID, space_417,
+              TAG_END),
+              LAYOUT_AddChild, main_gadgets[space_418] = NewObject( SPACE_GetClass(), NULL, 
+                GA_ID, space_418,
+              TAG_END),
+            TAG_END),
           PageEnd,
         TAG_END),
         LAYOUT_AddChild, main_gadgets[dco_buttons_layout] = NewObject( LAYOUT_GetClass(), NULL, 
@@ -2337,6 +2385,6 @@ void deficons_creation_options( void )
       TAG_END),
     TAG_END),
   TAG_END);  
-  main_gadgets[44] = 0;
+  main_gadgets[51] = 0;
 }
 

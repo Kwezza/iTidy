@@ -594,26 +594,26 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     /* Define hint info for gadget help (static so it persists) */
     static struct HintInfo hintInfo[] =
     {
-        {ITIDY_GAID_MASTER_LAYOUT, -1, "", 0},
-        {ITIDY_GAID_FOLDER_LAYOUT, -1, "", 0},
-        {ITIDY_GAID_FOLDER_GETFILE, -1, "Select the folder you want to tidy. To include subfolders, enable \"Include Subfolders\" below.", 0},
-        {ITIDY_GAID_OPTIONS_LAYOUT, -1, "", 0},
-        {ITIDY_GAID_LEFT_COLUMN, -1, "", 0},
-        {ITIDY_GAID_ORDER_CHOOSER, -1, "Sets how icons are grouped before sorting. Folders first, files first, mixed, or grouped by type.", 0},
-        {ITIDY_GAID_RECURSIVE_CHECKBOX, -1, "When enabled, iTidy also processes all subfolders under the selected folder.", 0},
-        {ITIDY_GAID_POSITION_CHOOSER, -1, "Controls where drawer windows are placed after resizing. (Only affects windows iTidy changes.)", 0},
-        {ITIDY_GAID_RIGHT_COLUMN, -1, "", 0},
-        {ITIDY_GAID_SORTBY_CHOOSER, -1, "Selects the field used for sorting: name, kind, date, or size.", 0},
-        {ITIDY_GAID_BACKUP_CHECKBOX, -1, "Creates an LhA backup of the folder's .info files before changes. Requires LhA in C:", 0},
-        {ITIDY_GAID_CREATE_NEW_ICONS, -1, "", 0},
-        {ITIDY_GAID_TOOLS_LAYOUT, -1, "", 0},
-        {ITIDY_GAID_ADVANCED_BUTTON, -1, "Opens Advanced Settings for finer control over layout and sizing.", 0},
-        {ITIDY_GAID_DEFAULT_TOOLS_BUTTON, -1, "Scans icons for missing or invalid Default Tools. Lets you fix them or batch-replace one tool with another.", 0},
-        {ITIDY_GAID_RESTORE_BUTTON, -1, "Restores icon positions and window snapshots from iTidy backups. Only available if you previously enabled backups.", 0},
-        {ITIDY_GAID_ICON_CREATION_BUTTON, -1, "Opens the icon creation settings (thumbnails, text previews, folder icons)", 0},
-        {ITIDY_GAID_BUTTONS_LAYOUT, -1, "", 0},
-        {ITIDY_GAID_START_BUTTON, -1, "Starts tidying the selected folder using the current settings.", 0},
-        {ITIDY_GAID_EXIT_BUTTON, -1, "Closes iTidy.", 0},
+        {main_root_layout, -1, "", 0},
+        {main_target_path_layout, -1, "", 0},
+        {GID_MAIN_FOLDER_GETFILE, -1, "Select the folder you want to tidy. To include subfolders, enable \"Include Subfolders\" below.", 0},
+        {main_options_layout, -1, "", 0},
+        {main_options_left_col_layout, -1, "", 0},
+        {GID_MAIN_ORDER_CHOOSER, -1, "Sets how icons are grouped before sorting. Folders first, files first, mixed, or grouped by type.", 0},
+        {GID_MAIN_RECURSIVE_CHECKBOX, -1, "When enabled, iTidy also processes all subfolders under the selected folder.", 0},
+        {GID_MAIN_POSITION_CHOOSER, -1, "Controls where drawer windows are placed after resizing. (Only affects windows iTidy changes.)", 0},
+        {main_options_right_col_layout, -1, "", 0},
+        {GID_MAIN_SORTBY_CHOOSER, -1, "Selects the field used for sorting: name, kind, date, or size.", 0},
+        {GID_MAIN_BACKUP_CHECKBOX, -1, "Creates an LhA backup of the folder's .info files before changes. Requires LhA in C:", 0},
+        {GID_MAIN_CREATE_NEW_ICONS, -1, "", 0},
+        {main_tools_layout, -1, "", 0},
+        {GID_MAIN_ADVANCED_BUTTON, -1, "Opens Advanced Settings for finer control over layout and sizing.", 0},
+        {GID_MAIN_DEFAULT_TOOLS_BTN, -1, "Scans icons for missing or invalid Default Tools. Lets you fix them or batch-replace one tool with another.", 0},
+        {GID_MAIN_RESTORE_BUTTON, -1, "Restores icon positions and window snapshots from iTidy backups. Only available if you previously enabled backups.", 0},
+        {GID_MAIN_ICON_CREATION_BTN, -1, "Opens the icon creation settings (thumbnails, text previews, folder icons)", 0},
+        {main_action_buttons_layout, -1, "", 0},
+        {GID_MAIN_START_BUTTON, -1, "Starts tidying the selected folder using the current settings.", 0},
+        {GID_MAIN_EXIT_BUTTON, -1, "Closes iTidy.", 0},
         {-1, -1, NULL, 0}
     };
     
@@ -648,9 +648,9 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
             LAYOUT_DeferLayout, TRUE,
             
             /* Master layout container */
-            LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_MASTER_LAYOUT] = 
+            LAYOUT_AddChild, win_data->gadgets[main_root_layout] = 
                 NewObject(LAYOUT_GetClass(), NULL,
-                GA_ID, ITIDY_GAID_MASTER_LAYOUT,
+                GA_ID, main_root_layout,
                 LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
                 LAYOUT_LeftSpacing, 2,
                 LAYOUT_RightSpacing, 2,
@@ -658,9 +658,9 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                 LAYOUT_BottomSpacing, 2,
                 
                 /* Folder selection group */
-                LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_FOLDER_LAYOUT] = 
+                LAYOUT_AddChild, win_data->gadgets[main_target_path_layout] = 
                     NewObject(LAYOUT_GetClass(), NULL,
-                    GA_ID, ITIDY_GAID_FOLDER_LAYOUT,
+                    GA_ID, main_target_path_layout,
                     LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
                     LAYOUT_BevelStyle, BVS_THIN,
                     LAYOUT_LeftSpacing, 2,
@@ -668,9 +668,9 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                     LAYOUT_TopSpacing, 3,
                     LAYOUT_BottomSpacing, 4,
                     
-                    LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_FOLDER_GETFILE] = 
+                    LAYOUT_AddChild, win_data->gadgets[main_gf_target_path] = 
                         NewObject(GETFILE_GetClass(), NULL,
-                        GA_ID, ITIDY_GAID_FOLDER_GETFILE,
+                        GA_ID, GID_MAIN_FOLDER_GETFILE,
                         GA_RelVerify, TRUE,
                         GETFILE_TitleText, "Select folder to tidy",
                         GETFILE_Drawer, win_data->folder_path_buffer,
@@ -684,9 +684,9 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                 TAG_END),
                 
                 /* Options group */
-                LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_OPTIONS_LAYOUT] = 
+                LAYOUT_AddChild, win_data->gadgets[main_options_layout] = 
                     NewObject(LAYOUT_GetClass(), NULL,
-                    GA_ID, ITIDY_GAID_OPTIONS_LAYOUT,
+                    GA_ID, main_options_layout,
                     LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
                     LAYOUT_BevelStyle, BVS_THIN,
                     LAYOUT_LeftSpacing, 2,
@@ -695,16 +695,16 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                     LAYOUT_BottomSpacing, 4,
                     
                     /* Left column */
-                    LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_LEFT_COLUMN] = 
+                    LAYOUT_AddChild, win_data->gadgets[main_options_left_col_layout] = 
                         NewObject(LAYOUT_GetClass(), NULL,
-                        GA_ID, ITIDY_GAID_LEFT_COLUMN,
+                        GA_ID, main_options_left_col_layout,
                         LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
                         LAYOUT_RightSpacing, 2,
                         
                         /* Order chooser */
-                        LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_ORDER_CHOOSER] = 
+                        LAYOUT_AddChild, win_data->gadgets[main_ch_sort_primary] = 
                             NewObject(CHOOSER_GetClass(), NULL,
-                            GA_ID, ITIDY_GAID_ORDER_CHOOSER,
+                            GA_ID, GID_MAIN_ORDER_CHOOSER,
                             GA_RelVerify, TRUE,
                             GA_TabCycle, TRUE,
                             CHOOSER_PopUp, TRUE,
@@ -716,9 +716,9 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                         TAG_END),
                         
                         /* Sort by chooser */
-                        LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_SORTBY_CHOOSER] = 
+                        LAYOUT_AddChild, win_data->gadgets[main_ch_sort_secondary] = 
                             NewObject(CHOOSER_GetClass(), NULL,
-                            GA_ID, ITIDY_GAID_SORTBY_CHOOSER,
+                            GA_ID, GID_MAIN_SORTBY_CHOOSER,
                             GA_RelVerify, TRUE,
                             GA_TabCycle, TRUE,
                             CHOOSER_PopUp, TRUE,
@@ -730,9 +730,9 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                         TAG_END),
                         
                         /* Position chooser */
-                        LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_POSITION_CHOOSER] = 
+                        LAYOUT_AddChild, win_data->gadgets[main_ch_positioning] = 
                             NewObject(CHOOSER_GetClass(), NULL,
-                            GA_ID, ITIDY_GAID_POSITION_CHOOSER,
+                            GA_ID, GID_MAIN_POSITION_CHOOSER,
                             GA_RelVerify, TRUE,
                             GA_TabCycle, TRUE,
                             CHOOSER_PopUp, TRUE,
@@ -745,16 +745,16 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                     TAG_END),
                     
                     /* Right column */
-                    LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_RIGHT_COLUMN] = 
+                    LAYOUT_AddChild, win_data->gadgets[main_options_right_col_layout] = 
                         NewObject(LAYOUT_GetClass(), NULL,
-                        GA_ID, ITIDY_GAID_RIGHT_COLUMN,
+                        GA_ID, main_options_right_col_layout,
                         LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
                         LAYOUT_LeftSpacing, 2,
                         
                         /* Include subfolders checkbox */
-                        LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_RECURSIVE_CHECKBOX] = 
+                        LAYOUT_AddChild, win_data->gadgets[main_cb_cleanup_subfolders] = 
                             NewObject(CHECKBOX_GetClass(), NULL,
-                            GA_ID, ITIDY_GAID_RECURSIVE_CHECKBOX,
+                            GA_ID, GID_MAIN_RECURSIVE_CHECKBOX,
                             GA_Text, "",
                             GA_RelVerify, TRUE,
                             GA_TabCycle, TRUE,
@@ -766,9 +766,9 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                         TAG_END),
                         
                         /* Create icons checkbox */
-                        LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_CREATE_NEW_ICONS] = 
+                        LAYOUT_AddChild, win_data->gadgets[main_cb_create_new_icons] = 
                             NewObject(CHECKBOX_GetClass(), NULL,
-                            GA_ID, ITIDY_GAID_CREATE_NEW_ICONS,
+                            GA_ID, GID_MAIN_CREATE_NEW_ICONS,
                             GA_Text, "",
                             GA_RelVerify, TRUE,
                             GA_TabCycle, TRUE,
@@ -780,9 +780,9 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                         TAG_END),
                         
                         /* Backup checkbox */
-                        LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_BACKUP_CHECKBOX] = 
+                        LAYOUT_AddChild, win_data->gadgets[main_cb_backup_icons] = 
                             NewObject(CHECKBOX_GetClass(), NULL,
-                            GA_ID, ITIDY_GAID_BACKUP_CHECKBOX,
+                            GA_ID, GID_MAIN_BACKUP_CHECKBOX,
                             GA_Text, "",
                             GA_RelVerify, TRUE,
                             GA_TabCycle, TRUE,
@@ -796,9 +796,9 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                 TAG_END),
                 
                 /* Tools button group */
-                LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_TOOLS_LAYOUT] = 
+                LAYOUT_AddChild, win_data->gadgets[main_tools_layout] = 
                     NewObject(LAYOUT_GetClass(), NULL,
-                    GA_ID, ITIDY_GAID_TOOLS_LAYOUT,
+                    GA_ID, main_tools_layout,
                     LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
                     LAYOUT_BevelStyle, BVS_THIN,
                     LAYOUT_LeftSpacing, 2,
@@ -806,9 +806,9 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                     LAYOUT_TopSpacing, 2,
                     LAYOUT_BottomSpacing, 4,
                     
-                    LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_ADVANCED_BUTTON] = 
+                    LAYOUT_AddChild, win_data->gadgets[main_btn_advanced] = 
                         NewObject(BUTTON_GetClass(), NULL,
-                        GA_ID, ITIDY_GAID_ADVANCED_BUTTON,
+                        GA_ID, GID_MAIN_ADVANCED_BUTTON,
                         GA_Text, "Advanced...",
                         GA_RelVerify, TRUE,
                         GA_TabCycle, TRUE,
@@ -818,9 +818,9 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                         BUTTON_FillPen, 3,
                     TAG_END),
                     
-                    LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_DEFAULT_TOOLS_BUTTON] = 
+                    LAYOUT_AddChild, win_data->gadgets[main_btn_default_tools] = 
                         NewObject(BUTTON_GetClass(), NULL,
-                        GA_ID, ITIDY_GAID_DEFAULT_TOOLS_BUTTON,
+                        GA_ID, GID_MAIN_DEFAULT_TOOLS_BTN,
                         GA_Text, "Fix default tools...",
                         GA_RelVerify, TRUE,
                         GA_TabCycle, TRUE,
@@ -830,9 +830,9 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                         BUTTON_FillPen, 3,
                     TAG_END),
                     
-                    LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_RESTORE_BUTTON] = 
+                    LAYOUT_AddChild, win_data->gadgets[main_btn_restore_backups] = 
                         NewObject(BUTTON_GetClass(), NULL,
-                        GA_ID, ITIDY_GAID_RESTORE_BUTTON,
+                        GA_ID, GID_MAIN_RESTORE_BUTTON,
                         GA_Text, "Restore backups...",
                         GA_RelVerify, TRUE,
                         GA_TabCycle, TRUE,
@@ -842,9 +842,9 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                         BUTTON_FillPen, 3,
                     TAG_END),
                     
-                    LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_ICON_CREATION_BUTTON] = 
+                    LAYOUT_AddChild, win_data->gadgets[main_btn_icon_settings] = 
                         NewObject(BUTTON_GetClass(), NULL,
-                        GA_ID, ITIDY_GAID_ICON_CREATION_BUTTON,
+                        GA_ID, GID_MAIN_ICON_CREATION_BTN,
                         GA_Text, "Icon Creation...",
                         GA_RelVerify, TRUE,
                         GA_TabCycle, TRUE,
@@ -856,14 +856,14 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                 TAG_END),
                 
                 /* Bottom buttons */
-                LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_BUTTONS_LAYOUT] = 
+                LAYOUT_AddChild, win_data->gadgets[main_action_buttons_layout] = 
                     NewObject(LAYOUT_GetClass(), NULL,
-                    GA_ID, ITIDY_GAID_BUTTONS_LAYOUT,
+                    GA_ID, main_action_buttons_layout,
                     LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
                     
-                    LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_START_BUTTON] = 
+                    LAYOUT_AddChild, win_data->gadgets[main_btn_start] = 
                         NewObject(BUTTON_GetClass(), NULL,
-                        GA_ID, ITIDY_GAID_START_BUTTON,
+                        GA_ID, GID_MAIN_START_BUTTON,
                         GA_Text, "Start",
                         GA_RelVerify, TRUE,
                         GA_TabCycle, TRUE,
@@ -873,9 +873,9 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                         BUTTON_FillPen, 3,
                     TAG_END),
                     
-                    LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_EXIT_BUTTON] = 
+                    LAYOUT_AddChild, win_data->gadgets[main_btn_exit] = 
                         NewObject(BUTTON_GetClass(), NULL,
-                        GA_ID, ITIDY_GAID_EXIT_BUTTON,
+                        GA_ID, GID_MAIN_EXIT_BUTTON,
                         GA_Text, "Exit",
                         GA_RelVerify, TRUE,
                         GA_TabCycle, TRUE,
@@ -1353,60 +1353,60 @@ static void sync_gui_from_preferences(struct iTidyMainWindow *win_data, const La
     win_data->folder_path_buffer[sizeof(win_data->folder_path_buffer) - 1] = '\0';
     
     /* Update ReAction gadgets */
-    if (win_data->gadgets[ITIDY_GAD_IDX_ORDER_CHOOSER])
+    if (win_data->gadgets[main_ch_sort_primary])
     {
-        SetGadgetAttrs((struct Gadget *)win_data->gadgets[ITIDY_GAD_IDX_ORDER_CHOOSER],
+        SetGadgetAttrs((struct Gadget *)win_data->gadgets[main_ch_sort_primary],
                       win_data->window, NULL,
                       CHOOSER_Selected, win_data->order_selected,
                       TAG_END);
     }
     
-    if (win_data->gadgets[ITIDY_GAD_IDX_SORTBY_CHOOSER])
+    if (win_data->gadgets[main_ch_sort_secondary])
     {
         BOOL enable_sortby = (win_data->order_selected != 3);
-        SetGadgetAttrs((struct Gadget *)win_data->gadgets[ITIDY_GAD_IDX_SORTBY_CHOOSER],
+        SetGadgetAttrs((struct Gadget *)win_data->gadgets[main_ch_sort_secondary],
                       win_data->window, NULL,
                       CHOOSER_Selected, win_data->sortby_selected,
                       GA_Disabled, !enable_sortby,
                       TAG_END);
     }
     
-    if (win_data->gadgets[ITIDY_GAD_IDX_RECURSIVE_CHECKBOX])
+    if (win_data->gadgets[main_cb_cleanup_subfolders])
     {
-        SetGadgetAttrs((struct Gadget *)win_data->gadgets[ITIDY_GAD_IDX_RECURSIVE_CHECKBOX],
+        SetGadgetAttrs((struct Gadget *)win_data->gadgets[main_cb_cleanup_subfolders],
                       win_data->window, NULL,
                       GA_Selected, win_data->recursive_subdirs,
                       TAG_END);
     }
     
-    if (win_data->gadgets[ITIDY_GAD_IDX_BACKUP_CHECKBOX])
+    if (win_data->gadgets[main_cb_backup_icons])
     {
-        SetGadgetAttrs((struct Gadget *)win_data->gadgets[ITIDY_GAD_IDX_BACKUP_CHECKBOX],
+        SetGadgetAttrs((struct Gadget *)win_data->gadgets[main_cb_backup_icons],
                       win_data->window, NULL,
                       GA_Selected, win_data->enable_backup,
                       TAG_END);
     }
     
-    if (win_data->gadgets[ITIDY_GAD_IDX_CREATE_NEW_ICONS])
+    if (win_data->gadgets[main_cb_create_new_icons])
     {
-        SetGadgetAttrs((struct Gadget *)win_data->gadgets[ITIDY_GAD_IDX_CREATE_NEW_ICONS],
+        SetGadgetAttrs((struct Gadget *)win_data->gadgets[main_cb_create_new_icons],
                       win_data->window, NULL,
                       GA_Selected, win_data->enable_deficons_icon_creation,
                       TAG_END);
     }
     
-    if (win_data->gadgets[ITIDY_GAD_IDX_POSITION_CHOOSER])
+    if (win_data->gadgets[main_ch_positioning])
     {
-        SetGadgetAttrs((struct Gadget *)win_data->gadgets[ITIDY_GAD_IDX_POSITION_CHOOSER],
+        SetGadgetAttrs((struct Gadget *)win_data->gadgets[main_ch_positioning],
                       win_data->window, NULL,
                       CHOOSER_Selected, win_data->window_position_selected,
                       TAG_END);
     }
     
     /* Update folder path display */
-    if (win_data->gadgets[ITIDY_GAD_IDX_FOLDER_GETFILE])
+    if (win_data->gadgets[main_gf_target_path])
     {
-        SetGadgetAttrs((struct Gadget *)win_data->gadgets[ITIDY_GAD_IDX_FOLDER_GETFILE],
+        SetGadgetAttrs((struct Gadget *)win_data->gadgets[main_gf_target_path],
                       win_data->window, NULL,
                       GETFILE_Drawer, win_data->folder_path_buffer,
                       TAG_END);
@@ -2076,17 +2076,17 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                         if (mitem)
                             win_data->enable_backup = (mitem->Flags & CHECKED) ? TRUE : FALSE;
                         
-                        if (win_data->gadgets[ITIDY_GAD_IDX_BACKUP_CHECKBOX])
+                        if (win_data->gadgets[main_cb_backup_icons])
                         {
                             SetGadgetAttrs(
-                                (struct Gadget *)win_data->gadgets[ITIDY_GAD_IDX_BACKUP_CHECKBOX],
+                                (struct Gadget *)win_data->gadgets[main_cb_backup_icons],
                                 win_data->window, NULL,
                                 GA_Selected, win_data->enable_backup,
                                 TAG_END);
                             /* RefreshGList forces the ReAction checkbox to redraw after
                                the attribute change, which SetGadgetAttrs alone doesn't do. */
                             RefreshGList(
-                                (struct Gadget *)win_data->gadgets[ITIDY_GAD_IDX_BACKUP_CHECKBOX],
+                                (struct Gadget *)win_data->gadgets[main_cb_backup_icons],
                                 win_data->window, NULL, 1);
                         }
                         log_debug(LOG_GUI, "Backup toggle via menu: %s\n",
@@ -2282,15 +2282,15 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
 {
     switch (gadget_id)
     {
-        case ITIDY_GAID_FOLDER_GETFILE:
+        case GID_MAIN_FOLDER_GETFILE:
             /* Invoke the file requester using GFILE_REQUEST method */
-            if (DoMethod((Object *)win_data->gadgets[ITIDY_GAD_IDX_FOLDER_GETFILE],
+            if (DoMethod((Object *)win_data->gadgets[main_gf_target_path],
                          GFILE_REQUEST, win_data->window))
             {
                 /* Read the selected path */
                 STRPTR drawer = NULL;
                 
-                GetAttr(GETFILE_Drawer, win_data->gadgets[ITIDY_GAD_IDX_FOLDER_GETFILE], 
+                GetAttr(GETFILE_Drawer, win_data->gadgets[main_gf_target_path], 
                        (ULONG *)&drawer);
                        
                 if (drawer && drawer[0])
@@ -2303,58 +2303,58 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
             }
             break;
         
-        case ITIDY_GAID_ORDER_CHOOSER:
+        case GID_MAIN_ORDER_CHOOSER:
             win_data->order_selected = code;
             CONSOLE_DEBUG("Order changed to: %s\n", order_labels_str[code]);
             /* Disable Sort By when "Grouped by type" is selected */
-            if (win_data->gadgets[ITIDY_GAD_IDX_SORTBY_CHOOSER])
+            if (win_data->gadgets[main_ch_sort_secondary])
             {
-                SetGadgetAttrs((struct Gadget *)win_data->gadgets[ITIDY_GAD_IDX_SORTBY_CHOOSER],
+                SetGadgetAttrs((struct Gadget *)win_data->gadgets[main_ch_sort_secondary],
                               win_data->window, NULL,
                               GA_Disabled, (code == 3),
                               TAG_END);
             }
             break;
         
-        case ITIDY_GAID_SORTBY_CHOOSER:
+        case GID_MAIN_SORTBY_CHOOSER:
             win_data->sortby_selected = code;
             CONSOLE_DEBUG("Sort by changed to: %s\n", sortby_labels_str[code]);
             break;
         
-        case ITIDY_GAID_RECURSIVE_CHECKBOX:
+        case GID_MAIN_RECURSIVE_CHECKBOX:
             {
                 ULONG selected = 0;
-                GetAttr(GA_Selected, win_data->gadgets[ITIDY_GAD_IDX_RECURSIVE_CHECKBOX], &selected);
+                GetAttr(GA_Selected, win_data->gadgets[main_cb_cleanup_subfolders], &selected);
                 win_data->recursive_subdirs = (BOOL)selected;
                 CONSOLE_DEBUG("Recursive: %s\n", win_data->recursive_subdirs ? "ON" : "OFF");
             }
             break;
         
-        case ITIDY_GAID_BACKUP_CHECKBOX:
+        case GID_MAIN_BACKUP_CHECKBOX:
             {
                 ULONG selected = 0;
-                GetAttr(GA_Selected, win_data->gadgets[ITIDY_GAD_IDX_BACKUP_CHECKBOX], &selected);
+                GetAttr(GA_Selected, win_data->gadgets[main_cb_backup_icons], &selected);
                 win_data->enable_backup = (BOOL)selected;
                 sync_backup_menu_check(win_data);
                 CONSOLE_DEBUG("Backup: %s\n", win_data->enable_backup ? "ON" : "OFF");
             }
             break;
         
-        case ITIDY_GAID_POSITION_CHOOSER:
+        case GID_MAIN_POSITION_CHOOSER:
             win_data->window_position_selected = code;
             CONSOLE_DEBUG("Position changed to: %s\n", position_labels_str[code]);
             break;
         
-        case ITIDY_GAID_CREATE_NEW_ICONS:
+        case GID_MAIN_CREATE_NEW_ICONS:
             {
                 ULONG selected = 0;
-                GetAttr(GA_Selected, win_data->gadgets[ITIDY_GAD_IDX_CREATE_NEW_ICONS], &selected);
+                GetAttr(GA_Selected, win_data->gadgets[main_cb_create_new_icons], &selected);
                 win_data->enable_deficons_icon_creation = (BOOL)selected;
                 CONSOLE_DEBUG("Create new icons: %s\n", win_data->enable_deficons_icon_creation ? "ON" : "OFF");
             }
             break;
         
-        case ITIDY_GAID_ADVANCED_BUTTON:
+        case GID_MAIN_ADVANCED_BUTTON:
             {
                 struct iTidyAdvancedWindow adv_data;
                 LayoutPreferences *temp_prefs = (LayoutPreferences *)AllocVec(sizeof(LayoutPreferences), MEMF_ANY|MEMF_CLEAR);
@@ -2406,7 +2406,7 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
             }
             break;
         
-        case ITIDY_GAID_DEFAULT_TOOLS_BUTTON:
+        case GID_MAIN_DEFAULT_TOOLS_BTN:
             {
                 struct iTidyToolCacheWindow tool_window;
                 LayoutPreferences *prefs;
@@ -2454,7 +2454,7 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
             }
             break;
         
-        case ITIDY_GAID_ICON_CREATION_BUTTON:
+        case GID_MAIN_ICON_CREATION_BTN:
             {
                 LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
                 LayoutPreferences *working_copy = (LayoutPreferences *)AllocVec(sizeof(LayoutPreferences), MEMF_ANY|MEMF_CLEAR);
@@ -2478,7 +2478,7 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
             }
             break;
         
-        case ITIDY_GAID_RESTORE_BUTTON:
+        case GID_MAIN_RESTORE_BUTTON:
             {
                 struct iTidyRestoreWindow restore_data;
                 
@@ -2514,7 +2514,7 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
             }
             break;
         
-        case ITIDY_GAID_START_BUTTON:
+        case GID_MAIN_START_BUTTON:
             CONSOLE_STATUS("Start button clicked - Processing icons...\n");
             {
                 struct iTidyMainProgressWindow progress_window;
@@ -2629,7 +2629,7 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
             }
             break;
         
-        case ITIDY_GAID_EXIT_BUTTON:
+        case GID_MAIN_EXIT_BUTTON:
             /* Signal to close - will be handled in main loop */
             CONSOLE_STATUS("Exit button clicked\n");
             return FALSE;  /* Exit the program */

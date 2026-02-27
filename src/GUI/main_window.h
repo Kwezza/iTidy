@@ -43,7 +43,7 @@ struct iTidyMainWindow
     BOOL window_open;                   /* Window state flag */
     
     /* Gadget array (ReAction style) */
-    struct Gadget *gadgets[ITIDY_GAD_IDX_COUNT];
+    struct Gadget *gadgets[MAIN_WINDOW_GAD_COUNT];
     
     /* Chooser label lists (must be freed on cleanup) */
     struct List *order_labels;          /* Order chooser labels */

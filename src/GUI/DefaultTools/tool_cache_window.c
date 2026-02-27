@@ -2608,7 +2608,7 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
                     
                     LAYOUT_AddChild, tool_data->replace_batch_btn_obj = NewObject(BUTTON_GetClass(), NULL,
                         GA_ID, GID_TOOL_REPLACE_BATCH_BUTTON,
-                        GA_Text, "Replace Tool (Batch)",
+                        GA_Text, "Replace Tool (Batch)...",
                         GA_RelVerify, TRUE,
                         GA_TabCycle, TRUE,
                         GA_Disabled, TRUE,
@@ -2616,7 +2616,7 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
                     
                     LAYOUT_AddChild, tool_data->replace_single_btn_obj = NewObject(BUTTON_GetClass(), NULL,
                         GA_ID, GID_TOOL_REPLACE_SINGLE_BUTTON,
-                        GA_Text, "Replace Tool (Single)",
+                        GA_Text, "Replace Tool (Single)...",
                         GA_RelVerify, TRUE,
                         GA_TabCycle, TRUE,
                         GA_Disabled, TRUE,

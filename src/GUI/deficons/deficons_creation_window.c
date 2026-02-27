@@ -23,6 +23,9 @@
 
 #include "deficons_creation_window.h"
 #include "text_templates_window.h"
+#include "deficons_settings_window.h"
+#include "../exclude_paths_window.h"
+#include "../../layout_preferences.h"
 #include "../../writeLog.h"
 #include "../../icon_edit/palette/palette_reduction.h"
 #include "../../platform/platform.h"
@@ -94,6 +97,8 @@ enum {
     GID_LOWCOLOR_MAPPING_CHOOSER,
     GID_REPLACE_THUMBNAILS_CB,
     GID_REPLACE_TEXT_PREVIEWS_CB,
+    GID_DEFICONS_CREATION_SETUP,
+    GID_DEFICONS_EXCLUDE_PATHS,
     GID_OK,
     GID_CANCEL
 };
@@ -128,6 +133,8 @@ typedef struct {
     Object *max_colors_chooser_obj;
     Object *dither_method_chooser_obj;
     Object *lowcolor_mapping_chooser_obj;
+    Object *deficons_creation_setup_btn;
+    Object *deficons_exclude_paths_btn;
     Object *ok_btn;
     Object *cancel_btn;
     
@@ -151,9 +158,9 @@ typedef struct {
 
 /* Folder icon mode chooser labels (matches ITIDY_FOLDER_ICON_MODE_* constants) */
 static STRPTR folder_mode_labels[] = {
-    "Smart (if content needs icons)",
-    "Always create",
-    "Never create",
+    "Smart (Create Folder If It Has Icons Inside)",
+    "Always Create",
+    "Never Create",
     NULL
 };
 
@@ -161,6 +168,7 @@ static STRPTR folder_mode_labels[] = {
 static STRPTR tab_label_strings[] = {
     "Create",
     "Rendering",
+    "DefIcons",
     NULL
 };
 
@@ -200,16 +208,16 @@ static STRPTR max_colors_labels[] = {
 static STRPTR dither_method_labels[] = {
     "None",
     "Ordered (Bayer 4x4)",
-    "Error diffusion (Floyd-Steinberg)",
-    "Auto (based on color count)",
+    "Error Diffusion (Floyd-Steinberg)",
+    "Auto (Based On Colour Count)",
     NULL
 };
 
 /* Low-color mapping chooser labels (used when max colors <= 8) */
 static STRPTR lowcolor_mapping_labels[] = {
-    "Grayscale",
-    "Workbench palette",
-    "Hybrid (grays + WB accents)",
+    "Greyscale",
+    "Workbench Palette",
+    "Hybrid (Grays + WB Accents)",
     NULL
 };
 
@@ -632,33 +640,35 @@ static BOOL create_window(DefIconsCreationWindow *win)
     static struct HintInfo hintInfo[] =
     {
         {GID_CLICKTAB,                -1, "", 0},
-        {GID_FOLDER_MODE_CHOOSER,     -1, "Creates missing drawer icons. Smart will scan the sub folder to see if it contains icons or content that needs icons. If it does, it creates a drawer icon.", 0},
+        {GID_FOLDER_MODE_CHOOSER,     -1, "Creates missing drawer icons. \"Smart\" scans the subfolder to see whether it contains icons or content that needs icons. If it does, it creates a drawer icon.", 0},
         {GID_SKIP_WHDLOAD_CB,         -1, "When enabled, folders with a WHDLoad slave (*.slave) are skipped. The WHDLoad drawer icon is still created, but sub-folders are skipped.", 0},
         {GID_TEXT_PREVIEW_CHECKBOX,   -1, "When enabled, iTidy can create thumbnail-style icons for text files by rendering the file contents onto the icon.", 0},
-        {GID_MANAGE_TEXT_TEMPLATES,   -1, "Open the Text Templates window to edit how text previews are rendered.", 0},
-        {GID_PICTURE_PREVIEW_CHECKBOX,-1, "Create thumbnail icons for recognised picture files (formats selected below).", 0},
-        {GID_FMT_ILBM_CB,             -1, "Amiga IFF ILBM/PBM thumbnails.", 0},
-        {GID_FMT_JPEG_CB,             -1, "JPEG thumbnails (slow to decode on 68k - can take over 60s per file on older hardware).", 0},
-        {GID_FMT_PNG_CB,              -1, "PNG thumbnails, also supports transparency.", 0},
-        {GID_FMT_ACBM_CB,             -1, "ACBM (Amiga Continuous Bitmap) thumbnails. A rare Amiga bitmap format, often seen in older demos or game assets.", 0},
-        {GID_FMT_GIF_CB,              -1, "GIF thumbnails, also supports transparency.", 0},
-        {GID_FMT_OTHER_CB,            -1, "Other image formats (not covered above) if supported by installed DataTypes.", 0},
-        {GID_FMT_BMP_CB,              -1, "BMP thumbnails.", 0},
-        {GID_REPLACE_THUMBNAILS_CB,   -1, "When enabled, iTidy will delete and recreate any image thumbnail icons it previously made (identified by the ITIDY_CREATED tool type). User-placed icons are never affected.", 0},
-        {GID_REPLACE_TEXT_PREVIEWS_CB,-1, "When enabled, iTidy will delete and recreate any text preview icons it previously made. Useful when changing rendering settings. User-placed icons are never affected.", 0},
+        {GID_MANAGE_TEXT_TEMPLATES,   -1, "Opens the Text Templates window to edit how text previews are rendered.", 0},
+        {GID_PICTURE_PREVIEW_CHECKBOX,-1, "Creates thumbnail icons for recognised picture files (formats selected below).", 0},
+        {GID_FMT_ILBM_CB,             -1, "Creates thumbnails for Amiga IFF ILBM/PBM images.", 0},
+        {GID_FMT_JPEG_CB,             -1, "Creates thumbnails for JPEG images (slow to decode on 68k).", 0},
+        {GID_FMT_PNG_CB,              -1, "Creates thumbnails for PNG images and supports transparency.", 0},
+        {GID_FMT_ACBM_CB,             -1, "Creates thumbnails for ACBM (Amiga Continuous Bitmap) images. This is a rare Amiga bitmap format, often seen in older demos or game asset data.", 0},
+        {GID_FMT_GIF_CB,              -1, "Creates thumbnails for GIF images and supports transparency.", 0},
+        {GID_FMT_OTHER_CB,            -1, "Other image formats (not covered above) if supported by installed DataTypes and DefIcons.", 0},
+        {GID_FMT_BMP_CB,              -1, "Creates thumbnails for BMP images.", 0},
+        {GID_REPLACE_THUMBNAILS_CB,   -1, "When enabled, iTidy will delete and recreate any image thumbnail icons it previously made (identified by the ITIDY_CREATED ToolType). User-placed icons are never affected.", 0},
+        {GID_REPLACE_TEXT_PREVIEWS_CB,-1, "When enabled, iTidy will delete and recreate any text preview icons it previously made. Useful after changing rendering settings. User-placed icons are never affected.", 0},
         {GID_ICON_SIZE_CHOOSER,       -1, "Sets the thumbnail canvas size used inside generated icons.", 0},
         {GID_THUMBNAIL_BORDERS_CHOOSER,-1, "Border style for thumbnail icons. Workbench: classic WB frame around the icon. Bevel: inner highlight drawn onto the image pixels (top-left bright, bottom-right dark). Smart modes skip the effect for transparent images.", 0},
         {GID_UPSCALE_THUMBNAILS_CB,   -1, "If enabled, small images are scaled up to fill the thumbnail area.", 0},
         {GID_MAX_COLORS_CHOOSER,      -1, "Limits the number of colours used in thumbnails. Lower is faster; higher looks better.", 0},
         {GID_DITHER_METHOD_CHOOSER,   -1, "Selects dithering when reducing colours.", 0},
         {GID_LOWCOLOR_MAPPING_CHOOSER,-1, "Palette mapping used at 4 or 8 colours (disabled above 8 colours / Ultra).", 0},
+        {GID_DEFICONS_CREATION_SETUP,  -1, "", 0},
+        {GID_DEFICONS_EXCLUDE_PATHS,     -1, "", 0},
         {GID_OK,                      -1, "Saves changes and closes the window.", 0},
         {GID_CANCEL,                  -1, "Closes the window without saving changes.", 0},
         {-1, -1, NULL, 0}
     };
 
     win->window_obj = (Object *)WindowObject,
-        WA_Title,              "iTidy: Icon creation settings",
+        WA_Title,              "iTidy - Icon Creation Settings",
         WA_Activate,           TRUE,
         WA_DepthGadget,        TRUE,
         WA_DragBar,            TRUE,
@@ -701,7 +711,7 @@ static BOOL create_window(DefIconsCreationWindow *win)
                             CHOOSER_Selected,  win->prefs->deficons_folder_icon_mode,
                         ChooserEnd,
                         CHILD_Label, (Object *)LabelObject,
-                            LABEL_Text, "Folder icons:",
+                            LABEL_Text, "Folder Icons:",
                         LabelEnd,
                         CHILD_WeightedHeight, 0,
 
@@ -725,7 +735,7 @@ static BOOL create_window(DefIconsCreationWindow *win)
                         LAYOUT_AddChild, (Object *)HLayoutObject,
                             LAYOUT_AddChild, win->text_preview_checkbox = (Object *)CheckBoxObject,
                                 GA_ID,                 GID_TEXT_PREVIEW_CHECKBOX,
-                                GA_Text,               "Text file previews",
+                                GA_Text,               "Text File Previews",
                                 GA_Selected,           win->prefs->deficons_enable_text_previews,
                                 GA_RelVerify,          TRUE,
                                 GA_TabCycle,           TRUE,
@@ -733,7 +743,7 @@ static BOOL create_window(DefIconsCreationWindow *win)
                             CheckBoxEnd,
                             LAYOUT_AddChild, win->manage_text_templates_btn = (Object *)ButtonObject,
                                 GA_ID,        GID_MANAGE_TEXT_TEMPLATES,
-                                GA_Text,      "Manage templates...",
+                                GA_Text,      "Manage Templates...",
                                 GA_RelVerify, TRUE,
                                 GA_TabCycle,  TRUE,
                             ButtonEnd,
@@ -744,7 +754,7 @@ static BOOL create_window(DefIconsCreationWindow *win)
                         LAYOUT_AddChild, (Object *)HLayoutObject,
                             LAYOUT_AddChild, win->picture_preview_checkbox = (Object *)CheckBoxObject,
                                 GA_ID,              GID_PICTURE_PREVIEW_CHECKBOX,
-                                GA_Text,            "Picture file previews",
+                                GA_Text,            "Picture File Previews",
                                 GA_Selected,        win->prefs->deficons_enable_picture_previews,
                                 GA_RelVerify,       TRUE,
                                 GA_TabCycle,        TRUE,
@@ -760,7 +770,7 @@ static BOOL create_window(DefIconsCreationWindow *win)
 
                         /* Picture formats label */
                         LAYOUT_AddImage, (Object *)LabelObject,
-                            LABEL_Text, "Picture formats:",
+                            LABEL_Text, "Picture Formats:",
                         LabelEnd,
 
                         /* Picture format checkboxes: 4 columns */
@@ -850,13 +860,13 @@ static BOOL create_window(DefIconsCreationWindow *win)
 
                         /* Replace section label */
                         LAYOUT_AddImage, (Object *)LabelObject,
-                            LABEL_Text, "Re-run / refresh options:",
+                            LABEL_Text, "Re-Run and Refresh Options:",
                         LabelEnd,
 
                         /* Replace image thumbnails checkbox */
                         LAYOUT_AddChild, win->replace_thumbnails_cb = (Object *)CheckBoxObject,
                             GA_ID,              GID_REPLACE_THUMBNAILS_CB,
-                            GA_Text,            "Replace existing image thumbnails created by iTidy",
+                            GA_Text,            "Replace Existing Image Thumbnails Created by iTidy",
                             GA_Selected,        win->prefs->deficons_replace_itidy_thumbnails,
                             GA_RelVerify,       TRUE,
                             GA_TabCycle,        TRUE,
@@ -867,7 +877,7 @@ static BOOL create_window(DefIconsCreationWindow *win)
                         /* Replace text previews checkbox */
                         LAYOUT_AddChild, win->replace_text_previews_cb = (Object *)CheckBoxObject,
                             GA_ID,              GID_REPLACE_TEXT_PREVIEWS_CB,
-                            GA_Text,            "Replace existing text previews created by iTidy",
+                            GA_Text,            "Replace Existing Text Previews Created by iTidy",
                             GA_Selected,        win->prefs->deficons_replace_itidy_text_previews,
                             GA_RelVerify,       TRUE,
                             GA_TabCycle,        TRUE,
@@ -899,7 +909,7 @@ static BOOL create_window(DefIconsCreationWindow *win)
                                 CHOOSER_Selected, win->prefs->deficons_icon_size_mode,
                             ChooserEnd,
                             CHILD_Label, (Object *)LabelObject,
-                                LABEL_Text, "Preview size:",
+                                LABEL_Text, "Preview Size:",
                             LabelEnd,
                             CHILD_WeightedHeight, 0,
 
@@ -912,13 +922,13 @@ static BOOL create_window(DefIconsCreationWindow *win)
                                 CHOOSER_Selected, (ULONG)win->prefs->deficons_thumbnail_border_mode,
                             ChooserEnd,
                             CHILD_Label, (Object *)LabelObject,
-                                LABEL_Text, "Thumbnail border:",
+                                LABEL_Text, "Thumbnail Border:",
                             LabelEnd,
                             CHILD_WeightedHeight, 0,
 
                             LAYOUT_AddChild, win->upscale_thumbnails_cb = (Object *)CheckBoxObject,
                                 GA_ID,              GID_UPSCALE_THUMBNAILS_CB,
-                                GA_Text,            "Upscale small images to icon size",
+                                GA_Text,            "Upscale Small Images To Icon Size",
                                 GA_Selected,        win->prefs->deficons_upscale_thumbnails,
                                 GA_RelVerify,       TRUE,
                                 GA_TabCycle,        TRUE,
@@ -942,7 +952,7 @@ static BOOL create_window(DefIconsCreationWindow *win)
                             LAYOUT_LabelPlace,    BVJ_TOP_LEFT,
 
                             LAYOUT_AddImage, (Object *)LabelObject,
-                                LABEL_Text, "Colour reduction:",
+                                LABEL_Text, "Colour Reduction:",
                             LabelEnd,
 
                             LAYOUT_AddChild, win->max_colors_chooser_obj = (Object *)ChooserObject,
@@ -955,7 +965,7 @@ static BOOL create_window(DefIconsCreationWindow *win)
                                 CHOOSER_Selected, (ULONG)max_colors_index,
                             ChooserEnd,
                             CHILD_Label, (Object *)LabelObject,
-                                LABEL_Text, "Max colours:",
+                                LABEL_Text, "Max Colours:",
                             LabelEnd,
                             CHILD_WeightedHeight, 0,
 
@@ -983,13 +993,50 @@ static BOOL create_window(DefIconsCreationWindow *win)
                                 CHOOSER_Selected, win->prefs->deficons_lowcolor_mapping,
                             ChooserEnd,
                             CHILD_Label, (Object *)LabelObject,
-                                LABEL_Text, "Low-col palette:",
+                                LABEL_Text, "Low-Colour Palette:",
                             LabelEnd,
                             CHILD_WeightedHeight, 0,
                         LayoutEnd,
                         CHILD_WeightedHeight, 0,
 
                     LayoutEnd, /* end Rendering page */
+
+                    /* ============ Page 2: DefIcons ============ */
+                    PAGE_Add, (Object *)VLayoutObject,
+
+                        /* Top spacers */
+                        LAYOUT_AddChild, (Object *)SpaceObject,
+                        SpaceEnd,
+
+                        LAYOUT_AddChild, (Object *)SpaceObject,
+                        SpaceEnd,
+
+                        /* Icon Creation Setup button */
+                        LAYOUT_AddChild, win->deficons_creation_setup_btn = (Object *)ButtonObject,
+                            GA_ID,        GID_DEFICONS_CREATION_SETUP,
+                            GA_Text,      "Icon Creation Setup...",
+                            GA_RelVerify, TRUE,
+                            GA_TabCycle,  TRUE,
+                        ButtonEnd,
+                        CHILD_WeightedHeight, 0,
+
+                        /* Exclude Paths button */
+                        LAYOUT_AddChild, win->deficons_exclude_paths_btn = (Object *)ButtonObject,
+                            GA_ID,        GID_DEFICONS_EXCLUDE_PATHS,
+                            GA_Text,      "Exclude Paths...",
+                            GA_RelVerify, TRUE,
+                            GA_TabCycle,  TRUE,
+                        ButtonEnd,
+                        CHILD_WeightedHeight, 0,
+
+                        /* Bottom spacers */
+                        LAYOUT_AddChild, (Object *)SpaceObject,
+                        SpaceEnd,
+
+                        LAYOUT_AddChild, (Object *)SpaceObject,
+                        SpaceEnd,
+
+                    LayoutEnd, /* end DefIcons page */
 
                 PageEnd, /* end PageObject */
             ClickTabEnd, /* end ClickTab */
@@ -1082,6 +1129,14 @@ static void event_loop(DefIconsCreationWindow *win)
 
                         case GID_MANAGE_TEXT_TEMPLATES:
                             open_text_templates_window(win->prefs);
+                            break;
+
+                        case GID_DEFICONS_CREATION_SETUP:
+                            open_itidy_deficons_settings_window(win->prefs);
+                            break;
+
+                        case GID_DEFICONS_EXCLUDE_PATHS:
+                            open_exclude_paths_window(GetGlobalExcludePaths(), NULL);
                             break;
 
                         default:

@@ -37,8 +37,8 @@ WEIGHTBAR: 0
 EXPANDED: 0
 --
 LISTITEM: All
-LISTITEM: Custom only
-LISTITEM: Missing only
+LISTITEM: Custom Only
+LISTITEM: Missing Only
 -
 TYPE: 2
 ID: 1
@@ -125,8 +125,8 @@ DISPLAYID: 0
 TYPE: 3
 ID: 4
 PARENTID:
-NAME: defIcons_text_templates
-IDENT: defIcons_text_templates
+NAME: deficons_text_templates
+IDENT: deficons_text_templates
 LABEL: 
 MINWIDTH: 150
 MINHEIGHT: 80
@@ -143,9 +143,9 @@ NODISPOSE: 0
 WEIGHTBAR: 0
 EXPANDED: 255
 --
-TITLE: DefIcons: Text Templates   
+TITLE: iTidy - DefIcons Text Templates
 SCREENTITLE: 
-ICONTITLE: MyApp
+ICONTITLE: DefIcons Text Templates
 ICONFILE: 
 LEFTEDGE: 5
 TOPEDGE: 20
@@ -161,16 +161,16 @@ REFRESHTYPE: 0
 FLAGS: 4111
 IDCMP: 610
 PREVIEWOPEN: 0
-PREVIEWLEFT: 234
-PREVIEWTOP: 144
+PREVIEWLEFT: 379
+PREVIEWTOP: 123
 PREVIEWWIDTH: 382
 PREVIEWHEIGHT: 217
 -
 TYPE: 4
 ID: 5
 PARENTID:
-NAME: Menu_5
-IDENT: Menu_5
+NAME: dtt_menu
+IDENT: dtt_menu
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -191,8 +191,8 @@ EXPANDED: 0
 TYPE: 17
 ID: 6
 PARENTID:
-NAME: Vert_6
-IDENT: Vert_6
+NAME: dtt_root
+IDENT: dtt_root
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -230,8 +230,8 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 8
 PARENTID: 6
-NAME: Vert_8
-IDENT: Vert_8
+NAME: dtt_main_col
+IDENT: dtt_main_col
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -269,8 +269,8 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 10
 PARENTID: 8
-NAME: Horiz_10
-IDENT: Horiz_10
+NAME: dtt_split_row
+IDENT: dtt_split_row
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -308,8 +308,8 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 11
 PARENTID: 10
-NAME: Vert_11
-IDENT: Vert_11
+NAME: dtt_templates_col
+IDENT: dtt_templates_col
 LABEL: Icons
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -350,7 +350,7 @@ PARENTID: 11
 NAME: Show
 IDENT: deficons_text_show_chooser
 LABEL: 
-HINT: Choose which template types to show in the list (All, Custom only, or Using master).
+HINT: Choose which template types to show in the list ("All", "Custom Only", or "Using Master").
 MINWIDTH: -1
 MINHEIGHT: -1
 MAXWIDTH: -1
@@ -426,8 +426,8 @@ EDITABLE: 0
 TYPE: 17
 ID: 12
 PARENTID: 10
-NAME: Vert_12
-IDENT: Vert_12
+NAME: dtt_details_col
+IDENT: dtt_details_col
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -465,8 +465,8 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 21
 PARENTID: 12
-NAME: Vert_21
-IDENT: Vert_21
+NAME: dtt_selected_details_col
+IDENT: dtt_selected_details_col
 LABEL: Selected Type
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -504,8 +504,8 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 36
 PARENTID: 21
-NAME: Vert_36
-IDENT: Vert_36
+NAME: dtt_selected_type_col
+IDENT: dtt_selected_type_col
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -578,8 +578,8 @@ TRANSPARENT: 1
 TYPE: 17
 ID: 37
 PARENTID: 21
-NAME: Vert_37
-IDENT: Vert_37
+NAME: dtt_selected_templatefile_col
+IDENT: dtt_selected_templatefile_col
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -619,7 +619,7 @@ ID: 17
 PARENTID: 37
 NAME: Progdir:...
 IDENT: deficons_text_selected_templatefile_value
-LABEL: Template file:
+LABEL: Template File:
 HINT: The custom template icon file for this type, if one exists.
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -652,8 +652,8 @@ TRANSPARENT: 1
 TYPE: 17
 ID: 38
 PARENTID: 21
-NAME: Vert_38
-IDENT: Vert_38
+NAME: dtt_selected_effective_col
+IDENT: dtt_selected_effective_col
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -726,8 +726,8 @@ TRANSPARENT: 1
 TYPE: 17
 ID: 39
 PARENTID: 21
-NAME: Vert_39
-IDENT: Vert_39
+NAME: dtt_selected_status_col
+IDENT: dtt_selected_status_col
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -800,8 +800,8 @@ TRANSPARENT: 1
 TYPE: 17
 ID: 40
 PARENTID: 12
-NAME: Vert_40
-IDENT: Vert_40
+NAME: dtt_details_spacer_col
+IDENT: dtt_details_spacer_col
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: 5
@@ -839,9 +839,9 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 22
 PARENTID: 12
-NAME: Vert_22
-IDENT: Vert_22
-LABEL: Template action
+NAME: dtt_template_actions_col
+IDENT: dtt_template_actions_col
+LABEL: Template Action
 MINWIDTH: -1
 MINHEIGHT: -1
 MAXWIDTH: -1
@@ -878,7 +878,7 @@ DEFERLAYOUT: 0
 TYPE: 5
 ID: 24
 PARENTID: 22
-NAME: Create from master
+NAME: Create From Master
 IDENT: deficons_text_btn_create_overwrite_master
 LABEL: 
 HINT: Create a custom template for the selected type by copying the master template. If a custom template already exists, it will be overwritten.
@@ -913,10 +913,10 @@ TRANSPARENT: 0
 TYPE: 5
 ID: 25
 PARENTID: 22
-NAME: Edit tooltypes...
+NAME: Edit Tooltypes...
 IDENT: deficons_text_btn_edit_tooltypes
 LABEL: 
-HINT: Open the selected template in Workbench Information so you can edit ToolTypes. Changes are saved by Workbench when you click Save.
+HINT: Open the selected template in Workbench Information so you can edit ToolTypes. Changes are saved by Workbench when you click "Save".
 MINWIDTH: -1
 MINHEIGHT: -1
 MAXWIDTH: -1
@@ -948,7 +948,7 @@ TRANSPARENT: 0
 TYPE: 5
 ID: 26
 PARENTID: 22
-NAME: Validate tooltypes
+NAME: Validate Tooltypes
 IDENT: deficons_text_btn_validate_tooltypes
 LABEL: 
 HINT: Check the selected template's ToolTypes for common mistakes and report any issues found.
@@ -983,7 +983,7 @@ TRANSPARENT: 0
 TYPE: 5
 ID: 35
 PARENTID: 22
-NAME: Revert to master
+NAME: Revert To Master
 IDENT: deficons_text_btn_revert_to_master
 LABEL: 
 HINT: Remove the custom template for the selected type so it uses the master template again. This deletes the type's template icon file.
@@ -1018,8 +1018,8 @@ TRANSPARENT: 0
 TYPE: 17
 ID: 30
 PARENTID: 6
-NAME: Horiz_30
-IDENT: Horiz_30
+NAME: dtt_buttons_row
+IDENT: dtt_buttons_row
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -1057,8 +1057,8 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 31
 PARENTID: 30
-NAME: Vert_31
-IDENT: Vert_31
+NAME: dtt_buttons_spacer_col
+IDENT: dtt_buttons_spacer_col
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -1096,8 +1096,8 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 32
 PARENTID: 30
-NAME: Horiz_32
-IDENT: Horiz_32
+NAME: dtt_buttons_right_row
+IDENT: dtt_buttons_right_row
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -1136,7 +1136,7 @@ TYPE: 5
 ID: 33
 PARENTID: 32
 NAME: Close
-IDENT: Button_33
+IDENT: dtt_close
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
