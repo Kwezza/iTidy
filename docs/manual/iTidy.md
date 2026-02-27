@@ -36,7 +36,7 @@ iTidy works by updating Workbench `.info` files and drawer layout information on
 iTidy requires the following to run properly:
 
 - AmigaOS Workbench 3.2 or newer
-- 68020 CPU or better
+- 68000 CPU or better
 - At least 1 megabyte (1 MB) of free memory
 - At least 1 megabyte (1 MB) of free storage space in the installation location (more as backups accumulate)
 - For backup and restore features: LhA must be installed in the `C:` path

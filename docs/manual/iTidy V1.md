@@ -394,6 +394,6 @@ Before running iTidy for the first time - especially on large or important parti
 ## Credits & Version Info
 
 **Author:** Kerry Thompson  
-**Version:** 2.0
+**Version:** 1.0
 **Website:** https://github.com/Kwezza/iTidy
 ---
