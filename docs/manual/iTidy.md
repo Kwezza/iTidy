@@ -13,21 +13,22 @@ iTidy works by updating Workbench `.info` files and drawer layout information on
 
 1. [Requirements](#requirements)
 2. [Introduction](#introduction)
-3. [Getting Started](#getting-started)
-4. [Main Window](#main-window)
-5. [Advanced Settings](#advanced-settings)
-6. [Icon Creation Settings](#icon-creation-settings)
-7. [DefIcons Categories](#deficons-categories)
-8. [Text Templates](#text-templates)
-9. [Exclude Paths](#exclude-paths)
-10. [Default Tool Analysis](#default-tool-analysis)
-11. [Replacing Default Tools](#replacing-default-tools)
-12. [Restoring Default Tool Backups](#restoring-default-tool-backups)
-13. [Restoring Layout Backups](#restoring-layout-backups)
-14. [Folder View](#folder-view)
-15. [ToolTypes](#tooltypes)
-16. [Tips & Troubleshooting](#tips--troubleshooting)
-17. [Credits & Version Info](#credits--version-info)
+3. [What's New in v2.0](#whats-new-in-v20)
+4. [Getting Started](#getting-started)
+5. [Main Window](#main-window)
+6. [Advanced Settings](#advanced-settings)
+7. [Icon Creation Settings](#icon-creation-settings)
+8. [DefIcons Categories](#deficons-categories)
+9. [Text Templates](#text-templates)
+10. [Exclude Paths](#exclude-paths)
+11. [Default Tool Analysis](#default-tool-analysis)
+12. [Replacing Default Tools](#replacing-default-tools)
+13. [Restoring Default Tool Backups](#restoring-default-tool-backups)
+14. [Restoring Layout Backups](#restoring-layout-backups)
+15. [Folder View](#folder-view)
+16. [ToolTypes](#tooltypes)
+17. [Tips & Troubleshooting](#tips--troubleshooting)
+18. [Credits & Version Info](#credits--version-info)
 
 ---
 
@@ -82,6 +83,34 @@ iTidy only touches `.info` files and Workbench drawer/window layout information.
 If you use iTidy, you do so at your own risk. I can't accept responsibility for data loss, corruption, or any other problems caused by using (or misusing) the software.
 
 Before running iTidy for the first time - especially on large or important partitions - make sure you have a current, verified backup. If you want to be extra cautious, try it on a small test folder or a copy of your Workbench setup first.
+
+---
+
+## What's New in v2.0
+
+This section covers the main changes since v1.0. If you're new to iTidy, you can skip straight to [Getting Started](#getting-started).
+
+### Fresh New Look
+
+The entire interface has been rebuilt using ReAction, the native Workbench 3.2 GUI toolkit. The windows, buttons, and lists all follow the standard Workbench 3.2 style and behave consistently with the rest of your desktop. This version requires **Workbench 3.2 or later** as a result.
+
+### Automatic Icon Creation
+
+iTidy v2.0 can create icons automatically for files and folders that don't already have them. To do this it uses **DefIcons**, the file type detection system built into Workbench 3.2. DefIcons examines each file, identifies its type using its built-in file type database, and supplies the appropriate default icon. iTidy does not maintain its own type database or icon set -- it relies entirely on what DefIcons already knows about.
+
+On top of the standard DefIcons icons, iTidy can optionally generate a **thumbnail preview** directly into the icon image for pictures, or a miniature rendered preview of the contents for text files. These are not separate files -- the preview is embedded in the .info icon itself. Whether to do this is configurable per file type.
+
+For image files, ILBM/IFF is handled natively without needing a datatype. All other formats go through the Amiga datatype system -- if DefIcons identifies the file as an image type and a matching datatype is installed, iTidy can decode it and produce a thumbnail. A standard Workbench 3.2.3 installation includes datatypes for JPEG, BMP, GIF, and PNG, so those formats work out of the box. Any additional third-party datatypes you install are picked up automatically -- no changes to iTidy are needed.
+
+**Note:** If DefIcons does not recognise a file type, iTidy will not create an icon for it. What gets recognised depends on your Workbench 3.2 installation and any additional DefIcons type entries you have added.
+
+### Choose Which File Types Get Icons
+
+A new settings window lists all the file types that DefIcons reports on your system. You can enable or disable icon creation for each type individually, and view or change the default tool assigned to open files of that type. Only types that DefIcons recognises will appear here.
+
+### Exclude Folders From Icon Creation
+
+You can tell iTidy to skip specific folders when creating icons. System directories like C:, Libs:, and Devs: are already excluded by default, and you can add your own.
 
 ---
 
@@ -765,7 +794,6 @@ Recursing through thousands of folders takes time on real hardware, especially w
 A few tips:
 - It's fine to leave iTidy running unattended during large jobs.
 - Avoid running other disk-heavy tasks at the same time.
-- If you're doing a huge collection, it can be quicker (and safer) to work in chunks (for example `WHDLoad:Games` first, then `WHDLoad:Demos`) rather than doing everything in one run.
 
 ### Icons Aren't Moved, and the Progress Log Shows No Icons Found
 
@@ -787,7 +815,7 @@ This usually means an icon's Default Tool points to something that isn't install
 
 ### DefIcons Categories Window Is Empty
 
-If the DefIcons Categories window shows no file types, it means `ENV:deficons.prefs` was not found or could not be parsed. This file is managed by the "DefaultIcons" Preferences tool in the Workbench Prefs drawer. Make sure you have Workbench 3.2 installed and the DefIcons system is configured.
+If the DefIcons Categories window shows no file types, it means `ENV:deficons.prefs` was not found or could not be parsed. This file is managed by the "DefaultIcons" Preferences tool in the Workbench Prefs drawer. Make sure you have Workbench 3.2 installed and the DefIcons system is configured.  
 
 ---
 
@@ -808,4 +836,5 @@ Before running iTidy for the first time - especially on large or important parti
 **Author:** Kerry Thompson
 **Version:** 2.0
 **Website:** https://github.com/Kwezza/iTidy
+**Special thanks** Darren 'dmcoles' Cole for the excellent "ReBuild" which iTidy interface was rebuilt with.
 ---
