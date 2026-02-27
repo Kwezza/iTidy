@@ -155,9 +155,9 @@ BOOL deficons_is_excluded_path(const char *path, const LayoutPreferences *prefs)
     }
     
     /* Check each exclude path pattern */
-    for (i = 0; i < prefs->deficons_exclude_path_count; i++)
+    for (i = 0; i < (int)GetGlobalExcludePaths()->count; i++)
     {
-        const char *exclude_pattern = prefs->deficons_exclude_paths[i];
+        const char *exclude_pattern = GetGlobalExcludePaths()->paths[i];
         
         if (exclude_pattern[0] == '\0')
             continue;  /* Skip empty entries */

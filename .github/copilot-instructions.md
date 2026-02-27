@@ -856,6 +856,7 @@ void process_path(STRPTR path)
 12. **Use ReAction classes** - No GadTools for v2.0 development
 13. **Layout automatically** - Let layout.gadget handle positioning
 14. **DisposeObject disposes children** - Never manually dispose child objects
+15. **⚠️ 68000 stack frame limit** - The 68000 CPU uses 16-bit displacements, so **any single function's local variable frame must stay under ~32 KB**. VBCC allocates ALL locals from ALL `case`/`if` branches simultaneously at function entry, even if only one branch runs at runtime. `LayoutPreferences` is now ~740 bytes (the 8 KB exclude-paths block was extracted to `DefIconsExcludePaths` in Option B). `DefIconsExcludePaths` is ~8.2 KB — never declare **two or more** as stack locals in the same function. Use `AllocVec/FreeVec` instead. This limit is intentional: iTidy targets the base 68000 for maximum hardware compatibility and that will not change. See `docs/68K_DISPLACEMENT_ERROR_ANALYSIS.md` for the full analysis.
 
 ---
 
@@ -959,6 +960,13 @@ The `docs/AutoDocs/` folder contains the **official Commodore/Hyperion AutoDocs*
 **When working with structures:**
 - [ ] Are fields grouped by size (4-byte fields first, then 2-byte BOOL fields last)?
 - [ ] Are you aware that BOOL is 2 bytes on Amiga (not 1 or 4)?
+
+**⚠️ 68000 stack frame limit (CRITICAL — read before adding any large locals):**
+- [ ] Does any function in your change declare `DefIconsExcludePaths` as a stack local? If so, is it the **only** large local in that function? If not, use `AllocVec/FreeVec` instead.
+- [ ] Does any function declare **two or more** structs that are each larger than ~4 KB as stack locals? If so, move at least one to the heap.
+- [ ] `DefIconsExcludePaths` is ~8.2 KB (paths[32][256] + count). One instance per function frame is the safe maximum. `LayoutPreferences` is now only ~740 bytes and is safe to use freely on the stack.
+- [ ] The 68000 displacement limit is ±32,767 bytes. VBCC allocates ALL case-block locals in a single frame. Four instances of `DefIconsExcludePaths` = 32,776 bytes = **build failure** (VBCC error 2030: displacement out of range).
+- [ ] See `docs/68K_DISPLACEMENT_ERROR_ANALYSIS.md` for full detail.
 
 **When updating the development log (docs\DEVELOPMENT_LOG.md):**
 - [ ] Have you documented the change with date, author, and description?

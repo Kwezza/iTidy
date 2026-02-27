@@ -29,6 +29,7 @@ endif
 # CONSOLE: Add -DENABLE_CONSOLE via CONSOLE=1 to open console window for debugging
 CC = vc
 CFLAGS = +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG $(CONSOLE_FLAG)
+CFLAGS_NOSIZEOPT = +aos68k -c99 -cpu=68000 -O2 -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG $(CONSOLE_FLAG)
 LDFLAGS = +aos68k -cpu=68000 -O2 -size -final -lamiga -lauto
 OUT_DIR = $(BUILD_DIR)/amiga
 BIN_DIR = Bin/Amiga
@@ -108,6 +109,7 @@ BACKUP_SRCS = \
 # GUI source files
 GUI_SRCS = \
 	$(SRC_DIR)/GUI/main_window.c \
+	$(SRC_DIR)/GUI/main_window_log_handlers.c \
 	$(SRC_DIR)/GUI/advanced_window.c \
 	$(SRC_DIR)/GUI/deficons/deficons_settings_window.c \
 	$(SRC_DIR)/GUI/deficons/deficons_creation_window.c \
@@ -216,6 +218,12 @@ $(BIN): $(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $^ 
 	@echo Build complete: $(BIN)
 	@echo Release build optimized for size (-O2 -size -final)
+
+# main_window.c: large file - compile without -size flag to avoid
+# 68000 short-branch displacement errors in long switch statements
+$(OUT_DIR)/GUI/main_window.o: $(SRC_DIR)/GUI/main_window.c
+	@echo Compiling [$@] from $< (no-size)
+	$(CC) $(CFLAGS_NOSIZEOPT) -c $< -o $@
 
 # Compile core source files
 $(OUT_DIR)/%.o: $(SRC_DIR)/%.c

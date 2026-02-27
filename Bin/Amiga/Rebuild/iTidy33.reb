@@ -1,7 +1,7 @@
 -REBUILD-
 VER=2
 NEXTID=407
-SELECTEDID=4
+SELECTEDID=347
 VIEWTMP=-1
 ADDSETT=-1
 PREVIEWCODE=0
@@ -18,8 +18,8 @@ USEMACROS=0
 TYPE: 0
 ID: 41
 PARENTID:
-NAME: main_OrderBy
-IDENT: ReactionList_41
+NAME: main_list_sort_primary
+IDENT: main_list_sort_primary
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -44,8 +44,8 @@ LISTITEM: Grouped by type
 TYPE: 0
 ID: 43
 PARENTID:
-NAME: main_tidy_by
-IDENT: ReactionList_43
+NAME: main_list_sort_secondary
+IDENT: main_list_sort_secondary
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -70,8 +70,8 @@ LISTITEM: Size
 TYPE: 0
 ID: 44
 PARENTID:
-NAME: main_position
-IDENT: ReactionList_44
+NAME: main_list_positioning
+IDENT: main_list_positioning
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -96,8 +96,8 @@ LISTITEM: No change
 TYPE: 0
 ID: 65
 PARENTID:
-NAME: advanced_layout_aspect
-IDENT: ReactionList_65
+NAME: adv_list_layout_aspect
+IDENT: adv_list_layout_aspect
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -123,8 +123,8 @@ LISTITEM: Wide (2.0)
 TYPE: 0
 ID: 66
 PARENTID:
-NAME: advanced_layout_whenFull
-IDENT: ReactionList_66
+NAME: adv_list_layout_when_full
+IDENT: adv_list_layout_when_full
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -148,8 +148,8 @@ LISTITEM: Expand both
 TYPE: 0
 ID: 83
 PARENTID:
-NAME: advanced_layout_width
-IDENT: ReactionList_83
+NAME: adv_list_layout_max_width
+IDENT: adv_list_layout_max_width
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -176,8 +176,8 @@ LISTITEM: 100%
 TYPE: 0
 ID: 84
 PARENTID:
-NAME: advanced_layout_align_vertically
-IDENT: ReactionList_84
+NAME: adv_list_layout_align_vertically
+IDENT: adv_list_layout_align_vertically
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -201,8 +201,8 @@ LISTITEM: Bottom
 TYPE: 0
 ID: 85
 PARENTID:
-NAME: advanced_layout_group_gaps
-IDENT: ReactionList_85
+NAME: adv_list_layout_gap_between_groups
+IDENT: adv_list_layout_gap_between_groups
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -226,8 +226,8 @@ LISTITEM: Large
 TYPE: 0
 ID: 140
 PARENTID:
-NAME: tools_show
-IDENT: ReactionList_140
+NAME: dta_list_filter_history
+IDENT: dta_list_filter_history
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -251,8 +251,8 @@ LISTITEM: Show missing only
 TYPE: 0
 ID: 200
 PARENTID:
-NAME: advanced_tabs
-IDENT: ReactionList_200
+NAME: adv_list_tabs
+IDENT: adv_list_tabs
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -278,8 +278,8 @@ LISTITEM: Filters & misc
 TYPE: 0
 ID: 280
 PARENTID:
-NAME: deficons_create_draw_mode
-IDENT: ReactionList_280
+NAME: dco_list_drawer_icon_mode
+IDENT: dco_list_drawer_icon_mode
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -303,8 +303,8 @@ LISTITEM: Never create
 TYPE: 0
 ID: 281
 PARENTID:
-NAME: deficons_create_thumbnail_size
-IDENT: ReactionList_281
+NAME: dco_list_preview_size
+IDENT: dco_list_preview_size
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -328,8 +328,8 @@ LISTITEM: Large (100x100)
 TYPE: 0
 ID: 287
 PARENTID:
-NAME: deficons_create_thumbnail_colours
-IDENT: ReactionList_287
+NAME: dco_list_max_colors
+IDENT: dco_list_max_colors
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -358,8 +358,8 @@ LISTITEM: Ultra (256 + detail boost)
 TYPE: 0
 ID: 288
 PARENTID:
-NAME: deficons_create_thumbnail_palette
-IDENT: ReactionList_288
+NAME: dco_list_lowcolor_mapping
+IDENT: dco_list_lowcolor_mapping
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -383,8 +383,8 @@ LISTITEM: Hybrid (Grays + WB Accents)
 TYPE: 0
 ID: 324
 PARENTID:
-NAME: deficons_create_thumbnail_dither
-IDENT: ReactionList_324
+NAME: dco_list_dither_method
+IDENT: dco_list_dither_method
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -409,8 +409,8 @@ LISTITEM: Auto (based on colour count)
 TYPE: 0
 ID: 327
 PARENTID:
-NAME: thumbnail_tabs
-IDENT: ReactionList_327
+NAME: dco_list_thumbnail_tabs
+IDENT: dco_list_thumbnail_tabs
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -433,8 +433,8 @@ LISTITEM: Text thumbnail
 TYPE: 0
 ID: 357
 PARENTID:
-NAME: deficons_tabs
-IDENT: ReactionList_357
+NAME: dco_list_tabs
+IDENT: dco_list_tabs
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -457,8 +457,8 @@ LISTITEM: Rendering
 TYPE: 0
 ID: 383
 PARENTID:
-NAME: deficons_folder_creation
-IDENT: ReactionList_383
+NAME: dco_list_folder_icon_mode
+IDENT: dco_list_folder_icon_mode
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -482,8 +482,8 @@ LISTITEM: Never create
 TYPE: 0
 ID: 398
 PARENTID:
-NAME: deficons_textgen_filter
-IDENT: ReactionList_398
+NAME: dco_list_textgen_filter
+IDENT: dco_list_textgen_filter
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -633,8 +633,8 @@ PREVIEWHEIGHT: 138
 TYPE: 4
 ID: 5
 PARENTID:
-NAME: Menu_5
-IDENT: Menu_5
+NAME: main_menu
+IDENT: main_menu
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -961,8 +961,8 @@ MUTUALGROUP: 0
 TYPE: 17
 ID: 6
 PARENTID:
-NAME: Vert_6
-IDENT: master_layout
+NAME: main_root_layout
+IDENT: main_root_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -1000,8 +1000,8 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 28
 PARENTID: 6
-NAME: Horiz_28
-IDENT: main_folder_layout
+NAME: main_target_path_layout
+IDENT: main_target_path_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -1039,8 +1039,8 @@ DEFERLAYOUT: 0
 TYPE: 11
 ID: 52
 PARENTID: 28
-NAME: Folder to tidy
-IDENT: main_folder_name
+NAME: main_gf_target_path
+IDENT: main_gf_target_path
 LABEL: 
 HINT: Select the folder you want to tidy. To include subfolders, enable 'Include subfolders' below.
 MINWIDTH: -1
@@ -1080,8 +1080,8 @@ READONLY: 1
 TYPE: 17
 ID: 26
 PARENTID: 6
-NAME: Horiz_26
-IDENT: main_itidy_options_layout
+NAME: main_options_layout
+IDENT: main_options_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -1119,8 +1119,8 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 33
 PARENTID: 26
-NAME: Vert_33
-IDENT: options_left_column
+NAME: main_options_left_col_layout
+IDENT: main_options_left_col_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -1159,7 +1159,7 @@ TYPE: 8
 ID: 35
 PARENTID: 33
 NAME: Grouping
-IDENT: order_selection
+IDENT: main_ch_sort_primary
 LABEL: 
 HINT: Sets how icons are grouped before sorting. Folders first, files first, mixed, or grouped by type.
 MINWIDTH: -1
@@ -1191,7 +1191,7 @@ TYPE: 8
 ID: 38
 PARENTID: 33
 NAME: Sort by
-IDENT: order_by_selection
+IDENT: main_ch_sort_secondary
 LABEL: 
 HINT: Selects the field used for sorting: name, kind, date, or size.
 MINWIDTH: -1
@@ -1223,7 +1223,7 @@ TYPE: 8
 ID: 37
 PARENTID: 33
 NAME: Window position
-IDENT: position_selector
+IDENT: main_ch_positioning
 LABEL: 
 HINT: Controls where drawer windows are placed after resizing. (Only affects windows iTidy changes.)
 MINWIDTH: -1
@@ -1254,8 +1254,8 @@ DROPDOWN: 0
 TYPE: 17
 ID: 34
 PARENTID: 26
-NAME: Vert_34
-IDENT: options_right_column
+NAME: main_options_right_col_layout
+IDENT: main_options_right_col_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -1294,7 +1294,7 @@ TYPE: 7
 ID: 36
 PARENTID: 34
 NAME: 
-IDENT: cleanup_subfolders
+IDENT: main_cb_cleanup_subfolders
 LABEL: Include subfolders
 HINT: When enabled, iTidy also processes all subfolders under the selected folder.
 MINWIDTH: -1
@@ -1323,7 +1323,7 @@ TYPE: 7
 ID: 262
 PARENTID: 34
 NAME: 
-IDENT: create_new_icons
+IDENT: main_cb_create_new_icons
 LABEL: Create icons during tidy
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -1351,7 +1351,7 @@ TYPE: 7
 ID: 39
 PARENTID: 34
 NAME: 
-IDENT: backup_icons_checkbox
+IDENT: main_cb_backup_icons
 LABEL: Back up layout before changes
 HINT: Creates an LhA backup of the folder's .info files before changes. Requires LhA in C: (or on your PATH).
 MINWIDTH: -1
@@ -1379,8 +1379,8 @@ LABELPLACE: 1
 TYPE: 17
 ID: 45
 PARENTID: 6
-NAME: Horiz_45
-IDENT: tools_layout
+NAME: main_tools_layout
+IDENT: main_tools_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -1419,7 +1419,7 @@ TYPE: 5
 ID: 46
 PARENTID: 45
 NAME: Advanced...
-IDENT: advanced_button
+IDENT: main_btn_advanced
 LABEL: 
 HINT: Opens Advanced Settings for finer control over layout and sizing.
 MINWIDTH: -1
@@ -1454,7 +1454,7 @@ TYPE: 5
 ID: 47
 PARENTID: 45
 NAME: Fix default tools...
-IDENT: default_tools_button
+IDENT: main_btn_default_tools
 LABEL: 
 HINT: Scans icons for missing or invalid default tools. Lets you fix them, or batch-replace one tool with another
 MINWIDTH: -1
@@ -1489,7 +1489,7 @@ TYPE: 5
 ID: 48
 PARENTID: 45
 NAME: Backups...
-IDENT: restore_backups_button
+IDENT: main_btn_restore_backups
 LABEL: 
 HINT: Restores icon positions and window snapshots from iTidy backups. Only available if you previously enabled backups.
 MINWIDTH: -1
@@ -1524,7 +1524,7 @@ TYPE: 5
 ID: 406
 PARENTID: 45
 NAME: Icon creation...
-IDENT: new_icons_settings
+IDENT: main_btn_icon_settings
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -1557,8 +1557,8 @@ TRANSPARENT: 0
 TYPE: 17
 ID: 49
 PARENTID: 6
-NAME: Horiz_49
-IDENT: main_buttons_layout
+NAME: main_action_buttons_layout
+IDENT: main_action_buttons_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -1597,7 +1597,7 @@ TYPE: 5
 ID: 50
 PARENTID: 49
 NAME: Start
-IDENT: start_button
+IDENT: main_btn_start
 LABEL: 
 HINT: Starts tidying the selected folder using the current settings.
 MINWIDTH: -1
@@ -1632,7 +1632,7 @@ TYPE: 5
 ID: 51
 PARENTID: 49
 NAME: Exit
-IDENT: exit_button
+IDENT: main_btn_exit
 LABEL: 
 HINT: Closes iTidy.
 MINWIDTH: -1
@@ -1710,8 +1710,8 @@ PREVIEWHEIGHT: 104
 TYPE: 4
 ID: 54
 PARENTID:
-NAME: Menu_54
-IDENT: Menu_54
+NAME: mp_menu
+IDENT: mp_menu
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -1732,8 +1732,8 @@ EXPANDED: 0
 TYPE: 17
 ID: 55
 PARENTID:
-NAME: Vert_55
-IDENT: status_container
+NAME: mp_root_layout
+IDENT: mp_root_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -1771,8 +1771,8 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 195
 PARENTID: 55
-NAME: Vert_195
-IDENT: status_list_container
+NAME: mp_list_layout
+IDENT: mp_list_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -1811,7 +1811,7 @@ TYPE: 18
 ID: 56
 PARENTID: 195
 NAME: ListBrowser_56
-IDENT: progress_listbrowser
+IDENT: mp_lb_status
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -1856,8 +1856,8 @@ EDITABLE: 0
 TYPE: 17
 ID: 196
 PARENTID: 55
-NAME: Vert_196
-IDENT: status_sub_text
+NAME: mp_message_layout
+IDENT: mp_message_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -1896,7 +1896,7 @@ TYPE: 5
 ID: 194
 PARENTID: 196
 NAME: Starting, one moment please...
-IDENT: slow_progress_text
+IDENT: mp_txt_status
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -1929,8 +1929,8 @@ TRANSPARENT: 1
 TYPE: 17
 ID: 197
 PARENTID: 55
-NAME: Vert_197
-IDENT: status_buttons_layout
+NAME: mp_buttons_layout
+IDENT: mp_buttons_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -1969,7 +1969,7 @@ TYPE: 5
 ID: 58
 PARENTID: 197
 NAME: Cancel
-IDENT: progress_cancel_button
+IDENT: mp_btn_cancel
 LABEL: 
 HINT: Press this to cancel the current iTidy run.  Note: Any changes made to the system will not be undone.
 MINWIDTH: -1
@@ -2047,8 +2047,8 @@ PREVIEWHEIGHT: 124
 TYPE: 4
 ID: 60
 PARENTID:
-NAME: Menu_60
-IDENT: Menu_60
+NAME: adv_menu
+IDENT: adv_menu
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -2069,8 +2069,8 @@ EXPANDED: 0
 TYPE: 17
 ID: 61
 PARENTID:
-NAME: Vert_61
-IDENT: Vert_61
+NAME: adv_root_layout
+IDENT: adv_root_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -2109,7 +2109,7 @@ TYPE: 9
 ID: 210
 PARENTID: 61
 NAME: ClickTab_199
-IDENT: advanced_tab
+IDENT: adv_ctab
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -2136,8 +2136,8 @@ DISABLED: 0
 TYPE: 17
 ID: 209
 PARENTID: 210
-NAME: Vert_209
-IDENT: advanced_tab_layout
+NAME: adv_pg_layout
+IDENT: adv_pg_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -2176,7 +2176,7 @@ TYPE: 8
 ID: 217
 PARENTID: 209
 NAME: Layout aspect
-IDENT: advanced_layout_aspect
+IDENT: adv_ch_layout_aspect
 LABEL: 
 HINT: Sets the target width-to-height shape for drawer windows.
 MINWIDTH: -1
@@ -2208,7 +2208,7 @@ TYPE: 8
 ID: 218
 PARENTID: 209
 NAME: When full
-IDENT: advanced_layout_full
+IDENT: adv_ch_layout_when_full
 LABEL: 
 HINT: Choose what iTidy does when a drawer has more icons than fit comfortably on screen.
 MINWIDTH: -1
@@ -2240,7 +2240,7 @@ TYPE: 8
 ID: 219
 PARENTID: 209
 NAME: Align vertically
-IDENT: advanced_layout_align_vertically
+IDENT: adv_ch_layout_align_vertically
 LABEL: 
 HINT: Sets how icons are aligned vertically when a row contains icons of different heights.
 MINWIDTH: -1
@@ -2271,8 +2271,8 @@ DROPDOWN: 0
 TYPE: 17
 ID: 224
 PARENTID: 210
-NAME: Vert_224
-IDENT: advanced_tab_density
+NAME: adv_pg_density
+IDENT: adv_pg_density
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -2311,7 +2311,7 @@ TYPE: 14
 ID: 225
 PARENTID: 224
 NAME: Horizontal spacing
-IDENT: advanced_iconspacing_x
+IDENT: adv_int_iconspacing_x
 LABEL: 
 HINT: Sets the horizontal gap between icons (in pixels).
 MINWIDTH: -1
@@ -2343,7 +2343,7 @@ TYPE: 14
 ID: 226
 PARENTID: 224
 NAME: Vertical spacing
-IDENT: advanced_iconspacing_y
+IDENT: adv_int_iconspacing_y
 LABEL: 
 HINT: Sets the vertical gap between icons (in pixels).
 MINWIDTH: -1
@@ -2374,8 +2374,8 @@ LINKTOSLIDER: 0
 TYPE: 25
 ID: 251
 PARENTID: 224
-NAME: Space_251
-IDENT: Space_251
+NAME: adv_sp_density_gap
+IDENT: adv_sp_density_gap
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -2396,8 +2396,8 @@ EXPANDED: 0
 TYPE: 17
 ID: 228
 PARENTID: 210
-NAME: Vert_228
-IDENT: advanced_tab_limits
+NAME: adv_pg_limits
+IDENT: adv_pg_limits
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -2436,7 +2436,7 @@ TYPE: 14
 ID: 234
 PARENTID: 228
 NAME: Icons per row: Min
-IDENT: advanced_icons_per_row
+IDENT: adv_int_icons_per_row_min
 LABEL: 
 HINT: Minimum columns. Prevents drawers becoming one long vertical list.
 MINWIDTH: -1
@@ -2468,7 +2468,7 @@ TYPE: 7
 ID: 257
 PARENTID: 228
 NAME: 
-IDENT: advanced_icons_per_row_autolayout
+IDENT: adv_cb_icons_per_row_autolayout
 LABEL: Auto-calc max icons
 HINT: When enabled (default), iTidy automatically chooses the maximum columns based on the window width.
 MINWIDTH: -1
@@ -2497,7 +2497,7 @@ TYPE: 14
 ID: 236
 PARENTID: 228
 NAME: Max
-IDENT: advanced_icons_per_row_max
+IDENT: adv_int_icons_per_row_max
 LABEL: 
 HINT: Maximum columns (used only when Auto-calc max icons is disabled).
 MINWIDTH: -1
@@ -2529,7 +2529,7 @@ TYPE: 8
 ID: 250
 PARENTID: 228
 NAME: Max window width
-IDENT: advanced_layout_width
+IDENT: adv_ch_layout_max_width
 LABEL: 
 HINT: Limits how wide drawer windows may become (percentage of screen width).
 MINWIDTH: -1
@@ -2560,8 +2560,8 @@ DROPDOWN: 0
 TYPE: 17
 ID: 229
 PARENTID: 210
-NAME: Vert_229
-IDENT: advanced_tab_columns_and_groups
+NAME: adv_pg_columns_groups
+IDENT: adv_pg_columns_groups
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -2600,7 +2600,7 @@ TYPE: 7
 ID: 240
 PARENTID: 229
 NAME: 
-IDENT: advanced_layout_column_layout
+IDENT: adv_cb_column_layout
 LABEL: Column layout
 HINT: When enabled, iTidy uses a column-based layout rather than free-flow positioning.
 MINWIDTH: -1
@@ -2629,7 +2629,7 @@ TYPE: 8
 ID: 242
 PARENTID: 229
 NAME: Gap between groups
-IDENT: advanced_layout_gap_between_groups
+IDENT: adv_ch_layout_gap_between_groups
 LABEL: 
 HINT: Controls spacing between icon groups when using the 'Grouped by Type' order mode.
 MINWIDTH: -1
@@ -2682,8 +2682,8 @@ EXPANDED: 0
 TYPE: 17
 ID: 230
 PARENTID: 210
-NAME: Vert_230
-IDENT: advanced_tab_filters_and_misc
+NAME: adv_pg_filters_misc
+IDENT: adv_pg_filters_misc
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -2722,7 +2722,7 @@ TYPE: 7
 ID: 241
 PARENTID: 230
 NAME: 
-IDENT: advanced_layout_opitimze_columns
+IDENT: adv_cb_optimize_columns
 LABEL: Auto-fit columns
 HINT: When enabled (default), each column is sized to its widest icon instead of forcing all columns to the same width.
 MINWIDTH: -1
@@ -2751,7 +2751,7 @@ TYPE: 7
 ID: 248
 PARENTID: 230
 NAME: 
-IDENT: advanced_layout_reverse_sort
+IDENT: adv_cb_reverse_sort
 LABEL: Reverse sort order
 HINT: Reverses the current sort direction (Z->A, newest-first, or largest-first depending on sort mode).
 MINWIDTH: -1
@@ -2780,7 +2780,7 @@ TYPE: 7
 ID: 247
 PARENTID: 230
 NAME: 
-IDENT: advanced_layout_strip_newicon_borders
+IDENT: adv_cb_strip_newicon_borders
 LABEL: Strip NewIcons borders (permanent)
 HINT: Strips NewIcons borders during processing (requires icon.library v44+). This permanently modifies those icons.
 MINWIDTH: -1
@@ -2809,7 +2809,7 @@ TYPE: 7
 ID: 246
 PARENTID: 230
 NAME: 
-IDENT: advanced_layout_skip_hidden
+IDENT: adv_cb_skip_hidden
 LABEL: Skip hidden folders
 HINT: When enabled (default), iTidy skips folders without .info files during recursive processing.
 MINWIDTH: -1
@@ -2837,8 +2837,8 @@ LABELPLACE: 1
 TYPE: 17
 ID: 100
 PARENTID: 61
-NAME: Horiz_100
-IDENT: advanced_layout_main_buttons
+NAME: adv_buttons_layout
+IDENT: adv_buttons_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -2876,8 +2876,8 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 252
 PARENTID: 100
-NAME: Vert_252
-IDENT: advanced_buttons_col1
+NAME: adv_buttons_col1_layout
+IDENT: adv_buttons_col1_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -2915,8 +2915,8 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 253
 PARENTID: 100
-NAME: Horiz_253
-IDENT: advanced_buttons_col2
+NAME: adv_buttons_col2_layout
+IDENT: adv_buttons_col2_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -2955,7 +2955,7 @@ TYPE: 5
 ID: 254
 PARENTID: 253
 NAME: Defaults
-IDENT: advanced_defaults_button
+IDENT: adv_btn_defaults
 LABEL: 
 HINT: Resets these settings to defaults.
 MINWIDTH: -1
@@ -2990,7 +2990,7 @@ TYPE: 5
 ID: 102
 PARENTID: 253
 NAME: Cancel
-IDENT: advanced_cancel_button
+IDENT: adv_btn_cancel
 LABEL: 
 HINT: Discards changes and returns to the main window.
 MINWIDTH: -1
@@ -3025,7 +3025,7 @@ TYPE: 5
 ID: 101
 PARENTID: 253
 NAME: OK
-IDENT: advanced_OK_button
+IDENT: adv_btn_ok
 LABEL: 
 HINT: Accepts changes and closes this window. Use the main window's "Save" menu item to write settings to disk.
 MINWIDTH: -1
@@ -3103,8 +3103,8 @@ PREVIEWHEIGHT: 190
 TYPE: 4
 ID: 104
 PARENTID:
-NAME: Menu_104
-IDENT: Menu_104
+NAME: rb_menu
+IDENT: rb_menu
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -3125,8 +3125,8 @@ EXPANDED: 0
 TYPE: 17
 ID: 105
 PARENTID:
-NAME: Vert_105
-IDENT: Vert_105
+NAME: rb_root_layout
+IDENT: rb_root_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -3164,8 +3164,8 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 106
 PARENTID: 105
-NAME: Vert_106
-IDENT: backup_list_layout
+NAME: rb_list_layout
+IDENT: rb_list_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -3204,7 +3204,7 @@ TYPE: 18
 ID: 107
 PARENTID: 106
 NAME: ListBrowser_107
-IDENT: backup_list
+IDENT: rb_lb_backups
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -3249,8 +3249,8 @@ EDITABLE: 0
 TYPE: 17
 ID: 108
 PARENTID: 105
-NAME: Vert_108
-IDENT: backup_details_layout
+NAME: rb_details_layout
+IDENT: rb_details_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -3289,7 +3289,7 @@ TYPE: 18
 ID: 117
 PARENTID: 108
 NAME: ListBrowser_117
-IDENT: details_browser
+IDENT: rb_lb_details
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -3334,8 +3334,8 @@ EDITABLE: 0
 TYPE: 17
 ID: 115
 PARENTID: 105
-NAME: Horiz_115
-IDENT: backup_buttons_row1_layout
+NAME: rb_buttons_layout
+IDENT: rb_buttons_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -3374,7 +3374,7 @@ TYPE: 5
 ID: 111
 PARENTID: 115
 NAME: Delete run
-IDENT: backup_delete_run
+IDENT: rb_btn_delete
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -3408,7 +3408,7 @@ TYPE: 5
 ID: 112
 PARENTID: 115
 NAME: Restore run
-IDENT: backup_restore_run
+IDENT: rb_btn_restore
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -3442,7 +3442,7 @@ TYPE: 5
 ID: 113
 PARENTID: 115
 NAME: View folders
-IDENT: backup_view_folders
+IDENT: rb_btn_view_folders
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -3476,7 +3476,7 @@ TYPE: 5
 ID: 116
 PARENTID: 115
 NAME: Cancel
-IDENT: button_cancel
+IDENT: rb_btn_close
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -3553,8 +3553,8 @@ PREVIEWHEIGHT: 192
 TYPE: 4
 ID: 119
 PARENTID:
-NAME: Menu_119
-IDENT: Menu_119
+NAME: rfv_menu
+IDENT: rfv_menu
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -3575,8 +3575,8 @@ EXPANDED: 0
 TYPE: 17
 ID: 120
 PARENTID:
-NAME: Vert_120
-IDENT: Vert_120
+NAME: rfv_root_layout
+IDENT: rfv_root_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -3615,7 +3615,7 @@ TYPE: 18
 ID: 121
 PARENTID: 120
 NAME: ListBrowser_121
-IDENT: folder_browser
+IDENT: rfv_lb_folders
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -3661,7 +3661,7 @@ TYPE: 5
 ID: 122
 PARENTID: 120
 NAME: Close
-IDENT: close_button
+IDENT: rfv_btn_close
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -3738,8 +3738,8 @@ PREVIEWHEIGHT: 77
 TYPE: 4
 ID: 124
 PARENTID:
-NAME: Menu_124
-IDENT: Menu_124
+NAME: rp_menu
+IDENT: rp_menu
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -3760,8 +3760,8 @@ EXPANDED: 0
 TYPE: 17
 ID: 125
 PARENTID:
-NAME: Vert_125
-IDENT: Vert_125
+NAME: rp_root_layout
+IDENT: rp_root_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -3800,7 +3800,7 @@ TYPE: 10
 ID: 126
 PARENTID: 125
 NAME: 
-IDENT: main_progress_bar
+IDENT: rp_gauge_main
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -3835,7 +3835,7 @@ TYPE: 30
 ID: 129
 PARENTID: 125
 NAME: Starting, one moment please...
-IDENT: main_progress_label
+IDENT: rp_txt_main
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -3861,7 +3861,7 @@ TYPE: 10
 ID: 130
 PARENTID: 125
 NAME: 
-IDENT: sub_progress_bar
+IDENT: rp_gauge_sub
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -3896,7 +3896,7 @@ TYPE: 30
 ID: 131
 PARENTID: 125
 NAME: Processing
-IDENT: sub_process_label
+IDENT: rp_txt_sub
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -3965,8 +3965,8 @@ PREVIEWHEIGHT: 254
 TYPE: 4
 ID: 133
 PARENTID:
-NAME: Menu_133
-IDENT: Menu_133
+NAME: dta_menu
+IDENT: dta_menu
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4104,8 +4104,8 @@ MUTUALGROUP: 0
 TYPE: 17
 ID: 134
 PARENTID:
-NAME: Vert_134
-IDENT: Vert_134
+NAME: dta_root_layout
+IDENT: dta_root_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4143,8 +4143,8 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 137
 PARENTID: 134
-NAME: Horiz_137
-IDENT: tool_folder_location
+NAME: dta_source_layout
+IDENT: dta_source_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4183,7 +4183,7 @@ TYPE: 11
 ID: 136
 PARENTID: 137
 NAME: Folder
-IDENT: tools_folder_name
+IDENT: dta_ch_folder
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4223,7 +4223,7 @@ TYPE: 5
 ID: 138
 PARENTID: 137
 NAME: Scan
-IDENT: scan_button
+IDENT: dta_btn_scan
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4256,8 +4256,8 @@ TRANSPARENT: 0
 TYPE: 17
 ID: 139
 PARENTID: 134
-NAME: Vert_139
-IDENT: tool_details_layout
+NAME: dta_results_layout
+IDENT: dta_results_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4296,7 +4296,7 @@ TYPE: 8
 ID: 141
 PARENTID: 139
 NAME: 
-IDENT: tools_filter
+IDENT: dta_str_filter
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4327,7 +4327,7 @@ TYPE: 18
 ID: 142
 PARENTID: 139
 NAME: ListBrowser_142
-IDENT: tool_status_list
+IDENT: dta_lb_tools
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4372,8 +4372,8 @@ EDITABLE: 0
 TYPE: 17
 ID: 144
 PARENTID: 134
-NAME: Vert_144
-IDENT: tool_status_layout
+NAME: dta_status_layout
+IDENT: dta_status_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4412,7 +4412,7 @@ TYPE: 35
 ID: 143
 PARENTID: 144
 NAME: ListView_143
-IDENT: tool_status_listview
+IDENT: dta_lv_status
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4435,8 +4435,8 @@ MULTISELECT: 0
 TYPE: 17
 ID: 145
 PARENTID: 134
-NAME: Horiz_145
-IDENT: tool_status_buttons
+NAME: dta_buttons_layout
+IDENT: dta_buttons_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4474,8 +4474,8 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 146
 PARENTID: 145
-NAME: Vert_146
-IDENT: tool_status_layout_col1
+NAME: dta_buttons_col1_layout
+IDENT: dta_buttons_col1_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4514,7 +4514,7 @@ TYPE: 5
 ID: 148
 PARENTID: 146
 NAME: Replace tool (batch)
-IDENT: replace_tool_batch
+IDENT: dta_btn_replace_batch
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4548,7 +4548,7 @@ TYPE: 5
 ID: 149
 PARENTID: 146
 NAME: Restore default tools backup
-IDENT: resore_default_tools_backup
+IDENT: dta_btn_restore_backup
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4581,8 +4581,8 @@ TRANSPARENT: 0
 TYPE: 17
 ID: 147
 PARENTID: 145
-NAME: Vert_147
-IDENT: tool_status_layout_col2
+NAME: dta_buttons_col2_layout
+IDENT: dta_buttons_col2_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4621,7 +4621,7 @@ TYPE: 5
 ID: 150
 PARENTID: 147
 NAME: Replace tool (single)
-IDENT: replace_tool_single
+IDENT: dta_btn_replace_single
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4655,7 +4655,7 @@ TYPE: 5
 ID: 151
 PARENTID: 147
 NAME: Close
-IDENT: tools_close_button
+IDENT: dta_btn_close
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4732,8 +4732,8 @@ PREVIEWHEIGHT: 206
 TYPE: 4
 ID: 153
 PARENTID:
-NAME: Menu_153
-IDENT: Menu_153
+NAME: dtu_menu
+IDENT: dtu_menu
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4754,8 +4754,8 @@ EXPANDED: 0
 TYPE: 17
 ID: 154
 PARENTID:
-NAME: Vert_154
-IDENT: Vert_154
+NAME: dtu_root_layout
+IDENT: dtu_root_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4793,8 +4793,8 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 170
 PARENTID: 154
-NAME: Horiz_170
-IDENT: current_tool_layout_horizontal
+NAME: dtu_current_layout
+IDENT: dtu_current_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4832,8 +4832,8 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 171
 PARENTID: 170
-NAME: Vert_171
-IDENT: current_tool_layout_col1
+NAME: dtu_current_col1_layout
+IDENT: dtu_current_col1_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4872,7 +4872,7 @@ TYPE: 5
 ID: 176
 PARENTID: 171
 NAME: Current tool:
-IDENT: label_current_tool
+IDENT: dtu_lbl_current_tool
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4906,7 +4906,7 @@ TYPE: 5
 ID: 177
 PARENTID: 171
 NAME: Mode:
-IDENT: mode_text
+IDENT: dtu_lbl_mode
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4940,7 +4940,7 @@ TYPE: 5
 ID: 178
 PARENTID: 171
 NAME: Change to:
-IDENT: change_to_label2
+IDENT: dtu_lbl_change_to
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -4973,8 +4973,8 @@ TRANSPARENT: 1
 TYPE: 17
 ID: 172
 PARENTID: 170
-NAME: Vert_172
-IDENT: current_tool_layout_col2
+NAME: dtu_current_col2_layout
+IDENT: dtu_current_col2_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5013,7 +5013,7 @@ TYPE: 5
 ID: 173
 PARENTID: 172
 NAME: current tool text
-IDENT: current_tool_text
+IDENT: dtu_txt_current_tool
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5047,7 +5047,7 @@ TYPE: 5
 ID: 174
 PARENTID: 172
 NAME: curren mode text
-IDENT: current_mode_text
+IDENT: dtu_txt_current_mode
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5081,7 +5081,7 @@ TYPE: 11
 ID: 163
 PARENTID: 172
 NAME: 
-IDENT: default_tool_new_tool
+IDENT: dtu_ch_new_tool
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5120,8 +5120,8 @@ READONLY: 1
 TYPE: 17
 ID: 164
 PARENTID: 154
-NAME: Vert_164
-IDENT: update_progress_listview
+NAME: dtu_progress_layout
+IDENT: dtu_progress_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5160,7 +5160,7 @@ TYPE: 30
 ID: 166
 PARENTID: 164
 NAME: Update progress
-IDENT: update_progress_label
+IDENT: dtu_lbl_progress
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5186,7 +5186,7 @@ TYPE: 18
 ID: 179
 PARENTID: 164
 NAME: ListBrowser_179
-IDENT: listview_update_progress
+IDENT: dtu_lb_progress
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5231,8 +5231,8 @@ EDITABLE: 0
 TYPE: 17
 ID: 167
 PARENTID: 154
-NAME: Horiz_167
-IDENT: default_tool_buttons
+NAME: dtu_buttons_layout
+IDENT: dtu_buttons_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5271,7 +5271,7 @@ TYPE: 5
 ID: 168
 PARENTID: 167
 NAME: Update default tool
-IDENT: default_tool_update_button
+IDENT: dtu_btn_update
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5305,7 +5305,7 @@ TYPE: 5
 ID: 169
 PARENTID: 167
 NAME: Close
-IDENT: update_tool_close
+IDENT: dtu_btn_close
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5382,8 +5382,8 @@ PREVIEWHEIGHT: 172
 TYPE: 4
 ID: 181
 PARENTID:
-NAME: Menu_181
-IDENT: Menu_181
+NAME: rdt_menu
+IDENT: rdt_menu
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5404,8 +5404,8 @@ EXPANDED: 0
 TYPE: 17
 ID: 182
 PARENTID:
-NAME: Vert_182
-IDENT: Vert_182
+NAME: rdt_root_layout
+IDENT: rdt_root_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5443,8 +5443,8 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 183
 PARENTID: 182
-NAME: Vert_183
-IDENT: backup_session_layout
+NAME: rdt_sessions_layout
+IDENT: rdt_sessions_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5483,7 +5483,7 @@ TYPE: 30
 ID: 184
 PARENTID: 183
 NAME: Backup sessions:
-IDENT: restore_listbrowser_label
+IDENT: rdt_lbl_sessions
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5509,7 +5509,7 @@ TYPE: 18
 ID: 185
 PARENTID: 183
 NAME: ListBrowser_185
-IDENT: backup_sessions_listbrowser
+IDENT: rdt_lb_sessions
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5554,8 +5554,8 @@ EDITABLE: 0
 TYPE: 17
 ID: 187
 PARENTID: 182
-NAME: Vert_187
-IDENT: tool_changes_sesssion
+NAME: rdt_changes_layout
+IDENT: rdt_changes_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5594,7 +5594,7 @@ TYPE: 30
 ID: 186
 PARENTID: 187
 NAME: Tool changes in session
-IDENT: tool_changes_label
+IDENT: rdt_lbl_changes
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5620,7 +5620,7 @@ TYPE: 18
 ID: 193
 PARENTID: 187
 NAME: ListBrowser_193
-IDENT: tool_changes_listbroswer
+IDENT: rdt_lb_changes
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5665,8 +5665,8 @@ EDITABLE: 0
 TYPE: 17
 ID: 189
 PARENTID: 182
-NAME: Horiz_189
-IDENT: restore_tools_buttons
+NAME: rdt_buttons_layout
+IDENT: rdt_buttons_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5705,7 +5705,7 @@ TYPE: 5
 ID: 190
 PARENTID: 189
 NAME: Restore
-IDENT: restore_tools_restore_button
+IDENT: rdt_btn_restore
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5739,7 +5739,7 @@ TYPE: 5
 ID: 191
 PARENTID: 189
 NAME: Delete
-IDENT: restore_tools_delete_button
+IDENT: rdt_btn_delete
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5773,7 +5773,7 @@ TYPE: 5
 ID: 192
 PARENTID: 189
 NAME: Close
-IDENT: restore_tools_close_button
+IDENT: rdt_btn_close
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5850,8 +5850,8 @@ PREVIEWHEIGHT: 159
 TYPE: 4
 ID: 265
 PARENTID:
-NAME: Menu_265
-IDENT: Menu_265
+NAME: dfs_menu
+IDENT: dfs_menu
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5872,8 +5872,8 @@ EXPANDED: 0
 TYPE: 17
 ID: 266
 PARENTID:
-NAME: Vert_266
-IDENT: Vert_266
+NAME: dfs_root_layout
+IDENT: dfs_root_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5911,8 +5911,8 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 267
 PARENTID: 266
-NAME: Vert_267
-IDENT: deficons_to_process_layout
+NAME: dfs_list_container_layout
+IDENT: dfs_list_container_layout
 LABEL: Select file types to create icons for:
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5950,8 +5950,8 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 277
 PARENTID: 267
-NAME: Vert_277
-IDENT: Vert_277
+NAME: dfs_list_layout
+IDENT: dfs_list_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -5990,7 +5990,7 @@ TYPE: 18
 ID: 269
 PARENTID: 277
 NAME: ListBrowser_269
-IDENT: deficons_to_process
+IDENT: dfs_lb_targets
 LABEL: 
 HINT: Select the file types to create icons for. This list comes from the "DefaultIcons" Preferences tool in the Workbench Prefs drawer.
 MINWIDTH: -1
@@ -6036,8 +6036,8 @@ EDITABLE: 0
 TYPE: 17
 ID: 270
 PARENTID: 267
-NAME: Horiz_270
-IDENT: Horiz_270
+NAME: dfs_select_buttons_layout
+IDENT: dfs_select_buttons_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -6075,8 +6075,8 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 271
 PARENTID: 270
-NAME: Vert_271
-IDENT: Vert_271
+NAME: dfs_select_col1_layout
+IDENT: dfs_select_col1_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -6115,7 +6115,7 @@ TYPE: 5
 ID: 273
 PARENTID: 271
 NAME: Select all
-IDENT: deficons_select_all_button
+IDENT: dfs_btn_select_all
 LABEL: 
 HINT: Select all file types in the list above. Note: this may create icons for any files that do not already have an icon, including system files. Use with care.
 MINWIDTH: -1
@@ -6150,7 +6150,7 @@ TYPE: 5
 ID: 275
 PARENTID: 271
 NAME: Show default tools
-IDENT: deficons_show_default_tools
+IDENT: dfs_btn_show_default_tools
 LABEL: 
 HINT: Scans the default icons and displays the Default Tool for each entry in the list above.
 MINWIDTH: -1
@@ -6184,8 +6184,8 @@ TRANSPARENT: 0
 TYPE: 17
 ID: 272
 PARENTID: 270
-NAME: Vert_272
-IDENT: Vert_272
+NAME: dfs_select_col2_layout
+IDENT: dfs_select_col2_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -6224,7 +6224,7 @@ TYPE: 5
 ID: 274
 PARENTID: 272
 NAME: Select none
-IDENT: deficons_select_none_button
+IDENT: dfs_btn_select_none
 LABEL: 
 HINT: Deselects all selected file types.
 MINWIDTH: -1
@@ -6259,7 +6259,7 @@ TYPE: 5
 ID: 276
 PARENTID: 272
 NAME: Change default tool
-IDENT: deficons_change_default_tools
+IDENT: dfs_btn_change_default_tools
 LABEL: 
 HINT: Change the Default Tool for the selected icon. If needed, a default icon is created automatically. Changes apply immediately.
 MINWIDTH: -1
@@ -6293,8 +6293,8 @@ TRANSPARENT: 0
 TYPE: 17
 ID: 290
 PARENTID: 266
-NAME: Horiz_290
-IDENT: Horiz_290
+NAME: dfs_action_buttons_layout
+IDENT: dfs_action_buttons_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -6333,7 +6333,7 @@ TYPE: 5
 ID: 291
 PARENTID: 290
 NAME: OK
-IDENT: deficons_Ok
+IDENT: dfs_btn_ok
 LABEL: 
 HINT: Saves changes.
 MINWIDTH: -1
@@ -6368,7 +6368,7 @@ TYPE: 5
 ID: 292
 PARENTID: 290
 NAME: Cancel
-IDENT: deficons_cancel
+IDENT: dfs_btn_cancel
 LABEL: 
 HINT: Closes the window without saving changes. Note: Default Tool changes are applied immediately and saved automatically.
 MINWIDTH: -1
@@ -6446,8 +6446,8 @@ PREVIEWHEIGHT: 183
 TYPE: 4
 ID: 297
 PARENTID:
-NAME: Menu_297
-IDENT: Menu_297
+NAME: dco_menu
+IDENT: dco_menu
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -6468,8 +6468,8 @@ EXPANDED: 0
 TYPE: 17
 ID: 298
 PARENTID:
-NAME: Vert_298
-IDENT: Vert_298
+NAME: dco_root_layout
+IDENT: dco_root_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -6507,8 +6507,8 @@ DEFERLAYOUT: 0
 TYPE: 9
 ID: 353
 PARENTID: 298
-NAME: ClickTab_353
-IDENT: ClickTab_353
+NAME: dco_ctab
+IDENT: dco_ctab
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -6535,8 +6535,8 @@ DISABLED: 0
 TYPE: 17
 ID: 354
 PARENTID: 353
-NAME: Vert_354
-IDENT: Vert_354
+NAME: dco_pg_general_layout
+IDENT: dco_pg_general_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -6574,8 +6574,8 @@ DEFERLAYOUT: 0
 TYPE: 25
 ID: 364
 PARENTID: 354
-NAME: Space_364
-IDENT: Space_364
+NAME: dco_sp_top
+IDENT: dco_sp_top
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -6597,7 +6597,7 @@ TYPE: 8
 ID: 355
 PARENTID: 354
 NAME: Folder icons:
-IDENT: deficons_folder_icon_mode
+IDENT: dco_mode_folder_icons
 LABEL: 
 HINT: Creates missing drawer icons.  "Smart" will scan the sub folder to see if it contains icons or content that needs icons. If it does, it creates a draw icon.
 MINWIDTH: -1
@@ -6628,8 +6628,8 @@ DROPDOWN: 0
 TYPE: 25
 ID: 363
 PARENTID: 354
-NAME: Space_363
-IDENT: Space_363
+NAME: dco_sp_after_folder_icons
+IDENT: dco_sp_after_folder_icons
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -6650,8 +6650,8 @@ EXPANDED: 0
 TYPE: 17
 ID: 358
 PARENTID: 354
-NAME: Horiz_358
-IDENT: Horiz_358
+NAME: dco_text_previews_layout
+IDENT: dco_text_previews_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -6690,7 +6690,7 @@ TYPE: 7
 ID: 359
 PARENTID: 358
 NAME: Text file previews
-IDENT: deficons_enable_text_previews
+IDENT: dco_cb_text_previews
 LABEL: 
 HINT: When enabled, iTidy can create thumbnail-style icons for text files by rendering the file contents onto the icon.
 MINWIDTH: -1
@@ -6719,7 +6719,7 @@ TYPE: 5
 ID: 360
 PARENTID: 358
 NAME: Manage templates...
-IDENT: deficons_manage_templates
+IDENT: dco_btn_manage_templates
 LABEL: 
 HINT: Open the Text Templates window to edit how text previews are rendered.
 MINWIDTH: -1
@@ -6753,8 +6753,8 @@ TRANSPARENT: 0
 TYPE: 17
 ID: 361
 PARENTID: 354
-NAME: Horiz_361
-IDENT: Horiz_361
+NAME: dco_picture_previews_layout
+IDENT: dco_picture_previews_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -6793,7 +6793,7 @@ TYPE: 7
 ID: 362
 PARENTID: 361
 NAME: Picture file previews
-IDENT: deficons_enable_picture_previews
+IDENT: dco_cb_picture_previews
 LABEL: 
 HINT: Create thumbnail icons for recognised picture files (formats selected below)
 MINWIDTH: -1
@@ -6821,8 +6821,8 @@ LABELPLACE: 1
 TYPE: 25
 ID: 377
 PARENTID: 354
-NAME: Space_377
-IDENT: Space_377
+NAME: dco_sp_before_formats
+IDENT: dco_sp_before_formats
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -6844,7 +6844,7 @@ TYPE: 30
 ID: 392
 PARENTID: 354
 NAME: Picture formats:
-IDENT: Label_392
+IDENT: dco_lbl_picture_types
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -6869,8 +6869,8 @@ JUSTIFY: 0
 TYPE: 17
 ID: 365
 PARENTID: 354
-NAME: Horiz_365
-IDENT: Horiz_365
+NAME: dco_picture_formats_layout
+IDENT: dco_picture_formats_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -6908,8 +6908,8 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 366
 PARENTID: 365
-NAME: Vert_366
-IDENT: Vert_366
+NAME: dco_pic_col1_layout
+IDENT: dco_pic_col1_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -6948,7 +6948,7 @@ TYPE: 7
 ID: 370
 PARENTID: 366
 NAME: ILBM (IFF)
-IDENT: deficons_pic_ILBM
+IDENT: dco_cb_pic_ilbm
 LABEL: 
 HINT: Amiga IFF ILBM/PBM thumbnails
 MINWIDTH: -1
@@ -6977,7 +6977,7 @@ TYPE: 7
 ID: 371
 PARENTID: 366
 NAME: JPEG (Slow)
-IDENT: deficons_pic_JPEG
+IDENT: dco_cb_pic_jpeg
 LABEL: 
 HINT: JPEG thumbnails (slow to decode on 68k)
 MINWIDTH: -1
@@ -7005,8 +7005,8 @@ LABELPLACE: 1
 TYPE: 17
 ID: 367
 PARENTID: 365
-NAME: Vert_367
-IDENT: Vert_367
+NAME: dco_pic_col2_layout
+IDENT: dco_pic_col2_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -7045,7 +7045,7 @@ TYPE: 7
 ID: 372
 PARENTID: 367
 NAME: PNG
-IDENT: deficons_pic_PNG
+IDENT: dco_cb_pic_png
 LABEL: 
 HINT: Creates PNG thumbnail and also supports transparency. 
 MINWIDTH: -1
@@ -7074,7 +7074,7 @@ TYPE: 7
 ID: 373
 PARENTID: 367
 NAME: ACBM
-IDENT: deficons_pic_ACBM
+IDENT: dco_cb_pic_acbm
 LABEL: 
 HINT: Creates thumbnails for ACBM (Amiga Continuous Bitmap) images. This is a rare Amiga bitmap format, often seen in older demos or game asset data.
 MINWIDTH: -1
@@ -7102,8 +7102,8 @@ LABELPLACE: 1
 TYPE: 17
 ID: 368
 PARENTID: 365
-NAME: Vert_368
-IDENT: Vert_368
+NAME: dco_pic_col3_layout
+IDENT: dco_pic_col3_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -7142,7 +7142,7 @@ TYPE: 7
 ID: 374
 PARENTID: 368
 NAME: GIF
-IDENT: deficons_pic_GIF
+IDENT: dco_cb_pic_gif
 LABEL: 
 HINT: Creates GIF thumbnails and also supports transparency. 
 MINWIDTH: -1
@@ -7171,7 +7171,7 @@ TYPE: 7
 ID: 375
 PARENTID: 368
 NAME: Other
-IDENT: deficons_pic_OTHER
+IDENT: dco_cb_pic_other
 LABEL: 
 HINT: Other image formats (not covered above) if supported by installed DataTypes and DefIcons.
 MINWIDTH: -1
@@ -7199,8 +7199,8 @@ LABELPLACE: 1
 TYPE: 17
 ID: 369
 PARENTID: 365
-NAME: Vert_369
-IDENT: Vert_369
+NAME: dco_pic_col4_layout
+IDENT: dco_pic_col4_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -7239,7 +7239,7 @@ TYPE: 7
 ID: 376
 PARENTID: 369
 NAME: BMP
-IDENT: deficons_pic_BMP
+IDENT: dco_cb_pic_bmp
 LABEL: 
 HINT: BMP thumbnails.
 MINWIDTH: -1
@@ -7267,8 +7267,8 @@ LABELPLACE: 1
 TYPE: 25
 ID: 391
 PARENTID: 354
-NAME: Space_391
-IDENT: Space_391
+NAME: dco_sp_after_formats
+IDENT: dco_sp_after_formats
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -7289,8 +7289,8 @@ EXPANDED: 0
 TYPE: 17
 ID: 378
 PARENTID: 353
-NAME: Vert_378
-IDENT: Vert_378
+NAME: dco_pg_quality_layout
+IDENT: dco_pg_quality_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -7328,8 +7328,8 @@ DEFERLAYOUT: 0
 TYPE: 17
 ID: 379
 PARENTID: 378
-NAME: Vert_379
-IDENT: Vert_379
+NAME: dco_size_layout
+IDENT: dco_size_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -7368,7 +7368,7 @@ TYPE: 8
 ID: 381
 PARENTID: 379
 NAME: Preview size:
-IDENT: deficons_icon_size_mode
+IDENT: dco_mode_preview_size
 LABEL: 
 HINT: Sets the thumbnail canvas size used inside generated icons.
 MINWIDTH: -1
@@ -7400,7 +7400,7 @@ TYPE: 8
 ID: 382
 PARENTID: 379
 NAME: Thumbnail frame:
-IDENT: deficons_thumbnail_border_mode
+IDENT: dco_mode_thumbnail_frame
 LABEL: 
 HINT: Controls whether a Workbench-style frame is drawn around the thumbnail.
 MINWIDTH: -1
@@ -7432,7 +7432,7 @@ TYPE: 7
 ID: 384
 PARENTID: 379
 NAME: Upscale small images to icon size
-IDENT: deficons_upscale_thumbnails
+IDENT: dco_cb_upscale_thumbnails
 LABEL: 
 HINT: If enabled, small images are scaled up to fill the thumbnail area.
 MINWIDTH: -1
@@ -7460,8 +7460,8 @@ LABELPLACE: 0
 TYPE: 25
 ID: 389
 PARENTID: 378
-NAME: Space_389
-IDENT: Space_389
+NAME: dco_sp_before_color
+IDENT: dco_sp_before_color
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -7482,8 +7482,8 @@ EXPANDED: 0
 TYPE: 17
 ID: 385
 PARENTID: 378
-NAME: Vert_385
-IDENT: Vert_385
+NAME: dco_color_layout
+IDENT: dco_color_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -7522,7 +7522,7 @@ TYPE: 30
 ID: 390
 PARENTID: 385
 NAME: Colour reduction:
-IDENT: Label_390
+IDENT: dco_lbl_color_settings
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -7548,7 +7548,7 @@ TYPE: 8
 ID: 386
 PARENTID: 385
 NAME: Max colours:
-IDENT: deficons_max_icon_colors
+IDENT: dco_mode_max_colors
 LABEL: 
 HINT: Limits the number of colours used in thumbnails. Lower is faster; higher looks better.
 MINWIDTH: -1
@@ -7580,7 +7580,7 @@ TYPE: 8
 ID: 387
 PARENTID: 385
 NAME: Dithering:
-IDENT: deficons_dither_method
+IDENT: dco_mode_dither
 LABEL: 
 HINT: Selects dithering when reducing colours.
 MINWIDTH: -1
@@ -7612,7 +7612,7 @@ TYPE: 8
 ID: 388
 PARENTID: 385
 NAME: Low-col palette:
-IDENT: deficons_lowcolor_mapping
+IDENT: dco_mode_lowcolor_mapping
 LABEL: 
 HINT: Palette mapping used at 4 or 8 colours (disabled above 8 colours / Ultra).
 MINWIDTH: -1
@@ -7643,8 +7643,8 @@ DROPDOWN: 0
 TYPE: 17
 ID: 347
 PARENTID: 298
-NAME: Horiz_347
-IDENT: Horiz_347
+NAME: dco_buttons_layout
+IDENT: dco_buttons_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -7683,7 +7683,7 @@ TYPE: 5
 ID: 348
 PARENTID: 347
 NAME: Ok
-IDENT: Button_348
+IDENT: dco_btn_ok
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -7717,7 +7717,7 @@ TYPE: 5
 ID: 349
 PARENTID: 347
 NAME: Cancel
-IDENT: Button_349
+IDENT: dco_btn_cancel
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1

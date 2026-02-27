@@ -33,13 +33,18 @@
  * - Reset to Defaults button (restores default exclude list)
  * - OK/Cancel buttons (standard modal dialog)
  * 
- * @param prefs Working copy of layout preferences to modify
+ * @param exclude_paths  Working copy of DefIconsExcludePaths to modify.
+ *                       The caller should pass a heap-allocated copy of
+ *                       GetGlobalExcludePaths() for cancel semantics.
+ * @param folder_path    Current drawer path; used as initial directory for
+ *                       the ASL file requester when adding a new path.
  * 
  * @return TRUE if user clicked OK (save changes), FALSE if Cancel
  * 
- * @note Changes are made to working copy - caller must update global prefs
+ * @note Changes are made to the working copy only.
+ *       Call UpdateGlobalExcludePaths() if the return value is TRUE.
  * @note Window is modal - blocks until OK or Cancel clicked
  */
-BOOL open_exclude_paths_window(LayoutPreferences *prefs);
+BOOL open_exclude_paths_window(DefIconsExcludePaths *exclude_paths, const char *folder_path);
 
 #endif /* EXCLUDE_PATHS_WINDOW_H */

@@ -1,7 +1,6 @@
 -REBUILD-
 VER=2
 NEXTID=407
-SELECTEDID=4
 VIEWTMP=-1
 ADDSETT=-1
 PREVIEWCODE=0
@@ -18,7 +17,7 @@ USEMACROS=0
 TYPE: 0
 ID: 41
 PARENTID:
-NAME: main_OrderBy
+NAME: main_order_by
 IDENT: ReactionList_41
 LABEL: 
 MINWIDTH: -1
@@ -687,7 +686,7 @@ TOGGLE: 0
 CHECKED: 0
 DISABLED: 0
 MUTUALGROUP: 0
-ITEMNAME: Bar1
+ITEMNAME: bar1
 COMMKEY: 
 TYPE: 1
 MENUBAR: 255
@@ -750,7 +749,7 @@ TOGGLE: 0
 CHECKED: 0
 DISABLED: 0
 MUTUALGROUP: 0
-ITEMNAME: DefIcons Categories..
+ITEMNAME: DefIcons Categories...
 COMMKEY: 
 TYPE: 1
 MENUBAR: 0
@@ -759,7 +758,7 @@ TOGGLE: 0
 CHECKED: 0
 DISABLED: 0
 MUTUALGROUP: 2
-ITEMNAME: DefIcons Categories..
+ITEMNAME: DefIcons Categories...
 COMMKEY: 
 TYPE: 2
 MENUBAR: 0
@@ -1001,7 +1000,7 @@ TYPE: 17
 ID: 28
 PARENTID: 6
 NAME: Horiz_28
-IDENT: main_folder_layout
+IDENT: folder_layout
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -1040,9 +1039,9 @@ TYPE: 11
 ID: 52
 PARENTID: 28
 NAME: Folder to tidy
-IDENT: main_folder_name
+IDENT: folder_name
 LABEL: 
-HINT: Select the folder you want to tidy. To include subfolders, enable 'Include subfolders' below.
+HINT: Select the folder you want to tidy. Enable 'Include subfolders' to process drawers below it.
 MINWIDTH: -1
 MINHEIGHT: -1
 MAXWIDTH: -1
@@ -1081,7 +1080,7 @@ TYPE: 17
 ID: 26
 PARENTID: 6
 NAME: Horiz_26
-IDENT: main_itidy_options_layout
+IDENT: itidy_options
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -1120,7 +1119,7 @@ TYPE: 17
 ID: 33
 PARENTID: 26
 NAME: Vert_33
-IDENT: options_left_column
+IDENT: left_column
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -1161,7 +1160,7 @@ PARENTID: 33
 NAME: Grouping
 IDENT: order_selection
 LABEL: 
-HINT: Sets how icons are grouped before sorting. Folders first, files first, mixed, or grouped by type.
+HINT: Choose how icons are grouped before sorting: folders first, files first, mixed, or grouped by type.
 MINWIDTH: -1
 MINHEIGHT: -1
 MAXWIDTH: -1
@@ -1193,7 +1192,7 @@ PARENTID: 33
 NAME: Sort by
 IDENT: order_by_selection
 LABEL: 
-HINT: Selects the field used for sorting: name, kind, date, or size.
+HINT: Choose the sort field: name, kind, date, or size.
 MINWIDTH: -1
 MINHEIGHT: -1
 MAXWIDTH: -1
@@ -1225,7 +1224,7 @@ PARENTID: 33
 NAME: Window position
 IDENT: position_selector
 LABEL: 
-HINT: Controls where drawer windows are placed after resizing. (Only affects windows iTidy changes.)
+HINT: Sets where drawer windows are placed after iTidy resizes them. Only affects windows iTidy changes.
 MINWIDTH: -1
 MINHEIGHT: -1
 MAXWIDTH: -1
@@ -1255,7 +1254,7 @@ TYPE: 17
 ID: 34
 PARENTID: 26
 NAME: Vert_34
-IDENT: options_right_column
+IDENT: right_column
 LABEL: 
 MINWIDTH: -1
 MINHEIGHT: -1
@@ -1293,7 +1292,7 @@ DEFERLAYOUT: 0
 TYPE: 7
 ID: 36
 PARENTID: 34
-NAME: 
+NAME: Include subfolders
 IDENT: cleanup_subfolders
 LABEL: Include subfolders
 HINT: When enabled, iTidy also processes all subfolders under the selected folder.
@@ -1322,9 +1321,10 @@ LABELPLACE: 1
 TYPE: 7
 ID: 262
 PARENTID: 34
-NAME: 
+NAME: Create icons during tidy
 IDENT: create_new_icons
 LABEL: Create icons during tidy
+HINT: When enabled, iTidy creates missing icons during tidy: DefIcons icons, plus optional preview icons for text and images.
 MINWIDTH: -1
 MINHEIGHT: -1
 MAXWIDTH: -1
@@ -1350,10 +1350,10 @@ LABELPLACE: 1
 TYPE: 7
 ID: 39
 PARENTID: 34
-NAME: 
+NAME: Back up layout before changes
 IDENT: backup_icons_checkbox
 LABEL: Back up layout before changes
-HINT: Creates an LhA backup of the folder's .info files before changes. Requires LhA in C: (or on your PATH).
+HINT: Creates an LhA backup of the folder's .info files before making changes. Requires LhA in C: (or on your path).
 MINWIDTH: -1
 MINHEIGHT: -1
 MAXWIDTH: -1
@@ -1421,7 +1421,7 @@ PARENTID: 45
 NAME: Advanced...
 IDENT: advanced_button
 LABEL: 
-HINT: Opens Advanced Settings for finer control over layout and sizing.
+HINT: Opens Advanced Settings for finer control of layout, sizing, and window handling.
 MINWIDTH: -1
 MINHEIGHT: -1
 MAXWIDTH: -1
@@ -1456,7 +1456,7 @@ PARENTID: 45
 NAME: Fix default tools...
 IDENT: default_tools_button
 LABEL: 
-HINT: Scans icons for missing or invalid default tools. Lets you fix them, or batch-replace one tool with another
+HINT: Scans icons for missing or invalid default tools. Fix them, or batch-replace one tool with another.
 MINWIDTH: -1
 MINHEIGHT: -1
 MAXWIDTH: -1
@@ -1491,7 +1491,7 @@ PARENTID: 45
 NAME: Backups...
 IDENT: restore_backups_button
 LABEL: 
-HINT: Restores icon positions and window snapshots from iTidy backups. Only available if you previously enabled backups.
+HINT: Opens backup management to restore or delete previous layout backups.
 MINWIDTH: -1
 MINHEIGHT: -1
 MAXWIDTH: -1
@@ -1526,6 +1526,7 @@ PARENTID: 45
 NAME: Icon creation...
 IDENT: new_icons_settings
 LABEL: 
+HINT: Opens Icon Creation settings: DefIcons categories, preview icons (text and image thumbnails), and excluded folders.
 MINWIDTH: -1
 MINHEIGHT: -1
 MAXWIDTH: -1
@@ -1599,7 +1600,7 @@ PARENTID: 49
 NAME: Start
 IDENT: start_button
 LABEL: 
-HINT: Starts tidying the selected folder using the current settings.
+HINT: Tidies the selected folder using the current settings.
 MINWIDTH: -1
 MINHEIGHT: -1
 MAXWIDTH: -1
@@ -4010,7 +4011,7 @@ TOGGLE: 0
 CHECKED: 0
 DISABLED: 0
 MUTUALGROUP: 0
-ITEMNAME: Bar
+ITEMNAME: bar
 COMMKEY: 
 TYPE: 1
 MENUBAR: 255
@@ -4037,7 +4038,7 @@ TOGGLE: 0
 CHECKED: 0
 DISABLED: 0
 MUTUALGROUP: 0
-ITEMNAME: Bar
+ITEMNAME: bar
 COMMKEY: 
 TYPE: 1
 MENUBAR: 255

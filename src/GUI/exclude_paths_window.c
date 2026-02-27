@@ -85,7 +85,8 @@ struct ExcludePathsWindow {
     Object *cancel_button;
     
     struct List *path_list;
-    LayoutPreferences *prefs;
+    DefIconsExcludePaths *exclude_paths; /* Working copy of exclude paths */
+    const char *folder_path;            /* Current scan folder (for ASL initial drawer) */
     BOOL user_cancelled;
 };
 
@@ -114,7 +115,7 @@ static BOOL refresh_path_list(struct ExcludePathsWindow *win, struct Window *win
     struct Node *node;
     int i;
     
-    if (!win || !win->prefs)
+    if (!win || !win->exclude_paths)
         return FALSE;
     
     /* Detach and free existing nodes */
@@ -128,13 +129,13 @@ static BOOL refresh_path_list(struct ExcludePathsWindow *win, struct Window *win
         FreeListBrowserNode(node);
     }
     
-    /* Create new nodes from preferences */
-    for (i = 0; i < win->prefs->deficons_exclude_path_count; i++)
+    /* Create new nodes from exclude paths */
+    for (i = 0; i < (int)win->exclude_paths->count; i++)
     {
         node = AllocListBrowserNode(1,
             LBNA_Column, 0,
                 LBNCA_CopyText, TRUE,
-                LBNCA_Text, win->prefs->deficons_exclude_paths[i],
+                LBNCA_Text, win->exclude_paths->paths[i],
             TAG_DONE);
         
         if (node)
@@ -342,7 +343,7 @@ static void handle_add_path(struct ExcludePathsWindow *win, struct Window *windo
         return;
     
     /* Get REAL scan device for DEVICE: substitution (resolves assigns) */
-    if (!get_real_device_name(win->prefs->folder_path, device))
+    if (!get_real_device_name(win->folder_path, device))
     {
         device[0] = '\0';
     }
@@ -354,7 +355,7 @@ static void handle_add_path(struct ExcludePathsWindow *win, struct Window *windo
         if (AslRequestTags(freq,
             ASLFR_TitleText, "Select Directory to Exclude",
             ASLFR_DrawersOnly, TRUE,
-            ASLFR_InitialDrawer, win->prefs->folder_path,
+            ASLFR_InitialDrawer, win->folder_path,
             TAG_DONE))
         {
             BPTR dir_lock;
@@ -412,7 +413,7 @@ static void handle_add_path(struct ExcludePathsWindow *win, struct Window *windo
             }
             
             /* Add to preferences */
-            if (add_deficons_exclude_path(win->prefs, final_path))
+            if (add_deficons_exclude_path(win->exclude_paths, final_path))
             {
                 refresh_path_list(win, window);
                 log_info(LOG_GUI, "Added exclude path: %s\n", final_path);
@@ -442,7 +443,7 @@ static void handle_remove_path(struct ExcludePathsWindow *win, struct Window *wi
     
     if (selected_index >= 0)
     {
-        if (remove_deficons_exclude_path(win->prefs, selected_index))
+        if (remove_deficons_exclude_path(win->exclude_paths, selected_index))
         {
             refresh_path_list(win, window);
             log_info(LOG_GUI, "Removed exclude path at index %ld\n", selected_index);
@@ -469,19 +470,19 @@ static void handle_modify_path(struct ExcludePathsWindow *win, struct Window *wi
     /* Get selected index */
     GetAttr(LISTBROWSER_Selected, win->path_listbrowser, (ULONG *)&selected_index);
     
-    if (selected_index < 0 || selected_index >= win->prefs->deficons_exclude_path_count)
+    if (selected_index < 0 || selected_index >= (LONG)win->exclude_paths->count)
         return;
     
     /* Get current path */
-    strncpy(selected_path, win->prefs->deficons_exclude_paths[selected_index], 
+    strncpy(selected_path, win->exclude_paths->paths[selected_index], 
         sizeof(selected_path) - 1);
     selected_path[sizeof(selected_path) - 1] = '\0';
     
     log_debug(LOG_GUI, "[MODIFY] Step 1: Selected path from list: '%s'\n", selected_path);
-    log_debug(LOG_GUI, "[MODIFY] Step 2: Scan folder path: '%s'\n", win->prefs->folder_path);
+    log_debug(LOG_GUI, "[MODIFY] Step 2: Scan folder path: '%s'\n", win->folder_path);
     
     /* Get REAL scan device (resolves assigns like SYS: -> Workbench:) */
-    if (!get_real_device_name(win->prefs->folder_path, device))
+    if (!get_real_device_name(win->folder_path, device))
     {
         device[0] = '\0';
     }
@@ -597,7 +598,7 @@ static void handle_modify_path(struct ExcludePathsWindow *win, struct Window *wi
             }
             
             /* Update preferences */
-            if (modify_deficons_exclude_path(win->prefs, selected_index, final_path))
+            if (modify_deficons_exclude_path(win->exclude_paths, selected_index, final_path))
             {
                 refresh_path_list(win, window);
                 log_info(LOG_GUI, "Modified exclude path at index %ld to: '%s'\n", 
@@ -619,7 +620,7 @@ static void handle_reset_defaults(struct ExcludePathsWindow *win, struct Window 
     
     if (show_reset_confirmation(window))
     {
-        reset_deficons_exclude_paths_to_defaults(win->prefs);
+        reset_deficons_exclude_paths_to_defaults(win->exclude_paths);
         refresh_path_list(win, window);
         log_info(LOG_GUI, "Reset exclude paths to defaults\n");
     }
@@ -703,7 +704,7 @@ static void handle_events(struct ExcludePathsWindow *win)
 /* Public Functions                                                      */
 /*========================================================================*/
 
-BOOL open_exclude_paths_window(LayoutPreferences *prefs)
+BOOL open_exclude_paths_window(DefIconsExcludePaths *exclude_paths, const char *folder_path)
 {
     struct ExcludePathsWindow win_data;
     Object *window_obj = NULL;
@@ -712,7 +713,7 @@ BOOL open_exclude_paths_window(LayoutPreferences *prefs)
     struct Window *window = NULL;
     BOOL success = FALSE;
     
-    if (!prefs)
+    if (!exclude_paths)
     {
         log_error(LOG_GUI, "Invalid parameters to open_exclude_paths_window\n");
         return FALSE;
@@ -720,7 +721,8 @@ BOOL open_exclude_paths_window(LayoutPreferences *prefs)
     
     /* Initialize window state */
     memset(&win_data, 0, sizeof(win_data));
-    win_data.prefs = prefs;
+    win_data.exclude_paths = exclude_paths;
+    win_data.folder_path = folder_path ? folder_path : "";
     win_data.user_cancelled = TRUE;
     
     /* Open ReAction classes */

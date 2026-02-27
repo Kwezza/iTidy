@@ -22,6 +22,8 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <proto/asl.h>
+#include <workbench/workbench.h>
+#include <clib/wb_protos.h>
 
 /* ReAction headers */
 #include <proto/window.h>
@@ -59,6 +61,8 @@
 #include "DefaultTools/tool_cache_window.h"
 #include "deficons/deficons_settings_window.h"
 #include "deficons/deficons_creation_window.h"
+#include "deficons/text_templates_window.h"
+#include "DefaultTools/default_tool_backup.h"
 #include "exclude_paths_window.h"
 #include "layout_preferences.h"
 #include "layout_processor.h"
@@ -99,6 +103,12 @@ struct Library *RequesterBase = NULL;
 /* Local GadToolsBase for menus - prefixed to avoid collision with system global */
 static struct Library *iTidy_GadToolsBase = NULL;
 
+/* Default Tool Restore window - old API (no clean open_ function exported from header) */
+extern struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_manager);
+extern BOOL iTidy_HandleToolRestoreWindowEvent(struct Window *window, struct IntuiMessage *msg);
+extern BOOL iTidy_WasRestorePerformed(void);
+extern void iTidy_CloseToolRestoreWindow(struct Window *window);
+
 /*------------------------------------------------------------------------*/
 /* Window Constants                                                       */
 /*------------------------------------------------------------------------*/
@@ -108,10 +118,10 @@ static struct Library *iTidy_GadToolsBase = NULL;
 /* Chooser Label String Arrays                                           */
 /*------------------------------------------------------------------------*/
 static STRPTR order_labels_str[] = {
-    "Folders first",
-    "Files first",
+    "Folders First",
+    "Files First",
     "Mixed",
-    "Grouped by type",
+    "Grouped By Type",
     NULL
 };
 
@@ -124,39 +134,61 @@ static STRPTR sortby_labels_str[] = {
 };
 
 static STRPTR position_labels_str[] = {
-    "Center screen",
-    "Keep position",
-    "Near parent",
-    "No change",
+    "Center Screen",
+    "Keep Position",
+    "Near Parent",
+    "No Change",
     NULL
 };
 
 /*------------------------------------------------------------------------*/
 /* Menu Template                                                          */
 /*------------------------------------------------------------------------*/
-static struct NewMenu main_window_menu_template[] = 
+static struct NewMenu main_window_menu_template[] =
 {
-    { NM_TITLE, "Project",      NULL, 0, 0, NULL },
-    { NM_ITEM,  "New",          "N",  0, 0, (APTR)MENU_PROJECT_NEW },
-    { NM_ITEM,  "Open...",      "O",  0, 0, (APTR)MENU_PROJECT_OPEN },
-    { NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
-    { NM_ITEM,  "Save",         "S",  0, 0, (APTR)MENU_PROJECT_SAVE },
-    { NM_ITEM,  "Save as...",   "A",  0, 0, (APTR)MENU_PROJECT_SAVE_AS },
-    { NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
-    { NM_ITEM,  "DefIcons types...", "D",  0, 0, (APTR)MENU_PROJECT_DEFICONS },
-    { NM_ITEM,  "DefIcons options...", "I",  0, 0, (APTR)MENU_PROJECT_DEFICONS_OPTIONS },
-    { NM_ITEM,  "Exclude Paths...", "E",  0, 0, (APTR)MENU_PROJECT_EXCLUDE_PATHS },
-    { NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
-    { NM_ITEM,  "About...",     NULL, 0, 0, (APTR)MENU_PROJECT_ABOUT },
-    { NM_ITEM,  NM_BARLABEL,    NULL, 0, 0, NULL },
-    { NM_ITEM,  "Quit",         "Q",  0, 0, (APTR)MENU_PROJECT_CLOSE },
-    { NM_TITLE, "Log mode",     NULL, 0, 0, NULL },
-    { NM_ITEM,  "Disabled (recommended)", NULL, CHECKIT | CHECKED, 30, (APTR)MENU_LOG_DISABLED },
-    { NM_ITEM,  "Debug",        NULL, CHECKIT, 29, (APTR)MENU_LOG_DEBUG },
-    { NM_ITEM,  "Info",         NULL, CHECKIT, 27, (APTR)MENU_LOG_INFO },
-    { NM_ITEM,  "Warning",      NULL, CHECKIT, 23, (APTR)MENU_LOG_WARNING },
-    { NM_ITEM,  "Error",        NULL, CHECKIT, 15, (APTR)MENU_LOG_ERROR },
-    { NM_END,   NULL,           NULL, 0, 0, NULL }
+    /* Presets */
+    { NM_TITLE, "Presets",                         NULL, 0, 0, NULL },
+    { NM_ITEM,  "Reset To Defaults",               "N",  0, 0, (APTR)MENU_PRESETS_RESET },
+    { NM_ITEM,  NM_BARLABEL,                       NULL, 0, 0, NULL },
+    { NM_ITEM,  "Open Preset...",                  "O",  0, 0, (APTR)MENU_PRESETS_OPEN },
+    { NM_ITEM,  NM_BARLABEL,                       NULL, 0, 0, NULL },
+    { NM_ITEM,  "Save Preset",                     "S",  0, 0, (APTR)MENU_PRESETS_SAVE },
+    { NM_ITEM,  "Save Preset As...",               "A",  0, 0, (APTR)MENU_PRESETS_SAVE_AS },
+    { NM_ITEM,  NM_BARLABEL,                       NULL, 0, 0, NULL },
+    { NM_ITEM,  "Quit",                            "Q",  0, 0, (APTR)MENU_PRESETS_QUIT },
+
+    /* Settings */
+    { NM_TITLE, "Settings",                        NULL, 0, 0, NULL },
+    { NM_ITEM,  "Advanced Settings...",            NULL, 0, 0, (APTR)MENU_SETTINGS_ADVANCED },
+    { NM_ITEM,  "DefIcons Categories...",          NULL, 0, 0, NULL },
+    { NM_SUB,   "DefIcons Categories...",          NULL, 0, 0, (APTR)MENU_SETTINGS_DEFI_CATS },
+    { NM_SUB,   "Preview Icons...",               NULL, 0, 0, (APTR)MENU_SETTINGS_DEFI_PREVIEW },
+    { NM_SUB,   "DefIcons Excluded Folders...",   NULL, 0, 0, (APTR)MENU_SETTINGS_DEFI_EXCLUDE },
+    { NM_ITEM,  "Backups...",                      NULL, 0, 0, NULL },
+    { NM_SUB,   "Back Up Layouts Before Changes",  NULL, CHECKIT, 0, (APTR)MENU_SETTINGS_BACKUP_TOGGLE },
+    { NM_ITEM,  "Logging",                         NULL, 0, 0, NULL },
+    { NM_SUB,   "Disabled (Recommended)",          NULL, CHECKIT | CHECKED, 30, (APTR)MENU_SETTINGS_LOG_DISABLED },
+    { NM_SUB,   "Debug",                           NULL, CHECKIT, 29, (APTR)MENU_SETTINGS_LOG_DEBUG },
+    { NM_SUB,   "Info",                            NULL, CHECKIT, 27, (APTR)MENU_SETTINGS_LOG_INFO },
+    { NM_SUB,   "Warning",                         NULL, CHECKIT, 23, (APTR)MENU_SETTINGS_LOG_WARNING },
+    { NM_SUB,   "Error",                           NULL, CHECKIT, 15, (APTR)MENU_SETTINGS_LOG_ERROR },
+    { NM_SUB,   NM_BARLABEL,                       NULL, 0, 0, NULL },
+    { NM_SUB,   "Open Log Folder",                NULL, 0, 0, (APTR)MENU_SETTINGS_LOG_FOLDER },
+    { NM_SUB,   "Archive Logs To RAM",            NULL, 0, 0, (APTR)MENU_SETTINGS_LOG_ARCHIVE },
+
+    /* Tools */
+    { NM_TITLE, "Tools",                           NULL, 0, 0, NULL },
+    { NM_ITEM,  "Restore...",                      NULL, 0, 0, NULL },
+    { NM_SUB,   "Restore Layouts...",              NULL, 0, 0, (APTR)MENU_TOOLS_RESTORE_LAYOUTS },
+    { NM_SUB,   "Restore Default Tools...",        NULL, 0, 0, (APTR)MENU_TOOLS_RESTORE_DEFTOOLS },
+
+    /* Help */
+    { NM_TITLE, "Help",                            NULL, 0, 0, NULL },
+    { NM_ITEM,  "iTidy Guide...",                  NULL, 0, 0, (APTR)MENU_HELP_GUIDE },
+    { NM_ITEM,  NM_BARLABEL,                       NULL, 0, 0, NULL },
+    { NM_ITEM,  "About",                           NULL, 0, 0, (APTR)MENU_HELP_ABOUT },
+
+    { NM_END,   NULL,                              NULL, 0, 0, NULL }
 };
 
 /*------------------------------------------------------------------------*/
@@ -168,8 +200,8 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
 static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWindow *win_data);
 
 /* Save/Load Preferences */
-static BOOL save_preferences_to_file(const char *filepath, const LayoutPreferences *prefs);
-static BOOL load_preferences_from_file(const char *filepath, LayoutPreferences *prefs);
+static BOOL save_preferences_to_file(const char *filepath, const LayoutPreferences *prefs, const DefIconsExcludePaths *ep);
+static BOOL load_preferences_from_file(const char *filepath, LayoutPreferences *prefs, DefIconsExcludePaths *ep);
 static void sync_gui_from_preferences(struct iTidyMainWindow *win_data, const LayoutPreferences *prefs);
 static void sync_gui_to_preferences(struct iTidyMainWindow *win_data, LayoutPreferences *prefs);
 
@@ -178,9 +210,13 @@ static void handle_main_new_menu(struct iTidyMainWindow *win_data);
 static void handle_main_open_menu(struct iTidyMainWindow *win_data);
 static void handle_main_save_menu(struct iTidyMainWindow *win_data);
 static void handle_main_save_as_menu(struct iTidyMainWindow *win_data);
+static struct MenuItem *find_menu_item_by_id(struct Menu *menu_strip, ULONG target_id);
+static void sync_backup_menu_check(struct iTidyMainWindow *win_data);
+void handle_menu_open_log_folder(struct Window *parent);
+void handle_menu_archive_logs(struct Window *parent);
 
 /* ReAction Requester Helper */
-static ULONG ShowReActionRequester(struct Window *parent_window,
+ULONG ShowReActionRequester(struct Window *parent_window,
                                    CONST_STRPTR title,
                                    CONST_STRPTR body,
                                    CONST_STRPTR gadgets,
@@ -422,7 +458,7 @@ static void free_chooser_labels(struct List *list)
  *
  * Returns the button number selected (1 = first button, 0 = last/cancel button).
  */
-static ULONG ShowReActionRequester(struct Window *parent_window,
+ULONG ShowReActionRequester(struct Window *parent_window,
                                    CONST_STRPTR title,
                                    CONST_STRPTR body,
                                    CONST_STRPTR gadgets,
@@ -562,7 +598,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     {
         {ITIDY_GAID_MASTER_LAYOUT, -1, "", 0},
         {ITIDY_GAID_FOLDER_LAYOUT, -1, "", 0},
-        {ITIDY_GAID_FOLDER_GETFILE, -1, "Select the folder you want to tidy. To include subfolders, enable 'Include subfolders' below.", 0},
+        {ITIDY_GAID_FOLDER_GETFILE, -1, "Select the folder you want to tidy. To include subfolders, enable \"Include Subfolders\" below.", 0},
         {ITIDY_GAID_OPTIONS_LAYOUT, -1, "", 0},
         {ITIDY_GAID_LEFT_COLUMN, -1, "", 0},
         {ITIDY_GAID_ORDER_CHOOSER, -1, "Sets how icons are grouped before sorting. Folders first, files first, mixed, or grouped by type.", 0},
@@ -570,12 +606,13 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
         {ITIDY_GAID_POSITION_CHOOSER, -1, "Controls where drawer windows are placed after resizing. (Only affects windows iTidy changes.)", 0},
         {ITIDY_GAID_RIGHT_COLUMN, -1, "", 0},
         {ITIDY_GAID_SORTBY_CHOOSER, -1, "Selects the field used for sorting: name, kind, date, or size.", 0},
-        {ITIDY_GAID_BACKUP_CHECKBOX, -1, "Creates an LhA backup of the folder's .info files before changes. Requires LhA in C: (or on your PATH).", 0},
+        {ITIDY_GAID_BACKUP_CHECKBOX, -1, "Creates an LhA backup of the folder's .info files before changes. Requires LhA in C:", 0},
         {ITIDY_GAID_CREATE_NEW_ICONS, -1, "", 0},
         {ITIDY_GAID_TOOLS_LAYOUT, -1, "", 0},
         {ITIDY_GAID_ADVANCED_BUTTON, -1, "Opens Advanced Settings for finer control over layout and sizing.", 0},
-        {ITIDY_GAID_DEFAULT_TOOLS_BUTTON, -1, "Scans icons for missing or invalid default tools. Lets you fix them, or batch-replace one tool with another", 0},
+        {ITIDY_GAID_DEFAULT_TOOLS_BUTTON, -1, "Scans icons for missing or invalid Default Tools. Lets you fix them or batch-replace one tool with another.", 0},
         {ITIDY_GAID_RESTORE_BUTTON, -1, "Restores icon positions and window snapshots from iTidy backups. Only available if you previously enabled backups.", 0},
+        {ITIDY_GAID_ICON_CREATION_BUTTON, -1, "Opens the icon creation settings (thumbnails, text previews, folder icons)", 0},
         {ITIDY_GAID_BUTTONS_LAYOUT, -1, "", 0},
         {ITIDY_GAID_START_BUTTON, -1, "Starts tidying the selected folder using the current settings.", 0},
         {ITIDY_GAID_EXIT_BUTTON, -1, "Closes iTidy.", 0},
@@ -644,7 +681,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                         GETFILE_ReadOnly, TRUE,
                     TAG_END),
                     CHILD_Label, NewObject(LABEL_GetClass(), NULL,
-                        LABEL_Text, "Folder to tidy",
+                        LABEL_Text, "Folder to clean:",
                     TAG_END),
                 TAG_END),
                 
@@ -680,18 +717,18 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                             LABEL_Text, "Grouping",
                         TAG_END),
                         
-                        /* Recursive checkbox */
-                        LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_RECURSIVE_CHECKBOX] = 
-                            NewObject(CHECKBOX_GetClass(), NULL,
-                            GA_ID, ITIDY_GAID_RECURSIVE_CHECKBOX,
-                            GA_Text, "",
+                        /* Sort by chooser */
+                        LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_SORTBY_CHOOSER] = 
+                            NewObject(CHOOSER_GetClass(), NULL,
+                            GA_ID, ITIDY_GAID_SORTBY_CHOOSER,
                             GA_RelVerify, TRUE,
                             GA_TabCycle, TRUE,
-                            GA_Selected, win_data->recursive_subdirs,
-                            CHECKBOX_TextPlace, PLACETEXT_RIGHT,
+                            CHOOSER_PopUp, TRUE,
+                            CHOOSER_Selected, win_data->sortby_selected,
+                            CHOOSER_Labels, win_data->sortby_labels,
                         TAG_END),
                         CHILD_Label, NewObject(LABEL_GetClass(), NULL,
-                            LABEL_Text, "Include subfolders",
+                            LABEL_Text, "Sort By",
                         TAG_END),
                         
                         /* Position chooser */
@@ -705,7 +742,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                             CHOOSER_Labels, win_data->position_labels,
                         TAG_END),
                         CHILD_Label, NewObject(LABEL_GetClass(), NULL,
-                            LABEL_Text, "Window position",
+                            LABEL_Text, "Window Position",
                         TAG_END),
                     TAG_END),
                     
@@ -716,18 +753,32 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                         LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
                         LAYOUT_LeftSpacing, 2,
                         
-                        /* Sort by chooser */
-                        LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_SORTBY_CHOOSER] = 
-                            NewObject(CHOOSER_GetClass(), NULL,
-                            GA_ID, ITIDY_GAID_SORTBY_CHOOSER,
+                        /* Include subfolders checkbox */
+                        LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_RECURSIVE_CHECKBOX] = 
+                            NewObject(CHECKBOX_GetClass(), NULL,
+                            GA_ID, ITIDY_GAID_RECURSIVE_CHECKBOX,
+                            GA_Text, "",
                             GA_RelVerify, TRUE,
                             GA_TabCycle, TRUE,
-                            CHOOSER_PopUp, TRUE,
-                            CHOOSER_Selected, win_data->sortby_selected,
-                            CHOOSER_Labels, win_data->sortby_labels,
+                            GA_Selected, win_data->recursive_subdirs,
+                            CHECKBOX_TextPlace, PLACETEXT_RIGHT,
                         TAG_END),
                         CHILD_Label, NewObject(LABEL_GetClass(), NULL,
-                            LABEL_Text, "Sort by",
+                            LABEL_Text, "Include Subfolders",
+                        TAG_END),
+                        
+                        /* Create icons checkbox */
+                        LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_CREATE_NEW_ICONS] = 
+                            NewObject(CHECKBOX_GetClass(), NULL,
+                            GA_ID, ITIDY_GAID_CREATE_NEW_ICONS,
+                            GA_Text, "",
+                            GA_RelVerify, TRUE,
+                            GA_TabCycle, TRUE,
+                            GA_Selected, win_data->enable_deficons_icon_creation,
+                            CHECKBOX_TextPlace, PLACETEXT_RIGHT,
+                        TAG_END),
+                        CHILD_Label, NewObject(LABEL_GetClass(), NULL,
+                            LABEL_Text, "Create Icons During Tidy",
                         TAG_END),
                         
                         /* Backup checkbox */
@@ -741,21 +792,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                             CHECKBOX_TextPlace, PLACETEXT_RIGHT,
                         TAG_END),
                         CHILD_Label, NewObject(LABEL_GetClass(), NULL,
-                            LABEL_Text, "Backup layouts",
-                        TAG_END),
-                        
-                        /* Create new icons checkbox */
-                        LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_CREATE_NEW_ICONS] = 
-                            NewObject(CHECKBOX_GetClass(), NULL,
-                            GA_ID, ITIDY_GAID_CREATE_NEW_ICONS,
-                            GA_Text, "",
-                            GA_RelVerify, TRUE,
-                            GA_TabCycle, TRUE,
-                            GA_Selected, win_data->enable_deficons_icon_creation,
-                            CHECKBOX_TextPlace, PLACETEXT_RIGHT,
-                        TAG_END),
-                        CHILD_Label, NewObject(LABEL_GetClass(), NULL,
-                            LABEL_Text, "Create new icons",
+                            LABEL_Text, "Back Up Layout Before Changes",
                         TAG_END),
                     TAG_END),
                 TAG_END),
@@ -777,6 +814,10 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                         GA_Text, "Advanced...",
                         GA_RelVerify, TRUE,
                         GA_TabCycle, TRUE,
+                        BUTTON_TextPen, 1,
+                        BUTTON_BackgroundPen, 0,
+                        BUTTON_FillTextPen, 1,
+                        BUTTON_FillPen, 3,
                     TAG_END),
                     
                     LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_DEFAULT_TOOLS_BUTTON] = 
@@ -785,6 +826,10 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                         GA_Text, "Fix default tools...",
                         GA_RelVerify, TRUE,
                         GA_TabCycle, TRUE,
+                        BUTTON_TextPen, 1,
+                        BUTTON_BackgroundPen, 0,
+                        BUTTON_FillTextPen, 1,
+                        BUTTON_FillPen, 3,
                     TAG_END),
                     
                     LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_RESTORE_BUTTON] = 
@@ -793,6 +838,22 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                         GA_Text, "Restore backups...",
                         GA_RelVerify, TRUE,
                         GA_TabCycle, TRUE,
+                        BUTTON_TextPen, 1,
+                        BUTTON_BackgroundPen, 0,
+                        BUTTON_FillTextPen, 1,
+                        BUTTON_FillPen, 3,
+                    TAG_END),
+                    
+                    LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_ICON_CREATION_BUTTON] = 
+                        NewObject(BUTTON_GetClass(), NULL,
+                        GA_ID, ITIDY_GAID_ICON_CREATION_BUTTON,
+                        GA_Text, "Icon Creation...",
+                        GA_RelVerify, TRUE,
+                        GA_TabCycle, TRUE,
+                        BUTTON_TextPen, 1,
+                        BUTTON_BackgroundPen, 0,
+                        BUTTON_FillTextPen, 1,
+                        BUTTON_FillPen, 3,
                     TAG_END),
                 TAG_END),
                 
@@ -808,6 +869,10 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                         GA_Text, "Start",
                         GA_RelVerify, TRUE,
                         GA_TabCycle, TRUE,
+                        BUTTON_TextPen, 1,
+                        BUTTON_BackgroundPen, 0,
+                        BUTTON_FillTextPen, 1,
+                        BUTTON_FillPen, 3,
                     TAG_END),
                     
                     LAYOUT_AddChild, win_data->gadgets[ITIDY_GAD_IDX_EXIT_BUTTON] = 
@@ -816,6 +881,10 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
                         GA_Text, "Exit",
                         GA_RelVerify, TRUE,
                         GA_TabCycle, TRUE,
+                        BUTTON_TextPen, 1,
+                        BUTTON_BackgroundPen, 0,
+                        BUTTON_FillTextPen, 1,
+                        BUTTON_FillPen, 3,
                     TAG_END),
                 TAG_END),
             TAG_END),
@@ -1022,14 +1091,15 @@ BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data)
 /* Save/Load Preferences Functions                                        */
 /*------------------------------------------------------------------------*/
 
-static BOOL save_preferences_to_file(const char *filepath, const LayoutPreferences *prefs)
+static BOOL save_preferences_to_file(const char *filepath, const LayoutPreferences *prefs, const DefIconsExcludePaths *ep)
 {
     BPTR file;
     const char header[] = "ITIDYPREFS";
-    ULONG version = 2;
+    ULONG version = 3;
     ULONG struct_size = sizeof(LayoutPreferences);
+    ULONG ep_size = sizeof(DefIconsExcludePaths);
     
-    if (!filepath || !prefs)
+    if (!filepath || !prefs || !ep)
     {
         log_error(LOG_GUI, "save_preferences_to_file: Invalid parameters\n");
         return FALSE;
@@ -1066,7 +1136,7 @@ static BOOL save_preferences_to_file(const char *filepath, const LayoutPreferenc
         return FALSE;
     }
     
-    /* v2: write struct size for forward compatibility */
+    /* v3: write struct size for forward compatibility */
     if (Write(file, (APTR)&struct_size, sizeof(ULONG)) != sizeof(ULONG))
     {
         log_error(LOG_GUI, "Failed to write struct size\n");
@@ -1081,18 +1151,33 @@ static BOOL save_preferences_to_file(const char *filepath, const LayoutPreferenc
         return FALSE;
     }
     
+    /* v3: write exclude paths block (size + data) */
+    if (Write(file, (APTR)&ep_size, sizeof(ULONG)) != sizeof(ULONG))
+    {
+        log_error(LOG_GUI, "Failed to write exclude paths size\n");
+        Close(file);
+        return FALSE;
+    }
+    
+    if (Write(file, (APTR)ep, sizeof(DefIconsExcludePaths)) != sizeof(DefIconsExcludePaths))
+    {
+        log_error(LOG_GUI, "Failed to write exclude paths structure\n");
+        Close(file);
+        return FALSE;
+    }
+    
     Close(file);
     log_info(LOG_GUI, "Successfully saved preferences to: %s\n", filepath);
     return TRUE;
 }
 
-static BOOL load_preferences_from_file(const char *filepath, LayoutPreferences *prefs)
+static BOOL load_preferences_from_file(const char *filepath, LayoutPreferences *prefs, DefIconsExcludePaths *ep)
 {
     BPTR file;
     char header[11];
     ULONG version;
     
-    if (!filepath || !prefs)
+    if (!filepath || !prefs || !ep)
     {
         log_error(LOG_GUI, "load_preferences_from_file: Invalid parameters\n");
         return FALSE;
@@ -1100,9 +1185,9 @@ static BOOL load_preferences_from_file(const char *filepath, LayoutPreferences *
     
     log_info(LOG_GUI, "Loading preferences from: %s\n", filepath);
     
-    /* Initialize with defaults so new fields get sane values
-     * even when loading an older (smaller) preference file */
+    /* Initialize with defaults first */
     InitLayoutPreferences(prefs);
+    reset_deficons_exclude_paths_to_defaults(ep);
     
     file = Open((STRPTR)filepath, MODE_OLDFILE);
     if (!file)
@@ -1133,43 +1218,71 @@ static BOOL load_preferences_from_file(const char *filepath, LayoutPreferences *
         return FALSE;
     }
     
-    if (version == 1)
+    if (version == 1 || version == 2)
     {
-        /* v1 format is no longer supported - tell user to re-save */
-        log_warning(LOG_GUI, "v1 preferences file detected - not supported, "
-                    "please re-save your settings\n");
+        /* v1/v2 preference layout is incompatible with current struct.
+         * The DefIcons exclude paths have been extracted from LayoutPreferences
+         * (Option B refactor), changing field offsets for all fields that
+         * followed the 8KB exclude-paths block.  Loading old files would
+         * corrupt those fields, so we reject them and use defaults. */
+        log_warning(LOG_GUI, "v%lu preferences file is no longer compatible "
+                    "(struct layout changed) - please re-save your settings\n",
+                    version);
         Close(file);
         return FALSE;
     }
-    else if (version == 2)
+    else if (version == 3)
     {
-        /* v2 format: header(10) + version(4) + struct_size(4) + struct */
+        /* v3 format: header(10) + version(4) + struct_size(4) + struct + ep_size(4) + ep */
         ULONG stored_size;
         ULONG read_size;
+        ULONG stored_ep_size;
+        ULONG read_ep_size;
 
         if (Read(file, (APTR)&stored_size, sizeof(ULONG)) != sizeof(ULONG))
         {
-            log_error(LOG_GUI, "Failed to read v2 struct size\n");
+            log_error(LOG_GUI, "Failed to read v3 struct size\n");
             Close(file);
             return FALSE;
         }
 
-        /* Read the smaller of stored size or current struct size */
         read_size = (stored_size < sizeof(LayoutPreferences))
                   ? stored_size
                   : sizeof(LayoutPreferences);
 
         if (Read(file, (APTR)prefs, read_size) != (LONG)read_size)
         {
-            log_error(LOG_GUI, "Failed to read v2 preferences structure\n");
+            log_error(LOG_GUI, "Failed to read v3 preferences structure\n");
             Close(file);
             return FALSE;
         }
 
-        log_info(LOG_GUI, "Loaded v2 preferences: stored=%lu, read=%lu, "
-                 "current=%lu\n",
-                 stored_size, read_size,
-                 (unsigned long)sizeof(LayoutPreferences));
+        /* Skip any extra bytes if stored struct was larger */
+        if (stored_size > sizeof(LayoutPreferences))
+        {
+            Seek(file, stored_size - sizeof(LayoutPreferences), OFFSET_CURRENT);
+        }
+
+        /* Read exclude paths block size */
+        if (Read(file, (APTR)&stored_ep_size, sizeof(ULONG)) != sizeof(ULONG))
+        {
+            log_warning(LOG_GUI, "v3 file: failed to read ep size, using defaults\n");
+            Close(file);
+            return TRUE;  /* prefs loaded OK; ep stays at defaults */
+        }
+
+        read_ep_size = (stored_ep_size < sizeof(DefIconsExcludePaths))
+                     ? stored_ep_size
+                     : sizeof(DefIconsExcludePaths);
+
+        if (Read(file, (APTR)ep, read_ep_size) != (LONG)read_ep_size)
+        {
+            log_warning(LOG_GUI, "v3 file: failed to read ep data, using defaults\n");
+            reset_deficons_exclude_paths_to_defaults(ep);
+        }
+
+        log_info(LOG_GUI, "Loaded v3 preferences: prefs_stored=%lu, ep_stored=%lu\n",
+                 stored_size, stored_ep_size);
     }
     else
     {
@@ -1307,6 +1420,9 @@ static void sync_gui_from_preferences(struct iTidyMainWindow *win_data, const La
         RefreshGList((struct Gadget *)win_data->window->FirstGadget, win_data->window, NULL, -1);
     }
     
+    /* Sync backup toggle menu item CHECKED state */
+    sync_backup_menu_check(win_data);
+    
     log_info(LOG_GUI, "GUI synchronized from loaded preferences\n");
 }
 
@@ -1357,6 +1473,7 @@ static void sync_gui_to_preferences(struct iTidyMainWindow *win_data, LayoutPref
 void handle_tooltype_loadprefs(struct iTidyMainWindow *win_data)
 {
     LayoutPreferences loaded_prefs;
+    DefIconsExcludePaths loaded_ep;
     char expanded_path[512];
     char error_msg[600];
     BPTR lock;
@@ -1423,7 +1540,7 @@ void handle_tooltype_loadprefs(struct iTidyMainWindow *win_data)
     UnLock(lock);
     
     /* Load preferences from file */
-    if (!load_preferences_from_file(expanded_path, &loaded_prefs))
+    if (!load_preferences_from_file(expanded_path, &loaded_prefs, &loaded_ep))
     {
         log_error(LOG_GUI, "LOADPREFS failed to load preferences: %s\n", expanded_path);
         
@@ -1450,6 +1567,7 @@ void handle_tooltype_loadprefs(struct iTidyMainWindow *win_data)
     
     /* Update global preferences */
     UpdateGlobalPreferences(&loaded_prefs);
+    UpdateGlobalExcludePaths(&loaded_ep);
     
     /* Restore log level if DEBUGLEVEL tooltype was set */
     if (preserve_log_level)
@@ -1540,7 +1658,7 @@ static void handle_main_save_menu(struct iTidyMainWindow *win_data)
     
     log_info(LOG_GUI, "Menu: Save clicked - saving to %s\n", win_data->last_save_path);
     
-    if (save_preferences_to_file(win_data->last_save_path, prefs))
+    if (save_preferences_to_file(win_data->last_save_path, prefs, GetGlobalExcludePaths()))
     {
         log_info(LOG_GUI, "Preferences saved to: %s\n", win_data->last_save_path);
     }
@@ -1649,7 +1767,7 @@ static void handle_main_save_as_menu(struct iTidyMainWindow *win_data)
         sync_gui_to_preferences(win_data, prefs);
         UpdateGlobalPreferences(prefs);
         
-        if (save_preferences_to_file(full_path, prefs))
+        if (save_preferences_to_file(full_path, prefs, GetGlobalExcludePaths()))
         {
             strncpy(win_data->last_save_path, full_path, sizeof(win_data->last_save_path) - 1);
             win_data->last_save_path[sizeof(win_data->last_save_path) - 1] = '\0';
@@ -1681,6 +1799,7 @@ static void handle_main_open_menu(struct iTidyMainWindow *win_data)
     char initial_drawer[512];
     BPTR lock;
     LayoutPreferences loaded_prefs;
+    DefIconsExcludePaths loaded_ep;
     
     if (!win_data || !win_data->window)
         return;
@@ -1751,7 +1870,7 @@ static void handle_main_open_menu(struct iTidyMainWindow *win_data)
         }
         UnLock(lock);
         
-        if (load_preferences_from_file(full_path, &loaded_prefs))
+        if (load_preferences_from_file(full_path, &loaded_prefs, &loaded_ep))
         {
             /* CRITICAL: Preserve current log level (from tooltype or menu selection)
              * Old settings files may have different log level, but we want to keep
@@ -1759,6 +1878,7 @@ static void handle_main_open_menu(struct iTidyMainWindow *win_data)
             LogLevel current_log_level = get_global_log_level();
             
             UpdateGlobalPreferences(&loaded_prefs);
+            UpdateGlobalExcludePaths(&loaded_ep);
             
             /* Restore the log level and update both global and preferences */
             set_global_log_level(current_log_level);
@@ -1793,6 +1913,53 @@ static void handle_main_open_menu(struct iTidyMainWindow *win_data)
 }
 
 /*------------------------------------------------------------------------*/
+/* Menu Helper Functions                                                 */
+/*------------------------------------------------------------------------*/
+
+/* Find a menu item by its user-data ID, searching all menus, items, and subitems */
+static struct MenuItem *find_menu_item_by_id(struct Menu *menu_strip, ULONG target_id)
+{
+    struct Menu *menu;
+    struct MenuItem *item, *sub;
+    
+    if (!menu_strip || target_id == 0)
+        return NULL;
+    
+    for (menu = menu_strip; menu; menu = menu->NextMenu)
+    {
+        for (item = menu->FirstItem; item; item = item->NextItem)
+        {
+            if ((ULONG)GTMENUITEM_USERDATA(item) == target_id)
+                return item;
+            for (sub = item->SubItem; sub; sub = sub->NextItem)
+            {
+                if ((ULONG)GTMENUITEM_USERDATA(sub) == target_id)
+                    return sub;
+            }
+        }
+    }
+    return NULL;
+}
+
+/* Sync the Backups menu CHECKED state from win_data->enable_backup */
+static void sync_backup_menu_check(struct iTidyMainWindow *win_data)
+{
+    struct MenuItem *mitem;
+    
+    if (!win_data || !win_data->menu_strip)
+        return;
+    
+    mitem = find_menu_item_by_id(win_data->menu_strip, MENU_SETTINGS_BACKUP_TOGGLE);
+    if (mitem)
+    {
+        if (win_data->enable_backup)
+            mitem->Flags |= CHECKED;
+        else
+            mitem->Flags &= ~CHECKED;
+    }
+}
+
+/*------------------------------------------------------------------------*/
 /* Menu Handling                                                         */
 /*------------------------------------------------------------------------*/
 
@@ -1811,94 +1978,233 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
             
             switch (item_id)
             {
-                case MENU_PROJECT_NEW:
+                /* --- Presets menu --- */
+                case MENU_PRESETS_RESET:
                     handle_main_new_menu(win_data);
                     break;
                 
-                case MENU_PROJECT_OPEN:
+                case MENU_PRESETS_OPEN:
                     handle_main_open_menu(win_data);
                     break;
                 
-                case MENU_PROJECT_SAVE:
+                case MENU_PRESETS_SAVE:
                     handle_main_save_menu(win_data);
                     break;
                 
-                case MENU_PROJECT_SAVE_AS:
+                case MENU_PRESETS_SAVE_AS:
                     handle_main_save_as_menu(win_data);
                     break;
                 
-                case MENU_PROJECT_DEFICONS:
+                case MENU_PRESETS_QUIT:
+                    continue_running = FALSE;
+                    break;
+                
+                /* --- Settings > Advanced --- */
+                case MENU_SETTINGS_ADVANCED:
+                    {
+                        struct iTidyAdvancedWindow adv_data;
+                        LayoutPreferences *temp_prefs = (LayoutPreferences *)AllocVec(sizeof(LayoutPreferences), MEMF_ANY|MEMF_CLEAR);
+                        if (!temp_prefs) break;
+                        
+                        memcpy(temp_prefs, GetGlobalPreferences(), sizeof(LayoutPreferences));
+                        memset(&adv_data, 0, sizeof(adv_data));
+                        
+                        if (open_itidy_advanced_window(&adv_data, temp_prefs))
+                        {
+                            handle_itidy_advanced_window_events(&adv_data);
+                            close_itidy_advanced_window(&adv_data);
+                            
+                            if (adv_data.changes_accepted)
+                            {
+                                UpdateGlobalPreferences(temp_prefs);
+                                log_info(LOG_GUI, "Advanced settings updated via menu\n");
+                            }
+                        }
+                        FreeVec(temp_prefs);
+                    }
+                    break;
+                
+                /* --- Settings > DefIcons Categories submenu --- */
+                case MENU_SETTINGS_DEFI_CATS:
                     {
                         LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
-                        LayoutPreferences working_copy;
-                        
-                        /* Make working copy of preferences */
-                        memcpy(&working_copy, prefs, sizeof(LayoutPreferences));
-                        
-                        /* Open DefIcons settings window */
-                        if (open_itidy_deficons_settings_window(&working_copy))
+                        LayoutPreferences *working_copy = (LayoutPreferences *)AllocVec(sizeof(LayoutPreferences), MEMF_ANY|MEMF_CLEAR);
+                        if (!working_copy) break;
+                        memcpy(working_copy, prefs, sizeof(LayoutPreferences));
+                        if (open_itidy_deficons_settings_window(working_copy))
                         {
-                            /* User clicked OK - update global preferences */
-                            UpdateGlobalPreferences(&working_copy);
+                            UpdateGlobalPreferences(working_copy);
                             log_info(LOG_GUI, "DefIcons preferences updated\n");
                         }
-                        else
-                        {
-                            log_debug(LOG_GUI, "DefIcons settings cancelled\n");
-                        }
+                        FreeVec(working_copy);
                     }
                     break;
                 
-                case MENU_PROJECT_DEFICONS_OPTIONS:
+                case MENU_SETTINGS_DEFI_PREVIEW:
                     {
                         LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
-                        LayoutPreferences working_copy;
-                        
-                        /* Make working copy of preferences */
-                        memcpy(&working_copy, prefs, sizeof(LayoutPreferences));
-                        
-                        /* Open DefIcons creation options window */
-                        if (open_itidy_deficons_creation_window(&working_copy))
-                        {
-                            /* User clicked OK - update global preferences */
-                            UpdateGlobalPreferences(&working_copy);
-                            log_info(LOG_GUI, "DefIcons creation preferences updated\n");
-                        }
-                        else
-                        {
-                            log_debug(LOG_GUI, "DefIcons creation options cancelled\n");
-                        }
+                        LayoutPreferences *working_copy = (LayoutPreferences *)AllocVec(sizeof(LayoutPreferences), MEMF_ANY|MEMF_CLEAR);
+                        if (!working_copy) break;
+                        memcpy(working_copy, prefs, sizeof(LayoutPreferences));
+                        open_text_templates_window(working_copy);
+                        FreeVec(working_copy);
                     }
                     break;
                 
-                case MENU_PROJECT_EXCLUDE_PATHS:
+                case MENU_SETTINGS_DEFI_EXCLUDE:
                     {
-                        LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
-                        LayoutPreferences working_copy;
-                        
-                        /* Make working copy of preferences */
-                        memcpy(&working_copy, prefs, sizeof(LayoutPreferences));
-                        
-                        /* Copy current folder path from GUI to working copy */
-                        strncpy(working_copy.folder_path, win_data->folder_path_buffer, 
-                            sizeof(working_copy.folder_path) - 1);
-                        working_copy.folder_path[sizeof(working_copy.folder_path) - 1] = '\0';
-                        
-                        /* Open Exclude Paths window */
-                        if (open_exclude_paths_window(&working_copy))
+                        /* Heap-allocate working copy (DefIconsExcludePaths ~8KB) to
+                         * keep this case block off the 68000 stack frame */
+                        DefIconsExcludePaths *ep_copy = (DefIconsExcludePaths *)AllocVec(
+                            sizeof(DefIconsExcludePaths), MEMF_ANY|MEMF_CLEAR);
+                        if (!ep_copy) break;
+                        memcpy(ep_copy, GetGlobalExcludePaths(), sizeof(DefIconsExcludePaths));
+                        if (open_exclude_paths_window(ep_copy, win_data->folder_path_buffer))
                         {
-                            /* User clicked OK - update global preferences */
-                            UpdateGlobalPreferences(&working_copy);
+                            UpdateGlobalExcludePaths(ep_copy);
                             log_info(LOG_GUI, "Exclude paths updated\n");
                         }
+                        FreeVec(ep_copy);
+                    }
+                    break;
+                
+                /* --- Settings > Backups submenu --- */
+                case MENU_SETTINGS_BACKUP_TOGGLE:
+                    /* GadTools toggles the CHECKED flag automatically on CHECKIT items.
+                       We just need to read the new state and sync it to the gadget. */
+                    {
+                        struct MenuItem *mitem = find_menu_item_by_id(
+                            win_data->menu_strip, MENU_SETTINGS_BACKUP_TOGGLE);
+                        if (mitem)
+                            win_data->enable_backup = (mitem->Flags & CHECKED) ? TRUE : FALSE;
+                        
+                        if (win_data->gadgets[ITIDY_GAD_IDX_BACKUP_CHECKBOX])
+                        {
+                            SetGadgetAttrs(
+                                (struct Gadget *)win_data->gadgets[ITIDY_GAD_IDX_BACKUP_CHECKBOX],
+                                win_data->window, NULL,
+                                GA_Selected, win_data->enable_backup,
+                                TAG_END);
+                        }
+                        log_debug(LOG_GUI, "Backup toggle via menu: %s\n",
+                            win_data->enable_backup ? "ON" : "OFF");
+                    }
+                    break;
+                
+                /* --- Settings > Logging submenu --- */
+                case MENU_SETTINGS_LOG_DISABLED:
+                    set_global_log_level(LOG_LEVEL_DISABLED);
+                    ((LayoutPreferences *)GetGlobalPreferences())->logLevel = LOG_LEVEL_DISABLED;
+                    log_info(LOG_GUI, "Log level: DISABLED\n");
+                    break;
+                
+                case MENU_SETTINGS_LOG_DEBUG:
+                    set_global_log_level(LOG_LEVEL_DEBUG);
+                    ((LayoutPreferences *)GetGlobalPreferences())->logLevel = LOG_LEVEL_DEBUG;
+                    log_info(LOG_GUI, "Log level: DEBUG\n");
+                    break;
+                
+                case MENU_SETTINGS_LOG_INFO:
+                    set_global_log_level(LOG_LEVEL_INFO);
+                    ((LayoutPreferences *)GetGlobalPreferences())->logLevel = LOG_LEVEL_INFO;
+                    log_info(LOG_GUI, "Log level: INFO\n");
+                    break;
+                
+                case MENU_SETTINGS_LOG_WARNING:
+                    set_global_log_level(LOG_LEVEL_WARNING);
+                    ((LayoutPreferences *)GetGlobalPreferences())->logLevel = LOG_LEVEL_WARNING;
+                    log_info(LOG_GUI, "Log level: WARNING\n");
+                    break;
+                
+                case MENU_SETTINGS_LOG_ERROR:
+                    set_global_log_level(LOG_LEVEL_ERROR);
+                    ((LayoutPreferences *)GetGlobalPreferences())->logLevel = LOG_LEVEL_ERROR;
+                    log_info(LOG_GUI, "Log level: ERROR\n");
+                    break;
+                
+                case MENU_SETTINGS_LOG_FOLDER:
+                    handle_menu_open_log_folder(win_data->window);
+                    break;
+                
+                case MENU_SETTINGS_LOG_ARCHIVE:
+                    handle_menu_archive_logs(win_data->window);
+                    break;
+                
+                /* --- Tools > Restore submenu --- */
+                case MENU_TOOLS_RESTORE_LAYOUTS:
+                    {
+                        struct iTidyRestoreWindow restore_data;
+                        
+                        safe_set_window_pointer(win_data->window, TRUE);
+                        
+                        if (open_restore_window(&restore_data))
+                        {
+                            safe_set_window_pointer(win_data->window, FALSE);
+                            while (handle_restore_window_events(&restore_data))
+                            {
+                            }
+                            close_restore_window(&restore_data);
+                        }
                         else
                         {
-                            log_debug(LOG_GUI, "Exclude paths window cancelled\n");
+                            safe_set_window_pointer(win_data->window, FALSE);
+                            log_error(LOG_GUI, "Failed to open Restore Layouts window\n");
                         }
                     }
                     break;
                 
-                case MENU_PROJECT_ABOUT:
+                case MENU_TOOLS_RESTORE_DEFTOOLS:
+                    {
+                        iTidy_ToolBackupManager temp_manager;
+                        struct Window *restore_win;
+                        
+                        if (!iTidy_InitToolBackupManager(&temp_manager, FALSE))
+                        {
+                            ShowReActionRequester(win_data->window,
+                                "Error",
+                                "Failed to initialize backup system.",
+                                "_OK",
+                                REQIMAGE_ERROR);
+                            break;
+                        }
+                        
+                        safe_set_window_pointer(win_data->window, TRUE);
+                        restore_win = iTidy_CreateToolRestoreWindow(
+                            win_data->window->WScreen, &temp_manager);
+                        safe_set_window_pointer(win_data->window, FALSE);
+                        
+                        if (restore_win)
+                        {
+                            while (iTidy_HandleToolRestoreWindowEvent(restore_win, NULL))
+                            {
+                            }
+                            iTidy_CloseToolRestoreWindow(restore_win);
+                        }
+                        else
+                        {
+                            ShowReActionRequester(win_data->window,
+                                "Error",
+                                "Failed to open Restore Default Tools window.",
+                                "_OK",
+                                REQIMAGE_ERROR);
+                        }
+                        
+                        iTidy_CleanupToolBackupManager(&temp_manager);
+                    }
+                    break;
+                
+                /* --- Help menu --- */
+                case MENU_HELP_GUIDE:
+                    ShowReActionRequester(win_data->window,
+                        "iTidy Guide",
+                        "The iTidy guide is not yet available.\n\n"
+                        "For help, refer to the README file\n"
+                        "in the iTidy program directory.",
+                        "_OK",
+                        REQIMAGE_INFO);
+                    break;
+                
+                case MENU_HELP_ABOUT:
                     ShowReActionRequester(win_data->window,
                         "About iTidy",
                         "iTidy v" ITIDY_VERSION "\n\n"
@@ -1909,55 +2215,6 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                         "(c) 2025-2026",
                         "_Ok",
                         REQIMAGE_INFO);
-                    break;
-                
-                case MENU_PROJECT_CLOSE:
-                    continue_running = FALSE;
-                    break;
-                
-                case MENU_LOG_DISABLED:
-                    set_global_log_level(LOG_LEVEL_DISABLED);
-                    {
-                        LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
-                        ((LayoutPreferences *)prefs)->logLevel = LOG_LEVEL_DISABLED;
-                    }
-                    log_info(LOG_GUI, "Log level changed to: DISABLED\n");
-                    break;
-                
-                case MENU_LOG_DEBUG:
-                    set_global_log_level(LOG_LEVEL_DEBUG);
-                    {
-                        LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
-                        ((LayoutPreferences *)prefs)->logLevel = LOG_LEVEL_DEBUG;
-                    }
-                    log_info(LOG_GUI, "Log level changed to: DEBUG\n");
-                    break;
-                
-                case MENU_LOG_INFO:
-                    set_global_log_level(LOG_LEVEL_INFO);
-                    {
-                        LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
-                        ((LayoutPreferences *)prefs)->logLevel = LOG_LEVEL_INFO;
-                    }
-                    log_info(LOG_GUI, "Log level changed to: INFO\n");
-                    break;
-                
-                case MENU_LOG_WARNING:
-                    set_global_log_level(LOG_LEVEL_WARNING);
-                    {
-                        LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
-                        ((LayoutPreferences *)prefs)->logLevel = LOG_LEVEL_WARNING;
-                    }
-                    log_info(LOG_GUI, "Log level changed to: WARNING\n");
-                    break;
-                
-                case MENU_LOG_ERROR:
-                    set_global_log_level(LOG_LEVEL_ERROR);
-                    {
-                        LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
-                        ((LayoutPreferences *)prefs)->logLevel = LOG_LEVEL_ERROR;
-                    }
-                    log_info(LOG_GUI, "Log level changed to: ERROR\n");
                     break;
             }
             
@@ -2033,6 +2290,7 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                 ULONG selected = 0;
                 GetAttr(GA_Selected, win_data->gadgets[ITIDY_GAD_IDX_BACKUP_CHECKBOX], &selected);
                 win_data->enable_backup = (BOOL)selected;
+                sync_backup_menu_check(win_data);
                 CONSOLE_DEBUG("Backup: %s\n", win_data->enable_backup ? "ON" : "OFF");
             }
             break;
@@ -2054,16 +2312,22 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
         case ITIDY_GAID_ADVANCED_BUTTON:
             {
                 struct iTidyAdvancedWindow adv_data;
-                LayoutPreferences temp_prefs;
+                LayoutPreferences *temp_prefs = (LayoutPreferences *)AllocVec(sizeof(LayoutPreferences), MEMF_ANY|MEMF_CLEAR);
                 
                 CONSOLE_STATUS("Advanced button clicked - opening Advanced Settings window\n");
                 
+                if (!temp_prefs)
+                {
+                    CONSOLE_ERROR("Failed to allocate temp_prefs\n");
+                    break;
+                }
+                
                 /* Get current global preferences (includes all current settings) */
-                memcpy(&temp_prefs, GetGlobalPreferences(), sizeof(LayoutPreferences));
+                memcpy(temp_prefs, GetGlobalPreferences(), sizeof(LayoutPreferences));
                 memset(&adv_data, 0, sizeof(adv_data));
                 
                 /* Open advanced window (modal) */
-                if (open_itidy_advanced_window(&adv_data, &temp_prefs))
+                if (open_itidy_advanced_window(&adv_data, temp_prefs))
                 {
                     /* Disable main window input while advanced window is open */
                     /* ReAction: We can't use ModifyIDCMP on ReAction windows, so we just don't process events */
@@ -2080,7 +2344,7 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                         CONSOLE_STATUS("Advanced settings accepted - updating global preferences\n");
                         
                         /* Update global preferences with advanced settings */
-                        UpdateGlobalPreferences(&temp_prefs);
+                        UpdateGlobalPreferences(temp_prefs);
                         
                         CONSOLE_DEBUG("Settings will be applied when you click Start button\n");
                     }
@@ -2093,6 +2357,7 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                 {
                     CONSOLE_ERROR("Failed to open Advanced Settings window\n");
                 }
+                FreeVec(temp_prefs);
             }
             break;
         
@@ -2141,6 +2406,30 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                         "_OK",
                         REQIMAGE_ERROR);
                 }
+            }
+            break;
+        
+        case ITIDY_GAID_ICON_CREATION_BUTTON:
+            {
+                LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
+                LayoutPreferences *working_copy = (LayoutPreferences *)AllocVec(sizeof(LayoutPreferences), MEMF_ANY|MEMF_CLEAR);
+                
+                CONSOLE_STATUS("Icon Creation button clicked - opening DefIcons creation window\n");
+                
+                if (!working_copy) break;
+                
+                memcpy(working_copy, prefs, sizeof(LayoutPreferences));
+                
+                if (open_itidy_deficons_creation_window(working_copy))
+                {
+                    UpdateGlobalPreferences(working_copy);
+                    log_info(LOG_GUI, "DefIcons creation preferences updated\n");
+                }
+                else
+                {
+                    log_debug(LOG_GUI, "DefIcons creation options cancelled\n");
+                }
+                FreeVec(working_copy);
             }
             break;
         

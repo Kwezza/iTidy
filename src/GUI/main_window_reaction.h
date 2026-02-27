@@ -40,6 +40,7 @@ enum iTidyReActionGadgetIndex
     ITIDY_GAD_IDX_ADVANCED_BUTTON,
     ITIDY_GAD_IDX_DEFAULT_TOOLS_BUTTON,
     ITIDY_GAD_IDX_RESTORE_BUTTON,
+    ITIDY_GAD_IDX_ICON_CREATION_BUTTON,
     
     /* Action buttons */
     ITIDY_GAD_IDX_START_BUTTON,
@@ -65,6 +66,7 @@ enum iTidyReActionGadgetIndex
 #define GID_MAIN_ADVANCED_BUTTON    1007
 #define GID_MAIN_DEFAULT_TOOLS_BTN  1008
 #define GID_MAIN_RESTORE_BUTTON     1009
+#define GID_MAIN_ICON_CREATION_BTN  1012
 #define GID_MAIN_START_BUTTON       1010
 #define GID_MAIN_EXIT_BUTTON        1011
 
@@ -90,29 +92,42 @@ enum iTidyReActionGadgetIndex
 #define ITIDY_GAID_POSITION_CHOOSER     GID_MAIN_POSITION_CHOOSER
 #define ITIDY_GAID_ADVANCED_BUTTON      GID_MAIN_ADVANCED_BUTTON
 #define ITIDY_GAID_DEFAULT_TOOLS_BUTTON GID_MAIN_DEFAULT_TOOLS_BTN
-#define ITIDY_GAID_RESTORE_BUTTON       GID_MAIN_RESTORE_BUTTON
-#define ITIDY_GAID_START_BUTTON         GID_MAIN_START_BUTTON
-#define ITIDY_GAID_EXIT_BUTTON          GID_MAIN_EXIT_BUTTON
+#define ITIDY_GAID_RESTORE_BUTTON           GID_MAIN_RESTORE_BUTTON
+#define ITIDY_GAID_ICON_CREATION_BUTTON     GID_MAIN_ICON_CREATION_BTN
+#define ITIDY_GAID_START_BUTTON             GID_MAIN_START_BUTTON
+#define ITIDY_GAID_EXIT_BUTTON              GID_MAIN_EXIT_BUTTON
 
 /*------------------------------------------------------------------------*/
-/* Menu Item IDs (for GadTools menus - used even in ReAction apps)      */
+/* Menu Item IDs                                                         */
 /*------------------------------------------------------------------------*/
 
-#define MENU_PROJECT_NEW              2001
-#define MENU_PROJECT_OPEN             2002
-#define MENU_PROJECT_SAVE             2003
-#define MENU_PROJECT_SAVE_AS          2004
-#define MENU_PROJECT_CLOSE            2005
-#define MENU_PROJECT_DEFICONS         2006
-#define MENU_PROJECT_DEFICONS_OPTIONS 2007
-#define MENU_PROJECT_EXCLUDE_PATHS    2008
-#define MENU_PROJECT_ABOUT            2009
+/* Presets menu */
+#define MENU_PRESETS_RESET              2001
+#define MENU_PRESETS_OPEN               2002
+#define MENU_PRESETS_SAVE               2003
+#define MENU_PRESETS_SAVE_AS            2004
+#define MENU_PRESETS_QUIT               2005
 
-/* Log mode menu items */
-#define MENU_LOG_DISABLED             3001
-#define MENU_LOG_DEBUG                3002
-#define MENU_LOG_INFO                 3003
-#define MENU_LOG_WARNING              3004
-#define MENU_LOG_ERROR                3005
+/* Settings menu */
+#define MENU_SETTINGS_ADVANCED          3001
+#define MENU_SETTINGS_DEFI_CATS         3002
+#define MENU_SETTINGS_DEFI_PREVIEW      3003
+#define MENU_SETTINGS_DEFI_EXCLUDE      3004
+#define MENU_SETTINGS_BACKUP_TOGGLE     3005
+#define MENU_SETTINGS_LOG_DISABLED      3006
+#define MENU_SETTINGS_LOG_DEBUG         3007
+#define MENU_SETTINGS_LOG_INFO          3008
+#define MENU_SETTINGS_LOG_WARNING       3009
+#define MENU_SETTINGS_LOG_ERROR         3010
+#define MENU_SETTINGS_LOG_FOLDER        3011
+#define MENU_SETTINGS_LOG_ARCHIVE       3012
+
+/* Tools menu */
+#define MENU_TOOLS_RESTORE_LAYOUTS      4001
+#define MENU_TOOLS_RESTORE_DEFTOOLS     4002
+
+/* Help menu */
+#define MENU_HELP_GUIDE                 5001
+#define MENU_HELP_ABOUT                 5002
 
 #endif /* ITIDY_MAIN_WINDOW_REACTION_H */

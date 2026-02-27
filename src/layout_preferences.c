@@ -24,7 +24,13 @@
  */
 static LayoutPreferences g_AppPreferences;
 
-/*========================================================================*/
+/**
+ * @brief Global exclude paths singleton — separate from LayoutPreferences
+ * to avoid the 9KB copy overhead on every settings window open.
+ */
+static DefIconsExcludePaths g_ExcludePaths;
+
+/*======================================================================*/
 /**
  * @brief Initialize preferences to default values (Classic preset)
  * 
@@ -95,9 +101,6 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     prefs->deficons_thumbnail_border_mode = DEFAULT_DEFICONS_THUMBNAIL_BORDER_MODE;
     prefs->deficons_enable_text_previews = DEFAULT_DEFICONS_ENABLE_TEXT_PREVIEWS;
     prefs->deficons_enable_picture_previews = DEFAULT_DEFICONS_ENABLE_PICTURE_PREVIEWS;
-    
-    /* DefIcons Exclude Paths - Initialize with defaults */
-    reset_deficons_exclude_paths_to_defaults(prefs);
     
     /* Logging and Debug Settings */
     prefs->logLevel = DEFAULT_LOG_LEVEL;
@@ -286,6 +289,7 @@ void MapGuiToPreferences(LayoutPreferences *prefs,
 void InitializeGlobalPreferences(void)
 {
     InitLayoutPreferences(&g_AppPreferences);
+    reset_deficons_exclude_paths_to_defaults(&g_ExcludePaths);
 }
 
 /*========================================================================*/
@@ -310,14 +314,6 @@ const LayoutPreferences* GetGlobalPreferences(void)
 /*========================================================================*/
 /**
  * @brief Update global preferences with new values
- * 
- * Updates the global preference singleton with values from the provided
- * LayoutPreferences structure. Typically called from GUI event handlers
- * when the user clicks "Apply" or "OK".
- * 
- * @param newPrefs Pointer to LayoutPreferences with new values
- * 
- * @note If newPrefs is NULL, this function does nothing
  */
 /*========================================================================*/
 void UpdateGlobalPreferences(const LayoutPreferences *newPrefs)
@@ -325,8 +321,29 @@ void UpdateGlobalPreferences(const LayoutPreferences *newPrefs)
     if (newPrefs == NULL)
         return;
     
-    /* Copy entire structure */
     memcpy(&g_AppPreferences, newPrefs, sizeof(LayoutPreferences));
+}
+
+/*========================================================================*/
+/**
+ * @brief Get read-write pointer to global exclude paths singleton
+ */
+/*========================================================================*/
+DefIconsExcludePaths *GetGlobalExcludePaths(void)
+{
+    return &g_ExcludePaths;
+}
+
+/*========================================================================*/
+/**
+ * @brief Replace global exclude paths with new values
+ */
+/*========================================================================*/
+void UpdateGlobalExcludePaths(const DefIconsExcludePaths *ep)
+{
+    if (ep == NULL)
+        return;
+    memcpy(&g_ExcludePaths, ep, sizeof(DefIconsExcludePaths));
 }
 
 /*========================================================================*/
@@ -655,23 +672,23 @@ static const char *DEFAULT_EXCLUDE_PATHS[] = {
  * @param prefs Pointer to LayoutPreferences structure
  */
 /*========================================================================*/
-void reset_deficons_exclude_paths_to_defaults(LayoutPreferences *prefs)
+void reset_deficons_exclude_paths_to_defaults(DefIconsExcludePaths *ep)
 {
     int i;
     
-    if (prefs == NULL)
+    if (ep == NULL)
         return;
     
     /* Clear existing paths */
-    prefs->deficons_exclude_path_count = 0;
-    memset(prefs->deficons_exclude_paths, 0, sizeof(prefs->deficons_exclude_paths));
+    ep->count = 0;
+    memset(ep->paths, 0, sizeof(ep->paths));
     
     /* Copy default paths */
     for (i = 0; DEFAULT_EXCLUDE_PATHS[i] != NULL && i < MAX_DEFICONS_EXCLUDE_PATHS; i++)
     {
-        strncpy(prefs->deficons_exclude_paths[i], DEFAULT_EXCLUDE_PATHS[i], DEFICONS_EXCLUDE_PATH_LENGTH - 1);
-        prefs->deficons_exclude_paths[i][DEFICONS_EXCLUDE_PATH_LENGTH - 1] = '\0';
-        prefs->deficons_exclude_path_count++;
+        strncpy(ep->paths[i], DEFAULT_EXCLUDE_PATHS[i], DEFICONS_EXCLUDE_PATH_LENGTH - 1);
+        ep->paths[i][DEFICONS_EXCLUDE_PATH_LENGTH - 1] = '\0';
+        ep->count++;
     }
 }
 
@@ -688,28 +705,28 @@ void reset_deficons_exclude_paths_to_defaults(LayoutPreferences *prefs)
  * @return TRUE if added successfully, FALSE if list is full or duplicate
  */
 /*========================================================================*/
-BOOL add_deficons_exclude_path(LayoutPreferences *prefs, const char *path)
+BOOL add_deficons_exclude_path(DefIconsExcludePaths *ep, const char *path)
 {
     int i;
     
-    if (prefs == NULL || path == NULL || path[0] == '\0')
+    if (ep == NULL || path == NULL || path[0] == '\0')
         return FALSE;
     
     /* Check if list is full */
-    if (prefs->deficons_exclude_path_count >= MAX_DEFICONS_EXCLUDE_PATHS)
+    if (ep->count >= MAX_DEFICONS_EXCLUDE_PATHS)
         return FALSE;
     
     /* Check for duplicates (case-insensitive) */
-    for (i = 0; i < prefs->deficons_exclude_path_count; i++)
+    for (i = 0; i < ep->count; i++)
     {
-        if (Stricmp(prefs->deficons_exclude_paths[i], path) == 0)
+        if (Stricmp(ep->paths[i], path) == 0)
             return FALSE;  /* Already exists */
     }
     
     /* Add new path */
-    strncpy(prefs->deficons_exclude_paths[prefs->deficons_exclude_path_count], path, DEFICONS_EXCLUDE_PATH_LENGTH - 1);
-    prefs->deficons_exclude_paths[prefs->deficons_exclude_path_count][DEFICONS_EXCLUDE_PATH_LENGTH - 1] = '\0';
-    prefs->deficons_exclude_path_count++;
+    strncpy(ep->paths[ep->count], path, DEFICONS_EXCLUDE_PATH_LENGTH - 1);
+    ep->paths[ep->count][DEFICONS_EXCLUDE_PATH_LENGTH - 1] = '\0';
+    ep->count++;
     
     return TRUE;
 }
@@ -726,22 +743,22 @@ BOOL add_deficons_exclude_path(LayoutPreferences *prefs, const char *path)
  * @return TRUE if removed successfully, FALSE if index invalid
  */
 /*========================================================================*/
-BOOL remove_deficons_exclude_path(LayoutPreferences *prefs, int index)
+BOOL remove_deficons_exclude_path(DefIconsExcludePaths *ep, int index)
 {
     int i;
     
-    if (prefs == NULL || index < 0 || index >= prefs->deficons_exclude_path_count)
+    if (ep == NULL || index < 0 || index >= (int)ep->count)
         return FALSE;
     
     /* Shift remaining entries down */
-    for (i = index; i < prefs->deficons_exclude_path_count - 1; i++)
+    for (i = index; i < (int)ep->count - 1; i++)
     {
-        strncpy(prefs->deficons_exclude_paths[i], prefs->deficons_exclude_paths[i + 1], DEFICONS_EXCLUDE_PATH_LENGTH);
+        strncpy(ep->paths[i], ep->paths[i + 1], DEFICONS_EXCLUDE_PATH_LENGTH);
     }
     
     /* Clear last entry */
-    memset(prefs->deficons_exclude_paths[prefs->deficons_exclude_path_count - 1], 0, DEFICONS_EXCLUDE_PATH_LENGTH);
-    prefs->deficons_exclude_path_count--;
+    memset(ep->paths[ep->count - 1], 0, DEFICONS_EXCLUDE_PATH_LENGTH);
+    ep->count--;
     
     return TRUE;
 }
@@ -759,26 +776,26 @@ BOOL remove_deficons_exclude_path(LayoutPreferences *prefs, int index)
  * @return TRUE if modified successfully, FALSE if index invalid
  */
 /*========================================================================*/
-BOOL modify_deficons_exclude_path(LayoutPreferences *prefs, int index, const char *new_path)
+BOOL modify_deficons_exclude_path(DefIconsExcludePaths *ep, int index, const char *new_path)
 {
     int i;
     
-    if (prefs == NULL || new_path == NULL || new_path[0] == '\0')
+    if (ep == NULL || new_path == NULL || new_path[0] == '\0')
         return FALSE;
     
-    if (index < 0 || index >= prefs->deficons_exclude_path_count)
+    if (index < 0 || index >= (int)ep->count)
         return FALSE;
     
     /* Check for duplicates with other entries (case-insensitive) */
-    for (i = 0; i < prefs->deficons_exclude_path_count; i++)
+    for (i = 0; i < (int)ep->count; i++)
     {
-        if (i != index && Stricmp(prefs->deficons_exclude_paths[i], new_path) == 0)
+        if (i != index && Stricmp(ep->paths[i], new_path) == 0)
             return FALSE;  /* Duplicate found */
     }
     
     /* Update path */
-    strncpy(prefs->deficons_exclude_paths[index], new_path, DEFICONS_EXCLUDE_PATH_LENGTH - 1);
-    prefs->deficons_exclude_paths[index][DEFICONS_EXCLUDE_PATH_LENGTH - 1] = '\0';
+    strncpy(ep->paths[index], new_path, DEFICONS_EXCLUDE_PATH_LENGTH - 1);
+    ep->paths[index][DEFICONS_EXCLUDE_PATH_LENGTH - 1] = '\0';
     
     return TRUE;
 }

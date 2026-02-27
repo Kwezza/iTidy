@@ -138,8 +138,28 @@ typedef struct {
 } BackupPreferences;
 
 /*========================================================================*/
-/* Layout Preferences Structure                                          */
+/* DefIcons Exclude Paths Type                                           */
 /*========================================================================*/
+
+/** Maximum number of exclude path entries */
+#define MAX_DEFICONS_EXCLUDE_PATHS   32
+/** Maximum length of each exclude path string */
+#define DEFICONS_EXCLUDE_PATH_LENGTH 256
+
+/**
+ * @brief Standalone exclude paths collection for DefIcons icon creation.
+ *
+ * Extracted from LayoutPreferences so that modal windows can operate on
+ * a small (~8KB) working copy instead of copying the full 9KB prefs struct.
+ */
+typedef struct {
+    char  paths[MAX_DEFICONS_EXCLUDE_PATHS][DEFICONS_EXCLUDE_PATH_LENGTH];
+    UWORD count;  /**< Number of active entries (0-32) */
+} DefIconsExcludePaths;
+
+/*========================================================================*/
+/* Layout Preferences Structure                                          */
+/*======================================================================*/
 /**
  * @brief Master preferences structure for icon layout and processing
  * 
@@ -207,12 +227,6 @@ typedef struct {
     UWORD deficons_thumbnail_border_mode;        /* ITIDY_THUMB_BORDER_NEVER/AUTO/ALWAYS — border mode for image thumbnails */
     BOOL deficons_enable_text_previews;         /* TRUE = enable text file content preview rendering on icons */
     BOOL deficons_enable_picture_previews;      /* TRUE = enable picture file thumbnail rendering on icons */
-    
-    /* DefIcons Exclude Paths (user-configurable exclude list) */
-    #define MAX_DEFICONS_EXCLUDE_PATHS 32
-    #define DEFICONS_EXCLUDE_PATH_LENGTH 256
-    char deficons_exclude_paths[32][256];      /* Array of path patterns to exclude (supports DEVICE: placeholder) */
-    UWORD deficons_exclude_path_count;         /* Number of active exclude paths (0-32) */
     
     /* Logging and Debug Settings */
     UWORD logLevel;                            /* Log level: 0=DEBUG, 1=INFO, 2=WARN, 3=ERROR */
@@ -454,6 +468,26 @@ const LayoutPreferences* GetGlobalPreferences(void);
 void UpdateGlobalPreferences(const LayoutPreferences *newPrefs);
 
 /**
+ * @brief Get read-write access to the global exclude paths singleton
+ *
+ * Returns a pointer to the global DefIconsExcludePaths singleton.
+ * Use this when the exclude-paths window needs to operate on a copy.
+ *
+ * @return Pointer to global DefIconsExcludePaths (never NULL)
+ */
+DefIconsExcludePaths *GetGlobalExcludePaths(void);
+
+/**
+ * @brief Replace the global exclude paths with new values
+ *
+ * Copies the provided DefIconsExcludePaths into the global singleton.
+ * Call this when the exclude-paths window is confirmed (OK/Save).
+ *
+ * @param ep Source exclude paths to copy from
+ */
+void UpdateGlobalExcludePaths(const DefIconsExcludePaths *ep);
+
+/**
  * @brief Set the scan path in global preferences
  * 
  * Convenience setter for updating just the folder path.
@@ -566,7 +600,7 @@ void apply_default_deficon_type_selections(LayoutPreferences *prefs,
  * 
  * @param prefs Pointer to LayoutPreferences structure
  */
-void reset_deficons_exclude_paths_to_defaults(LayoutPreferences *prefs);
+void reset_deficons_exclude_paths_to_defaults(DefIconsExcludePaths *ep);
 
 /**
  * @brief Add a path to the exclude list
@@ -574,37 +608,37 @@ void reset_deficons_exclude_paths_to_defaults(LayoutPreferences *prefs);
  * Adds a directory path to the exclude list. Paths can use the
  * DEVICE: placeholder for portability (e.g., "DEVICE:Fonts").
  * 
- * @param prefs Pointer to LayoutPreferences structure
+ * @param ep Pointer to DefIconsExcludePaths structure
  * @param path Path to add (absolute or DEVICE: pattern)
  * 
  * @return TRUE if added successfully, FALSE if list is full or duplicate
  */
-BOOL add_deficons_exclude_path(LayoutPreferences *prefs, const char *path);
+BOOL add_deficons_exclude_path(DefIconsExcludePaths *ep, const char *path);
 
 /**
  * @brief Remove a path from the exclude list
  * 
  * Removes a path at the specified index from the exclude list.
  * 
- * @param prefs Pointer to LayoutPreferences structure
+ * @param ep Pointer to DefIconsExcludePaths structure
  * @param index Index of path to remove (0-based)
  * 
  * @return TRUE if removed successfully, FALSE if index invalid
  */
-BOOL remove_deficons_exclude_path(LayoutPreferences *prefs, int index);
+BOOL remove_deficons_exclude_path(DefIconsExcludePaths *ep, int index);
 
 /**
  * @brief Modify an existing exclude path
  * 
  * Replaces the path at the specified index with a new value.
  * 
- * @param prefs Pointer to LayoutPreferences structure
+ * @param ep Pointer to DefIconsExcludePaths structure
  * @param index Index of path to modify (0-based)
  * @param new_path New path value
  * 
  * @return TRUE if modified successfully, FALSE if index invalid
  */
-BOOL modify_deficons_exclude_path(LayoutPreferences *prefs, int index, const char *new_path);
+BOOL modify_deficons_exclude_path(DefIconsExcludePaths *ep, int index, const char *new_path);
 
 /**
  * @brief Set skip hidden folders mode in global preferences
