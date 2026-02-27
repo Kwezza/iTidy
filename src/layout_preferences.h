@@ -222,7 +222,7 @@ typedef struct {
     char deficons_disabled_types[256];         /* Comma-separated list of disabled root type names (e.g., "tool,font") */
     UWORD deficons_folder_icon_mode;           /* 0=Smart (create if visible), 1=Always, 2=Never */
     BOOL deficons_skip_system_assigns;         /* TRUE = skip SYS:, C:, S:, DEVS:, LIBS:, etc. */
-    BOOL deficons_log_created_icons;           /* TRUE = log all created .info files to dedicated log (for testing/delete scripts) */
+
     UWORD deficons_icon_size_mode;              /* 0=Small(48), 1=Medium(64), 2=Large(100) — IFF thumbnail size */
     UWORD deficons_thumbnail_border_mode;        /* ITIDY_THUMB_BORDER_NEVER/AUTO/ALWAYS — border mode for image thumbnails */
     BOOL deficons_enable_text_previews;         /* TRUE = enable text file content preview rendering on icons */
@@ -315,7 +315,7 @@ typedef struct {
 #define DEFAULT_DEFICONS_DISABLED_TYPES                    "tool,prefs,iff,key,kickstart"  /* Disabled types (unchecked in default UI) */
 #define DEFAULT_DEFICONS_FOLDER_ICON_MODE                  0       /* 0=Smart (create if visible), 1=Always, 2=Never */
 #define DEFAULT_DEFICONS_SKIP_SYSTEM_ASSIGNS               TRUE    /* Skip system directories by default */
-#define DEFAULT_DEFICONS_LOG_CREATED_ICONS                 TRUE    /* Log created icons to separate file (useful for testing) */
+
 #define DEFAULT_DEFICONS_ICON_SIZE_MODE                     1       /* 0=Small(48), 1=Medium(64), 2=Large(100) */
 /* Thumbnail border/bevel style constants (used with deficons_thumbnail_border_mode)         */
 /* Values 0-2 are backward-compatible with preferences saved by earlier versions of iTidy.  */

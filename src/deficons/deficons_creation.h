@@ -84,32 +84,6 @@ void deficons_creation_display_stats(void);
 ULONG deficons_creation_get_total(void);
 
 /*========================================================================*/
-/* Icon Creation Log File                                                */
-/*========================================================================*/
-
-/**
- * @brief Open dedicated log file for tracking created icons
- *
- * Creates PROGDIR:logs/IconsCreated/ folder if needed and opens log file.
- * Log file format: One .info path per line for easy script generation.
- *
- * @return TRUE if successful, FALSE on error
- */
-BOOL deficons_creation_open_log(void);
-
-/**
- * @brief Log a created icon path to dedicated log file
- *
- * @param info_path Full path to created .info file
- */
-void deficons_creation_log_icon(const char *info_path);
-
-/**
- * @brief Close icon creation log file
- */
-void deficons_creation_close_log(void);
-
-/*========================================================================*/
 /* Icon Creation Functions                                               */
 /*========================================================================*/
 

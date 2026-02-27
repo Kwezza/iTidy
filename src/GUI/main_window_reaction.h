@@ -120,7 +120,6 @@ enum iTidyReActionGadgetIndex
 #define MENU_SETTINGS_LOG_WARNING       3009
 #define MENU_SETTINGS_LOG_ERROR         3010
 #define MENU_SETTINGS_LOG_FOLDER        3011
-#define MENU_SETTINGS_LOG_ARCHIVE       3012
 
 /* Tools menu */
 #define MENU_TOOLS_RESTORE_LAYOUTS      4001

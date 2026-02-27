@@ -165,7 +165,7 @@ static struct NewMenu main_window_menu_template[] =
     { NM_SUB,   "Preview Icons...",               NULL, 0, 0, (APTR)MENU_SETTINGS_DEFI_PREVIEW },
     { NM_SUB,   "DefIcons Excluded Folders...",   NULL, 0, 0, (APTR)MENU_SETTINGS_DEFI_EXCLUDE },
     { NM_ITEM,  "Backups...",                      NULL, 0, 0, NULL },
-    { NM_SUB,   "Back Up Layouts Before Changes",  NULL, CHECKIT, 0, (APTR)MENU_SETTINGS_BACKUP_TOGGLE },
+    { NM_SUB,   "Back Up Layouts Before Changes",  NULL, CHECKIT | MENUTOGGLE, 0, (APTR)MENU_SETTINGS_BACKUP_TOGGLE },
     { NM_ITEM,  "Logging",                         NULL, 0, 0, NULL },
     { NM_SUB,   "Disabled (Recommended)",          NULL, CHECKIT | CHECKED, 30, (APTR)MENU_SETTINGS_LOG_DISABLED },
     { NM_SUB,   "Debug",                           NULL, CHECKIT, 29, (APTR)MENU_SETTINGS_LOG_DEBUG },
@@ -174,7 +174,6 @@ static struct NewMenu main_window_menu_template[] =
     { NM_SUB,   "Error",                           NULL, CHECKIT, 15, (APTR)MENU_SETTINGS_LOG_ERROR },
     { NM_SUB,   NM_BARLABEL,                       NULL, 0, 0, NULL },
     { NM_SUB,   "Open Log Folder",                NULL, 0, 0, (APTR)MENU_SETTINGS_LOG_FOLDER },
-    { NM_SUB,   "Archive Logs To RAM",            NULL, 0, 0, (APTR)MENU_SETTINGS_LOG_ARCHIVE },
 
     /* Tools */
     { NM_TITLE, "Tools",                           NULL, 0, 0, NULL },
@@ -213,7 +212,6 @@ static void handle_main_save_as_menu(struct iTidyMainWindow *win_data);
 static struct MenuItem *find_menu_item_by_id(struct Menu *menu_strip, ULONG target_id);
 static void sync_backup_menu_check(struct iTidyMainWindow *win_data);
 void handle_menu_open_log_folder(struct Window *parent);
-void handle_menu_archive_logs(struct Window *parent);
 
 /* ReAction Requester Helper */
 ULONG ShowReActionRequester(struct Window *parent_window,
@@ -2085,6 +2083,11 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                                 win_data->window, NULL,
                                 GA_Selected, win_data->enable_backup,
                                 TAG_END);
+                            /* RefreshGList forces the ReAction checkbox to redraw after
+                               the attribute change, which SetGadgetAttrs alone doesn't do. */
+                            RefreshGList(
+                                (struct Gadget *)win_data->gadgets[ITIDY_GAD_IDX_BACKUP_CHECKBOX],
+                                win_data->window, NULL, 1);
                         }
                         log_debug(LOG_GUI, "Backup toggle via menu: %s\n",
                             win_data->enable_backup ? "ON" : "OFF");
@@ -2124,10 +2127,6 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                 
                 case MENU_SETTINGS_LOG_FOLDER:
                     handle_menu_open_log_folder(win_data->window);
-                    break;
-                
-                case MENU_SETTINGS_LOG_ARCHIVE:
-                    handle_menu_archive_logs(win_data->window);
                     break;
                 
                 /* --- Tools > Restore submenu --- */
@@ -2195,13 +2194,59 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                 
                 /* --- Help menu --- */
                 case MENU_HELP_GUIDE:
-                    ShowReActionRequester(win_data->window,
-                        "iTidy Guide",
-                        "The iTidy guide is not yet available.\n\n"
-                        "For help, refer to the README file\n"
-                        "in the iTidy program directory.",
-                        "_OK",
-                        REQIMAGE_INFO);
+                    {
+                        /* Resolve PROGDIR:iTidy.guide to an absolute path before
+                         * passing to OpenWorkbenchObject() - it does not understand
+                         * process-local assignments like PROGDIR:               */
+                        BPTR guide_lock;
+                        char guide_abs[512];
+                        struct Library *WBBase2;
+
+                        guide_lock = Lock("PROGDIR:iTidy.guide", ACCESS_READ);
+                        if (!guide_lock)
+                        {
+                            ShowReActionRequester(win_data->window,
+                                "iTidy Guide",
+                                "Could not find iTidy.guide.\n\n"
+                                "The guide file should be placed in\n"
+                                "the iTidy program directory.",
+                                "_OK",
+                                REQIMAGE_WARNING);
+                            break;
+                        }
+
+                        guide_abs[0] = '\0';
+                        if (!NameFromLock(guide_lock, guide_abs, (LONG)sizeof(guide_abs)))
+                        {
+                            /* Fallback: unlikely but handle gracefully */
+                            strncpy(guide_abs, "PROGDIR:iTidy.guide", sizeof(guide_abs) - 1);
+                            guide_abs[sizeof(guide_abs) - 1] = '\0';
+                        }
+                        UnLock(guide_lock);
+
+                        WBBase2 = OpenLibrary("workbench.library", 36L);
+                        if (WBBase2)
+                        {
+                            if (!OpenWorkbenchObject(guide_abs, TAG_DONE))
+                            {
+                                ShowReActionRequester(win_data->window,
+                                    "iTidy Guide",
+                                    "Could not open iTidy.guide.\n"
+                                    "AmigaGuide may not be installed.",
+                                    "_OK",
+                                    REQIMAGE_WARNING);
+                            }
+                            CloseLibrary(WBBase2);
+                        }
+                        else
+                        {
+                            ShowReActionRequester(win_data->window,
+                                "iTidy Guide",
+                                "Could not open workbench.library.",
+                                "_OK",
+                                REQIMAGE_ERROR);
+                        }
+                    }
                     break;
                 
                 case MENU_HELP_ABOUT:

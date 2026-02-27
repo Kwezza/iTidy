@@ -173,73 +173,7 @@ void deficons_creation_display_stats(void)
     }
 }
 
-/*========================================================================*/
-/* Icon Creation Log File                                                */
-/*========================================================================*/
-
-static BPTR g_creation_log_file = 0;
-
-BOOL deficons_creation_open_log(void)
-{
-    const char *timestamp;
-    char log_path[512];
-    char dir_path[256];
-
-    if (g_creation_log_file != 0)
-        return TRUE;
-
-    snprintf(dir_path, sizeof(dir_path), "PROGDIR:logs/IconsCreated/");
-    if (!CreateDirectoryPath(dir_path))
-    {
-        log_warning(LOG_ICONS, "Failed to create IconsCreated directory: %s\n", dir_path);
-        return FALSE;
-    }
-
-    timestamp = get_log_timestamp();
-    snprintf(log_path, sizeof(log_path), "%screated_%s.txt", dir_path, timestamp);
-
-    g_creation_log_file = Open((CONST_STRPTR)log_path, MODE_NEWFILE);
-    if (g_creation_log_file == 0)
-    {
-        log_error(LOG_ICONS, "Failed to create icon creation log: %s\n", log_path);
-        return FALSE;
-    }
-
-    {
-        const char *header = "; iTidy Icon Creation Log\n"
-                             "; One .info file path per line\n"
-                             "; Use this to generate delete scripts for testing\n"
-                             ";\n";
-        Write(g_creation_log_file, (APTR)header, strlen(header));
-    }
-
-    log_info(LOG_ICONS, "Icon creation log opened: %s\n", log_path);
-    return TRUE;
-}
-
-void deficons_creation_log_icon(const char *info_path)
-{
-    if (g_creation_log_file == 0)
-        return;
-    if (!info_path || info_path[0] == '\0')
-        return;
-
-    Write(g_creation_log_file, (APTR)info_path, strlen(info_path));
-    Write(g_creation_log_file, (APTR)"\n", 1);
-    Flush(g_creation_log_file);
-}
-
-void deficons_creation_close_log(void)
-{
-    if (g_creation_log_file != 0)
-    {
-        Close(g_creation_log_file);
-        g_creation_log_file = 0;
-        log_debug(LOG_ICONS, "Icon creation log closed\n");
-    }
-}
-
-/*========================================================================*/
+/*========================================================================
 /* Helper: Proper .info suffix check                                     */
 /*========================================================================*/
 
@@ -743,15 +677,6 @@ BOOL deficons_create_missing_icons_in_directory(
             local_visible = TRUE;
             log_info(LOG_ICONS, "Created icon: %s -> %s\n", template_path, info_path);
 
-            /* Log to dedicated icon creation file */
-            {
-                const LayoutPreferences *log_prefs = GetGlobalPreferences();
-                if (log_prefs && log_prefs->deficons_log_created_icons)
-                {
-                    deficons_creation_log_icon(info_path);
-                }
-            }
-
             /* Log to backup manifest */
             if (backup_context != NULL && backup_context->createdIconsOpen)
             {
@@ -1048,15 +973,6 @@ BOOL deficons_create_missing_icons_recursive(
                         result->icons_created++;
                         result->has_visible_contents = TRUE;
                         log_info(LOG_ICONS, "Created drawer icon (post-order): %s\n", drawer_info);
-
-                        /* Log to creation file */
-                        {
-                            const LayoutPreferences *log_p = GetGlobalPreferences();
-                            if (log_p && log_p->deficons_log_created_icons)
-                            {
-                                deficons_creation_log_icon(drawer_info);
-                            }
-                        }
 
                         /* Log to backup manifest */
                         if (backup_context != NULL && backup_context->createdIconsOpen)

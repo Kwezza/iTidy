@@ -408,12 +408,6 @@ BOOL ProcessDirectoryWithPreferences(void)
         }
         else
         {
-            /* Open icon creation log if enabled */
-            if (prefs->deficons_log_created_icons)
-            {
-                deficons_creation_open_log();
-            }
-            
             /* Open created icons manifest in backup run (for restore to delete these) */
             if (g_backupContext != NULL && g_backupContext->sessionActive)
             {
@@ -596,12 +590,6 @@ BOOL ProcessDirectoryWithPreferences(void)
         log_debug(LOG_GENERAL, "Freeing PATH search list\n");
         FreePathSearchList();
         g_ValidateDefaultTools = FALSE;
-    }
-    
-    /* Close icon creation log if open */
-    if (prefs->deficons_log_created_icons)
-    {
-        deficons_creation_close_log();
     }
     
     /* End backup session if one was started */

@@ -46,7 +46,7 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     memset(prefs, 0, sizeof(LayoutPreferences));
     
     /* Folder and Scanning Settings */
-    prefs->folder_path[0] = '\0';       /* Empty path initially */
+    strcpy(prefs->folder_path, "SYS:");       /* Empty path initially */
     prefs->recursive_subdirs = FALSE;
     
     /* Layout Settings */
@@ -96,7 +96,7 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     strcpy(prefs->deficons_disabled_types, DEFAULT_DEFICONS_DISABLED_TYPES);
     prefs->deficons_folder_icon_mode = DEFAULT_DEFICONS_FOLDER_ICON_MODE;
     prefs->deficons_skip_system_assigns = DEFAULT_DEFICONS_SKIP_SYSTEM_ASSIGNS;
-    prefs->deficons_log_created_icons = DEFAULT_DEFICONS_LOG_CREATED_ICONS;
+
     prefs->deficons_icon_size_mode = DEFAULT_DEFICONS_ICON_SIZE_MODE;
     prefs->deficons_thumbnail_border_mode = DEFAULT_DEFICONS_THUMBNAIL_BORDER_MODE;
     prefs->deficons_enable_text_previews = DEFAULT_DEFICONS_ENABLE_TEXT_PREVIEWS;
