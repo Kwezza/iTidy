@@ -57,12 +57,16 @@ Single-click selects a run and updates the details panel. Double-click opens the
 
 On window open, the first run is automatically selected.
 
+**Hint:** "Shows all iTidy backup runs. Click a run to view its details below. Double-click to view the folder structure of the run."
+
 ### Details Panel (Lower ListBrowser)
 
 Read-only label/value display showing details of the selected run:
 - Run Number, Date Created, Source Directory, Total Archives, Total Size, Icons Created, Status, Location
 
 Status can be: "Complete (catalog present)", "Orphaned (no catalog)", "Incomplete (missing archives)", or "Corrupted (catalog error)".
+
+**Hint:** "Shows details of the selected backup run: date created, source folder, number of archives, total size, and status."
 
 ### Delete Run
 
@@ -71,6 +75,8 @@ Permanently deletes the selected backup run and all its files.
 Shows a confirmation requester: "Delete backup run Run_NNNN? This will permanently delete N folder archive(s), Catalog file, Run directory. This action cannot be undone!"
 
 After deletion, the run list is rescanned and repopulated. If no runs remain, all action buttons are disabled.
+
+**Hint:** "Permanently deletes the selected backup run and all its files. A confirmation requester is shown first. This cannot be undone."
 
 ### Restore Run
 
@@ -87,15 +93,21 @@ Restores the selected backup run's icons to their original state using LhA.
 
 **Requires LhA**: If the LhA executable is not found, an error requester is shown: "LHA executable not found! Restore requires LHA to be installed."
 
+**Hint:** "Restores icon positions and window layouts from the selected backup run. Choose to restore with or without window positions. Requires LhA in C:."
+
 ### View Folders...
 
 Opens the Folder View sub-window showing a hierarchical tree of the archive contents. Only enabled when the selected run has a catalog file. A busy pointer is shown on the restore window while the folder view is open.
 
 Also triggered by double-clicking a run in the list.
 
+**Hint:** "Opens a tree view showing the hierarchical folder structure of the selected run. Only available for runs with a catalog file."
+
 ### Cancel
 
 Closes the window. Same effect as the window close gadget.
+
+**Hint:** "Closes the Restore Backups window."
 
 ---
 

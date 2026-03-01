@@ -73,6 +73,8 @@ Displays all backdrop entries across all mounted volumes. Seven columns:
 
 Columns 0-4 are sortable (click header to sort/reverse) and draggable (reorderable). X and Y columns are not sortable.
 
+**Hint:** "Shows all backdrop entries from all mounted volumes. Click a column header to sort. Click a row to select it."
+
 ### Status Label
 
 Read-only text showing current state. Initially "Press 'Scan' to begin." Updates to show scan results (e.g. "42 entries: 30 OK, 4 devices, 6 orphans, 2 unverified").
@@ -88,6 +90,8 @@ Scans all mounted filesystem devices:
 
 Shows a busy pointer during scanning.
 
+**Hint:** "Scans all mounted filesystem devices for .backdrop files, validates entries, and populates the list."
+
 ### Remove Orphans
 
 Removes all orphaned entries from `.backdrop` files. Only enabled after scanning finds at least one orphan.
@@ -96,6 +100,8 @@ Removes all orphaned entries from `.backdrop` files. Only enabled after scanning
 2. Creates a `.backdrop.bak` backup of each affected file
 3. Rewrites `.backdrop` files without the orphaned lines
 4. Automatically re-scans to refresh the display
+
+**Hint:** "Removes all orphaned entries from .backdrop files. A .backdrop.bak backup is created first. Only enabled after a scan finds orphans."
 
 ### Tidy Layout
 
@@ -110,13 +116,19 @@ Repositions all valid backdrop icons into an organized grid on the Workbench scr
 
 The requester confirms: "Layout N Workbench icons into a tidy grid? (M icons need repositioning) Icon positions will be saved to disk."
 
+**Hint:** "Repositions all valid Workbench backdrop icons into an organised grid. Only enabled after a scan finds valid entries."
+
 ### TEST Upd/Redraw
 
 Diagnostic button that sends Workbench UpdateAll and RedrawAll ARexx commands without snapshotting. For testing whether ARexx communication is working.
 
+**Hint:** "Sends Workbench UpdateAll and RedrawAll ARexx commands without snapshotting. Use to test whether ARexx communication is working."
+
 ### Close
 
 Closes the window.
+
+**Hint:** "Closes the Workbench Screen Manager window."
 
 ---
 

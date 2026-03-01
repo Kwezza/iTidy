@@ -81,6 +81,8 @@ Filters which template types appear in the list.
 
 The master row ("ascii") always appears regardless of filter. Changing the filter rebuilds the list and clears the selection.
 
+**Hint:** "Filters which template types appear in the list. The master \"ascii\" row always appears regardless of filter."
+
 ### Template List (ListBrowser)
 
 Displays all DefIcons ASCII sub-types with three columns:
@@ -92,7 +94,7 @@ Displays all DefIcons ASCII sub-types with three columns:
 | Status | 20% | "Master", "Custom", "Using master", or "Excluded" |
 
 Single-select with alternating row shading. Selecting a row updates the info panel and enables/disables action buttons.
-
+**Hint:** "Shows all DefIcons ASCII sub-types with their template status. Select a row to see details and enable the action buttons."
 ### Selected Type — Info Panel
 
 Four read-only fields showing details of the currently selected type:
@@ -118,12 +120,16 @@ Four buttons in the "Template Action" group. All start disabled and enable when 
 - Disabled when master type is selected (you can't copy the master onto itself).
 - On success, rebuilds the list to reflect the new file.
 
+**Hint:** "Copies the master template (def_ascii.info) to create or replace a custom template for the selected type."
+
 #### Edit tooltypes...
 
 - Opens the effective template icon in the Workbench Information editor via ARexx (`Info NAME "<path>"` sent to the WORKBENCH ARexx port).
 - Creates a zero-byte companion file if needed (required by the Workbench Info command).
 - If ARexx/Workbench port unavailable, shows an error requester.
 - For the master type, opens `def_ascii.info`. For sub-types without a custom template, also opens `def_ascii.info`.
+
+**Hint:** "Opens the selected template icon in the Workbench Information editor to view and edit its ITIDY_* rendering ToolTypes."
 
 #### Validate tooltypes
 
@@ -139,6 +145,8 @@ Four buttons in the "Template Action" group. All start disabled and enable when 
   - Adaptive text and palette expansion on/off status
   - Exclude types list
 
+**Hint:** "Reads all ToolTypes from the effective template and checks for unknown keys, out-of-range values, and formatting errors."
+
 #### Revert to master
 
 - Deletes the custom `def_<type>.info` file so the sub-type falls back to the master.
@@ -146,9 +154,13 @@ Four buttons in the "Template Action" group. All start disabled and enable when 
 - Disabled when: nothing selected, master type selected, or no custom template exists.
 - On success, rebuilds the list. If the type disappears from the current filtered view (e.g. "Custom Only" filter), the selection resets.
 
+**Hint:** "Deletes the custom template for the selected type so it falls back to the master template. A confirmation requester is shown first."
+
 ### Close Button
 
 Keyboard shortcut: C. Closes the window and returns to the calling window.
+
+**Hint:** "Closes the Text Templates window and returns to the calling window."
 
 ---
 

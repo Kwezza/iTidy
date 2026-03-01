@@ -38,9 +38,13 @@ The tree is built from the backup run's `catalog.txt` file. Folder depth is calc
 
 Selecting a tree node currently has no effect (placeholder for potential future details view).
 
+**Hint:** "Shows the hierarchical folder structure of this backup run. Click the disclosure triangles to expand or collapse branches."
+
 ### Close
 
 Closes the window (keyboard shortcut: C).
+
+**Hint:** "Closes the folder view and returns to the Restore Backups window."
 
 ---
 

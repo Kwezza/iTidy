@@ -39,6 +39,8 @@ iTidy reads the following tooltypes from its program icon when launched from Wor
 
 Default: `SYS:`
 
+**Hint:** "Click to open a directory requester and choose the drawer iTidy will process."
+
 **Tip:** You can select a whole partition (e.g. `Work:`) to process everything on that volume.
 
 ---
@@ -58,6 +60,8 @@ Sets how icons are grouped before sorting. This determines the overall arrangeme
 
 **Note:** When "Grouped By Type" is selected, the Sort By option is disabled because the group order is fixed. Icons within each group are still sorted by name.
 
+**Hint:** "Sets how icons are grouped before sorting. Choose folders first, files first, mixed, or grouped by file type."
+
 ### Sort By
 
 Selects the sort key used within the chosen grouping mode.
@@ -71,6 +75,8 @@ Selects the sort key used within the chosen grouping mode.
 
 This option is disabled when Grouping is set to "Grouped By Type".
 
+**Hint:** "Sets the sort order within the current grouping mode. Disabled when \"Grouping\" is set to \"Grouped By Type\"."
+
 ### Include Subfolders
 
 When enabled, iTidy also processes all subfolders under the selected folder. This is the option you would use for tidying a whole partition or a large folder tree in one pass.
@@ -79,6 +85,8 @@ Default: Off
 
 **Note:** On classic hardware, very large directory trees can take a while to process.
 
+**Hint:** "When enabled, all subfolders under the selected folder are also processed. Use with care on large directory trees."
+
 ### Create Icons During Tidy
 
 When enabled, iTidy will create new icons for files and folders that do not already have `.info` files, using the DefIcons system. This happens during the tidying process -- files that gain new icons are then included in the layout.
@@ -86,6 +94,8 @@ When enabled, iTidy will create new icons for files and folders that do not alre
 You can configure which file types get icons, thumbnail settings, and other creation options via the **Icon Creation...** button.
 
 Default: Off
+
+**Hint:** "When enabled, iTidy creates new icons for files that do not already have .info files, using the DefIcons system."
 
 ### Back Up Layout Before Changes
 
@@ -96,6 +106,8 @@ Default: Off
 **Requirement:** LhA must be installed in `C:`. If LhA is not found when you click Start with backups enabled, iTidy will warn you and offer to continue without backups or cancel.
 
 This checkbox is kept in sync with the menu option at Settings > Backups > Back Up Layouts Before Changes. Changing one updates the other.
+
+**Hint:** "When enabled, an LhA backup of each folder's .info files is created before making changes. Requires LhA in C:."
 
 ### Window Position
 
@@ -108,6 +120,8 @@ Controls where drawer windows are placed after iTidy resizes them. This only aff
 | Near Parent | Places the window slightly down and right of the parent window (cascading style). |
 | No Change | Resizes the window but does not move it. |
 
+**Hint:** "Controls where drawer windows are placed after iTidy resizes them. Only affects windows that iTidy actually changes."
+
 ---
 
 ## Tool Buttons
@@ -118,6 +132,8 @@ Opens the Advanced Settings window for finer control over layout, density, limit
 
 **Tooltip:** "Opens Advanced Settings for finer control over layout and sizing."
 
+**Hint:** "Opens the Advanced Settings window for finer control over layout, density, limits, columns, grouping gaps, and filtering."
+
 ### Fix default tools...
 
 Opens the Default Tool Analysis window, which scans icons for missing or invalid default tools (the program that Workbench runs when you double-click an icon). From there you can review, batch-replace, or single-replace broken tool paths.
@@ -125,6 +141,8 @@ Opens the Default Tool Analysis window, which scans icons for missing or invalid
 The scan targets the currently selected folder and respects the Include Subfolders setting.
 
 **Tooltip:** "Scans icons for missing or invalid Default Tools. Lets you fix them or batch-replace one tool with another."
+
+**Hint:** "Scans icons for missing or invalid default tools. Lets you review and fix broken tool paths in batch or one at a time."
 
 ### Restore backups...
 
@@ -134,11 +152,15 @@ Opens the Restore Backups window, which shows previous backup runs created by iT
 
 **Tooltip:** "Restores icon positions and window snapshots from iTidy backups. Only available if you previously enabled backups."
 
+**Hint:** "Opens the Restore Backups window to restore icon positions and window layouts from a previous iTidy backup run."
+
 ### Icon Creation...
 
 Opens the Icon Creation Settings window, where you can configure how iTidy creates new icons for files that don't have them. Settings include thumbnail generation (for images and text files), folder icon creation mode, and DefIcons category management.
 
 **Tooltip:** "Opens the icon creation settings (thumbnails, text previews, folder icons)"
+
+**Hint:** "Opens the Icon Creation Settings window to configure thumbnail generation, text previews, folder icons, and DefIcons categories."
 
 ---
 
@@ -156,11 +178,15 @@ Begins processing using the current settings. When you click Start:
 
 **Tooltip:** "Starts tidying the selected folder using the current settings."
 
+**Hint:** "Starts tidying the selected folder using the current settings. A progress window shows status during processing."
+
 ### Exit
 
 Closes iTidy.
 
 **Tooltip:** "Closes iTidy."
+
+**Hint:** "Closes iTidy."
 
 ---
 

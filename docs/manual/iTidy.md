@@ -795,11 +795,6 @@ A few tips:
 - It's fine to leave iTidy running unattended during large jobs.
 - Avoid running other disk-heavy tasks at the same time.
 
-### Icons Aren't Moved, and the Progress Log Shows No Icons Found
-
-Check the folder in Workbench and see if the menu `Window->Show->All Files` is selected. This option shows the contents of the folder by giving each item a temporary icon, which won't be visible to iTidy.
-
-If you want iTidy to tidy this folder, you should create real icons first. You can either enable "Create Icons During Tidy" in iTidy, or manually snapshot them: select the folder's contents via `Window->Select Contents`, then choose `Icons->Snapshot`.
 
 ### iTidy Is Skipping Some Folders That Contain Valid Icons
 

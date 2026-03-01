@@ -44,7 +44,7 @@ Simple two-part vertical layout:
 ### Path List (ListBrowser)
 
 Single column titled "Exclude Path". Displays all currently configured exclude paths. Single-select — clicking a row selects it for use by Remove and Modify. Supports 0 to 32 entries.
-
+**Hint:** "Shows all excluded directory paths. Click a row to select it for use by \"Remove\" or \"Modify\"."
 ### Add...
 
 Opens an ASL directory requester ("Select Directory to Exclude") starting in the current scan folder. After selecting a directory:
@@ -53,13 +53,19 @@ Opens an ASL directory requester ("Select Directory to Exclude") starting in the
 3. The path is added to the list. Duplicate paths (case-insensitive) are silently rejected.
 4. Silently fails if the list is already full (32 entries).
 
+**Hint:** "Opens a directory requester to add a new path to the exclude list. Offers to store it as a portable DEVICE: pattern or as an absolute path."
+
 ### Remove
 
 Removes the currently selected path from the list. Does nothing if no row is selected. No confirmation requester.
 
+**Hint:** "Removes the selected path from the exclude list. Does nothing if no row is selected."
+
 ### Modify...
 
 Opens an ASL directory requester ("Modify Exclude Path") pre-set to the currently selected path. Same DEVICE:/absolute logic as Add. Rejects the change if it would create a duplicate. Does nothing if no row is selected.
+
+**Hint:** "Opens a directory requester to change the selected exclude path. Does nothing if no row is selected."
 
 ### Reset to Defaults
 
@@ -67,13 +73,19 @@ Shows a confirmation requester ("Reset exclude list to defaults? Current list wi
 
 `DEVICE:Fonts`, `DEVICE:Locale`, `DEVICE:Classes`, `DEVICE:Libs`, `DEVICE:C`, `DEVICE:Rexxc`, `DEVICE:T`, `DEVICE:L`, `DEVICE:Devs`, `DEVICE:Resources`, `DEVICE:System`, `DEVICE:Storage`, `DEVICE:Expansion`, `DEVICE:Kickstart`, `DEVICE:Env`, `DEVICE:Envarc`, `DEVICE:Prefs/Env-Archive`
 
+**Hint:** "Replaces the current exclude list with the 16 default AmigaOS system directory paths. A confirmation requester is shown first."
+
 ### OK
 
 Accepts the current list and closes the window. The caller commits the changes to the global preferences.
 
+**Hint:** "Accepts the current exclude list and closes the window."
+
 ### Cancel
 
 Discards changes and closes the window. Closing via the window close gadget or Ctrl+C also cancels.
+
+**Hint:** "Discards all changes to the exclude list and closes the window."
 
 ---
 

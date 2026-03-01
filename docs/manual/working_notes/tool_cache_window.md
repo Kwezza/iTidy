@@ -73,6 +73,8 @@ Scans a directory tree to find all default tools referenced by icons, then displ
 
 Directory selection field. Initialised from the current scan folder in preferences. Drawers only (no files). The selected folder becomes the root for the Scan operation.
 
+**Hint:** "Select the root folder to scan for default tool information. Drawers only."
+
 ### Scan
 
 Starts a recursive directory scan of the selected folder. Opens a progress window showing scan statistics. During scanning:
@@ -82,6 +84,8 @@ Starts a recursive directory scan of the selected folder. Opens a progress windo
 - The user must close the progress window before returning to the tool list
 
 After scanning, the tool list is populated and the filter chooser is enabled.
+
+**Hint:** "Starts a recursive scan of the selected folder to find all default tools referenced by icons. Opens a progress window during scanning."
 
 ### Filter Chooser
 
@@ -95,6 +99,8 @@ Filters the tool list display. Disabled until tool data is loaded.
 
 Changing the filter clears the current selection and details panel.
 
+**Hint:** "Filters the tool list to show all tools, only valid tools, or only missing tools. Disabled until tool data is loaded."
+
 ### Tool List (Upper ListBrowser)
 
 Displays all discovered default tools in three sortable columns:
@@ -107,6 +113,8 @@ Displays all discovered default tools in three sortable columns:
 
 Click a column header to sort by that column. Click again to reverse the sort order. Selecting a row populates the details panel below.
 
+**Hint:** "Shows all discovered default tools, how many icons reference each one, and whether the tool exists on disk. Click a row to see details."
+
 ### Details Panel (Lower ListBrowser)
 
 Shows information about the selected tool:
@@ -118,21 +126,31 @@ Shows information about the selected tool:
 
 If a tool has more than 200 referencing files, only the first 200 are shown with a note.
 
+**Hint:** "Shows details of the selected tool: name, status, version string, and the list of icon files that reference it."
+
 ### Replace Tool (Batch)...
 
 Opens the Default Tool Update window in batch mode. Replaces the default tool in ALL icons that reference the selected tool. Only enabled when a tool is selected in the upper list.
+
+**Hint:** "Opens the Replace Default Tool window to update all icons that reference the selected tool at once."
 
 ### Replace Tool (Single)...
 
 Opens the Default Tool Update window in single mode. Replaces the default tool in ONE specific icon file. Only enabled when a file row is selected in the details panel (rows 3+, not the header rows).
 
+**Hint:** "Opens the Replace Default Tool window to update the default tool in one specific icon file selected in the details panel."
+
 ### Restore Default Tools Backups...
 
 Opens the Default Tool Restore window where previously backed-up default tools can be restored. Always enabled. If any restores are performed, the tool cache is cleared on return and the user is prompted to re-scan.
 
+**Hint:** "Opens the Restore Default Tools window to revert previous default tool replacements from iTidy's backup records."
+
 ### Close
 
 Closes the window.
+
+**Hint:** "Closes the Default Tool Analysis window."
 
 ---
 

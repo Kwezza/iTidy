@@ -52,6 +52,8 @@ File browser for selecting the new default tool. Opens with initial drawer set t
 
 Leaving this empty and clicking Update will prompt to **clear** the default tool from the icon(s), effectively removing the tool association.
 
+**Hint:** "Select the new default tool program. Leave empty to remove the tool association from the selected icon(s). Cannot select .info files."
+
 ---
 
 ## Progress List (ListBrowser)
@@ -83,10 +85,12 @@ Starts the replacement process. Shows a busy pointer during operation.
 **If the Change To field is empty**: Shows a confirmation requester — "This will remove the default tool from the selected icon(s). The icon(s) will no longer launch a specific program. Are you sure you want to continue?"
 
 After completion, shows a summary requester with success/failure counts. The Update button is then permanently disabled — one update per window opening.
-
+**Hint:** "Starts replacing the default tool in the selected icon(s). The button is disabled after one use per window opening."
 ### Close
 
 Closes the window. On close, the parent Tool Cache window is automatically refreshed to reflect any changes made.
+
+**Hint:** "Closes this window. The Default Tool Analysis window is automatically refreshed to show the updated tool assignments."
 
 ---
 

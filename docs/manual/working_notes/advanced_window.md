@@ -25,6 +25,8 @@ Sets the target width-to-height shape for drawer windows. This controls the over
 | Classic (1) | Traditional Workbench-like proportions. |
 | Wide (2.0) | Wider, landscape-oriented windows. **(Default)** |
 
+**Hint:** "Sets the target width-to-height proportions for drawer windows when iTidy resizes them."
+
 ### When Full
 
 Controls what iTidy does when a drawer has more icons than fit comfortably in the window at its target proportions.
@@ -35,6 +37,8 @@ Controls what iTidy does when a drawer has more icons than fit comfortably in th
 | Expand Vertically | Adds more rows. You will scroll up and down. |
 | Expand Both | Balances expansion in both directions. |
 
+**Hint:** "Controls how iTidy expands a drawer window when it has more icons than fit at the target proportions."
+
 ### Align Vertically
 
 Sets how icons are aligned vertically when a row contains icons of different heights.
@@ -44,6 +48,8 @@ Sets how icons are aligned vertically when a row contains icons of different hei
 | Top | Aligns icons to the top of the row. |
 | Middle | Aligns icons to the middle of the row. **(Default)** |
 | Bottom | Aligns icons to the bottom of the row. |
+
+**Hint:** "Sets how icons are aligned vertically within a row when icons of different heights appear in the same row."
 
 ---
 
@@ -56,12 +62,16 @@ Sets the horizontal gap between icons, in pixels. Lower values pack icons tighte
 - Range: 0 to 20
 - Default: 8
 
+**Hint:** "Sets the horizontal gap between icons in pixels. Lower values pack icons tighter; higher values give more breathing room."
+
 ### Vertical Spacing
 
 Sets the vertical gap between icons, in pixels.
 
 - Range: 0 to 20
 - Default: 8
+
+**Hint:** "Sets the vertical gap between icons in pixels. Lower values pack icons tighter; higher values give more breathing room."
 
 ---
 
@@ -74,6 +84,8 @@ Sets the minimum number of columns in a drawer window. This prevents drawers fro
 - Range: 0 to 30
 - Default: 2
 
+**Hint:** "Sets the minimum number of columns in a drawer window, preventing icons from being arranged in one long vertical list."
+
 ### Auto-Calc Max Icons
 
 When enabled, iTidy automatically calculates the maximum number of columns based on the window width and screen size. This is the recommended setting for most use cases.
@@ -82,12 +94,16 @@ Default: On
 
 When this is enabled, the Max field below is disabled (greyed out).
 
+**Hint:** "When enabled, the maximum number of columns is calculated automatically based on window width and screen size."
+
 ### Max
 
 Sets the maximum number of columns. This field is only used when Auto-Calc Max Icons is turned off.
 
 - Range: 2 to 40
 - Default: 10 (shown as placeholder when Auto-Calc is enabled)
+
+**Hint:** "Sets the maximum number of columns. Only used when \"Auto-Calc Max Icons\" is turned off."
 
 ### Max Window Width
 
@@ -102,6 +118,8 @@ Limits how wide drawer windows may become, as a percentage of screen width. This
 | 90% | Window can use up to 90% of screen width. |
 | 100% | Window can use the full screen width. |
 
+**Hint:** "Limits how wide drawer windows may become, as a percentage of screen width. Prevents windows from filling the entire screen."
+
 ---
 
 ## Columns & Groups Tab
@@ -111,6 +129,8 @@ Limits how wide drawer windows may become, as a percentage of screen width. This
 When enabled, iTidy uses a column-based layout where icons are arranged in strict columns. When disabled, icons use a free-flow row-based layout.
 
 Default: Off
+
+**Hint:** "When enabled, icons are arranged in strict vertical columns. When disabled, a free-flow row-based layout is used."
 
 ### Gap Between Groups
 
@@ -124,6 +144,8 @@ Controls the spacing between icon groups when the main window's Grouping option 
 
 **Note:** If a group contains no icons (for example, a folder with no Tools), that group is skipped and no gap is added.
 
+**Hint:** "Controls the spacing between icon groups when \"Grouping\" on the main window is set to \"Grouped By Type\"."
+
 ---
 
 ## Filters & Misc Tab
@@ -133,6 +155,8 @@ Controls the spacing between icon groups when the main window's Grouping option 
 When enabled, each column is sized to fit its widest icon, rather than forcing all columns to the same width. This produces a more compact and visually balanced layout.
 
 Default: On
+
+**Hint:** "When enabled, each column is sized to fit its widest icon, producing a more compact and visually balanced layout."
 
 ### Reverse Sort Order
 
@@ -144,6 +168,8 @@ Reverses the current sort direction. The effect depends on the sort mode selecte
 
 Default: Off
 
+**Hint:** "Reverses the sort direction. Applies to name (Z-A), date (newest first), and size (largest first) sorting."
+
 ### Strip Newicons Borders (Permanent)
 
 Strips the black border from NewIcons during processing. This requires icon.library v44 or later.
@@ -152,11 +178,15 @@ Strips the black border from NewIcons during processing. This requires icon.libr
 
 Default: Off
 
+**Hint:** "Permanently strips the black border from NewIcons. Requires icon.library v44 or later. Enable backups before using this option."
+
 ### Skip Hidden Folders
 
 When enabled, iTidy skips folders that do not have a corresponding `.info` file during recursive processing. Folders without `.info` files are considered "hidden" from Workbench and are typically not visible to the user, so processing them serves no purpose.
 
 Default: On
+
+**Hint:** "When enabled, folders without a .info file are skipped during recursive processing, as they are not visible in Workbench."
 
 ---
 
@@ -166,13 +196,19 @@ Default: On
 
 Resets all settings in this window to their factory default values. A confirmation requester is shown before the reset takes place. This does not save anything to disk -- it only resets the gadgets in this window.
 
+**Hint:** "Resets all settings in this window to their factory defaults. A confirmation requester is shown before the reset takes place."
+
 ### Cancel
 
 Discards all changes and returns to the main window. The original settings are preserved unchanged.
 
+**Hint:** "Discards all changes and returns to the main window. The original settings are preserved unchanged."
+
 ### OK
 
 Accepts the current settings and closes the window. The changes are applied to the active session but are not saved to disk. To save permanently, use Presets > Save on the main window.
+
+**Hint:** "Accepts the current settings and closes the window. Changes are applied to the session but not saved to disk."
 
 ---
 

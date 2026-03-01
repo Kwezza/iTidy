@@ -32,6 +32,8 @@ Only file types at the second level have checkboxes. Root categories and deeper 
 
 Click a checkbox to toggle it. The change takes effect immediately in the working preferences.
 
+**Hint:** "Check a type to create icons for files of that type during processing. Uncheck to skip it."
+
 ### Default disabled types
 
 By default, the following categories are disabled because creating icons for them is rarely useful or could affect system files:
@@ -54,9 +56,13 @@ Enables all file types for icon creation. All checkboxes in the tree are ticked.
 
 **Note:** This may create icons for any files that do not already have an icon, including system files. Use with care.
 
+**Hint:** "Enables all file types for icon creation. All checkboxes in the tree are ticked."
+
 ### Select None
 
 Disables all file types. All checkboxes in the tree are unticked. No icons will be created for any type.
+
+**Hint:** "Disables all file types. No icons will be created for any file type during icon creation."
 
 ### Show Default Tools
 
@@ -69,6 +75,8 @@ If a type does not have its own template icon, no tool is shown for that entry (
 
 This is a one-shot action -- click it to scan and display the tools. The display updates automatically after changing a default tool.
 
+**Hint:** "Scans the DefIcons template icons in ENVARC:Sys/ and shows the assigned default tool next to each type name."
+
 ### Change Default Tool...
 
 Opens a file requester to select a new default tool for the currently selected type. The selected program is written directly to the type's template icon file in `ENVARC:Sys/`.
@@ -79,15 +87,21 @@ If the selected type does not yet have its own template icon (it inherits from i
 
 If no type is selected in the tree, a warning is shown asking you to select one first.
 
+**Hint:** "Opens a file requester to assign a new default tool to the selected type. Changes are saved to disk immediately and are not affected by Cancel."
+
 ### OK
 
 Accepts the current type selections (enabled/disabled checkboxes) and closes the window. The changes are applied to the working preferences.
+
+**Hint:** "Accepts the current type selections and closes the window. Checkbox changes are applied to the working preferences."
 
 ### Cancel
 
 Closes the window without saving type selection changes. Any checkbox changes are discarded.
 
 **Note:** Default tool changes made via the "Change Default Tool..." button are already saved to disk and are not affected by Cancel.
+
+**Hint:** "Closes the window without saving type selection changes. Note: default tool changes made via \"Change Default Tool...\" are already saved to disk."
 
 ---
 

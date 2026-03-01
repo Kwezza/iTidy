@@ -24,6 +24,9 @@ iTidy has three progress window implementations, though only two are actively us
 ### Display
 
 - **Scrolling status list** (ListBrowser): Shows a history of status messages (up to 50 entries, oldest removed when full). Auto-scrolls to keep the newest entry visible.
+
+  **Hint:** "Shows a scrollable history of processing status messages. Auto-scrolls to keep the newest entry visible."
+
 - **Status text**: Below the list, shows current operation progress (e.g. "Scanning: 34 / 200")
 - **Cancel/Close button**: Full-width button at the bottom
 
@@ -32,6 +35,8 @@ iTidy has three progress window implementations, though only two are actively us
 During processing, the button shows "Cancel". Clicking it shows a confirmation requester: "Are you sure you want to cancel? Changes will not be reverted." If confirmed, the current operation is flagged for cancellation.
 
 After processing completes, the button text changes to "Close" and clicking it simply closes the window without confirmation.
+
+**Hint:** "Cancels the current operation after confirmation (during processing), or closes the window (when done). Changes already made are not reverted."
 
 The status text is updated periodically with a heartbeat/spinner showing the current phase, item count, and progress. The event loop is pumped during updates to keep the Cancel button responsive.
 

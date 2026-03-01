@@ -52,6 +52,8 @@ Displays all backup sessions found in `PROGDIR:Backups/tools/`. Four sortable co
 
 Shows a busy pointer while scanning for sessions on window open.
 
+**Hint:** "Shows all backed-up default tool replacement sessions. Click a session to see the tool changes it recorded."
+
 ### Changes List (Lower ListBrowser)
 
 Shows the tool changes recorded in the selected session. Uses a label/value format with no column headers:
@@ -60,6 +62,8 @@ For each unique tool change in the session:
 - **Old tool**: The original default tool (or "(none)" if it was empty)
 - **New tool**: The replacement tool (or "(none)" if cleared)
 - **Icons**: Number of icons affected by this specific change
+
+**Hint:** "Shows the tool changes recorded in the selected session: the original tool, the replacement, and how many icons were affected."
 
 ### Restore
 
@@ -72,6 +76,8 @@ Restores all icons from the selected backup session to their original default to
 
 Only enabled when a session is selected in the upper list.
 
+**Hint:** "Restores all icons in the selected session to their original default tools. The backup session is kept after restoring."
+
 ### Delete
 
 Permanently deletes the selected backup session and its files.
@@ -82,9 +88,13 @@ Permanently deletes the selected backup session and its files.
 
 Only enabled when a session is selected.
 
+**Hint:** "Permanently deletes the selected backup session and its files. A confirmation requester is shown first. This cannot be undone."
+
 ### Close
 
 Closes the window.
+
+**Hint:** "Closes the Restore Default Tools window."
 
 ---
 
