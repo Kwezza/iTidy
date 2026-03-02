@@ -1,5 +1,7 @@
 # Default Tool Analysis Window — Working Notes
 
+**Rebuild window:** `default_tool_analysis`
+
 **Source**: `src/GUI/DefaultTools/tool_cache_window.c` (3129 lines), `tool_cache_window.h`
 **Title bar**: "iTidy - Default Tool Analysis"
 **Opened from**: Main window -> Tools button (or menu)
@@ -70,12 +72,14 @@ Scans a directory tree to find all default tools referenced by icons, then displ
 ## Gadgets
 
 ### Folder (GetFile)
+*Rebuild IDENT: `dta_ch_folder` | Name: "Folder:" | Type: File requester gadget*
 
 Directory selection field. Initialised from the current scan folder in preferences. Drawers only (no files). The selected folder becomes the root for the Scan operation.
 
 **Hint:** "Select the root folder to scan for default tool information. Drawers only."
 
 ### Scan
+*Rebuild IDENT: `dta_btn_scan` | Name: "Scan" | Type: Button gadget*
 
 Starts a recursive directory scan of the selected folder. Opens a progress window showing scan statistics. During scanning:
 - A busy pointer is shown on the tool cache window
@@ -88,6 +92,7 @@ After scanning, the tool list is populated and the filter chooser is enabled.
 **Hint:** "Starts a recursive scan of the selected folder to find all default tools referenced by icons. Opens a progress window during scanning."
 
 ### Filter Chooser
+*Rebuild IDENT: `dta_str_filter` | Type: Chooser (cycle/popup) gadget*
 
 Filters the tool list display. Disabled until tool data is loaded.
 
@@ -102,6 +107,7 @@ Changing the filter clears the current selection and details panel.
 **Hint:** "Filters the tool list to show all tools, only valid tools, or only missing tools. Disabled until tool data is loaded."
 
 ### Tool List (Upper ListBrowser)
+*Rebuild IDENT: `dta_lb_tools` | Type: List browser gadget*
 
 Displays all discovered default tools in three sortable columns:
 
@@ -116,6 +122,7 @@ Click a column header to sort by that column. Click again to reverse the sort or
 **Hint:** "Shows all discovered default tools, how many icons reference each one, and whether the tool exists on disk. Click a row to see details."
 
 ### Details Panel (Lower ListBrowser)
+*Rebuild IDENT: `dta_lv_status` | Type: List view gadget*
 
 Shows information about the selected tool:
 
@@ -129,24 +136,28 @@ If a tool has more than 200 referencing files, only the first 200 are shown with
 **Hint:** "Shows details of the selected tool: name, status, version string, and the list of icon files that reference it."
 
 ### Replace Tool (Batch)...
+*Rebuild IDENT: `dta_btn_replace_batch` | Name: "Replace Tool (Batch)..." | Type: Button gadget*
 
 Opens the Default Tool Update window in batch mode. Replaces the default tool in ALL icons that reference the selected tool. Only enabled when a tool is selected in the upper list.
 
 **Hint:** "Opens the Replace Default Tool window to update all icons that reference the selected tool at once."
 
 ### Replace Tool (Single)...
+*Rebuild IDENT: `dta_btn_replace_single` | Name: "Replace Tool (Single)..." | Type: Button gadget*
 
 Opens the Default Tool Update window in single mode. Replaces the default tool in ONE specific icon file. Only enabled when a file row is selected in the details panel (rows 3+, not the header rows).
 
 **Hint:** "Opens the Replace Default Tool window to update the default tool in one specific icon file selected in the details panel."
 
 ### Restore Default Tools Backups...
+*Rebuild IDENT: `dta_btn_restore_backup` | Name: "Restore Default Tools Backup..." | Type: Button gadget*
 
 Opens the Default Tool Restore window where previously backed-up default tools can be restored. Always enabled. If any restores are performed, the tool cache is cleared on return and the user is prompted to re-scan.
 
 **Hint:** "Opens the Restore Default Tools window to revert previous default tool replacements from iTidy's backup records."
 
 ### Close
+*Rebuild IDENT: `dta_btn_close` | Name: "Close" | Type: Button gadget*
 
 Closes the window.
 

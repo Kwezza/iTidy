@@ -1,5 +1,7 @@
 # Default Tool Restore Window — Working Notes
 
+**Rebuild window:** `restore_default_tool`
+
 **Source**: `src/GUI/DefaultTools/default_tool_restore_window.c` (1302 lines)
 **Title bar**: "iTidy - Restore Default Tools"
 **Opened from**: Main window -> Tools -> Restore Default Tools; also from Default Tool Analysis -> Restore Default Tools Backups
@@ -40,6 +42,7 @@ Allows the user to view and restore backed-up default tool changes. Each time iT
 ## Gadgets
 
 ### Session List (Upper ListBrowser)
+*Rebuild IDENT: `rdt_lb_sessions` | Type: List browser gadget*
 
 Displays all backup sessions found in `PROGDIR:Backups/tools/`. Four sortable columns:
 
@@ -55,6 +58,7 @@ Shows a busy pointer while scanning for sessions on window open.
 **Hint:** "Shows all backed-up default tool replacement sessions. Click a session to see the tool changes it recorded."
 
 ### Changes List (Lower ListBrowser)
+*Rebuild IDENT: `rdt_lb_changes` | Type: List browser gadget*
 
 Shows the tool changes recorded in the selected session. Uses a label/value format with no column headers:
 
@@ -66,6 +70,7 @@ For each unique tool change in the session:
 **Hint:** "Shows the tool changes recorded in the selected session: the original tool, the replacement, and how many icons were affected."
 
 ### Restore
+*Rebuild IDENT: `rdt_btn_restore` | Name: "Restore" | Type: Button gadget*
 
 Restores all icons from the selected backup session to their original default tools.
 
@@ -79,6 +84,7 @@ Only enabled when a session is selected in the upper list.
 **Hint:** "Restores all icons in the selected session to their original default tools. The backup session is kept after restoring."
 
 ### Delete
+*Rebuild IDENT: `rdt_btn_delete` | Name: "Delete" | Type: Button gadget*
 
 Permanently deletes the selected backup session and its files.
 
@@ -91,6 +97,7 @@ Only enabled when a session is selected.
 **Hint:** "Permanently deletes the selected backup session and its files. A confirmation requester is shown first. This cannot be undone."
 
 ### Close
+*Rebuild IDENT: `rdt_btn_close` | Name: "Close" | Type: Button gadget*
 
 Closes the window.
 

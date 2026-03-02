@@ -1,5 +1,7 @@
 # Main Window
 
+**Rebuild window:** `main_window`
+
 **Window title:** iTidy v2.0 - Icon Cleanup Tool
 **Navigation:** This is the first window shown when iTidy launches.
 
@@ -35,7 +37,10 @@ iTidy reads the following tooltypes from its program icon when launched from Wor
 
 ## Folder Selection
 
-**Folder to clean** - A file requester gadget that lets you select the drawer (folder) you want iTidy to process. Clicking the folder button opens a requester that shows drawers only (not files). The selected path is shown in the field and is read-only -- you must use the requester to change it.
+**Folder to clean**
+*Rebuild IDENT: `main_gf_target_path` | Name: "Folder to clean:" | Type: File requester gadget*
+
+A file requester gadget that lets you select the drawer (folder) you want iTidy to process. Clicking the folder button opens a requester that shows drawers only (not files). The selected path is shown in the field and is read-only -- you must use the requester to change it.
 
 Default: `SYS:`
 
@@ -48,6 +53,7 @@ Default: `SYS:`
 ## Tidy Options
 
 ### Grouping
+*Rebuild IDENT: `main_ch_sort_primary` | Name: "Grouping" | Type: Chooser (cycle/popup) gadget*
 
 Sets how icons are grouped before sorting. This determines the overall arrangement order.
 
@@ -63,6 +69,7 @@ Sets how icons are grouped before sorting. This determines the overall arrangeme
 **Hint:** "Sets how icons are grouped before sorting. Choose folders first, files first, mixed, or grouped by file type."
 
 ### Sort By
+*Rebuild IDENT: `main_ch_sort_secondary` | Name: "Sort By" | Type: Chooser (cycle/popup) gadget*
 
 Selects the sort key used within the chosen grouping mode.
 
@@ -78,6 +85,7 @@ This option is disabled when Grouping is set to "Grouped By Type".
 **Hint:** "Sets the sort order within the current grouping mode. Disabled when \"Grouping\" is set to \"Grouped By Type\"."
 
 ### Include Subfolders
+*Rebuild IDENT: `main_cb_cleanup_subfolders` | Name: "Include Subfolders" | Type: Checkbox gadget*
 
 When enabled, iTidy also processes all subfolders under the selected folder. This is the option you would use for tidying a whole partition or a large folder tree in one pass.
 
@@ -88,6 +96,7 @@ Default: Off
 **Hint:** "When enabled, all subfolders under the selected folder are also processed. Use with care on large directory trees."
 
 ### Create Icons During Tidy
+*Rebuild IDENT: `main_cb_create_new_icons` | Name: "Create Icons During Tidy" | Type: Checkbox gadget*
 
 When enabled, iTidy will create new icons for files and folders that do not already have `.info` files, using the DefIcons system. This happens during the tidying process -- files that gain new icons are then included in the layout.
 
@@ -98,6 +107,7 @@ Default: Off
 **Hint:** "When enabled, iTidy creates new icons for files that do not already have .info files, using the DefIcons system."
 
 ### Back Up Layout Before Changes
+*Rebuild IDENT: `main_cb_backup_icons` | Name: "Back Up Layout Before Changes" | Type: Checkbox gadget*
 
 When enabled, iTidy creates an LhA backup of each folder's `.info` files before making any changes. This gives you something to roll back to later using the Restore backups feature.
 
@@ -105,11 +115,12 @@ Default: Off
 
 **Requirement:** LhA must be installed in `C:`. If LhA is not found when you click Start with backups enabled, iTidy will warn you and offer to continue without backups or cancel.
 
-This checkbox is kept in sync with the menu option at Settings > Backups > Back Up Layouts Before Changes. Changing one updates the other.
+This checkbox is kept in sync with the menu option at Settings > Backups > Back Up Layout Before Changes. Changing one updates the other.
 
 **Hint:** "When enabled, an LhA backup of each folder's .info files is created before making changes. Requires LhA in C:."
 
 ### Window Position
+*Rebuild IDENT: `main_ch_positioning` | Name: "Window Position" | Type: Chooser (cycle/popup) gadget*
 
 Controls where drawer windows are placed after iTidy resizes them. This only affects windows that iTidy actually changes.
 
@@ -127,6 +138,7 @@ Controls where drawer windows are placed after iTidy resizes them. This only aff
 ## Tool Buttons
 
 ### Advanced...
+*Rebuild IDENT: `main_btn_advanced` | Name: "Advanced..." | Type: Button gadget*
 
 Opens the Advanced Settings window for finer control over layout, density, limits, columns, grouping gaps, and filtering. Changes made in the Advanced Settings window are applied when you click OK, or discarded if you click Cancel.
 
@@ -135,6 +147,7 @@ Opens the Advanced Settings window for finer control over layout, density, limit
 **Hint:** "Opens the Advanced Settings window for finer control over layout, density, limits, columns, grouping gaps, and filtering."
 
 ### Fix default tools...
+*Rebuild IDENT: `main_btn_default_tools` | Name: "Fix Default Tools..." | Type: Button gadget*
 
 Opens the Default Tool Analysis window, which scans icons for missing or invalid default tools (the program that Workbench runs when you double-click an icon). From there you can review, batch-replace, or single-replace broken tool paths.
 
@@ -145,6 +158,7 @@ The scan targets the currently selected folder and respects the Include Subfolde
 **Hint:** "Scans icons for missing or invalid default tools. Lets you review and fix broken tool paths in batch or one at a time."
 
 ### Restore backups...
+*Rebuild IDENT: `main_btn_restore_backups` | Name: "Restore Backups..." | Type: Button gadget*
 
 Opens the Restore Backups window, which shows previous backup runs created by iTidy. From there you can restore icon positions and window layouts to a previous state, view which folders were included in a run, or delete old backups.
 
@@ -155,6 +169,7 @@ Opens the Restore Backups window, which shows previous backup runs created by iT
 **Hint:** "Opens the Restore Backups window to restore icon positions and window layouts from a previous iTidy backup run."
 
 ### Icon Creation...
+*Rebuild IDENT: `main_btn_icon_settings` | Name: "Icon Creation..." | Type: Button gadget*
 
 Opens the Icon Creation Settings window, where you can configure how iTidy creates new icons for files that don't have them. Settings include thumbnail generation (for images and text files), folder icon creation mode, and DefIcons category management.
 
@@ -167,6 +182,7 @@ Opens the Icon Creation Settings window, where you can configure how iTidy creat
 ## Action Buttons
 
 ### Start
+*Rebuild IDENT: `main_btn_start` | Name: "Start" | Type: Button gadget*
 
 Begins processing using the current settings. When you click Start:
 
@@ -181,6 +197,7 @@ Begins processing using the current settings. When you click Start:
 **Hint:** "Starts tidying the selected folder using the current settings. A progress window shows status during processing."
 
 ### Exit
+*Rebuild IDENT: `main_btn_exit` | Name: "Exit" | Type: Button gadget*
 
 Closes iTidy.
 
@@ -212,7 +229,7 @@ Closes iTidy.
 | - Preview Icons... | Opens the Text Templates management window for configuring text file preview templates. |
 | - DefIcons Excluded Folders... | Opens the Exclude Paths window for managing folders that should be skipped during DefIcons icon creation. |
 | **Backups...** (submenu) | |
-| - Back Up Layouts Before Changes | Toggle checkmark. Enables or disables automatic LhA backups before tidying. This is kept in sync with the "Back Up Layout Before Changes" checkbox on the main window. |
+| - Back Up Layout Before Changes | Toggle checkmark. Enables or disables automatic LhA backups before tidying. This is kept in sync with the "Back Up Layout Before Changes" checkbox on the main window. |
 | **Logging** (submenu) | |
 | - Disabled (Recommended) | Turns off all logging. **(Default)** |
 | - Debug | Most verbose logging level -- logs everything. |

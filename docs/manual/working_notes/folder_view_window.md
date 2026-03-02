@@ -1,5 +1,7 @@
 # Folder View Window — Working Notes
 
+**Rebuild window:** `restore_folders_view`
+
 **Source**: `src/GUI/RestoreBackups/folder_view_window.c` (997 lines)
 **Title bar**: "Folder View - Run N (date)" (dynamic)
 **Opened from**: Restore Backups window -> View Folders button, or double-click on a run
@@ -26,6 +28,7 @@ Simple two-part vertical layout:
 ## Gadgets
 
 ### Folder Tree (ListBrowser)
+*Rebuild IDENT: `rfv_lb_folders` | Type: List browser gadget*
 
 Hierarchical tree display with disclosure triangles for expanding/collapsing branches. Two columns:
 
@@ -41,6 +44,7 @@ Selecting a tree node currently has no effect (placeholder for potential future 
 **Hint:** "Shows the hierarchical folder structure of this backup run. Click the disclosure triangles to expand or collapse branches."
 
 ### Close
+*Rebuild IDENT: `rfv_btn_close` | Name: "Close" | Type: Button gadget*
 
 Closes the window (keyboard shortcut: C).
 

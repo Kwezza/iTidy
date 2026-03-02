@@ -1,5 +1,7 @@
 # Advanced Settings
 
+**Rebuild window:** `advanced_settings`
+
 **Window title:** iTidy - Advanced Settings
 **Navigation:** Main Window > Advanced... button, or Main Window > Settings menu > Advanced Settings...
 
@@ -14,6 +16,7 @@ This window is modal -- the main window does not respond to input while Advanced
 ## Layout Tab
 
 ### Layout Aspect
+*Rebuild IDENT: `adv_ch_layout_aspect` | Name: "Layout Aspect" | Type: Chooser (cycle/popup) gadget*
 
 Sets the target width-to-height shape for drawer windows. This controls the overall proportions iTidy aims for when resizing windows to fit their contents.
 
@@ -22,12 +25,13 @@ Sets the target width-to-height shape for drawer windows. This controls the over
 | Tall (0.75) | Tall, narrow windows. |
 | Square (1.0) | Roughly square windows. |
 | Compact (1.3) | Slightly wider than tall. |
-| Classic (1) | Traditional Workbench-like proportions. |
+| Classic (1.0) | Traditional Workbench-like proportions. |
 | Wide (2.0) | Wider, landscape-oriented windows. **(Default)** |
 
 **Hint:** "Sets the target width-to-height proportions for drawer windows when iTidy resizes them."
 
 ### When Full
+*Rebuild IDENT: `adv_ch_layout_when_full` | Name: "When Full" | Type: Chooser (cycle/popup) gadget*
 
 Controls what iTidy does when a drawer has more icons than fit comfortably in the window at its target proportions.
 
@@ -40,6 +44,7 @@ Controls what iTidy does when a drawer has more icons than fit comfortably in th
 **Hint:** "Controls how iTidy expands a drawer window when it has more icons than fit at the target proportions."
 
 ### Align Vertically
+*Rebuild IDENT: `adv_ch_layout_align_vertically` | Name: "Align Vertically" | Type: Chooser (cycle/popup) gadget*
 
 Sets how icons are aligned vertically when a row contains icons of different heights.
 
@@ -56,6 +61,7 @@ Sets how icons are aligned vertically when a row contains icons of different hei
 ## Density Tab
 
 ### Horizontal Spacing
+*Rebuild IDENT: `adv_int_iconspacing_x` | Name: "Horizontal Spacing" | Type: Integer input gadget*
 
 Sets the horizontal gap between icons, in pixels. Lower values pack icons tighter; higher values give icons more breathing room.
 
@@ -65,6 +71,7 @@ Sets the horizontal gap between icons, in pixels. Lower values pack icons tighte
 **Hint:** "Sets the horizontal gap between icons in pixels. Lower values pack icons tighter; higher values give more breathing room."
 
 ### Vertical Spacing
+*Rebuild IDENT: `adv_int_iconspacing_y` | Name: "Vertical Spacing" | Type: Integer input gadget*
 
 Sets the vertical gap between icons, in pixels.
 
@@ -78,6 +85,7 @@ Sets the vertical gap between icons, in pixels.
 ## Limits Tab
 
 ### Icons Per Row: Min
+*Rebuild IDENT: `adv_int_icons_per_row_min` | Name: "Icons Per Row: Min" | Type: Integer input gadget*
 
 Sets the minimum number of columns in a drawer window. This prevents drawers from becoming one long vertical list when a window is narrow or icons are wide.
 
@@ -87,6 +95,7 @@ Sets the minimum number of columns in a drawer window. This prevents drawers fro
 **Hint:** "Sets the minimum number of columns in a drawer window, preventing icons from being arranged in one long vertical list."
 
 ### Auto-Calc Max Icons
+*Rebuild IDENT: `adv_cb_icons_per_row_autolayout` | Name: "Auto-Calc Max Icons" | Type: Checkbox gadget*
 
 When enabled, iTidy automatically calculates the maximum number of columns based on the window width and screen size. This is the recommended setting for most use cases.
 
@@ -97,6 +106,7 @@ When this is enabled, the Max field below is disabled (greyed out).
 **Hint:** "When enabled, the maximum number of columns is calculated automatically based on window width and screen size."
 
 ### Max
+*Rebuild IDENT: `adv_int_icons_per_row_max` | Name: "Max" | Type: Integer input gadget*
 
 Sets the maximum number of columns. This field is only used when Auto-Calc Max Icons is turned off.
 
@@ -106,6 +116,7 @@ Sets the maximum number of columns. This field is only used when Auto-Calc Max I
 **Hint:** "Sets the maximum number of columns. Only used when \"Auto-Calc Max Icons\" is turned off."
 
 ### Max Window Width
+*Rebuild IDENT: `adv_ch_layout_max_width` | Name: "Max Window Width" | Type: Chooser (cycle/popup) gadget*
 
 Limits how wide drawer windows may become, as a percentage of screen width. This prevents windows from stretching across the entire screen on high-resolution displays.
 
@@ -125,6 +136,7 @@ Limits how wide drawer windows may become, as a percentage of screen width. This
 ## Columns & Groups Tab
 
 ### Column Layout
+*Rebuild IDENT: `adv_cb_column_layout` | Name: "Column Layout" | Type: Checkbox gadget*
 
 When enabled, iTidy uses a column-based layout where icons are arranged in strict columns. When disabled, icons use a free-flow row-based layout.
 
@@ -133,6 +145,7 @@ Default: Off
 **Hint:** "When enabled, icons are arranged in strict vertical columns. When disabled, a free-flow row-based layout is used."
 
 ### Gap Between Groups
+*Rebuild IDENT: `adv_ch_layout_gap_between_groups` | Name: "Gap Between Groups" | Type: Chooser (cycle/popup) gadget*
 
 Controls the spacing between icon groups when the main window's Grouping option is set to "Grouped By Type". Each group (e.g. Drawers, Tools, Projects) is separated by a visual gap.
 
@@ -151,6 +164,7 @@ Controls the spacing between icon groups when the main window's Grouping option 
 ## Filters & Misc Tab
 
 ### Auto-Fit Columns
+*Rebuild IDENT: `adv_cb_optimize_columns` | Name: "Auto-Fit Columns" | Type: Checkbox gadget*
 
 When enabled, each column is sized to fit its widest icon, rather than forcing all columns to the same width. This produces a more compact and visually balanced layout.
 
@@ -159,6 +173,7 @@ Default: On
 **Hint:** "When enabled, each column is sized to fit its widest icon, producing a more compact and visually balanced layout."
 
 ### Reverse Sort Order
+*Rebuild IDENT: `adv_cb_reverse_sort` | Name: "Reverse Sort Order" | Type: Checkbox gadget*
 
 Reverses the current sort direction. The effect depends on the sort mode selected on the main window:
 
@@ -170,17 +185,21 @@ Default: Off
 
 **Hint:** "Reverses the sort direction. Applies to name (Z-A), date (newest first), and size (largest first) sorting."
 
-### Strip Newicons Borders (Permanent)
+### Strip NewIcon Borders
+*Rebuild IDENT: `adv_cb_strip_newicon_borders` | Name: "Strip NewIcon Borders" | Type: Checkbox gadget*
 
-Strips the black border from NewIcons during processing. This requires icon.library v44 or later.
+Removes the border that Workbench draws around NewIcon images by marking them as frameless. This does not alter the icon's pixel data -- it sets a flag that tells Workbench not to draw the surrounding border frame.
 
-**Warning:** This permanently modifies the affected icons. If you might want to restore the original appearance later, enable the backup option on the main window before running iTidy.
+To restore the border on an individual icon afterwards, open the icon's Information window in Workbench (select the icon, then choose "Information..." from the Icons menu), switch to "Icon Image" from the menu, and untick the "Frameless?" checkbox.
+
+Requires icon.library v44 or later.
 
 Default: Off
 
-**Hint:** "Permanently strips the black border from NewIcons. Requires icon.library v44 or later. Enable backups before using this option."
+**Hint:** "Removes the Workbench-drawn border from NewIcon images by setting them frameless. Reversible via Icon Information > Icon Image > Frameless."
 
 ### Skip Hidden Folders
+*Rebuild IDENT: `adv_cb_skip_hidden` | Name: "Skip Hidden Folders" | Type: Checkbox gadget*
 
 When enabled, iTidy skips folders that do not have a corresponding `.info` file during recursive processing. Folders without `.info` files are considered "hidden" from Workbench and are typically not visible to the user, so processing them serves no purpose.
 
@@ -193,18 +212,21 @@ Default: On
 ## Buttons
 
 ### Defaults
+*Rebuild IDENT: `adv_btn_defaults` | Name: "Defaults" | Type: Button gadget*
 
 Resets all settings in this window to their factory default values. A confirmation requester is shown before the reset takes place. This does not save anything to disk -- it only resets the gadgets in this window.
 
 **Hint:** "Resets all settings in this window to their factory defaults. A confirmation requester is shown before the reset takes place."
 
 ### Cancel
+*Rebuild IDENT: `adv_btn_cancel` | Name: "Cancel" | Type: Button gadget*
 
 Discards all changes and returns to the main window. The original settings are preserved unchanged.
 
 **Hint:** "Discards all changes and returns to the main window. The original settings are preserved unchanged."
 
 ### OK
+*Rebuild IDENT: `adv_btn_ok` | Name: "OK" | Type: Button gadget*
 
 Accepts the current settings and closes the window. The changes are applied to the active session but are not saved to disk. To save permanently, use Presets > Save on the main window.
 
@@ -229,5 +251,5 @@ Accepts the current settings and closes the window. The changes are applied to t
 | Gap Between Groups | Medium |
 | Auto-Fit Columns | On |
 | Reverse Sort Order | Off |
-| Strip Newicons Borders | Off |
+| Strip NewIcon Borders | Off |
 | Skip Hidden Folders | On |

@@ -1,5 +1,7 @@
 # DefIcons Categories
 
+**Rebuild window:** `deficons_setup`
+
 **Window title:** DefIcons: Icon Creation Setup
 **Navigation:** Main Window > Icon Creation... > DefIcons tab > Icon Creation Setup... button, or Main Window > Settings menu > DefIcons Categories... > DefIcons Categories...
 
@@ -12,6 +14,7 @@ This window is modal -- the calling window does not respond to input while it is
 ---
 
 ## Type Tree
+*Rebuild IDENT: `dfs_lb_targets` | Type: List browser gadget*
 
 The main area of the window shows a hierarchical tree of file types. Each top-level entry represents a category (e.g. music, picture, tool), and expanding a category reveals the individual file types within it.
 
@@ -51,6 +54,7 @@ All other types are enabled by default.
 ## Buttons
 
 ### Select All
+*Rebuild IDENT: `dfs_btn_select_all` | Name: "Select All" | Type: Button gadget*
 
 Enables all file types for icon creation. All checkboxes in the tree are ticked.
 
@@ -59,12 +63,14 @@ Enables all file types for icon creation. All checkboxes in the tree are ticked.
 **Hint:** "Enables all file types for icon creation. All checkboxes in the tree are ticked."
 
 ### Select None
+*Rebuild IDENT: `dfs_btn_select_none` | Name: "Select None" | Type: Button gadget*
 
 Disables all file types. All checkboxes in the tree are unticked. No icons will be created for any type.
 
 **Hint:** "Disables all file types. No icons will be created for any file type during icon creation."
 
 ### Show Default Tools
+*Rebuild IDENT: `dfs_btn_show_default_tools` | Name: "Show Default Tools" | Type: Button gadget*
 
 Scans the default icon templates in `ENVARC:Sys/` and displays the default tool (the program Workbench would launch) next to each type name. For example:
 
@@ -78,6 +84,7 @@ This is a one-shot action -- click it to scan and display the tools. The display
 **Hint:** "Scans the DefIcons template icons in ENVARC:Sys/ and shows the assigned default tool next to each type name."
 
 ### Change Default Tool...
+*Rebuild IDENT: `dfs_btn_change_default_tools` | Name: "Change Default Tool..." | Type: Button gadget*
 
 Opens a file requester to select a new default tool for the currently selected type. The selected program is written directly to the type's template icon file in `ENVARC:Sys/`.
 
@@ -90,12 +97,14 @@ If no type is selected in the tree, a warning is shown asking you to select one 
 **Hint:** "Opens a file requester to assign a new default tool to the selected type. Changes are saved to disk immediately and are not affected by Cancel."
 
 ### OK
+*Rebuild IDENT: `dfs_btn_ok` | Name: "OK" | Type: Button gadget*
 
 Accepts the current type selections (enabled/disabled checkboxes) and closes the window. The changes are applied to the working preferences.
 
 **Hint:** "Accepts the current type selections and closes the window. Checkbox changes are applied to the working preferences."
 
 ### Cancel
+*Rebuild IDENT: `dfs_btn_cancel` | Name: "Cancel" | Type: Button gadget*
 
 Closes the window without saving type selection changes. Any checkbox changes are discarded.
 

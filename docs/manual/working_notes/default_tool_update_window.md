@@ -1,5 +1,7 @@
 # Default Tool Update Window — Working Notes
 
+**Rebuild window:** `default_tool_update`
+
 **Source**: `src/GUI/DefaultTools/default_tool_update_window_reaction.c`, `default_tool_update_window_reaction.h`
 **Title bar**: "iTidy - Replace Default Tool"
 **Opened from**: Default Tool Analysis window -> Replace Tool (Batch) or Replace Tool (Single)
@@ -43,10 +45,13 @@ Replaces the default tool in one or more icon files. Operates in two modes:
 
 Three read-only rows showing:
 - **Current Tool**: The tool being replaced (e.g. "MultiView")
+  *Rebuild IDENT: `dtu_txt_current_tool` | Name: "Current Tool Text" | Type: Button gadget*
 - **Mode**: "Batch Mode: N icon(s) will be updated" or "Single mode: <path>"
+  *Rebuild IDENT: `dtu_txt_current_mode` | Name: "Current Mode Text" | Type: Button gadget*
 - **Change To**: GetFile gadget for selecting the replacement tool program
 
 ### Change To (GetFile)
+*Rebuild IDENT: `dtu_ch_new_tool` | Type: File requester gadget*
 
 File browser for selecting the new default tool. Opens with initial drawer set to `C:`. Rejects `.info` files. The text field is read-only — the user must use the browse button.
 
@@ -57,6 +62,7 @@ Leaving this empty and clicking Update will prompt to **clear** the default tool
 ---
 
 ## Progress List (ListBrowser)
+*Rebuild IDENT: `dtu_lb_progress` | Type: List browser gadget*
 
 Two-column list showing results as icons are processed:
 
@@ -72,6 +78,7 @@ In batch mode, the display is updated every 5 icons for visual feedback.
 ## Buttons
 
 ### Update Default Tool
+*Rebuild IDENT: `dtu_btn_update` | Name: "Update Default Tool" | Type: Button gadget*
 
 Starts the replacement process. Shows a busy pointer during operation.
 
@@ -87,6 +94,7 @@ Starts the replacement process. Shows a busy pointer during operation.
 After completion, shows a summary requester with success/failure counts. The Update button is then permanently disabled — one update per window opening.
 **Hint:** "Starts replacing the default tool in the selected icon(s). The button is disabled after one use per window opening."
 ### Close
+*Rebuild IDENT: `dtu_btn_close` | Name: "Close" | Type: Button gadget*
 
 Closes the window. On close, the parent Tool Cache window is automatically refreshed to reflect any changes made.
 

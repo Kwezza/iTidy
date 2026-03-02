@@ -1,5 +1,7 @@
 # Progress Windows — Working Notes
 
+**Rebuild windows:** `main_progress_window`, `recursive_progress_window`
+
 **Source**: `src/GUI/StatusWindows/` (4 files)
 **Status**: Two active progress windows plus one unused legacy implementation
 
@@ -24,11 +26,14 @@ iTidy has three progress window implementations, though only two are actively us
 ### Display
 
 - **Scrolling status list** (ListBrowser): Shows a history of status messages (up to 50 entries, oldest removed when full). Auto-scrolls to keep the newest entry visible.
+  *Rebuild IDENT: `mp_lb_status` | Type: List browser gadget*
 
   **Hint:** "Shows a scrollable history of processing status messages. Auto-scrolls to keep the newest entry visible."
 
 - **Status text**: Below the list, shows current operation progress (e.g. "Scanning: 34 / 200")
+  *Rebuild IDENT: `mp_txt_status` | Name: "Starting, One Moment Please..." | Type: Button gadget*
 - **Cancel/Close button**: Full-width button at the bottom
+  *Rebuild IDENT: `mp_btn_cancel` | Name: "Cancel" | Type: Button gadget*
 
 ### Behaviour
 
@@ -53,9 +58,13 @@ Resizable (min 300x200, opens at 400x300 centred on mouse).
 ### Display
 
 - **Main progress bar** (FuelGauge): Shows folder-level progress with built-in percentage display (e.g. "42%")
+  *Rebuild IDENT: `rp_gauge_main` | Type: Fuel gauge / progress bar gadget*
 - **Main label**: Shows current folder being processed (e.g. "Processing: Work:Programs/ (42/500)")
+  *Rebuild IDENT: `rp_txt_main` | Name: "Starting, One Moment Please..." | Type: Label image*
 - **Sub progress bar** (FuelGauge, optional): Shows icon-level progress within the current folder
+  *Rebuild IDENT: `rp_gauge_sub` | Type: Fuel gauge / progress bar gadget*
 - **Sub label** (optional): Shows icon count (e.g. "Icons: 15/43" or "No icons in folder")
+  *Rebuild IDENT: `rp_txt_sub` | Name: "Processing" | Type: Label image*
 
 ### Behaviour
 

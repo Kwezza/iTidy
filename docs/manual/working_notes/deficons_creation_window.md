@@ -1,5 +1,7 @@
 # Icon Creation Settings
 
+**Rebuild window:** `deficons_creation_options`
+
 **Window title:** iTidy - Icon Creation Settings
 **Navigation:** Main Window > Icon Creation... button
 
@@ -16,18 +18,20 @@ This window is modal -- the main window does not respond to input while it is op
 ## Create Tab
 
 ### Folder Icons
+*Rebuild IDENT: `dco_mode_folder_icons` | Name: "Folder Icons:" | Type: Chooser (cycle/popup) gadget*
 
 Controls whether iTidy creates drawer icons for folders that do not have them.
 
 | Option | Description |
 |--------|-------------|
-| Smart (Create Folder If It Has Icons Inside) | iTidy checks whether the folder contains files or icons that need processing. If it does, a drawer icon is created. **(Default)** |
+| Smart (When Folder Has Icons) | iTidy checks whether the folder contains files or icons that need processing. If it does, a drawer icon is created. **(Default)** |
 | Always Create | A drawer icon is always created for folders without one. |
 | Never Create | Folder icons are never created. |
 
 **Hint:** "Controls whether iTidy creates drawer icons for folders that do not already have them."
 
-### Skip icon creation inside WHDLoad folders
+### Skip files in WHDLoad folders
+*Rebuild IDENT: `dco_cb_skip_whdload_folders` | Name: "Skip Files In WHDLoad Folders" | Type: Checkbox gadget*
 
 When enabled, folders that contain a WHDLoad slave file (*.slave) are skipped during icon creation. The drawer icon for the WHDLoad folder itself is still created, but no icons are generated for files inside it.
 
@@ -38,6 +42,7 @@ Default: Off
 **Hint:** "When enabled, files inside WHDLoad game folders are skipped during icon creation. The WHDLoad folder icon itself is still created."
 
 ### Text File Previews
+*Rebuild IDENT: `dco_cb_text_previews` | Name: "Text File Previews" | Type: Checkbox gadget*
 
 When enabled, iTidy creates thumbnail-style icons for text files by rendering a preview of the file's contents onto the icon image. The appearance of text previews can be customised using the Manage Templates button.
 
@@ -46,12 +51,14 @@ Default: On
 **Hint:** "When enabled, iTidy renders a preview of a text file's contents onto the icon image."
 
 ### Manage Templates...
+*Rebuild IDENT: `dco_btn_manage_templates` | Name: "Manage Templates..." | Type: Button gadget*
 
 Opens the Text Templates window, where you can view and edit the rendering templates that control how different text file types are previewed on their icons. See the Text Templates section for details.
 
 **Hint:** "Opens the Text Templates window to view and edit how different text file types are rendered as icon previews."
 
 ### Picture File Previews
+*Rebuild IDENT: `dco_cb_picture_previews` | Name: "Picture File Previews" | Type: Checkbox gadget*
 
 When enabled, iTidy creates thumbnail icons for recognised picture files by generating a miniature version of the image. The specific image formats to process are selected using the format checkboxes below.
 
@@ -67,29 +74,43 @@ Select which image file formats should have thumbnail icons generated. Each form
 |--------|-------------|---------|
 | ILBM (IFF) | Amiga IFF ILBM and PBM images. The most common Amiga image format. | On |
 
+*Rebuild IDENT: `dco_cb_pic_ilbm` | Name: "ILBM (IFF)" | Type: Checkbox gadget*
+
 **Hint:** "Enable thumbnail creation for Amiga IFF ILBM and PBM images."
 
 | PNG | PNG images. Supports transparency. | On |
+
+*Rebuild IDENT: `dco_cb_pic_png` | Name: "PNG" | Type: Checkbox gadget*
 
 **Hint:** "Enable thumbnail creation for PNG images. Supports transparency."
 
 | GIF | GIF images. Supports transparency. | On |
 
+*Rebuild IDENT: `dco_cb_pic_gif` | Name: "GIF" | Type: Checkbox gadget*
+
 **Hint:** "Enable thumbnail creation for GIF images. Supports transparency."
 
 | JPEG (Slow) | JPEG images. Decoding is slow on 68k hardware. | Off |
+
+*Rebuild IDENT: `dco_cb_pic_jpeg` | Name: "JPEG (Slow)" | Type: Checkbox gadget*
 
 **Hint:** "Enable thumbnail creation for JPEG images. Disabled by default because JPEG decoding is slow on 68k hardware."
 
 | BMP | Windows BMP images. | On |
 
+*Rebuild IDENT: `dco_cb_pic_bmp` | Name: "BMP" | Type: Checkbox gadget*
+
 **Hint:** "Enable thumbnail creation for Windows BMP images."
 
 | ACBM | Amiga Continuous Bitmap format. A rare Amiga bitmap format sometimes used in older demos or game asset data. | On |
 
+*Rebuild IDENT: `dco_cb_pic_acbm` | Name: "ACBM" | Type: Checkbox gadget*
+
 **Hint:** "Enable thumbnail creation for Amiga Continuous Bitmap images, a rare format used in some older demos and game assets."
 
 | Other | Any other image formats supported by installed DataTypes and DefIcons. | On |
+
+*Rebuild IDENT: `dco_cb_pic_other` | Name: "Other" | Type: Checkbox gadget*
 
 **Hint:** "Enable thumbnail creation for other image formats supported by installed DataTypes and DefIcons."
 
@@ -100,6 +121,7 @@ Select which image file formats should have thumbnail icons generated. Each form
 These options control what happens when you run iTidy again on a folder that already has icons created by a previous iTidy run.
 
 #### Replace Existing Image Thumbnails Created by iTidy
+*Rebuild IDENT: `dco_cb_replace_image_thumbnails` | Name: "Replace Existing Image Thumbnails" | Type: Checkbox gadget*
 
 When enabled, iTidy will delete and recreate any image thumbnail icons that it previously created. iTidy identifies its own icons using the `ITIDY_CREATED` tooltype. Icons placed by the user or by other programs are never affected.
 
@@ -110,6 +132,7 @@ Default: Off
 **Hint:** "When enabled, image thumbnail icons previously created by iTidy are deleted and regenerated. User-placed icons are not affected."
 
 #### Replace Existing Text Previews Created by iTidy
+*Rebuild IDENT: `dco_cb_replace_text_previews` | Name: "Replace Existing Text Previews" | Type: Checkbox gadget*
 
 When enabled, iTidy will delete and recreate any text preview icons that it previously created. As with image thumbnails, only icons with the `ITIDY_CREATED` tooltype are affected.
 
@@ -126,6 +149,7 @@ Default: Off
 These settings control the visual appearance of generated thumbnail icons.
 
 ### Preview Size
+*Rebuild IDENT: `dco_mode_preview_size` | Name: "Preview Size:" | Type: Chooser (cycle/popup) gadget*
 
 Sets the canvas size used for thumbnail icons. Larger sizes show more detail but take up more space on screen.
 
@@ -138,6 +162,7 @@ Sets the canvas size used for thumbnail icons. Larger sizes show more detail but
 **Hint:** "Sets the canvas size used for thumbnail icons. Larger sizes show more detail but take up more screen space."
 
 ### Thumbnail Border
+*Rebuild IDENT: `dco_mode_thumbnail_frame` | Name: "Thumbnail Border:" | Type: Chooser (cycle/popup) gadget*
 
 Controls the border style drawn around thumbnail icons.
 
@@ -153,7 +178,8 @@ The "Smart" modes detect transparent images and skip the border effect, which av
 
 **Hint:** "Controls the border style drawn around thumbnail icons. The \"Smart\" modes skip the border on images with transparency."
 
-### Upscale Small Images To Icon Size
+### Upscale Small Images
+*Rebuild IDENT: `dco_cb_upscale_thumbnails` | Name: "Upscale Small Images" | Type: Checkbox gadget*
 
 When enabled, images that are smaller than the chosen preview size are scaled up to fill the thumbnail area. When disabled, small images are centred in the thumbnail at their original size.
 
@@ -166,19 +192,22 @@ Default: Off
 These settings control how full-colour images are reduced to fit within the limited palette of Amiga icons.
 
 #### Max Colours
+*Rebuild IDENT: `dco_mode_max_colors` | Name: "Max Colours:" | Type: Chooser (cycle/popup) gadget*
 
 Sets the maximum number of colours used in generated thumbnail icons. Lower colour counts produce smaller icons and process faster, but higher counts look better.
 
+[Coding note:  the order must not be changed without changing the index numbers in the actual code]
+
 | Option | Description |
 |--------|-------------|
-| 4 colors | Very limited palette. |
-| 8 colors | Basic colour range. |
-| 16 colors | Moderate colour range. |
+| 4 colours | Very limited palette. |
+| 8 colours | Basic colour range. |
+| 16 colours | Moderate colour range. |
 | GlowIcons palette (29 colours) | Uses the standard GlowIcons palette for maximum compatibility with existing icon sets. |
-| 32 colors | Good colour range. |
-| 64 colors | Rich colour range. |
-| 128 colors | Near-photographic quality. |
-| 256 colors (full) | Full 256-colour palette. **(Default)** |
+| 32 colours | Good colour range. |
+| 64 colours | Rich colour range. |
+| 128 colours | Near-photographic quality. |
+| 256 colours (full) | Full 256-colour palette. **(Default)** |
 | Ultra (256 + detail boost) | 256 colours with enhanced detail processing for the best possible image quality. |
 
 **Hint:** "Sets the maximum number of colours used in generated thumbnail icons. Higher counts look better but produce larger icon files."
@@ -189,6 +218,7 @@ Sets the maximum number of colours used in generated thumbnail icons. Lower colo
 - When Max Colours is set above 8, or to GlowIcons palette or Ultra, the Low-Colour Palette option is disabled (only relevant at very low colour counts).
 
 #### Dithering
+*Rebuild IDENT: `dco_mode_dither` | Name: "Dithering:" | Type: Chooser (cycle/popup) gadget*
 
 Selects the dithering method used when reducing the number of colours in an image. Dithering simulates intermediate colours by mixing nearby pixels.
 
@@ -204,6 +234,7 @@ Selects the dithering method used when reducing the number of colours in an imag
 This option is disabled when Max Colours is set to 256 or Ultra.
 
 #### Low-Colour Palette
+*Rebuild IDENT: `dco_mode_lowcolor_mapping` | Name: "Low-Colour Palette:" | Type: Chooser (cycle/popup) gadget*
 
 Controls the palette mapping used at very low colour counts (4 or 8 colours). This determines what fixed palette the colours are reduced to.
 
@@ -224,6 +255,7 @@ This option is only enabled when Max Colours is set to 4 or 8. It is disabled at
 This tab provides access to the DefIcons configuration sub-windows.
 
 ### Icon Creation Setup...
+*Rebuild IDENT: `dco_btn_creation_setup` | Name: "Icon Creation Setup..." | Type: Button gadget*
 
 Opens the DefIcons Categories window, where you can select which file types should have icons created during processing. The window shows a tree view of all available DefIcons file types with checkboxes, and lets you view or change the default tool assigned to each type.
 
@@ -232,6 +264,7 @@ See the DefIcons Categories section for details.
 **Hint:** "Opens the DefIcons Categories window to select which file types should receive icons during processing."
 
 ### Exclude Paths...
+*Rebuild IDENT: `dco_btn_exclude_paths` | Name: "Exclude Paths..." | Type: Button gadget*
 
 Opens the Exclude Paths window, where you can manage the list of folder paths that should be skipped during icon creation. This is useful for excluding system directories or folders that should not have icons generated.
 
@@ -244,12 +277,14 @@ See the Exclude Paths section for details.
 ## Buttons
 
 ### OK
+*Rebuild IDENT: `dco_btn_ok` | Name: "OK" | Type: Button gadget*
 
 Accepts the current settings and closes the window. Changes are applied to the active session.
 
 **Hint:** "Accepts the current settings and closes the window. Changes are applied to the active session."
 
 ### Cancel
+*Rebuild IDENT: `dco_btn_cancel` | Name: "Cancel" | Type: Button gadget*
 
 Discards all changes and closes the window. The original settings are preserved.
 

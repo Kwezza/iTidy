@@ -1,5 +1,7 @@
 # Restore Backups Window — Working Notes
 
+**Rebuild window:** `restore_backups`
+
 **Source**: `src/GUI/RestoreBackups/restore_window.c` (1718 lines)
 **Title bar**: "iTidy - Restore Backups"
 **Opened from**: Main window -> Restore Backups button; also Main window -> Tools -> Restore -> Restore Layouts
@@ -32,7 +34,7 @@ Allows the user to view, restore, and delete iTidy's LhA-based backup runs. Each
 | Status:           Complete (catalog present)        |
 | Location:         PROGDIR:Backups/Run_0007          |
 +----------------------------------------------------+
-| [Delete Run] [Restore Run] [View Folders...] [Cancel]|
+| [Delete Run] [Restore Run] [View Folders...] [Close] |
 +----------------------------------------------------+
 ```
 
@@ -41,6 +43,7 @@ Allows the user to view, restore, and delete iTidy's LhA-based backup runs. Each
 ## Gadgets
 
 ### Run List (Upper ListBrowser)
+*Rebuild IDENT: `rb_lb_backups` | Type: List browser gadget*
 
 Displays all backup runs found in `PROGDIR:Backups/`. Six columns:
 
@@ -60,6 +63,7 @@ On window open, the first run is automatically selected.
 **Hint:** "Shows all iTidy backup runs. Click a run to view its details below. Double-click to view the folder structure of the run."
 
 ### Details Panel (Lower ListBrowser)
+*Rebuild IDENT: `rb_lb_details` | Type: List browser gadget*
 
 Read-only label/value display showing details of the selected run:
 - Run Number, Date Created, Source Directory, Total Archives, Total Size, Icons Created, Status, Location
@@ -69,6 +73,7 @@ Status can be: "Complete (catalog present)", "Orphaned (no catalog)", "Incomplet
 **Hint:** "Shows details of the selected backup run: date created, source folder, number of archives, total size, and status."
 
 ### Delete Run
+*Rebuild IDENT: `rb_btn_delete` | Name: "Delete Run" | Type: Button gadget*
 
 Permanently deletes the selected backup run and all its files.
 
@@ -79,6 +84,7 @@ After deletion, the run list is rescanned and repopulated. If no runs remain, al
 **Hint:** "Permanently deletes the selected backup run and all its files. A confirmation requester is shown first. This cannot be undone."
 
 ### Restore Run
+*Rebuild IDENT: `rb_btn_restore` | Name: "Restore Run" | Type: Button gadget*
 
 Restores the selected backup run's icons to their original state using LhA.
 
@@ -96,6 +102,7 @@ Restores the selected backup run's icons to their original state using LhA.
 **Hint:** "Restores icon positions and window layouts from the selected backup run. Choose to restore with or without window positions. Requires LhA in C:."
 
 ### View Folders...
+*Rebuild IDENT: `rb_btn_view_folders` | Name: "View Folders..." | Type: Button gadget*
 
 Opens the Folder View sub-window showing a hierarchical tree of the archive contents. Only enabled when the selected run has a catalog file. A busy pointer is shown on the restore window while the folder view is open.
 
@@ -103,7 +110,8 @@ Also triggered by double-clicking a run in the list.
 
 **Hint:** "Opens a tree view showing the hierarchical folder structure of the selected run. Only available for runs with a catalog file."
 
-### Cancel
+### Close
+*Rebuild IDENT: `rb_btn_close` | Name: "Close" | Type: Button gadget*
 
 Closes the window. Same effect as the window close gadget.
 
@@ -113,8 +121,8 @@ Closes the window. Same effect as the window close gadget.
 
 ## Button State Logic
 
-| Condition | Delete | Restore | View Folders | Cancel |
-|-----------|--------|---------|--------------|--------|
+| Condition | Delete | Restore | View Folders | Close |
+|-----------|--------|---------|--------------|-------|
 | No runs found | Disabled | Disabled | Disabled | Enabled |
 | Run with catalog selected | Enabled | Enabled | Enabled | Enabled |
 | Orphaned run selected (no catalog) | Enabled | Enabled | Disabled | Enabled |
