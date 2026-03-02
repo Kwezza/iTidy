@@ -148,6 +148,14 @@ BOOL itidy_main_progress_window_open(struct iTidyMainProgressWindow *window_data
         goto cleanup;
     }
 
+    /* Hint/tooltip info for gadget help */
+    static struct HintInfo hintInfo[] =
+    {
+        {ITIDY_MAIN_PROGRESS_GID_HISTORY, -1, "Shows a scrollable history of processing status messages. Auto-scrolls to keep the newest entry visible.", 0},
+        {ITIDY_MAIN_PROGRESS_GID_CANCEL,  -1, "Cancels the current operation after confirmation, or closes the window when done. Changes already made are not reverted.", 0},
+        {-1, -1, NULL, 0}
+    };
+
     window_data->window_obj = NewObject(WINDOW_GetClass(), NULL,
         WA_Title,          ITIDY_MAIN_PROGRESS_TITLE,
         WA_Left,           5,
@@ -167,6 +175,8 @@ BOOL itidy_main_progress_window_open(struct iTidyMainProgressWindow *window_data
         WA_Activate,       TRUE,
         WA_NoCareRefresh,  TRUE,
         WA_IDCMP,          IDCMP_GADGETDOWN | IDCMP_GADGETUP | IDCMP_CLOSEWINDOW | IDCMP_NEWSIZE,
+        WINDOW_HintInfo,   hintInfo,
+        WINDOW_GadgetHelp, TRUE,
         
         WINDOW_ParentGroup, window_data->main_layout = NewObject(LAYOUT_GetClass(), NULL,
             LAYOUT_Orientation, LAYOUT_ORIENT_VERT,

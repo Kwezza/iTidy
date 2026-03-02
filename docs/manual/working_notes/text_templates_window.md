@@ -2,7 +2,7 @@
 
 **Source**: `src/GUI/deficons/text_templates_window.c` (2127 lines), `src/GUI/deficons/text_templates_window.h`
 **Title bar**: "iTidy - DefIcons Text Templates"
-**Opened from**: Main window -> Settings -> DefIcons -> Text Templates (also accessible from DefIcons Categories window)
+**Opened from**: Main window -> Settings -> DefIcons Categories... -> Preview Icons...; also Icon Creation Settings -> Create tab -> Manage Templates...
 **Modal**: No
 **Blocking**: Yes (runs own event loop, returns when closed)
 **Resizable**: Yes (min 420x300, initial 480x200)

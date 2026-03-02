@@ -369,6 +369,14 @@ BOOL open_folder_view_window(struct iTidyFolderViewWindow *folder_data,
     folder_data->column_info[2].ci_Title = (STRPTR)~0;
     folder_data->column_info[2].ci_Flags = -1;
     
+    /* Hint/tooltip info for gadget help */
+    static struct HintInfo hintInfo[] =
+    {
+        {GID_FOLDER_VIEW_LISTBROWSER, -1, "Shows the hierarchical folder structure of this backup run. Click the disclosure triangles to expand or collapse branches.", 0},
+        {GID_FOLDER_VIEW_CLOSE_BTN,   -1, "Closes the folder view and returns to the Restore Backups window.", 0},
+        {-1, -1, NULL, 0}
+    };
+
     /* Create the ReAction window object with empty list first */
     /* We'll populate it after the window opens for better user feedback */
     folder_data->window_obj = NewObject(WINDOW_GetClass(), NULL,
@@ -390,6 +398,8 @@ BOOL open_folder_view_window(struct iTidyFolderViewWindow *folder_data,
         WA_NoCareRefresh,   TRUE,
         WINDOW_Position,    WPOS_CENTERMOUSE,
         WA_IDCMP,           IDCMP_GADGETDOWN | IDCMP_GADGETUP | IDCMP_CLOSEWINDOW | IDCMP_NEWSIZE,
+        WINDOW_HintInfo,    hintInfo,
+        WINDOW_GadgetHelp,  TRUE,
         
         WINDOW_ParentGroup, folder_data->main_layout = NewObject(LAYOUT_GetClass(), NULL,
             LAYOUT_Orientation,   LAYOUT_ORIENT_VERT,

@@ -21,7 +21,7 @@ iTidy has three progress window implementations, though only two are actively us
 
 **Source**: `main_progress_window.c` (475 lines)
 **Title**: "iTidy - Progress"
-**Used by**: Main processing (Apply button), Default Tool Analysis scanning
+**Used by**: Main processing (Start button), Default Tool Analysis scanning
 
 ### Display
 

@@ -909,6 +909,17 @@ struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_
     NewList(&data->session_list);
     NewList(&data->changes_list);
     
+    /* Hint/tooltip info for gadget help */
+    static struct HintInfo hintInfo[] =
+    {
+        {GID_SESSION_LIST,   -1, "Shows all backed-up default tool replacement sessions. Click a session to see the tool changes it recorded.", 0},
+        {GID_CHANGES_LIST,   -1, "Shows the tool changes recorded in the selected session: the original tool, the replacement, and how many icons were affected.", 0},
+        {GID_RESTORE_ALL,    -1, "Restores all icons in the selected session to their original default tools. The backup session is kept after restoring.", 0},
+        {GID_DELETE_SESSION, -1, "Permanently deletes the selected backup session and its files. A confirmation requester is shown first. This cannot be undone.", 0},
+        {GID_CLOSE,          -1, "Closes the Restore Default Tools window.", 0},
+        {-1, -1, NULL, 0}
+    };
+
     /* Create window object following testcode.c layout */
     window_obj = NewObject(WINDOW_GetClass(), NULL,
         WA_Title, WINDOW_TITLE,
@@ -928,6 +939,8 @@ struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_
         WA_PubScreen, screen,
         WA_IDCMP, IDCMP_GADGETUP | IDCMP_CLOSEWINDOW | IDCMP_NEWSIZE,
         WINDOW_Position, WPOS_CENTERSCREEN,
+        WINDOW_HintInfo, hintInfo,
+        WINDOW_GadgetHelp, TRUE,
         WINDOW_ParentGroup, NewObject(LAYOUT_GetClass(), NULL,
             LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
             LAYOUT_SpaceOuter, TRUE,

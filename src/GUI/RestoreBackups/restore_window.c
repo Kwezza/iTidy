@@ -1178,6 +1178,18 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
     
     restore_data->screen = screen;
     
+    /* Hint/tooltip info for gadget help */
+    static struct HintInfo hintInfo[] =
+    {
+        {GID_RESTORE_RUN_LISTBROWSER,    -1, "Shows all iTidy backup runs. Click a run to view its details below. Double-click to view the folder structure of the run.", 0},
+        {GID_RESTORE_DETAILS_LISTBROWSER,-1, "Shows details of the selected backup run: date created, source folder, number of archives, total size, and status.", 0},
+        {GID_RESTORE_DELETE_BUTTON,      -1, "Permanently deletes the selected backup run and all its files. A confirmation requester is shown first. This cannot be undone.", 0},
+        {GID_RESTORE_RESTORE_BUTTON,     -1, "Restores icon positions and window layouts from the selected backup run. Choose to restore with or without window positions. Requires LhA in C:.", 0},
+        {GID_RESTORE_VIEW_BUTTON,        -1, "Opens a tree view showing the hierarchical folder structure of the selected run. Only available for runs with a catalog file.", 0},
+        {GID_RESTORE_CANCEL_BUTTON,      -1, "Closes the Restore Backups window.", 0},
+        {-1, -1, NULL, 0}
+    };
+
     /* Create the ReAction window object */
     restore_data->window_obj = NewObject(WINDOW_GetClass(), NULL,
         WA_Title, RESTORE_WINDOW_TITLE,
@@ -1199,6 +1211,8 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
         WA_NoCareRefresh, TRUE,
         WINDOW_Position, WPOS_CENTERSCREEN,
         WA_IDCMP, IDCMP_GADGETDOWN | IDCMP_GADGETUP | IDCMP_CLOSEWINDOW | IDCMP_NEWSIZE,
+        WINDOW_HintInfo, hintInfo,
+        WINDOW_GadgetHelp, TRUE,
         
         WINDOW_ParentGroup, NewObject(LAYOUT_GetClass(), NULL,
             LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
@@ -1285,7 +1299,7 @@ BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
                     
                     LAYOUT_AddChild, restore_data->cancel_btn = NewObject(BUTTON_GetClass(), NULL,
                         GA_ID, GID_RESTORE_CANCEL_BUTTON,
-                        GA_Text, "Cancel",
+                        GA_Text, "Close",
                         GA_RelVerify, TRUE,
                         GA_TabCycle, TRUE,
                     TAG_END),

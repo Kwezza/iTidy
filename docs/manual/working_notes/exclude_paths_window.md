@@ -2,7 +2,7 @@
 
 **Source**: `src/GUI/exclude_paths_window.c`, `src/GUI/exclude_paths_window.h`
 **Title bar**: "DefIcons Exclude Paths"
-**Opened from**: Main window -> Settings -> DefIcons -> Exclude Paths; also from DefIcons Creation Settings window
+**Opened from**: Main window -> Settings -> DefIcons Categories... -> DefIcons Excluded Folders...; also from DefIcons Creation Settings window
 **Modal**: Effectively modal (blocks caller via synchronous event loop)
 **Resizable**: Yes (initial 600x300)
 **Keyboard shortcuts**: A (Add), R (Remove), M (Modify), D (Reset to Defaults), O (OK), C (Cancel)
@@ -69,11 +69,11 @@ Opens an ASL directory requester ("Modify Exclude Path") pre-set to the currentl
 
 ### Reset to Defaults
 
-Shows a confirmation requester ("Reset exclude list to defaults? Current list will be lost.") with Reset/Cancel buttons. If confirmed, clears all paths and repopulates with the 16 default entries:
+Shows a confirmation requester ("Reset exclude list to defaults? Current list will be lost.") with Reset/Cancel buttons. If confirmed, clears all paths and repopulates with the 17 default entries:
 
 `DEVICE:Fonts`, `DEVICE:Locale`, `DEVICE:Classes`, `DEVICE:Libs`, `DEVICE:C`, `DEVICE:Rexxc`, `DEVICE:T`, `DEVICE:L`, `DEVICE:Devs`, `DEVICE:Resources`, `DEVICE:System`, `DEVICE:Storage`, `DEVICE:Expansion`, `DEVICE:Kickstart`, `DEVICE:Env`, `DEVICE:Envarc`, `DEVICE:Prefs/Env-Archive`
 
-**Hint:** "Replaces the current exclude list with the 16 default AmigaOS system directory paths. A confirmation requester is shown first."
+**Hint:** "Replaces the current exclude list with the 17 default AmigaOS system directory paths. A confirmation requester is shown first."
 
 ### OK
 

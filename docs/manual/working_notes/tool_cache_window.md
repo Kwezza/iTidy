@@ -4,7 +4,7 @@
 
 **Source**: `src/GUI/DefaultTools/tool_cache_window.c` (3129 lines), `tool_cache_window.h`
 **Title bar**: "iTidy - Default Tool Analysis"
-**Opened from**: Main window -> Tools button (or menu)
+**Opened from**: Main window -> "Fix default tools..." button
 **Modal**: Effectively modal (blocks caller via event loop)
 **Resizable**: Yes (initial 550x400, min 450x300)
 **Menus**: Yes — Project, File, View (with keyboard shortcuts)
@@ -150,7 +150,7 @@ Opens the Default Tool Update window in single mode. Replaces the default tool i
 **Hint:** "Opens the Replace Default Tool window to update the default tool in one specific icon file selected in the details panel."
 
 ### Restore Default Tools Backups...
-*Rebuild IDENT: `dta_btn_restore_backup` | Name: "Restore Default Tools Backup..." | Type: Button gadget*
+*Rebuild IDENT: `dta_btn_restore_backup` | Name: "Restore Default Tools Backups..." | Type: Button gadget*
 
 Opens the Default Tool Restore window where previously backed-up default tools can be restored. Always enabled. If any restores are performed, the tool cache is cleared on return and the user is prompted to re-scan.
 

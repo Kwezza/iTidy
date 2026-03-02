@@ -569,13 +569,13 @@ static BOOL create_window(DefIconsSettingsWindow *win)
     /* Define hint info for gadget help (tooltips) */
     static struct HintInfo hintInfo[] =
     {
-        {GID_TYPE_TREE, -1, "Select the file types to create icons for. This list comes from the \"DefaultIcons\" Preferences tool in the Workbench Prefs drawer.", 0},
-        {GID_SELECT_ALL, -1, "Select all file types in the list above. Note: this may create icons for any files that do not already have an icon, including system files. Use with care.", 0},
-        {GID_SHOW_TOOLS, -1, "Scans the default icons and displays the Default Tool for each entry in the list above.", 0},
-        {GID_SELECT_NONE, -1, "Deselects all selected file types.", 0},
-        {GID_CHANGE_DEFAULT_TOOL, -1, "Change the Default Tool for the selected icon. If needed, a default icon is created automatically. Changes apply immediately.", 0},
-        {GID_OK, -1, "Saves changes.", 0},
-        {GID_CANCEL, -1, "Closes the window without saving changes. Note: Default Tool changes are applied immediately and saved automatically.", 0},
+        {GID_TYPE_TREE, -1, "Check a type to create icons for files of that type during processing. Uncheck to skip it.", 0},
+        {GID_SELECT_ALL, -1, "Enables all file types for icon creation. All checkboxes in the tree are ticked.", 0},
+        {GID_SHOW_TOOLS, -1, "Scans the DefIcons template icons in ENVARC:Sys/ and shows the assigned default tool next to each type name.", 0},
+        {GID_SELECT_NONE, -1, "Disables all file types. No icons will be created for any file type during icon creation.", 0},
+        {GID_CHANGE_DEFAULT_TOOL, -1, "Opens a file requester to assign a new default tool to the selected type. Changes are saved to disk immediately and are not affected by Cancel.", 0},
+        {GID_OK, -1, "Accepts the current type selections and closes the window. Checkbox changes are applied to the working preferences.", 0},
+        {GID_CANCEL, -1, "Closes the window without saving type selection changes. Note: default tool changes made via \"Change Default Tool...\" are already saved to disk.", 0},
         {-1, -1, NULL, 0}
     };
     

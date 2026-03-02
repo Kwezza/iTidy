@@ -185,18 +185,18 @@ Default: Off
 
 **Hint:** "Reverses the sort direction. Applies to name (Z-A), date (newest first), and size (largest first) sorting."
 
-### Strip NewIcon Borders
-*Rebuild IDENT: `adv_cb_strip_newicon_borders` | Name: "Strip NewIcon Borders" | Type: Checkbox gadget*
+### Strip Newicons Borders
+*Rebuild IDENT: `adv_cb_strip_newicon_borders` | Name: "Strip Newicons Borders" | Type: Checkbox gadget*
 
-Removes the border that Workbench draws around NewIcon images by marking them as frameless. This does not alter the icon's pixel data -- it sets a flag that tells Workbench not to draw the surrounding border frame.
-
-To restore the border on an individual icon afterwards, open the icon's Information window in Workbench (select the icon, then choose "Information..." from the Icons menu), switch to "Icon Image" from the menu, and untick the "Frameless?" checkbox.
+Permanently strips the black border from NewIcons.
 
 Requires icon.library v44 or later.
 
+**Warning:** This permanently modifies the affected icons. Enable backups before using.
+
 Default: Off
 
-**Hint:** "Removes the Workbench-drawn border from NewIcon images by setting them frameless. Reversible via Icon Information > Icon Image > Frameless."
+**Hint:** "Permanently strips the black border from NewIcons. Requires icon.library v44 or later. Enable backups before using this option."
 
 ### Skip Hidden Folders
 *Rebuild IDENT: `adv_cb_skip_hidden` | Name: "Skip Hidden Folders" | Type: Checkbox gadget*

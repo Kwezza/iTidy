@@ -16,7 +16,7 @@ From here you can access all of iTidy's features: advanced layout settings, icon
 iTidy requires:
 
 - AmigaOS Workbench 3.2 or newer (ReAction GUI)
-- 68020 CPU or better
+- 68000 CPU or better
 - At least 1 MB of free memory
 - At least 1 MB of free storage space in the installation location (more as backups accumulate)
 - For backup and restore features: LhA must be installed in `C:`
@@ -37,8 +37,8 @@ iTidy reads the following tooltypes from its program icon when launched from Wor
 
 ## Folder Selection
 
-**Folder to clean**
-*Rebuild IDENT: `main_gf_target_path` | Name: "Folder to clean:" | Type: File requester gadget*
+**Folder to tidy**
+*Rebuild IDENT: `main_gf_target_path` | Name: "Folder to tidy:" | Type: File requester gadget*
 
 A file requester gadget that lets you select the drawer (folder) you want iTidy to process. Clicking the folder button opens a requester that shows drawers only (not files). The selected path is shown in the field and is read-only -- you must use the requester to change it.
 
@@ -229,7 +229,7 @@ Closes iTidy.
 | - Preview Icons... | Opens the Text Templates management window for configuring text file preview templates. |
 | - DefIcons Excluded Folders... | Opens the Exclude Paths window for managing folders that should be skipped during DefIcons icon creation. |
 | **Backups...** (submenu) | |
-| - Back Up Layout Before Changes | Toggle checkmark. Enables or disables automatic LhA backups before tidying. This is kept in sync with the "Back Up Layout Before Changes" checkbox on the main window. |
+| - Back Up Layout Before Changes? | Toggle checkmark. Enables or disables automatic LhA backups before tidying. This is kept in sync with the "Back Up Layout Before Changes" checkbox on the main window. |
 | **Logging** (submenu) | |
 | - Disabled (Recommended) | Turns off all logging. **(Default)** |
 | - Debug | Most verbose logging level -- logs everything. |

@@ -606,6 +606,15 @@ BOOL iTidy_OpenDefaultToolUpdateWindow_ReAction(struct iTidy_DefaultToolUpdateWi
         return FALSE;
     }
     
+    /* Hint/tooltip info for gadget help */
+    static struct HintInfo hintInfo[] =
+    {
+        {GID_TOOL_UPDATE_NEW_TOOL_GETFILE, -1, "Select the new default tool program. Leave empty to remove the tool association from the selected icon(s). Cannot select .info files.", 0},
+        {GID_TOOL_UPDATE_UPDATE_BUTTON,    -1, "Starts replacing the default tool in the selected icon(s). The button is disabled after one use per window opening.", 0},
+        {GID_TOOL_UPDATE_CLOSE_BUTTON,     -1, "Closes this window. The Default Tool Analysis window is automatically refreshed to show the updated tool assignments.", 0},
+        {-1, -1, NULL, 0}
+    };
+
     /* Create ReAction window object tree */
     data->window_obj = WindowObject,
         WA_Title, "iTidy - Replace Default Tool",
@@ -616,6 +625,8 @@ BOOL iTidy_OpenDefaultToolUpdateWindow_ReAction(struct iTidy_DefaultToolUpdateWi
         WA_SizeGadget, TRUE,
         WA_PubScreen, data->screen,
         WINDOW_Position, WPOS_CENTERSCREEN,
+        WINDOW_HintInfo, hintInfo,
+        WINDOW_GadgetHelp, TRUE,
         WA_InnerWidth, 500,
         WA_InnerHeight, 350,
         WINDOW_ParentGroup, data->main_layout_obj = VLayoutObject,

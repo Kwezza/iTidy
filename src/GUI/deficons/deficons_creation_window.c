@@ -158,7 +158,7 @@ typedef struct {
 
 /* Folder icon mode chooser labels (matches ITIDY_FOLDER_ICON_MODE_* constants) */
 static STRPTR folder_mode_labels[] = {
-    "Smart (Create Folder If It Has Icons Inside)",
+    "Smart (When Folder Has Icons)",
     "Always Create",
     "Never Create",
     NULL
@@ -190,16 +190,16 @@ static STRPTR thumbnail_border_labels[] = {
     NULL
 };
 
-/* Max icon colors chooser labels (indices 0-8) */
+/* Max icon colours chooser labels (indices 0-8) */
 static STRPTR max_colors_labels[] = {
-    "4 colors",
-    "8 colors",
-    "16 colors",
+    "4 colours",
+    "8 colours",
+    "16 colours",
     "GlowIcons palette (29 colours)",    /* ITIDY_MAX_COLORS_HARMONISED_INDEX */
-    "32 colors",
-    "64 colors",
-    "128 colors",
-    "256 colors (full)",
+    "32 colours",
+    "64 colours",
+    "128 colours",
+    "256 colours (full)",
     "Ultra (256 + detail boost)",         /* ITIDY_MAX_COLORS_ULTRA_INDEX */
     NULL
 };
@@ -640,30 +640,30 @@ static BOOL create_window(DefIconsCreationWindow *win)
     static struct HintInfo hintInfo[] =
     {
         {GID_CLICKTAB,                -1, "", 0},
-        {GID_FOLDER_MODE_CHOOSER,     -1, "Creates missing drawer icons. \"Smart\" scans the subfolder to see whether it contains icons or content that needs icons. If it does, it creates a drawer icon.", 0},
-        {GID_SKIP_WHDLOAD_CB,         -1, "When enabled, folders with a WHDLoad slave (*.slave) are skipped. The WHDLoad drawer icon is still created, but sub-folders are skipped.", 0},
-        {GID_TEXT_PREVIEW_CHECKBOX,   -1, "When enabled, iTidy can create thumbnail-style icons for text files by rendering the file contents onto the icon.", 0},
-        {GID_MANAGE_TEXT_TEMPLATES,   -1, "Opens the Text Templates window to edit how text previews are rendered.", 0},
-        {GID_PICTURE_PREVIEW_CHECKBOX,-1, "Creates thumbnail icons for recognised picture files (formats selected below).", 0},
-        {GID_FMT_ILBM_CB,             -1, "Creates thumbnails for Amiga IFF ILBM/PBM images.", 0},
-        {GID_FMT_JPEG_CB,             -1, "Creates thumbnails for JPEG images (slow to decode on 68k).", 0},
-        {GID_FMT_PNG_CB,              -1, "Creates thumbnails for PNG images and supports transparency.", 0},
-        {GID_FMT_ACBM_CB,             -1, "Creates thumbnails for ACBM (Amiga Continuous Bitmap) images. This is a rare Amiga bitmap format, often seen in older demos or game asset data.", 0},
-        {GID_FMT_GIF_CB,              -1, "Creates thumbnails for GIF images and supports transparency.", 0},
-        {GID_FMT_OTHER_CB,            -1, "Other image formats (not covered above) if supported by installed DataTypes and DefIcons.", 0},
-        {GID_FMT_BMP_CB,              -1, "Creates thumbnails for BMP images.", 0},
-        {GID_REPLACE_THUMBNAILS_CB,   -1, "When enabled, iTidy will delete and recreate any image thumbnail icons it previously made (identified by the ITIDY_CREATED ToolType). User-placed icons are never affected.", 0},
-        {GID_REPLACE_TEXT_PREVIEWS_CB,-1, "When enabled, iTidy will delete and recreate any text preview icons it previously made. Useful after changing rendering settings. User-placed icons are never affected.", 0},
-        {GID_ICON_SIZE_CHOOSER,       -1, "Sets the thumbnail canvas size used inside generated icons.", 0},
-        {GID_THUMBNAIL_BORDERS_CHOOSER,-1, "Border style for thumbnail icons. Workbench: classic WB frame around the icon. Bevel: inner highlight drawn onto the image pixels (top-left bright, bottom-right dark). Smart modes skip the effect for transparent images.", 0},
-        {GID_UPSCALE_THUMBNAILS_CB,   -1, "If enabled, small images are scaled up to fill the thumbnail area.", 0},
-        {GID_MAX_COLORS_CHOOSER,      -1, "Limits the number of colours used in thumbnails. Lower is faster; higher looks better.", 0},
-        {GID_DITHER_METHOD_CHOOSER,   -1, "Selects dithering when reducing colours.", 0},
-        {GID_LOWCOLOR_MAPPING_CHOOSER,-1, "Palette mapping used at 4 or 8 colours (disabled above 8 colours / Ultra).", 0},
-        {GID_DEFICONS_CREATION_SETUP,  -1, "", 0},
-        {GID_DEFICONS_EXCLUDE_PATHS,     -1, "", 0},
-        {GID_OK,                      -1, "Saves changes and closes the window.", 0},
-        {GID_CANCEL,                  -1, "Closes the window without saving changes.", 0},
+        {GID_FOLDER_MODE_CHOOSER,     -1, "Controls whether iTidy creates drawer icons for folders that do not already have them.", 0},
+        {GID_SKIP_WHDLOAD_CB,         -1, "When enabled, files inside WHDLoad game folders are skipped during icon creation. The WHDLoad folder icon itself is still created.", 0},
+        {GID_TEXT_PREVIEW_CHECKBOX,   -1, "When enabled, iTidy renders a preview of a text file's contents onto the icon image.", 0},
+        {GID_MANAGE_TEXT_TEMPLATES,   -1, "Opens the Text Templates window to view and edit how different text file types are rendered as icon previews.", 0},
+        {GID_PICTURE_PREVIEW_CHECKBOX,-1, "When enabled, iTidy creates thumbnail icons for recognised image files by generating a miniature version of the image.", 0},
+        {GID_FMT_ILBM_CB,             -1, "Enable thumbnail creation for Amiga IFF ILBM and PBM images.", 0},
+        {GID_FMT_JPEG_CB,             -1, "Enable thumbnail creation for JPEG images. Disabled by default because JPEG decoding is slow on 68k hardware.", 0},
+        {GID_FMT_PNG_CB,              -1, "Enable thumbnail creation for PNG images. Supports transparency.", 0},
+        {GID_FMT_ACBM_CB,             -1, "Enable thumbnail creation for Amiga Continuous Bitmap images, a rare format used in some older demos and game assets.", 0},
+        {GID_FMT_GIF_CB,              -1, "Enable thumbnail creation for GIF images. Supports transparency.", 0},
+        {GID_FMT_OTHER_CB,            -1, "Enable thumbnail creation for other image formats supported by installed DataTypes and DefIcons.", 0},
+        {GID_FMT_BMP_CB,              -1, "Enable thumbnail creation for Windows BMP images.", 0},
+        {GID_REPLACE_THUMBNAILS_CB,   -1, "When enabled, image thumbnail icons previously created by iTidy are deleted and regenerated. User-placed icons are not affected.", 0},
+        {GID_REPLACE_TEXT_PREVIEWS_CB,-1, "When enabled, text preview icons previously created by iTidy are deleted and regenerated. User-placed icons are not affected.", 0},
+        {GID_ICON_SIZE_CHOOSER,       -1, "Sets the canvas size used for thumbnail icons. Larger sizes show more detail but take up more screen space.", 0},
+        {GID_THUMBNAIL_BORDERS_CHOOSER,-1, "Controls the border style drawn around thumbnail icons. The \"Smart\" modes skip the border on images with transparency.", 0},
+        {GID_UPSCALE_THUMBNAILS_CB,   -1, "When enabled, images smaller than the preview size are scaled up to fill the thumbnail area.", 0},
+        {GID_MAX_COLORS_CHOOSER,      -1, "Sets the maximum number of colours used in generated thumbnail icons. Higher counts look better but produce larger icon files.", 0},
+        {GID_DITHER_METHOD_CHOOSER,   -1, "Selects the dithering method used when reducing colours. Disabled when \"Max Colours\" is set to 256 or Ultra.", 0},
+        {GID_LOWCOLOR_MAPPING_CHOOSER,-1, "Controls the colour palette used at very low colour counts (4 or 8). Only enabled when \"Max Colours\" is set to 4 or 8.", 0},
+        {GID_DEFICONS_CREATION_SETUP,  -1, "Opens the DefIcons Categories window to select which file types should receive icons during processing.", 0},
+        {GID_DEFICONS_EXCLUDE_PATHS,   -1, "Opens the Exclude Paths window to manage folders that should be skipped during icon creation.", 0},
+        {GID_OK,                      -1, "Accepts the current settings and closes the window. Changes are applied to the active session.", 0},
+        {GID_CANCEL,                  -1, "Discards all changes and closes the window. The original settings are preserved.", 0},
         {-1, -1, NULL, 0}
     };
 
@@ -718,7 +718,7 @@ static BOOL create_window(DefIconsCreationWindow *win)
                         /* WHDLoad skip checkbox */
                         LAYOUT_AddChild, win->whdload_skip_cb = (Object *)CheckBoxObject,
                             GA_ID,              GID_SKIP_WHDLOAD_CB,
-                            GA_Text,            "Skip icon creation inside WHDLoad folders",
+                            GA_Text,            "Skip Files In WHDLoad Folders",
                             GA_Selected,        win->prefs->deficons_skip_whdload_folders,
                             GA_RelVerify,       TRUE,
                             GA_TabCycle,        TRUE,
@@ -928,7 +928,7 @@ static BOOL create_window(DefIconsCreationWindow *win)
 
                             LAYOUT_AddChild, win->upscale_thumbnails_cb = (Object *)CheckBoxObject,
                                 GA_ID,              GID_UPSCALE_THUMBNAILS_CB,
-                                GA_Text,            "Upscale Small Images To Icon Size",
+                                GA_Text,            "Upscale Small Images",
                                 GA_Selected,        win->prefs->deficons_upscale_thumbnails,
                                 GA_RelVerify,       TRUE,
                                 GA_TabCycle,        TRUE,

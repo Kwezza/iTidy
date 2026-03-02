@@ -95,7 +95,7 @@ static void apply_prefs_to_gadgets(struct iTidyAdvancedWindow *adv_data, const L
 static void save_settings_from_gadgets(struct iTidyAdvancedWindow *adv_data);
 
 /* Labels for Choosers and ClickTabs (Static const) */
-static STRPTR aspect_labels_str[] = { "Tall (0.75)", "Square (1.0)", "Compact (1.3)", "Classic (1)", "Wide (2.0)", NULL };
+static STRPTR aspect_labels_str[] = { "Tall (0.75)", "Square (1.0)", "Compact (1.3)", "Classic (1.0)", "Wide (2.0)", NULL };
 static STRPTR overflow_labels_str[] = { "Expand Horizontally", "Expand Vertically", "Expand Both", NULL };
 static STRPTR width_labels_str[] = { "Auto", "30%", "50%", "70%", "90%", "100%", NULL };
 static STRPTR align_labels_str[] = { "Top", "Middle", "Bottom", NULL };
@@ -180,36 +180,24 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
     /* Define hint info for gadget help (static so it persists) */
     static struct HintInfo hintInfo[] =
     {
-        {ITIDY_ADV_GAID_ROOT_LAYOUT, -1, "", 0},
-        {ITIDY_ADV_GAID_CLICKTAB, -1, "", 0},
-        {ITIDY_ADV_GAID_TAB_LAYOUT, -1, "", 0},
-        {ITIDY_ADV_GAID_ASPECT_CHOOSER, -1, "Sets the target width-to-height shape for drawer windows.", 0},
-        {ITIDY_ADV_GAID_OVERFLOW_CHOOSER, -1, "Choose what iTidy does when a drawer has more icons than fit comfortably on screen.", 0},
-        {ITIDY_ADV_GAID_VERT_ALIGN_CHOOSER, -1, "Sets how icons are aligned vertically when a row contains icons of different heights.", 0},
-        {ITIDY_ADV_GAID_TAB_DENSITY, -1, "", 0},
-        {ITIDY_ADV_GAID_SPACING_X, -1, "Sets the horizontal gap between icons (in pixels).", 0},
-        {ITIDY_ADV_GAID_SPACING_Y, -1, "Sets the vertical gap between icons (in pixels).", 0},
-        {ITIDY_ADV_GAID_SPACE_DENSITY, -1, "", 0},
-        {ITIDY_ADV_GAID_TAB_LIMITS, -1, "", 0},
-        {ITIDY_ADV_GAID_MIN_ICONS_ROW, -1, "Minimum columns. Prevents drawers becoming one long vertical list.", 0},
-        {ITIDY_ADV_GAID_AUTO_MAX_CHECK, -1, "When enabled (default), iTidy automatically chooses the maximum columns based on the window width.", 0},
-        {ITIDY_ADV_GAID_MAX_ICONS_ROW, -1, "Maximum columns (used only when \"Auto-Calc Max Icons\" is disabled).", 0},
-        {ITIDY_ADV_GAID_MAX_WIDTH_CHOOSER, -1, "Limits how wide drawer windows may become (percentage of screen width).", 0},
-        {ITIDY_ADV_GAID_TAB_COLUMNS_GROUPS, -1, "", 0},
-        {ITIDY_ADV_GAID_COLUMN_LAYOUT_CHECK, -1, "When enabled, iTidy uses a column-based layout rather than free-flow positioning.", 0},
-        {ITIDY_ADV_GAID_BLOCK_GAP_CHOOSER, -1, "Controls spacing between icon groups when using the \"Grouped by Type\" order mode.", 0},
-        {ITIDY_ADV_GAID_SPACE_COLUMNS, -1, "", 0},
-        {ITIDY_ADV_GAID_TAB_FILTERS_MISC, -1, "", 0},
-        {ITIDY_ADV_GAID_OPTIMIZE_COLS_CHECK, -1, "When enabled (default), each column is sized to its widest icon instead of forcing all columns to the same width.", 0},
-        {ITIDY_ADV_GAID_REVERSE_SORT_CHECK, -1, "Reverses the current sort direction (Z->A, newest-first, or largest-first depending on sort mode).", 0},
-        {ITIDY_ADV_GAID_STRIP_BORDERS_CHECK, -1, "Strips NewIcons borders during processing (requires icon.library v44+). This permanently modifies those icons.", 0},
-        {ITIDY_ADV_GAID_SKIP_HIDDEN_CHECK, -1, "When enabled (default), iTidy skips folders without .info files during recursive processing.", 0},
-        {ITIDY_ADV_GAID_BUTTON_LAYOUT, -1, "", 0},
-        {ITIDY_ADV_GAID_BUTTON_COL1, -1, "", 0},
-        {ITIDY_ADV_GAID_BUTTON_COL2, -1, "", 0},
-        {ITIDY_ADV_GAID_DEFAULTS_BUTTON, -1, "Resets these settings to defaults.", 0},
-        {ITIDY_ADV_GAID_CANCEL_BUTTON, -1, "Discards changes and returns to the main window.", 0},
-        {ITIDY_ADV_GAID_OK_BUTTON, -1, "Accepts changes and closes this window. Use the main window's \"Save\" menu item to write settings to disk.", 0},
+        {ITIDY_ADV_GAID_ASPECT_CHOOSER, -1, "Sets the target width-to-height proportions for drawer windows when iTidy resizes them.", 0},
+        {ITIDY_ADV_GAID_OVERFLOW_CHOOSER, -1, "Controls how iTidy expands a drawer window when it has more icons than fit at the target proportions.", 0},
+        {ITIDY_ADV_GAID_VERT_ALIGN_CHOOSER, -1, "Sets how icons are aligned vertically within a row when icons of different heights appear in the same row.", 0},
+        {ITIDY_ADV_GAID_SPACING_X, -1, "Sets the horizontal gap between icons in pixels. Lower values pack icons tighter; higher values give more breathing room.", 0},
+        {ITIDY_ADV_GAID_SPACING_Y, -1, "Sets the vertical gap between icons in pixels. Lower values pack icons tighter; higher values give more breathing room.", 0},
+        {ITIDY_ADV_GAID_MIN_ICONS_ROW, -1, "Sets the minimum number of columns in a drawer window, preventing icons from being arranged in one long vertical list.", 0},
+        {ITIDY_ADV_GAID_AUTO_MAX_CHECK, -1, "When enabled, the maximum number of columns is calculated automatically based on window width and screen size.", 0},
+        {ITIDY_ADV_GAID_MAX_ICONS_ROW, -1, "Sets the maximum number of columns. Only used when \"Auto-Calc Max Icons\" is turned off.", 0},
+        {ITIDY_ADV_GAID_MAX_WIDTH_CHOOSER, -1, "Limits how wide drawer windows may become, as a percentage of screen width. Prevents windows from filling the entire screen.", 0},
+        {ITIDY_ADV_GAID_COLUMN_LAYOUT_CHECK, -1, "When enabled, icons are arranged in strict vertical columns. When disabled, a free-flow row-based layout is used.", 0},
+        {ITIDY_ADV_GAID_BLOCK_GAP_CHOOSER, -1, "Controls the spacing between icon groups when \"Grouping\" on the main window is set to \"Grouped By Type\".", 0},
+        {ITIDY_ADV_GAID_OPTIMIZE_COLS_CHECK, -1, "When enabled, each column is sized to fit its widest icon, producing a more compact and visually balanced layout.", 0},
+        {ITIDY_ADV_GAID_REVERSE_SORT_CHECK, -1, "Reverses the sort direction. Applies to name (Z-A), date (newest first), and size (largest first) sorting.", 0},
+        {ITIDY_ADV_GAID_STRIP_BORDERS_CHECK, -1, "Permanently strips the black border from NewIcons. Requires icon.library v44 or later. Enable backups before using this option.", 0},
+        {ITIDY_ADV_GAID_SKIP_HIDDEN_CHECK, -1, "When enabled, folders without a .info file are skipped during recursive processing, as they are not visible in Workbench.", 0},
+        {ITIDY_ADV_GAID_DEFAULTS_BUTTON, -1, "Resets all settings in this window to their factory defaults. A confirmation requester is shown before the reset takes place.", 0},
+        {ITIDY_ADV_GAID_CANCEL_BUTTON, -1, "Discards all changes and returns to the main window. The original settings are preserved unchanged.", 0},
+        {ITIDY_ADV_GAID_OK_BUTTON, -1, "Accepts the current settings and closes the window. Changes are applied to the session but not saved to disk.", 0},
         {-1, -1, NULL, 0}
     };
 
@@ -456,7 +444,7 @@ BOOL open_itidy_advanced_window(struct iTidyAdvancedWindow *adv_data,
                                 GA_Selected, prefs->stripNewIconBorders,
                                 CHECKBOX_TextPlace, PLACETEXT_RIGHT,
                             TAG_END),
-                            CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Strip Newicons Borders (Permanent)", TAG_END),
+                            CHILD_Label, NewObject(LABEL_GetClass(), NULL, LABEL_Text, "Strip Newicons Borders", TAG_END),
                             
                             LAYOUT_AddChild, adv_data->gadgets[ITIDY_ADV_SKIP_HIDDEN_CHECK] = NewObject(CHECKBOX_GetClass(), NULL,
                                 GA_ID, ITIDY_ADV_GAID_SKIP_HIDDEN_CHECK,

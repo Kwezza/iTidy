@@ -2498,6 +2498,21 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
         return FALSE;
     }
     
+    /* Hint/tooltip info for gadget help */
+    static struct HintInfo hintInfo[] =
+    {
+        {GID_TOOL_FOLDER_GETFILE,        -1, "Select the root folder to scan for default tool information. Drawers only.", 0},
+        {GID_TOOL_SCAN_BUTTON,           -1, "Starts a recursive scan of the selected folder to find all default tools referenced by icons. Opens a progress window during scanning.", 0},
+        {GID_TOOL_FILTER_CHOOSER,        -1, "Filters the tool list to show all tools, only valid tools, or only missing tools. Disabled until tool data is loaded.", 0},
+        {GID_TOOL_LIST_LISTBROWSER,      -1, "Shows all discovered default tools, how many icons reference each one, and whether the tool exists on disk. Click a row for details.", 0},
+        {GID_TOOL_DETAILS_LISTBROWSER,   -1, "Shows details of the selected tool: name, status, version string, and the list of icon files that reference it.", 0},
+        {GID_TOOL_REPLACE_BATCH_BUTTON,  -1, "Opens the Replace Default Tool window to update all icons that reference the selected tool at once.", 0},
+        {GID_TOOL_REPLACE_SINGLE_BUTTON, -1, "Opens the Replace Default Tool window to update the default tool in one specific icon file selected in the details panel.", 0},
+        {GID_TOOL_RESTORE_TOOLS_BUTTON,  -1, "Opens the Restore Default Tools window to revert previous default tool replacements from iTidy's backup records.", 0},
+        {GID_TOOL_CLOSE_BUTTON,          -1, "Closes the Default Tool Analysis window.", 0},
+        {-1, -1, NULL, 0}
+    };
+
     /* Create the ReAction window object */
     tool_data->window_obj = NewObject(WINDOW_GetClass(), NULL,
         WA_Title, TOOL_WINDOW_TITLE,
@@ -2519,6 +2534,8 @@ BOOL open_tool_cache_window(struct iTidyToolCacheWindow *tool_data)
         WA_NoCareRefresh, TRUE,
         WINDOW_Position, WPOS_CENTERSCREEN,
         WA_IDCMP, IDCMP_GADGETDOWN | IDCMP_GADGETUP | IDCMP_CLOSEWINDOW | IDCMP_NEWSIZE | IDCMP_MENUPICK,
+        WINDOW_HintInfo, hintInfo,
+        WINDOW_GadgetHelp, TRUE,
         
         WINDOW_ParentGroup, NewObject(LAYOUT_GetClass(), NULL,
             LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
