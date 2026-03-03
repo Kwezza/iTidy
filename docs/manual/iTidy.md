@@ -1,10 +1,8 @@
 # iTidy v2.0
 
-**A Workbench icon and window tidy tool for AmigaOS 3.2**
+**A Workbench Icon & Window Tidy Tool for AmigaOS 3.2+**
 
-iTidy tidies Workbench drawer icon layouts and resizes drawer windows so they fit their contents more consistently. It can also create missing icons using Workbench 3.2's DefIcons system (including optional thumbnail previews), scan and repair broken Default Tools, and (optionally) create LhA-based backups so you can roll back icon/layout changes later.
-
-**Note:** iTidy works by reading and writing Workbench `.info` files and drawer window layout data. It does not modify the contents of your data files.
+iTidy is a small Workbench utility I wrote after getting fed up with the mess left behind by large archive extractions -- especially when unpacking thousands of WHDLoad games and demos into drawer trees. The aim was simple: point it at a folder, let it recurse through everything underneath, and have it tidy icon layouts and drawer windows in a consistent way. Version 2.0 adds a ReAction GUI (Workbench 3.2 only), icon creation using the DefIcons system, and a much expanded set of options.
 
 
 ## Table of Contents
@@ -31,927 +29,896 @@ iTidy tidies Workbench drawer icon layouts and resizes drawer windows so they fi
 
 ## Requirements
 
-iTidy v2.0 requires:
-
-- AmigaOS Workbench 3.2 or newer (ReAction GUI)
+- AmigaOS Workbench 3.2 or newer (ReAction GUI requires WB 3.2)
 - 68000 CPU or better
 - At least 1 MB of free memory
 - At least 1 MB of free storage space in the installation location (more as backups accumulate)
-- For backup and restore features: LhA installed in `C:`
-  - Download LhA from: http://aminet.net/package/util/arc/lha
+- For backup and restore features: LhA must be installed in `C:`
 
 ---
 
 ## Introduction
 
-### Purpose
+iTidy focuses on a few areas that tend to cause friction once your disks and drawers start to grow.
 
-iTidy is a Workbench maintenance tool. It focuses on jobs that otherwise require lots of manual Workbench work:
+**Manual tidying gets tedious.** Workbench's built-in "Clean Up" works one drawer at a time. iTidy can walk through entire directory trees in one go.
 
-- tidying icon positions into a consistent grid
-- resizing drawer windows to match the resulting layout
-- optionally creating missing icons so everything in a drawer can be laid out
-- optionally repairing broken Default Tools so icons open cleanly
+**Layouts drift over time.** Changing screen modes, fonts, or resolutions often leaves icons overlapping or windows sized oddly. iTidy re-arranges icons into a grid, with adjustable spacing and proportions.
 
-### What iTidy reads and writes
+**Missing icons.** Large archive extractions often leave files sitting in drawers with no icons at all. Version 2.0 can create new icons automatically using the DefIcons system, including image thumbnails and text file previews.
 
-You should expect iTidy to touch these items on disk:
+**Default tools go missing.** Older archives often reference tools that aren't present on a modern setup, resulting in "Unable to open your tool" errors. iTidy scans for missing tools and lets you fix them.
 
-- **Drawer and file icons:** iTidy reads and writes Workbench `.info` files.
-  - Icon positions, tooltypes, and default tools live in these `.info` files.
-  - If icon creation is enabled, iTidy may create new `.info` files for items that previously had none.
+**No safety net for large changes.** iTidy includes an optional backup system using LhA, so you can roll back icon and layout changes later if needed.
 
-- **Drawer window snapshots:** Workbench stores drawer window geometry in the drawer's `.info` file.
-  - When iTidy resizes a drawer window, it writes the new window geometry back to the `.info` file.
+iTidy only touches `.info` files and drawer/window layout information. It never modifies the contents of your data files.
 
-- **Backups (optional):**
-  - Layout backups are stored under `PROGDIR:Backups/Run_0001`, `Run_0002`, ... and contain one `.lha` archive per processed folder plus a `catalog.txt` (when present).
-  - Default tool backups (when enabled in preferences) are stored under `PROGDIR:Backups/tools/YYYYMMDD_HHMMSS/` and contain `session.txt` and `changes.csv`.
+### Safety & Disclaimer
 
-- **DefIcons default tool changes (only if you change them):**
-  - The DefIcons Categories window can write default tool changes directly into template icons under `ENVARC:Sys/`.
+iTidy is free hobby software. It has been tested on real Amiga systems, but it may still have bugs or edge cases I haven't hit yet. If you use iTidy, you do so at your own risk. I can't accept responsibility for data loss, corruption, or any other problems caused by using the software.
 
-iTidy does **not** change the contents of your data files. For example, it does not rewrite documents, archives, or images. (Thumbnail previews and text previews are written into icon images inside `.info` files, not into the original files.)
-
-### Safety and expectations
-
-- iTidy can make lots of changes quickly, especially with recursion enabled. Test on a small drawer first.
-- If you enable backups, you get a practical rollback path for `.info` changes. Backups are not a replacement for your normal backups.
-- If you cancel an operation, changes already written to disk are **not** reverted.
+Before running iTidy for the first time -- especially on large or important partitions -- make sure you have a current, verified backup. If you want to be cautious, try it on a small test folder first.
 
 ---
 
 ## Getting Started
 
-### Purpose
+1. Double-click the iTidy icon to launch it. The main window opens.
 
-Run a simple, safe tidy pass so you can confirm the results match your Workbench setup.
+2. Click the **Folder to tidy** gadget and choose the drawer (or whole partition) you want to process. The selected path appears in the field.
 
-### Typical Workflow
+3. Choose how you want icons grouped using **Grouping** (Folders First is the default).
 
-1. Launch iTidy.
-2. In **Folder to tidy:** choose a small test drawer.
-3. Leave **Grouping** at `Folders First` (default) and **Sort By** at `Name` (default).
-4. Leave **Include Subfolders** off for the first run.
-5. If you want a rollback option, enable **Back Up Layout Before Changes** (requires LhA in `C:`).
-6. Click **Start**.
-7. Watch the progress window and read the final summary before closing it.
+4. If you want iTidy to process everything underneath the chosen folder, enable **Include Subfolders**.
 
-### Settings That Matter
+5. If you want backups before any changes are made, enable **Back Up Layout Before Changes**. LhA must be installed in `C:` for this to work.
 
-- **Back Up Layout Before Changes**
-  - **Effect:** Creates a restore point before `.info` files are modified.
-  - **When to use:** Any time you are tidying more than a small test drawer.
-  - **Gotcha:** If LhA is missing, you will be prompted to continue without backups or cancel.
-  - **Default:** Off.
+6. If you want iTidy to create new icons for files and folders that don't already have them, enable **Create Icons During Tidy**. You can configure which file types get icons, thumbnail settings, and other creation options via **Icon Creation...**.
 
-- **Include Subfolders**
-  - **Effect:** Turns one drawer tidy into a whole tree tidy.
-  - **When to use:** Whole volumes, archive extractions, collections.
-  - **Gotcha:** On classic hardware, very large trees can take a while.
-  - **Default:** Off.
+7. For more control over layout and window sizing, click **Advanced...**.
 
-### Example
+8. Click **Start**. A progress window shows what iTidy is doing. When it finishes, the Cancel button changes to Close.
 
-You unpack a large archive into `Work:Downloads/Unpacked`. The icons are scattered and the drawer window is the wrong size.
-
-1. Set **Folder to tidy** to `Work:Downloads/Unpacked`.
-2. Enable **Back Up Layout Before Changes**.
-3. Click **Start**.
-4. Re-open the drawer in Workbench: icons should appear in a neater grid and the window should be resized to suit.
+**Tip:** For your first run, try a small test folder. If you enable backups, you can always restore afterwards if you want to undo the changes.
 
 ---
 
 ## Main Window
 
-Window title: **iTidy v2.0 - Icon Cleanup Tool**
+The main window is where you choose what to tidy and set the basic options. All other windows are opened from here.
 
-### Purpose
+### Folder Selection
 
-This is the main task window. You pick a target drawer, choose how you want icons grouped and sorted, and start a tidy run. From here you can also open the windows for advanced layout, icon creation, default tool repair, and restores.
+- **Folder to tidy** -- Click this to open a directory requester. The selected drawer path appears in the field afterwards. It defaults to `SYS:` when iTidy first launches.
 
-### Typical Workflow
+### Tidy Options
 
-1. Set **Folder to tidy**.
-2. Choose **Grouping** and **Sort By**.
-3. Decide whether to enable **Include Subfolders**.
-4. Decide whether to enable **Create Icons During Tidy**.
-5. (Optional) Enable **Back Up Layout Before Changes**.
-6. Click **Start** and monitor the progress window.
+- **Grouping** -- Sets how icons are grouped before sorting.
+  - *Folders First* -- Drawer icons are laid out before file icons. **(Default)**
+  - *Files First* -- File icons are laid out before drawer icons.
+  - *Mixed* -- Folders and files are sorted together with no grouping.
+  - *Grouped By Type* -- Icons are arranged in visual groups (Drawers, Tools, Projects, Other). Each group is laid out separately, with a configurable gap between them (see Advanced Settings).
 
-### What happens when you click Start
+  **Note:** When *Grouped By Type* is selected, the Sort By option is disabled because the group order is fixed. Icons within each group are still sorted by name.
 
-During a tidy run you should expect:
+- **Sort By** -- Selects the sort key within the chosen grouping mode.
+  - *Name* -- Sort alphabetically. **(Default)**
+  - *Type* -- Sort by file type.
+  - *Date* -- Sort by modification date.
+  - *Size* -- Sort by file size.
 
-- A progress window titled **iTidy - Progress**.
-- Status messages showing which folder is being processed.
-- Updated `.info` files written to disk as each folder completes.
-- If icon creation is enabled, new `.info` files may appear for items that had none.
+  This option is disabled when Grouping is set to *Grouped By Type*.
 
-If you click Cancel in the progress window and confirm, iTidy stops as soon as practical. Any `.info` files already written remain changed.
+- **Include Subfolders** -- When enabled, iTidy also processes all subfolders under the selected folder. Useful for tidying a whole partition or a large folder tree in one pass. Default: Off.
 
-### Settings That Matter
+- **Create Icons During Tidy** -- When enabled, iTidy creates new `.info` files for files and folders that don't already have them, using the DefIcons system. Files that gain new icons are then included in the layout. Configure what gets icons using the **Icon Creation...** button, including thumbnail icons.   Default: Off.
 
-- **Folder to tidy**
-  - **Effect:** Sets the root drawer iTidy will process.
-  - **When to use:** Choose a drawer, or a whole volume like `Work:`.
-  - **Gotcha:** The path field is read-only; use the requester button.
-  - **Default:** `SYS:`.
+- **Back Up Layout Before Changes** -- When enabled, iTidy creates an LhA backup of each folder's `.info` files before making any changes. Requires LhA in `C:`. If LhA is not found when you click Start with this enabled, iTidy will warn you and offer to continue without backups or cancel. Default: Off.
 
-- **Grouping**
-  - **Effect:** Controls the high-level grouping order before sorting.
-  - **When to use:**
-    - `Folders First` for typical Workbench drawers.
-    - `Grouped By Type` when you want visual blocks (drawers, tools, projects, etc.).
-  - **Gotcha:** When `Grouped By Type` is selected, **Sort By** is disabled. Items within each group are still sorted by name.
-  - **Default:** `Folders First`.
+  This checkbox is kept in sync with the menu item at Settings -> Backups -> Back Up Layout Before Changes.
 
-- **Sort By**
-  - **Effect:** Chooses the sort key inside each grouping.
-  - **When to use:**
-    - `Name` for most drawers.
-    - `Date` for "newest first" clean-ups (combine with Reverse Sort Order in Advanced Settings).
-  - **Gotcha:** Disabled when `Grouping` is `Grouped By Type`.
-  - **Default:** `Name`.
+- **Window Position** -- Controls where drawer windows are placed after iTidy resizes them.
+  - *Center Screen* -- Centres the window on the Workbench screen. **(Default)**
+  - *Keep Position* -- Keeps the window at its current location.
+  - *Near Parent* -- Places the window slightly down and right of its parent (cascading style).
+  - *No Change* -- Resizes the window but does not move it.
 
-- **Include Subfolders**
-  - **Effect:** Processes the entire drawer tree under the selected folder.
-  - **When to use:** Whole collections or partitions.
-  - **Gotcha:** Combine with **Skip Hidden Folders** (Advanced Settings) if you do not want to touch folders that Workbench does not show.
-  - **Default:** Off.
+### Buttons
 
-- **Create Icons During Tidy**
-  - **Effect:** Creates missing `.info` files using DefIcons while tidying, so those items can be included in the layout.
-  - **When to use:** Drawers where you have lots of files without icons.
-  - **Gotcha:** Icon creation can add time, especially with picture previews enabled (and especially JPEG on 68k).
-  - **Default:** Off.
+- **Advanced...** -- Opens the Advanced Settings window for finer control over layout, density, limits, columns, grouping gaps, and filtering.
 
-- **Back Up Layout Before Changes**
-  - **Effect:** Creates LhA backups of `.info` files before modifying them.
-  - **When to use:** Any non-trivial run.
-  - **Gotcha:** Requires LhA in `C:`. If it is missing, you can continue without backups or cancel.
-  - **Default:** Off.
+- **Fix Default Tools...** -- Opens the Default Tool Analysis window, which scans icons for missing or invalid default tools. The scan targets the selected folder and respects the Include Subfolders setting.
 
-- **Window Position**
-  - **Effect:** Controls where resized drawer windows end up.
-  - **When to use:**
-    - `Keep Position` if you have carefully arranged windows.
-    - `Near Parent` if you like cascading drawers.
-  - **Gotcha:** Only affects windows that iTidy actually resizes.
-  - **Default:** `Center Screen`.
+- **Restore Backups...** -- Opens the Restore Backups window. This restores icon/layout backups only. To undo default tool changes, use the Restore Default Tools feature inside the Fix Default Tools window.
 
-- **Advanced... / Icon Creation... / Fix default tools... / Restore backups...**
-  - **Effect:** Opens the related window for the task.
-  - **When to use:** Open these when the defaults are not giving you the result you want.
-  - **Gotcha:** Default Tool Analysis scanning inside that feature is always recursive, regardless of **Include Subfolders**.
+- **Icon Creation...** -- Opens the Icon Creation Settings window to configure thumbnail generation, text previews, folder icons, and DefIcons categories.
 
-- **Presets (open/save/reset)**
-  - **Effect:** Lets you save your current settings to disk and load them later.
-  - **When to use:** Keep different setups (for example, one preset for photo folders and one for source trees).
-  - **Gotcha:** Advanced/Icon Creation changes apply immediately to the session, but are only made permanent when you save a preset.
-  - **Defaults:** Default preset location is `PROGDIR:userdata/Settings/`.
+- **Start** -- Begins processing using the current settings. All current settings are saved to the active preferences before processing starts. A progress window opens showing status during the run.
 
-- **Logging**
-  - **Effect:** Controls how much iTidy writes into `PROGDIR:logs/`.
-  - **When to use:** Set to Info/Debug when diagnosing issues.
-  - **Gotcha:** Logging is disabled by default for performance and disk noise reasons.
-  - **Default:** Disabled.
+- **Exit** -- Closes iTidy.
 
-### Example
+### Menus
 
-You have a drawer `Work:Projects` with a mix of sub-drawers, tools, and documents. You want drawers first, then files alphabetically.
+#### Presets
 
-1. Set **Folder to tidy** to `Work:Projects`.
-2. Leave **Grouping** at `Folders First` and **Sort By** at `Name`.
-3. Enable **Back Up Layout Before Changes**.
-4. Click **Start**.
+| Menu Item | Shortcut | Description |
+|-----------|----------|-------------|
+| Reset To Defaults | Amiga+N | Resets all settings to their default values. The current log level is preserved. |
+| Open Preset... | Amiga+O | Loads a previously saved preferences file. The default location is `PROGDIR:userdata/Settings/`. |
+| Save Preset | Amiga+S | Saves the current settings to the last-used file path. Behaves like Save Preset As if no file has been saved yet. |
+| Save Preset As... | Amiga+A | Opens a requester to choose where to save. Default filename is `iTidy.prefs` in `PROGDIR:userdata/Settings/`. |
+| Quit | Amiga+Q | Closes iTidy. |
+
+#### Settings
+
+| Menu Item | Description |
+|-----------|-------------|
+| Advanced Settings... | Opens the Advanced Settings window. |
+| DefIcons Categories... | Opens the DefIcons category selection window. |
+| Preview Icons... | Opens the Text Templates window. |
+| DefIcons Excluded Folders... | Opens the Exclude Paths window. |
+| Back Up Layout Before Changes? | Toggle checkmark. Kept in sync with the checkbox on the main window. |
+| Logging -- Disabled (Recommended) | Turns off all logging. **(Default)** |
+| Logging -- Debug | Most verbose level, logs everything. |
+| Logging -- Info | Logs informational messages and above. |
+| Logging -- Warning | Logs warnings and errors only. |
+| Logging -- Error | Logs errors only. |
+| Logging -- Open Log Folder | Opens `PROGDIR:logs/` as a Workbench drawer. |
+
+The five logging level items are mutually exclusive.
+
+#### Tools
+
+| Menu Item | Description |
+|-----------|-------------|
+| Restore Layouts... | Opens the Restore Backups window (same as the Restore Backups button). |
+| Restore Default Tools... | Opens the Restore Default Tools window for reverting default tool changes. |
+
+#### Help
+
+| Menu Item | Description |
+|-----------|-------------|
+| iTidy Guide... | Opens `PROGDIR:iTidy.guide` using AmigaGuide. |
+| About | Shows a requester with the version number, description, and copyright notice. |
+
+### Tips
+
+- Save your preferred settings as a preset. Use the LOADPREFS ToolType to load them automatically every time iTidy starts.
+- If you are experimenting, enable backups and start with a small test folder first.
+- You can point iTidy at a whole partition (e.g. `Work:`) to process everything on that volume in one pass.
 
 ---
 
 ## Advanced Settings
 
-Window title: **iTidy - Advanced Settings**
+Open this window with **Advanced...** on the main window, or via the Settings menu. Settings are organised into five tabs. Changes are applied when you click **OK**, or discarded if you click **Cancel** or press Escape. To save settings permanently, use Presets -> Save on the main window.
 
-### Purpose
+### Layout Tab
 
-Fine-tune how iTidy lays out icons and how it resizes drawer windows. Use this when the main window options are not enough (for example, you want stricter column layout, different density, or different behaviour when a drawer has too many icons).
+- **Layout Aspect** -- Sets the target width-to-height shape for drawer windows.
+  - *Tall (0.75)* -- Tall, narrow windows.
+  - *Square (1.0)* -- Roughly square windows.
+  - *Compact (1.3)* -- Slightly wider than tall.
+  - *Classic (1.0)* -- Traditional Workbench-like proportions.
+  - *Wide (2.0)* -- Wider, landscape-oriented windows. **(Default)**
 
-Settings are organised into tabs. Changes apply when you click **OK**. They are not written to disk until you save a preset from the main window.
+- **When Full** -- Controls what iTidy does when a drawer has more icons than fit at the target proportions.
+  - *Expand Horizontally* -- Adds more columns. You will scroll left and right. **(Default)**
+  - *Expand Vertically* -- Adds more rows. You will scroll up and down.
+  - *Expand Both* -- Balances expansion in both directions.
 
-### Typical Workflow
+- **Align Vertically** -- Sets how icons are aligned vertically when a row contains icons of different heights.
+  - *Top* -- Aligns icons to the top of the row.
+  - *Middle* -- Aligns icons to the middle. **(Default)**
+  - *Bottom* -- Aligns icons to the bottom of the row.
 
-1. Open **Advanced...** from the main window.
-2. Adjust one group of settings (for example, Density or Limits).
-3. Click **OK**.
-4. Run a tidy on a test drawer and check the result.
-5. If you want to keep the settings, use Presets -> Save on the main window.
+### Density Tab
 
-### Settings That Matter
+- **Horizontal Spacing** -- Horizontal gap between icons, in pixels. Range: 0 to 20. Default: 8.
+- **Vertical Spacing** -- Vertical gap between icons, in pixels. Range: 0 to 20. Default: 8.
 
-- **Layout Aspect**
-  - **Effect:** Changes the target width-to-height shape iTidy aims for when resizing drawer windows.
-  - **When to use:**
-    - Wider values for widescreen Workbench setups.
-    - Square/tall values for narrow screens or when you prefer taller lists.
-  - **Gotcha:** If a drawer has too many icons to fit, the When Full setting decides how iTidy breaks the target.
-  - **Default:** `Wide (2.0)`.
+### Limits Tab
 
-- **When Full**
-  - **Effect:** Decides whether iTidy adds columns, rows, or both when the target shape cannot fit all icons.
-  - **When to use:**
-    - `Expand Horizontally` if you prefer left/right scrolling.
-    - `Expand Vertically` if you prefer up/down scrolling.
-  - **Gotcha:** This affects how much scrolling you need after the tidy.
-  - **Default:** `Expand Horizontally`.
+- **Icons Per Row: Min** -- Minimum number of columns in a drawer window. Prevents drawers from collapsing to a single-column list. Range: 0 to 30. Default: 2.
 
-- **Horizontal Spacing / Vertical Spacing**
-  - **Effect:** Controls pixel gap between icons.
-  - **When to use:** Increase spacing for readability, reduce it to pack more icons into a smaller window.
-  - **Gotcha:** Very tight spacing can make dense drawers hard to scan visually.
-  - **Default:** 8 / 8.
+- **Auto-Calc Max Icons** -- When enabled, iTidy calculates the maximum columns automatically based on window width and screen size. Default: On. When this is on, the Max field below is disabled.
 
-- **Icons Per Row: Min**
-  - **Effect:** Prevents a drawer from becoming a single narrow column.
-  - **When to use:** Raise it for drawers where you want a more grid-like look.
-  - **Gotcha:** Setting this too high can force wider windows than you expect.
-  - **Default:** 2.
+- **Max** -- Maximum number of columns. Only used when Auto-Calc Max Icons is off. Range: 2 to 40. Default: 10.
 
-- **Auto-Calc Max Icons / Max**
-  - **Effect:** Controls the maximum number of columns.
-  - **When to use:** Turn off Auto-Calc if you want a hard cap.
-  - **Gotcha:** If you disable Auto-Calc and set Max too low, large drawers will grow vertically and require more scrolling.
-  - **Default:** Auto-Calc On.
+- **Max Window Width** -- Limits how wide drawer windows may become, as a percentage of screen width.
+  - *Auto* -- No fixed limit.
+  - *30%* -- Up to 30% of screen width.
+  - *50%* -- Up to 50% of screen width.
+  - *70%* -- Up to 70% of screen width. **(Default)**
+  - *90%* -- Up to 90% of screen width.
+  - *100%* -- Full screen width.
 
-- **Max Window Width**
-  - **Effect:** Caps how wide iTidy will make a drawer window.
-  - **When to use:** Prevent windows spanning the whole Workbench screen.
-  - **Gotcha:** Combined with high Min icons-per-row it may force taller windows instead.
-  - **Default:** `70%`.
+### Columns & Groups Tab
 
-- **Column Layout / Auto-Fit Columns**
-  - **Effect:** Switches to stricter column behaviour and optionally sizes each column to its widest icon.
-  - **When to use:** When you want predictable vertical columns.
-  - **Gotcha:** Column layout can look "rigid" compared to free-flow layout.
-  - **Default:** Column Layout Off; Auto-Fit Columns On.
+- **Column Layout** -- When enabled, icons are arranged in strict vertical columns. When disabled, a free-flow row-based layout is used. Default: Off.
 
-- **Gap Between Groups**
-  - **Effect:** Controls the visual spacing between groups when Grouping is `Grouped By Type`.
-  - **When to use:** When grouped layouts look too cramped or too loose.
-  - **Gotcha:** Empty groups are skipped, so gaps only appear between groups that exist.
-  - **Default:** Medium.
+- **Gap Between Groups** -- Controls spacing between icon groups when Grouping is set to *Grouped By Type*.
+  - *Small* -- Small gap.
+  - *Medium* -- Medium gap. **(Default)**
+  - *Large* -- Large gap.
 
-- **Reverse Sort Order**
-  - **Effect:** Reverses name/date/size sort.
-  - **When to use:** "Newest first" or "largest first" views.
-  - **Gotcha:** Has no effect if the underlying sort does not apply (for example, Sort By disabled under Grouped By Type).
-  - **Default:** Off.
+  **Note:** Groups with no icons are skipped and no gap is added for them.
 
-- **Strip Newicons Borders**
-  - **Effect:** Permanently removes the black border from NewIcons.
-  - **When to use:** Only if you know you want this look.
-  - **Gotcha:** This permanently modifies icons. Enable layout backups first. Requires `icon.library` v44 or later.
-  - **Default:** Off.
+### Filters & Misc Tab
 
-- **Skip Hidden Folders**
-  - **Effect:** During recursive tidies, skips folders that have no corresponding `.info` file (folders "hidden" from Workbench).
-  - **When to use:** When you want iTidy to behave like Workbench (only touch folders that are visible).
-  - **Gotcha:** If you expected recursion to include every directory on disk, this will skip some.
-  - **Default:** On.
+- **Auto-Fit Columns** -- When enabled, each column is sized to fit its widest icon rather than forcing all columns to the same width. Produces a more compact layout. Default: On.
 
-### Example
+- **Reverse Sort Order** -- Reverses the sort direction (Z to A, newest first, or largest first, depending on the sort mode). Default: Off.
 
-You have a drawer full of wide thumbnails and you do not want the window to become extremely wide.
+- **Strip Newicons Borders** -- Removes the icon border from NewIcons. Requires icon.library v44 or later.  Default: Off.
 
-1. Open **Advanced...**.
-2. Set **Max Window Width** to `50%`.
-3. Leave **Layout Aspect** at `Wide (2.0)`.
-4. Click **OK** and run a tidy.
+- **Skip Hidden Folders** -- When enabled, iTidy skips folders that do not have a corresponding `.info` file during recursive processing. Folders without `.info` files are not visible in Workbench. Default: On.
+
+### Buttons
+
+- **Defaults** -- Resets all settings in this window to factory defaults. A confirmation requester is shown first. Does not save anything to disk.
+- **Cancel** -- Discards all changes and returns to the main window.
+- **OK** -- Accepts the current settings and closes the window. Changes apply to the session but are not saved to disk.
+
+### Default Values Summary
+
+| Setting | Default |
+|---------|---------|
+| Layout Aspect | Wide (2.0) |
+| When Full | Expand Horizontally |
+| Align Vertically | Middle |
+| Horizontal Spacing | 8 |
+| Vertical Spacing | 8 |
+| Icons Per Row: Min | 2 |
+| Auto-Calc Max Icons | On |
+| Max | 10 |
+| Max Window Width | 70% |
+| Column Layout | Off |
+| Gap Between Groups | Medium |
+| Auto-Fit Columns | On |
+| Reverse Sort Order | Off |
+| Strip NewIcon Borders | Off |
+| Skip Hidden Folders | On |
 
 ---
 
 ## Icon Creation Settings
 
-Window title: **iTidy - Icon Creation Settings**
+Open this window with **Icon Creation...** on the main window. It controls how iTidy creates new icons for files and folders that do not already have `.info` files, using the DefIcons system. Settings are organised into three tabs: Create, Rendering, and DefIcons.
 
-### Purpose
+Changes are applied when you click **OK**, or discarded if you click **Cancel**.
 
-Configure how iTidy creates missing `.info` files during a tidy run, including optional thumbnail previews for pictures and text files.
+### Create Tab
 
-This feature uses the DefIcons type system (Workbench 3.2) to decide what type each file is and what base icon it should use.
+- **Folder Icons** -- Controls whether iTidy creates drawer icons for folders that don't have them.
+  - *Smart (When Folder Has Icons)* -- Only creates a folder icon if the folder will end up showing something on Workbench after the run. **(Default)**
+  - *Always Create* -- Creates a folder icon for every folder that is missing one..
+  - *Never Create* -- Never creates folder icons.
 
-### Typical Workflow
+  **How Smart works**
+  Smart mode is designed to avoid creating folder icons for folders that would still look “empty” on Workbench.
 
-1. In the main window, enable **Create Icons During Tidy**.
-2. Open **Icon Creation...**.
-3. Decide whether you want picture previews and/or text previews.
-4. If you want picture previews, decide which formats to enable.
-5. Click **OK**.
-6. Run a tidy.
+  - **If you are not processing subfolders (non-recursive):**  
+    iTidy looks inside each subfolder (just the files in that folder, not deeper folders).  
+    1) It first checks for any existing icons (`.info` files). If it finds one, it creates the folder icon straight away.  
+    2) If there are no icons, it then checks the files in the folder to see if DefIcons would normally give any of them an icon. As soon as it finds one that would get an icon, it stops and creates the folder icon.
 
-### Settings That Matter
+  - **If you are processing subfolders (recursive):**  
+    iTidy does not do a separate “look ahead” scan. Instead, it processes the deepest folders first, creating icons as needed, then works back up.  
+    When it returns to a folder, it creates that folder’s icon only if something inside ended up getting an icon (or was already visible).  
+    This makes recursive Smart mode faster, because iTidy learns what’s inside while it’s doing the real work.
 
-- **Folder Icons**
-  - **Effect:** Controls whether iTidy creates missing drawer icons.
-  - **When to use:**
-    - `Smart` for normal use.
-    - `Always Create` if you want every folder to be Workbench-visible.
-  - **Gotcha:** `Smart` only creates a folder icon when the folder actually has work to do.
-  - **Default:** `Smart (When Folder Has Icons)`.
+>   **Note:** Smart mode is quickest when iTidy can decide based on existing icons. If a folder has no icons at all, iTidy may need to ask DefIcons about many files to work out what would get an icon. On a large collection, that can mean a DefIcons ARexx call for every file in every subfolder, which can be slow on Classic hardware.
 
-- **Skip Files In WHDLoad Folders**
-  - **Effect:** When a folder contains a `*.slave`, iTidy does not create icons for files inside it.
-  - **When to use:** WHDLoad collections, where internal files are not meant to be launched.
-  - **Gotcha:** The folder icon itself can still be created.
-  - **Default:** Off.
+- **Skip Files In WHDLoad Folders** -- When enabled, folders containing a WHDLoad slave file (`*.slave`) are skipped during icon creation. The drawer icon for the WHDLoad folder itself is still created, but no icons are generated for files inside it. Default: Off.
 
-- **Text File Previews**
-  - **Effect:** Generates a text preview image on the icon.
-  - **When to use:** Source trees, documentation folders.
-  - **Gotcha:** iTidy reads a limited number of bytes from each file (controlled by template ToolTypes) and renders that, not the whole file.
-  - **Default:** On.
+- **Text File Previews** -- When enabled, iTidy renders a preview of a text file's contents onto the icon image. Default: On.
 
-- **Picture File Previews**
-  - **Effect:** Generates a thumbnail image on the icon.
-  - **When to use:** Image collections.
-  - **Gotcha:** Thumbnail generation can be CPU heavy. See JPEG note below.
-  - **Default:** On.
+- **Manage Templates...** -- Opens the Text Templates window to view and edit the rendering templates used for text preview icons.
 
-- **Picture Formats (ILBM/PNG/GIF/JPEG/BMP/ACBM/Other)**
-  - **Effect:** Limits which image types get thumbnails.
-  - **When to use:** Disable formats you do not need to reduce processing time.
-  - **Gotcha:** `JPEG (Slow)` is disabled by default for performance reasons on 68k.
-  - **Defaults:** ILBM On, PNG On, GIF On, JPEG Off, BMP On, ACBM On, Other On.
+- **Picture File Previews** -- When enabled, iTidy generates thumbnail icons for recognised image files. Default: On.
 
-- **Replace Existing Image Thumbnails Created by iTidy / Replace Existing Text Previews Created by iTidy**
-  - **Effect:** Recreates thumbnails/text previews that iTidy previously created (identified by `ITIDY_CREATED=1` tooltype).
-  - **When to use:** After you change preview size, borders, or templates and want existing generated icons updated.
-  - **Gotcha:** This does not touch icons created by you or other tools.
-  - **Default:** Off.
+  Individual image formats can be enabled or disabled separately:
 
-- **Preview Size**
-  - **Effect:** Controls thumbnail canvas size.
-  - **When to use:** Larger sizes for more detail, smaller for denser drawers.
-  - **Gotcha:** Larger previews usually mean larger `.info` files and more memory/time during creation.
-  - **Default:** `Medium (64x64)`.
+  | Format | Default |
+  |--------|---------|
+  | ILBM (IFF) | On |
+  | PNG | On |
+  | GIF | On |
+  | JPEG (Slow) | Off |
+  | BMP | On |
+  | ACBM | On |
+  | Other | On |
 
-- **Thumbnail Border**
-  - **Effect:** Adds a frame/bevel around thumbnails.
-  - **When to use:** To make thumbnails stand out against busy backgrounds.
-  - **Gotcha:** Smart modes may skip borders on images with transparency.
-  - **Default:** `Bevel (Smart)`.
+  **Note:** JPEG is disabled by default because JPEG decoding is computationally expensive on 68k hardware. Enabling it will significantly slow down icon creation on classic Amiga hardware.
 
-- **Upscale Small Images**
-  - **Effect:** Scales small images up to fill the preview.
-  - **When to use:** When many source images are smaller than your chosen preview size.
-  - **Gotcha:** Upscaling can make small images look soft or blocky.
-  - **Default:** Off.
+- **Replace Existing Image Thumbnails** -- When enabled, iTidy deletes and recreates image thumbnail icons that it previously created (identified by the `ITIDY_CREATED` ToolType). User-placed icons are never affected. Default: Off.
 
-- **Max Colours / Dithering / Low-Colour Palette**
-  - **Effect:** Controls how full-colour images are reduced to an icon-friendly palette.
-  - **When to use:**
-    - Lower colour counts for speed and smaller icon files.
-    - Higher colour counts for quality.
-  - **Gotcha:** At 256 colours (full) and Ultra, Dithering is disabled.
-  - **Default:** Max Colours `256 colours (full)`; Dithering `Auto`.
+- **Replace Existing Text Previews** -- When enabled, iTidy deletes and recreates text preview icons that it previously created. Only icons with the `ITIDY_CREATED` ToolType are affected. Default: Off.
 
-### Performance note: JPEG on 68k
+### Rendering Tab
 
-JPEG decoding is slow on classic 68k hardware. If you enable `JPEG (Slow)` and process a folder with lots of JPEG files, icon creation can dominate the run time.
+These settings control the visual appearance of generated thumbnail icons.
 
-### Example
+- **Preview Size** -- Sets the canvas size for thumbnail icons.
+  - *Small (48x48)* -- Compact thumbnails.
+  - *Medium (64x64)* -- Balanced size and detail. **(Default)**
+  - *Large (100x100)* -- Largest thumbnails with the most detail.
 
-You have a drawer full of PNG screenshots and you want thumbnails, but you do not want a slow run on a 68030.
+- **Thumbnail Border** -- Controls the border style drawn around thumbnails.
+  - *None* -- No border.
+  - *Workbench (Smart)* -- Classic Workbench frame, skipped for images with transparency.
+  - *Workbench (Always)* -- Classic Workbench frame, always applied.
+  - *Bevel (Smart)* -- Inner highlight bevel, skipped for images with transparency. **(Default)**
+  - *Bevel (Always)* -- Inner highlight bevel, always applied.
 
-1. Open **Icon Creation...**.
-2. Leave `PNG` enabled. Leave `JPEG (Slow)` disabled.
-3. Set **Preview Size** to `Small (48x48)`.
-4. Click **OK**, then run a tidy with **Create Icons During Tidy** enabled.
+  The "Smart" modes detect transparent images and skip the border, avoiding borders around irregularly shaped images.
+
+- **Upscale Small Images** -- When enabled, images smaller than the chosen preview size are scaled up to fill the thumbnail area. When disabled, small images are centred at their original size. Default: Off.
+
+- **Max Colours** -- Sets the maximum number of colours in generated icons.
+  - *4 colours* -- Very limited palette.
+  - *8 colours* -- Basic colour range.
+  - *16 colours* -- Moderate colour range.
+  - *GlowIcons palette (29 colours)* -- Standard GlowIcons palette for maximum compatibility.
+  - *32 colours* -- Good colour range.
+  - *64 colours* -- Rich colour range.
+  - *128 colours* -- Near-photographic quality.
+  - *256 colours (full)* -- Full 256-colour palette. **(Default)**
+  - *Ultra (256 + detail boost)* -- 256 colours with enhanced detail processing.
+
+  When Max Colours is set to 256 or Ultra, the Dithering option is disabled. When Max Colours is above 8 (or set to GlowIcons palette or Ultra), the Low-Colour Palette option is disabled.
+
+- **Dithering** -- Selects the dithering method used when reducing colours.
+  - *None* -- Colours are mapped directly.
+  - *Ordered (Bayer 4x4)* -- Systematic dithering pattern, fast and predictable.
+  - *Error Diffusion (Floyd-Steinberg)* -- Diffuses quantisation error to neighbouring pixels. Smoother gradients but can be slower.
+  - *Auto (Based On Colour Count)* -- Automatically selects the best method. **(Default)**
+
+  Disabled when Max Colours is 256 or Ultra.
+
+- **Low-Colour Palette** -- Controls the palette used at very low colour counts (4 or 8 colours).
+  - *Greyscale* -- Maps to a greyscale palette. **(Default)**
+  - *Workbench Palette* -- Maps to the standard Workbench palette.
+  - *Hybrid (Grays + WB Accents)* -- Mostly greyscale with a few Workbench accent colours.
+
+  Only enabled when Max Colours is set to 4 or 8.
+
+### DefIcons Tab
+
+- **Icon Creation Setup...** -- Opens the DefIcons Categories window to select which file types should receive icons during processing.
+- **Exclude Paths...** -- Opens the Exclude Paths window to manage folders that should be skipped during icon creation.
+
+### Default Values Summary
+
+| Setting | Default |
+|---------|---------|
+| Folder Icons | Smart (When Folder Has Icons) |
+| Skip WHDLoad Folders | Off |
+| Text File Previews | On |
+| Picture File Previews | On |
+| ILBM (IFF) | On |
+| PNG | On |
+| GIF | On |
+| JPEG (Slow) | Off |
+| BMP | On |
+| ACBM | On |
+| Other | On |
+| Replace Image Thumbnails | Off |
+| Replace Text Previews | Off |
+| Preview Size | Medium (64x64) |
+| Thumbnail Border | Bevel (Smart) |
+| Upscale Small Images | Off |
+| Max Colours | 256 colours (full) |
+| Dithering | Auto |
+| Low-Colour Palette | Greyscale |
 
 ---
 
 ## DefIcons Categories
 
-Window title: **DefIcons: Icon Creation Setup**
+Open this window from the main window via Settings -> DefIcons Categories... -> DefIcons Categories..., or from Icon Creation Settings -> DefIcons tab -> Icon Creation Setup....
 
-### Purpose
+This window lets you choose which file types iTidy should create icons for. It shows a tree view of all file types defined in the system's DefIcons preferences, with checkboxes to enable or disable each type.
 
-Choose which DefIcons file types should have icons created during processing. This is the main way to stop iTidy creating icons for categories you do not care about.
+The type tree is read from `ENV:deficons.prefs`, managed by the "DefaultIcons" Preferences tool in the Workbench Prefs drawer. If the DefIcons system is not available, this window cannot be used.
 
-This window reads the DefIcons tree from `ENV:deficons.prefs` (managed by the Workbench Preferences tool that configures DefaultIcons/DefIcons).
+### Type Tree
 
-### Typical Workflow
+The tree shows a hierarchical list of file types. Top-level entries are categories (music, picture, tool, etc.). Expanding a category reveals the individual file types within it. Only second-level file types have checkboxes -- root categories and deeper sub-types do not.
 
-1. Open **DefIcons: Icon Creation Setup** from Icon Creation Settings -> DefIcons tab, or from the main menu.
-2. Expand categories and tick/untick file types.
-3. (Optional) Click **Show Default Tools** to see what each type would launch.
-4. Click **OK** to keep checkbox changes, or **Cancel** to discard them.
+- A checked type means iTidy will create icons for files of that type.
+- An unchecked type means iTidy will skip that type during icon creation.
 
-### Settings That Matter
+The following categories are disabled by default because creating icons for them is rarely useful or could affect system files:
 
-- **Type checkboxes**
-  - **Effect:** A checked type means iTidy will create icons for files of that type.
-  - **When to use:** Untick types where icon creation is noisy or pointless.
-  - **Gotcha:** Only second-level types have checkboxes. Root categories and deeper sub-types do not.
-  - **Defaults:** Several categories are disabled by default: `tool`, `prefs`, `iff`, `key`, `kickstart`. Most others are enabled.
+- **tool** -- Executable programs (most already have icons)
+- **prefs** -- Preferences files
+- **iff** -- Generic IFF files
+- **key** -- Keyfiles
+- **kickstart** -- Kickstart ROM images
 
-- **Show Default Tools**
-  - **Effect:** Scans template icons under `ENVARC:Sys/` and shows the assigned default tool next to the type.
-  - **When to use:** When you are diagnosing "Unable to open your tool" problems.
-  - **Gotcha:** This only shows direct template icons. Inheritance is not shown.
+All other types are enabled by default.
 
-- **Change Default Tool...**
-  - **Effect:** Writes a new default tool into the selected type's template icon under `ENVARC:Sys/`.
-  - **When to use:** When you want a type to open in a different viewer/editor.
-  - **Gotcha:** This is written to disk immediately. It is not affected by OK/Cancel.
+### Buttons
 
-### Example
+- **Select All** -- Enables all file types. Use with care -- this may create icons for system files that don't ordinarily have them.
+- **Select None** -- Disables all file types. No icons will be created for any type.
+- **Show Default Tools** -- Scans `ENVARC:Sys/` and displays the default tool assigned to each type next to its name (e.g. `mod  [EaglePlayer]`). This is a one-shot action that updates automatically after you change a default tool.
+- **Change Default Tool...** -- Opens a file requester to assign a new default tool to the selected type. The change is written directly to the type's template icon in `ENVARC:Sys/`. If the selected type does not yet have its own template icon, iTidy creates one by cloning the parent's template first.
 
-You want iTidy to create icons for pictures, but not for executable tools.
+  **Warning:** Default tool changes are applied immediately and saved to disk. They are not subject to the OK/Cancel buttons.
 
-1. Open **DefIcons: Icon Creation Setup**.
-2. Leave picture-related types enabled.
-3. Ensure the `tool` category stays disabled.
-4. Click **OK**.
+- **OK** -- Accepts the current checkbox selections and closes the window.
+- **Cancel** -- Closes the window without saving checkbox changes. Default tool changes already made via "Change Default Tool..." are not affected by Cancel.
 
 ---
 
 ## Text Templates
 
-Window title: **iTidy - DefIcons Text Templates**
+Open this window from the main window via Settings -> DefIcons Categories... -> Preview Icons..., or from Icon Creation Settings -> Create tab -> Manage Templates....
 
-### Purpose
+This window manages the DefIcons text preview templates. Each ASCII sub-type (C source, REXX, HTML, etc.) can have its own template icon (`def_<type>.info`) stored in `PROGDIR:Icons/`. These templates contain ToolTypes that control how iTidy renders text previews onto file icons.
 
-Control how text file previews are rendered onto icons. Templates are standard Workbench icons stored under `PROGDIR:Icons/`.
+### Master and Custom Templates
 
-- Master template: `def_ascii.info` (fallback for all ASCII sub-types)
-- Optional per-type templates: `def_<type>.info` (for example `def_c.info`, `def_rexx.info`)
+- The **master template** is `def_ascii.info`. It is the fallback used for all ASCII sub-types that don't have their own template. It always appears first in the list with status "Master".
+- A **custom template** is a type-specific file such as `def_c.info` or `def_rexx.info`. Status shows "Custom".
+- If no custom template exists for a sub-type, it falls back to the master. Status shows "Using master".
 
-### Typical Workflow
+### Excluded Types
 
-1. Open **Text Templates** (from Icon Creation Settings -> Manage Templates, or from the main menu).
-2. Select a type (for example `c`).
-3. Create a custom template from the master.
-4. Edit ToolTypes in Workbench Information.
-5. Validate ToolTypes in iTidy to catch typos/out-of-range values.
-
-### Settings That Matter
-
-- **Show filter (All / Custom Only / Missing Only)**
-  - **Effect:** Filters the list so you can focus on just missing templates or just custom ones.
-  - **When to use:** Use Missing Only to find types that are still using the master; use Custom Only when cleaning up overrides.
-  - **Gotcha:** The master (`ascii`) row always appears regardless of filter.
-
-- **Master vs custom templates**
-  - **Effect:** If a type has `def_<type>.info`, iTidy uses it. Otherwise it uses `def_ascii.info`.
-  - **When to use:** Create a custom template for types where you want different text size, colours, or layout.
-  - **Gotcha:** If the master template is missing, many operations will fail.
-
-- **Edit tooltypes...**
-  - **Effect:** Opens the effective template icon in Workbench Information (via the WORKBENCH ARexx port).
-  - **When to use:** To change how previews look.
-  - **Gotcha:** Changes are saved in Workbench Information, not inside iTidy.
-
-- **Validate tooltypes**
-  - **Effect:** Checks `ITIDY_*` ToolTypes for typos, formatting, and out-of-range values and shows an effect summary.
-  - **When to use:** After you edit a template.
-  - **Gotcha:** Validation does not change anything; it only reports.
-
-- **Excluded types (EXCLUDETYPE)**
-  - **Effect:** Types listed in `EXCLUDETYPE` inside `def_ascii.info` are excluded from receiving icons.
-  - **When to use:** When you never want previews/icons for certain sub-types.
-  - **Gotcha:** You manage this by editing the master template's ToolTypes.
+The master template's `EXCLUDETYPE` ToolType lists sub-types excluded from icon creation entirely. These appear with status "Excluded". To remove a type from the excluded list, edit the `EXCLUDETYPE` ToolType in `def_ascii.info` directly using the Edit tooltypes action on the master row.
 
 ### Template ToolTypes
 
-Template icons use `ITIDY_*` tooltypes. These control the rendering. iTidy understands (at minimum) the following keys:
+Custom templates can contain the following `ITIDY_*` ToolTypes to control rendering. Defaults are used for any ToolType that is absent.
 
-| ToolType | Purpose |
-|----------|---------|
-| ITIDY_TEXT_AREA | Text draw rectangle (x,y,w,h) |
-| ITIDY_EXCLUDE_AREA | Exclude rectangle (x,y,w,h) |
-| ITIDY_LINE_HEIGHT | Pixel height of each text line |
-| ITIDY_LINE_GAP | Pixel gap between lines |
-| ITIDY_MAX_LINES | Maximum number of lines |
-| ITIDY_CHAR_WIDTH | Pixel width per character |
-| ITIDY_READ_BYTES | Bytes read from the file |
-| ITIDY_BG_COLOR | Background colour index (0-255) |
-| ITIDY_TEXT_COLOR | Text colour index (0-255) |
-| ITIDY_MID_COLOR | Mid-tone colour index (0-255) |
-| ITIDY_DARKEN_PERCENT | Darkening percentage (0-100) |
-| ITIDY_DARKEN_ALT_PERCENT | Alternate darkening percentage (0-100) |
-| ITIDY_ADAPTIVE_TEXT | Adaptive text colouring on/off |
-| ITIDY_EXPAND_PALETTE | Palette expansion on/off |
+**Note:** The text renderer is a micro-preview renderer, not a text layout engine. It fits an entire file's worth of text into an icon a few dozen pixels across by treating each character as a single pixel-width column and each line as a single pixel-tall band. The result looks like ruled-paper marks that suggest text density and structure, not readable characters. All the size and spacing ToolTypes operate in this output-pixel coordinate space, not in font or point sizes.
 
-### Example
+| ToolType | Default | Purpose |
+|----------|---------|------|
+| `ITIDY_TEXT_AREA` | 4-pixel margin | Rectangle (x,y,w,h) defining the safe zone where text is drawn |
+| `ITIDY_EXCLUDE_AREA` | (none) | Rectangle (x,y,w,h) area to skip pixel-by-pixel when drawing |
+| `ITIDY_LINE_HEIGHT` | 1 | Output height in pixels of each rendered line band. At the default of 1, a 60px-tall safe area holds 60 bands. Increase to 2 or 3 for thicker bands and fewer lines per icon. |
+| `ITIDY_LINE_GAP` | 1 | Gap between line bands in pixels *(reserved -- not currently used by the renderer)* |
+| `ITIDY_MAX_LINES` | (auto) | Maximum number of rendered line bands to produce *(reserved -- not currently enforced by the renderer)* |
+| `ITIDY_CHAR_WIDTH` | 0 (auto) | Horizontal pixel step per rendered character (1 = narrow, 2 = normal); 0 = auto-select based on safe area width |
+| `ITIDY_READ_BYTES` | 4096 | Number of bytes to read from the source file |
+| `ITIDY_BG_COLOUR` | (none -- no fill) | Background colour index (0-254) to fill the safe area; absent or -1 = no fill (preserve template pixels). Index 255 is reserved internally and cannot be used. |
+| `ITIDY_TEXT_COLOUR` | (auto) | Text colour index (0-255); ignored when `ITIDY_ADAPTIVE_TEXT=YES` |
+| `ITIDY_MID_COLOUR` | (auto) | Mid-tone colour index (0-255); ignored when `ITIDY_ADAPTIVE_TEXT=YES` |
+| `ITIDY_DARKEN_PERCENT` | 70 | Darkening strength for even output rows (1-100); only active when `ITIDY_ADAPTIVE_TEXT=YES` |
+| `ITIDY_DARKEN_ALT_PERCENT` | 35 | Darkening strength for odd output rows (1-100); only active when `ITIDY_ADAPTIVE_TEXT=YES` |
+| `ITIDY_ADAPTIVE_TEXT` | NO | Master switch for the adaptive rendering path (YES/NO) |
+| `ITIDY_EXPAND_PALETTE` | YES | Pre-adds darkened colour variants derived from the existing palette for smoother tones; only active when `ITIDY_ADAPTIVE_TEXT=YES` |
 
-You want C source previews to show more lines.
+Editing ToolTypes opens the Workbench Information editor via ARexx. Changes are saved there, not within iTidy itself.
 
-1. Open **Text Templates**.
-2. Select type `c`.
-3. Click **Create from master**.
-4. Click **Edit tooltypes...** and increase `ITIDY_MAX_LINES`.
-5. Back in iTidy, click **Validate tooltypes** to confirm the value is recognised.
+#### The two rendering modes: fixed colour vs adaptive
+
+**`ITIDY_ADAPTIVE_TEXT`** is the master switch that divides the ToolTypes into two groups. Getting this right is probably the most important thing to understand about the template system.
+
+**When `ITIDY_ADAPTIVE_TEXT=NO` (the default):**
+- Glyph pixels are painted with fixed palette indices: `ITIDY_TEXT_COLOUR` for medium- and high-density pixels, `ITIDY_MID_COLOUR` for sparse and edge pixels.
+- `ITIDY_DARKEN_PERCENT`, `ITIDY_DARKEN_ALT_PERCENT`, and `ITIDY_EXPAND_PALETTE` are all ignored entirely.
+- If `ITIDY_TEXT_COLOUR` or `ITIDY_MID_COLOUR` are absent, the renderer auto-detects appropriate palette entries (see below).
+
+**When `ITIDY_ADAPTIVE_TEXT=YES`:**
+- `ITIDY_TEXT_COLOUR` and `ITIDY_MID_COLOUR` are ignored for glyph painting. Instead, the renderer samples the background pixel at each position and darkens it. The text inherits the colour of whatever the template artwork has underneath it, which works particularly well with detailed or colourful template art.
+- `ITIDY_DARKEN_PERCENT` (default 70%) controls how strongly even output rows are darkened.
+- `ITIDY_DARKEN_ALT_PERCENT` (default 35%) controls darkening for odd output rows, producing a lighter "ruled paper" stripe effect.
+- `ITIDY_EXPAND_PALETTE` becomes active (see below).
+- `ITIDY_BG_COLOUR` still controls whether the safe area is filled before rendering. When absent (the default), no fill happens -- the template artwork pixels are preserved, which is exactly what you need. Pairing a solid fill with adaptive mode defeats the purpose: once every pixel is the same colour, the text just darkens to one result, no different from fixed colour mode.
+
+At a glance:
+
+| ToolType | ITIDY_ADAPTIVE_TEXT=NO | ITIDY_ADAPTIVE_TEXT=YES |
+|----------|------------------------|------------------------|
+| `ITIDY_TEXT_COLOUR` | Fixed colour for medium/high-density glyph pixels | **Ignored** |
+| `ITIDY_MID_COLOUR` | Fixed colour for sparse/edge glyph pixels | **Ignored** |
+| `ITIDY_DARKEN_PERCENT` | **Ignored** | Darkening strength for even rows (default 70%) |
+| `ITIDY_DARKEN_ALT_PERCENT` | **Ignored** | Darkening strength for odd rows (default 35%) |
+| `ITIDY_EXPAND_PALETTE` | **Ignored** | Adds darkened palette variants for smoother tone gradations |
+| `ITIDY_BG_COLOUR` | No fill (template pixels preserved) | Same default -- no fill. A solid fill defeats adaptive mode; leave absent or set to -1. |
+
+#### `ITIDY_EXPAND_PALETTE` -- depends on `ITIDY_ADAPTIVE_TEXT`
+
+When palette expansion is active (`ITIDY_ADAPTIVE_TEXT=YES` and `ITIDY_EXPAND_PALETTE` not set to `NO`), darkened colour variants are derived from the existing palette and added to it, giving the darken tables more entries to map to and producing smoother tone gradations. It works in two phases: first a 70%-darkened copy of every palette colour is added (used for even output rows), then a 35%-darkened copy (used for odd/alternate rows). Entries that are already close enough to an existing colour are reused rather than duplicated, so no colour slots are wasted. No neutral grey values are inserted -- all new entries come from the template's own colours.
+
+Expansion only fires when the palette has fewer than 128 colours and at least 2. If `ITIDY_ADAPTIVE_TEXT=NO`, this ToolType has no effect regardless of its value.
+
+#### `ITIDY_BG_COLOUR` -- absent means no fill
+
+When `ITIDY_BG_COLOUR` is absent (or set to `-1`), the safe area is left exactly as it is and glyph pixels are painted on top of whatever template artwork is already there. This is the default behaviour.
+
+This means adaptive mode works correctly without setting `ITIDY_BG_COLOUR` at all -- just leave it out. You only need to set it if you want a solid fill, and you would not normally want that with `ITIDY_ADAPTIVE_TEXT=YES`, because once the safe area is filled with one colour, every glyph pixel darkens to the same result, which is no different from fixed colour mode.
+
+Setting `ITIDY_BG_COLOUR` to a valid palette index (0-254) forces a solid fill. Index 255 is reserved internally as the "no fill" sentinel and cannot be used as a colour. Setting it to any value outside the valid palette range (other than 255, which is always treated as no-fill) triggers auto-detection of the lightest palette entry, which is also a solid fill.
+
+#### Colour auto-detection
+
+`ITIDY_TEXT_COLOUR` and `ITIDY_MID_COLOUR` (fixed colour mode only) auto-detect when absent or out-of-range. `ITIDY_BG_COLOUR` behaves differently -- see below.
+
+- **Text** (`ITIDY_TEXT_COLOUR` absent): darkest palette entry
+- **Mid-tone** (`ITIDY_MID_COLOUR` absent): palette entry closest to the midpoint between the darkest and lightest entries, excluding those two extremes
+- **Background** (`ITIDY_BG_COLOUR` absent): no fill -- template pixels are preserved. This differs from the other two: absent does not trigger a palette scan, it disables the fill entirely. Auto-detection of the lightest entry only happens if `ITIDY_BG_COLOUR` is set to an out-of-range value.
+
+A safety check ensures the text and mid-tone colours never resolve to the same palette index.
+
+#### `ITIDY_TEXT_AREA` and `ITIDY_EXCLUDE_AREA` -- independent zones
+
+These two ToolTypes are checked separately and serve different purposes:
+
+- **`ITIDY_TEXT_AREA`** sets the safe rendering zone. The renderer fills the background and draws all text within this rectangle. If absent, the zone defaults to the icon bounds minus a 4-pixel margin on all sides.
+- **`ITIDY_EXCLUDE_AREA`** defines a per-pixel skip zone. Any individual pixel that falls inside this rectangle is not written, regardless of the text area. This is useful for preserving decorative template artwork such as a folded-corner graphic. It works in both adaptive and non-adaptive modes.
+
+The two zones are independent -- the exclude area can overlap the text area, lie entirely within it, or be placed outside it entirely.
+
+#### `ITIDY_CHAR_WIDTH` -- auto-select mode
+
+Setting `ITIDY_CHAR_WIDTH=0` (the default) enables automatic selection: 2 pixels per character column if the safe area is 64 pixels wide or greater; 1 pixel per character column if it is narrower. Any non-zero value overrides this.
+
+#### `ITIDY_MAX_LINES` and `ITIDY_LINE_GAP` -- reserved for future use
+
+These ToolTypes are recognised by the Validate function and will not be flagged as unknown keys, but the renderer does not currently use them. `ITIDY_MAX_LINES` is calculated automatically from the safe area height divided by `ITIDY_LINE_HEIGHT`. `ITIDY_LINE_GAP` is parsed but the rendering loop does not read it -- band spacing is controlled solely by `ITIDY_LINE_HEIGHT`. Setting either will not cause errors but will have no visible effect.
+
+### Gadgets
+
+- **Show** -- Filters which types appear in the list.
+  - *All* -- Shows every sub-type. **(Default)**
+  - *Custom Only* -- Shows only types with a custom template.
+  - *Missing Only* -- Shows only types without a custom template.
+
+  The master row ("ascii") always appears regardless of the filter.
+
+- **Template list** -- Three-column list showing Type, Template filename, and Status for each sub-type. Select a row to see details and enable the action buttons.
+
+- **Selected Type info panel** -- Read-only fields showing: Type, Template file, Effective file (which template will actually be used at runtime), and Status.
+
+### Action Buttons
+
+All action buttons start disabled and enable when a row is selected.
+
+- **Create from master / Overwrite from master** -- Copies `def_ascii.info` to create a new custom template for the selected type. The label changes to "Overwrite from master" if a custom template already exists. A confirmation is shown before overwriting. Disabled when the master is selected (cannot copy the master onto itself).
+
+- **Edit tooltypes...** -- Opens the effective template icon in the Workbench Information editor. For sub-types without a custom template, this opens the master `def_ascii.info`.
+
+- **Validate tooltypes** -- Reads all ToolTypes from the effective template and checks for unknown `ITIDY_*` keys, colour values outside 0-255, percentage values outside 0-100, and formatting errors. Results are shown in a requester with an "Effect Summary" of all collected values.
+
+- **Revert to master** -- Deletes the custom `def_<type>.info` so the sub-type falls back to the master. A confirmation is shown first. Disabled when the master is selected or no custom template exists.
+
+- **Close** -- Closes the window (keyboard shortcut: C).
 
 ---
 
 ## Exclude Paths
 
-Window title: **DefIcons Exclude Paths**
+Open this window from the main window via Settings -> DefIcons Categories... -> DefIcons Excluded Folders..., or from the DefIcons tab in Icon Creation Settings.
 
-### Purpose
+This window manages the list of folder paths skipped during DefIcons icon creation. Any folder matching an exclude path is skipped entirely -- no icons are generated inside it.
 
-Stop DefIcons icon creation in folders where it is not wanted or where it would waste time (for example system directories, caches, or large collections where you do not use Workbench icons).
+### DEVICE: Placeholder
 
-### Typical Workflow
+Paths can use a `DEVICE:` prefix instead of a real volume name. At scan time, `DEVICE:` is substituted with the volume being scanned, making the list portable across different drives. For example, `DEVICE:C` matches `Workbench:C`, `Work:C`, or any other volume's `C` directory.
 
-1. Open **Exclude Paths** from Icon Creation Settings or from the main menu.
-2. Add one or more folders.
-3. Choose whether to store each path as an absolute path or as a portable `DEVICE:` pattern.
-4. Click **OK**.
+When you add or modify a path, if the selected directory is on the same volume as the current scan folder, iTidy asks whether to store the path as `DEVICE:` or as an absolute path.
 
-### Settings That Matter
+### Limits
 
-- **DEVICE: placeholder**
-  - **Effect:** Makes an exclude path portable across volumes by substituting the current scanned volume name.
-  - **When to use:** For standard directories (for example `C`, `Libs`, `Devs`) that exist on most bootable volumes.
-  - **Gotcha:** `DEVICE:C` matches `Workbench:C` and `Work:C` depending on what you are scanning.
+- Maximum 32 exclude paths
+- Each path up to 255 characters long
 
-- **Default exclude list**
-  - **Effect:** A set of 17 common system directories.
-  - **When to use:** As a baseline; add your own as needed.
-  - **Gotcha:** Excluded folders are skipped for icon creation, not for tidying existing icons.
+### Gadgets
 
-- **Where changes apply**
-  - **Effect:** The window edits a working copy and normally applies changes only when you click **OK**.
-  - **When to use:** Always click **OK** after edits.
-  - **Gotcha:** When opened from Icon Creation Settings, changes may apply immediately. (This inconsistency may change in future.)
+- **Path list** -- Shows all configured exclude paths. Click a row to select it for Remove or Modify.
 
-### Example
+- **Add...** -- Opens a directory requester. After selecting a folder, iTidy asks whether to store it as a portable `DEVICE:` pattern or absolute path. Duplicate paths are silently rejected.
 
-You are tidying `Work:` with icon creation enabled, but you do not want thumbnails created in `Work:WHDLoad`.
+- **Remove** -- Removes the selected path. Does nothing if no row is selected.
 
-1. Open **Exclude Paths**.
-2. Add `Work:WHDLoad` and choose `DEVICE:WHDLoad` if you want it portable.
-3. Click **OK**.
+- **Modify...** -- Opens a directory requester pre-set to the selected path. Same `DEVICE:`/absolute logic as Add. Does nothing if no row is selected.
+
+- **Reset to Defaults** -- After a confirmation, replaces the current list with the following 17 default AmigaOS system directory paths:
+
+  `DEVICE:Fonts`, `DEVICE:Locale`, `DEVICE:Classes`, `DEVICE:Libs`, `DEVICE:C`, `DEVICE:Rexxc`, `DEVICE:T`, `DEVICE:L`, `DEVICE:Devs`, `DEVICE:Resources`, `DEVICE:System`, `DEVICE:Storage`, `DEVICE:Expansion`, `DEVICE:Kickstart`, `DEVICE:Env`, `DEVICE:Envarc`, `DEVICE:Prefs/Env-Archive`
+
+- **OK** -- Accepts the current list and closes the window.
+
+- **Cancel** -- Discards changes and closes the window.
 
 ---
 
 ## Default Tool Analysis
 
-Window title: **iTidy - Default Tool Analysis**
+Open this window with **Fix Default Tools...** on the main window.
 
-### Purpose
+### What is a Default Tool?
 
-Find icons whose Default Tool is missing or wrong, then fix them in batch or one-by-one. This helps with the common Workbench error "Unable to open your tool".
+Most data file icons on the Amiga have a "Default Tool" -- the program Workbench runs when you double-click that icon. After copying icons between systems or extracting older archives, those tool paths often break, resulting in "Unable to open your tool" errors.
 
-This feature reads `.info` files, collects the tools they reference, checks whether those tools exist on disk, and lets you replace the tool path.
+### Using the Scanner
 
-### Typical Workflow
+1. The **Folder** field initialises from the current scan folder in your preferences. Change it if needed.
 
-1. Open **Fix default tools...** from the main window.
-2. Set the **Folder** to scan.
-3. Click **Scan**.
-4. Use the filter to show only missing tools.
-5. Replace a tool in batch (all icons using it) or in a single icon.
-6. (Optional) Export a report for documentation.
+2. Click **Scan** to start a recursive scan. A progress window shows scan statistics. After scanning, close the progress window to return to the tool list.
 
-### Settings That Matter
+3. Use the **Filter** chooser to narrow the list: *Show All*, *Show Valid Only*, or *Show Missing Only*.
 
-- **Scan is always recursive**
-  - **Effect:** Scans the selected folder and all subfolders.
-  - **When to use:** Plan for this; choose your scan root carefully.
-  - **Gotcha:** This is independent of the main window's **Include Subfolders**.
+4. Click a tool in the upper list to see which icons reference it in the details panel.
 
-- **Filter (Show All / Valid Only / Missing Only)**
-  - **Effect:** Helps you focus on the tools that actually need attention.
-  - **When to use:** Use Missing Only for repairs; use All for audits.
-  - **Gotcha:** The filter only changes display; it does not change scan results.
+5. To fix a tool, select it and use **Replace Tool (Batch)...** to update all icons that reference it, or select a specific icon file in the details panel and use **Replace Tool (Single)...** to update just that one.
 
-- **Save/Open tool cache**
-  - **Effect:** Lets you re-open scan results without re-scanning.
-  - **When to use:** Slow volumes, repeated work.
-  - **Gotcha:** A saved cache can become stale if you install/remove tools or change icons.
+### Tool List Columns
 
-- **Export reports**
-  - **Effect:** Writes text reports listing tools (and optionally the files that reference them).
-  - **When to use:** Audits and clean-up planning.
-  - **Gotcha:** The report reflects the current tool cache, not live disk changes since the scan.
+| Column | Content |
+|--------|---------|
+| Tool | Tool name or path |
+| Files | Number of icons that reference this tool |
+| Status | EXISTS or MISSING |
 
-- **System PATH...**
-  - **Effect:** Shows where iTidy looked for tools.
-  - **When to use:** When a tool is reported missing but you think it exists.
-  - **Gotcha:** The PATH list only exists after a scan.
+Click a column header to sort. Click again to reverse the sort order.
 
-### Example
+### Details Panel
 
-Many icons in `Work:Docs` fail to open because they point to an old viewer.
+Shows information about the selected tool: tool name, status, version string if available, and the list of icon files that reference it. If a tool has more than 200 referencing files, only the first 200 are shown.
 
-1. Open **Default Tool Analysis**.
-2. Set Folder to `Work:Docs` and click **Scan**.
-3. Filter to `Show Missing Only`.
-4. Select the missing tool and click **Replace Tool (Batch)...**.
-5. Choose your replacement viewer (for example `SYS:Utilities/MultiView`) and click **Update Default Tool**.
+### Buttons
+
+- **Scan** -- Starts the recursive directory scan. Always scans recursively regardless of the Include Subfolders setting on the main window.
+- **Replace Tool (Batch)...** -- Opens the Replace Default Tool window to update all icons referencing the selected tool. Only enabled when a tool is selected in the upper list.
+- **Replace Tool (Single)...** -- Opens the Replace Default Tool window for one specific icon. Only enabled when an icon file row is selected in the details panel.
+- **Restore Default Tools Backups...** -- Opens the Restore Default Tools window. If any restores are performed, the cache is cleared and you will be prompted to re-scan.
+- **Close** -- Closes the window.
+
+### Menus
+
+#### Project Menu
+
+| Item | Shortcut | Action |
+|------|----------|--------|
+| New | Amiga+N | Clears the tool cache and resets the display |
+| Open... | Amiga+O | Loads a previously saved tool cache from a `.dat` file |
+| Save | Amiga+S | Saves the cache to `PROGDIR:userdata/DTools/toolcache.dat` |
+| Save as... | Amiga+A | Saves the cache to a user-chosen location |
+| Close | Amiga+C | Closes the window |
+
+#### File Menu
+
+| Item | Shortcut | Action |
+|------|----------|--------|
+| Export list of tools | Amiga+T | Exports a text report of all tools |
+| Export list of files and tools | Amiga+F | Exports a detailed report of all files and their tools |
+
+#### View Menu
+
+| Item | Shortcut | Action |
+|------|----------|--------|
+| System PATH... | Amiga+P | Shows the list of directories iTidy searches for default tools |
+
+### Notes
+
+- Saving and loading the tool cache lets you preserve scan results between sessions without re-scanning large volumes.
+- The Export menus create text reports useful for documenting which tools are used across a volume.
+- After using Restore Default Tools Backups, the tool cache is cleared and must be rebuilt with a new scan.
 
 ---
 
 ## Replacing Default Tools
 
-Window title: **iTidy - Replace Default Tool**
+This window opens from **Replace Tool (Batch)...** or **Replace Tool (Single)...** in the Default Tool Analysis window.
 
-### Purpose
+### Batch vs Single Mode
 
-Apply a Default Tool change to one icon file (single mode) or to every icon that references a particular tool (batch mode).
+In **batch mode** (opened via Replace Tool (Batch)), all icons that reference the selected tool are updated at once. The Mode field shows "Batch Mode: N icon(s) will be updated".
 
-### Typical Workflow
+In **single mode** (opened via Replace Tool (Single)), only the one icon selected in the details panel is updated. The Mode field shows the icon file path.
 
-1. Start from Default Tool Analysis.
-2. Choose **Replace Tool (Batch)...** or **Replace Tool (Single)...**.
-3. Use **Change To** to choose the replacement program.
-4. Click **Update Default Tool**.
-5. Review the per-file results list.
+### Using the Window
 
-### Settings That Matter
+1. The **Current Tool** field shows the tool being replaced.
+2. Click the browse button next to **Change To** to select the replacement tool program. The initial location is `C:`. `.info` files cannot be selected.
+3. Click **Update Default Tool** to start the replacement.
+4. Results appear in the progress list as each icon is processed: SUCCESS, FAILED, or READ-ONLY.
+5. After completion, a summary shows success and failure counts. The Update button is disabled after one use -- close and reopen to do another update.
+6. Click **Close** to return to the Default Tool Analysis window, which refreshes automatically.
 
-- **Change To**
-  - **Effect:** Selects the replacement program.
-  - **When to use:** Choose the program Workbench should run for those icons.
-  - **Gotcha:** `.info` files cannot be selected.
+**Tip:** Leave the Change To field empty and click Update to remove the default tool from the icon(s) entirely. A confirmation requester will be shown first.
 
-- **Leaving Change To empty**
-  - **Effect:** Clears the Default Tool from the selected icon(s).
-  - **When to use:** When you want an icon to have no forced tool association.
-  - **Gotcha:** Workbench may then use other rules (project file tooltypes, filetype defaults, or prompts) when opening.
+**Note:** Write-protected icons are automatically skipped with a "READ-ONLY" status and are not counted as failures.
 
-- **Write-protected icons**
-  - **Effect:** iTidy skips them and reports `READ-ONLY`.
-  - **When to use:** Remove write protection if you want them fixed.
-  - **Gotcha:** Skips are not errors; they are expected.
+### Backup System
 
-- **Update button is single-use**
-  - **Effect:** After an update, the button disables until you close and re-open the window.
-  - **When to use:** Plan changes in one batch where possible.
-  - **Gotcha:** This is deliberate.
-
-- **Backups (if enabled)**
-  - **Effect:** Records changes under `PROGDIR:Backups/tools/YYYYMMDD_HHMMSS/` so you can restore later.
-  - **When to use:** Enable this if you want an undo trail for Default Tool changes.
-  - **Gotcha:** Restoring uses the recorded session; it does not guess what your tools "should" be.
-
-### Example
-
-You want all `*.txt` icons that currently use a missing tool `OldViewer` to open in MultiView.
-
-1. Scan the folder in Default Tool Analysis.
-2. Select `OldViewer` and choose **Replace Tool (Batch)...**.
-3. Set **Change To** to `SYS:Utilities/MultiView`.
-4. Click **Update Default Tool**.
+If default tool backup is enabled, every change is recorded in `PROGDIR:Backups/tools/YYYYMMDD_HHMMSS/`. The session folder contains `session.txt` (metadata) and `changes.csv` (one row per icon: icon path, old tool, new tool). Use the Restore Default Tools window to revert changes.
 
 ---
 
 ## Restoring Default Tool Backups
 
-Window title: **iTidy - Restore Default Tools**
+Open this window from the Default Tool Analysis window via **Restore Default Tools Backups...**, or from the main window via Tools -> Restore Default Tools....
 
-### Purpose
+This window lists all backup sessions created when iTidy replaced default tools. Each session represents one Replace operation.
 
-Undo previous Default Tool replacement operations recorded by iTidy.
+### Session List
 
-Sessions are stored under `PROGDIR:Backups/tools/` and contain:
+| Column | Content |
+|--------|---------|
+| Date/Time | When the backup was created |
+| Mode | "Batch" or "Single" |
+| Path | The folder path that was being processed |
+| Changed | Number of icons that were modified |
 
-- `session.txt` (metadata)
-- `changes.csv` (one line per icon changed)
+Click a session to see its tool changes in the panel below.
 
-### Typical Workflow
+### Changes Panel
 
-1. Open **Restore Default Tools** (from Default Tool Analysis or the Tools -> Restore menu).
-2. Select a session.
-3. Click **Restore**.
-4. Re-scan in Default Tool Analysis if you want an updated view.
+Shows the tool changes recorded in the selected session -- the original tool, the replacement, and how many icons were affected by each specific old->new pair.
 
-### Settings That Matter
+### Buttons
 
-- **Restore does not delete sessions**
-  - **Effect:** You can restore multiple times.
-  - **When to use:** Keep sessions until you are confident.
-  - **Gotcha:** Disk usage grows until you delete sessions.
+- **Restore** -- Restores all icons in the selected session to their original default tools. A confirmation requester is shown with the icon count. The backup session is kept after restoring. Only enabled when a session is selected.
 
-- **Delete is permanent**
-  - **Effect:** Removes the session folder and its files.
-  - **When to use:** After you no longer need that undo point.
-  - **Gotcha:** There is no undo for deleting a session.
+- **Delete** -- Permanently deletes the selected backup session and all its files. A confirmation is shown first. Deleted sessions cannot be recovered. Only enabled when a session is selected.
 
-### Example
+- **Close** -- Closes the window.
 
-You batch-replaced a tool and later decide it was the wrong choice.
-
-1. Open **Restore Default Tools**.
-2. Select the session from the date/time you ran the batch.
-3. Click **Restore**.
-4. Go back to Default Tool Analysis and re-scan if you want to verify.
+**Note:** After restoring, the tool cache in the Default Tool Analysis window is invalidated and must be rebuilt with a new scan.
 
 ---
 
 ## Restoring Layout Backups
 
-Window title: **iTidy - Restore Backups**
+Open this window with **Restore Backups...** on the main window, or via Tools -> Restore -> Restore Layouts....
 
-### Purpose
+This window lists all iTidy backup runs created when tidying with **Back Up Layout Before Changes** enabled. Each run is an LhA-based snapshot of the `.info` files and window positions for the processed folders.
 
-Undo a tidy run by restoring backed-up `.info` files from a previous run.
+**Note:** This restores icon/layout backups only. To undo default tool changes, use the Restore Default Tools window instead.
 
-Backups are stored under `PROGDIR:Backups/Run_0001`, `Run_0002`, ... Each run typically contains:
+### Run List
 
-- `catalog.txt` (metadata listing archived folders)
-- one `.lha` archive per processed folder
+| Column | Content |
+|--------|---------|
+| Run | Run number (e.g. 0007) |
+| Date/Time | When the backup was created |
+| Folders | Number of folder archives in the run |
+| Size | Total size of all archives |
+| Icons+ | Number of icons created by DefIcons during this run ("-" if none) |
+| Status | "Complete" (has catalog) or "NoCAT" (no catalog file) |
 
-### Typical Workflow
+Click a run to select it and update the details panel. Double-click a run to open the Folder View window (requires a catalog file). The first run is automatically selected when the window opens.
 
-1. Open **Restore backups...** from the main window.
-2. Select a run.
-3. Click **Restore Run**.
-4. Choose whether to restore **With Windows** or **Icons Only**.
-5. Wait for the restore progress to complete.
+### Details Panel
 
-### Settings That Matter
+Shows: Run Number, Date Created, Source Directory, Total Archives, Total Size, Icons Created, Status, and the on-disk location.
 
-- **With Windows vs Icons Only**
-  - **Effect:**
-    - With Windows restores icon data and drawer window snapshots.
-    - Icons Only restores icon data but does not change window geometry.
-  - **When to use:** Use Icons Only if you like your current window sizes.
-  - **Gotcha:** Both options overwrite current `.info` files.
+### Buttons
 
-- **Delete Run**
-  - **Effect:** Permanently deletes the selected run directory and its archives.
-  - **When to use:** When you are sure you no longer need that restore point.
-  - **Gotcha:** This cannot be undone.
+- **Delete Run** -- Permanently deletes the selected run and all its files. A confirmation is shown first. Cannot be undone.
 
-- **View Folders...**
-  - **Effect:** Opens a read-only tree view of what the run contains.
-  - **When to use:** Before restoring, to confirm which folders are included.
-  - **Gotcha:** Only available when the run has a catalog (status "Complete").
+- **Restore Run** -- Restores the selected run using LhA. A requester gives three choices:
+  - *With Windows* -- Restores icons AND window positions/sizes.
+  - *Icons Only* -- Restores only icon files without changing window geometry.
+  - *Cancel* -- Aborts.
 
-- **Runs with "NoCAT" status**
-  - **Effect:** Runs without a catalog cannot show the folder tree.
-  - **When to use:** You can still restore or delete them.
-  - **Gotcha:** View Folders is disabled.
+  If the run included icons created by DefIcons, the requester notes that those icons will also be removed during restoration. A progress window shows per-folder extraction progress.
 
-- **DefIcons-created icons**
-  - **Effect:** If the original run created new icons, restoring that run may remove those created icons.
-  - **When to use:** Expect this if you enabled icon creation.
-  - **Gotcha:** The restore is trying to return to the pre-run state.
+  **Requires LhA:** If LhA is not found in `C:`, an error requester is shown.
 
-- **LhA requirement**
-  - **Effect:** Restore uses LhA to extract archives.
-  - **When to use:** Install LhA in `C:`.
-  - **Gotcha:** Restore will fail if LhA is missing.
+- **View Folders...** -- Opens the Folder View window for the selected run. Only enabled when the run has a catalog file ("Complete" status). Also opened by double-clicking the run.
 
-### Example
+- **Close** -- Closes the window.
 
-You tidied `Work:Projects` yesterday and you want to go back to how it was.
+### Notes
 
-1. Open **Restore Backups**.
-2. Select yesterday's run.
-3. Click **Restore Run** and choose **With Windows**.
-4. Re-open the drawer in Workbench.
+- Restoring overwrites current `.info` files. Any changes made after the original backup will be lost.
+- "NoCAT" (orphaned) runs can be deleted but the View Folders button will be disabled for them.
+- Run numbers may have gaps (e.g. Run_0001, Run_0003) if intermediate runs were deleted.
+- Backups are stored in `PROGDIR:Backups/`.
 
 ---
 
 ## Folder View
 
-Window title: **Folder View - Run N (date)** (dynamic)
+This read-only window opens from the Restore Backups window via **View Folders...** or by double-clicking a run.
 
-### Purpose
+It shows the hierarchical folder structure of a backup run -- which folders were backed up, their compressed archive sizes, and how many icons each contained.
 
-Show which folders a backup run contains, in a read-only tree view.
+The tree starts **fully collapsed**. Click the disclosure triangles to expand branches. Two columns are shown: the folder name (with indentation showing depth), and a combined Size/Icons value (e.g. "11 KB / 15 icons").
 
-### Typical Workflow
-
-1. In **Restore Backups**, select a run with a catalog (status "Complete").
-2. Click **View Folders...** (or double-click the run).
-3. Expand branches using the disclosure triangles.
-4. Close the window.
-
-### Settings That Matter
-
-- There are no settings here. This window is informational.
-- The Size/Icons column shows compressed archive size (from the catalog), not original file sizes.
-
-### Example
-
-You are not sure whether a run included `Work:Projects/Old`.
-
-1. Open **View Folders...** for the run.
-2. Expand `Work:Projects`.
-3. Check whether `Old` appears in the tree.
+Selecting a tree node has no effect -- this window is informational only. Click **Close** (or press C) to return to the Restore Backups window.
 
 ---
 
 ## ToolTypes
 
-### Purpose
+These ToolTypes are read from the iTidy program icon when launched from Workbench.
 
-Control iTidy behaviour at launch (logging and automation) when starting iTidy from Workbench.
-
-### Typical Workflow
-
-1. In Workbench, select the iTidy program icon.
-2. Open Information (Workbench "Information...").
-3. Add or edit the ToolTypes listed below.
-4. Save the icon.
-5. Launch iTidy from Workbench so the ToolTypes are applied.
-
-**Gotcha:** ToolTypes are read from the program icon at launch. If you start iTidy in a way that bypasses Workbench icon ToolTypes, these settings may not apply.
-
-iTidy reads these tooltypes from its program icon when launched from Workbench:
-
-| ToolType | Values | Default | Effect / When / Gotcha |
-|----------|--------|---------|-------------------------|
-| DEBUGLEVEL | 0-4 | 4 (Disabled) | **Effect:** sets logging level (0=Debug, 1=Info, 2=Warning, 3=Error, 4=Disabled). **When:** use Debug for diagnostics. **Gotcha:** overrides any log level loaded from preferences. |
-| LOADPREFS | File path | (none) | **Effect:** loads a preferences file at startup. **When:** use to pin iTidy to a known preset. **Gotcha:** paths without a device are resolved relative to `PROGDIR:userdata/Settings/`. |
-| PERFLOG | YES / NO | NO | **Effect:** enables performance timing logs. **When:** benchmarking. **Gotcha:** produces extra log output. |
-
-### Example
-
-You want extra detail for diagnosing a problem run.
-
-1. Set `DEBUGLEVEL` to `0` (Debug).
-2. Run iTidy and reproduce the problem on a small drawer.
-3. Use the main window logging menu to open `PROGDIR:logs/` and review the latest log files.
+| ToolType | Values | Default | Description |
+|----------|--------|---------|-------------|
+| DEBUGLEVEL | 0-4 | 4 (Disabled) | Log level. 0=Debug, 1=Info, 2=Warning, 3=Error, 4=Disabled. Overrides any log level stored in a loaded preferences file. |
+| LOADPREFS | File path | (none) | Automatically loads a saved preferences file at startup. Paths without a device name are resolved relative to `PROGDIR:userdata/Settings/`. |
+| PERFLOG | YES / NO | NO | Enables performance timing logs for benchmarking. |
 
 ---
 
 ## Tips & Troubleshooting
 
-### Purpose
+### General Tips
 
-Quick checks for common problems and the practical next step to take.
+- **Enable backups for big runs.** If you are tidying a lot of folders with recursion enabled, turning on backups gives you a way back if you don't like the result.
+- **Start small.** Try a single drawer first so you can see how the settings affect layout before pointing iTidy at a whole partition.
+- **Save your settings.** Once you have a setup you like, use Presets -> Save As so you can load it again later. Use the LOADPREFS ToolType to load it automatically at startup.
+- **Keep a drawer open while you test.** Open the window you want to tidy beforehand and reopen it after to see how the layout changed, without running a full recursive pass.
+- **To see window changes clearly,** close any drawers you are tidying before you run iTidy. After it finishes, you may need to close and reopen the drawers (or restart Workbench) to see updated window sizes and positions.
 
-### Typical Workflow
+### Icons Appear Misaligned
 
-1. Identify which feature you were using (tidy, icon creation, default tools, restore).
-2. Check the relevant setting and the logs (if logging is enabled).
-3. Re-run on a small folder to confirm the fix before scaling up.
+If some icons look misaligned while others look fine, it's often an icon.library issue. On setups with an older icon.library, OS3.5+ colour icons may not render at their real size and can appear as tiny placeholder images. iTidy positions icons using the actual icon dimensions, but Workbench may draw them at the wrong size.
 
-### Settings That Matter
+**What to do:**
+- Update icon.library to v44+ if you want to use OS3.5+ colour icons.
+- Alternatively, convert colour icons back to NewIcons or classic icons if you are keeping a stock WB 3.0/3.1 setup.
 
-- **Logging level**
-  - **Effect:** Controls how much iTidy writes into `PROGDIR:logs/`.
-  - **When to use:** Enable Info/Debug when diagnosing.
-  - **Gotcha:** Logging is disabled by default.
+### Window Positions Not Updating
 
-- **Backups**
-  - **Effect:** Give you a rollback path.
-  - **When to use:** Before large runs.
-  - **Gotcha:** Restore overwrites current `.info` files.
+If window positions don't change after a run or restore, this is usually Workbench caching.
 
-### Common issues
+**What to do:**
+- Close and reopen the affected drawers.
+- If that doesn't help, restart Workbench or reboot.
 
-#### LhA warnings
+### Backup or Restore Not Working
 
-**Symptom:** iTidy warns that LhA is missing when you enable backups or try to restore.
+A few things to check:
 
-**What to do:** Install LhA in `C:` and re-try the operation.
+- LhA is installed in `C:`.
+- You have enough free disk space for archives (when backing up) or extraction (when restoring).
+- The original folder paths still exist when restoring.
+- Check `PROGDIR:logs/` for error details.
 
-#### Icons do not open ("Unable to open your tool")
+### Slow Processing on Large Folder Trees
 
-**Symptom:** Double-clicking icons fails.
+Recursing through thousands of folders takes time on real hardware, especially with mechanical drives.
 
-**Likely cause:** An icon's Default Tool points to a program that is missing.
+- It is fine to leave iTidy running unattended during large jobs.
+- Avoid running other disk-heavy tasks at the same time.
+- For large collections, it can be quicker to work in chunks (for example `WHDLoad:Games` first, then `WHDLoad:Demos`) rather than the entire volume at once.
 
-**What to do:** Use **Fix default tools...** -> Scan -> Replace Tool (Batch) for the missing tool.
+### Icons Are Not Moved, and the Progress Log Shows No Icons Found
 
-#### DefIcons Categories list is empty
+Check the folder in Workbench and see if Window -> Show -> All Files is selected. This option shows folder contents by giving each item a temporary icon, which iTidy cannot see.
 
-**Symptom:** The type tree is empty.
+If you want iTidy to process this folder, create real icons first: select the contents via Window -> Select Contents, then choose Icons -> Snapshot. Real icons will be created and iTidy will be able to process them.
 
-**Likely cause:** `ENV:deficons.prefs` is missing or could not be parsed.
+### iTidy Skips Some Folders That Contain Valid Icons
 
-**What to do:** Confirm you are on Workbench 3.2 and that the DefIcons system is installed/configured using the appropriate Preferences tool.
+By default, iTidy skips folders without an `.info` file during recursive processing, because those folders are not visible in Workbench.
 
-#### iTidy is skipping folders during recursion
+To bypass this, open Advanced Settings and untick **Skip Hidden Folders**.
 
-**Symptom:** Some directories are not processed when Include Subfolders is enabled.
+### Icons Do Not Open ("Unable to open your tool")
 
-**Likely cause:** **Skip Hidden Folders** is enabled and the skipped folders have no `.info` file.
+This means an icon's Default Tool points to something that is not installed.
 
-**What to do:** In Advanced Settings, disable **Skip Hidden Folders** if you really want all directories processed.
+**What to do:**
+- Use **Fix Default Tools...** to scan for missing tools and repair them.
+- See the Default Tool Analysis section for details on the scanner.
 
-#### JPEG thumbnails are slow
+### DefIcons Icon Creation Produces No Icons
 
-**Symptom:** Icon creation runs very slowly on JPEG-heavy folders.
+Check the following:
 
-**Likely cause:** `JPEG (Slow)` was enabled.
+- **Create Icons During Tidy** is enabled on the main window.
+- The target file type is not disabled in the DefIcons Categories window.
+- The target folder is not in the Exclude Paths list.
+- `ENV:deficons.prefs` is present and valid (managed by the DefaultIcons Preferences tool in the Workbench Prefs drawer).
 
-**What to do:** Leave JPEG disabled unless you need it, or run icon creation in smaller batches.
+### Text Preview Icons Look Wrong or Are Missing
 
-### Example
-
-You enable backups, run a tidy, then decide you preferred the previous layout.
-
-1. Open **Restore backups...**.
-2. Select the run you just created.
-3. Click **Restore Run** and choose **Icons Only** if you want to keep your current window sizes.
+- Check that **Text File Previews** is enabled in Icon Creation Settings -> Create tab.
+- Make sure the master template `PROGDIR:Icons/def_ascii.info` exists.
+- Use the Text Templates window to validate the ToolTypes in the relevant template.
+- If a sub-type appears as "Excluded" in the templates list, edit the `EXCLUDETYPE` ToolType in `def_ascii.info` to remove it (use Edit tooltypes on the master row).
 
 ---
 
@@ -960,4 +927,5 @@ You enable backups, run a tidy, then decide you preferred the previous layout.
 **Author:** Kerry Thompson
 **Version:** 2.0
 **Website:** https://github.com/Kwezza/iTidy
-**Special thanks:** Darren 'dmcoles' Cole for the excellent ReBuild which the iTidy interface was rebuilt with.
+
+---

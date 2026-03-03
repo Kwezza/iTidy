@@ -404,8 +404,8 @@ BOOL itidy_content_preview_cache_valid(const char *target_path,
  * the text rendering phase). In this case, we skip the index swap entirely
  * and just copy the palette.
  *
- * If bg_color_index is ITIDY_NO_BG_COLOR (255), skips the swap entirely
- * since there's no meaningful background color to swap.
+ * If bg_color_index is ITIDY_NO_BG_COLOUR (255), skips the swap entirely
+ * since there's no meaningful background colour to swap.
  *
  * See plan Section 8: Selected Image Handling.
  */
@@ -417,7 +417,7 @@ static BOOL build_selected_image(iTidy_IconImageData *img,
     ULONG buffer_size;
 
     // Skip selected image generation if "no background" mode
-    if (params != NULL && params->bg_color_index == ITIDY_NO_BG_COLOR)
+    if (params != NULL && params->bg_color_index == ITIDY_NO_BG_COLOUR)
     {
         log_debug(LOG_ICONS, "build_selected_image: skipping (no background mode)\n");
         return TRUE;
@@ -789,7 +789,7 @@ static int apply_iff_preview(const char *source_path,
     iff_params.base.safe_top = 0;
     iff_params.base.safe_width = img.width;
     iff_params.base.safe_height = img.height;
-    iff_params.base.bg_color_index = ITIDY_NO_BG_COLOR;
+    iff_params.base.bg_color_index = ITIDY_NO_BG_COLOUR;
     iff_params.allow_upscale    = prefs ? prefs->deficons_upscale_thumbnails : FALSE;
     iff_params.try_magenta_key  = TRUE;  /* ILBM/ACBM can use magenta key transparency */
 
@@ -1359,7 +1359,7 @@ static int apply_picture_preview(const char *source_path,
     iff_params.base.safe_top    = 0;
     iff_params.base.safe_width  = img.width;
     iff_params.base.safe_height = img.height;
-    iff_params.base.bg_color_index = ITIDY_NO_BG_COLOR;
+    iff_params.base.bg_color_index = ITIDY_NO_BG_COLOUR;
     iff_params.allow_upscale   = prefs ? prefs->deficons_upscale_thumbnails : FALSE;
     iff_params.try_magenta_key = itidy_format_uses_magenta_key(type_token);
 
@@ -1982,8 +1982,8 @@ int itidy_apply_content_preview(const char *source_path,
 
     /*--------------------------------------------------------------------*/
     /* Step 4: Build render parameters from the IMAGE TEMPLATE.           */
-    /*         The template may contain ITIDY_TEXT_AREA, ITIDY_BG_COLOR,  */
-    /*         ITIDY_TEXT_COLOR and other ToolTypes for rendering.         */
+    /*         The template may contain ITIDY_TEXT_AREA, ITIDY_BG_COLOUR, */
+    /*         ITIDY_TEXT_COLOUR and other ToolTypes for rendering.        */
     /*--------------------------------------------------------------------*/
 
     memset(&text_params, 0, sizeof(text_params));

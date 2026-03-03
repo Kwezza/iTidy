@@ -1082,7 +1082,7 @@ void itidy_resolve_palette_indices(struct DiskObject *icon,
     // Special case: -1 means "no background" (preserve template pixels)
     if (tt_bg == -1)
     {
-        *bg_index = ITIDY_NO_BG_COLOR;
+        *bg_index = ITIDY_NO_BG_COLOUR;
         log_debug(LOG_ICONS, "itidy_resolve_palette_indices: bg = NO_BG (255) from ToolType\n");
     }
     else if (tt_bg >= 0 && (ULONG)tt_bg < palette_size)

@@ -206,7 +206,7 @@ BOOL itidy_is_text_content(const UBYTE *buffer, ULONG buffer_size)
  * Only fills within the safe area — pixels outside are untouched
  * (preserving template border artwork).
  *
- * If bg_color_index is ITIDY_NO_BG_COLOR (255), skips filling entirely,
+ * If bg_color_index is ITIDY_NO_BG_COLOUR (255), skips filling entirely,
  * preserving the template's existing pixel data.
  */
 static void fill_safe_area(const iTidy_RenderParams *p)
@@ -218,7 +218,7 @@ static void fill_safe_area(const iTidy_RenderParams *p)
     UWORD height = p->safe_height;
 
     // Skip filling if "no background" mode is enabled
-    if (p->bg_color_index == ITIDY_NO_BG_COLOR)
+    if (p->bg_color_index == ITIDY_NO_BG_COLOUR)
     {
         return;
     }

@@ -773,7 +773,7 @@ static const char *s_known_itidy_keys[] = {
 /**
  * @brief Check whether 'key' starts with "ITIDY_" and is an unknown key.
  *
- * @param key ToolType key string (e.g., "ITIDY_BG_COLOR" or "TOOLTYPE")
+ * @param key ToolType key string (e.g., "ITIDY_BG_COLOUR" or "TOOLTYPE")
  * @return TRUE if unknown ITIDY_ key (potential typo / unsupported key)
  */
 static BOOL is_unknown_itidy_key(const char *key)

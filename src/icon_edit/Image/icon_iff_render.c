@@ -191,10 +191,10 @@ int itidy_render_iff_thumbnail(const char *source_path,
              (unsigned)offset_x, (unsigned)offset_y);
 
     /*--------------------------------------------------------------------*/
-    /* Step 3: Fill safe area with background color                       */
+    /* Step 3: Fill safe area with background colour                      */
     /*--------------------------------------------------------------------*/
 
-    if (iff_params->base.bg_color_index != ITIDY_NO_BG_COLOR)
+    if (iff_params->base.bg_color_index != ITIDY_NO_BG_COLOUR)
     {
         UWORD row;
         for (row = 0; row < iff_params->base.safe_height; row++)

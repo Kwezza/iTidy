@@ -190,8 +190,8 @@ typedef struct {
 #define ITIDY_CHAR_WIDTH_PROMOTE_THRESHOLD  64
 
 /** Sentinel value for "no background" — skip background fill entirely.
- *  Set ITIDY_BG_COLOR=-1 in icon ToolType to preserve template pixels. */
-#define ITIDY_NO_BG_COLOR                   255
+ *  Set ITIDY_BG_COLOUR=-1 in icon ToolType to preserve template pixels. */
+#define ITIDY_NO_BG_COLOUR                  255
 
 /*========================================================================*/
 /* ToolType String Constants                                              */
@@ -203,9 +203,9 @@ typedef struct {
 #define ITIDY_TT_LINE_GAP       "ITIDY_LINE_GAP"
 #define ITIDY_TT_MAX_LINES      "ITIDY_MAX_LINES"
 #define ITIDY_TT_CHAR_WIDTH     "ITIDY_CHAR_WIDTH"
-#define ITIDY_TT_BG_COLOR       "ITIDY_BG_COLOR"
-#define ITIDY_TT_TEXT_COLOR      "ITIDY_TEXT_COLOR"
-#define ITIDY_TT_MID_COLOR       "ITIDY_MID_COLOR"
+#define ITIDY_TT_BG_COLOR       "ITIDY_BG_COLOUR"
+#define ITIDY_TT_TEXT_COLOR      "ITIDY_TEXT_COLOUR"
+#define ITIDY_TT_MID_COLOR       "ITIDY_MID_COLOUR"
 #define ITIDY_TT_ADAPTIVE_TEXT       "ITIDY_ADAPTIVE_TEXT"
 #define ITIDY_TT_DARKEN_PERCENT      "ITIDY_DARKEN_PERCENT"
 #define ITIDY_TT_DARKEN_ALT_PERCENT  "ITIDY_DARKEN_ALT_PERCENT"
@@ -356,7 +356,7 @@ BOOL itidy_get_render_params(struct DiskObject *icon,
 /**
  * @brief Find background and text palette indices.
  *
- * First checks the icon ToolTypes for ITIDY_BG_COLOR and ITIDY_TEXT_COLOR.
+ * First checks the icon ToolTypes for ITIDY_BG_COLOUR and ITIDY_TEXT_COLOUR.
  * If not present, scans the palette for the lightest entry (→ bg) and
  * darkest entry (→ text) using luminance approximation:
  *   lum = 0.299 * R + 0.587 * G + 0.114 * B

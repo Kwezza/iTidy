@@ -24,11 +24,36 @@ Controls whether iTidy creates drawer icons for folders that do not have them.
 
 | Option | Description |
 |--------|-------------|
-| Smart (When Folder Has Icons) | iTidy checks whether the folder contains files or icons that need processing. If it does, a drawer icon is created. **(Default)** |
+| Smart (When Folder Has Icons) | A drawer icon is created only if the folder will have visible contents on Workbench after the run. See below for full details. **(Default)** |
 | Always Create | A drawer icon is always created for folders without one. |
 | Never Create | Folder icons are never created. |
 
 **Hint:** "Controls whether iTidy creates drawer icons for folders that do not already have them."
+
+#### How Smart Mode Works
+
+Smart mode avoids creating drawer icons for empty or unrecognised folders. Its exact behaviour depends on whether recursive processing is enabled.
+
+**Non-recursive mode** (current folder only):
+
+For each subfolder without an existing `.info` file, iTidy performs a two-pass pre-scan of that subfolder's *direct* contents only. Sub-subfolders are not examined.
+
+- *Pass 1 (fast):* Scans for existing `.info` files. If any are found, the folder is considered visible and a drawer icon is created immediately.
+- *Pass 2 (slower):* If no `.info` files are found, iTidy queries DefIcons via ARexx for each file in the folder, checking whether that file type is enabled in the user's category settings. The scan stops as soon as the first qualifying file is found.
+
+Pass 2 can be slow on folders containing many files with no existing icons, because each file requires an ARexx call to DefIcons for type identification.
+
+**Recursive mode** (process subfolders):
+
+In recursive mode Smart mode uses a *post-order* strategy rather than a pre-scan. iTidy works its way down to the deepest subfolder first, creating icons for files as it goes. As the recursion unwinds back up the tree, each folder's drawer icon is created only if icons were created inside it (or it already contained visible content).
+
+This means:
+- No separate pre-scan is performed; the visibility check is a by-product of the actual icon creation work.
+- Subfolders that would otherwise be hidden (no `.info`) are still recursed into, because they may turn out to contain files that need icons.
+- A drawer icon is created for a subfolder only after iTidy knows for certain whether that folder has visible contents.
+- The recursion depth limit is 100 levels, which is effectively unlimited for real-world use.
+
+The post-order approach is more efficient than non-recursive Smart mode because it avoids double-scanning. For very large collections (for example a WHDLoad library with thousands of subfolders), the main cost is the DefIcons ARexx call per file, not the folder traversal itself.
 
 ### Skip files in WHDLoad folders
 *Rebuild IDENT: `dco_cb_skip_whdload_folders` | Name: "Skip Files In WHDLoad Folders" | Type: Checkbox gadget*
