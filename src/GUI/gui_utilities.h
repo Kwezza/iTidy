@@ -23,6 +23,11 @@
  * This wrapper checks the cached Workbench version from prefsWorkbench and only
  * calls SetWindowPointer on systems that support it.
  * 
+ * When clearing the busy pointer (busy=FALSE), this function also flushes any
+ * IDCMP messages that accumulated on the window's UserPort while it was busy.
+ * This prevents stale clicks, close events, etc. from firing immediately when
+ * the parent event loop resumes after a child window closes.
+ * 
  * @param window Pointer to the window to modify (may be NULL, function will return safely)
  * @param busy TRUE to set busy pointer, FALSE to restore normal pointer
  * 

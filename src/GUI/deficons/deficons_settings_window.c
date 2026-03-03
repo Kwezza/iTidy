@@ -17,6 +17,7 @@
 #define RequesterBase iTidy_DefIcons_RequesterBase
 
 #include "deficons_settings_window.h"
+#include "../gui_utilities.h"
 #include "../../writeLog.h"
 #include "../../deficons/deficons_parser.h"
 #include "../../deficons/deficons_templates.h"
@@ -835,7 +836,7 @@ static void handle_show_tools(DefIconsSettingsWindow *win)
     log_info(LOG_GUI, "\n=== Scanning DefIcons for default tools ===\n");
     
     /* Set busy pointer while scanning */
-    SetWindowPointer(win->window, WA_BusyPointer, TRUE, TAG_DONE);
+    safe_set_window_pointer(win->window, TRUE);
     
     /* Check if template system is initialized */
     {
@@ -853,7 +854,7 @@ static void handle_show_tools(DefIconsSettingsWindow *win)
             {
                 log_error(LOG_GUI, "Failed to initialize template system!\n");
                 /* Restore normal pointer on error */
-                SetWindowPointer(win->window, WA_BusyPointer, FALSE, TAG_DONE);
+                safe_set_window_pointer(win->window, FALSE);
                 return;
             }
         }
@@ -919,7 +920,7 @@ static void handle_show_tools(DefIconsSettingsWindow *win)
     RefreshWindowFrame(win->window);
     
     /* Restore normal pointer */
-    SetWindowPointer(win->window, WA_BusyPointer, FALSE, TAG_DONE);
+    safe_set_window_pointer(win->window, FALSE);
     
     log_info(LOG_GUI, "=== Default tools display updated ===\n\n");
 }

@@ -244,8 +244,8 @@ Four buttons in the "Template Action" group. All start disabled and enable when 
 
 - Reads all ToolTypes from the effective template and checks for:
   - Unknown `ITIDY_*` keys (possible typos)
-  - Colour values outside 0-255 range
-  - Percentage values outside 0-100 range
+  - Colour values outside 0-255 (or outside 0-254 for `ITIDY_BG_COLOUR`)
+  - Percentage values outside 1-100 range
   - Area values not matching `x,y,w,h` format or with w,h not > 0
   - Positive integer values that are zero or negative
 - Displays results in a requester with an "Effect Summary" showing all collected values:

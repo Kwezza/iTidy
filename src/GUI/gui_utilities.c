@@ -7,6 +7,7 @@
 #include <exec/types.h>
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
+#include <proto/exec.h>
 #include <utility/tagitem.h>
 
 #include "GUI/gui_utilities.h"
@@ -53,6 +54,17 @@ void safe_set_window_pointer(struct Window *window, BOOL busy)
         }
         else
         {
+            /* Flush any IDCMP messages that accumulated while the window
+             * was busy. Without this, stale clicks/close events queued
+             * during the busy period would fire immediately when the
+             * parent event loop resumes (e.g. user clicks Close on the
+             * busy parent, child closes, parent instantly exits). */
+            struct IntuiMessage *msg;
+            while ((msg = (struct IntuiMessage *)GetMsg(window->UserPort)) != NULL)
+            {
+                ReplyMsg((struct Message *)msg);
+            }
+            
             SetWindowPointer(window, WA_Pointer, NULL, TAG_DONE);
         }
     }

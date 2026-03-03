@@ -201,3 +201,15 @@ Goal: Allow iTidy to be **iconified** to an **AppIcon** on the Workbench and pro
   - [ ] Include created-icon counts for drop runs the same as normal runs
 
 
+
+---
+
+## 12. Fix DefIcons "project" Type Filtering
+
+**Problem:** "project" is the gen-1 root of the DefIcons type tree. ind_root_category() walks up to find a gen-2 ancestor to use as the filter category, but "project" has no gen-2 ancestor - it *is* the root. The fallback returns "other", so the "project" checkbox in the DefIcons settings window has no effect, and files DefIcons returns as type "project" always get icons created regardless of the checkbox state.
+
+**Workaround in place (2026-03-03):** deficons_should_create_icon() in deficons_filters.c special-cases "project" with a direct is_deficon_type_enabled() check before the normal category resolution path.
+
+**Proper fix:** In ind_root_category() (deficons_templates.c), when the walk exhausts the parent chain without finding a gen-2 node, return 	ype_token itself (e.g. "project") instead of the hardcoded "other" fallback. This makes all root-level types self-categorising and their UI checkboxes correct. Remove the special-case in deficons_filters.c once done.
+
+**Priority:** Low (workaround is functional)

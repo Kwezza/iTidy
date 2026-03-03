@@ -520,8 +520,17 @@ BOOL deficons_resolve_template(const char *type_token, char *template_path, int 
     /* No match in type hierarchy - try fallback */
     if (apply_fallback_template(template_path, path_size))
     {
-        add_to_template_cache(type_token, template_path, "fallback", TRUE);
-        log_debug(LOG_ICONS, "Template resolved: '%s' \u2192 %s (FALLBACK - no type-specific icon)\n", type_token, template_path);
+        /* Determine fallback category from the resolved template path so that
+         * deficons_should_create_icon() can correctly honour the user's disabled-
+         * types list (e.g. disabling "project" will also suppress fallback icons
+         * that would otherwise silently receive def_project.info). */
+        const char *fallback_category = "project";
+        if (strstr(template_path, "def_tool.info") != NULL)
+            fallback_category = "tool";
+
+        add_to_template_cache(type_token, template_path, fallback_category, TRUE);
+        log_info(LOG_ICONS, "No specific template for type '%s', using fallback: %s\n",
+                 type_token, template_path);
         return TRUE;
     }
     

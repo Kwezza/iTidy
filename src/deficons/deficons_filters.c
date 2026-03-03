@@ -100,7 +100,19 @@ BOOL deficons_should_create_icon(const char *type_token, const LayoutPreferences
         log_debug(LOG_ICONS, "Icon creation disabled by master flag\n");
         return FALSE;
     }
-    
+
+    /* "project" is the gen-1 root of the DefIcons type tree and is used as a
+     * catch-all fallback for files DefIcons cannot specifically identify.
+     * There is no "project" entry in the DefIcons settings GUI, so there is no
+     * way for the user to opt in. Always skip icon creation for this type.
+     * See iTidy_TODO_list.md item 12 for the full fix.
+     */
+    if (strcmp(type_token, "project") == 0)
+    {
+        log_info(LOG_ICONS, "Skipping icon creation for type 'project' (unidentified file type - no specific icon available)\n");
+        return FALSE;
+    }
+
     /* Get resolved category for this type */
     category = deficons_get_resolved_category(type_token);
     if (!category)

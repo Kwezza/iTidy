@@ -2000,6 +2000,7 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                         memcpy(temp_prefs, GetGlobalPreferences(), sizeof(LayoutPreferences));
                         memset(&adv_data, 0, sizeof(adv_data));
                         
+                        safe_set_window_pointer(win_data->window, TRUE);
                         if (open_itidy_advanced_window(&adv_data, temp_prefs))
                         {
                             handle_itidy_advanced_window_events(&adv_data);
@@ -2011,6 +2012,7 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                                 log_info(LOG_GUI, "Advanced settings updated via menu\n");
                             }
                         }
+                        safe_set_window_pointer(win_data->window, FALSE);
                         FreeVec(temp_prefs);
                     }
                     break;
@@ -2022,11 +2024,13 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                         LayoutPreferences *working_copy = (LayoutPreferences *)AllocVec(sizeof(LayoutPreferences), MEMF_ANY|MEMF_CLEAR);
                         if (!working_copy) break;
                         memcpy(working_copy, prefs, sizeof(LayoutPreferences));
+                        safe_set_window_pointer(win_data->window, TRUE);
                         if (open_itidy_deficons_settings_window(working_copy))
                         {
                             UpdateGlobalPreferences(working_copy);
                             log_info(LOG_GUI, "DefIcons preferences updated\n");
                         }
+                        safe_set_window_pointer(win_data->window, FALSE);
                         FreeVec(working_copy);
                     }
                     break;
@@ -2037,7 +2041,9 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                         LayoutPreferences *working_copy = (LayoutPreferences *)AllocVec(sizeof(LayoutPreferences), MEMF_ANY|MEMF_CLEAR);
                         if (!working_copy) break;
                         memcpy(working_copy, prefs, sizeof(LayoutPreferences));
+                        safe_set_window_pointer(win_data->window, TRUE);
                         open_text_templates_window(working_copy);
+                        safe_set_window_pointer(win_data->window, FALSE);
                         FreeVec(working_copy);
                     }
                     break;
@@ -2050,11 +2056,13 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                             sizeof(DefIconsExcludePaths), MEMF_ANY|MEMF_CLEAR);
                         if (!ep_copy) break;
                         memcpy(ep_copy, GetGlobalExcludePaths(), sizeof(DefIconsExcludePaths));
+                        safe_set_window_pointer(win_data->window, TRUE);
                         if (open_exclude_paths_window(ep_copy, win_data->folder_path_buffer))
                         {
                             UpdateGlobalExcludePaths(ep_copy);
                             log_info(LOG_GUI, "Exclude paths updated\n");
                         }
+                        safe_set_window_pointer(win_data->window, FALSE);
                         FreeVec(ep_copy);
                     }
                     break;
@@ -2131,7 +2139,6 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                         
                         if (open_restore_window(&restore_data))
                         {
-                            safe_set_window_pointer(win_data->window, FALSE);
                             while (handle_restore_window_events(&restore_data))
                             {
                             }
@@ -2139,9 +2146,9 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                         }
                         else
                         {
-                            safe_set_window_pointer(win_data->window, FALSE);
                             log_error(LOG_GUI, "Failed to open Restore Layouts window\n");
                         }
+                        safe_set_window_pointer(win_data->window, FALSE);
                     }
                     break;
                 
@@ -2163,7 +2170,6 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                         safe_set_window_pointer(win_data->window, TRUE);
                         restore_win = iTidy_CreateToolRestoreWindow(
                             win_data->window->WScreen, &temp_manager);
-                        safe_set_window_pointer(win_data->window, FALSE);
                         
                         if (restore_win)
                         {
@@ -2180,6 +2186,7 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                                 "_OK",
                                 REQIMAGE_ERROR);
                         }
+                        safe_set_window_pointer(win_data->window, FALSE);
                         
                         iTidy_CleanupToolBackupManager(&temp_manager);
                     }
@@ -2365,6 +2372,7 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                 memset(&adv_data, 0, sizeof(adv_data));
                 
                 /* Open advanced window (modal) */
+                safe_set_window_pointer(win_data->window, TRUE);
                 if (open_itidy_advanced_window(&adv_data, temp_prefs))
                 {
                     /* Disable main window input while advanced window is open */
@@ -2395,6 +2403,7 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                 {
                     CONSOLE_ERROR("Failed to open Advanced Settings window\n");
                 }
+                safe_set_window_pointer(win_data->window, FALSE);
                 FreeVec(temp_prefs);
             }
             break;
@@ -2421,6 +2430,7 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                 }
                 
                 /* Open tool cache window */
+                safe_set_window_pointer(win_data->window, TRUE);
                 if (open_tool_cache_window(&tool_window))
                 {
                     /* Event loop - handler does the Wait(), no wait here */
@@ -2444,6 +2454,7 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                         "_OK",
                         REQIMAGE_ERROR);
                 }
+                safe_set_window_pointer(win_data->window, FALSE);
             }
             break;
         
@@ -2458,6 +2469,7 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                 
                 memcpy(working_copy, prefs, sizeof(LayoutPreferences));
                 
+                safe_set_window_pointer(win_data->window, TRUE);
                 if (open_itidy_deficons_creation_window(working_copy))
                 {
                     UpdateGlobalPreferences(working_copy);
@@ -2467,6 +2479,7 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                 {
                     log_debug(LOG_GUI, "DefIcons creation options cancelled\n");
                 }
+                safe_set_window_pointer(win_data->window, FALSE);
                 FreeVec(working_copy);
             }
             break;
@@ -2483,9 +2496,6 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                 /* Open restore window (modal) */
                 if (open_restore_window(&restore_data))
                 {
-                    /* Clear busy pointer - restore window is now open */
-                    safe_set_window_pointer(win_data->window, FALSE);
-                    
                     /* Run restore window event loop (Wait is inside handler) */
                     while (handle_restore_window_events(&restore_data))
                     {
@@ -2499,11 +2509,10 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                 }
                 else
                 {
-                    /* Clear busy pointer on error */
-                    safe_set_window_pointer(win_data->window, FALSE);
-                    
                     CONSOLE_ERROR("Failed to open Restore window\n");
                 }
+                /* Clear busy pointer */
+                safe_set_window_pointer(win_data->window, FALSE);
             }
             break;
         
@@ -2573,7 +2582,7 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                     break;
                 }
                 
-                /* Set busy pointer on main window */
+                /* Set busy pointer on main window (before processing starts) */
                 safe_set_window_pointer(win_data->window, TRUE);
                 
                 /* Process the directory with progress window integration */
@@ -2608,9 +2617,6 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                 /* Change Cancel button to Close now that processing is complete */
                 itidy_main_progress_window_set_button_text(&progress_window, "Close");
                 
-                /* Clear busy pointer */
-                safe_set_window_pointer(win_data->window, FALSE);
-                
                 /* Keep progress window open so user can review - wait for Cancel/Close */
                 while (itidy_main_progress_window_handle_events(&progress_window))
                 {
@@ -2619,6 +2625,9 @@ static BOOL handle_gadget_event(ULONG gadget_id, WORD code, struct iTidyMainWind
                 
                 /* Close progress window */
                 itidy_main_progress_window_close(&progress_window);
+                
+                /* Clear busy pointer (also flushes any stale IDCMP events) */
+                safe_set_window_pointer(win_data->window, FALSE);
             }
             break;
         

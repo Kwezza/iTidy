@@ -25,6 +25,7 @@
 #include "text_templates_window.h"
 #include "deficons_settings_window.h"
 #include "../exclude_paths_window.h"
+#include "../gui_utilities.h"
 #include "../../layout_preferences.h"
 #include "../../writeLog.h"
 #include "../../icon_edit/palette/palette_reduction.h"
@@ -1128,15 +1129,21 @@ static void event_loop(DefIconsCreationWindow *win)
                             break;
 
                         case GID_MANAGE_TEXT_TEMPLATES:
+                            safe_set_window_pointer(win->window, TRUE);
                             open_text_templates_window(win->prefs);
+                            safe_set_window_pointer(win->window, FALSE);
                             break;
 
                         case GID_DEFICONS_CREATION_SETUP:
+                            safe_set_window_pointer(win->window, TRUE);
                             open_itidy_deficons_settings_window(win->prefs);
+                            safe_set_window_pointer(win->window, FALSE);
                             break;
 
                         case GID_DEFICONS_EXCLUDE_PATHS:
+                            safe_set_window_pointer(win->window, TRUE);
                             open_exclude_paths_window(GetGlobalExcludePaths(), NULL);
+                            safe_set_window_pointer(win->window, FALSE);
                             break;
 
                         default:

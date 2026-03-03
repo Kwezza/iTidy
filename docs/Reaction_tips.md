@@ -6,16 +6,17 @@ This document captures hard-won lessons from implementing ReAction GUI component
 
 ## Table of Contents
 1. [Event Loop Patterns](#event-loop-patterns)
-2. [ListBrowser Hierarchical Tree View](#listbrowser-hierarchical-tree-view)
-3. [ListBrowser Column Sorting](#listbrowser-column-sorting)
-4. [ListBrowser Column Resizing](#listbrowser-column-resizing)
-5. [ListBrowser Column Sizing and AutoFit](#listbrowser-column-sizing-and-autofit)
-6. [Dynamic Text Labels](#dynamic-text-labels)
-7. [GetFile Gadget (File/Folder Selection)](#getfile-gadget-filefolder-selection)
-8. [ClickTab Gadget (Tabbed Interface)](#clicktab-gadget-tabbed-interface)
-9. [Gadget Tooltips (HintInfo)](#gadget-tooltips-hintinfo)
-10. [General ReAction Gotchas](#general-reaction-gotchas)
-11. [Memory and Type Safety](#memory-and-type-safety)
+2. [Busy Pointer and IDCMP Flushing](#busy-pointer-and-idcmp-flushing)
+3. [ListBrowser Hierarchical Tree View](#listbrowser-hierarchical-tree-view)
+4. [ListBrowser Column Sorting](#listbrowser-column-sorting)
+5. [ListBrowser Column Resizing](#listbrowser-column-resizing)
+6. [ListBrowser Column Sizing and AutoFit](#listbrowser-column-sizing-and-autofit)
+7. [Dynamic Text Labels](#dynamic-text-labels)
+8. [GetFile Gadget (File/Folder Selection)](#getfile-gadget-filefolder-selection)
+9. [ClickTab Gadget (Tabbed Interface)](#clicktab-gadget-tabbed-interface)
+10. [Gadget Tooltips (HintInfo)](#gadget-tooltips-hintinfo)
+11. [General ReAction Gotchas](#general-reaction-gotchas)
+12. [Memory and Type Safety](#memory-and-type-safety)
 
 ---
 
@@ -211,6 +212,94 @@ case GID_OPEN_CHILD_WINDOW:
 - Parent's loop just calls the handler repeatedly
 - No `WaitPort()` in the parent's loop
 - This prevents the "one behind" bug
+
+---
+
+## Busy Pointer and IDCMP Flushing
+
+### ⚠️ CRITICAL: Flush IDCMP Messages When Clearing Busy Pointer
+
+**Problem:** When a parent window sets `WA_BusyPointer` and opens a child window (synchronous/modal), the parent's IDCMP port continues to queue user events (clicks, close gadget, key presses). Although Intuition shows the busy pointer and the user *sees* the window as disabled, events are still delivered to the UserPort. When the child closes and the parent's `RA_HandleInput()` loop resumes, those stale messages fire immediately -- causing unexpected behaviour like the parent window closing, buttons activating, or gadgets changing state.
+
+**Symptom:** Open a child window from a parent. Click the parent's close gadget (or any button) while it shows the busy pointer. Close the child window. The parent immediately processes the stale close/click event and exits or performs the wrong action.
+
+**Root Cause:** AmigaOS Intuition queues IDCMP messages regardless of the busy pointer state. `WA_BusyPointer` only changes the mouse cursor graphic -- it does **not** block or discard input events. The messages sit in the window's `UserPort` until someone calls `GetMsg()` on them.
+
+**Solution:** When clearing the busy pointer, drain all pending IDCMP messages from the window's UserPort *before* restoring the normal pointer. This is implemented in the `safe_set_window_pointer()` utility wrapper:
+
+```c
+void safe_set_window_pointer(struct Window *window, BOOL busy)
+{
+    if (!window) return;
+    
+    if (prefsWorkbench.workbenchVersion >= 39)
+    {
+        if (busy)
+        {
+            SetWindowPointer(window, WA_BusyPointer, TRUE, TAG_DONE);
+        }
+        else
+        {
+            /* Flush stale IDCMP messages that accumulated while busy.
+             * Without this, queued clicks/close events fire immediately
+             * when the parent event loop resumes. */
+            struct IntuiMessage *msg;
+            while ((msg = (struct IntuiMessage *)GetMsg(window->UserPort)) != NULL)
+            {
+                ReplyMsg((struct Message *)msg);
+            }
+            
+            SetWindowPointer(window, WA_Pointer, NULL, TAG_DONE);
+        }
+    }
+}
+```
+
+**Why This Works:**
+1. Parent sets busy pointer -> opens child window
+2. User clicks on the busy parent -> Intuition queues IDCMP messages on `UserPort`
+3. Child closes -> parent calls `safe_set_window_pointer(window, FALSE)`
+4. The `FALSE` path calls `GetMsg()` in a loop to drain and `ReplyMsg()` every queued message
+5. Normal pointer is restored
+6. Parent's `RA_HandleInput()` loop resumes with a clean, empty message queue
+
+### Complete Pattern: Busy Pointer for Child Windows
+
+All child windows in iTidy are synchronous (the parent's event loop blocks while the child runs). The standard pattern is:
+
+```c
+/* Set busy pointer on parent BEFORE opening child */
+safe_set_window_pointer(parent->window, TRUE);
+
+if (open_child_window(&child_data))
+{
+    /* Child event loop -- parent is blocked here */
+    while (handle_child_events(&child_data)) { }
+    close_child_window(&child_data);
+}
+
+/* Clear busy pointer AFTER child closes.
+ * This also flushes any stale IDCMP messages. */
+safe_set_window_pointer(parent->window, FALSE);
+```
+
+**Key Points:**
+- Set busy **before** the child opens (not after) -- if the open is slow, the parent should already show busy
+- Clear busy **after** the child closes, outside the if/else -- covers both success and failure paths with a single call
+- The flush happens automatically inside `safe_set_window_pointer()` -- no extra code needed at call sites
+- Parent stays busy for the **full lifetime** of the child window, clearly communicating that it cannot be used
+- Never manually dispose stale messages with `ReplyMsg()` at individual call sites -- the centralised wrapper handles it
+
+### When Not to Flush
+
+The flush is specifically appropriate when clearing a busy pointer after a blocking operation (child window, long scan, etc.). Do **not** flush IDCMP messages in normal event processing -- only when transitioning from busy back to normal.
+
+### Implementation Detail: `safe_set_window_pointer()`
+
+- **Defined in:** `src/GUI/gui_utilities.c`
+- **Header:** `src/GUI/gui_utilities.h`
+- **WB 2.x safety:** The wrapper checks `prefsWorkbench.workbenchVersion >= 39` before calling `SetWindowPointer()`. On WB 2.x systems it silently does nothing (no busy pointer support).
+- **NULL-safe:** Passing a NULL window pointer is valid and returns immediately.
 
 ---
 
@@ -2019,6 +2108,13 @@ If flags are correct but no triangles appear, the list wasn't set up before gadg
 
 ## Version History
 
+- **2026-03-03:** Added Busy Pointer and IDCMP Flushing section
+  - CRITICAL: WA_BusyPointer only changes the cursor -- it does NOT block or discard IDCMP events
+  - Stale clicks/close events queue on the parent's UserPort while busy and fire when the event loop resumes
+  - Solution: Flush all pending IDCMP messages with GetMsg()/ReplyMsg() loop when clearing the busy pointer
+  - Implemented centrally in safe_set_window_pointer() so all call sites benefit automatically
+  - Standard pattern: set busy before child open, clear after child close (covers success and error paths)
+  - Parent stays busy for full child window lifetime for clear modal-like behaviour
 - **2026-02-19:** Added ListBrowser Column Sizing and AutoFit section
   - CRITICAL: `LISTBROWSER_VirtualWidth` makes `ci_Width` a percentage of the virtual pixel canvas, not the visible gadget — columns become giant
   - Use `LISTBROWSER_AutoFit, TRUE` as the correct companion to `LISTBROWSER_HorizontalProp, TRUE`

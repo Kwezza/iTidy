@@ -1982,7 +1982,7 @@ static void handle_scan_button(struct iTidyToolCacheWindow *tool_data)
         return;
     }
     
-    /* Set busy pointer */
+    /* Set busy pointer (before processing starts) */
     safe_set_window_pointer(tool_data->window, TRUE);
     
     /* Rescan the directory */
@@ -2168,6 +2168,7 @@ static void handle_replace_batch_button(struct iTidyToolCacheWindow *tool_data)
     
     memset(update_window, 0, sizeof(struct iTidy_DefaultToolUpdateWindow_ReAction));
     
+    safe_set_window_pointer(tool_data->window, TRUE);
     if (iTidy_OpenDefaultToolUpdateWindow_ReAction((struct iTidy_DefaultToolUpdateWindow_ReAction *)update_window, &update_ctx))
     {
         while (iTidy_HandleDefaultToolUpdateEvents_ReAction((struct iTidy_DefaultToolUpdateWindow_ReAction *)update_window))
@@ -2176,6 +2177,7 @@ static void handle_replace_batch_button(struct iTidyToolCacheWindow *tool_data)
         }
         iTidy_CloseDefaultToolUpdateWindow_ReAction((struct iTidy_DefaultToolUpdateWindow_ReAction *)update_window);
     }
+    safe_set_window_pointer(tool_data->window, FALSE);
     
     whd_free(update_window);
     
@@ -2276,6 +2278,7 @@ static void handle_replace_single_button(struct iTidyToolCacheWindow *tool_data)
     
     memset(update_window, 0, sizeof(struct iTidy_DefaultToolUpdateWindow_ReAction));
     
+    safe_set_window_pointer(tool_data->window, TRUE);
     if (iTidy_OpenDefaultToolUpdateWindow_ReAction((struct iTidy_DefaultToolUpdateWindow_ReAction *)update_window, &update_ctx))
     {
         while (iTidy_HandleDefaultToolUpdateEvents_ReAction((struct iTidy_DefaultToolUpdateWindow_ReAction *)update_window))
@@ -2284,6 +2287,7 @@ static void handle_replace_single_button(struct iTidyToolCacheWindow *tool_data)
         }
         iTidy_CloseDefaultToolUpdateWindow_ReAction((struct iTidy_DefaultToolUpdateWindow_ReAction *)update_window);
     }
+    safe_set_window_pointer(tool_data->window, FALSE);
     
     whd_free(update_window);
 }
@@ -2328,8 +2332,6 @@ static void handle_restore_tools_button(struct iTidyToolCacheWindow *tool_data)
         return;
     }
     
-    safe_set_window_pointer(tool_data->window, FALSE);
-    
     /* Run restore window event loop (ReAction-style) */
     keep_running = TRUE;
     while (keep_running)
@@ -2343,6 +2345,7 @@ static void handle_restore_tools_button(struct iTidyToolCacheWindow *tool_data)
     
     /* Close restore window */
     iTidy_CloseToolRestoreWindow(restore_window);
+    safe_set_window_pointer(tool_data->window, FALSE);
     iTidy_CleanupToolBackupManager(&temp_manager);
     
     /* If restores were performed, invalidate cache */

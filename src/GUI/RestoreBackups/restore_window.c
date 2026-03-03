@@ -1553,16 +1553,13 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                                             }
                                             
                                             close_folder_view_window(&folder_view_data);
-                                            
-                                            /* Clear busy pointer after folder view closes */
-                                            safe_set_window_pointer(restore_data->window, FALSE);
                                         }
                                         else
                                         {
                                             log_error(LOG_GUI, "ERROR: Failed to open folder view window\n");
-                                            /* Clear busy pointer on error */
-                                            safe_set_window_pointer(restore_data->window, FALSE);
                                         }
+                                        /* Clear busy pointer */
+                                        safe_set_window_pointer(restore_data->window, FALSE);
                                     }
                                 }
                             }
@@ -1705,16 +1702,13 @@ BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
                                     }
                                     
                                     close_folder_view_window(&folder_view_data);
-                                    
-                                    /* Clear busy pointer after folder view closes */
-                                    safe_set_window_pointer(restore_data->window, FALSE);
                                 }
                                 else
                                 {
                                     log_error(LOG_GUI, "ERROR: Failed to open folder view window\n");
-                                    /* Clear busy pointer on error */
-                                    safe_set_window_pointer(restore_data->window, FALSE);
                                 }
+                                /* Clear busy pointer */
+                                safe_set_window_pointer(restore_data->window, FALSE);
                             }
                             break;
                         

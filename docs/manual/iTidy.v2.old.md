@@ -831,5 +831,5 @@ Before running iTidy for the first time - especially on large or important parti
 **Author:** Kerry Thompson
 **Version:** 2.0
 **Website:** https://github.com/Kwezza/iTidy
-**Special thanks** Darren 'dmcoles' Cole for the excellent "ReBuild" which iTidy interface was rebuilt with.
+**Special thanks:** Darren "dmcoles" Cole for ReBuild, an excellent GUI builder that made iTidy's updated interface possible.
 ---

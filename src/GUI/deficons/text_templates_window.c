@@ -19,6 +19,7 @@
 #define RequesterBase iTidy_TextTemplates_RequesterBase
 
 #include "text_templates_window.h"
+#include "../gui_utilities.h"
 #include "../../writeLog.h"
 #include "../../platform/platform.h"
 #include "../../deficons/deficons_templates.h"
@@ -2107,7 +2108,7 @@ void open_text_templates_window(LayoutPreferences *prefs)
 
     /* Set busy pointer while loading exclusion data and populating the list.
      * Icon reading and filesystem checks can take a moment on slow Amigas. */
-    SetWindowPointer(win.window, WA_BusyPointer, TRUE, TAG_DONE);
+    safe_set_window_pointer(win.window, TRUE);
 
     /* Load EXCLUDETYPE tooltype from PROGDIR:Icons/def_ascii.info */
     load_exclude_types(&win);
@@ -2117,7 +2118,7 @@ void open_text_templates_window(LayoutPreferences *prefs)
     update_selected_type_panel(&win, -1);
 
     /* Dismiss busy pointer now the list is fully populated */
-    SetWindowPointer(win.window, WA_BusyPointer, FALSE, TAG_DONE);
+    safe_set_window_pointer(win.window, FALSE);
 
     event_loop(&win);
 
