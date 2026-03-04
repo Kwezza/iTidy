@@ -313,7 +313,7 @@ typedef struct {
 /* DefIcons Feature Defaults (Workbench 3.2+) */
 #define DEFAULT_ENABLE_DEFICONS_ICON_CREATION              FALSE   /* Disabled by default (opt-in feature) */
 #define DEFAULT_DEFICONS_DISABLED_TYPES                    "tool,prefs,iff,key,kickstart"  /* Disabled types (unchecked in default UI) */
-#define DEFAULT_DEFICONS_FOLDER_ICON_MODE                  0       /* 0=Smart (create if visible), 1=Always, 2=Never */
+#define DEFAULT_DEFICONS_FOLDER_ICON_MODE                  2       /* 0=Smart (create if visible), 1=Always, 2=Never */
 #define DEFAULT_DEFICONS_SKIP_SYSTEM_ASSIGNS               TRUE    /* Skip system directories by default */
 
 #define DEFAULT_DEFICONS_ICON_SIZE_MODE                     1       /* 0=Small(48), 1=Medium(64), 2=Large(100) */

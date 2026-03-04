@@ -233,8 +233,21 @@ static BOOL query_deficons_port(const char *filepath, char *result, int result_s
         return FALSE;
     }
     
-    /* Build Identify command */
-    snprintf(command, sizeof(command), "Identify \"%s\"", filepath);
+    /* Resolve to absolute path so DefIcons can locate the file.
+     * Relative paths (e.g. "Tests/images/foo.IFF") cause rc=10 because
+     * DefIcons does not inherit the caller's current directory. */
+    {
+        char abs_path[512];
+        const char *path_to_use = filepath;
+        BPTR file_lock = Lock((STRPTR)filepath, ACCESS_READ);
+        if (file_lock)
+        {
+            if (NameFromLock(file_lock, (STRPTR)abs_path, sizeof(abs_path)))
+                path_to_use = abs_path;
+            UnLock(file_lock);
+        }
+        snprintf(command, sizeof(command), "Identify \"%s\"", path_to_use);
+    }
     
     /* Create REXX message */
     rxmsg = CreateRexxMsg(reply_port, NULL, NULL);

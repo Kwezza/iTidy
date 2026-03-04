@@ -315,9 +315,17 @@ Changes are applied when you click **OK**, or discarded if you click **Cancel**.
 ### Create Tab
 
 - **Folder Icons** -- Controls whether iTidy creates drawer icons for folders that don't have them.
-  - *Smart (When Folder Has Icons)* -- Only creates a folder icon if the folder will end up showing something on Workbench after the run. **(Default)**
-  - *Always Create* -- Creates a folder icon for every folder that is missing one..
-  - *Never Create* -- Never creates folder icons.
+  - *Smart (When Folder Has Icons)* -- Only creates a folder icon if the folder will end up showing something on Workbench after the run.
+  - *Always Create* -- Creates a folder icon for every folder that is missing one.
+  - *Never Create* -- Never creates folder icons. **(Default)**
+
+  **How iTidy processes folders when "Include Subfolders" is on**
+
+  When **Include Subfolders** is ticked on the main window, iTidy uses a depth-first strategy. Rather than processing the folder you pointed it at first and then stepping into its subfolders, it dives straight down to the deepest subfolder it can find before touching anything. Only once it has reached the bottom does it begin creating icons and tidying, then it gradually works its way back up through each parent folder until it finally reaches the top.
+
+  This means that when you start a recursive run, iTidy may appear to do nothing visible for a while as it descends through the tree. It can end up very deep inside folder structures you might not even know are there. Once it starts working back out, you will see folders being processed in roughly bottom-up order -- the deepest nested folders first, then their parents, and so on.
+
+  This approach is intentional. A folder can only be given a drawer icon once iTidy knows what is inside it, and on a recursive run it does not know that until the contents have been processed. By going deep first, each folder's icon decision is made with complete information as the recursion unwinds.
 
   **How Smart works**
   Smart mode is designed to avoid creating folder icons for folders that would still look “empty” on Workbench.
@@ -333,6 +341,8 @@ Changes are applied when you click **OK**, or discarded if you click **Cancel**.
     This makes recursive Smart mode faster, because iTidy learns what’s inside while it’s doing the real work.
 
 >   **Note:** Smart mode is quickest when iTidy can decide based on existing icons. If a folder has no icons at all, iTidy may need to ask DefIcons about many files to work out what would get an icon. On a large collection, that can mean a DefIcons ARexx call for every file in every subfolder, which can be slow on Classic hardware.
+
+>   **Performance warning:** When Smart mode is combined with "Include Subfolders" on the main window, iTidy will recurse into every subfolder, sub-subfolder, and so on -- querying DefIcons for files at every level and then backtracking up through the entire folder tree to determine which folders need drawer icons. On deeply nested volumes or large collections this can take a very long time on Classic Amiga hardware. If processing time is a concern, use "Never Create" for folder icons, or limit the run to a single folder without recursion.
 
 - **Skip Files In WHDLoad Folders** -- When enabled, folders containing a WHDLoad slave file (`*.slave`) are skipped during icon creation. The drawer icon for the WHDLoad folder itself is still created, but no icons are generated for files inside it. Default: Off.
 
@@ -413,7 +423,7 @@ These settings control the visual appearance of generated thumbnail icons.
 
 ### Default Values Summary
 
-- **Folder Icons** -- Smart (When Folder Has Icons)
+- **Folder Icons** -- Never Create
 - **Skip WHDLoad Folders** -- Off
 - **Text File Previews** -- On
 - **Picture File Previews** -- On

@@ -24,9 +24,9 @@ Controls whether iTidy creates drawer icons for folders that do not have them.
 
 | Option | Description |
 |--------|-------------|
-| Smart (When Folder Has Icons) | A drawer icon is created only if the folder will have visible contents on Workbench after the run. See below for full details. **(Default)** |
+| Smart (When Folder Has Icons) | A drawer icon is created only if the folder will have visible contents on Workbench after the run. See below for full details. |
 | Always Create | A drawer icon is always created for folders without one. |
-| Never Create | Folder icons are never created. |
+| Never Create | Folder icons are never created. **(Default)** |
 
 **Hint:** "Controls whether iTidy creates drawer icons for folders that do not already have them."
 
@@ -54,6 +54,8 @@ This means:
 - The recursion depth limit is 100 levels, which is effectively unlimited for real-world use.
 
 The post-order approach is more efficient than non-recursive Smart mode because it avoids double-scanning. For very large collections (for example a WHDLoad library with thousands of subfolders), the main cost is the DefIcons ARexx call per file, not the folder traversal itself.
+
+> **Performance warning:** When Smart mode is combined with "Include Subfolders" on the main window, iTidy will recurse into every subfolder, sub-subfolder, and so on, querying DefIcons for files at every level and then backtracking up through the folder tree to determine which folders need drawer icons. On deeply nested volumes or large collections this can be very slow on Classic Amiga hardware, because each file requires an individual ARexx call to DefIcons for type identification. If processing time is a concern, consider using "Never Create" for folder icons, or limiting the run to a single folder without recursion.
 
 ### Skip files in WHDLoad folders
 *Rebuild IDENT: `dco_cb_skip_whdload_folders` | Name: "Skip Files In WHDLoad Folders" | Type: Checkbox gadget*

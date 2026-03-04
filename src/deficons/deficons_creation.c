@@ -274,8 +274,10 @@ BOOL deficons_folder_has_visible_contents(const char *path,
     if (!path || !prefs)
         return FALSE;
 
-    /* Skip system paths - they won't get icons anyway */
+    /* Skip system paths and user-excluded paths - they won't get icons anyway */
     if (deficons_is_system_path(path, prefs))
+        return FALSE;
+    if (deficons_is_excluded_path(path, prefs))
         return FALSE;
 
     /* WHDLoad folder: the parent should still create a drawer icon for it,
@@ -606,6 +608,23 @@ BOOL deficons_create_missing_icons_in_directory(
             /* Non-recursive (single-folder) mode: pre-scan as before */
             {
                 BOOL should_create = FALSE;
+
+                /* Skip system and user-excluded subdirectory paths before
+                 * the potentially expensive smart pre-scan.  The top-level
+                 * checks at function entry only guard the root directory
+                 * itself, not subdirectories discovered during ExNext. */
+                if (deficons_is_system_path(fullpath, prefs))
+                {
+                    log_debug(LOG_ICONS, "Folder skipped (system path): %s\n",
+                              fib->fib_FileName);
+                    continue;
+                }
+                if (deficons_is_excluded_path(fullpath, prefs))
+                {
+                    log_debug(LOG_ICONS, "Folder skipped (excluded path): %s\n",
+                              fib->fib_FileName);
+                    continue;
+                }
 
                 /* Determine whether to create a drawer icon */
                 switch (prefs->deficons_folder_icon_mode)

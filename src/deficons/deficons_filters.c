@@ -211,6 +211,8 @@ BOOL deficons_is_excluded_path(const char *path, const LayoutPreferences *prefs)
 BOOL deficons_is_system_path(const char *path, const LayoutPreferences *prefs)
 {
     int i;
+    char path_with_slash[520];
+    size_t path_len;
     
     if (!path || !prefs)
     {
@@ -225,12 +227,34 @@ BOOL deficons_is_system_path(const char *path, const LayoutPreferences *prefs)
         return FALSE;
     }
     
+    /* Build path with trailing slash for directory name matching.
+     * System prefixes end with '/' (e.g., "SYS:C/") which won't match
+     * a bare directory path like "SYS:C". Appending '/' allows matching
+     * both "SYS:C" (the directory itself) and "SYS:C/List" (contents). */
+    path_len = strlen(path);
+    path_with_slash[0] = '\0';
+    if (path_len > 0 && path_len < sizeof(path_with_slash) - 2 &&
+        path[path_len - 1] != '/')
+    {
+        memcpy(path_with_slash, path, path_len);
+        path_with_slash[path_len] = '/';
+        path_with_slash[path_len + 1] = '\0';
+    }
+    
     /* Check each system path prefix */
     for (i = 0; g_system_path_prefixes[i] != NULL; i++)
     {
         if (starts_with_ignore_case(path, g_system_path_prefixes[i]))
         {
             log_debug(LOG_ICONS, "System path detected: %s\n", path);
+            return TRUE;
+        }
+        /* Also match directory name without trailing slash
+         * e.g., path "SYS:C" against prefix "SYS:C/" */
+        if (path_with_slash[0] != '\0' &&
+            starts_with_ignore_case(path_with_slash, g_system_path_prefixes[i]))
+        {
+            log_debug(LOG_ICONS, "System path detected (directory): %s\n", path);
             return TRUE;
         }
     }
