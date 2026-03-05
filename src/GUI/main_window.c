@@ -211,6 +211,7 @@ static void handle_main_save_menu(struct iTidyMainWindow *win_data);
 static void handle_main_save_as_menu(struct iTidyMainWindow *win_data);
 static struct MenuItem *find_menu_item_by_id(struct Menu *menu_strip, ULONG target_id);
 static void sync_backup_menu_check(struct iTidyMainWindow *win_data);
+static void sync_log_level_menu_check(struct iTidyMainWindow *win_data);
 void handle_menu_open_log_folder(struct Window *parent);
 
 /* ReAction Requester Helper */
@@ -930,6 +931,7 @@ BOOL open_itidy_main_window(struct iTidyMainWindow *win_data)
     if (win_data->menu_strip)
     {
         SetMenuStrip(win_data->window, win_data->menu_strip);
+        sync_log_level_menu_check(win_data);
     }
     
     win_data->window_open = TRUE;
@@ -1413,6 +1415,7 @@ static void sync_gui_from_preferences(struct iTidyMainWindow *win_data, const La
     
     /* Sync backup toggle menu item CHECKED state */
     sync_backup_menu_check(win_data);
+    sync_log_level_menu_check(win_data);
     
     log_info(LOG_GUI, "GUI synchronized from loaded preferences\n");
 }
@@ -1950,6 +1953,47 @@ static void sync_backup_menu_check(struct iTidyMainWindow *win_data)
     }
 }
 
+static void sync_log_level_menu_check(struct iTidyMainWindow *win_data)
+{
+    LogLevel current_level;
+    ULONG log_menu_ids[5];
+    ULONG active_id;
+    struct MenuItem *mitem;
+    int i;
+
+    if (!win_data || !win_data->menu_strip)
+        return;
+
+    current_level = get_global_log_level();
+
+    switch (current_level)
+    {
+        case LOG_LEVEL_DEBUG:   active_id = MENU_SETTINGS_LOG_DEBUG;    break;
+        case LOG_LEVEL_INFO:    active_id = MENU_SETTINGS_LOG_INFO;     break;
+        case LOG_LEVEL_WARNING: active_id = MENU_SETTINGS_LOG_WARNING;  break;
+        case LOG_LEVEL_ERROR:   active_id = MENU_SETTINGS_LOG_ERROR;    break;
+        default:                active_id = MENU_SETTINGS_LOG_DISABLED; break;
+    }
+
+    log_menu_ids[0] = MENU_SETTINGS_LOG_DISABLED;
+    log_menu_ids[1] = MENU_SETTINGS_LOG_DEBUG;
+    log_menu_ids[2] = MENU_SETTINGS_LOG_INFO;
+    log_menu_ids[3] = MENU_SETTINGS_LOG_WARNING;
+    log_menu_ids[4] = MENU_SETTINGS_LOG_ERROR;
+
+    for (i = 0; i < 5; i++)
+    {
+        mitem = find_menu_item_by_id(win_data->menu_strip, log_menu_ids[i]);
+        if (mitem)
+        {
+            if (log_menu_ids[i] == active_id)
+                mitem->Flags |= CHECKED;
+            else
+                mitem->Flags &= ~CHECKED;
+        }
+    }
+}
+
 /*------------------------------------------------------------------------*/
 /* Menu Handling                                                         */
 /*------------------------------------------------------------------------*/
@@ -2105,24 +2149,28 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                 case MENU_SETTINGS_LOG_DEBUG:
                     set_global_log_level(LOG_LEVEL_DEBUG);
                     ((LayoutPreferences *)GetGlobalPreferences())->logLevel = LOG_LEVEL_DEBUG;
+                    log_info(LOG_GENERAL, "iTidy v" ITIDY_VERSION " built " __DATE__ " " __TIME__ " (" ITIDY_BUILD_TARGET ")\n");
                     log_info(LOG_GUI, "Log level: DEBUG\n");
                     break;
                 
                 case MENU_SETTINGS_LOG_INFO:
                     set_global_log_level(LOG_LEVEL_INFO);
                     ((LayoutPreferences *)GetGlobalPreferences())->logLevel = LOG_LEVEL_INFO;
+                    log_info(LOG_GENERAL, "iTidy v" ITIDY_VERSION " built " __DATE__ " " __TIME__ " (" ITIDY_BUILD_TARGET ")\n");
                     log_info(LOG_GUI, "Log level: INFO\n");
                     break;
                 
                 case MENU_SETTINGS_LOG_WARNING:
                     set_global_log_level(LOG_LEVEL_WARNING);
                     ((LayoutPreferences *)GetGlobalPreferences())->logLevel = LOG_LEVEL_WARNING;
+                    log_info(LOG_GENERAL, "iTidy v" ITIDY_VERSION " built " __DATE__ " " __TIME__ " (" ITIDY_BUILD_TARGET ")\n");
                     log_info(LOG_GUI, "Log level: WARNING\n");
                     break;
                 
                 case MENU_SETTINGS_LOG_ERROR:
                     set_global_log_level(LOG_LEVEL_ERROR);
                     ((LayoutPreferences *)GetGlobalPreferences())->logLevel = LOG_LEVEL_ERROR;
+                    log_info(LOG_GENERAL, "iTidy v" ITIDY_VERSION " built " __DATE__ " " __TIME__ " (" ITIDY_BUILD_TARGET ")\n");
                     log_info(LOG_GUI, "Log level: ERROR\n");
                     break;
                 
@@ -2257,6 +2305,8 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                         "ReAction GUI Version (WB 3.2+)\n\n"
                         "Automatically arranges icon layouts\n"
                         "and resizes folder windows.\n\n"
+                        "Built: " __DATE__ " " __TIME__ "\n"
+                        "CPU target: " ITIDY_BUILD_TARGET "\n\n"
                         "(c) 2025-2026",
                         "_Ok",
                         REQIMAGE_INFO);

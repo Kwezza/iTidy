@@ -738,6 +738,7 @@ int main(int argc, char **argv)
     whd_memory_init();
     
     log_info(LOG_GENERAL, "=== iTidy GUI version starting up (VBCC build) ===\n");
+    log_info(LOG_GENERAL, "iTidy v" ITIDY_VERSION " built " __DATE__ " " __TIME__ " (" ITIDY_BUILD_TARGET ")\n");
 
 #ifdef DEBUG
     log_debug(LOG_GENERAL, "iTidy GUI V%s - Amiga Workbench Icon Tidier\n", VERSION);
