@@ -119,114 +119,63 @@ extern struct WBStartup *_WBenchMsg;
 /*---------------------------------------------------------------------------*/
 
 /**
- * @brief Check if Workbench 3.0 or later is running
- * 
- * iTidy requires Workbench 3.0 (Kickstart 3.0, v39+) minimum.
- * Earlier versions will crash due to missing GadTools features.
- * 
- * This check uses SysBase->LibNode.lib_Version which reflects the
- * Kickstart/exec.library version:
+ * @brief Check if Workbench 3.2 or later is running
+ *
+ * iTidy v2.0 requires Workbench 3.2 (exec v47+) because it uses the
+ * ReAction GUI toolkit (window.class, layout.gadget, etc.) which is
+ * only bundled with Workbench 3.2+.  Users still running an older
+ * Workbench should keep using iTidy v1.x (GadTools build).
+ *
+ * Relevant exec.library version numbers:
  *   - v37 = Kickstart 2.04 (Workbench 2.0)
- *   - v38 = Kickstart 2.1 (Workbench 2.1)
- *   - v39 = Kickstart 3.0 (Workbench 3.0)
- *   - v40 = Kickstart 3.1 (Workbench 3.1)
- * 
- * @return 1 if OK to run (v39+), 0 if version too old (should quit)
+ *   - v39 = Kickstart 3.0  (Workbench 3.0)
+ *   - v40 = Kickstart 3.1  (Workbench 3.1)
+ *   - v47 = Workbench 3.2  (first ReAction-bundled release)
+ *
+ * AutoRequest() is used for the error dialog because it is available
+ * on all Workbench versions back to 1.x, so the message is always
+ * visible regardless of what the user is running.
+ *
+ * @return 1 if OK to run (v47+), 0 if version too old (caller should quit)
  */
-static int RequireWB3OrBetter(void)
+static int RequireWB32OrBetter(void)
 {
     UWORD detected_version;
-    /* BPTR log_file; */
-    char version_msg[256];
-    
+
     /* Get the exec.library version */
     detected_version = SysBase->LibNode.lib_Version;
-    
-    /* NOTE: Diagnostic log file creation disabled - no longer needed for WB 3.0+ only target */
-    /*
-    log_file = Open((STRPTR)"PROGDIR:version_check.log", MODE_NEWFILE);
-    if (log_file)
+
+    /* Exec v47 == Workbench 3.2 (first version bundling ReAction) */
+    if (detected_version >= 47)
     {
-        sprintf(version_msg, "iTidy Version Check\n");
-        Write(log_file, version_msg, strlen(version_msg));
-        sprintf(version_msg, "===================\n");
-        Write(log_file, version_msg, strlen(version_msg));
-        sprintf(version_msg, "SysBase->LibNode.lib_Version = %u\n", detected_version);
-        Write(log_file, version_msg, strlen(version_msg));
-        sprintf(version_msg, "Required: 39 (Kickstart/WB 3.0) or higher\n");
-        Write(log_file, version_msg, strlen(version_msg));
-        
-        if (detected_version >= 39)
-        {
-            sprintf(version_msg, "Result: OK - Version check passed\n");
-            Write(log_file, version_msg, strlen(version_msg));
-        }
-        else
-        {
-            sprintf(version_msg, "Result: FAILED - Version too old\n");
-            Write(log_file, version_msg, strlen(version_msg));
-            sprintf(version_msg, "Displaying error alert and exiting...\n");
-            Write(log_file, version_msg, strlen(version_msg));
-        }
-        
-        Close(log_file);
-    }
-    */
-    
-    /* Exec v39 == Kickstart 3.0 (Workbench 3.0 era) */
-    if (detected_version >= 39)
-    {
-        /* Version OK - write to console and continue */
-        sprintf(version_msg, "[Version Check] SysBase version %u - OK\n", detected_version);
-        PutStr(version_msg);
         return 1;
     }
 
-    /* Version too old - display error */
-    sprintf(version_msg, "[Version Check] SysBase version %u - TOO OLD (need 39+)\n", detected_version);
-    PutStr(version_msg);
-    
-    /* Display error alert using AutoRequest (compatible with WB1.x+) */
+    /* Version too old - use DisplayAlert() which works at a system level
+       even when no console or Intuition screen is available, so users who
+       double-click from an older Workbench always see the message.
+       Available since OS 1.1. */
     {
-        struct IntuiText body_text;
-        struct IntuiText pos_text;
-        
-        /* Initialize body text (keep it simple - single line) */
-        body_text.FrontPen = 1;
-        body_text.BackPen = 0;
-        body_text.DrawMode = JAM1;
-        body_text.LeftEdge = 10;
-        body_text.TopEdge = 10;
-        body_text.ITextFont = NULL;
-        body_text.IText = (UBYTE *)"iTidy requires Workbench 3.0 or later";
-        body_text.NextText = NULL;
-        
-        /* Initialize positive button text */
-        pos_text.FrontPen = 1;
-        pos_text.BackPen = 0;
-        pos_text.DrawMode = JAM1;
-        pos_text.LeftEdge = 6;
-        pos_text.TopEdge = 3;
-        pos_text.ITextFont = NULL;
-        pos_text.IText = (UBYTE *)"Exit";
-        pos_text.NextText = NULL;
-        
-        /* Try to show requester */
-        AutoRequest(NULL, &body_text, &pos_text, NULL, 0, 0, 300, 60);
-        
-        /* Always echo to Shell (primary output for older systems) */
-        PutStr("\n");
-        PutStr("===============================================\n");
-        PutStr("  iTidy - Version Check Error\n");
-        PutStr("===============================================\n");
-        PutStr("\n");
-        PutStr("iTidy requires Workbench 3.0 or later.\n");
-        PutStr("You appear to be running an older version.\n");
-        PutStr("\n");
-        PutStr("If you need a WB2/WB1 build, please contact:\n");
-        PutStr("GitHub: Kwezza/iTidy\n");
-        PutStr("\n");
+        UBYTE alert_msg[] = {
+            0, 0, 20, 20,
+            'i','T','i','d','y',' ','v','2',
+            ' ','r','e','q','u','i','r','e','s',
+            ' ','W','o','r','k','b','e','n','c','h',
+            ' ','3','.','2',' ','o','r',' ','l','a','t','e','r','.',
+            0,
+            0, 0, 20, 34,
+            'F','o','r',' ','W','B',' ','3','.','0','/','3','.','1',
+            ' ','u','s','e',' ','i','T','i','d','y',' ','v','1','.',
+            0,
+            0   /* end of alert string */
+        };
+
+        DisplayAlert(RECOVERY_ALERT, alert_msg, 50);
     }
+
+    /* Also write to Shell output in case launched from CLI */
+    PutStr("iTidy v2 requires Workbench 3.2 or later.\n");
+    PutStr("For WB 3.0/3.1 use iTidy v1. See: github.com/Kwezza/iTidy\n");
 
     return 0;
 }
@@ -661,10 +610,14 @@ void FreeIconErrorList(IconErrorTrackerStruct *tracker)
 
 int main(int argc, char **argv)
 {
-    /* CRITICAL: Check Workbench version FIRST (before any initialization) */
-    if (!RequireWB3OrBetter())
+    /* CRITICAL: Check Workbench version FIRST (before any initialization).
+     * iTidy v2 uses ReAction (window.class, layout.gadget, etc.) which
+     * requires Workbench 3.2+.  If the user is still on WB 3.0/3.1 they
+     * should use iTidy v1 instead - show a clear message before anything
+     * else attempts to open libraries that may not exist on their system. */
+    if (!RequireWB32OrBetter())
     {
-        /* Version check failed - alert displayed, exit cleanly */
+        /* Version check failed - alert already displayed, exit cleanly */
         return RETURN_FAIL;
     }
 
@@ -791,13 +744,13 @@ int main(int argc, char **argv)
     whd_free(stringWBVersion);
 #endif
 
-    /* KEEP: Secondary version check (primary WB3.0+ check is at startup) */
-    /* This check is now redundant (RequireWB3OrBetter() already enforced v39+) */
-    /* but kept for belt-and-suspenders safety in case GetWorkbenchVersion() differs */
-    if (workbenchVersion < 39000)
+    /* Secondary version check - belt-and-suspenders in case GetWorkbenchVersion()
+     * uses a different source than SysBase->LibNode.lib_Version.
+     * v47000 == Workbench 3.2 in the GetWorkbenchVersion() encoding. */
+    if (workbenchVersion < 47000)
     {
-        CONSOLE_ERROR("This program requires Workbench 3.0 or higher.\n");
-        log_error(LOG_GENERAL, "Workbench version check failed: %d (requires 39000+)\n", workbenchVersion);
+        CONSOLE_ERROR("This program requires Workbench 3.2 or higher.\n");
+        log_error(LOG_GENERAL, "Workbench version check failed: %d (requires 47000+ for WB 3.2)\n", workbenchVersion);
         return RETURN_FAIL;
     }
 

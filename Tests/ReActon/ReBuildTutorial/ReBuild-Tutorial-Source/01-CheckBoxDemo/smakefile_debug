@@ -1,8 +1,0 @@
-OBJS= cbdemo.o
-CFLAGS=	ICONS  PARMS=REGISTER debug=symbol MAP MAPHUNK MAPSYMBOLS MAPLIB MAPFILE=cbdemo.map VERBOSE
-main: $(OBJS)
-   sc link to cbDemo.debug with <<
-$(OBJS)
-<
-
-cbdemo.o: cbdemo.c

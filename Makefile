@@ -7,7 +7,7 @@
 CONSOLE ?= 0
 
 # Project name
-PROJECT = iTidy
+PROJECT = iTidy2
 
 # Directories
 SRC_DIR = src

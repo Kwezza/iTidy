@@ -2195,19 +2195,19 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                 /* --- Help menu --- */
                 case MENU_HELP_GUIDE:
                     {
-                        /* Resolve PROGDIR:iTidy.guide to an absolute path before
+                        /* Resolve PROGDIR:iTidy2.guide to an absolute path before
                          * passing to OpenWorkbenchObject() - it does not understand
                          * process-local assignments like PROGDIR:               */
                         BPTR guide_lock;
                         char guide_abs[512];
                         struct Library *WBBase2;
 
-                        guide_lock = Lock("PROGDIR:iTidy.guide", ACCESS_READ);
+                        guide_lock = Lock("PROGDIR:iTidy2.guide", ACCESS_READ);
                         if (!guide_lock)
                         {
                             ShowReActionRequester(win_data->window,
                                 "iTidy Guide",
-                                "Could not find iTidy.guide.\n\n"
+                                "Could not find iTidy2.guide.\n\n"
                                 "The guide file should be placed in\n"
                                 "the iTidy program directory.",
                                 "_OK",
@@ -2219,7 +2219,7 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                         if (!NameFromLock(guide_lock, guide_abs, (LONG)sizeof(guide_abs)))
                         {
                             /* Fallback: unlikely but handle gracefully */
-                            strncpy(guide_abs, "PROGDIR:iTidy.guide", sizeof(guide_abs) - 1);
+                            strncpy(guide_abs, "PROGDIR:iTidy2.guide", sizeof(guide_abs) - 1);
                             guide_abs[sizeof(guide_abs) - 1] = '\0';
                         }
                         UnLock(guide_lock);
@@ -2231,7 +2231,7 @@ static BOOL handle_menu_selection(ULONG menu_number, struct iTidyMainWindow *win
                             {
                                 ShowReActionRequester(win_data->window,
                                     "iTidy Guide",
-                                    "Could not open iTidy.guide.\n"
+                                    "Could not open iTidy2.guide.\n"
                                     "AmigaGuide may not be installed.",
                                     "_OK",
                                     REQIMAGE_WARNING);

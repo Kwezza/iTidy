@@ -1,3 +1,0 @@
-
-Build complete: Bin/Amiga/iTidy
-

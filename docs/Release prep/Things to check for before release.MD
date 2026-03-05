@@ -142,8 +142,8 @@
   - [ ] Reasonable compression ratio
 - [ ] **Package contains all required files**:
   - [ ] iTidy executable
-  - [ ] iTidy.guide (AmigaGuide documentation)
-  - [ ] iTidy.guide.info
+  - [ ] iTidy2.guide (AmigaGuide documentation)
+  - [ ] iTidy2.guide.info
   - [ ] iTidy.readme (Aminet README)
   - [ ] LICENSE file
   - [ ] VERSION_HISTORY.md or ChangeLog

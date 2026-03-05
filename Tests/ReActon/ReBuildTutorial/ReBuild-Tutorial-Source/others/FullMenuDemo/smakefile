@@ -1,8 +1,0 @@
-OBJS= fmdemo.o
-CFLAGS=	ICONS  OPTIMIZE OPTSIZE OPTLOOP PARMS=REGISTER VERBOSE
-main: $(OBJS)
-   sc link to fmDemo with <<
-$(OBJS)
-<
-
-fmdemo.o: fmdemo.c

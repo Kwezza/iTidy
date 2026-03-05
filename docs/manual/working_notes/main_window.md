@@ -252,7 +252,7 @@ The five logging level options are mutually exclusive -- selecting one deselects
 
 | Menu Item | Description |
 |-----------|-------------|
-| iTidy Guide... | Opens `PROGDIR:iTidy.guide` using AmigaGuide. A warning is shown if the guide file is not found. |
+| iTidy Guide... | Opens `PROGDIR:iTidy2.guide` using AmigaGuide. A warning is shown if the guide file is not found. |
 | About | Shows an information requester with the version number, description, and copyright notice. |
 
 ---

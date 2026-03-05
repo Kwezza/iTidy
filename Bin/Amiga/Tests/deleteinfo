@@ -1,7 +1,0 @@
-delete  images/#?.info
-delete  #?.info
-delete  images/png/#?.info
-delete  png/#?.info 
-delete  images/JPeg/#?.info
-delete  images/gif/#?.info
-delete  TextIcons/#?.info
