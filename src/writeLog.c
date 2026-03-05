@@ -201,22 +201,20 @@ static BOOL ensure_logs_directory(void) {
     /* Failed to create directory - get error code */
     error = IoErr();
     
-    /* Try to log the error to console since logging system isn't ready yet */
-#ifdef DEBUG
-    Printf("WARNING: Failed to create logs directory '%s' (IoErr: %ld)\n", 
-           g_logsDirectory, error);
+    /* Report failure via both console-safe macros and AmigaOS Printf */
+    CONSOLE_ERROR("WARNING: Failed to create logs directory '%s' (IoErr: %ld)\n",
+                  g_logsDirectory, (long)error);
     
     /* Check if PROGDIR: itself is accessible */
     lock = Lock("PROGDIR:", ACCESS_READ);
     if (lock) {
-        Printf("PROGDIR: is accessible\n");
+        CONSOLE_STATUS("  PROGDIR: is accessible\n");
         UnLock(lock);
     } else {
-        Printf("ERROR: PROGDIR: is NOT accessible! (IoErr: %ld)\n", IoErr());
+        CONSOLE_ERROR("  ERROR: PROGDIR: is NOT accessible! (IoErr: %ld)\n", (long)IoErr());
     }
     
-    Printf("Falling back to PROGDIR: (logs in same directory as executable)\n");
-#endif
+    CONSOLE_WARNING("  Falling back to PROGDIR: (logs in executable directory)\n");
     
     return FALSE;
 }
@@ -265,12 +263,16 @@ void initialize_log_system(BOOL cleanOldLogs) {
     
     /* Set up logs directory path */
     snprintf(g_logsDirectory, sizeof(g_logsDirectory), "PROGDIR:logs/");
+    CONSOLE_STATUS("Log system init: checking/creating '%s'...\n", g_logsDirectory);
     
     /* Create logs directory */
     if (!ensure_logs_directory()) {
         /* If we can't create it, fall back to PROGDIR: */
         strncpy(g_logsDirectory, "PROGDIR:", sizeof(g_logsDirectory));
         g_logsDirectory[sizeof(g_logsDirectory) - 1] = '\0';
+        CONSOLE_WARNING("Log system: falling back to '%s'\n", g_logsDirectory);
+    } else {
+        CONSOLE_STATUS("Log system: logs directory OK - '%s'\n", g_logsDirectory);
     }
     
     /* Clean old logs if requested */

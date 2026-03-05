@@ -70,6 +70,12 @@
 /* VBCC: Set stack size to 80KB at compile time */
 long __stack = 80000L;
 
+/* VBCC -lauto: open a console window when launched from Workbench in CONSOLE builds.
+ * Without this, printf() output has nowhere to go when double-clicking the icon. */
+#ifdef ENABLE_CONSOLE
+char __stdiowin[] = "CON:0/0/640/300/iTidy Debug Console/CLOSE/AUTO";
+#endif
+
 /* Define global variables */
 struct Screen *screen = NULL;
 struct Window *window = NULL;
