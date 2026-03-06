@@ -1,0 +1,502 @@
+/**
+ * backup_catalog.c - iTidy Backup System Catalog Management Implementation
+ * 
+ * Implements human-readable catalog.txt file management.
+ * 
+ * Author: Kerry Thompson
+ * Date: October 24, 2025
+ */
+
+#include "backup_catalog.h"
+#include "backup_paths.h"
+#include <string.h>
+#include <stdio.h>
+#include <time.h>
+#include <stdint.h>
+
+/* Amiga-specific includes */
+#include <dos/dos.h>
+#include <proto/dos.h>
+#include "../writeLog.h"
+/* VBCC C99 mode has issues with variadic macros, just disable for now */
+#define DEBUG_LOG(...) /* disabled */
+
+/*========================================================================*/
+/* Constants                                                             */
+/*========================================================================*/
+
+#define CATALOG_VERSION "iTidy Backup Catalog v1.1"
+#define CATALOG_SEPARATOR "==============================================================================="
+#define CATALOG_COLUMN_HEADER "# Index    | Subfolder | Size    | Icons | Original Path                            | Window Geometry | VM"
+#define CATALOG_COLUMN_DIVIDER "-----------+-----------+---------+-------+------------------------------------------+----------------+---"
+#define MAX_LINE_LENGTH 512
+
+/*========================================================================*/
+/* Helper Functions                                                      */
+/*========================================================================*/
+
+/**
+ * @brief Get current timestamp as string
+ */
+static void GetTimestampString(char *buffer, size_t bufSize) {
+    time_t now;
+    struct tm *timeinfo;
+    
+    time(&now);
+    timeinfo = localtime(&now);
+    
+    if (timeinfo) {
+        strftime(buffer, bufSize, "%Y-%m-%d %H:%M:%S", timeinfo);
+    } else {
+        snprintf(buffer, bufSize, "Unknown");
+    }
+}
+
+/**
+ * @brief Write a line to file (AmigaDOS)
+ */
+static BOOL WriteLineToFile(BPTR file, const char *line) {
+    LONG len = strlen(line);
+    if (Write(file, (APTR)line, len) != len) {
+        return FALSE;
+    }
+    if (Write(file, (APTR)"\n", 1) != 1) {
+        return FALSE;
+    }
+    return TRUE;
+}
+
+/*========================================================================*/
+/* Size Formatting                                                       */
+/*========================================================================*/
+
+void FormatSizeForCatalog(char *outStr, ULONG sizeBytes) {
+    if (!outStr) {
+        return;
+    }
+    
+    if (sizeBytes == 0) {
+        strcpy(outStr, "N/A");
+        return;
+    }
+    
+    if (sizeBytes < 1024) {
+        snprintf(outStr, 16, "%lu B", sizeBytes);
+    } else if (sizeBytes < 1024 * 1024) {
+        snprintf(outStr, 16, "%lu KB", sizeBytes / 1024);
+    } else if (sizeBytes < 1024 * 1024 * 1024) {
+        snprintf(outStr, 16, "%lu MB", sizeBytes / (1024 * 1024));
+    } else {
+        /* Integer division with one decimal place: GB.tenths */
+        ULONG gb = sizeBytes / (1024UL * 1024 * 1024);
+        ULONG decimal = ((sizeBytes % (1024UL * 1024 * 1024)) * 10) / (1024UL * 1024 * 1024);
+        snprintf(outStr, 16, "%lu.%lu GB", gb, decimal);
+    }
+}
+
+/*========================================================================*/
+/* Path Building                                                         */
+/*========================================================================*/
+
+BOOL GetCatalogPath(char *outPath, const char *runDirectory) {
+    int length;
+    
+    if (!outPath || !runDirectory) {
+        return FALSE;
+    }
+    
+    length = snprintf(outPath, MAX_BACKUP_PATH, "%s/%s", 
+                     runDirectory, CATALOG_FILENAME);
+    
+    if (length >= MAX_BACKUP_PATH) {
+        DEBUG_LOG("Catalog path too long: %d chars", length);
+        return FALSE;
+    }
+    
+    return TRUE;
+}
+
+/*========================================================================*/
+/* Catalog Creation and Writing                                          */
+/*========================================================================*/
+
+BOOL CreateCatalog(BackupContext *ctx) {
+    char catalogPath[MAX_BACKUP_PATH];
+    char timestamp[64];
+    char line[256];
+    
+    if (!ctx || !ctx->runDirectory[0]) {
+        DEBUG_LOG("Invalid context for catalog creation");
+        return FALSE;
+    }
+    
+    /* Build catalog path */
+    if (!GetCatalogPath(catalogPath, ctx->runDirectory)) {
+        return FALSE;
+    }
+    
+    DEBUG_LOG("Creating catalog: %s", catalogPath);
+    
+    /* Open catalog file for writing */
+    {
+        BPTR file = Open((STRPTR)catalogPath, MODE_NEWFILE);
+        if (!file) {
+            DEBUG_LOG("Failed to create catalog file: %s", catalogPath);
+            return FALSE;
+        }
+        ctx->catalogFile = file;
+    }
+    ctx->catalogOpen = TRUE;
+    
+    /* Write header */
+    GetTimestampString(timestamp, sizeof(timestamp));
+    
+    if (!WriteLineToFile(ctx->catalogFile, CATALOG_VERSION)) {
+        return FALSE;
+    }
+    if (!WriteLineToFile(ctx->catalogFile, CATALOG_SEPARATOR)) {
+        return FALSE;
+    }
+    
+    snprintf(line, sizeof(line), "Run Number: %04u", ctx->runNumber);
+    WriteLineToFile(ctx->catalogFile, line);
+    
+    snprintf(line, sizeof(line), "Session Started: %s", timestamp);
+    WriteLineToFile(ctx->catalogFile, line);
+    
+    /* Write source directory if available */
+    if (ctx->sourceDirectory[0] != '\0') {
+        snprintf(line, sizeof(line), "Source Directory: %s", ctx->sourceDirectory);
+        WriteLineToFile(ctx->catalogFile, line);
+    }
+    
+    /* LhA version (if available) */
+    if (ctx->lhaAvailable) {
+        snprintf(line, sizeof(line), "LhA Path: %s", ctx->lhaPath);
+        WriteLineToFile(ctx->catalogFile, line);
+    } else {
+        WriteLineToFile(ctx->catalogFile, "LhA: Not available");
+    }
+    
+    WriteLineToFile(ctx->catalogFile, CATALOG_SEPARATOR);
+    WriteLineToFile(ctx->catalogFile, "");
+    WriteLineToFile(ctx->catalogFile, CATALOG_COLUMN_HEADER);
+    WriteLineToFile(ctx->catalogFile, CATALOG_COLUMN_DIVIDER);
+    
+    DEBUG_LOG("Catalog header written");
+    return TRUE;
+}
+
+BOOL AppendCatalogEntry(BackupContext *ctx, const BackupArchiveEntry *entry) {
+    char line[MAX_LINE_LENGTH];
+    char sizeStr[16];
+    char geometryStr[32];
+    
+    if (!ctx || !entry || !ctx->catalogFile || !ctx->catalogOpen) {
+        DEBUG_LOG("Invalid parameters for catalog entry");
+        return FALSE;
+    }
+    
+    /* Format size */
+    FormatSizeForCatalog(sizeStr, entry->sizeBytes);
+    
+    /* Format window geometry: "320x200+100+50" or "N/A" if not available */
+    if (entry->windowWidth > 0 && entry->windowHeight > 0 && 
+        entry->windowLeft >= 0 && entry->windowTop >= 0) {
+        snprintf(geometryStr, sizeof(geometryStr), "%dx%d+%d+%d",
+                 entry->windowWidth, entry->windowHeight,
+                 entry->windowLeft, entry->windowTop);
+    } else {
+        strcpy(geometryStr, "N/A");
+    }
+    
+    /* Build entry line with window geometry and view mode:
+     * "00042.lha  | 000/      | 22 KB   | 5     | DH0:Projects/MyFolder/ | 320x200+100+50 | 1" */
+    snprintf(line, sizeof(line), "%-10s | %-9s | %-7s | %-5hu | %-40s | %-14s | %hu",
+             entry->archiveName,
+             entry->subFolder,
+             sizeStr,
+             entry->iconCount,
+             entry->originalPath,
+             geometryStr,
+             entry->viewMode);
+    
+    if (!WriteLineToFile(ctx->catalogFile, line)) {
+        DEBUG_LOG("Failed to write catalog entry");
+        return FALSE;
+    }
+    
+    return TRUE;
+}
+
+BOOL CloseCatalog(BackupContext *ctx) {
+    char timestamp[64];
+    char line[256];
+    char totalSize[16];
+    
+    if (!ctx || !ctx->catalogFile || !ctx->catalogOpen) {
+        return FALSE;
+    }
+    
+    DEBUG_LOG("Closing catalog");
+    
+    /* Write footer */
+    GetTimestampString(timestamp, sizeof(timestamp));
+    FormatSizeForCatalog(totalSize, ctx->totalBytesArchived);
+    
+    WriteLineToFile(ctx->catalogFile, "");
+    WriteLineToFile(ctx->catalogFile, CATALOG_SEPARATOR);
+    
+    snprintf(line, sizeof(line), "Session Ended: %s", timestamp);
+    WriteLineToFile(ctx->catalogFile, line);
+    
+    snprintf(line, sizeof(line), "Total Archives: %hu", 
+             (UWORD)(ctx->foldersBackedUp + ctx->failedBackups));
+    WriteLineToFile(ctx->catalogFile, line);
+    
+    snprintf(line, sizeof(line), "Successful: %hu", ctx->foldersBackedUp);
+    WriteLineToFile(ctx->catalogFile, line);
+    
+    snprintf(line, sizeof(line), "Failed: %u", ctx->failedBackups);
+    WriteLineToFile(ctx->catalogFile, line);
+    
+    snprintf(line, sizeof(line), "Total Size: %s", totalSize);
+    WriteLineToFile(ctx->catalogFile, line);
+    
+    /* Write icons created count (DefIcons integration) */
+    if (ctx->iconsCreated > 0)
+    {
+        snprintf(line, sizeof(line), "Icons Created: %lu", ctx->iconsCreated);
+        WriteLineToFile(ctx->catalogFile, line);
+    }
+    
+    WriteLineToFile(ctx->catalogFile, CATALOG_SEPARATOR);
+    
+    /* Close file */
+    Close(ctx->catalogFile);
+    
+    ctx->catalogFile = 0;
+    ctx->catalogOpen = FALSE;
+    
+    DEBUG_LOG("Catalog closed");
+    return TRUE;
+}
+
+/*========================================================================*/
+/* Catalog Parsing                                                       */
+/*========================================================================*/
+
+BOOL ParseCatalogLine(const char *line, BackupArchiveEntry *outEntry) {
+    char tempLine[MAX_LINE_LENGTH];
+    char *token;
+    char *saveptr = NULL;
+    int field = 0;
+    
+    if (!line || !outEntry) {
+        return FALSE;
+    }
+    
+    /* Skip empty lines and comments */
+    if (line[0] == '\0' || line[0] == '#' || line[0] == '=' || line[0] == '-') {
+        return FALSE;
+    }
+    
+    /* Copy line for tokenization */
+    strncpy(tempLine, line, sizeof(tempLine) - 1);
+    tempLine[sizeof(tempLine) - 1] = '\0';
+    
+    /* Clear output entry */
+    memset(outEntry, 0, sizeof(BackupArchiveEntry));
+    
+    /* Initialize window geometry to "not available" */
+    outEntry->windowLeft = -1;
+    outEntry->windowTop = -1;
+    outEntry->windowWidth = -1;
+    outEntry->windowHeight = -1;
+    outEntry->viewMode = 0;
+    
+    /* Parse pipe-delimited fields */
+    token = strtok(tempLine, "|");
+    
+    while (token && field < 7) {
+        /* Trim leading/trailing whitespace */
+        while (*token == ' ' || *token == '\t') token++;
+        
+        char *end = token + strlen(token) - 1;
+        while (end > token && (*end == ' ' || *end == '\t' || *end == '\n' || *end == '\r')) {
+            *end = '\0';
+            end--;
+        }
+        
+        /* Parse field based on position */
+        switch (field) {
+            case 0: /* Archive name */
+                strncpy(outEntry->archiveName, token, MAX_ARCHIVE_NAME - 1);
+                /* Extract archive index from name (e.g., "00042.lha" -> 42) */
+                sscanf(token, "%lu", &outEntry->archiveIndex);
+                break;
+                
+            case 1: /* Subfolder */
+                strncpy(outEntry->subFolder, token, MAX_FOLDER_NAME - 1);
+                break;
+                
+            case 2: /* Size */
+                /* Parse size string (e.g., "22 KB") */
+                if (strcmp(token, "N/A") == 0) {
+                    outEntry->sizeBytes = 0;
+                    outEntry->successful = FALSE;
+                } else {
+                    ULONG value;
+                    char unit[8];
+                    if (sscanf(token, "%lu %s", &value, unit) == 2) {
+                        if (strcmp(unit, "KB") == 0) {
+                            outEntry->sizeBytes = value * 1024UL;
+                        } else if (strcmp(unit, "MB") == 0) {
+                            outEntry->sizeBytes = value * 1024UL * 1024UL;
+                        } else if (strcmp(unit, "GB") == 0) {
+                            outEntry->sizeBytes = value * 1024UL * 1024UL * 1024UL;
+                        } else {
+                            outEntry->sizeBytes = value; /* Assume bytes */
+                        }
+                        outEntry->successful = TRUE;
+                    }
+                }
+                break;
+                
+            case 3: /* Icon count */
+                sscanf(token, "%hu", &outEntry->iconCount);
+                break;
+                
+            case 4: /* Original path */
+                strncpy(outEntry->originalPath, token, MAX_BACKUP_PATH - 1);
+                break;
+                
+            case 5: /* Window geometry: "320x200+100+50" or "N/A" */
+                if (strcmp(token, "N/A") != 0) {
+                    int w, h, l, t;
+                    if (sscanf(token, "%dx%d+%d+%d", &w, &h, &l, &t) == 4) {
+                        outEntry->windowWidth = (WORD)w;
+                        outEntry->windowHeight = (WORD)h;
+                        outEntry->windowLeft = (WORD)l;
+                        outEntry->windowTop = (WORD)t;
+                    }
+                }
+                break;
+                
+            case 6: /* View mode */
+                sscanf(token, "%hu", &outEntry->viewMode);
+                break;
+        }
+        
+        field++;
+        token = strtok(NULL, "|");
+    }
+    
+    /* Valid entry must have at least the first 5 fields (backwards compatibility) */
+    /* Fields 6 and 7 (window geometry and view mode) are optional */
+    if (field >= 5 && outEntry->archiveName[0] && outEntry->originalPath[0]) {
+        return TRUE;
+    }
+    
+    return FALSE;
+}
+
+BOOL ParseCatalog(const char *catalogPath, 
+                  BOOL (*callback)(const BackupArchiveEntry *entry, void *userData),
+                  void *userData) {
+    char line[MAX_LINE_LENGTH];
+    BackupArchiveEntry entry;
+    BPTR file;
+    BOOL result = TRUE;
+    
+    if (!catalogPath || !callback) {
+        return FALSE;
+    }
+    
+    file = Open((STRPTR)catalogPath, MODE_OLDFILE);
+    if (!file) {
+        DEBUG_LOG("Failed to open catalog: %s", catalogPath);
+        return FALSE;
+    }
+    
+    while (FGets(file, line, sizeof(line))) {
+        if (ParseCatalogLine(line, &entry)) {
+            if (!callback(&entry, userData)) {
+                result = FALSE; /* Callback requested stop */
+                break;
+            }
+        }
+    }
+    
+    Close(file);
+    
+    return result;
+}
+
+/*========================================================================*/
+/* Helper structures for ParseCatalog callbacks                          */
+/*========================================================================*/
+
+typedef struct {
+    ULONG targetArchiveIndex;
+    BackupArchiveEntry *outEntry;
+    BOOL found;
+} FindEntryContext;
+
+typedef struct {
+    UWORD count;
+} CountEntryContext;
+
+/*========================================================================*/
+/* Callback functions (no longer nested)                                 */
+/*========================================================================*/
+
+static BOOL FindEntryCallback(const BackupArchiveEntry *entry, void *userData) {
+    FindEntryContext *ctx = (FindEntryContext *)userData;
+    if (entry->archiveIndex == ctx->targetArchiveIndex) {
+        memcpy(ctx->outEntry, entry, sizeof(BackupArchiveEntry));
+        ctx->found = TRUE;
+        return FALSE; /* Stop parsing */
+    }
+    return TRUE; /* Continue */
+}
+
+static BOOL CountEntryCallback(const BackupArchiveEntry *entry, void *userData) {
+    CountEntryContext *ctx = (CountEntryContext *)userData;
+    if (ctx == NULL || entry == NULL) {
+        return FALSE;
+    }
+    ctx->count++;
+    return TRUE; /* Continue */
+}
+
+/*========================================================================*/
+/* Public API implementations                                            */
+/*========================================================================*/
+
+BOOL FindCatalogEntry(const char *catalogPath, ULONG archiveIndex,
+                      BackupArchiveEntry *outEntry) {
+    FindEntryContext ctx;
+    
+    if (!catalogPath || !outEntry) {
+        return FALSE;
+    }
+    
+    ctx.targetArchiveIndex = archiveIndex;
+    ctx.outEntry = outEntry;
+    ctx.found = FALSE;
+    
+    ParseCatalog(catalogPath, FindEntryCallback, &ctx);
+    
+    return ctx.found;
+}
+
+UWORD CountCatalogEntries(const char *catalogPath) {
+    CountEntryContext ctx;
+    
+    ctx.count = 0;
+    
+    ParseCatalog(catalogPath, CountEntryCallback, &ctx);
+    
+    return ctx.count;
+}

@@ -1,72 +1,103 @@
 /**
  * @file default_tool_restore_window.c
- * @brief Restore window for reverting default tool changes from backups
+ * @brief Restore window for reverting default tool changes from backups (ReAction)
  * 
- * Two-ListView architecture using Exec lists:
- * 1. Sessions ListView: Shows backup sessions from PROGDIR:Backups/tools/
- * 2. Changes ListView: Shows tool changes in selected session
+ * Two-ListBrowser architecture with real columns:
+ * 1. Sessions ListBrowser: Shows backup sessions from PROGDIR:Backups/tools/ (4 columns)
+ * 2. Changes ListBrowser: Shows tool changes in label/value format (2 columns, 3 rows per change)
+ *    - Row 1: "Old tool:" | <old_tool_path>
+ *    - Row 2: "New tool:" | <new_tool_path>
+ *    - Row 3: "Icons:" | <icon_count>
  * 
- * Uses list-based API from default_tool_backup.h
+ * Migrated from GadTools to ReAction for Workbench 3.2+
+ * Uses ListBrowser gadgets with real columns (replacing "fake columns" approach)
  */
+
+/* =========================================================================
+ * LIBRARY BASE ISOLATION
+ * Redefine library bases to local unique names BEFORE including proto headers
+ * ========================================================================= */
+#define WindowBase      iTidy_ToolRestore_WindowBase
+#define LayoutBase      iTidy_ToolRestore_LayoutBase
+#define ButtonBase      iTidy_ToolRestore_ButtonBase
+#define ListBrowserBase iTidy_ToolRestore_ListBrowserBase
+#define LabelBase       iTidy_ToolRestore_LabelBase
+#define RequesterBase   iTidy_ToolRestore_RequesterBase
+
+#include "platform/platform.h"
 
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <exec/lists.h>
 #include <dos/dos.h>
 #include <intuition/intuition.h>
+#include <intuition/screens.h>
 #include <intuition/gadgetclass.h>
-#include <libraries/gadtools.h>
-
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
-#include <proto/gadtools.h>
-#include <clib/exec_protos.h>  /* For NewList() */
+#include <proto/utility.h>
+#include <proto/graphics.h>
+#include <utility/hooks.h>
 
 #include <stdio.h>
 #include <string.h>
 
-#include "platform/platform.h"
+/* ReAction headers - MUST come before exec_list_compat.h */
+#include <clib/alib_protos.h>
+#include <reaction/reaction.h>
+#include <reaction/reaction_macros.h>
+
+/* Project headers */
 #include "default_tool_backup.h"
-#include "helpers/listview_simple_columns.h"
 #include "../../helpers/exec_list_compat.h"
-#include "../easy_request_helper.h"
 #include "writeLog.h"
-#include "Settings/IControlPrefs.h"  /* For prefsIControl global */
+#include "Settings/IControlPrefs.h"
 #include "string_functions.h"
 #include "GUI/gui_utilities.h"
+#include "path_utilities.h"
+
+/* ReAction class headers */
+#include <proto/window.h>
+#include <proto/layout.h>
+#include <proto/button.h>
+#include <proto/listbrowser.h>
+#include <proto/label.h>
+#include <proto/requester.h>
+#include <classes/window.h>
+#include <classes/requester.h>
+#include <gadgets/layout.h>
+#include <gadgets/button.h>
+#include <gadgets/listbrowser.h>
+#include <images/label.h>
+
+/*------------------------------------------------------------------------*/
+/* Library Bases (Prefixed to avoid collision)                           */
+/*------------------------------------------------------------------------*/
+struct Library *iTidy_ToolRestore_WindowBase = NULL;
+struct Library *iTidy_ToolRestore_LayoutBase = NULL;
+struct Library *iTidy_ToolRestore_ButtonBase = NULL;
+struct Library *iTidy_ToolRestore_ListBrowserBase = NULL;
+struct Library *iTidy_ToolRestore_LabelBase = NULL;
+struct Library *iTidy_ToolRestore_RequesterBase = NULL;
 
 /* Forward declarations for external interface */
 struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_manager);
 BOOL iTidy_HandleToolRestoreWindowEvent(struct Window *window, struct IntuiMessage *msg);
 void iTidy_CloseToolRestoreWindow(struct Window *window);
+BOOL iTidy_WasRestorePerformed(void);
 
 /* Forward declaration of data structure */
 typedef struct iTidy_ToolRestoreData iTidy_ToolRestoreData;
 
-/* Global window data pointer (safer than UserPort hack) */
+/* Global window data pointer */
 static iTidy_ToolRestoreData *g_restore_window_data = NULL;
 
 /* ============================================
  * Constants and Gadget IDs
  * ============================================ */
 
-#define WINDOW_TITLE "Restore Default Tools"
-#define WINDOW_WIDTH 600
-#define WINDOW_HEIGHT 320
-
-/*------------------------------------------------------------------------*/
-/* Column Configuration for Session List (Simple API)                     */
-/*------------------------------------------------------------------------*/
-#define NUM_SESSION_LIST_COLUMNS 4
-
-static const iTidy_SimpleColumn session_list_columns[] = {
-    /* title         width  align               smart_path */
-    {"Date/Time",    20,   ITIDY_ALIGN_LEFT,   FALSE},
-    {"Mode",         10,   ITIDY_ALIGN_LEFT,   FALSE},
-    {"Path",         30,   ITIDY_ALIGN_LEFT,   TRUE},  /* Enable smart path truncation */
-    {"Changed",      7,    ITIDY_ALIGN_RIGHT,  FALSE}
-};
+#define WINDOW_TITLE "iTidy - Restore Default Tools"
 
 /* Gadget IDs */
 enum {
@@ -74,27 +105,41 @@ enum {
     GID_CHANGES_LIST,
     GID_RESTORE_ALL,
     GID_DELETE_SESSION,
-    GID_CLOSE
+    GID_CLOSE,
+    GID_VERT_182,
+    GID_BACKUP_SESSION_LAYOUT,
+    GID_RESTORE_LISTBROWSER_LABEL,
+    GID_TOOL_CHANGES_SESSION,
+    GID_TOOL_CHANGES_LABEL,
+    GID_RESTORE_TOOLS_BUTTONS
 };
+
+/*------------------------------------------------------------------------*/
+/* Column Configuration for Session ListBrowser (4 columns)              */
+/*------------------------------------------------------------------------*/
+static struct ColumnInfo *session_column_info = NULL;
+
+/*------------------------------------------------------------------------*/
+/* Column Configuration for Changes ListBrowser (3 columns)              */
+/*------------------------------------------------------------------------*/
+static struct ColumnInfo *changes_column_info = NULL;
 
 /* ============================================
  * Data Structures
  * ============================================ */
 
 /**
- * @brief Window state for restore UI
+ * @brief Window state for restore UI (ReAction)
  */
 struct iTidy_ToolRestoreData {
-    struct Window *window;          /* Intuition window */
-    struct Gadget *gadget_list;     /* First gadget in list */
-    void *visual_info;              /* GadTools visual info */
-    
-    /* Gadgets */
-    struct Gadget *session_listview;
-    struct Gadget *changes_listview;
-    struct Gadget *restore_button;
-    struct Gadget *delete_button;
-    struct Gadget *close_button;
+    /* ReAction objects */
+    Object *window_obj;
+    struct Window *window;
+    Object *session_listbrowser_obj;
+    Object *changes_listbrowser_obj;
+    Object *restore_button_obj;
+    Object *delete_button_obj;
+    Object *close_button_obj;
     
     /* Session tracking */
     struct List session_list;           /* List of iTidy_ToolBackupSession */
@@ -102,12 +147,9 @@ struct iTidy_ToolRestoreData {
     LONG selected_session_index;       /* Currently selected session (-1 = none) */
     char selected_session_id[32];      /* ID of selected session */
     
-    /* Display lists for ListViews */
-    struct List *session_display_list;  /* Formatted session list (simple API) */
-    struct List changes_display_list;   /* Formatted strings for changes ListView */
-    
-    /* Layout dimensions */
-    UWORD listview_width;               /* Width of ListViews for formatter */
+    /* Display lists for ListBrowsers */
+    struct List *session_nodes;         /* ListBrowser nodes for sessions */
+    struct List *changes_nodes;         /* ListBrowser nodes for changes */
     
     /* Restore tracking - for cache invalidation */
     BOOL restore_performed;             /* TRUE if any restore operation completed */
@@ -117,221 +159,334 @@ struct iTidy_ToolRestoreData {
  * Forward Declarations
  * ============================================ */
 
-static void populate_session_list(iTidy_ToolRestoreData *data);
-static void populate_changes_list(iTidy_ToolRestoreData *data);
+static BOOL open_reaction_classes(void);
+static void close_reaction_classes(void);
+static BOOL init_column_info(void);
+static void free_column_info(void);
+static void free_listbrowser_list(struct List *list);
+static void populate_session_listbrowser(iTidy_ToolRestoreData *data);
+static void populate_changes_listbrowser(iTidy_ToolRestoreData *data);
 static void handle_restore_all(iTidy_ToolRestoreData *data);
-static void cleanup_display_lists(iTidy_ToolRestoreData *data);
+static void handle_delete_session(iTidy_ToolRestoreData *data);
+static void update_button_states(iTidy_ToolRestoreData *data);
+static ULONG show_reaction_requester(struct Window *parent_window,
+                                     CONST_STRPTR title,
+                                     CONST_STRPTR body,
+                                     CONST_STRPTR gadgets,
+                                     ULONG image_type);
 
 /* ============================================
- * Display List Management
+ * ReAction Class Management
  * ============================================ */
 
 /**
- * @brief Free display list nodes and strings
+ * @brief Open ReAction class libraries
  */
-static void cleanup_display_lists(iTidy_ToolRestoreData *data)
+static BOOL open_reaction_classes(void)
 {
-    struct Node *node, *next_node;
+    if (!WindowBase)      WindowBase = OpenLibrary("window.class", 0);
+    if (!LayoutBase)      LayoutBase = OpenLibrary("gadgets/layout.gadget", 0);
+    if (!ButtonBase)      ButtonBase = OpenLibrary("gadgets/button.gadget", 0);
+    if (!ListBrowserBase) ListBrowserBase = OpenLibrary("gadgets/listbrowser.gadget", 0);
+    if (!LabelBase)       LabelBase = OpenLibrary("images/label.image", 0);
+    if (!RequesterBase)   RequesterBase = OpenLibrary("requester.class", 0);
     
-    /* Detach lists from gadgets first */
-    if (data->session_listview && data->window) {
-        GT_SetGadgetAttrs(data->session_listview, data->window, NULL,
-                          GTLV_Labels, ~0,
-                          TAG_DONE);
-    }
-    if (data->changes_listview && data->window) {
-        GT_SetGadgetAttrs(data->changes_listview, data->window, NULL,
-                          GTLV_Labels, ~0,
-                          TAG_DONE);
-    }
-    
-    /* Free session ListView resources (simple API) */
-    if (data->session_display_list) {
-        while ((node = RemHead(data->session_display_list)) != NULL) {
-            if (node->ln_Name) whd_free(node->ln_Name);
-            FreeVec(node);
-        }
-        FreeVec(data->session_display_list);
-        data->session_display_list = NULL;
+    if (!WindowBase || !LayoutBase || !ButtonBase || 
+        !ListBrowserBase || !LabelBase || !RequesterBase)
+    {
+        log_error(LOG_GUI, "Failed to open ReAction classes for tool restore window\n");
+        return FALSE;
     }
     
-    /* Free changes display list (both tool lines and count lines are allocated) */
-    node = data->changes_display_list.lh_Head;
-    while (node->ln_Succ) {
-        next_node = node->ln_Succ;
-        Remove(node);
-        /* Free allocated strings (tool lines and count lines) */
-        /* Check if it's an allocated string (not the placeholder) */
-        if (node->ln_Name && strcmp(node->ln_Name, "(No tool changes in session)") != 0) {
-            whd_free(node->ln_Name);
-        }
-        FreeVec(node);
-        node = next_node;
-    }
+    return TRUE;
+}
+
+/**
+ * @brief Close ReAction class libraries
+ */
+static void close_reaction_classes(void)
+{
+    if (RequesterBase)   { CloseLibrary(RequesterBase);   RequesterBase = NULL; }
+    if (LabelBase)       { CloseLibrary(LabelBase);       LabelBase = NULL; }
+    if (ListBrowserBase) { CloseLibrary(ListBrowserBase); ListBrowserBase = NULL; }
+    if (ButtonBase)      { CloseLibrary(ButtonBase);      ButtonBase = NULL; }
+    if (LayoutBase)      { CloseLibrary(LayoutBase);      LayoutBase = NULL; }
+    if (WindowBase)      { CloseLibrary(WindowBase);      WindowBase = NULL; }
 }
 
 /* ============================================
- * Session List Population
+ * Column Management
  * ============================================ */
 
 /**
- * @brief Sort session array by specified column
- * @param sessions Array of sessions to sort (will be modified in-place)
- * @param count Number of sessions
- * @param column Column index (0=date, 1=mode, 2=path, 3=changed count)
+ * @brief Initialize column info structures for both ListBrowsers
  */
-static void iTidy_SortSessionsByColumn(iTidy_ToolBackupSession *sessions, int count, int column)
+static BOOL init_column_info(void)
 {
-    int i, j;
-    iTidy_ToolBackupSession temp;
-    int swap_needed;
+    log_debug(LOG_GUI, "Initializing column info for restore window\n");
     
-    /* Simple bubble sort - sufficient for small session lists */
-    for (i = 0; i < count - 1; i++) {
-        for (j = 0; j < count - i - 1; j++) {
-            swap_needed = 0;
-            
-            switch (column) {
-                case 0:  /* Date/Time - compare session_id (timestamp string) */
-                    swap_needed = (strcmp(sessions[j].session_id, sessions[j+1].session_id) > 0);
-                    break;
-                case 1:  /* Mode */
-                    swap_needed = (strcmp(sessions[j].mode, sessions[j+1].mode) > 0);
-                    break;
-                case 2:  /* Path */
-                    swap_needed = (strcmp(sessions[j].scanned_path, sessions[j+1].scanned_path) > 0);
-                    break;
-                case 3:  /* Changed count */
-                    swap_needed = (sessions[j].icons_changed > sessions[j+1].icons_changed);
-                    break;
-            }
-            
-            if (swap_needed) {
-                temp = sessions[j];
-                sessions[j] = sessions[j+1];
-                sessions[j+1] = temp;
-            }
-        }
+    /* Session ListBrowser: Date/Time | Mode | Path | Changed */
+    session_column_info = AllocLBColumnInfo(4,
+        LBCIA_Column, 0,
+            LBCIA_Title, "Date/Time",
+            LBCIA_Weight, 25,
+            LBCIA_Sortable, TRUE,
+            LBCIA_SortArrow, TRUE,
+            LBCIA_Flags, CIF_SORTABLE | CIF_DRAGGABLE,
+        LBCIA_Column, 1,
+            LBCIA_Title, "Mode",
+            LBCIA_Weight, 15,
+            LBCIA_Sortable, TRUE,
+            LBCIA_SortArrow, TRUE,
+            LBCIA_Flags, CIF_SORTABLE | CIF_DRAGGABLE,
+        LBCIA_Column, 2,
+            LBCIA_Title, "Path",
+            LBCIA_Weight, 45,
+            LBCIA_Sortable, TRUE,
+            LBCIA_SortArrow, TRUE,
+            LBCIA_Flags, CIF_SORTABLE | CIF_DRAGGABLE,
+        LBCIA_Column, 3,
+            LBCIA_Title, "Changed",
+            LBCIA_Weight, 15,
+            LBCIA_Sortable, TRUE,
+            LBCIA_SortArrow, TRUE,
+            LBCIA_Flags, CIF_SORTABLE | CIF_DRAGGABLE,
+        TAG_DONE);
+    
+    if (session_column_info == NULL)
+    {
+        log_error(LOG_GUI, "Failed to allocate session column info\n");
+        return FALSE;
+    }
+    
+    /* Changes ListBrowser: Label | Value (3 rows per change) */
+    changes_column_info = AllocLBColumnInfo(2,
+        LBCIA_Column, 0,
+            LBCIA_Title, "",
+            LBCIA_Weight, 25,
+            LBCIA_Sortable, FALSE,
+        LBCIA_Column, 1,
+            LBCIA_Title, "",
+            LBCIA_Weight, 75,
+            LBCIA_Sortable, FALSE,
+        TAG_DONE);
+    
+    if (changes_column_info == NULL)
+    {
+        log_error(LOG_GUI, "Failed to allocate changes column info\n");
+        FreeLBColumnInfo(session_column_info);
+        session_column_info = NULL;
+        return FALSE;
+    }
+    
+    log_debug(LOG_GUI, "Column info initialized successfully\n");
+    return TRUE;
+}
+
+/**
+ * @brief Free column info structures
+ */
+static void free_column_info(void)
+{
+    if (session_column_info)
+    {
+        FreeLBColumnInfo(session_column_info);
+        session_column_info = NULL;
+    }
+    
+    if (changes_column_info)
+    {
+        FreeLBColumnInfo(changes_column_info);
+        changes_column_info = NULL;
     }
 }
 
 /**
- * @brief Populate the session ListView using simple columns API
+ * @brief Free a ListBrowser list and all its nodes
  */
-static void populate_session_list(iTidy_ToolRestoreData *data)
+static void free_listbrowser_list(struct List *list)
+{
+    struct Node *node;
+    struct Node *next;
+    
+    if (!list)
+        return;
+    
+    node = list->lh_Head;
+    while ((next = node->ln_Succ))
+    {
+        FreeListBrowserNode(node);
+        node = next;
+    }
+    
+    FreeMem(list, sizeof(struct List));
+}
+
+/**
+ * @brief Show a ReAction requester dialog
+ */
+static ULONG show_reaction_requester(struct Window *parent_window,
+                                     CONST_STRPTR title,
+                                     CONST_STRPTR body,
+                                     CONST_STRPTR gadgets,
+                                     ULONG image_type)
+{
+    Object *req_obj;
+    struct orRequest req_msg;
+    ULONG result = 0;
+    
+    if (!RequesterBase || !parent_window)
+    {
+        log_error(LOG_GUI, "RequesterBase or parent window is NULL\n");
+        return 0;
+    }
+    
+    req_obj = NewObject(REQUESTER_GetClass(), NULL,
+        REQ_Type, REQTYPE_INFO,
+        REQ_TitleText, title,
+        REQ_BodyText, body,
+        REQ_GadgetText, gadgets,
+        REQ_Image, image_type,
+        TAG_DONE);
+    
+    if (req_obj)
+    {
+        req_msg.MethodID = RM_OPENREQ;
+        req_msg.or_Attrs = NULL;
+        req_msg.or_Window = parent_window;
+        req_msg.or_Screen = NULL;
+        
+        result = DoMethodA(req_obj, (Msg)&req_msg);
+        
+        DisposeObject(req_obj);
+    }
+    else
+    {
+        log_error(LOG_GUI, "Failed to create requester object\n");
+    }
+    
+    return result;
+}
+
+/* ============================================
+ * Session ListBrowser Population
+ * ============================================ */
+
+/**
+ * @brief Populate the session ListBrowser with backup sessions (4 columns)
+ */
+static void populate_session_listbrowser(iTidy_ToolRestoreData *data)
 {
     iTidy_ToolBackupSession *session;
-    struct Node *session_node, *node;
-    UWORD count;
+    struct Node *session_node, *lb_node;
     char formatted_date[32];
     char changed_str[16];
-    const char *cell_values[NUM_SESSION_LIST_COLUMNS];
+    char truncated_path[64];
     
-    log_debug(LOG_GUI, "populate_session_list: Starting...\n");
+    log_debug(LOG_GUI, "populate_session_listbrowser: Starting...\n");
     
-    /* Set busy pointer during loading */
+    /* Set busy pointer */
     if (data->window) {
         safe_set_window_pointer(data->window, TRUE);
     }
     
-    /* Free old ListView resources */
-    log_debug(LOG_GUI, "populate_session_list: Freeing old ListView data\n");
-    if (data->session_display_list) {
-        while ((node = RemHead(data->session_display_list)) != NULL) {
-            if (node->ln_Name) whd_free(node->ln_Name);
-            FreeVec(node);
-        }
-        FreeVec(data->session_display_list);
-        data->session_display_list = NULL;
+    /* Detach old list from gadget */
+    if (data->session_listbrowser_obj && data->window)
+    {
+        SetGadgetAttrs((struct Gadget *)data->session_listbrowser_obj,
+                       data->window, NULL,
+                       LISTBROWSER_Labels, ~0,
+                       TAG_DONE);
+    }
+    
+    /* Free old nodes */
+    if (data->session_nodes)
+    {
+        free_listbrowser_list(data->session_nodes);
+        data->session_nodes = NULL;
     }
     
     /* Free old session data */
     iTidy_FreeSessionList(&data->session_list);
     NewList(&data->session_list);
     
-    /* Scan for backup sessions */
-    log_debug(LOG_GUI, "populate_session_list: Scanning for backup sessions...\n");
-    count = iTidy_ScanBackupSessions(&data->session_list);
-    log_info(LOG_GUI, "populate_session_list: Found %u backup sessions\n", count);
+    /* Load sessions from backup directory */
+    log_debug(LOG_GUI, "Loading backup sessions from directory...\n");
+    if (iTidy_ScanBackupSessions(&data->session_list) == 0)
+    {
+        log_warning(LOG_GUI, "No backup sessions found or failed to load\n");
+    }
     
-    /* Create new display list */
-    data->session_display_list = (struct List *)AllocVec(sizeof(struct List), MEMF_CLEAR);
-    if (!data->session_display_list) {
-        log_error(LOG_GUI, "populate_session_list: Failed to allocate display list\n");
-        if (data->window) {
-            safe_set_window_pointer(data->window, FALSE);
-        }
+    /* Create new ListBrowser node list */
+    data->session_nodes = (struct List *)AllocMem(sizeof(struct List), MEMF_PUBLIC | MEMF_CLEAR);
+    if (!data->session_nodes)
+    {
+        log_error(LOG_GUI, "Failed to allocate session_nodes\n");
+        safe_set_window_pointer(data->window, FALSE);
         return;
     }
-    NewList(data->session_display_list);
+    NewList(data->session_nodes);
     
-    /* Add header row */
-    node = AllocVec(sizeof(struct Node), MEMF_CLEAR);
-    if (node) {
-        node->ln_Name = iTidy_FormatHeader(session_list_columns, NUM_SESSION_LIST_COLUMNS);
-        if (node->ln_Name) {
-            AddTail(data->session_display_list, node);
-        } else {
-            FreeVec(node);
-        }
-    }
-    
-    /* Add separator row */
-    node = AllocVec(sizeof(struct Node), MEMF_CLEAR);
-    if (node) {
-        node->ln_Name = iTidy_FormatSeparator(session_list_columns, NUM_SESSION_LIST_COLUMNS);
-        if (node->ln_Name) {
-            AddTail(data->session_display_list, node);
-        } else {
-            FreeVec(node);
-        }
-    }
-    
-    /* Add data rows */
-    if (count > 0) {
-        log_debug(LOG_GUI, "populate_session_list: Building %u data rows\n", count);
-        for (session_node = data->session_list.lh_Head; 
-             session_node->ln_Succ != NULL; 
-             session_node = session_node->ln_Succ)
+    /* Populate ListBrowser nodes with 4 columns */
+    for (session_node = data->session_list.lh_Head; 
+         session_node->ln_Succ != NULL; 
+         session_node = session_node->ln_Succ)
+    {
+        session = (iTidy_ToolBackupSession *)session_node;
+        
+        /* Format date/time */
+        if (!iTidy_FormatTimestamp(session->session_id, formatted_date, sizeof(formatted_date)))
         {
-            session = (iTidy_ToolBackupSession *)session_node;
+            strncpy(formatted_date, session->session_id, sizeof(formatted_date) - 1);
+            formatted_date[sizeof(formatted_date) - 1] = '\0';
+        }
+        
+        /* Format changed count */
+        snprintf(changed_str, sizeof(changed_str), "%u", (unsigned int)session->icons_changed);
+        
+        /* Truncate path if needed */
+        if (!iTidy_ShortenPathWithParentDir(session->scanned_path, truncated_path, 50))
+        {
+            strncpy(truncated_path, session->scanned_path, sizeof(truncated_path) - 1);
+            truncated_path[sizeof(truncated_path) - 1] = '\0';
+        }
+        
+        /* Create ListBrowser node: Date/Time | Mode | Path | Changed */
+        lb_node = AllocListBrowserNode(4,
+            LBNA_Column, 0,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, formatted_date,
+            LBNA_Column, 1,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, session->mode,
+            LBNA_Column, 2,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, truncated_path,
+            LBNA_Column, 3,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, changed_str,
+                LBNCA_Justification, LCJ_RIGHT,
+            TAG_DONE);
+        
+        if (lb_node)
+        {
+            /* Store session pointer in UserData for selection tracking */
+            SetListBrowserNodeAttrs(lb_node,
+                LBNA_UserData, (APTR)session,
+                TAG_DONE);
             
-            /* Format date using iTidy_FormatTimestamp() */
-            if (!iTidy_FormatTimestamp(session->session_id, formatted_date, sizeof(formatted_date))) {
-                strncpy(formatted_date, session->date_string, 31);
-                formatted_date[31] = '\0';
-            }
-            
-            /* Format changed count */
-            sprintf(changed_str, "%u", (unsigned int)session->icons_changed);
-            
-            /* Build cell values array */
-            cell_values[0] = formatted_date;
-            cell_values[1] = session->mode;
-            cell_values[2] = session->scanned_path;
-            cell_values[3] = changed_str;
-            
-            /* Format row */
-            node = AllocVec(sizeof(struct Node), MEMF_CLEAR);
-            if (node) {
-                node->ln_Name = iTidy_FormatRow(session_list_columns, NUM_SESSION_LIST_COLUMNS, cell_values);
-                if (node->ln_Name) {
-                    AddTail(data->session_display_list, node);
-                } else {
-                    FreeVec(node);
-                }
-            }
+            AddTail(data->session_nodes, lb_node);
         }
     }
     
-    /* Update the ListView gadget */
-    log_debug(LOG_GUI, "populate_session_list: Updating ListView gadget\n");
-    if (data->session_listview && data->window) {
-        GT_SetGadgetAttrs(data->session_listview, data->window, NULL,
-                          GTLV_Labels, data->session_display_list,
-                          GTLV_Selected, ~0,  /* No selection on load */
-                          TAG_DONE);
-        log_debug(LOG_GUI, "populate_session_list: ListView updated\n");
+    /* Reattach list to gadget */
+    if (data->session_listbrowser_obj && data->window)
+    {
+        SetGadgetAttrs((struct Gadget *)data->session_listbrowser_obj,
+                       data->window, NULL,
+                       LISTBROWSER_Labels, data->session_nodes,
+                       LISTBROWSER_AutoFit, TRUE,
+                       TAG_DONE);
     }
     
     /* Clear busy pointer */
@@ -339,117 +494,188 @@ static void populate_session_list(iTidy_ToolRestoreData *data)
         safe_set_window_pointer(data->window, FALSE);
     }
     
-    log_debug(LOG_GUI, "populate_session_list: Complete\n");
+    log_debug(LOG_GUI, "populate_session_listbrowser: Complete\n");
 }
 
 /* ============================================
- * Changes List Population
+ * Changes ListBrowser Population
  * ============================================ */
 
 /**
- * @brief Populate changes ListView for selected session
+ * @brief Populate the changes ListBrowser with tool changes (3 columns)
  */
-static void populate_changes_list(iTidy_ToolRestoreData *data)
+static void populate_changes_listbrowser(iTidy_ToolRestoreData *data)
 {
     iTidy_ToolChange *change;
-    struct Node *change_node, *display_node;
-    char *tool_line;
-    char *count_line;
-    UWORD count;
+    struct Node *change_node, *lb_node;
+    char icons_str[16];
+    const char *old_tool_display;
+    const char *new_tool_display;
     
-    /* Clear existing changes display list */
+    log_debug(LOG_GUI, "populate_changes_listbrowser: Starting...\n");
+    
+    /* Detach old list from gadget */
+    if (data->changes_listbrowser_obj && data->window)
     {
-        struct Node *node, *next_node;
-        node = data->changes_display_list.lh_Head;
-        while (node->ln_Succ) {
-            next_node = node->ln_Succ;
-            Remove(node);
-            /* Free allocated string if it's not pointing to change->display_text */
-            if (node->ln_Name && strncmp(node->ln_Name, "Total icons updated:", 20) == 0) {
-                whd_free(node->ln_Name);
-            }
-            FreeVec(node);
-            node = next_node;
-        }
+        SetGadgetAttrs((struct Gadget *)data->changes_listbrowser_obj,
+                       data->window, NULL,
+                       LISTBROWSER_Labels, ~0,
+                       TAG_DONE);
     }
-    NewList(&data->changes_display_list);
     
-    /* Free old changes data */
+    /* Free old nodes */
+    if (data->changes_nodes)
+    {
+        free_listbrowser_list(data->changes_nodes);
+        data->changes_nodes = NULL;
+    }
+    
+    /* Free old change data */
     iTidy_FreeToolChangeList(&data->changes_list);
     NewList(&data->changes_list);
     
-    /* Validate selection */
-    if (data->selected_session_index < 0 || data->selected_session_id[0] == '\0') {
-        if (data->changes_listview && data->window) {
-            GT_SetGadgetAttrs(data->changes_listview, data->window, NULL,
-                              GTLV_Labels, &data->changes_display_list,
-                              TAG_DONE);
+    /* If no session selected, show empty list */
+    if (data->selected_session_index < 0 || data->selected_session_id[0] == '\0')
+    {
+        log_debug(LOG_GUI, "No session selected, showing empty list\n");
+        
+        /* Create empty list */
+        data->changes_nodes = (struct List *)AllocMem(sizeof(struct List), MEMF_PUBLIC | MEMF_CLEAR);
+        if (data->changes_nodes)
+        {
+            NewList(data->changes_nodes);
+            
+            /* Reattach empty list */
+            if (data->changes_listbrowser_obj && data->window)
+            {
+                SetGadgetAttrs((struct Gadget *)data->changes_listbrowser_obj,
+                               data->window, NULL,
+                               LISTBROWSER_Labels, data->changes_nodes,
+                               TAG_DONE);
+            }
         }
         return;
     }
     
     /* Load tool changes for selected session */
-    count = iTidy_LoadToolChanges(data->selected_session_id, &data->changes_list);
+    log_debug(LOG_GUI, "Loading tool changes for session: %s\n", data->selected_session_id);
+    if (!iTidy_LoadToolChanges(data->selected_session_id, &data->changes_list))
+    {
+        log_warning(LOG_GUI, "No tool changes found for session\n");
+    }
     
-    if (count == 0) {
-        /* No changes - add placeholder */
-        display_node = AllocVec(sizeof(struct Node), MEMF_CLEAR);
-        if (display_node) {
-            display_node->ln_Name = "(No tool changes in session)";
-            AddTail(&data->changes_display_list, display_node);
-        }
-    } else {
-        /* Create TWO display nodes for each change: tool conversion + icon count */
-        for (change_node = data->changes_list.lh_Head; 
-             change_node->ln_Succ != NULL; 
-             change_node = change_node->ln_Succ)
+    /* Create new ListBrowser node list */
+    data->changes_nodes = (struct List *)AllocMem(sizeof(struct List), MEMF_PUBLIC | MEMF_CLEAR);
+    if (!data->changes_nodes)
+    {
+        log_error(LOG_GUI, "Failed to allocate changes_nodes\n");
+        return;
+    }
+    NewList(data->changes_nodes);
+    
+    /* Populate ListBrowser nodes with 3 columns: Old Tool | New Tool | Icons */
+    for (change_node = data->changes_list.lh_Head; 
+         change_node->ln_Succ != NULL; 
+         change_node = change_node->ln_Succ)
+    {
+        change = (iTidy_ToolChange *)change_node;
+        
+        /* Format icon count */
+        snprintf(icons_str, sizeof(icons_str), "%u", (unsigned int)change->icon_count);
+        
+        /* Display strings (show "(none)" for empty tools) */
+        old_tool_display = (change->old_tool[0] != '\0') ? change->old_tool : "(none)";
+        new_tool_display = (change->new_tool[0] != '\0') ? change->new_tool : "(none)";
+        
+        /* Create 3 rows per change: Label | Value format */
+        
+        /* Row 1: Old tool */
+        lb_node = AllocListBrowserNode(2,
+            LBNA_Column, 0,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, (STRPTR)"Old tool:",
+                LBNCA_Justification, LCJ_RIGHT,
+            LBNA_Column, 1,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, (STRPTR)old_tool_display,
+            LBNA_UserData, (APTR)change,
+            TAG_DONE);
+        if (lb_node)
         {
-            change = (iTidy_ToolChange *)change_node;
-            
-            /* First row: Tool conversion (old -> new) */
-            tool_line = (char *)whd_malloc(256);
-            if (tool_line) {
-                sprintf(tool_line, "%s -> %s",
-                        change->old_tool[0] ? change->old_tool : "(none)",
-                        change->new_tool[0] ? change->new_tool : "(none)");
-                
-                display_node = AllocVec(sizeof(struct Node), MEMF_CLEAR);
-                if (display_node) {
-                    display_node->ln_Name = tool_line;
-                    AddTail(&data->changes_display_list, display_node);
-                    
-                    log_message(LOG_GUI, LOG_LEVEL_DEBUG,
-                                "TOOL LINE: '%s'", tool_line);
-                } else {
-                    whd_free(tool_line);
-                }
-            }
-            
-            /* Second row: Icon count */
-            count_line = (char *)whd_malloc(128);
-            if (count_line) {
-                sprintf(count_line, "Total icons updated: %u",
-                    (unsigned int)change->icon_count);
-                
-                display_node = AllocVec(sizeof(struct Node), MEMF_CLEAR);
-                if (display_node) {
-                    display_node->ln_Name = count_line;
-                    AddTail(&data->changes_display_list, display_node);
-                    
-                    log_message(LOG_GUI, LOG_LEVEL_DEBUG,
-                                "COUNT LINE: '%s'", count_line);
-                } else {
-                    whd_free(count_line);
-                }
-            }
+            AddTail(data->changes_nodes, lb_node);
+        }
+        
+        /* Row 2: New tool */
+        lb_node = AllocListBrowserNode(2,
+            LBNA_Column, 0,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, (STRPTR)"New tool:",
+                LBNCA_Justification, LCJ_RIGHT,
+            LBNA_Column, 1,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, (STRPTR)new_tool_display,
+            LBNA_UserData, (APTR)change,
+            TAG_DONE);
+        if (lb_node)
+        {
+            AddTail(data->changes_nodes, lb_node);
+        }
+        
+        /* Row 3: Icons count */
+        lb_node = AllocListBrowserNode(2,
+            LBNA_Column, 0,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, (STRPTR)"Icons:",
+                LBNCA_Justification, LCJ_RIGHT,
+            LBNA_Column, 1,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, icons_str,
+            LBNA_UserData, (APTR)change,
+            TAG_DONE);
+        if (lb_node)
+        {
+            AddTail(data->changes_nodes, lb_node);
         }
     }
     
-    /* Refresh ListView */
-    if (data->changes_listview && data->window) {
-        GT_SetGadgetAttrs(data->changes_listview, data->window, NULL,
-                          GTLV_Labels, &data->changes_display_list,
-                          TAG_DONE);
+    /* Reattach list to gadget */
+    if (data->changes_listbrowser_obj && data->window)
+    {
+        SetGadgetAttrs((struct Gadget *)data->changes_listbrowser_obj,
+                       data->window, NULL,
+                       LISTBROWSER_Labels, data->changes_nodes,
+                       LISTBROWSER_AutoFit, TRUE,
+                       TAG_DONE);
+    }
+    
+    log_debug(LOG_GUI, "populate_changes_listbrowser: Complete\n");
+}
+
+/* ============================================
+ * Button State Management
+ * ============================================ */
+
+/**
+ * @brief Update button enable/disable states based on selection
+ */
+static void update_button_states(iTidy_ToolRestoreData *data)
+{
+    BOOL has_selection = (data->selected_session_index >= 0);
+    
+    if (data->restore_button_obj && data->window)
+    {
+        SetGadgetAttrs((struct Gadget *)data->restore_button_obj,
+                       data->window, NULL,
+                       GA_Disabled, !has_selection,
+                       TAG_DONE);
+    }
+    
+    if (data->delete_button_obj && data->window)
+    {
+        SetGadgetAttrs((struct Gadget *)data->delete_button_obj,
+                       data->window, NULL,
+                       GA_Disabled, !has_selection,
+                       TAG_DONE);
     }
 }
 
@@ -458,20 +684,22 @@ static void populate_changes_list(iTidy_ToolRestoreData *data)
  * ============================================ */
 
 /**
- * @brief Handle Restore All button click
+ * @brief Handle Restore button click
  */
 static void handle_restore_all(iTidy_ToolRestoreData *data)
 {
     UWORD success_count = 0;
     UWORD failed_count = 0;
-    LONG result;
+    ULONG result;
     char message[256];
     iTidy_ToolBackupSession *session;
     struct Node *node;
     LONG index;
+    char formatted_date[32];
     
     /* Validate selection */
-    if (data->selected_session_index < 0 || data->selected_session_id[0] == '\0') {
+    if (data->selected_session_index < 0 || data->selected_session_id[0] == '\0')
+    {
         return;
     }
     
@@ -482,15 +710,24 @@ static void handle_restore_all(iTidy_ToolRestoreData *data)
          node->ln_Succ != NULL; 
          node = node->ln_Succ)
     {
-        if (index == data->selected_session_index) {
+        if (index == data->selected_session_index)
+        {
             session = (iTidy_ToolBackupSession *)node;
             break;
         }
         index++;
     }
     
-    if (!session) {
+    if (!session)
+    {
         return;
+    }
+    
+    /* Format date for display */
+    if (!iTidy_FormatTimestamp(data->selected_session_id, formatted_date, sizeof(formatted_date)))
+    {
+        strncpy(formatted_date, data->selected_session_id, sizeof(formatted_date) - 1);
+        formatted_date[sizeof(formatted_date) - 1] = '\0';
     }
     
     /* Confirmation dialog */
@@ -498,27 +735,28 @@ static void handle_restore_all(iTidy_ToolRestoreData *data)
              "Restore %u icon default tool%s\nfrom backup session %s?",
              session->icons_changed,
              session->icons_changed == 1 ? "" : "s",
-             data->selected_session_id);
+             formatted_date);
     
-    result = ShowEasyRequest(data->window, "Restore Confirmation", 
-                             message, "Restore|Cancel");
+    result = show_reaction_requester(data->window, "Restore Confirmation", 
+                                     message, "_Restore|_Cancel", REQIMAGE_QUESTION);
     
-    if (result != 1) {
+    if (result != 1)
+    {
         return;  /* User cancelled */
     }
     
     /* Perform restore */
     log_info(LOG_GUI, "[RESTORE_TRACKING] Starting restore operation for session: %s\n", data->selected_session_id);
     
-    if (iTidy_RestoreAllIcons(data->selected_session_id, &success_count, &failed_count)) {
+    if (iTidy_RestoreAllIcons(data->selected_session_id, &success_count, &failed_count))
+    {
         log_info(LOG_GUI, "[RESTORE_TRACKING] Restore completed: success=%u, failed=%u\n", success_count, failed_count);
         
-        /* Mark that a restore was performed (even if some failed) */
-        if (success_count > 0) {
+        /* Mark that a restore was performed */
+        if (success_count > 0)
+        {
             data->restore_performed = TRUE;
             log_info(LOG_GUI, "[RESTORE_TRACKING] Setting restore_performed flag to TRUE\n");
-        } else {
-            log_info(LOG_GUI, "[RESTORE_TRACKING] No icons restored successfully - flag remains FALSE\n");
         }
         
         /* Show result */
@@ -527,10 +765,100 @@ static void handle_restore_all(iTidy_ToolRestoreData *data)
                  success_count,
                  success_count == 1 ? "" : "s",
                  failed_count);
-        ShowEasyRequest(data->window, "Restore Complete", message, "OK");
-    } else {
-        ShowEasyRequest(data->window, "Restore Failed",
-                        "Failed to restore icons.\nSee log for details.", "OK");
+        show_reaction_requester(data->window, "Restore Complete", message, "_Ok", REQIMAGE_INFO);
+    }
+    else
+    {
+        show_reaction_requester(data->window, "Restore Failed",
+                                "Failed to restore icons.\nSee log for details.", "_Ok", REQIMAGE_ERROR);
+    }
+}
+
+/**
+ * @brief Handle Delete Session button click
+ */
+static void handle_delete_session(iTidy_ToolRestoreData *data)
+{
+    ULONG result;
+    char message[512];
+    iTidy_ToolBackupSession *session;
+    struct Node *node;
+    LONG index;
+    char formatted_date[32];
+    
+    /* Validate selection */
+    if (data->selected_session_index < 0 || data->selected_session_id[0] == '\0')
+    {
+        return;
+    }
+    
+    /* Find session */
+    index = 0;
+    session = NULL;
+    for (node = data->session_list.lh_Head; 
+         node->ln_Succ != NULL; 
+         node = node->ln_Succ)
+    {
+        if (index == data->selected_session_index)
+        {
+            session = (iTidy_ToolBackupSession *)node;
+            break;
+        }
+        index++;
+    }
+    
+    if (!session)
+    {
+        return;
+    }
+    
+    /* Format date for display */
+    if (!iTidy_FormatTimestamp(data->selected_session_id, formatted_date, sizeof(formatted_date)))
+    {
+        strncpy(formatted_date, data->selected_session_id, sizeof(formatted_date) - 1);
+        formatted_date[sizeof(formatted_date) - 1] = '\0';
+    }
+    
+    /* Confirmation dialog */
+    snprintf(message, sizeof(message),
+             "Delete backup session %s?\n\nThis will permanently delete:\n- %u tool change record%s\n\nThis action cannot be undone!",
+             formatted_date,
+             session->icons_changed,
+             session->icons_changed == 1 ? "" : "s");
+    
+    result = show_reaction_requester(data->window, "Confirm Delete", 
+                                     message, "_Delete|_Cancel", REQIMAGE_WARNING);
+    
+    if (result != 1)
+    {
+        return;  /* User cancelled */
+    }
+    
+    /* Perform delete */
+    log_info(LOG_GUI, "Deleting backup session: %s\n", data->selected_session_id);
+    
+    if (iTidy_DeleteBackupSession(data->selected_session_id))
+    {
+        /* Clear selection state */
+        data->selected_session_index = -1;
+        data->selected_session_id[0] = '\0';
+        
+        /* Disable buttons */
+        update_button_states(data);
+        
+        /* Clear changes list */
+        populate_changes_listbrowser(data);
+        
+        /* Refresh session list */
+        populate_session_listbrowser(data);
+        
+        show_reaction_requester(data->window, "Delete Complete",
+                                "Backup session deleted successfully.", "_Ok", REQIMAGE_INFO);
+    }
+    else
+    {
+        show_reaction_requester(data->window, "Delete Failed",
+                                "Failed to delete backup session.\nSee log for details.", "_Ok", REQIMAGE_ERROR);
     }
 }
 
@@ -539,441 +867,346 @@ static void handle_restore_all(iTidy_ToolRestoreData *data)
  * ============================================ */
 
 /**
- * @brief Create the restore window with dual ListView layout
+ * @brief Create the restore window with ReAction ListBrowsers
  */
 struct Window *iTidy_CreateToolRestoreWindow(struct Screen *screen, APTR backup_manager)
 {
     iTidy_ToolRestoreData *data;
-    struct NewGadget ng;
-    struct Gadget *gad;
-    UWORD top_edge, left_edge;
-    UWORD list_width, session_list_height, changes_list_height;
-    UWORD font_height, listview_line_height;
-    UWORD button_height, window_height;
-    struct TextAttr listview_font;
-    UWORD font_char_width;
+    Object *window_obj;
+    struct Window *window;
     
-    /* Use system font from global prefsIControl (already loaded at startup) */
-    listview_font.ta_Name = prefsIControl.systemFontName;
-    listview_font.ta_YSize = prefsIControl.systemFontSize;
-    listview_font.ta_Style = FS_NORMAL;
-    listview_font.ta_Flags = 0;
-    font_char_width = prefsIControl.systemFontCharWidth;
-    font_height = prefsIControl.systemFontSize;
+    log_info(LOG_GUI, "Creating tool restore window (ReAction)...\n");
     
-    log_info(LOG_GUI, "Using system font for ListView: %s size=%u, char_width=%u\n", 
-             listview_font.ta_Name, listview_font.ta_YSize, font_char_width);
-    log_info(LOG_GUI, "Screen font: %s size=%u\n", 
-             screen->Font->ta_Name, screen->Font->ta_YSize);
+    /* Open ReAction classes */
+    if (!open_reaction_classes())
+    {
+        log_error(LOG_GUI, "Failed to open ReAction classes\n");
+        return NULL;
+    }
     
-    /* Calculate ListView line height */
-    listview_line_height = font_height + 2;
-    
-    /* Calculate button height */
-    button_height = 20;  /* Standard button height */
+    /* Initialize column info */
+    if (!init_column_info())
+    {
+        log_error(LOG_GUI, "Failed to initialize column info\n");
+        close_reaction_classes();
+        return NULL;
+    }
     
     /* Allocate window data */
     data = AllocVec(sizeof(iTidy_ToolRestoreData), MEMF_CLEAR);
-    if (!data) {
+    if (!data)
+    {
+        log_error(LOG_GUI, "Failed to allocate window data\n");
+        free_column_info();
+        close_reaction_classes();
         return NULL;
     }
     
     data->selected_session_index = -1;
-    data->session_display_list = NULL;  /* Will be created by simple API */
-    data->restore_performed = FALSE;     /* Track if any restores happen */
+    data->session_nodes = NULL;
+    data->changes_nodes = NULL;
+    data->restore_performed = FALSE;
     NewList(&data->session_list);
     NewList(&data->changes_list);
-    NewList(&data->changes_display_list);
     
-    /* Get visual info */
-    data->visual_info = GetVisualInfo(screen, TAG_DONE);
-    if (!data->visual_info) {
-        FreeVec(data);
-        return NULL;
-    }
-    
-    /* Create context gadget */
-    gad = CreateContext(&data->gadget_list);
-    if (!gad) {
-        FreeVisualInfo(data->visual_info);
-        FreeVec(data);
-        return NULL;
-    }
-    
-    /* Layout parameters */
-    top_edge = screen->WBorTop + screen->Font->ta_YSize + 2;
-    left_edge = 8;
-    list_width = WINDOW_WIDTH - 16;  /* Full width */
-    
-    /* Calculate ListView heights based on font */
-    session_list_height = listview_line_height * 9;  /* 9 rows for sessions */
-    changes_list_height = listview_line_height * 3;  /* 3 rows for changes */
-    
-    /* Store ListView width in CHARACTERS for formatter (not pixels!) */
-    /* Account for: scrollbar (~20px), left border (~4px), right border (~4px), padding (~8px) = ~36px total */
-    data->listview_width = (list_width - 36) / font_char_width;
-    
-    log_info(LOG_GUI, "ListView: pixel_width=%u, border_adjust=%u, font_char_width=%u, char_width=%u\n",
-             list_width, list_width - 36, font_char_width, data->listview_width);
-    
-    /* Session ListView (top) */
-    ng.ng_LeftEdge = left_edge;
-    ng.ng_TopEdge = top_edge + 14;
-    ng.ng_Width = list_width;
-    ng.ng_Height = session_list_height;
-    ng.ng_GadgetText = "Backup Sessions:";
-    ng.ng_TextAttr = &listview_font;  /* Use icon font from preferences */
-    ng.ng_GadgetID = GID_SESSION_LIST;
-    ng.ng_Flags = PLACETEXT_ABOVE;
-    ng.ng_VisualInfo = data->visual_info;
-    
-    gad = CreateGadget(LISTVIEW_KIND, gad, &ng,
-                       GTLV_Labels, data->session_display_list,  /* Pass list pointer, NOT &pointer! */
-                       GTLV_ShowSelected, NULL,
-                       TAG_DONE);
-    data->session_listview = gad;
-    
-    /* Changes ListView (bottom) */
-    ng.ng_TopEdge = top_edge + 14 + session_list_height + 16;
-    ng.ng_Height = changes_list_height;
-    ng.ng_GadgetText = "Tool Changes in Session:";
-    ng.ng_GadgetID = GID_CHANGES_LIST;
-    
-    gad = CreateGadget(LISTVIEW_KIND, gad, &ng,
-                       GTLV_Labels, data->changes_display_list,  /* Pass list pointer, NOT &pointer! */
-                       GTLV_ReadOnly, TRUE,
-                       TAG_DONE);
-    data->changes_listview = gad;
-    
-    /* Calculate equal button widths for 3 buttons with gaps */
-    UWORD button_gap = 8;
-    UWORD button_width = (list_width - (2 * button_gap)) / 3;  /* Three buttons with gaps */
-    
-    /* Restore All button */
-    ng.ng_LeftEdge = left_edge;
-    ng.ng_TopEdge = top_edge + 14 + session_list_height + 16 + changes_list_height + 16;
-    ng.ng_Width = button_width;
-    ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Restore";
-    ng.ng_GadgetID = GID_RESTORE_ALL;
-    ng.ng_Flags = 0;  /* Default centered text in button */
-    
-    gad = CreateGadget(BUTTON_KIND, gad, &ng,
-                       GA_Disabled, TRUE,  /* Disabled until selection */
-                       TAG_DONE);
-    data->restore_button = gad;
-    
-    /* Delete Session button */
-    ng.ng_LeftEdge = left_edge + button_width + button_gap;
-    ng.ng_Width = button_width;
-    ng.ng_GadgetText = "Delete";
-    ng.ng_GadgetID = GID_DELETE_SESSION;
-    ng.ng_Flags = 0;  /* Default centered text in button */
-    
-    gad = CreateGadget(BUTTON_KIND, gad, &ng,
-                       GA_Disabled, TRUE,  /* Disabled until selection */
-                       TAG_DONE);
-    data->delete_button = gad;
-    
-    /* Close button */
-    ng.ng_LeftEdge = left_edge + (2 * button_width) + (2 * button_gap);
-    ng.ng_Width = button_width;
-    ng.ng_GadgetText = "Close";
-    ng.ng_GadgetID = GID_CLOSE;
-    ng.ng_Flags = 0;  /* Default centered text in button */
-    
-    gad = CreateGadget(BUTTON_KIND, gad, &ng, TAG_DONE);
-    data->close_button = gad;
-    
-    /* Calculate window height: top_edge + label space + session list + spacing + label space + changes list + spacing + buttons + bottom margin */
-    window_height = ng.ng_TopEdge + button_height + 8;  /* Button top + button height + bottom padding */
-    
-    /* Open window */
-    data->window = OpenWindowTags(NULL,
-        WA_Left, (screen->Width - WINDOW_WIDTH) / 2,
-        WA_Top, (screen->Height - window_height) / 2,
-        WA_Width, WINDOW_WIDTH,
-        WA_Height, window_height,
-        WA_Title, (ULONG)WINDOW_TITLE,
-        WA_Flags, WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_CLOSEGADGET | WFLG_ACTIVATE,
-        WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_REFRESHWINDOW | IDCMP_GADGETUP | IDCMP_MOUSEBUTTONS | LISTVIEWIDCMP | BUTTONIDCMP,
-        WA_Gadgets, data->gadget_list,
+    /* Hint/tooltip info for gadget help */
+    static struct HintInfo hintInfo[] =
+    {
+        {GID_SESSION_LIST,   -1, "Shows all backed-up default tool replacement sessions. Click a session to see the tool changes it recorded.", 0},
+        {GID_CHANGES_LIST,   -1, "Shows the tool changes recorded in the selected session: the original tool, the replacement, and how many icons were affected.", 0},
+        {GID_RESTORE_ALL,    -1, "Restores all icons in the selected session to their original default tools. The backup session is kept after restoring.", 0},
+        {GID_DELETE_SESSION, -1, "Permanently deletes the selected backup session and its files. A confirmation requester is shown first. This cannot be undone.", 0},
+        {GID_CLOSE,          -1, "Closes the Restore Default Tools window.", 0},
+        {-1, -1, NULL, 0}
+    };
+
+    /* Create window object following testcode.c layout */
+    window_obj = NewObject(WINDOW_GetClass(), NULL,
+        WA_Title, WINDOW_TITLE,
+        WA_Left, 5,
+        WA_Top, 20,
+        WA_Width, 600,
+        WA_Height, 400,
+        WA_MinWidth, 400,
+        WA_MinHeight, 300,
+        WA_MaxWidth, 8192,
+        WA_MaxHeight, 8192,
+        WA_CloseGadget, TRUE,
+        WA_DepthGadget, TRUE,
+        WA_SizeGadget, TRUE,
+        WA_DragBar, TRUE,
+        WA_Activate, TRUE,
         WA_PubScreen, screen,
+        WA_IDCMP, IDCMP_GADGETUP | IDCMP_CLOSEWINDOW | IDCMP_NEWSIZE,
+        WINDOW_Position, WPOS_CENTERSCREEN,
+        WINDOW_HintInfo, hintInfo,
+        WINDOW_GadgetHelp, TRUE,
+        WINDOW_ParentGroup, NewObject(LAYOUT_GetClass(), NULL,
+            LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+            LAYOUT_SpaceOuter, TRUE,
+            LAYOUT_DeferLayout, TRUE,
+            
+            /* Main vertical layout */
+            LAYOUT_AddChild, NewObject(LAYOUT_GetClass(), NULL,
+                GA_ID, GID_VERT_182,
+                LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                LAYOUT_LeftSpacing, 2,
+                LAYOUT_RightSpacing, 2,
+                LAYOUT_TopSpacing, 2,
+                LAYOUT_BottomSpacing, 2,
+                
+                /* Session list layout */
+                LAYOUT_AddChild, NewObject(LAYOUT_GetClass(), NULL,
+                    GA_ID, GID_BACKUP_SESSION_LAYOUT,
+                    LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                    LAYOUT_HorizAlignment, LALIGN_CENTER,
+                    
+                    /* Session label */
+                    LAYOUT_AddImage, NewObject(LABEL_GetClass(), NULL,
+                        GA_ID, GID_RESTORE_LISTBROWSER_LABEL,
+                        LABEL_Text, "Backup Sessions:",
+                        LABEL_Justification, LJ_CENTER,
+                        TAG_DONE),
+                    
+                    /* Session ListBrowser */
+                    LAYOUT_AddChild, data->session_listbrowser_obj = NewObject(LISTBROWSER_GetClass(), NULL,
+                        GA_ID, GID_SESSION_LIST,
+                        GA_RelVerify, TRUE,
+                        GA_TabCycle, TRUE,
+                        LISTBROWSER_Position, 0,
+                        LISTBROWSER_ColumnInfo, session_column_info,
+                        LISTBROWSER_ColumnTitles, TRUE,
+                        LISTBROWSER_AutoFit, TRUE,
+                        TAG_DONE),
+                    TAG_DONE),
+                CHILD_WeightedHeight, 60,
+                
+                /* Changes list layout */
+                LAYOUT_AddChild, NewObject(LAYOUT_GetClass(), NULL,
+                    GA_ID, GID_TOOL_CHANGES_SESSION,
+                    LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                    LAYOUT_HorizAlignment, LALIGN_CENTER,
+                    
+                    /* Changes label */
+                    LAYOUT_AddImage, NewObject(LABEL_GetClass(), NULL,
+                        GA_ID, GID_TOOL_CHANGES_LABEL,
+                        LABEL_Text, "Tool Changes in Session",
+                        TAG_DONE),
+                    
+                    /* Changes ListBrowser */
+                    LAYOUT_AddChild, data->changes_listbrowser_obj = NewObject(LISTBROWSER_GetClass(), NULL,
+                        GA_ID, GID_CHANGES_LIST,
+                        GA_RelVerify, TRUE,
+                        GA_TabCycle, TRUE,
+                        LISTBROWSER_Position, 0,
+                        LISTBROWSER_ColumnInfo, changes_column_info,
+                        LISTBROWSER_ColumnTitles, FALSE,
+                        LISTBROWSER_AutoFit, TRUE,
+                        TAG_DONE),
+                    TAG_DONE),
+                CHILD_WeightedHeight, 35,
+                
+                /* Button layout */
+                LAYOUT_AddChild, NewObject(LAYOUT_GetClass(), NULL,
+                    GA_ID, GID_RESTORE_TOOLS_BUTTONS,
+                    LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
+                    
+                    /* Restore button */
+                    LAYOUT_AddChild, data->restore_button_obj = NewObject(BUTTON_GetClass(), NULL,
+                        GA_ID, GID_RESTORE_ALL,
+                        GA_Text, "_Restore",
+                        GA_RelVerify, TRUE,
+                        GA_TabCycle, TRUE,
+                        GA_Disabled, TRUE,  /* Initially disabled */
+                        BUTTON_TextPen, 1,
+                        BUTTON_BackgroundPen, 0,
+                        BUTTON_FillTextPen, 1,
+                        BUTTON_FillPen, 3,
+                        TAG_DONE),
+                    
+                    /* Delete button */
+                    LAYOUT_AddChild, data->delete_button_obj = NewObject(BUTTON_GetClass(), NULL,
+                        GA_ID, GID_DELETE_SESSION,
+                        GA_Text, "_Delete",
+                        GA_RelVerify, TRUE,
+                        GA_TabCycle, TRUE,
+                        GA_Disabled, TRUE,  /* Initially disabled */
+                        BUTTON_TextPen, 1,
+                        BUTTON_BackgroundPen, 0,
+                        BUTTON_FillTextPen, 1,
+                        BUTTON_FillPen, 3,
+                        TAG_DONE),
+                    
+                    /* Close button */
+                    LAYOUT_AddChild, data->close_button_obj = NewObject(BUTTON_GetClass(), NULL,
+                        GA_ID, GID_CLOSE,
+                        GA_Text, "_Close",
+                        GA_RelVerify, TRUE,
+                        GA_TabCycle, TRUE,
+                        BUTTON_TextPen, 1,
+                        BUTTON_BackgroundPen, 0,
+                        BUTTON_FillTextPen, 1,
+                        BUTTON_FillPen, 3,
+                        TAG_DONE),
+                    TAG_DONE),
+                CHILD_WeightedHeight, 5,
+                TAG_DONE),
+            TAG_DONE),
         TAG_DONE);
     
-    if (!data->window) {
-        FreeGadgets(data->gadget_list);
-        FreeVisualInfo(data->visual_info);
+    if (!window_obj)
+    {
+        log_error(LOG_GUI, "Failed to create window object\n");
+        iTidy_FreeSessionList(&data->session_list);
+        iTidy_FreeToolChangeList(&data->changes_list);
         FreeVec(data);
+        free_column_info();
+        close_reaction_classes();
         return NULL;
     }
     
-    /* Store data pointer globally (safer than hacking window structures) */
+    /* Open the window */
+    window = (struct Window *)RA_OpenWindow(window_obj);
+    if (!window)
+    {
+        log_error(LOG_GUI, "Failed to open window\n");
+        DisposeObject(window_obj);
+        iTidy_FreeSessionList(&data->session_list);
+        iTidy_FreeToolChangeList(&data->changes_list);
+        FreeVec(data);
+        free_column_info();
+        close_reaction_classes();
+        return NULL;
+    }
+    
+    /* Store window data */
+    data->window_obj = window_obj;
+    data->window = window;
     g_restore_window_data = data;
     
-    GT_RefreshWindow(data->window, NULL);
-    
     /* Populate session list */
-    populate_session_list(data);
+    populate_session_listbrowser(data);
     
-    return data->window;
+    log_info(LOG_GUI, "Tool restore window created successfully\n");
+    
+    return window;
 }
 
 /* ============================================
- * Event Loop Handler
+ * Event Handling
  * ============================================ */
 
 /**
- * @brief Handle window events (call from main event loop)
- * 
- * @return TRUE to keep window open, FALSE to close
- * 
- * NOTE: To check if any restores were performed after window closes,
- *       call iTidy_WasRestorePerformed() before calling cleanup.
+ * @brief Handle window events
  */
 BOOL iTidy_HandleToolRestoreWindowEvent(struct Window *window, struct IntuiMessage *msg)
 {
     iTidy_ToolRestoreData *data;
-    struct Gadget *gad;
-    ULONG class;
+    ULONG result;
     UWORD code;
     BOOL keep_open = TRUE;
+    ULONG gad_id;
+    LONG selected_index;
+    struct Node *selected_node;
+    iTidy_ToolBackupSession *session;
+    ULONG signal_mask, signals;
     
-    /* Safety checks */
-    if (!window || !msg) {
+    if (!window)
+    {
         return FALSE;
     }
     
-    /* Retrieve data from global pointer */
     data = g_restore_window_data;
-    if (!data) {
-        return FALSE;  /* Safety check */
+    if (!data || !data->window_obj)
+    {
+        return FALSE;
     }
     
-    if (data->window != window) {
-        return FALSE;  /* Window mismatch */
+    /* Get ReAction window's signal mask and wait for events */
+    GetAttr(WINDOW_SigMask, data->window_obj, &signal_mask);
+    signals = Wait(signal_mask | SIGBREAKF_CTRL_C);
+    
+    if (signals & SIGBREAKF_CTRL_C)
+    {
+        log_debug(LOG_GUI, "Ctrl+C detected, closing restore window\n");
+        return FALSE;
     }
     
-    class = msg->Class;
-    code = msg->Code;
-    gad = (struct Gadget *)msg->IAddress;
-    
-    switch (class) {
-        case IDCMP_CLOSEWINDOW:
-            keep_open = FALSE;
-            break;
-            
-        case IDCMP_REFRESHWINDOW:
-            GT_BeginRefresh(window);
-            GT_EndRefresh(window, TRUE);
-            break;
-            
-        case IDCMP_GADGETUP:
-            switch (gad->GadgetID) {
-                case GID_SESSION_LIST:
-                    {
-                        /* Get selected row from ListView */
-                        LONG selected_row = ~0;
-                        GT_GetGadgetAttrs(data->session_listview, window, NULL,
-                                         GTLV_Selected, &selected_row,
-                                         TAG_DONE);
-                        
-                        /* Check if click was on header row for column sorting */
-                        if (selected_row == 0) {
-                            int clicked_column = iTidy_DetectClickedColumn(
-                                session_list_columns,
-                                NUM_SESSION_LIST_COLUMNS,
-                                msg->MouseX,
-                                data->session_listview->LeftEdge,
-                                prefsIControl.systemFontCharWidth
-                            );
-                            
-                            if (clicked_column >= 0) {
-                                iTidy_ToolBackupSession *session_array, *session;
-                                struct Node *node;
-                                int i, count = 0;
-                                
-                                log_info(LOG_GUI, "Column %d header clicked, sorting...\n", clicked_column);
-                                
-                                /* Count sessions */
-                                for (node = data->session_list.lh_Head; node->ln_Succ; node = node->ln_Succ) {
-                                    count++;
-                                }
-                                
-                                if (count > 0) {
-                                    /* Convert list to array for sorting */
-                                    session_array = (iTidy_ToolBackupSession *)whd_malloc(count * sizeof(iTidy_ToolBackupSession));
-                                    if (session_array) {
-                                        i = 0;
-                                        for (node = data->session_list.lh_Head; node->ln_Succ; node = node->ln_Succ) {
-                                            session = (iTidy_ToolBackupSession *)node;
-                                            session_array[i++] = *session;
-                                        }
-                                        
-                                        /* Sort array by clicked column */
-                                        iTidy_SortSessionsByColumn(session_array, count, clicked_column);
-                                        
-                                        /* Rebuild list from sorted array */
-                                        NewList(&data->session_list);
-                                        for (i = 0; i < count; i++) {
-                                            session = (iTidy_ToolBackupSession *)whd_malloc(sizeof(iTidy_ToolBackupSession));
-                                            if (session) {
-                                                *session = session_array[i];
-                                                AddTail(&data->session_list, (struct Node *)session);
-                                            }
-                                        }
-                                        
-                                        whd_free(session_array);
-                                        
-                                        /* Refresh display */
-                                        populate_session_list(data);
-                                    }
-                                }
-                            }
-                        }
-                        /* Check if data row selected (skip header row 0, separator row 1) */
-                        else if (selected_row >= 2) {
-                            iTidy_ToolBackupSession *session;
-                            struct Node *node;
-                            LONG session_index = 0;
-                            LONG data_index = selected_row - 2;  /* Subtract header+separator rows */
-                            
-                            /* Find session at this data index */
-                            for (node = data->session_list.lh_Head; 
-                                 node->ln_Succ != NULL && session_index < data_index; 
-                                 node = node->ln_Succ, session_index++)
-                            {
-                                /* Skip to target index */
-                            }
-                            
-                            if (node && node->ln_Succ) {
-                                session = (iTidy_ToolBackupSession *)node;
-                                
-                                /* Store selected session */
-                                data->selected_session_index = data_index;
-                                strncpy(data->selected_session_id, session->session_id, 
-                                       sizeof(data->selected_session_id) - 1);
-                                data->selected_session_id[sizeof(data->selected_session_id) - 1] = '\0';
-                                
-                                log_info(LOG_GUI, "Selected session %ld: %s (ID=%s, %d changes)\n",
-                                        data_index, session->date_string, 
-                                        session->session_id, session->icons_changed);
-                                
-                                /* Enable Restore and Delete buttons */
-                                if (data->restore_button && window) {
-                                    GT_SetGadgetAttrs(data->restore_button, window, NULL,
-                                                     GA_Disabled, FALSE,
-                                                     TAG_DONE);
-                                }
-                                if (data->delete_button && window) {
-                                    GT_SetGadgetAttrs(data->delete_button, window, NULL,
-                                                     GA_Disabled, FALSE,
-                                                     TAG_DONE);
-                                }
-                                
-                                /* Populate changes list for this session */
-                                populate_changes_list(data);
-                            }
-                        }
-                    }
-                    break;
-                    
-                case GID_RESTORE_ALL:
-                    handle_restore_all(data);
-                    break;
+    /* Handle ReAction events */
+    while ((result = RA_HandleInput(data->window_obj, &code)) != WMHI_LASTMSG)
+    {
+        switch (result & WMHI_CLASSMASK)
+        {
+            case WMHI_CLOSEWINDOW:
+                keep_open = FALSE;
+                break;
                 
-                case GID_DELETE_SESSION:
-                    {
-                        iTidy_ToolBackupSession *session;
-                        struct Node *node;
-                        LONG index;
-                        char message[256];
-                        char formatted_date[32];
-                        LONG result;
+            case WMHI_GADGETUP:
+                gad_id = result & WMHI_GADGETMASK;
+                
+                switch (gad_id)
+                {
+                    case GID_SESSION_LIST:
+                        /* Session selected - update changes list */
+                        GetAttr(LISTBROWSER_Selected, data->session_listbrowser_obj, (ULONG *)&selected_index);
                         
-                        /* Validate selection */
-                        if (data->selected_session_index < 0 || data->selected_session_id[0] == '\0') {
-                            break;
-                        }
-                        
-                        /* Find session to get details for confirmation */
-                        index = 0;
-                        session = NULL;
-                        for (node = data->session_list.lh_Head; 
-                             node->ln_Succ != NULL; 
-                             node = node->ln_Succ)
+                        if (selected_index >= 0)
                         {
-                            if (index == data->selected_session_index) {
-                                session = (iTidy_ToolBackupSession *)node;
-                                break;
+                            /* Get selected node */
+                            GetAttr(LISTBROWSER_SelectedNode, data->session_listbrowser_obj, (ULONG *)&selected_node);
+                            
+                            if (selected_node)
+                            {
+                                /* Get session pointer from UserData */
+                                GetListBrowserNodeAttrs(selected_node,
+                                    LBNA_UserData, (ULONG *)&session,
+                                    TAG_DONE);
+                                
+                                if (session)
+                                {
+                                    data->selected_session_index = selected_index;
+                                    strncpy(data->selected_session_id, session->session_id, sizeof(data->selected_session_id) - 1);
+                                    data->selected_session_id[sizeof(data->selected_session_id) - 1] = '\0';
+                                    
+                                    log_debug(LOG_GUI, "Session selected: %s (index=%ld)\n", 
+                                             data->selected_session_id, selected_index);
+                                    
+                                    /* Update changes list */
+                                    populate_changes_listbrowser(data);
+                                    
+                                    /* Enable buttons */
+                                    update_button_states(data);
+                                }
                             }
-                            index++;
                         }
-                        
-                        if (!session) {
-                            break;
-                        }
-                        
-                        /* Format date for display */
-                        if (!iTidy_FormatTimestamp(data->selected_session_id, formatted_date, sizeof(formatted_date))) {
-                            strncpy(formatted_date, data->selected_session_id, sizeof(formatted_date) - 1);
-                            formatted_date[sizeof(formatted_date) - 1] = '\0';
-                        }
-                        
-                        /* Confirmation dialog */
-                        snprintf(message, sizeof(message),
-                                 "Delete backup session %s?\n\nThis will permanently delete:\n- %u tool change record%s\n\nThis action cannot be undone!",
-                                 formatted_date,
-                                 session->icons_changed,
-                                 session->icons_changed == 1 ? "" : "s");
-                        
-                        result = ShowEasyRequest(data->window, "Confirm Delete", 
-                                                 message, "Delete|Cancel");
-                        
-                        if (result != 1) {
-                            break;  /* User cancelled */
-                        }
-                        
-                        /* Perform delete */
-                        log_info(LOG_GUI, "Deleting backup session: %s\n", data->selected_session_id);
-                        
-                        if (iTidy_DeleteBackupSession(data->selected_session_id)) {
-                            /* Clear selection state */
+                        else
+                        {
+                            /* Selection cleared */
                             data->selected_session_index = -1;
                             data->selected_session_id[0] = '\0';
-                            
-                            /* Disable buttons since no selection */
-                            if (data->restore_button && window) {
-                                GT_SetGadgetAttrs(data->restore_button, window, NULL,
-                                                 GA_Disabled, TRUE,
-                                                 TAG_DONE);
-                            }
-                            if (data->delete_button && window) {
-                                GT_SetGadgetAttrs(data->delete_button, window, NULL,
-                                                 GA_Disabled, TRUE,
-                                                 TAG_DONE);
-                            }
-                            
-                            /* Clear changes list */
-                            populate_changes_list(data);
-                            
-                            /* Refresh session list (will rescan backup directory) */
-                            populate_session_list(data);
-                            
-                            ShowEasyRequest(data->window, "Delete Complete",
-                                           "Backup session deleted successfully.", "OK");
-                        } else {
-                            ShowEasyRequest(data->window, "Delete Failed",
-                                           "Failed to delete backup session.\nSee log for details.", "OK");
+                            populate_changes_listbrowser(data);
+                            update_button_states(data);
                         }
-                    }
-                    break;
-                    
-                case GID_CLOSE:
-                    keep_open = FALSE;
-                    break;
-            }
-            break;
+                        break;
+                        
+                    case GID_CHANGES_LIST:
+                        /* Changes list clicked (no action needed for now) */
+                        break;
+                        
+                    case GID_RESTORE_ALL:
+                        handle_restore_all(data);
+                        break;
+                        
+                    case GID_DELETE_SESSION:
+                        handle_delete_session(data);
+                        break;
+                        
+                    case GID_CLOSE:
+                        keep_open = FALSE;
+                        break;
+                }
+                break;
+        }
     }
     
     return keep_open;
@@ -985,16 +1218,11 @@ BOOL iTidy_HandleToolRestoreWindowEvent(struct Window *window, struct IntuiMessa
 
 /**
  * @brief Check if any restore operations were performed
- * 
- * Call this AFTER the window event loop ends but BEFORE calling
- * iTidy_CloseToolRestoreWindow() to determine if tool cache should
- * be invalidated.
- * 
- * @return TRUE if at least one restore operation completed successfully
  */
 BOOL iTidy_WasRestorePerformed(void)
 {
-    if (g_restore_window_data) {
+    if (g_restore_window_data)
+    {
         BOOL result = g_restore_window_data->restore_performed;
         log_info(LOG_GUI, "[RESTORE_TRACKING] iTidy_WasRestorePerformed() called: returning %s\n", 
                  result ? "TRUE" : "FALSE");
@@ -1011,74 +1239,77 @@ void iTidy_CloseToolRestoreWindow(struct Window *window)
 {
     iTidy_ToolRestoreData *data;
     
-    if (!window) {
+    if (!window)
+    {
         return;
     }
     
-    /* Retrieve data from global pointer */
     data = g_restore_window_data;
     
-    if (data) {
+    if (data)
+    {
         log_info(LOG_GUI, "[RESTORE_TRACKING] iTidy_CloseToolRestoreWindow: restore_performed=%s\n",
                  data->restore_performed ? "TRUE" : "FALSE");
     }
     
     g_restore_window_data = NULL;  /* Clear global */
     
-    if (data) {
-        /* CRITICAL: Detach lists from gadgets BEFORE closing window */
-        if (data->session_listview && data->window) {
-            GT_SetGadgetAttrs(data->session_listview, data->window, NULL,
-                              GTLV_Labels, ~0,
-                              TAG_DONE);
+    if (data)
+    {
+        /* Detach lists from gadgets */
+        if (data->session_listbrowser_obj && data->window)
+        {
+            SetGadgetAttrs((struct Gadget *)data->session_listbrowser_obj,
+                           data->window, NULL,
+                           LISTBROWSER_Labels, ~0,
+                           TAG_DONE);
         }
-        if (data->changes_listview && data->window) {
-            GT_SetGadgetAttrs(data->changes_listview, data->window, NULL,
-                              GTLV_Labels, ~0,
-                              TAG_DONE);
+        if (data->changes_listbrowser_obj && data->window)
+        {
+            SetGadgetAttrs((struct Gadget *)data->changes_listbrowser_obj,
+                           data->window, NULL,
+                           LISTBROWSER_Labels, ~0,
+                           TAG_DONE);
         }
         
-        /* Close window BEFORE freeing gadgets */
-        if (data->window) {
-            CloseWindow(data->window);
+        /* Close window (also disposes all child objects) */
+        if (data->window_obj)
+        {
+            DisposeObject(data->window_obj);  /* Closes window and disposes children */
+            data->window_obj = NULL;
             data->window = NULL;
         }
         
-        /* Now safe to free gadgets */
-        if (data->gadget_list) {
-            FreeGadgets(data->gadget_list);
-            data->gadget_list = NULL;
-        }
-        
-        /* Free visual info */
-        if (data->visual_info) {
-            FreeVisualInfo(data->visual_info);
-            data->visual_info = NULL;
-        }
-        
-        /* Free session ListView resources (simple API - already done in cleanup_display_lists) */
-        
-        /* Free changes display list (just the wrapper nodes) */
+        /* Free ListBrowser node lists */
+        if (data->session_nodes)
         {
-            struct Node *node, *next_node;
-            
-            node = data->changes_display_list.lh_Head;
-            while (node->ln_Succ) {
-                next_node = node->ln_Succ;
-                Remove(node);
-                FreeVec(node);
-                node = next_node;
-            }
+            free_listbrowser_list(data->session_nodes);
+            data->session_nodes = NULL;
+        }
+        if (data->changes_nodes)
+        {
+            free_listbrowser_list(data->changes_nodes);
+            data->changes_nodes = NULL;
         }
         
         /* Free session and change lists */
         iTidy_FreeSessionList(&data->session_list);
         iTidy_FreeToolChangeList(&data->changes_list);
         
-        /* Finally free the data structure */
+        /* Free window data */
         FreeVec(data);
-    } else {
-        /* No data - just close window */
-        CloseWindow(window);
     }
+    else
+    {
+        /* No data - should not happen, but handle gracefully */
+        log_warning(LOG_GUI, "CloseToolRestoreWindow: No data structure found\n");
+    }
+    
+    /* Free column info */
+    free_column_info();
+    
+    /* Close ReAction classes */
+    close_reaction_classes();
+    
+    log_info(LOG_GUI, "Tool restore window closed\n");
 }

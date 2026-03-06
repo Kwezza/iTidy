@@ -72,6 +72,34 @@ typedef enum {
 } TextAlignment;
 
 /*========================================================================*/
+/* Block Grouping Mode Enumeration                                       */
+/*========================================================================*/
+/**
+ * @brief How icons are visually grouped in the layout
+ */
+typedef enum {
+    BLOCK_GROUP_NONE = 0,       /* Standard layout (no grouping) */
+    BLOCK_GROUP_BY_TYPE = 1     /* Group by WBDRAWER/WBTOOL/other */
+} BlockGroupMode;
+
+/*========================================================================*/
+/* Block Gap Size Enumeration                                            */
+/*========================================================================*/
+/**
+ * @brief Vertical spacing between grouped blocks
+ */
+typedef enum {
+    BLOCK_GAP_SMALL = 0,        /* 5 pixels */
+    BLOCK_GAP_MEDIUM = 1,       /* 10 pixels */
+    BLOCK_GAP_LARGE = 2         /* 15 pixels */
+} BlockGapSize;
+
+/* Pixel values for gap sizes */
+#define BLOCK_GAP_SMALL_PX   5
+#define BLOCK_GAP_MEDIUM_PX  10
+#define BLOCK_GAP_LARGE_PX   15
+
+/*========================================================================*/
 /* Window Overflow Mode Enumeration                                      */
 /*========================================================================*/
 /**
@@ -110,8 +138,28 @@ typedef struct {
 } BackupPreferences;
 
 /*========================================================================*/
-/* Layout Preferences Structure                                          */
+/* DefIcons Exclude Paths Type                                           */
 /*========================================================================*/
+
+/** Maximum number of exclude path entries */
+#define MAX_DEFICONS_EXCLUDE_PATHS   32
+/** Maximum length of each exclude path string */
+#define DEFICONS_EXCLUDE_PATH_LENGTH 256
+
+/**
+ * @brief Standalone exclude paths collection for DefIcons icon creation.
+ *
+ * Extracted from LayoutPreferences so that modal windows can operate on
+ * a small (~8KB) working copy instead of copying the full 9KB prefs struct.
+ */
+typedef struct {
+    char  paths[MAX_DEFICONS_EXCLUDE_PATHS][DEFICONS_EXCLUDE_PATH_LENGTH];
+    UWORD count;  /**< Number of active entries (0-32) */
+} DefIconsExcludePaths;
+
+/*========================================================================*/
+/* Layout Preferences Structure                                          */
+/*======================================================================*/
 /**
  * @brief Master preferences structure for icon layout and processing
  * 
@@ -139,6 +187,10 @@ typedef struct {
     BOOL useColumnWidthOptimization; /* Optimize per-column widths */
     TextAlignment textAlignment;     /* Vertical alignment of text labels in rows */
     
+    /* Block Grouping Settings */
+    BlockGroupMode blockGroupMode;   /* BLOCK_GROUP_NONE or BLOCK_GROUP_BY_TYPE */
+    BlockGapSize blockGapSize;       /* SMALL, MEDIUM, or LARGE gap between blocks */
+    
     /* Window Management */
     BOOL resizeWindows;              /* Auto-resize drawer windows */
     UWORD minIconsPerRow;            /* Minimum columns (prevent 1×N layouts) */
@@ -165,14 +217,19 @@ typedef struct {
     /* Advanced Settings */
     BOOL skipHiddenFolders;          /* Skip folders without .info files (hidden) */
     
-    /* Beta/Experimental Features */
-    BOOL beta_openFoldersAfterProcessing;      /* Auto-open folders via Workbench during processing */
-    BOOL beta_FindWindowOnWorkbenchAndUpdate;  /* Find open folder windows and move/resize them to match saved geometry */
+    /* DefIcons Icon Creation Settings (Workbench 3.2+) */
+    BOOL enable_deficons_icon_creation;        /* Master enable/disable for automatic icon creation */
+    char deficons_disabled_types[256];         /* Comma-separated list of disabled root type names (e.g., "tool,font") */
+    UWORD deficons_folder_icon_mode;           /* 0=Smart (create if visible), 1=Always, 2=Never */
+    BOOL deficons_skip_system_assigns;         /* TRUE = skip SYS:, C:, S:, DEVS:, LIBS:, etc. */
+
+    UWORD deficons_icon_size_mode;              /* 0=Small(48), 1=Medium(64), 2=Large(100) — IFF thumbnail size */
+    UWORD deficons_thumbnail_border_mode;        /* ITIDY_THUMB_BORDER_NEVER/AUTO/ALWAYS — border mode for image thumbnails */
+    BOOL deficons_enable_text_previews;         /* TRUE = enable text file content preview rendering on icons */
+    BOOL deficons_enable_picture_previews;      /* TRUE = enable picture file thumbnail rendering on icons */
     
     /* Logging and Debug Settings */
     UWORD logLevel;                            /* Log level: 0=DEBUG, 1=INFO, 2=WARN, 3=ERROR */
-    BOOL memoryLoggingEnabled;                 /* Enable memory allocation logging (creates memory_*.log) */
-    BOOL enable_performance_logging;           /* Enable performance timing logging for iTidy operations */
     
     /* Default Tool Validation Settings */
     BOOL validate_default_tools;               /* Enable default tool validation using system PATH */
@@ -182,6 +239,39 @@ typedef struct {
     
     /* Backup Settings */
     BackupPreferences backupPrefs;   /* Embedded backup configuration */
+    
+    /* === NEW FIELDS BELOW THIS LINE (v2 prefs format) === */
+    /* These MUST remain at the end of the struct for backward  */
+    /* compatibility with v1 preference files.                  */
+    
+    /* DefIcons Palette Reduction Settings (Workbench 3.2+) */
+    UWORD deficons_max_icon_colors;             /* Max palette colors: 4,8,16,29,32,64,128,256 */
+    UWORD deficons_dither_method;               /* 0=None, 1=Ordered, 2=Floyd-Steinberg, 3=Auto */
+    UWORD deficons_lowcolor_mapping;            /* 0=Grayscale, 1=WB palette, 2=Hybrid (only when max<=8) */
+    BOOL deficons_ultra_mode;                   /* TRUE = 256-color detail-preserving downsample */
+    BOOL deficons_harmonised_palette;           /* TRUE = force fixed 29-colour GlowIcons palette */
+
+    /* Per-format picture thumbnail enable flags (v3 fields) */
+    ULONG deficons_picture_formats_enabled;     /* Bitmask: ITIDY_PICTFMT_* bits — which formats get thumbnails */
+
+    /* Upscaling control (v3 fields) */
+    BOOL deficons_upscale_thumbnails;           /* FALSE = keep small images at natural size (default) */
+                                                /* TRUE  = scale up images smaller than icon size      */
+
+    /* === NEW FIELDS BELOW THIS LINE (v4 prefs format) === */
+    /* These MUST remain at the end of the struct for backward  */
+    /* compatibility with v1-v3 preference files.               */
+
+    /* WHDLoad Integration (v4 fields) */
+    BOOL deficons_skip_whdload_folders;         /* TRUE = detect WHDLoad folders (contain *.slave) and skip icon creation inside them */
+
+    /* === NEW FIELDS BELOW THIS LINE (v5 prefs format) === */
+    /* These MUST remain at the end of the struct for backward  */
+    /* compatibility with v1-v4 preference files.               */
+
+    /* Replace-iTidy-icons options (v5 fields) */
+    BOOL deficons_replace_itidy_thumbnails;     /* TRUE = replace existing iTidy-created image thumbnail icons on re-run */
+    BOOL deficons_replace_itidy_text_previews;  /* TRUE = replace existing iTidy-created text preview icons on re-run */
 } LayoutPreferences;
 
 /*========================================================================*/
@@ -220,14 +310,83 @@ typedef struct {
 #define DEFAULT_ICON_SPACING_Y      8    /* 8px vertical spacing */
 #define DEFAULT_SKIP_HIDDEN_FOLDERS TRUE   /* Default: ignore hidden folders */
 
-/* Beta/Experimental Feature Defaults */
-#define DEFAULT_BETA_OPEN_FOLDERS_AFTER_PROCESSING         FALSE   /* Enable for testing */
-#define DEFAULT_BETA_FIND_WINDOW_ON_WORKBENCH_AND_UPDATE   FALSE   /* Enable for testing */
+/* DefIcons Feature Defaults (Workbench 3.2+) */
+#define DEFAULT_ENABLE_DEFICONS_ICON_CREATION              FALSE   /* Disabled by default (opt-in feature) */
+#define DEFAULT_DEFICONS_DISABLED_TYPES                    "tool,prefs,iff,key,kickstart"  /* Disabled types (unchecked in default UI) */
+#define DEFAULT_DEFICONS_FOLDER_ICON_MODE                  2       /* 0=Smart (create if visible), 1=Always, 2=Never */
+#define DEFAULT_DEFICONS_SKIP_SYSTEM_ASSIGNS               TRUE    /* Skip system directories by default */
+
+#define DEFAULT_DEFICONS_ICON_SIZE_MODE                     1       /* 0=Small(48), 1=Medium(64), 2=Large(100) */
+/* Thumbnail border/bevel style constants (used with deficons_thumbnail_border_mode)         */
+/* Values 0-2 are backward-compatible with preferences saved by earlier versions of iTidy.  */
+#define ITIDY_THUMB_BORDER_NONE         0   /* No border, no bevel — edge-to-edge frameless thumbnail */
+#define ITIDY_THUMB_BORDER_WB_AUTO      1   /* Smart: Workbench frame only if image is opaque */
+#define ITIDY_THUMB_BORDER_WB_ALWAYS    2   /* Workbench frame always, regardless of transparency */
+#define ITIDY_THUMB_BORDER_BEVEL_AUTO   3   /* Smart: inner bevel highlight only if image is opaque */
+#define ITIDY_THUMB_BORDER_BEVEL_ALWAYS 4   /* Inner bevel highlight always, regardless of transparency */
+/* Backward-compatible aliases for the original three-value names */
+#define ITIDY_THUMB_BORDER_NEVER    ITIDY_THUMB_BORDER_NONE
+#define ITIDY_THUMB_BORDER_AUTO     ITIDY_THUMB_BORDER_WB_AUTO
+#define ITIDY_THUMB_BORDER_ALWAYS   ITIDY_THUMB_BORDER_WB_ALWAYS
+#define DEFAULT_DEFICONS_THUMBNAIL_BORDER_MODE  ITIDY_THUMB_BORDER_BEVEL_AUTO  /* Default: smart bevel (opaque=bevel, transparent=frameless) */
+#define DEFAULT_DEFICONS_ENABLE_TEXT_PREVIEWS               TRUE    /* Default: Text content previews enabled */
+#define DEFAULT_DEFICONS_ENABLE_PICTURE_PREVIEWS            TRUE    /* Default: Picture thumbnails enabled */
+#define DEFAULT_DEFICONS_UPSCALE_THUMBNAILS                 FALSE   /* Default: Do NOT upscale small images to icon size */
+#define DEFAULT_DEFICONS_SKIP_WHDLOAD_FOLDERS               FALSE   /* Default: OFF (opt-in) */
+#define DEFAULT_DEFICONS_REPLACE_ITIDY_THUMBNAILS            FALSE   /* Default: OFF - do not overwrite existing iTidy image thumbnails */
+#define DEFAULT_DEFICONS_REPLACE_ITIDY_TEXT_PREVIEWS         FALSE   /* Default: OFF - do not overwrite existing iTidy text previews */
+
+/* DefIcons Palette Reduction Defaults */
+#define DEFAULT_DEFICONS_MAX_ICON_COLORS                    256     /* No limit (full palette) */
+#define DEFAULT_DEFICONS_DITHER_METHOD                      3       /* Auto (smart selection by color count) */
+#define DEFAULT_DEFICONS_LOWCOLOR_MAPPING                   0       /* Grayscale (safe default for 4-8 colors) */
+#define DEFAULT_DEFICONS_ULTRA_MODE                         FALSE   /* Standard mode by default */
+#define DEFAULT_DEFICONS_HARMONISED_PALETTE                 FALSE   /* Standard mode by default */
+
+/*========================================================================*/
+/* Picture Format Enable Bitmask Constants                               */
+/*========================================================================*/
+
+/**
+ * @brief Per-format enable bits for deficons_picture_formats_enabled.
+ *
+ * Only formats with a corresponding datatype installed in
+ * DEVS:DataTypes (or Classes/DataTypes) can produce thumbnails.
+ * If the datatype is absent, NewDTObject() returns NULL and the
+ * pipeline logs a warning and skips to the next file.
+ *
+ * Default WB 3.2 datatypes present: ilbm, png, gif, acbm, bmp, jpeg.
+ * jpeg is disabled by default due to slow decode on 68000.
+ */
+
+/* IFF ILBM (standard Amiga bitplane format — native parser + DT fallback for HAM) */
+#define ITIDY_PICTFMT_ILBM      0x0001UL
+/* PNG (WB 3.2 default — fast, supports alpha; recommended for UI art) */
+#define ITIDY_PICTFMT_PNG       0x0002UL
+/* GIF (WB 3.2 default — fast, supports 1-bit transparency; multi-frame uses frame 0) */
+#define ITIDY_PICTFMT_GIF       0x0004UL
+/* JPEG (WB 3.2 default — SLOW: can take >60s on 68000; disabled by default) */
+#define ITIDY_PICTFMT_JPEG      0x0008UL
+/* BMP (WB 3.2 default — uncompressed Windows bitmap) */
+#define ITIDY_PICTFMT_BMP       0x0010UL
+/* ACBM (Amiga Continuous BitMap — IFF variant; WB 3.2 default) */
+#define ITIDY_PICTFMT_ACBM      0x0020UL
+/* All other picture formats (tiff, targa, pcx, ico, sunraster, reko, brush, etc.) */
+/* Only works if a third-party datatype for that format is installed. */
+#define ITIDY_PICTFMT_OTHER     0x0040UL
+
+/* Convenience: all formats enabled */
+#define ITIDY_PICTFMT_ALL       (ITIDY_PICTFMT_ILBM | ITIDY_PICTFMT_PNG | ITIDY_PICTFMT_GIF | \
+                                 ITIDY_PICTFMT_JPEG | ITIDY_PICTFMT_BMP | ITIDY_PICTFMT_ACBM | \
+                                 ITIDY_PICTFMT_OTHER)
+
+/* Default: all enabled EXCEPT JPEG (slow) */
+#define DEFAULT_DEFICONS_PICTURE_FORMATS_ENABLED \
+    (ITIDY_PICTFMT_ILBM | ITIDY_PICTFMT_PNG | ITIDY_PICTFMT_GIF | \
+     ITIDY_PICTFMT_BMP  | ITIDY_PICTFMT_ACBM | ITIDY_PICTFMT_OTHER)
 
 /* Logging and Debug Defaults */
-#define DEFAULT_LOG_LEVEL                                  3       /* Default: ERROR level (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR) */
-#define DEFAULT_MEMORY_LOGGING_ENABLED                     FALSE   /* Default: Disabled (can be very verbose) */
-#define DEFAULT_PERFORMANCE_LOGGING_ENABLED                FALSE   /* Default: Disabled (performance timing logs) */
+#define DEFAULT_LOG_LEVEL                                  4       /* Default: DISABLED level (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR, 4=DISABLED) */
 
 /* Default Tool Validation Defaults */
 #define DEFAULT_VALIDATE_DEFAULT_TOOLS                     TRUE    /* Default: Enabled (validate default tools using system PATH) */
@@ -309,6 +468,26 @@ const LayoutPreferences* GetGlobalPreferences(void);
 void UpdateGlobalPreferences(const LayoutPreferences *newPrefs);
 
 /**
+ * @brief Get read-write access to the global exclude paths singleton
+ *
+ * Returns a pointer to the global DefIconsExcludePaths singleton.
+ * Use this when the exclude-paths window needs to operate on a copy.
+ *
+ * @return Pointer to global DefIconsExcludePaths (never NULL)
+ */
+DefIconsExcludePaths *GetGlobalExcludePaths(void);
+
+/**
+ * @brief Replace the global exclude paths with new values
+ *
+ * Copies the provided DefIconsExcludePaths into the global singleton.
+ * Call this when the exclude-paths window is confirmed (OK/Save).
+ *
+ * @param ep Source exclude paths to copy from
+ */
+void UpdateGlobalExcludePaths(const DefIconsExcludePaths *ep);
+
+/**
  * @brief Set the scan path in global preferences
  * 
  * Convenience setter for updating just the folder path.
@@ -326,6 +505,140 @@ void SetGlobalScanPath(const char *path);
  * @param recursive TRUE to enable recursive scanning, FALSE to disable
  */
 void SetGlobalRecursiveMode(BOOL recursive);
+
+/**
+ * @brief Set skip hidden folders mode in global preferences
+ * 
+ * Convenience setter for controlling whether hidden folders (those
+ * without .info files) are processed.
+ * 
+ * @param skip TRUE to skip hidden folders, FALSE to process them
+ */
+void SetGlobalSkipHiddenFolders(BOOL skip);
+
+/*========================================================================*/
+/* DefIcons Preferences Helper Functions                                 */
+/*========================================================================*/
+
+/**
+ * @brief Check if a DefIcons type is enabled for icon creation
+ * 
+ * Checks whether automatic icon creation is enabled for a specific
+ * DefIcons type by looking in the disabled types list.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ * @param type_name Type name to check (e.g., "tool", "music", "picture")
+ * 
+ * @return TRUE if type is enabled, FALSE if disabled
+ */
+BOOL is_deficon_type_enabled(const LayoutPreferences *prefs, const char *type_name);
+
+/**
+ * @brief Add a type to the disabled types list
+ * 
+ * Adds a DefIcons type to the disabled list, preventing automatic
+ * icon creation for that category.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ * @param type_name Type name to disable (e.g., "tool", "font")
+ * 
+ * @return TRUE if added successfully, FALSE on error
+ */
+BOOL add_disabled_deficon_type(LayoutPreferences *prefs, const char *type_name);
+
+/**
+ * @brief Remove a type from the disabled types list
+ * 
+ * Removes a DefIcons type from the disabled list, re-enabling automatic
+ * icon creation for that category.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ * @param type_name Type name to enable (e.g., "tool", "font")
+ * 
+ * @return TRUE if removed successfully, FALSE on error
+ */
+BOOL remove_disabled_deficon_type(LayoutPreferences *prefs, const char *type_name);
+
+/**
+ * @brief Clear all disabled types (enable all)
+ * 
+ * Clears the disabled types list, enabling automatic icon creation
+ * for all DefIcons categories.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ */
+void clear_disabled_deficon_types(LayoutPreferences *prefs);
+
+/**
+ * @brief Apply default disabled types after loading deficons tree
+ * 
+ * Sets the default disabled types (tool, prefs, iff, key, kickstart) based on
+ * the screenshot defaults. Silently skips any types that don't exist in the
+ * loaded deficons tree (since deficons.prefs is an external user system file).
+ * 
+ * This should be called after the deficons tree is loaded and before displaying
+ * the settings window for the first time, or when resetting to defaults.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ * @param tree Pointer to DefIcons type tree array
+ * @param count Number of nodes in tree
+ */
+void apply_default_deficon_type_selections(LayoutPreferences *prefs, 
+                                           const void *tree, 
+                                           int count);
+
+/*========================================================================*/
+/* DefIcons Exclude Paths Helper Functions                               */
+/*========================================================================*/
+
+/**
+ * @brief Reset exclude paths to default list
+ * 
+ * Resets the exclude paths array to the default list of system
+ * directories that should be skipped during icon creation.
+ * Uses DEVICE: placeholder for portability across volumes.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ */
+void reset_deficons_exclude_paths_to_defaults(DefIconsExcludePaths *ep);
+
+/**
+ * @brief Add a path to the exclude list
+ * 
+ * Adds a directory path to the exclude list. Paths can use the
+ * DEVICE: placeholder for portability (e.g., "DEVICE:Fonts").
+ * 
+ * @param ep Pointer to DefIconsExcludePaths structure
+ * @param path Path to add (absolute or DEVICE: pattern)
+ * 
+ * @return TRUE if added successfully, FALSE if list is full or duplicate
+ */
+BOOL add_deficons_exclude_path(DefIconsExcludePaths *ep, const char *path);
+
+/**
+ * @brief Remove a path from the exclude list
+ * 
+ * Removes a path at the specified index from the exclude list.
+ * 
+ * @param ep Pointer to DefIconsExcludePaths structure
+ * @param index Index of path to remove (0-based)
+ * 
+ * @return TRUE if removed successfully, FALSE if index invalid
+ */
+BOOL remove_deficons_exclude_path(DefIconsExcludePaths *ep, int index);
+
+/**
+ * @brief Modify an existing exclude path
+ * 
+ * Replaces the path at the specified index with a new value.
+ * 
+ * @param ep Pointer to DefIconsExcludePaths structure
+ * @param index Index of path to modify (0-based)
+ * @param new_path New path value
+ * 
+ * @return TRUE if modified successfully, FALSE if index invalid
+ */
+BOOL modify_deficons_exclude_path(DefIconsExcludePaths *ep, int index, const char *new_path);
 
 /**
  * @brief Set skip hidden folders mode in global preferences

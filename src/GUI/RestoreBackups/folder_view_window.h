@@ -1,7 +1,7 @@
 /*
  * folder_view_window.h - iTidy Folder View Window Header
  * Displays folder hierarchy for a selected backup run
- * GadTools-based window for Workbench 2.0+
+ * ReAction-based window for Workbench 3.2+ with Hierarchical ListBrowser
  */
 
 #ifndef ITIDY_FOLDER_VIEW_WINDOW_H
@@ -11,13 +11,13 @@
 #include <exec/lists.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
-#include <libraries/gadtools.h>
+#include <intuition/classusr.h>
 
 /*------------------------------------------------------------------------*/
 /* Gadget IDs                                                             */
 /*------------------------------------------------------------------------*/
-#define GID_FOLDER_LIST         3001
-#define GID_FOLDER_CLOSE_BTN    3002
+#define GID_FOLDER_VIEW_LISTBROWSER   3001
+#define GID_FOLDER_VIEW_CLOSE_BTN     3002
 
 /*------------------------------------------------------------------------*/
 /* Window Spacing Constants                                              */
@@ -31,47 +31,65 @@
 #define FOLDER_VIEW_BUTTON_PADDING  8       /* Button text padding */
 
 /*------------------------------------------------------------------------*/
-/* Standard Window Width                                                 */
+/* Standard Window Dimensions                                            */
 /*------------------------------------------------------------------------*/
-#define FOLDER_VIEW_WIDTH_CHARS     65      /* Width in characters */
+#define FOLDER_VIEW_WIDTH           420     /* Window width in pixels */
+#define FOLDER_VIEW_HEIGHT          300     /* Window height in pixels */
+#define FOLDER_VIEW_MIN_WIDTH       300     /* Minimum window width */
+#define FOLDER_VIEW_MIN_HEIGHT      200     /* Minimum window height */
 
 /*------------------------------------------------------------------------*/
-/* Folder Entry Structure                                                */
+/* Hierarchical ListBrowser Node User Data                               */
+/* This is stored as user data on each ListBrowser node                  */
 /*------------------------------------------------------------------------*/
-struct FolderEntry
+typedef struct iTidyFolderNodeData
 {
-    struct Node node;               /* For linking in list */
-    char *path;                     /* Full folder path */
-    char *display_text;             /* Formatted display text with tree lines */
+    char *path;                     /* Full folder path (allocated) */
+    char *display_name;             /* Display name for column (allocated) */
+    char *size_info;                /* Size/icons info for column (allocated) */
     UWORD depth;                    /* Nesting depth (0 = root) */
-    ULONG archive_number;           /* Archive number (00001, 00002, etc.) */
-    ULONG size_bytes;               /* Size in bytes */
-};
+    ULONG archive_number;           /* Archive number */
+    BOOL has_children;              /* TRUE if this node has children */
+} iTidyFolderNodeData;
 
 /*------------------------------------------------------------------------*/
 /* Folder View Window Data Structure                                     */
 /*------------------------------------------------------------------------*/
 struct iTidyFolderViewWindow
 {
+    /* Screen and Window */
     struct Screen *screen;              /* Workbench screen */
-    struct Window *window;              /* Folder view window */
-    APTR visual_info;                   /* GadTools visual info */
-    struct Gadget *glist;               /* Gadget list */
-    struct TextFont *system_font;       /* System default font (if opened) */
-    struct TextAttr system_font_attr;   /* Font attributes (must persist) */
+    struct Window *window;              /* Window pointer (from RA_OpenWindow) */
+    Object *window_obj;                 /* ReAction window object */
     BOOL window_open;                   /* Window state flag */
     
-    /* Gadget pointers */
-    struct Gadget *folder_list;         /* ListView showing folder hierarchy */
-    struct Gadget *close_btn;           /* Close button */
+    /* ReAction Gadget Objects */
+    Object *main_layout;                /* Main layout gadget */
+    Object *listbrowser_obj;            /* Hierarchical ListBrowser */
+    Object *close_button_obj;           /* Close button */
     
-    /* Data */
-    struct List folder_entries;         /* List of FolderEntry nodes */
+    /* ListBrowser Data */
+    struct List *folder_list;           /* List of ListBrowser nodes */
+    struct ColumnInfo *column_info;     /* Column information (2 columns) */
+    
+    /* Node User Data Tracking (for cleanup) */
+    struct List node_data_list;         /* List to track allocated iTidyFolderNodeData */
+    
+    /* Window Info */
     char run_name[16];                  /* Run name (e.g., "Run_0008") */
     char window_title[80];              /* Window title (must persist) */
     UWORD run_number;                   /* Run number */
     char date_str[24];                  /* Date created */
     ULONG archive_count;                /* Total archives */
+};
+
+/*------------------------------------------------------------------------*/
+/* Node Data Tracking Node (for cleanup)                                 */
+/*------------------------------------------------------------------------*/
+struct NodeDataTracker
+{
+    struct Node node;                   /* For linking in list */
+    iTidyFolderNodeData *data;          /* Pointer to allocated data */
 };
 
 /*------------------------------------------------------------------------*/
@@ -82,6 +100,7 @@ struct iTidyFolderViewWindow
  * @brief Open the Folder View Window for a backup run
  * 
  * Opens a modal window showing the folder hierarchy for a selected backup run.
+ * Uses ReAction with hierarchical ListBrowser for native tree display.
  * 
  * @param folder_data Pointer to folder view window data structure
  * @param catalog_path Full path to the catalog.txt file
@@ -112,7 +131,9 @@ void close_folder_view_window(struct iTidyFolderViewWindow *folder_data);
 BOOL handle_folder_view_window_events(struct iTidyFolderViewWindow *folder_data);
 
 /**
- * @brief Parse catalog and build folder hierarchy with tree structure
+ * @brief Parse catalog and build hierarchical folder tree
+ * 
+ * Parses the catalog file and builds a hierarchical ListBrowser node tree.
  * 
  * @param catalog_path Path to catalog.txt file
  * @param folder_data Pointer to folder view window data
@@ -122,27 +143,9 @@ BOOL parse_catalog_and_build_tree(const char *catalog_path,
                                   struct iTidyFolderViewWindow *folder_data);
 
 /**
- * @brief Format folder entry with ASCII tree lines
- * 
- * Formats a folder path with proper indentation and ASCII tree characters
- * based on its depth in the hierarchy.
- * 
- * @param path Folder path
- * @param depth Nesting depth (0 = root)
- * @param is_last TRUE if this is the last child at this depth
- * @param parent_lines Array indicating which parent levels need vertical lines
- * @param buffer Output buffer for formatted text
- * @param buffer_size Size of output buffer
- */
-void format_folder_with_tree_lines(const char *path,
-                                   UWORD depth,
-                                   BOOL is_last,
-                                   BOOL *parent_lines,
-                                   char *buffer,
-                                   UWORD buffer_size);
-
-/**
  * @brief Free all folder entries in the list
+ * 
+ * Frees all ListBrowser nodes and associated user data.
  * 
  * @param folder_data Pointer to folder view window data
  */

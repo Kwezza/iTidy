@@ -1,32 +1,22 @@
 /*
- * restore_window.c - iTidy Restore Window Implementation
- * GadTools-based Backup Restore GUI for Workbench 2.0+
- * Based on RESTORE_WINDOW_GUI_SPEC.md specification
+ * restore_window.c - iTidy Restore Window Implementation (ReAction)
+ * ReAction GUI for Workbench 3.2+
  * 
- * COLUMN ALIGNMENT - SYSTEM DEFAULT FONT:
- * ========================================
- * The run list uses space-based column alignment which requires a
- * FIXED-WIDTH (monospaced) font. To ensure proper alignment regardless
- * of the screen font, this window uses the System Default Text font
- * (typically Topaz) for all gadgets.
- * 
- * Even if the Workbench screen uses a proportional font (like Helvetica)
- * for Screen Text, the listviews will use the System Default Text font,
- * which is defined in Workbench Preferences and is typically fixed-width.
- * 
- * The code:
- * - Opens the System Default Text font (GfxBase->DefaultFont)
- * - Uses it for all gadgets via ng.ng_TextAttr
- * - Closes the font in cleanup
- * 
- * This ensures column alignment works correctly with the format:
- * "Run_0007  2025-10-25 14:32    63 folders   46 KB  Complete"
- * 
- * Technical details:
- * - Listview width: font_width * 65 characters
- * - Format width: ~65 chars using %-9s, %-16s, %11s, %8s
- * - Columns align because character widths are consistent
+ * Migrated from GadTools to ReAction following REACTION_MIGRATION_GUIDE.md
+ * Uses ListBrowser gadgets for run list and details display.
  */
+
+/* =========================================================================
+ * LIBRARY BASE ISOLATION
+ * Redefine library bases to local unique names BEFORE including proto headers.
+ * This prevents linker collisions with bases defined in main_window.c
+ * ========================================================================= */
+#define WindowBase      iTidy_Restore_WindowBase
+#define LayoutBase      iTidy_Restore_LayoutBase
+#define ButtonBase      iTidy_Restore_ButtonBase
+#define ListBrowserBase iTidy_Restore_ListBrowserBase
+#define LabelBase       iTidy_Restore_LabelBase
+#define RequesterBase   iTidy_Restore_RequesterBase
 
 #include "platform/platform.h"
 #include <exec/types.h>
@@ -34,79 +24,114 @@
 #include <exec/lists.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
+#include <intuition/gadgetclass.h>
 #include <libraries/gadtools.h>
 #include <libraries/asl.h>
 #include <libraries/dos.h>
 #include <graphics/rastport.h>
 #include <graphics/gfx.h>
-#include <graphics/gfxmacros.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
-#include <proto/gadtools.h>
 #include <proto/graphics.h>
-#include <proto/asl.h>
 #include <proto/dos.h>
+#include <proto/utility.h>
 #include <string.h>
 #include <stdio.h>
 
+/* ReAction headers */
+#include <clib/alib_protos.h>
+#include <reaction/reaction.h>
+#include <reaction/reaction_macros.h>
+#include <proto/window.h>
+#include <proto/layout.h>
+#include <proto/button.h>
+#include <proto/listbrowser.h>
+#include <proto/label.h>
+#include <proto/requester.h>
+#include <classes/window.h>
+#include <classes/requester.h>
+#include <gadgets/layout.h>
+#include <gadgets/button.h>
+#include <gadgets/listbrowser.h>
+#include <images/label.h>
+
 #include "restore_window.h"
-#include "GUI/StatusWindows/progress_window.h"
-#include "helpers/listview_simple_columns.h"
-#include "helpers/list_formatter.h"  /* Justified list formatter */
-#include "backup_restore.h"
+#include "GUI/StatusWindows/recursive_progress.h"
+#include "backups/backup_restore.h"
 #include "writeLog.h"
 #include "folder_view_window.h"
 #include "GUI/gui_utilities.h"
-#include "backup_runs.h"
-#include "backup_catalog.h"
-#include "backup_restore.h"
-#include "writeLog.h"
-#include "Settings/IControlPrefs.h"
-#include "string_functions.h"    /* For iTidy_FormatTimestamp() */
-#include "../easy_request_helper.h"  /* Global EasyRequest helper */
+#include "backups/backup_runs.h"
+#include "backups/backup_catalog.h"
+#include "backups/backup_session.h"
+#include "string_functions.h"
 
 #ifndef NewList
 VOID NewList(struct List *list);
 #endif
 
 /*------------------------------------------------------------------------*/
-/* External Global Variables                                             */
+/* Library Bases (Prefixed to avoid collision with main_window.c)        */
 /*------------------------------------------------------------------------*/
-extern struct IControlPrefsDetails prefsIControl;
+struct Library *iTidy_Restore_WindowBase = NULL;
+struct Library *iTidy_Restore_LayoutBase = NULL;
+struct Library *iTidy_Restore_ButtonBase = NULL;
+struct Library *iTidy_Restore_ListBrowserBase = NULL;
+struct Library *iTidy_Restore_RequesterBase = NULL;
+struct Library *iTidy_Restore_LabelBase = NULL;
 
 /*------------------------------------------------------------------------*/
-/* Window Title                                                           */
+/* Window Constants                                                       */
 /*------------------------------------------------------------------------*/
 #define RESTORE_WINDOW_TITLE "iTidy - Restore Backups"
 
 /*------------------------------------------------------------------------*/
-/* Column Configuration for Run List (Simple API)                        */
+/* Gadget IDs (ReAction uses these via GA_ID)                            */
 /*------------------------------------------------------------------------*/
-static const iTidy_SimpleColumn run_list_columns[] = {
-    /* title         width  align               smart_path */
-    {"Run",          4,    ITIDY_ALIGN_RIGHT,  FALSE},
-    {"Date/Time",    20,   ITIDY_ALIGN_LEFT,   FALSE},
-    {"Folders",      7,    ITIDY_ALIGN_RIGHT,  FALSE},
-    {"Size",         8,    ITIDY_ALIGN_RIGHT,  FALSE},
-    {"Status",       10,   ITIDY_ALIGN_LEFT,   FALSE}
+enum {
+    GID_RESTORE_ROOT_LAYOUT = 1,
+    GID_RESTORE_RUN_LIST_LAYOUT,
+    GID_RESTORE_RUN_LISTBROWSER,
+    GID_RESTORE_DETAILS_LAYOUT,
+    GID_RESTORE_DETAILS_LISTBROWSER,
+    GID_RESTORE_BUTTONS_LAYOUT,
+    GID_RESTORE_DELETE_BUTTON,
+    GID_RESTORE_RESTORE_BUTTON,
+    GID_RESTORE_VIEW_BUTTON,
+    GID_RESTORE_CANCEL_BUTTON
 };
 
-#define NUM_RUN_LIST_COLUMNS (sizeof(run_list_columns) / sizeof(iTidy_SimpleColumn))
+/*------------------------------------------------------------------------*/
+/* Column Configuration for Run ListBrowser                              */
+/*------------------------------------------------------------------------*/
+static struct ColumnInfo run_list_column_info[] = {
+    { 8,  "Run",       0 },
+    { 18, "Date/Time", 0 },
+    { 8,  "Folders",   0 },
+    { 8,  "Size",      0 },
+    { 8,  "Icons+",    0 },
+    { 10, "Status",    0 },
+    { -1, (STRPTR)~0, -1 }
+};
+
+static struct ColumnInfo details_column_info[] = {
+    { 30, "Field", 0 },
+    { 70, "Value", 0 },
+    { -1, (STRPTR)~0, -1 }
+};
 
 /*------------------------------------------------------------------------*/
-/* Helper function to update window max dimensions                       */
+/* Forward Declarations                                                   */
 /*------------------------------------------------------------------------*/
-static void update_window_max_dimensions(UWORD *current_max_width,
-                                        UWORD *current_max_height,
-                                        UWORD gadget_right,
-                                        UWORD gadget_bottom)
-{
-    if (gadget_right > *current_max_width)
-        *current_max_width = gadget_right;
-    
-    if (gadget_bottom > *current_max_height)
-        *current_max_height = gadget_bottom;
-}
+static BOOL open_reaction_classes(void);
+static void close_reaction_classes(void);
+static void free_listbrowser_list(struct List *list);
+static BOOL delete_directory_recursive(const char *path);
+static ULONG ShowReActionRequester(struct Window *parent_window,
+                                   CONST_STRPTR title,
+                                   CONST_STRPTR body,
+                                   CONST_STRPTR gadgets,
+                                   ULONG image_type);
 
 /*------------------------------------------------------------------------*/
 /**
@@ -115,14 +140,13 @@ static void update_window_max_dimensions(UWORD *current_max_width,
 /*------------------------------------------------------------------------*/
 void format_size_string(ULONG bytes, char *buffer)
 {
-    /* Convert bytes to human-readable format with units (integer math only) */
-    if (bytes >= 1048576)  /* >= 1 MB */
+    if (bytes >= 1048576)
     {
         ULONG mb = bytes / 1048576;
         ULONG decimal = ((bytes % 1048576) * 10) / 1048576;
         sprintf(buffer, "%lu.%lu MB", mb, decimal);
     }
-    else if (bytes >= 1024)  /* >= 1 KB */
+    else if (bytes >= 1024)
     {
         ULONG kb = bytes / 1024;
         ULONG decimal = ((bytes % 1024) * 10) / 1024;
@@ -130,16 +154,13 @@ void format_size_string(ULONG bytes, char *buffer)
     }
     else
     {
-        sprintf(buffer, "%lu  B", bytes);  /* Extra space for alignment with KB/MB */
+        sprintf(buffer, "%lu B", bytes);
     }
 }
 
 /*------------------------------------------------------------------------*/
 /**
  * @brief Format DateStamp to human-readable string
- * 
- * Converts an Amiga DateStamp (days since 1978, minutes, ticks) into
- * a formatted string: "YYYY-MM-DD HH:MM:SS"
  */
 /*------------------------------------------------------------------------*/
 static void format_datestamp_string(struct DateStamp *ds, char *buffer, int bufferSize)
@@ -157,18 +178,14 @@ static void format_datestamp_string(struct DateStamp *ds, char *buffer, int buff
     
     days = ds->ds_Days;
     minutes = ds->ds_Minute;
-    seconds = ds->ds_Tick / 50;  /* Ticks are 1/50th of a second */
+    seconds = ds->ds_Tick / 50;
     
-    /* Convert minutes to hours and minutes */
     hour = minutes / 60;
     minute = minutes % 60;
     
-    /* Days since Jan 1, 1978 - convert to calendar date */
-    /* Simple algorithm: count years and remaining days */
     daysSinceEpoch = days;
     year = 1978;
     
-    /* Account for leap years */
     while (1)
     {
         ULONG daysInYear = 365;
@@ -184,7 +201,6 @@ static void format_datestamp_string(struct DateStamp *ds, char *buffer, int buff
             break;
     }
     
-    /* Count months */
     {
         ULONG daysInMonth[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
         BOOL isLeap = ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0));
@@ -199,154 +215,12 @@ static void format_datestamp_string(struct DateStamp *ds, char *buffer, int buff
             month++;
         }
         
-        day = daysSinceEpoch + 1;  /* Days are 1-based */
+        day = daysSinceEpoch + 1;
     }
     
-    /* Format the string */
     snprintf(buffer, bufferSize, "%04lu-%02lu-%02lu %02lu:%02lu:%02lu",
              year, month, day, hour, minute, seconds);
 }
-
-/*------------------------------------------------------------------------*/
-/**
- * @brief Draw window background with checkerboard pattern and recessed panel
- * 
- * Creates the classic Amiga dialog look:
- * 1. Fill entire window with checkerboard pattern
- * 2. Draw large recessed panel for main content area
- * 3. Buttons remain on checkerboard pattern at bottom
- * 
- * @param restore_data Pointer to restore window data structure
- */
-/*------------------------------------------------------------------------*/
-static void draw_window_background(struct iTidyRestoreWindow *restore_data)
-{
-    struct RastPort *rp;
-    WORD content_left, content_top, content_width, content_height;
-    WORD window_inner_left, window_inner_top;
-    WORD window_inner_width, window_inner_height;
-    struct DrawInfo *dri;
-    static UWORD checkerboard_pattern[2] = {0x5555, 0xAAAA};
-    
-    if (restore_data == NULL || restore_data->window == NULL)
-        return;
-    
-    if (restore_data->run_list == NULL || restore_data->details_listview == NULL)
-        return;
-    
-    rp = restore_data->window->RPort;
-    dri = GetScreenDrawInfo(restore_data->screen);
-    if (dri == NULL)
-        return;
-    
-    /* Get window's inner dimensions (excluding borders) */
-    window_inner_left = restore_data->window->BorderLeft;
-    window_inner_top = restore_data->window->BorderTop;
-    window_inner_width = restore_data->window->Width - 
-                         restore_data->window->BorderLeft - 
-                         restore_data->window->BorderRight;
-    window_inner_height = restore_data->window->Height - 
-                          restore_data->window->BorderTop - 
-                          restore_data->window->BorderBottom;
-    
-    /* Fill entire window interior with checkerboard pattern */
-    /* Use pen 0 (light gray) and pen 1 (white) for the classic Amiga look */
-    SetAPen(rp, 0);  /* Light gray background */
-    SetBPen(rp, 2);  /* White */
-    SetDrMd(rp, JAM2);
-    
-    /* Use alternating pattern (checkerboard) */
-    SetAfPt(rp, checkerboard_pattern, 1);
-    
-    RectFill(rp, 
-             window_inner_left, 
-             window_inner_top,
-             window_inner_left + window_inner_width - 1,
-             window_inner_top + window_inner_height - 1);
-    
-    /* Clear the pattern */
-    SetAfPt(rp, NULL, 0);
-    
-    /* Calculate recessed panel dimensions */
-    /* Panel should contain: both listviews, but NOT the buttons */
-    /* Bevel starts RESTORE_BEVEL_BORDER pixels from the content */
-    content_left = restore_data->run_list->LeftEdge - RESTORE_CONTENT_PADDING - RESTORE_BEVEL_BORDER;
-    content_top = restore_data->run_list->TopEdge - RESTORE_CONTENT_PADDING - RESTORE_BEVEL_BORDER;
-    
-    /* Width matches the listview width + content padding on both sides + bevel border on both sides */
-    content_width = restore_data->run_list->Width + (2 * RESTORE_CONTENT_PADDING) + (2 * RESTORE_BEVEL_BORDER);
-    
-    /* Height goes from top to bottom of details listview + padding + border */
-    content_height = (restore_data->details_listview->TopEdge + 
-                      restore_data->details_listview->Height + 
-                      RESTORE_CONTENT_PADDING + RESTORE_BEVEL_BORDER) - content_top;
-    
-    /* Fill the content area with solid background color (clear the checkerboard) */
-    /* This fills the area inside the bevel plus the 4-pixel border */
-    SetAPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
-    SetDrMd(rp, JAM1);
-    RectFill(rp,
-             content_left,
-             content_top,
-             content_left + content_width - 1,
-             content_top + content_height - 1);
-    
-    /* Draw the large recessed bevel box for content area */
-    DrawBevelBox(rp,
-                content_left,
-                content_top,
-                content_width,
-                content_height,
-                GT_VisualInfo, restore_data->visual_info,
-                GTBB_Recessed, TRUE,  /* Sunken/recessed effect */
-                TAG_END);
-    
-    FreeScreenDrawInfo(restore_data->screen, dri);
-}
-
-/*------------------------------------------------------------------------*/
-/**
- * @brief Calculate optimal column widths based on listview width
- * 
- * This function calculates column widths that maintain alignment across
- * different font sizes by using the actual character width.
- * 
- * @param listview_width_chars Total width in characters (typically 65)
- * @param col_widths Output array for column widths [5 columns]
- */
-/*------------------------------------------------------------------------*/
-static void calculate_column_widths(UWORD listview_width_chars, UWORD *col_widths)
-{
-    /* Default column widths for 65-character listview:
-     * Run Name:     9 chars  "Run_0007"
-     * Date/Time:   16 chars  "2025-10-25 14:32"
-     * Folders:     11 chars  "63 folders"
-     * Size:         8 chars  "46 KB"
-     * Status:      remainder  "Complete"
-     * Separators:   8 chars  (2 spaces x 4)
-     * Total:       52 chars + status
-     */
-    
-    if (col_widths == NULL)
-        return;
-    
-    /* Fixed columns that don't change */
-    col_widths[0] = 9;   /* Run Name */
-    col_widths[1] = 16;  /* Date/Time */
-    col_widths[2] = 11;  /* Folder Count */
-    col_widths[3] = 8;   /* Size */
-    
-    /* Calculate remaining space for status */
-    UWORD used = col_widths[0] + col_widths[1] + col_widths[2] + col_widths[3];
-    UWORD separators = 8;  /* 2 spaces x 4 gaps */
-    
-    if (listview_width_chars > used + separators)
-        col_widths[4] = listview_width_chars - used - separators;
-    else
-        col_widths[4] = 10;  /* Minimum for "Complete" */
-}
-
-/* Removed create_listview_entry_from_run - using simple API now */
 
 /*------------------------------------------------------------------------*/
 /* Helper structure for catalog statistics                               */
@@ -370,7 +244,7 @@ static BOOL catalog_stats_callback(const BackupArchiveEntry *entry, void *userDa
         stats->totalBytes += entry->sizeBytes;
     }
     
-    return TRUE;  /* Continue parsing */
+    return TRUE;
 }
 
 /*------------------------------------------------------------------------*/
@@ -393,18 +267,14 @@ static BOOL extract_source_directory(const char *catalog_path, char *buffer, ULO
     if (!file)
         return FALSE;
     
-    /* Read lines looking for "Source Directory: " */
     while (FGets(file, line, sizeof(line)))
     {
-        /* Remove trailing newline */
         ULONG len = strlen(line);
         if (len > 0 && line[len - 1] == '\n')
             line[len - 1] = '\0';
         
-        /* Check if this is the source directory line */
         if (strncmp(line, "Source Directory: ", 18) == 0)
         {
-            /* Extract the path after the label */
             const char *path = line + 18;
             strncpy(buffer, path, buffer_size - 1);
             buffer[buffer_size - 1] = '\0';
@@ -412,7 +282,6 @@ static BOOL extract_source_directory(const char *catalog_path, char *buffer, ULO
             break;
         }
         
-        /* Stop at the table separator (end of header) */
         if (strstr(line, "----") != NULL)
             break;
     }
@@ -440,45 +309,39 @@ ULONG scan_backup_runs(const char *backup_root,
     if (backup_root == NULL || entries_out == NULL)
         return 0;
     
-    /* Find highest run number */
     highest_run = FindHighestRunNumber(backup_root);
     if (highest_run == 0)
     {
-        append_to_log("scan_backup_runs: No backup runs found in %s\n", backup_root);
+        log_debug(LOG_BACKUP, "scan_backup_runs: No backup runs found in %s\n", backup_root);
         *entries_out = NULL;
         return 0;
     }
     
-    append_to_log("scan_backup_runs: Highest run number = %u\n", highest_run);
+    log_debug(LOG_BACKUP, "scan_backup_runs: Highest run number = %u\n", highest_run);
     
-    /* Allocate entries array (max possible size) */
     entries = (struct RestoreRunEntry *)whd_malloc(
         sizeof(struct RestoreRunEntry) * highest_run);
     
     if (entries == NULL)
     {
-        append_to_log("scan_backup_runs: Failed to allocate memory for entries\n");
+        log_error(LOG_BACKUP, "scan_backup_runs: Failed to allocate memory for entries\n");
         return 0;
     }
     memset(entries, 0, sizeof(struct RestoreRunEntry) * highest_run);
     
-    /* Scan each run from 1 to highest */
     for (i = 1; i <= highest_run; i++)
     {
         struct FileInfoBlock *fib;
         struct DateStamp runDate;
         BOOL hasDate = FALSE;
         
-        /* Build run directory path */
         if (!GetRunDirectoryPath(run_path, backup_root, (UWORD)i))
             continue;
         
-        /* Check if run directory exists and get its timestamp */
         lock = Lock(run_path, ACCESS_READ);
         if (lock == 0)
-            continue;  /* Directory doesn't exist, skip */
+            continue;
         
-        /* Get directory timestamp */
         fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
         if (fib != NULL)
         {
@@ -492,13 +355,11 @@ ULONG scan_backup_runs(const char *backup_root,
         
         UnLock(lock);
         
-        /* We have a valid run directory */
         struct RestoreRunEntry *entry = &entries[count];
         entry->runNumber = (UWORD)i;
         FormatRunDirectoryName(entry->runName, (UWORD)i);
         strcpy(entry->fullPath, run_path);
         
-        /* Format the timestamp */
         if (hasDate)
         {
             format_datestamp_string(&runDate, entry->dateStr, sizeof(entry->dateStr));
@@ -508,7 +369,6 @@ ULONG scan_backup_runs(const char *backup_root,
             strcpy(entry->dateStr, "Unknown");
         }
         
-        /* Check for catalog.txt */
         sprintf(catalog_path, "%s/catalog.txt", run_path);
         lock = Lock(catalog_path, ACCESS_READ);
         entry->hasCatalog = (lock != 0);
@@ -519,7 +379,6 @@ ULONG scan_backup_runs(const char *backup_root,
         {
             struct CatalogStatsContext stats;
             
-            /* Parse catalog to get folder count and total size */
             stats.count = 0;
             stats.totalBytes = 0;
             ParseCatalog(catalog_path, catalog_stats_callback, &stats);
@@ -530,11 +389,34 @@ ULONG scan_backup_runs(const char *backup_root,
             entry->statusCode = RESTORE_STATUS_COMPLETE;
             strcpy(entry->statusStr, "Complete");
             
-            /* Extract source directory from catalog header */
             if (!extract_source_directory(catalog_path, entry->sourceDirectory, 
                                          sizeof(entry->sourceDirectory)))
             {
                 strcpy(entry->sourceDirectory, "(Unknown)");
+            }
+            
+            /* Read DefIcons created icon count from manifest */
+            entry->iconsCreated = CountCreatedIconsInManifest(run_path);
+            
+            /* Fallback: read from catalog footer if manifest not found */
+            if (entry->iconsCreated == 0)
+            {
+                BPTR cat_file = Open((STRPTR)catalog_path, MODE_OLDFILE);
+                if (cat_file)
+                {
+                    char cat_line[512];
+                    while (FGets(cat_file, cat_line, sizeof(cat_line)))
+                    {
+                        if (strncmp(cat_line, "Icons Created: ", 15) == 0)
+                        {
+                            ULONG val = 0;
+                            sscanf(cat_line + 15, "%lu", &val);
+                            entry->iconsCreated = val;
+                            break;
+                        }
+                    }
+                    Close(cat_file);
+                }
             }
         }
         else
@@ -550,7 +432,7 @@ ULONG scan_backup_runs(const char *backup_root,
         count++;
     }
     
-    append_to_log("scan_backup_runs: Found %lu valid run directories\n", count);
+    log_debug(LOG_BACKUP, "scan_backup_runs: Found %lu valid run directories\n", count);
     
     *entries_out = entries;
     return count;
@@ -558,99 +440,62 @@ ULONG scan_backup_runs(const char *backup_root,
 
 /*------------------------------------------------------------------------*/
 /**
- * @brief Populate list view with backup run entries using simple columns API
+ * @brief Populate run list ListBrowser with backup entries
  */
 /*------------------------------------------------------------------------*/
 void populate_run_list(struct iTidyRestoreWindow *restore_data,
                        struct RestoreRunEntry *entries,
                        ULONG count,
-                       int nav_direction)  /* Unused in simple API but kept for API compatibility */
+                       int nav_direction)
 {
     ULONG i;
     struct Node *node;
-    char short_date[32];
-    char run_num_str[8];
+    char run_num_str[16];
     char folder_str[16];
-    const char *cell_values[NUM_RUN_LIST_COLUMNS];
+    char short_date[32];
     
-    if (restore_data == NULL || restore_data->run_list == NULL)
+    if (restore_data == NULL || restore_data->run_listbrowser_obj == NULL)
         return;
     
     /* Detach old list from gadget */
-    GT_SetGadgetAttrs(restore_data->run_list, restore_data->window, NULL,
-        GTLV_Labels, ~0,
-        TAG_END);
+    SetGadgetAttrs((struct Gadget *)restore_data->run_listbrowser_obj, 
+                   restore_data->window, NULL,
+                   LISTBROWSER_Labels, ~0,
+                   TAG_DONE);
     
-    /* Free existing list if any */
-    if (restore_data->run_list_strings != NULL)
+    /* Free existing list */
+    if (restore_data->run_list_nodes != NULL)
     {
-        while ((node = RemHead(restore_data->run_list_strings)) != NULL)
-        {
-            if (node->ln_Name) whd_free(node->ln_Name);
-            FreeVec(node);
-        }
-        FreeVec(restore_data->run_list_strings);
-        restore_data->run_list_strings = NULL;
+        free_listbrowser_list(restore_data->run_list_nodes);
+        restore_data->run_list_nodes = NULL;
     }
     
     /* Create new list */
-    restore_data->run_list_strings = (struct List *)AllocVec(sizeof(struct List), MEMF_CLEAR);
-    if (restore_data->run_list_strings == NULL)
+    restore_data->run_list_nodes = (struct List *)AllocMem(sizeof(struct List), MEMF_PUBLIC | MEMF_CLEAR);
+    if (restore_data->run_list_nodes == NULL)
     {
-        append_to_log("ERROR: Failed to allocate run_list_strings\n");
+        log_error(LOG_GUI, "ERROR: Failed to allocate run_list_nodes\n");
         return;
     }
-    
-    NewList(restore_data->run_list_strings);
-    
-    /* Add header row */
-    node = AllocVec(sizeof(struct Node), MEMF_CLEAR);
-    if (node)
-    {
-        node->ln_Name = iTidy_FormatHeader(run_list_columns, NUM_RUN_LIST_COLUMNS);
-        if (node->ln_Name)
-        {
-            AddTail(restore_data->run_list_strings, node);
-        }
-        else
-        {
-            FreeVec(node);
-        }
-    }
-    
-    /* Add separator row */
-    node = AllocVec(sizeof(struct Node), MEMF_CLEAR);
-    if (node)
-    {
-        node->ln_Name = iTidy_FormatSeparator(run_list_columns, NUM_RUN_LIST_COLUMNS);
-        if (node->ln_Name)
-        {
-            AddTail(restore_data->run_list_strings, node);
-        }
-        else
-        {
-            FreeVec(node);
-        }
-    }
+    NewList(restore_data->run_list_nodes);
     
     /* Add data rows */
     for (i = 0; i < count; i++)
     {
-        /* Format run number */
         sprintf(run_num_str, "%u", entries[i].runNumber);
+        sprintf(folder_str, "%lu", entries[i].folderCount);
         
         /* Format date using iTidy_FormatTimestamp() */
-        /* Convert "2025-10-25 14:32:17" to timestamp format for iTidy_FormatTimestamp */
         char sort_key_date[20];
         if (strlen(entries[i].dateStr) >= 19)
         {
             sprintf(sort_key_date, "%.4s%.2s%.2s_%.2s%.2s%.2s",
-                    entries[i].dateStr,      /* YYYY */
-                    entries[i].dateStr + 5,  /* MM */
-                    entries[i].dateStr + 8,  /* DD */
-                    entries[i].dateStr + 11, /* HH */
-                    entries[i].dateStr + 14, /* MM */
-                    entries[i].dateStr + 17);/* SS */
+                    entries[i].dateStr,
+                    entries[i].dateStr + 5,
+                    entries[i].dateStr + 8,
+                    entries[i].dateStr + 11,
+                    entries[i].dateStr + 14,
+                    entries[i].dateStr + 17);
         }
         else
         {
@@ -659,7 +504,6 @@ void populate_run_list(struct iTidyRestoreWindow *restore_data,
         
         if (!iTidy_FormatTimestamp(sort_key_date, short_date, sizeof(short_date)))
         {
-            /* Fallback: use first 16 chars of original */
             if (strlen(entries[i].dateStr) >= 16)
             {
                 strncpy(short_date, entries[i].dateStr, 16);
@@ -671,62 +515,83 @@ void populate_run_list(struct iTidyRestoreWindow *restore_data,
             }
         }
         
-        /* Format folder count */
-        sprintf(folder_str, "%lu", entries[i].folderCount);
+        /* Create ListBrowser node with 6 columns (including Icons Created) */
+        char icons_created_str[16];
+        if (entries[i].iconsCreated > 0)
+        {
+            sprintf(icons_created_str, "%lu", entries[i].iconsCreated);
+        }
+        else
+        {
+            strcpy(icons_created_str, "-");
+        }
         
-        /* Build cell values array */
-        cell_values[0] = run_num_str;
-        cell_values[1] = short_date;
-        cell_values[2] = folder_str;
-        cell_values[3] = entries[i].sizeStr;
-        cell_values[4] = entries[i].statusStr;
+        node = AllocListBrowserNode(6,
+            LBNA_Column, 0,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, run_num_str,
+                LBNCA_Justification, LCJ_RIGHT,
+            LBNA_Column, 1,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, short_date,
+            LBNA_Column, 2,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, folder_str,
+                LBNCA_Justification, LCJ_RIGHT,
+            LBNA_Column, 3,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, entries[i].sizeStr,
+                LBNCA_Justification, LCJ_RIGHT,
+            LBNA_Column, 4,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, icons_created_str,
+                LBNCA_Justification, LCJ_RIGHT,
+            LBNA_Column, 5,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, entries[i].statusStr,
+            TAG_DONE);
         
-        /* Format row */
-        node = AllocVec(sizeof(struct Node), MEMF_CLEAR);
         if (node)
         {
-            node->ln_Name = iTidy_FormatRow(run_list_columns, NUM_RUN_LIST_COLUMNS, cell_values);
-            if (node->ln_Name)
-            {
-                AddTail(restore_data->run_list_strings, node);
-            }
-            else
-            {
-                FreeVec(node);
-            }
+            AddTail(restore_data->run_list_nodes, node);
         }
     }
     
-    /* Attach list to gadget with first data row selected */
-    LONG select_row = (count > 0) ? 2 : ~0;  /* Row 2 = first data row (after header + separator) */
+    /* Reattach list to gadget */
+    SetGadgetAttrs((struct Gadget *)restore_data->run_listbrowser_obj, 
+                   restore_data->window, NULL,
+                   LISTBROWSER_Labels, restore_data->run_list_nodes,
+                   LISTBROWSER_AutoFit, TRUE,
+                   TAG_DONE);
     
-    GT_SetGadgetAttrs(restore_data->run_list, restore_data->window, NULL,
-        GTLV_Labels, restore_data->run_list_strings,
-        GTLV_Selected, select_row,
-        TAG_END);
-    
-    /* Enable buttons if we have data entries */
+    /* Enable buttons if we have data */
     if (count > 0)
     {
-        update_details_panel(restore_data, NULL);
+        /* Select first row */
+        SetGadgetAttrs((struct Gadget *)restore_data->run_listbrowser_obj,
+                       restore_data->window, NULL,
+                       LISTBROWSER_Selected, 0,
+                       TAG_DONE);
         
-        if (restore_data->window != NULL)
-        {
-            GT_SetGadgetAttrs(restore_data->restore_run_btn,
-                            restore_data->window, NULL,
-                            GA_Disabled, FALSE,
-                            TAG_END);
-            
-            GT_SetGadgetAttrs(restore_data->delete_run_btn,
-                            restore_data->window, NULL,
-                            GA_Disabled, FALSE,
-                            TAG_END);
-            
-            GT_SetGadgetAttrs(restore_data->view_folders_btn,
-                            restore_data->window, NULL,
-                            GA_Disabled, TRUE,
-                            TAG_END);
-        }
+        restore_data->selected_run_index = 0;
+        update_details_panel(restore_data, &entries[0]);
+        
+        /* Enable restore and delete buttons */
+        SetGadgetAttrs((struct Gadget *)restore_data->restore_run_btn,
+                       restore_data->window, NULL,
+                       GA_Disabled, FALSE,
+                       TAG_DONE);
+        
+        SetGadgetAttrs((struct Gadget *)restore_data->delete_run_btn,
+                       restore_data->window, NULL,
+                       GA_Disabled, FALSE,
+                       TAG_DONE);
+        
+        /* Enable view folders if catalog exists */
+        SetGadgetAttrs((struct Gadget *)restore_data->view_folders_btn,
+                       restore_data->window, NULL,
+                       GA_Disabled, !entries[0].hasCatalog,
+                       TAG_DONE);
     }
 }
 
@@ -738,41 +603,69 @@ void populate_run_list(struct iTidyRestoreWindow *restore_data,
 void update_details_panel(struct iTidyRestoreWindow *restore_data,
                           struct RestoreRunEntry *selected_entry)
 {
-    const char *detail_lines[7];
-    char line_buffer[7][256];
-    struct List *formatted_list;
+    struct Node *node;
+    char value_buffer[256];
     
-    if (restore_data == NULL || restore_data->details_listview == NULL)
+    /* Label/Value pairs for the details panel */
+    static const char *labels[] = {
+        "Run Number",
+        "Date Created",
+        "Source Directory",
+        "Total Archives",
+        "Total Size",
+        "Icons Created",
+        "Status",
+        "Location"
+    };
+    
+    if (restore_data == NULL || restore_data->details_listbrowser_obj == NULL)
         return;
     
     /* Detach list from gadget */
-    GT_SetGadgetAttrs(restore_data->details_listview, restore_data->window, NULL,
-        GTLV_Labels, ~0,
-        TAG_END);
+    SetGadgetAttrs((struct Gadget *)restore_data->details_listbrowser_obj, 
+                   restore_data->window, NULL,
+                   LISTBROWSER_Labels, ~0,
+                   TAG_DONE);
     
-    /* Free existing list if any */
-    if (restore_data->details_list_strings != NULL)
+    /* Free existing list */
+    if (restore_data->details_list_nodes != NULL)
     {
-        itidy_free_justified_list(restore_data->details_list_strings);
-        restore_data->details_list_strings = NULL;
+        free_listbrowser_list(restore_data->details_list_nodes);
+        restore_data->details_list_nodes = NULL;
     }
+    
+    /* Create new list */
+    restore_data->details_list_nodes = (struct List *)AllocMem(sizeof(struct List), MEMF_PUBLIC | MEMF_CLEAR);
+    if (restore_data->details_list_nodes == NULL)
+    {
+        log_error(LOG_GUI, "ERROR: Failed to allocate details_list_nodes\n");
+        return;
+    }
+    NewList(restore_data->details_list_nodes);
     
     if (selected_entry == NULL)
     {
-        /* No selection - show placeholder */
-        strcpy(line_buffer[0], "(No run selected)");
-        line_buffer[1][0] = '\0';
-        line_buffer[2][0] = '\0';
-        line_buffer[3][0] = '\0';
-        line_buffer[4][0] = '\0';
-        line_buffer[5][0] = '\0';
-        line_buffer[6][0] = '\0';
+        /* No selection - show placeholder in both columns */
+        node = AllocListBrowserNode(2,
+            LBNA_Column, 0,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, "(No run selected)",
+            LBNA_Column, 1,
+                LBNCA_CopyText, TRUE,
+                LBNCA_Text, "",
+            TAG_DONE);
+        if (node) AddTail(restore_data->details_list_nodes, node);
     }
     else
     {
+        const char *values[8];
+        char run_num_str[16];
+        char archives_str[16];
+        char icons_created_str[16];
         char status_desc[64];
+        int i;
         
-        /* Format status description */
+        /* Determine status description */
         switch (selected_entry->statusCode)
         {
             case RESTORE_STATUS_COMPLETE:
@@ -792,47 +685,49 @@ void update_details_panel(struct iTidyRestoreWindow *restore_data,
                 break;
         }
         
-        /* Format each detail line */
-        sprintf(line_buffer[0], "Run Number: %04u", 
-                selected_entry->runNumber);
-        sprintf(line_buffer[1], "Date Created: %s", 
-                selected_entry->dateStr); 
-        sprintf(line_buffer[2], "Source Directory: %s", 
-                selected_entry->sourceDirectory);
-        sprintf(line_buffer[3], "Total Archives: %lu", 
-                selected_entry->folderCount);
-        sprintf(line_buffer[4], "Total Size: %s", 
-                selected_entry->sizeStr);
-        sprintf(line_buffer[5], "Status: %s", 
-                status_desc);
-        sprintf(line_buffer[6], "Location: %s", 
-                selected_entry->fullPath);
+        /* Format numeric values to strings */
+        sprintf(run_num_str, "%04u", selected_entry->runNumber);
+        sprintf(archives_str, "%lu", selected_entry->folderCount);
+        
+        if (selected_entry->iconsCreated > 0)
+        {
+            sprintf(icons_created_str, "%lu", selected_entry->iconsCreated);
+        }
+        else
+        {
+            strcpy(icons_created_str, "0");
+        }
+        
+        /* Build values array */
+        values[0] = run_num_str;
+        values[1] = selected_entry->dateStr;
+        values[2] = selected_entry->sourceDirectory;
+        values[3] = archives_str;
+        values[4] = selected_entry->sizeStr;
+        values[5] = icons_created_str;
+        values[6] = status_desc;
+        values[7] = selected_entry->fullPath;
+        
+        /* Add each row with 2 columns: label and value */
+        for (i = 0; i < 8; i++)
+        {
+            node = AllocListBrowserNode(2,
+                LBNA_Column, 0,
+                    LBNCA_CopyText, TRUE,
+                    LBNCA_Text, (STRPTR)labels[i],
+                LBNA_Column, 1,
+                    LBNCA_CopyText, TRUE,
+                    LBNCA_Text, (STRPTR)values[i],
+                TAG_DONE);
+            if (node) AddTail(restore_data->details_list_nodes, node);
+        }
     }
-    
-    /* Build pointer array for helper function */
-    detail_lines[0] = line_buffer[0];
-    detail_lines[1] = line_buffer[1];
-    detail_lines[2] = line_buffer[2];
-    detail_lines[3] = line_buffer[3];
-    detail_lines[4] = line_buffer[4];
-    detail_lines[5] = line_buffer[5];
-    detail_lines[6] = line_buffer[6];
-    
-    /* Create justified list using helper (no max_width = 0) */
-    formatted_list = itidy_create_justified_list(detail_lines, 7, ':', 0);
-    if (formatted_list == NULL)
-    {
-        append_to_log("ERROR: Failed to create justified list\n");
-        return;
-    }
-    
-    /* Store for later cleanup */
-    restore_data->details_list_strings = formatted_list;
     
     /* Reattach list to gadget */
-    GT_SetGadgetAttrs(restore_data->details_listview, restore_data->window, NULL,
-        GTLV_Labels, formatted_list,
-        TAG_END);
+    SetGadgetAttrs((struct Gadget *)restore_data->details_listbrowser_obj, 
+                   restore_data->window, NULL,
+                   LISTBROWSER_Labels, restore_data->details_list_nodes,
+                   TAG_DONE);
 }
 
 /*------------------------------------------------------------------------*/
@@ -844,98 +739,149 @@ BOOL perform_restore_run(struct iTidyRestoreWindow *restore_data,
                         struct RestoreRunEntry *run_entry)
 {
     RestoreStatus status;
-    char message[256];
+    char message[512];
     
     if (restore_data == NULL || run_entry == NULL)
         return FALSE;
     
-    /* Show confirmation requester using global helper */
     if (restore_data->window == NULL)
     {
-        append_to_log("ERROR: Window is NULL in perform_restore_run\n");
+        log_error(LOG_GUI, "ERROR: Window is NULL in perform_restore_run\n");
         return FALSE;
     }
     
-    sprintf(message, "Restore all folders from %s?", run_entry->runName);
-    
-    /* Use new ShowEasyRequest() helper - ensures requester opens on correct screen */
-    if (!ShowEasyRequest(restore_data->window, 
-                         "Confirm Restore",
-                         message,
-                         "Restore|Cancel"))
+    /* Build warning message with DefIcons info if applicable */
+    if (run_entry->iconsCreated > 0)
     {
-        append_to_log("Restore cancelled by user\n");
+        snprintf(message, sizeof(message),
+                 "\33bWarning:\33n Restoring %s will overwrite\n"
+                 "current .info files with backup versions.\n\n"
+                 "Changes made after the backup will be lost,\n"
+                 "including icon positions, ToolTypes, and\n"
+                 "default tool settings.\n\n"
+                 "%lu icon(s) created by DefIcons during this\n"
+                 "run will also be removed.\n\n"
+                 "Choose restore option:",
+                 run_entry->runName,
+                 run_entry->iconsCreated);
+    }
+    else
+    {
+        snprintf(message, sizeof(message),
+                 "\33bWarning:\33n Restoring %s will overwrite\n"
+                 "current .info files with backup versions.\n\n"
+                 "Changes made after the backup will be lost,\n"
+                 "including icon positions, ToolTypes, and\n"
+                 "default tool settings.\n\n"
+                 "Choose restore option:",
+                 run_entry->runName);
+    }
+    
+    /* Use ReAction requester with question mark icon */
+    /* Button returns: 1=With Windows, 2=Icons Only, 0=Cancel */
+    ULONG button_result = ShowReActionRequester(restore_data->window,
+                                                 "Confirm Restore",
+                                                 message,
+                                                 "With _Windows|_Icons Only|_Cancel",
+                                                 REQIMAGE_QUESTION);
+    
+    if (button_result == 0)
+    {
+        log_info(LOG_BACKUP, "Restore cancelled by user\n");
         return FALSE;
     }
     
-    append_to_log("Starting restore of run %u from %s\n",
-                  run_entry->runNumber,
-                  restore_data->backup_root_path);
+    /* Set restore_window_geometry based on button selection */
+    /* Button 1 = With Windows (TRUE), Button 2 = Icons Only (FALSE) */
+    restore_data->restore_window_geometry = (button_result == 1) ? TRUE : FALSE;
+    log_info(LOG_BACKUP, "Window geometry restore: %s\n",
+             restore_data->restore_window_geometry ? "ENABLED (user selected 'With Windows')" : "DISABLED (user selected 'Icons Only')");
     
-    /* Initialize restore context */
+    log_info(LOG_BACKUP, "Starting restore of run %u from %s\n",
+             run_entry->runNumber,
+             restore_data->backup_root_path);
+    
     RestoreContext restoreCtx;
     if (!InitRestoreContext(&restoreCtx))
     {
-        append_to_log("ERROR: Failed to initialize restore context - LHA not available\n");
+        log_error(LOG_BACKUP, "ERROR: Failed to initialize restore context - LHA not available\n");
         
         sprintf(message, "LHA executable not found!\nRestore requires LHA to be installed.");
         
-        ShowEasyRequest(restore_data->window,
-                       "Restore Failed",
-                       message,
-                       "OK");
+        ShowReActionRequester(restore_data->window,
+                              "Restore Failed",
+                              message,
+                              "_OK",
+                              REQIMAGE_ERROR);
         
         return FALSE;
     }
     
-    /* Set window geometry restore flag from checkbox */
     restoreCtx.restoreWindowGeometry = restore_data->restore_window_geometry;
-    append_to_log("Window geometry restore: %s\n",
-                  restoreCtx.restoreWindowGeometry ? "ENABLED" : "DISABLED");
+    log_info(LOG_BACKUP, "Window geometry restore: %s\n",
+             restoreCtx.restoreWindowGeometry ? "ENABLED" : "DISABLED");
     
-    /* Build full path to run directory */
     char runPath[512];
     sprintf(runPath, "%s/%s", restore_data->backup_root_path, run_entry->runName);
     
-    append_to_log("Restoring from: %s\n", runPath);
-    append_to_log("Restoring %lu folder(s)...\n", run_entry->folderCount);
+    log_info(LOG_BACKUP, "Restoring from: %s\n", runPath);
+    log_info(LOG_BACKUP, "Restoring %lu folder(s)...\n", run_entry->folderCount);
     
-    /* Open progress window */
-    struct iTidy_ProgressWindow *progress_window = NULL;
-    sprintf(message, "Restoring %s", run_entry->runName);
-    progress_window = iTidy_OpenProgressWindow(restore_data->screen, 
-                                                message,
-                                                (UWORD)run_entry->folderCount);
-    if (!progress_window)
+    /* Create prescan result for recursive progress window */
+    iTidy_RecursiveScanResult *scan_result = NULL;
+    scan_result = (iTidy_RecursiveScanResult *)AllocMem(sizeof(iTidy_RecursiveScanResult), MEMF_CLEAR);
+    if (scan_result)
     {
-        append_to_log("WARNING: Failed to open progress window, continuing without progress display\n");
+        /* For restore, we already know the folder count from the backup run entry */
+        scan_result->totalFolders = run_entry->folderCount;
+        scan_result->totalIcons = 0;  /* Not tracking individual icons during restore */
+        scan_result->folderPaths = NULL;  /* Not needed for restore progress */
+        scan_result->iconCounts = NULL;
+        scan_result->allocated = 0;
     }
     
-    /* Store progress window pointer in restore context for callbacks */
+    struct iTidy_RecursiveProgressWindow *progress_window = NULL;
+    sprintf(message, "Restoring %s", run_entry->runName);
+    if (scan_result)
+    {
+        progress_window = iTidy_OpenRecursiveProgress(restore_data->screen, 
+                                                       message,
+                                                       scan_result,
+                                                       FALSE);  /* Don't show sub progress for restore */
+    }
+    
+    if (!progress_window)
+    {
+        log_warning(LOG_GUI, "WARNING: Failed to open progress window, continuing without progress display\n");
+    }
+    
     restoreCtx.userData = progress_window;
     
-    /* Perform the actual restore */
     status = RestoreFullRun(&restoreCtx, runPath);
     
-    /* Close progress window */
     if (progress_window)
     {
-        iTidy_CloseProgressWindow(progress_window);
+        iTidy_CloseRecursiveProgress(progress_window);
         progress_window = NULL;
     }
     
-    /* Log results */
-    append_to_log("Restore completed with status: %s\n", GetRestoreStatusMessage(status));
-    append_to_log("Archives restored: %u, Archives failed: %u\n",
-                  restoreCtx.stats.archivesRestored,
-                  restoreCtx.stats.archivesFailed);
+    /* Free scan result */
+    if (scan_result)
+    {
+        FreeMem(scan_result, sizeof(iTidy_RecursiveScanResult));
+        scan_result = NULL;
+    }
+    
+    log_info(LOG_BACKUP, "Restore completed with status: %s\n", GetRestoreStatusMessage(status));
+    log_info(LOG_BACKUP, "Archives restored: %u, Archives failed: %u\n",
+             restoreCtx.stats.archivesRestored,
+             restoreCtx.stats.archivesFailed);
     
     if (restoreCtx.stats.hasErrors)
     {
-        append_to_log("First error: %s\n", restoreCtx.stats.firstError);
+        log_error(LOG_BACKUP, "First error: %s\n", restoreCtx.stats.firstError);
     }
     
-    /* Show result */
     if (status == RESTORE_OK)
     {
         sprintf(message, "Successfully restored %s\n\n%u folder(s) restored\n%u failed",
@@ -943,16 +889,16 @@ BOOL perform_restore_run(struct iTidyRestoreWindow *restore_data,
                 restoreCtx.stats.archivesRestored,
                 restoreCtx.stats.archivesFailed);
         
-        ShowEasyRequest(restore_data->window,
-                       "Restore Complete",
-                       message,
-                       "OK");
+        ShowReActionRequester(restore_data->window,
+                              "Restore Complete",
+                              message,
+                              "_OK",
+                              REQIMAGE_INFO);
         
         restore_data->restore_performed = TRUE;
     }
     else
     {
-        /* Show detailed error message */
         const char *statusMsg = GetRestoreStatusMessage(status);
         
         if (restoreCtx.stats.hasErrors && restoreCtx.stats.firstError[0] != '\0')
@@ -969,10 +915,11 @@ BOOL perform_restore_run(struct iTidyRestoreWindow *restore_data,
                     statusMsg);
         }
         
-        ShowEasyRequest(restore_data->window,
-                       "Restore Failed",
-                       message,
-                       "OK");
+        ShowReActionRequester(restore_data->window,
+                              "Restore Failed",
+                              message,
+                              "_OK",
+                              REQIMAGE_ERROR);
     }
     
     return (status == RESTORE_OK);
@@ -981,9 +928,6 @@ BOOL perform_restore_run(struct iTidyRestoreWindow *restore_data,
 /*------------------------------------------------------------------------*/
 /**
  * @brief Recursively delete a directory and all its contents
- * 
- * @param path Path to directory to delete
- * @return BOOL TRUE if successful, FALSE otherwise
  */
 /*------------------------------------------------------------------------*/
 static BOOL delete_directory_recursive(const char *path)
@@ -996,12 +940,12 @@ static BOOL delete_directory_recursive(const char *path)
     if (path == NULL)
         return FALSE;
     
-    append_to_log("delete_directory_recursive: %s\n", path);
+    log_debug(LOG_BACKUP, "delete_directory_recursive: %s\n", path);
     
     lock = Lock((STRPTR)path, ACCESS_READ);
     if (!lock)
     {
-        append_to_log("ERROR: Cannot lock directory: %s\n", path);
+        log_error(LOG_BACKUP, "ERROR: Cannot lock directory: %s\n", path);
         return FALSE;
     }
     
@@ -1009,70 +953,188 @@ static BOOL delete_directory_recursive(const char *path)
     if (!fib)
     {
         UnLock(lock);
-        append_to_log("ERROR: Cannot allocate FIB\n");
+        log_error(LOG_BACKUP, "ERROR: Cannot allocate FIB\n");
         return FALSE;
     }
     
-    /* Examine the directory */
     if (!Examine(lock, fib))
     {
         FreeDosObject(DOS_FIB, fib);
         UnLock(lock);
-        append_to_log("ERROR: Cannot examine directory: %s\n", path);
+        log_error(LOG_BACKUP, "ERROR: Cannot examine directory: %s\n", path);
         return FALSE;
     }
     
-    /* Iterate through directory contents */
     while (ExNext(lock, fib))
     {
-        /* Build full path to entry */
         snprintf(full_path, sizeof(full_path), "%s/%s", path, fib->fib_FileName);
         
         if (fib->fib_DirEntryType > 0)
         {
-            /* It's a directory - recurse */
-            append_to_log("  Entering subdirectory: %s\n", fib->fib_FileName);
+            log_debug(LOG_BACKUP, "  Entering subdirectory: %s\n", fib->fib_FileName);
             if (!delete_directory_recursive(full_path))
             {
                 success = FALSE;
-                append_to_log("ERROR: Failed to delete subdirectory: %s\n", full_path);
+                log_error(LOG_BACKUP, "ERROR: Failed to delete subdirectory: %s\n", full_path);
             }
         }
         else
         {
-            /* It's a file - delete it */
-            append_to_log("  Deleting file: %s\n", fib->fib_FileName);
+            log_debug(LOG_BACKUP, "  Deleting file: %s\n", fib->fib_FileName);
             if (!DeleteFile((STRPTR)full_path))
             {
                 success = FALSE;
-                append_to_log("ERROR: Failed to delete file: %s\n", full_path);
+                log_error(LOG_BACKUP, "ERROR: Failed to delete file: %s\n", full_path);
             }
         }
     }
     
-    /* Check if ExNext ended normally (ERROR_NO_MORE_ENTRIES) or with an error */
     LONG error = IoErr();
     if (error != ERROR_NO_MORE_ENTRIES)
     {
-        append_to_log("ERROR: ExNext failed with error code: %ld\n", error);
+        log_error(LOG_BACKUP, "ERROR: ExNext failed with error code: %ld\n", error);
         success = FALSE;
     }
     
     FreeDosObject(DOS_FIB, fib);
     UnLock(lock);
     
-    /* Now delete the empty directory itself */
     if (success)
     {
-        append_to_log("  Deleting directory: %s\n", path);
+        log_debug(LOG_BACKUP, "  Deleting directory: %s\n", path);
         if (!DeleteFile((STRPTR)path))
         {
-            append_to_log("ERROR: Failed to delete directory: %s\n", path);
+            log_error(LOG_BACKUP, "ERROR: Failed to delete directory: %s\n", path);
             success = FALSE;
         }
     }
     
     return success;
+}
+
+/*------------------------------------------------------------------------*/
+/**
+ * @brief Show a ReAction requester dialog
+ * 
+ * Uses requester.class for native ReAction look and feel.
+ * 
+ * @param parent_window  Parent window for requester positioning
+ * @param title          Title text for the requester
+ * @param body           Body text (supports ESC formatting codes)
+ * @param gadgets        Gadget text (e.g. "_Yes|_No" or "_OK")
+ * @param image_type     REQIMAGE_* constant (e.g. REQIMAGE_QUESTION)
+ * @return Button number selected (1,2,3...0) or 0 if failed/cancelled
+ */
+/*------------------------------------------------------------------------*/
+static ULONG ShowReActionRequester(struct Window *parent_window,
+                                   CONST_STRPTR title,
+                                   CONST_STRPTR body,
+                                   CONST_STRPTR gadgets,
+                                   ULONG image_type)
+{
+    Object *req_obj;
+    struct orRequest req_msg;
+    ULONG result = 0;
+    
+    if (!RequesterBase)
+    {
+        log_error(LOG_GUI, "RequesterBase is NULL, cannot show requester\n");
+        return 0;
+    }
+    
+    if (!parent_window)
+    {
+        log_error(LOG_GUI, "Parent window is NULL, cannot show requester\n");
+        return 0;
+    }
+    
+    req_obj = NewObject(REQUESTER_GetClass(), NULL,
+        REQ_Type, REQTYPE_INFO,
+        REQ_TitleText, title,
+        REQ_BodyText, body,
+        REQ_GadgetText, gadgets,
+        REQ_Image, image_type,
+        TAG_DONE);
+    
+    if (req_obj)
+    {
+        req_msg.MethodID = RM_OPENREQ;
+        req_msg.or_Attrs = NULL;
+        req_msg.or_Window = parent_window;
+        req_msg.or_Screen = NULL;
+        
+        result = DoMethodA(req_obj, (Msg)&req_msg);
+        
+        DisposeObject(req_obj);
+    }
+    else
+    {
+        log_error(LOG_GUI, "Failed to create requester object\n");
+    }
+    
+    return result;
+}
+
+/*------------------------------------------------------------------------*/
+/**
+ * @brief Open ReAction class libraries
+ */
+/*------------------------------------------------------------------------*/
+static BOOL open_reaction_classes(void)
+{
+    if (!WindowBase)      WindowBase = OpenLibrary("window.class", 0);
+    if (!LayoutBase)      LayoutBase = OpenLibrary("gadgets/layout.gadget", 0);
+    if (!ButtonBase)      ButtonBase = OpenLibrary("gadgets/button.gadget", 0);
+    if (!ListBrowserBase) ListBrowserBase = OpenLibrary("gadgets/listbrowser.gadget", 0);
+    if (!LabelBase)       LabelBase = OpenLibrary("images/label.image", 0);
+    if (!RequesterBase)   RequesterBase = OpenLibrary("requester.class", 0);
+    
+    if (!WindowBase || !LayoutBase || !ButtonBase || 
+        !ListBrowserBase || !LabelBase || !RequesterBase)
+    {
+        log_error(LOG_GUI, "Failed to open ReAction classes for restore window\n");
+        return FALSE;
+    }
+    
+    return TRUE;
+}
+
+/*------------------------------------------------------------------------*/
+/**
+ * @brief Close ReAction class libraries
+ */
+/*------------------------------------------------------------------------*/
+static void close_reaction_classes(void)
+{
+    if (RequesterBase)   { CloseLibrary(RequesterBase);   RequesterBase = NULL; }
+    if (LabelBase)       { CloseLibrary(LabelBase);       LabelBase = NULL; }
+    if (ListBrowserBase) { CloseLibrary(ListBrowserBase); ListBrowserBase = NULL; }
+    if (ButtonBase)      { CloseLibrary(ButtonBase);      ButtonBase = NULL; }
+    if (LayoutBase)      { CloseLibrary(LayoutBase);      LayoutBase = NULL; }
+    if (WindowBase)      { CloseLibrary(WindowBase);      WindowBase = NULL; }
+}
+
+/*------------------------------------------------------------------------*/
+/**
+ * @brief Free a ListBrowser list and all its nodes
+ */
+/*------------------------------------------------------------------------*/
+static void free_listbrowser_list(struct List *list)
+{
+    struct Node *node;
+    struct Node *next;
+    
+    if (!list)
+        return;
+    
+    node = list->lh_Head;
+    while ((next = node->ln_Succ))
+    {
+        FreeListBrowserNode(node);
+        node = next;
+    }
+    
+    FreeMem(list, sizeof(struct List));
 }
 
 /*------------------------------------------------------------------------*/
@@ -1083,520 +1145,221 @@ static BOOL delete_directory_recursive(const char *path)
 BOOL open_restore_window(struct iTidyRestoreWindow *restore_data)
 {
     struct Screen *screen;
-    struct DrawInfo *draw_info;
-    struct TextFont *font;
-    struct TextFont *system_font;
-    struct TextAttr system_font_attr;
-    struct RastPort temp_rp;
-    struct NewGadget ng;
-    struct Gadget *gad;
-    UWORD font_width, font_height;
-    UWORD button_height, string_height;
-    UWORD listview_lines, listview_requested_height, actual_listview_height;
-    UWORD detail_line_height, details_height;
-    UWORD current_x, current_y;
-    UWORD window_max_width, window_max_height;
-    UWORD listview_bottom_y;
-    UWORD final_window_width, final_window_height;
-    STRPTR label;
-    UWORD label_width, label_spacing;
     
-    append_to_log("=== open_restore_window: Starting ===\n");
+    log_info(LOG_GUI, "=== open_restore_window: Starting (ReAction) ===\n");
     
     if (restore_data == NULL)
     {
-        append_to_log("ERROR: restore_data is NULL\n");
+        log_error(LOG_GUI, "ERROR: restore_data is NULL\n");
         return FALSE;
     }
     
-    append_to_log("Initializing restore_data structure\n");
     /* Initialize structure */
     memset(restore_data, 0, sizeof(struct iTidyRestoreWindow));
     restore_data->selected_run_index = -1;
-    restore_data->restore_window_geometry = TRUE;  /* Default to enabled */
+    restore_data->restore_window_geometry = TRUE;
     strcpy(restore_data->backup_root_path, "PROGDIR:Backups");
     
+    /* Open ReAction classes */
+    if (!open_reaction_classes())
+    {
+        log_error(LOG_GUI, "Failed to open ReAction classes\n");
+        return FALSE;
+    }
+    
     /* Get Workbench screen */
-    append_to_log("Locking Workbench screen\n");
     screen = LockPubScreen(NULL);
     if (screen == NULL)
     {
-        append_to_log("ERROR: Failed to lock Workbench screen\n");
+        log_error(LOG_GUI, "ERROR: Failed to lock Workbench screen\n");
+        close_reaction_classes();
         return FALSE;
     }
     
-    append_to_log("Screen locked successfully\n");
     restore_data->screen = screen;
     
-    /* Get DrawInfo for proper font information */
-    append_to_log("Getting DrawInfo and font dimensions\n");
-    draw_info = GetScreenDrawInfo(screen);
-    if (draw_info == NULL)
+    /* Hint/tooltip info for gadget help */
+    static struct HintInfo hintInfo[] =
     {
-        append_to_log("ERROR: Failed to get DrawInfo\n");
-        UnlockPubScreen(NULL, screen);
-        return FALSE;
-    }
-    
-    font = draw_info->dri_Font;
-    font_width = font->tf_XSize;
-    font_height = font->tf_YSize;
-    append_to_log("Screen font: width=%d, height=%d, flags=0x%02x\n", 
-                  font_width, font_height, font->tf_Flags);
-    
-    /* Check if font is proportional */
-    if (font->tf_Flags & FPF_PROPORTIONAL)
-    {
-        append_to_log("WARNING: Screen uses proportional font - will use system default font instead\n");
-    }
-    
-    /* Open System Default Text font for listviews
-     * This ensures we use a fixed-width font (typically Topaz)
-     * even if the screen uses a proportional font
-     */
-    system_font_attr.ta_Name = (STRPTR)GfxBase->DefaultFont->tf_Message.mn_Node.ln_Name;
-    system_font_attr.ta_YSize = GfxBase->DefaultFont->tf_YSize;
-    system_font_attr.ta_Style = FS_NORMAL;
-    system_font_attr.ta_Flags = 0;
-    
-    system_font = OpenFont(&system_font_attr);
-    if (system_font != NULL)
-    {
-        append_to_log("Opened system default font: %s, size %d\n", 
-                      system_font_attr.ta_Name, system_font_attr.ta_YSize);
-        
-        /* Store in restore_data for later cleanup */
-        restore_data->system_font = system_font;
-        
-        /* Use system font metrics for listview calculations */
-        font = system_font;
-        font_width = font->tf_XSize;
-        font_height = font->tf_YSize;
-        append_to_log("System font: width=%d, height=%d, flags=0x%02x\n", 
-                      font_width, font_height, font->tf_Flags);
-    }
-    else
-    {
-        append_to_log("WARNING: Could not open system default font, using screen font\n");
-        font = draw_info->dri_Font;
-        system_font = NULL;
-        restore_data->system_font = NULL;
-    }
-    
-    /* Initialize RastPort for TextLength() measurements */
-    InitRastPort(&temp_rp);
-    SetFont(&temp_rp, font);
-    
-    /* Calculate gadget dimensions */
-    button_height = font_height + 6;
-    string_height = font_height + 6;
-    listview_lines = 10;
-    listview_requested_height = (font_height + 2) * listview_lines;
-    detail_line_height = font_height + 4;
-    details_height = detail_line_height * 6;
-    
-    /* Initialize position tracking */
-    /* Start from window borders (using IControl preferences), then add margins */
-    /* STANDARD LAYOUT: No bevel border or content padding */
-    current_x = prefsIControl.currentLeftBarWidth + RESTORE_MARGIN_LEFT;
-    current_y = prefsIControl.currentWindowBarHeight + RESTORE_MARGIN_TOP;
-    window_max_width = 0;
-    window_max_height = 0;
-    
-    /* Create GadTools visual info */
-    append_to_log("Creating GadTools visual info\n");
-    restore_data->visual_info = GetVisualInfo(screen, TAG_END);
-    if (restore_data->visual_info == NULL)
-    {
-        append_to_log("ERROR: Failed to create visual info\n");
-        UnlockPubScreen(NULL, screen);
-        return FALSE;
-    }
-    
-    append_to_log("Visual info created successfully\n");
-    
-    /* Create context gadget */
-    append_to_log("Creating gadget context\n");
-    gad = CreateContext(&restore_data->glist);
-    if (gad == NULL)
-    {
-        append_to_log("ERROR: Failed to create gadget context\n");
-        FreeVisualInfo(restore_data->visual_info);
-        UnlockPubScreen(NULL, screen);
-        return FALSE;
-    }
-    
-    append_to_log("Gadget context created successfully\n");
-    
-    /* Initialize NewGadget structure with required fields */
-    /* Use system default font for gadgets (fixed-width) instead of screen font */
-    ng.ng_TextAttr = (system_font != NULL) ? &system_font_attr : screen->Font;
-    ng.ng_VisualInfo = restore_data->visual_info;
-    ng.ng_Flags = 0;
-    
-    append_to_log("NewGadget structure initialized (using %s)\n", 
-                  (system_font != NULL) ? "system default font" : "screen font");
-    
-    /*--------------------------------------------------------------------*/
-    /* PRE-CALCULATE LAYOUT DIMENSIONS                                   */
-    /*--------------------------------------------------------------------*/
-    UWORD listview_width = font_width * 65;
-    
-    /* Pre-calculate what the maximum right edge will be */
-    UWORD precalc_max_right = current_x + listview_width;
-    
-    append_to_log("=== PRE-CALCULATED LAYOUT ===\n");
-    append_to_log("Listview width: %d, max_right will be: %d\n", listview_width, precalc_max_right);
-    
-    /*--------------------------------------------------------------------*/
-    /* Backup Run ListView                                               */
-    /*--------------------------------------------------------------------*/
-    append_to_log("Creating Backup Run ListView\n");
-    
-    ng.ng_LeftEdge = current_x;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = listview_width;
-    ng.ng_Height = (font_height + 2) * 7;;
-    ng.ng_GadgetText = "";
-    ng.ng_GadgetID = GID_RESTORE_RUN_LIST;
-    ng.ng_Flags = PLACETEXT_ABOVE;
-    
-    append_to_log("ListView parameters: x=%d, y=%d, w=%d, h=%d\n", 
-                  ng.ng_LeftEdge, ng.ng_TopEdge, ng.ng_Width, ng.ng_Height);
-    
-    restore_data->run_list = gad = CreateGadget(LISTVIEW_KIND, gad, &ng,
-        GTLV_Labels, NULL,
-        GTLV_Selected, ~0,
-        GTLV_ShowSelected, NULL,
-        TAG_END);
-    
-    if (gad == NULL)
-    {
-        append_to_log("ERROR: Failed to create Backup Run ListView\n");
-        goto cleanup_error;
-    }
-    
-    append_to_log("Backup Run ListView created successfully\n");
-    
-    /* CRITICAL: Get actual height */
-    actual_listview_height = gad->Height;
-    listview_bottom_y = ng.ng_TopEdge + actual_listview_height;
-    
-    update_window_max_dimensions(&window_max_width, &window_max_height,
-                                ng.ng_LeftEdge + ng.ng_Width,
-                                ng.ng_TopEdge + actual_listview_height);
-    
-    /*--------------------------------------------------------------------*/
-    /* Run Details ListView - Read-only display                          */
-    /*--------------------------------------------------------------------*/
-    current_y = listview_bottom_y + RESTORE_SPACE_Y;
-    
-    ng.ng_LeftEdge = current_x;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = listview_width;
-    ng.ng_Height = (font_height + 2) * 7;  /* 7 lines for details (added Source Directory) */
-    ng.ng_GadgetText = "";
-    ng.ng_GadgetID = GID_RESTORE_DETAILS;
-    ng.ng_Flags = PLACETEXT_ABOVE;
-    
-    restore_data->details_listview = gad = CreateGadget(LISTVIEW_KIND, gad, &ng,
-        GTLV_Labels, NULL,
-        GTLV_ReadOnly, TRUE,
-        GTLV_ShowSelected, NULL,
-        TAG_END);
-    
-    if (gad == NULL)
-        goto cleanup_error;
-    
-    update_window_max_dimensions(&window_max_width, &window_max_height,
-                                ng.ng_LeftEdge + ng.ng_Width,
-                                ng.ng_TopEdge + ng.ng_Height);
-    
-    /*--------------------------------------------------------------------*/
-    /* Calculate equal button width for all 4 buttons                    */
-    /*--------------------------------------------------------------------*/
-    /* Find maximum button text width */
-    UWORD max_btn_text_width = TextLength(&temp_rp, "Restore Run", 11);
-    UWORD temp_width = TextLength(&temp_rp, "View Folders...", 15);
-    if (temp_width > max_btn_text_width)
-        max_btn_text_width = temp_width;
-    temp_width = TextLength(&temp_rp, "Delete Run", 10);
-    if (temp_width > max_btn_text_width)
-        max_btn_text_width = temp_width;
-    temp_width = TextLength(&temp_rp, "Cancel", 6);
-    if (temp_width > max_btn_text_width)
-        max_btn_text_width = temp_width;
-    
-    /* Calculate equal button width: 3 * button_width + 2 * spacing = available_width */
-    UWORD available_width = listview_width;
-    UWORD equal_button_width = (available_width - (2 * RESTORE_SPACE_X)) / 3;
-    
-    /* Ensure buttons are wide enough for text + padding */
-    if (equal_button_width < max_btn_text_width + 8)
-        equal_button_width = max_btn_text_width + 8;
-    
-    append_to_log("=== BUTTON CALCULATION ===\n");
-    append_to_log("Available width: %d, Equal button width: %d\n", 
-                  available_width, equal_button_width);
-    
-    /*--------------------------------------------------------------------*/
-    /* Top Row: Restore Run Button + Checkbox                            */
-    /*--------------------------------------------------------------------*/
-    /* Add spacing between details listview and top button row */
-    current_y = ng.ng_TopEdge + ng.ng_Height + RESTORE_SPACE_Y;
-    
-    /* Restore Run Button - left-aligned, no centering */
-    ng.ng_LeftEdge = current_x;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = equal_button_width;
-    ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Restore Run";
-    ng.ng_GadgetID = GID_RESTORE_RUN_BTN;
-    ng.ng_Flags = PLACETEXT_IN;
-    
-    restore_data->restore_run_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
-        GA_Disabled, TRUE,
-        TAG_END);
-    
-    if (gad == NULL)
-        goto cleanup_error;
-    
-    /* Restore Window Geometry Checkbox - to the right of the button */
-    ng.ng_LeftEdge = current_x + equal_button_width + RESTORE_SPACE_X;
-    ng.ng_TopEdge = current_y + ((button_height - (temp_rp.TxHeight + 4)) / 2); /* Vertically center with button */
-    ng.ng_Width = TextLength(&temp_rp, "Restore window positions", 24) + 30;
-    ng.ng_Height = temp_rp.TxHeight + 4;
-    ng.ng_GadgetText = "Restore window positions";
-    ng.ng_GadgetID = GID_RESTORE_WINDOW_GEOM_CHK;
-    ng.ng_Flags = PLACETEXT_RIGHT;
-    
-    restore_data->window_geom_chk = gad = CreateGadget(CHECKBOX_KIND, gad, &ng,
-        GTCB_Checked, TRUE,  /* Default to enabled */
-        TAG_END);
-    
-    if (gad == NULL)
-        goto cleanup_error;
-    
-    /*--------------------------------------------------------------------*/
-    /* Bottom Row: Delete Run, View Folders, Cancel (3 equal buttons)    */
-    /*--------------------------------------------------------------------*/
-    /* Add spacing between top row and bottom button row */
-    current_y += button_height + RESTORE_SPACE_Y;
-    
-    UWORD button_row_x = current_x;
-    
-    append_to_log("=== BOTTOM BUTTON ROW ===\n");
-    append_to_log("Button row starts at x=%d, y=%d\n", button_row_x, current_y);
-    
-    /* Delete Run Button */
-    ng.ng_LeftEdge = button_row_x;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = equal_button_width;
-    ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Delete Run";
-    ng.ng_GadgetID = GID_RESTORE_DELETE_RUN;
-    ng.ng_Flags = PLACETEXT_IN;
-    
-    restore_data->delete_run_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
-        GA_Disabled, TRUE,
-        TAG_END);
-    
-    if (gad == NULL)
-        goto cleanup_error;
-    
-    /* View Folders Button */
-    ng.ng_LeftEdge = button_row_x + equal_button_width + RESTORE_SPACE_X;
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = equal_button_width;
-    ng.ng_Height = button_height;
-    ng.ng_GadgetText = "View Folders...";
-    ng.ng_GadgetID = GID_RESTORE_VIEW_FOLDERS;
-    ng.ng_Flags = PLACETEXT_IN;
-    
-    restore_data->view_folders_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
-        GA_Disabled, TRUE,
-        TAG_END);
-    
-    if (gad == NULL)
-        goto cleanup_error;
-    
-    /* Cancel Button */
-    ng.ng_LeftEdge = button_row_x + (2 * equal_button_width) + (2 * RESTORE_SPACE_X);
-    ng.ng_TopEdge = current_y;
-    ng.ng_Width = equal_button_width;
-    ng.ng_Height = button_height;
-    ng.ng_GadgetText = "Cancel";
-    ng.ng_GadgetID = GID_RESTORE_CANCEL;
-    ng.ng_Flags = PLACETEXT_IN;
-    
-    restore_data->cancel_btn = gad = CreateGadget(BUTTON_KIND, gad, &ng,
-        TAG_END);
-    
-    if (gad == NULL)
-        goto cleanup_error;
-    
-    update_window_max_dimensions(&window_max_width, &window_max_height,
-                                ng.ng_LeftEdge + ng.ng_Width,
-                                ng.ng_TopEdge + ng.ng_Height);
-    
-    /*--------------------------------------------------------------------*/
-    /* Calculate final window size and open window                       */
-    /*--------------------------------------------------------------------*/
-    /* Add right border width and margin to window width */
-    final_window_width = window_max_width + prefsIControl.currentLeftBarWidth + RESTORE_MARGIN_RIGHT;
-    final_window_height = current_y + button_height + RESTORE_MARGIN_BOTTOM;
-    
-    append_to_log("=== PREPARING TO OPEN WINDOW ===\n");
-    append_to_log("Window size calculation:\n");
-    append_to_log("  window_max_width=%d\n", window_max_width);
-    append_to_log("  currentLeftBarWidth=%d\n", prefsIControl.currentLeftBarWidth);
-    append_to_log("  RESTORE_MARGIN_RIGHT=%d\n", RESTORE_MARGIN_RIGHT);
-    append_to_log("  final_window_width=%d\n", final_window_width);
-    append_to_log("  current_y=%d, button_height=%d, RESTORE_MARGIN_BOTTOM=%d\n", 
-                  current_y, button_height, RESTORE_MARGIN_BOTTOM);
-    append_to_log("  final_window_height=%d\n", final_window_height);
-    append_to_log("Screen dimensions: %d x %d\n", screen->Width, screen->Height);
-    append_to_log("Window position: Left=%d, Top=%d\n",
-                  (screen->Width - final_window_width) / 2,
-                  (screen->Height - final_window_height) / 2);
-    append_to_log("Gadget list pointer: %p\n", restore_data->glist);
-    append_to_log("Screen pointer: %p\n", screen);
-    
-    /* Verify all gadgets were created */
-    if (restore_data->run_list == NULL)
-    {
-        append_to_log("ERROR: run_list is NULL!\n");
-        goto cleanup_error;
-    }
-    if (restore_data->details_listview == NULL)
-    {
-        append_to_log("ERROR: details_listview is NULL!\n");
-        goto cleanup_error;
-    }
-    if (restore_data->restore_run_btn == NULL)
-    {
-        append_to_log("ERROR: restore_run_btn is NULL!\n");
-        goto cleanup_error;
-    }
-    if (restore_data->delete_run_btn == NULL)
-    {
-        append_to_log("ERROR: delete_run_btn is NULL!\n");
-        goto cleanup_error;
-    }
-    if (restore_data->view_folders_btn == NULL)
-    {
-        append_to_log("ERROR: view_folders_btn is NULL!\n");
-        goto cleanup_error;
-    }
-    if (restore_data->cancel_btn == NULL)
-    {
-        append_to_log("ERROR: cancel_btn is NULL!\n");
-        goto cleanup_error;
-    }
-    
-    append_to_log("All gadgets verified OK. Calling OpenWindowTags...\n");
-    
-    restore_data->window = OpenWindowTags(NULL,
-        WA_Left, (screen->Width - final_window_width) / 2,
-        WA_Top, (screen->Height - final_window_height) / 2,
-        WA_Width, final_window_width,
-        WA_Height, final_window_height,
+        {GID_RESTORE_RUN_LISTBROWSER,    -1, "Shows all iTidy backup runs. Click a run to view its details below. Double-click to view the folder structure of the run.", 0},
+        {GID_RESTORE_DETAILS_LISTBROWSER,-1, "Shows details of the selected backup run: date created, source folder, number of archives, total size, and status.", 0},
+        {GID_RESTORE_DELETE_BUTTON,      -1, "Permanently deletes the selected backup run and all its files. A confirmation requester is shown first. This cannot be undone.", 0},
+        {GID_RESTORE_RESTORE_BUTTON,     -1, "Restores icon positions and window layouts from the selected backup run. Choose to restore with or without window positions. Requires LhA in C:.", 0},
+        {GID_RESTORE_VIEW_BUTTON,        -1, "Opens a tree view showing the hierarchical folder structure of the selected run. Only available for runs with a catalog file.", 0},
+        {GID_RESTORE_CANCEL_BUTTON,      -1, "Closes the Restore Backups window.", 0},
+        {-1, -1, NULL, 0}
+    };
+
+    /* Create the ReAction window object */
+    restore_data->window_obj = NewObject(WINDOW_GetClass(), NULL,
         WA_Title, RESTORE_WINDOW_TITLE,
-        WA_DragBar, TRUE,
-        WA_DepthGadget, TRUE,
-        WA_CloseGadget, TRUE,
-        WA_Activate, TRUE,
+        WA_ScreenTitle, RESTORE_WINDOW_TITLE,
         WA_PubScreen, screen,
-        WA_Gadgets, restore_data->glist,
-        WA_IDCMP, IDCMP_CLOSEWINDOW | IDCMP_REFRESHWINDOW | IDCMP_GADGETUP | IDCMP_GADGETDOWN | IDCMP_MOUSEBUTTONS,
-        TAG_END);
+        WA_Left, 50,
+        WA_Top, 30,
+        WA_Width, 500,
+        WA_Height, 350,
+        WA_MinWidth, 400,
+        WA_MinHeight, 250,
+        WA_MaxWidth, 8192,
+        WA_MaxHeight, 8192,
+        WA_CloseGadget, TRUE,
+        WA_DepthGadget, TRUE,
+        WA_SizeGadget, TRUE,
+        WA_DragBar, TRUE,
+        WA_Activate, TRUE,
+        WA_NoCareRefresh, TRUE,
+        WINDOW_Position, WPOS_CENTERSCREEN,
+        WA_IDCMP, IDCMP_GADGETDOWN | IDCMP_GADGETUP | IDCMP_CLOSEWINDOW | IDCMP_NEWSIZE,
+        WINDOW_HintInfo, hintInfo,
+        WINDOW_GadgetHelp, TRUE,
+        
+        WINDOW_ParentGroup, NewObject(LAYOUT_GetClass(), NULL,
+            LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+            LAYOUT_SpaceOuter, TRUE,
+            LAYOUT_DeferLayout, TRUE,
+            
+            /* Root vertical layout */
+            LAYOUT_AddChild, restore_data->gadgets[0] = NewObject(LAYOUT_GetClass(), NULL,
+                GA_ID, GID_RESTORE_ROOT_LAYOUT,
+                LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                
+                /* Run List Layout */
+                LAYOUT_AddChild, NewObject(LAYOUT_GetClass(), NULL,
+                    GA_ID, GID_RESTORE_RUN_LIST_LAYOUT,
+                    LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                    LAYOUT_LeftSpacing, 2,
+                    LAYOUT_RightSpacing, 2,
+                    LAYOUT_TopSpacing, 2,
+                    LAYOUT_BottomSpacing, 2,
+                    
+                    LAYOUT_AddChild, restore_data->run_listbrowser_obj = NewObject(LISTBROWSER_GetClass(), NULL,
+                        GA_ID, GID_RESTORE_RUN_LISTBROWSER,
+                        GA_RelVerify, TRUE,
+                        GA_TabCycle, TRUE,
+                        LISTBROWSER_ColumnInfo, run_list_column_info,
+                        LISTBROWSER_ColumnTitles, TRUE,
+                        LISTBROWSER_ShowSelected, TRUE,
+                        LISTBROWSER_AutoFit, TRUE,
+                    TAG_END),
+                TAG_END),
+                CHILD_WeightedHeight, 45,
+                
+                /* Details Layout */
+                LAYOUT_AddChild, NewObject(LAYOUT_GetClass(), NULL,
+                    GA_ID, GID_RESTORE_DETAILS_LAYOUT,
+                    LAYOUT_Orientation, LAYOUT_ORIENT_VERT,
+                    LAYOUT_LeftSpacing, 2,
+                    LAYOUT_RightSpacing, 2,
+                    LAYOUT_TopSpacing, 2,
+                    LAYOUT_BottomSpacing, 2,
+                    
+                    LAYOUT_AddChild, restore_data->details_listbrowser_obj = NewObject(LISTBROWSER_GetClass(), NULL,
+                        GA_ID, GID_RESTORE_DETAILS_LISTBROWSER,
+                        GA_RelVerify, TRUE,
+                        GA_TabCycle, TRUE,
+                        LISTBROWSER_ColumnInfo, details_column_info,
+                        LISTBROWSER_ColumnTitles, FALSE,
+                        LISTBROWSER_ShowSelected, FALSE,
+                        LISTBROWSER_AutoFit, TRUE,
+                    TAG_END),
+                TAG_END),
+                CHILD_WeightedHeight, 35,
+                
+                /* Button row */
+                LAYOUT_AddChild, NewObject(LAYOUT_GetClass(), NULL,
+                    GA_ID, GID_RESTORE_BUTTONS_LAYOUT,
+                    LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ,
+                    LAYOUT_TopSpacing, 4,
+                    LAYOUT_EvenSize, TRUE,
+                    
+                    LAYOUT_AddChild, restore_data->delete_run_btn = NewObject(BUTTON_GetClass(), NULL,
+                        GA_ID, GID_RESTORE_DELETE_BUTTON,
+                        GA_Text, "Delete Run",
+                        GA_RelVerify, TRUE,
+                        GA_TabCycle, TRUE,
+                        GA_Disabled, TRUE,
+                    TAG_END),
+                    
+                    LAYOUT_AddChild, restore_data->restore_run_btn = NewObject(BUTTON_GetClass(), NULL,
+                        GA_ID, GID_RESTORE_RESTORE_BUTTON,
+                        GA_Text, "Restore Run",
+                        GA_RelVerify, TRUE,
+                        GA_TabCycle, TRUE,
+                        GA_Disabled, TRUE,
+                    TAG_END),
+                    
+                    LAYOUT_AddChild, restore_data->view_folders_btn = NewObject(BUTTON_GetClass(), NULL,
+                        GA_ID, GID_RESTORE_VIEW_BUTTON,
+                        GA_Text, "View Folders...",
+                        GA_RelVerify, TRUE,
+                        GA_TabCycle, TRUE,
+                        GA_Disabled, TRUE,
+                    TAG_END),
+                    
+                    LAYOUT_AddChild, restore_data->cancel_btn = NewObject(BUTTON_GetClass(), NULL,
+                        GA_ID, GID_RESTORE_CANCEL_BUTTON,
+                        GA_Text, "Close",
+                        GA_RelVerify, TRUE,
+                        GA_TabCycle, TRUE,
+                    TAG_END),
+                TAG_END),
+                CHILD_WeightedHeight, 0,
+                
+            TAG_END), /* End root layout */
+        TAG_END), /* End parent group */
+    TAG_END);
     
-    append_to_log("OpenWindowTags returned: %p\n", restore_data->window);
+    if (restore_data->window_obj == NULL)
+    {
+        log_error(LOG_GUI, "ERROR: Failed to create restore window object\n");
+        UnlockPubScreen(NULL, screen);
+        close_reaction_classes();
+        return FALSE;
+    }
     
+    /* Open the window */
+    restore_data->window = (struct Window *)RA_OpenWindow(restore_data->window_obj);
     if (restore_data->window == NULL)
     {
-        LONG ioerr = IoErr();
-        append_to_log("ERROR: Failed to open restore window\n");
-        append_to_log("ERROR: IoErr() = %ld\n", ioerr);
-        goto cleanup_error;
+        log_error(LOG_GUI, "ERROR: Failed to open restore window\n");
+        DisposeObject(restore_data->window_obj);
+        restore_data->window_obj = NULL;
+        UnlockPubScreen(NULL, screen);
+        close_reaction_classes();
+        return FALSE;
     }
     
-    append_to_log("Restore window opened successfully\n");
     restore_data->window_open = TRUE;
+    log_info(LOG_GUI, "Restore window opened successfully\n");
     
-    /* DISABLED: Custom checkerboard background 
-     * Draw the window background FIRST (before refreshing gadgets)
-     * This ensures the pattern and bevel are behind the gadgets
-     */
-    /* draw_window_background(restore_data); */
-    
-    /* DISABLED: Custom gadget refresh
-     * Force all gadgets to redraw themselves on top of the background
-     * GT_RefreshWindow alone doesn't work with custom backgrounds
-     */
-    /* append_to_log("Refreshing window gadgets\n");
-    RefreshGList(restore_data->glist, restore_data->window, NULL, -1); */
-    
-    /* Set busy pointer while scanning for backup runs */
+    /* Set busy pointer while scanning */
     safe_set_window_pointer(restore_data->window, TRUE);
     
     /* Scan for backup runs */
-    append_to_log("Scanning for backup runs in: %s\n", restore_data->backup_root_path);
+    log_info(LOG_BACKUP, "Scanning for backup runs in: %s\n", restore_data->backup_root_path);
     restore_data->run_count = scan_backup_runs(restore_data->backup_root_path,
-                                              &restore_data->run_entries);
+                                               &restore_data->run_entries);
     
-    append_to_log("Found %d backup runs\n", restore_data->run_count);
+    log_info(LOG_BACKUP, "Found %lu backup runs\n", restore_data->run_count);
     
     if (restore_data->run_count > 0)
     {
         populate_run_list(restore_data,
                          restore_data->run_entries,
                          restore_data->run_count,
-                         0);  /* Initial load */
+                         0);
+    }
+    else
+    {
+        /* Show empty state in details */
+        update_details_panel(restore_data, NULL);
     }
     
-    /* Clear busy pointer - scanning complete */
+    /* Clear busy pointer */
     safe_set_window_pointer(restore_data->window, FALSE);
     
-    /* Free DrawInfo - no longer needed after window is created */
-    if (draw_info != NULL)
-    {
-        FreeScreenDrawInfo(screen, draw_info);
-    }
-    
-    append_to_log("Restore window opened successfully\n");
     return TRUE;
-
-cleanup_error:
-    append_to_log("ERROR: Entering cleanup_error - gadget creation failed\n");
-    if (restore_data->glist != NULL)
-    {
-        append_to_log("Freeing gadgets\n");
-        FreeGadgets(restore_data->glist);
-    }
-    if (restore_data->visual_info != NULL)
-    {
-        append_to_log("Freeing visual info\n");
-        FreeVisualInfo(restore_data->visual_info);
-    }
-    if (restore_data->system_font != NULL)
-    {
-        append_to_log("Closing system font\n");
-        CloseFont(restore_data->system_font);
-        restore_data->system_font = NULL;
-    }
-    if (draw_info != NULL)
-    {
-        append_to_log("Freeing DrawInfo\n");
-        FreeScreenDrawInfo(screen, draw_info);
-    }
-    if (screen != NULL)
-    {
-        append_to_log("Unlocking screen\n");
-        UnlockPubScreen(NULL, screen);
-    }
-    append_to_log("=== open_restore_window: Exiting with failure ===\n");
-    return FALSE;
 }
 
 /*------------------------------------------------------------------------*/
@@ -1606,116 +1369,74 @@ cleanup_error:
 /*------------------------------------------------------------------------*/
 void close_restore_window(struct iTidyRestoreWindow *restore_data)
 {
-    struct Node *node;
-    
     if (restore_data == NULL)
         return;
     
-    append_to_log("close_restore_window: Starting cleanup\n");
+    log_info(LOG_GUI, "close_restore_window: Starting cleanup\n");
     
-    /* CRITICAL: Detach list views from gadgets BEFORE freeing lists */
-    /* This prevents the gadgets from accessing freed memory during window close */
-    if (restore_data->window != NULL)
+    /* Dispose window object (automatically frees gadgets) */
+    if (restore_data->window_obj != NULL)
     {
-        append_to_log("Detaching listviews from gadgets\n");
-        
-        if (restore_data->run_list != NULL)
+        /* Detach lists before disposing */
+        if (restore_data->window != NULL)
         {
-            GT_SetGadgetAttrs(restore_data->run_list, restore_data->window, NULL,
-                GTLV_Labels, ~0,
-                TAG_END);
-        }
-        
-        if (restore_data->details_listview != NULL)
-        {
-            GT_SetGadgetAttrs(restore_data->details_listview, restore_data->window, NULL,
-                GTLV_Labels, ~0,
-                TAG_END);
-        }
-    }
-    
-    /* Free run list using simple cleanup */
-    if (restore_data->run_list_strings != NULL)
-    {
-        struct Node *node;
-        append_to_log("Freeing run_list_strings\n");
-        while ((node = RemHead(restore_data->run_list_strings)) != NULL)
-        {
-            if (node->ln_Name) whd_free(node->ln_Name);
-            FreeVec(node);
-        }
-        FreeVec(restore_data->run_list_strings);
-        restore_data->run_list_strings = NULL;
-    }
-    
-    /* Free details list strings */
-    if (restore_data->details_list_strings != NULL)
-    {
-        append_to_log("Freeing details_list_strings\n");
-        while ((node = RemHead(restore_data->details_list_strings)) != NULL)
-        {
-            if (node->ln_Name != NULL)
+            if (restore_data->run_listbrowser_obj != NULL)
             {
-                FreeVec(node->ln_Name);
-                node->ln_Name = NULL;
+                SetGadgetAttrs((struct Gadget *)restore_data->run_listbrowser_obj, 
+                               restore_data->window, NULL,
+                               LISTBROWSER_Labels, ~0,
+                               TAG_DONE);
             }
-            FreeVec(node);
+            
+            if (restore_data->details_listbrowser_obj != NULL)
+            {
+                SetGadgetAttrs((struct Gadget *)restore_data->details_listbrowser_obj, 
+                               restore_data->window, NULL,
+                               LISTBROWSER_Labels, ~0,
+                               TAG_DONE);
+            }
         }
-        FreeVec(restore_data->details_list_strings);
-        restore_data->details_list_strings = NULL;
+        
+        DisposeObject(restore_data->window_obj);
+        restore_data->window_obj = NULL;
+        restore_data->window = NULL;
+        restore_data->run_listbrowser_obj = NULL;
+        restore_data->details_listbrowser_obj = NULL;
+    }
+    
+    /* Free ListBrowser lists */
+    if (restore_data->run_list_nodes != NULL)
+    {
+        free_listbrowser_list(restore_data->run_list_nodes);
+        restore_data->run_list_nodes = NULL;
+    }
+    
+    if (restore_data->details_list_nodes != NULL)
+    {
+        free_listbrowser_list(restore_data->details_list_nodes);
+        restore_data->details_list_nodes = NULL;
     }
     
     /* Free run entries */
     if (restore_data->run_entries != NULL)
     {
-        append_to_log("Freeing run_entries\n");
-        FreeVec(restore_data->run_entries);
+        whd_free(restore_data->run_entries);
         restore_data->run_entries = NULL;
-    }
-    
-    /* Close window */
-    if (restore_data->window != NULL)
-    {
-        append_to_log("Closing window\n");
-        CloseWindow(restore_data->window);
-        restore_data->window = NULL;
-    }
-    
-    /* Free gadgets */
-    if (restore_data->glist != NULL)
-    {
-        append_to_log("Freeing gadgets\n");
-        FreeGadgets(restore_data->glist);
-        restore_data->glist = NULL;
-    }
-    
-    /* Free visual info */
-    if (restore_data->visual_info != NULL)
-    {
-        append_to_log("Freeing visual info\n");
-        FreeVisualInfo(restore_data->visual_info);
-        restore_data->visual_info = NULL;
-    }
-    
-    /* Close system font if we opened it */
-    if (restore_data->system_font != NULL)
-    {
-        append_to_log("Closing system font\n");
-        CloseFont(restore_data->system_font);
-        restore_data->system_font = NULL;
     }
     
     /* Unlock screen */
     if (restore_data->screen != NULL)
     {
-        append_to_log("Unlocking screen\n");
         UnlockPubScreen(NULL, restore_data->screen);
         restore_data->screen = NULL;
     }
     
+    /* Close ReAction classes */
+    close_reaction_classes();
+    
     restore_data->window_open = FALSE;
     
-    append_to_log("Restore window closed successfully\n");
+    log_info(LOG_GUI, "Restore window closed successfully\n");
 }
 
 /*------------------------------------------------------------------------*/
@@ -1725,291 +1446,280 @@ void close_restore_window(struct iTidyRestoreWindow *restore_data)
 /*------------------------------------------------------------------------*/
 BOOL handle_restore_window_events(struct iTidyRestoreWindow *restore_data)
 {
-    struct IntuiMessage *imsg;
-    ULONG msgClass;
-    UWORD msgCode;
-    struct Gadget *gadget;
-    WORD mouseX, mouseY;
+    ULONG signals, signal_mask;
+    ULONG result;
+    UWORD code;
     BOOL continue_running = TRUE;
     
-    if (restore_data == NULL || restore_data->window == NULL)
+    if (restore_data == NULL || restore_data->window_obj == NULL)
         return FALSE;
-    
-    /* Wait for events */
-    WaitPort(restore_data->window->UserPort);
-    
-    while ((imsg = GT_GetIMsg(restore_data->window->UserPort)) != NULL)
+
+    // Get the ReAction window's signal mask
+    GetAttr(WINDOW_SigMask, restore_data->window_obj, &signal_mask);
+
+    // Wait for events using the correct signal mask
+    signals = Wait(signal_mask | SIGBREAKF_CTRL_C);
+
+    if (signals & SIGBREAKF_CTRL_C)
     {
-        msgClass = imsg->Class;
-        msgCode = imsg->Code;
-        gadget = (struct Gadget *)imsg->IAddress;
-        mouseX = imsg->MouseX;
-        mouseY = imsg->MouseY;
-        
-        GT_ReplyIMsg(imsg);
-        
-        switch (msgClass)
+        log_debug(LOG_GUI, "Ctrl+C detected, closing window.\n");
+        return FALSE;
+    }
+
+    // Handle window events (no need to check signal_mask - RA_HandleInput handles it)
+    while ((result = RA_HandleInput(restore_data->window_obj, &code)) != WMHI_LASTMSG)
         {
-            case IDCMP_CLOSEWINDOW:
-                append_to_log("Close gadget clicked\n");
-                continue_running = FALSE;
-                break;
-            
-            case IDCMP_REFRESHWINDOW:
-                /* DISABLED: Custom background redrawing
-                 * GT_BeginRefresh(restore_data->window);
-                 * draw_window_background(restore_data);
-                 * GT_EndRefresh(restore_data->window, TRUE);
-                 */
-                /* Use standard GadTools refresh instead */
-                GT_BeginRefresh(restore_data->window);
-                GT_EndRefresh(restore_data->window, TRUE);
-                break;
-            
-            case IDCMP_GADGETUP:
-                log_debug(LOG_GUI, "IDCMP_GADGETUP: gadget=%p, ID=%d\n", gadget, gadget ? gadget->GadgetID : -1);
-                switch (gadget->GadgetID)
-                {
-                    case GID_RESTORE_RUN_LIST:
-                        {
-                            LONG selected_row = ~0;
-                            
-                            /* Get selected row from ListView */
-                            GT_GetGadgetAttrs(restore_data->run_list, restore_data->window, NULL,
-                                            GTLV_Selected, &selected_row,
-                                            TAG_END);
-                            
-                            /* Row 0 = header, Row 1 = separator, Row 2+ = data */
-                            if (selected_row >= 2)
+            switch (result & WMHI_CLASSMASK)
+            {
+                case WMHI_CLOSEWINDOW:
+                    log_debug(LOG_GUI, "Close gadget clicked\n");
+                    continue_running = FALSE;
+                    break;
+                
+                case WMHI_GADGETUP:
+                    switch (result & WMHI_GADGETMASK)
+                    {
+                        case GID_RESTORE_RUN_LISTBROWSER:
                             {
-                                ULONG data_index = (ULONG)(selected_row - 2);  /* Convert to 0-based data index */
+                                ULONG selected = ~0;
+                                ULONG rel_event = LBRE_NORMAL;
                                 
-                                if (data_index < restore_data->run_count)
+                                GetAttr(LISTBROWSER_Selected, 
+                                       restore_data->run_listbrowser_obj, 
+                                       &selected);
+                                
+                                /* Check what type of event triggered this */
+                                GetAttr(LISTBROWSER_RelEvent,
+                                       restore_data->run_listbrowser_obj,
+                                       &rel_event);
+                                
+                                if (selected != ~0 && selected < restore_data->run_count)
                                 {
-                                    append_to_log("Selected row %ld (data index %lu): Run %u\n",
-                                                selected_row, data_index,
-                                                restore_data->run_entries[data_index].runNumber);
+                                    log_debug(LOG_GUI, "Selected run index: %lu (event type: %lu)\n", selected, rel_event);
                                     
-                                    restore_data->selected_run_index = (LONG)data_index;
+                                    restore_data->selected_run_index = (LONG)selected;
                                     
                                     /* Update details panel */
                                     update_details_panel(restore_data,
-                                                        &restore_data->run_entries[data_index]);
+                                                        &restore_data->run_entries[selected]);
                                     
-                                    /* Enable restore and delete buttons */
-                                    GT_SetGadgetAttrs(restore_data->restore_run_btn,
-                                                    restore_data->window, NULL,
-                                                    GA_Disabled, FALSE,
-                                                    TAG_END);
+                                    /* Enable buttons */
+                                    SetGadgetAttrs((struct Gadget *)restore_data->restore_run_btn,
+                                                   restore_data->window, NULL,
+                                                   GA_Disabled, FALSE,
+                                                   TAG_DONE);
                                     
-                                    GT_SetGadgetAttrs(restore_data->delete_run_btn,
-                                                    restore_data->window, NULL,
-                                                    GA_Disabled, FALSE,
-                                                    TAG_END);
+                                    SetGadgetAttrs((struct Gadget *)restore_data->delete_run_btn,
+                                                   restore_data->window, NULL,
+                                                   GA_Disabled, FALSE,
+                                                   TAG_DONE);
                                     
                                     /* Enable view folders if catalog exists */
-                                    GT_SetGadgetAttrs(restore_data->view_folders_btn,
-                                                    restore_data->window, NULL,
-                                                    GA_Disabled,
-                                                    !restore_data->run_entries[data_index].hasCatalog,
-                                                    TAG_END);
+                                    SetGadgetAttrs((struct Gadget *)restore_data->view_folders_btn,
+                                                   restore_data->window, NULL,
+                                                   GA_Disabled, !restore_data->run_entries[selected].hasCatalog,
+                                                   TAG_DONE);
+                                    
+                                    /* Handle double-click - open folder view if catalog exists */
+                                    if (rel_event == LBRE_DOUBLECLICK && 
+                                        restore_data->run_entries[selected].hasCatalog)
+                                    {
+                                        struct RestoreRunEntry *selected_entry = 
+                                            &restore_data->run_entries[selected];
+                                        char catalog_path[512];
+                                        struct iTidyFolderViewWindow folder_view_data;
+                                        
+                                        sprintf(catalog_path, "%s/%s/catalog.txt",
+                                               restore_data->backup_root_path,
+                                               selected_entry->runName);
+                                        
+                                        log_debug(LOG_GUI, "Double-click detected - Opening folder view for: %s\n", catalog_path);
+                                        
+                                        /* Set busy pointer while opening folder view */
+                                        safe_set_window_pointer(restore_data->window, TRUE);
+                                        
+                                        memset(&folder_view_data, 0, sizeof(folder_view_data));
+                                        folder_view_data.screen = restore_data->screen;
+                                        
+                                        if (open_folder_view_window(&folder_view_data,
+                                                                   catalog_path,
+                                                                   selected_entry->runNumber,
+                                                                   selected_entry->dateStr,
+                                                                   selected_entry->folderCount))
+                                        {
+                                            while (handle_folder_view_window_events(&folder_view_data))
+                                            {
+                                                /* The event loop is now inside handle_folder_view_window_events */
+                                            }
+                                            
+                                            close_folder_view_window(&folder_view_data);
+                                        }
+                                        else
+                                        {
+                                            log_error(LOG_GUI, "ERROR: Failed to open folder view window\n");
+                                        }
+                                        /* Clear busy pointer */
+                                        safe_set_window_pointer(restore_data->window, FALSE);
+                                    }
                                 }
                             }
-                        }
-                        break;
-                    
-                    case GID_RESTORE_WINDOW_GEOM_CHK:
-                        /* Update flag from checkbox state */
-                        restore_data->restore_window_geometry = 
-                            (((struct Gadget*)imsg->IAddress)->Flags & GFLG_SELECTED) != 0;
-                        append_to_log("Window geometry restore: %s\n", 
-                                     restore_data->restore_window_geometry ? "ENABLED" : "DISABLED");
-                        break;
-                    
-                    case GID_RESTORE_RUN_BTN:
-                        if (restore_data->selected_run_index >= 0 &&
-                            restore_data->selected_run_index < (LONG)restore_data->run_count)
-                        {
-                            perform_restore_run(restore_data,
-                                &restore_data->run_entries[restore_data->selected_run_index]);
-                        }
-                        break;
-                    
-                    case GID_RESTORE_DELETE_RUN:
-                        if (restore_data->selected_run_index >= 0 &&
-                            restore_data->selected_run_index < (LONG)restore_data->run_count)
-                        {
-                            struct RestoreRunEntry *selected_entry = 
-                                &restore_data->run_entries[restore_data->selected_run_index];
-                            char message[512];
-                            
-                            /* Show confirmation requester */
-                            sprintf(message, "Delete backup run %s?\n\nThis will permanently delete:\n- %lu folder archive(s)\n- Catalog file\n- Run directory\n\nThis action cannot be undone!",
-                                    selected_entry->runName,
-                                    selected_entry->folderCount);
-                            
-                            if (ShowEasyRequest(restore_data->window,
-                                               "Confirm Delete",
-                                               message,
-                                               "Delete|Cancel"))
+                            break;
+                        
+                        case GID_RESTORE_RESTORE_BUTTON:
+                            if (restore_data->selected_run_index >= 0 &&
+                                restore_data->selected_run_index < (LONG)restore_data->run_count)
                             {
-                                char run_path[512];
+                                perform_restore_run(restore_data,
+                                    &restore_data->run_entries[restore_data->selected_run_index]);
+                            }
+                            break;
+                        
+                        case GID_RESTORE_DELETE_BUTTON:
+                            if (restore_data->selected_run_index >= 0 &&
+                                restore_data->selected_run_index < (LONG)restore_data->run_count)
+                            {
+                                struct RestoreRunEntry *selected_entry = 
+                                    &restore_data->run_entries[restore_data->selected_run_index];
+                                char message[512];
                                 
-                                /* Build full path to run directory */
-                                sprintf(run_path, "%s/%s", restore_data->backup_root_path, selected_entry->runName);
+                                sprintf(message, "Delete backup run %s?\n\nThis will permanently delete:\n- %lu folder archive(s)\n- Catalog file\n- Run directory\n\nThis action cannot be undone!",
+                                        selected_entry->runName,
+                                        selected_entry->folderCount);
                                 
-                                append_to_log("Deleting backup run: %s\n", run_path);
-                                
-                                /* Delete the entire run directory recursively */
-                                if (delete_directory_recursive(run_path))
+                                /* Use ReAction requester with question mark icon */
+                                /* Button returns: 1=Delete, 0=Cancel */
+                                if (ShowReActionRequester(restore_data->window,
+                                                          "Confirm Delete",
+                                                          message,
+                                                          "_Delete|_Cancel",
+                                                          REQIMAGE_QUESTION) == 1)
                                 {
-                                    append_to_log("Successfully deleted run: %s\n", selected_entry->runName);
+                                    char run_path[512];
                                     
-                                    /* Rescan backup directory */
-                                    if (restore_data->run_entries != NULL)
+                                    sprintf(run_path, "%s/%s", restore_data->backup_root_path, selected_entry->runName);
+                                    
+                                    log_info(LOG_BACKUP, "Deleting backup run: %s\n", run_path);
+                                    
+                                    if (delete_directory_recursive(run_path))
                                     {
-                                        FreeVec(restore_data->run_entries);
-                                        restore_data->run_entries = NULL;
-                                    }
-                                    
-                                    restore_data->run_count = scan_backup_runs(
-                                        restore_data->backup_root_path,
-                                        &restore_data->run_entries);
-                                    
-                                    if (restore_data->run_count > 0)
-                                    {
-                                        populate_run_list(restore_data,
-                                                         restore_data->run_entries,
-                                                         restore_data->run_count,
-                                                         0);  /* Refresh after delete */
+                                        log_info(LOG_BACKUP, "Successfully deleted run: %s\n", selected_entry->runName);
+                                        
+                                        /* Rescan backup directory */
+                                        if (restore_data->run_entries != NULL)
+                                        {
+                                            whd_free(restore_data->run_entries);
+                                            restore_data->run_entries = NULL;
+                                        }
+                                        
+                                        restore_data->run_count = scan_backup_runs(
+                                            restore_data->backup_root_path,
+                                            &restore_data->run_entries);
+                                        
+                                        if (restore_data->run_count > 0)
+                                        {
+                                            populate_run_list(restore_data,
+                                                             restore_data->run_entries,
+                                                             restore_data->run_count,
+                                                             0);
+                                        }
+                                        else
+                                        {
+                                            /* No runs left */
+                                            update_details_panel(restore_data, NULL);
+                                            
+                                            SetGadgetAttrs((struct Gadget *)restore_data->restore_run_btn,
+                                                           restore_data->window, NULL,
+                                                           GA_Disabled, TRUE,
+                                                           TAG_DONE);
+                                            SetGadgetAttrs((struct Gadget *)restore_data->delete_run_btn,
+                                                           restore_data->window, NULL,
+                                                           GA_Disabled, TRUE,
+                                                           TAG_DONE);
+                                            SetGadgetAttrs((struct Gadget *)restore_data->view_folders_btn,
+                                                           restore_data->window, NULL,
+                                                           GA_Disabled, TRUE,
+                                                           TAG_DONE);
+                                        }
+                                        
+                                        sprintf(message, "Backup run %s deleted successfully.", selected_entry->runName);
+                                        
+                                        ShowReActionRequester(restore_data->window,
+                                                              "Delete Complete",
+                                                              message,
+                                                              "_OK",
+                                                              REQIMAGE_INFO);
                                     }
                                     else
                                     {
-                                        /* No runs left, clear details and disable buttons */
-                                        update_details_panel(restore_data, NULL);
-                                        GT_SetGadgetAttrs(restore_data->restore_run_btn,
-                                                        restore_data->window, NULL,
-                                                        GA_Disabled, TRUE,
-                                                        TAG_END);
-                                        GT_SetGadgetAttrs(restore_data->delete_run_btn,
-                                                        restore_data->window, NULL,
-                                                        GA_Disabled, TRUE,
-                                                        TAG_END);
-                                        GT_SetGadgetAttrs(restore_data->view_folders_btn,
-                                                        restore_data->window, NULL,
-                                                        GA_Disabled, TRUE,
-                                                        TAG_END);
+                                        log_error(LOG_BACKUP, "ERROR: Failed to delete run: %s\n", run_path);
+                                        
+                                        sprintf(message, "Failed to delete backup run %s.\n\nThe directory may be in use or protected.\nCheck the log for details.", selected_entry->runName);
+                                        
+                                        ShowReActionRequester(restore_data->window,
+                                                              "Delete Failed",
+                                                              message,
+                                                              "_OK",
+                                                              REQIMAGE_ERROR);
                                     }
-                                    
-                                    /* Show success message */
-                                    sprintf(message, "Backup run %s deleted successfully.", selected_entry->runName);
-                                    
-                                    ShowEasyRequest(restore_data->window,
-                                                   "Delete Complete",
-                                                   message,
-                                                   "OK");
                                 }
                                 else
                                 {
-                                    append_to_log("ERROR: Failed to delete run: %s\n", run_path);
-                                    
-                                    sprintf(message, "Failed to delete backup run %s.\n\nThe directory may be in use or protected.\nCheck the log for details.", selected_entry->runName);
-                                    
-                                    ShowEasyRequest(restore_data->window,
-                                                   "Delete Failed",
-                                                   message,
-                                                   "OK");
+                                    log_debug(LOG_BACKUP, "Delete cancelled by user\n");
                                 }
                             }
-                            else
+                            break;
+                        
+                        case GID_RESTORE_VIEW_BUTTON:
+                            if (restore_data->selected_run_index >= 0 &&
+                                restore_data->selected_run_index < (LONG)restore_data->run_count)
                             {
-                                append_to_log("Delete cancelled by user\n");
-                            }
-                        }
-                        break;
-                    
-                    case GID_RESTORE_VIEW_FOLDERS:
-                        /* Use simple test window (working version) */
-                        if (restore_data->selected_run_index >= 0 &&
-                            restore_data->selected_run_index < (LONG)restore_data->run_count)
-                        {
-                            struct RestoreRunEntry *selected_entry = 
-                                &restore_data->run_entries[restore_data->selected_run_index];
-                            char catalog_path[512];
-                            struct iTidyFolderViewWindow folder_view_data;
-                            
-                            /* Build path to catalog.txt */
-                            sprintf(catalog_path, "%s/%s/catalog.txt",
-                                   restore_data->backup_root_path,
-                                   selected_entry->runName);
-                            
-                            append_to_log("Opening folder view for: %s\n", catalog_path);
-                            
-                            /* Initialize folder view data */
-                            memset(&folder_view_data, 0, sizeof(folder_view_data));
-                            folder_view_data.screen = restore_data->screen;
-                            
-                            /* Open folder view window - it handles its own busy pointer */
-                            if (open_folder_view_window(&folder_view_data,
-                                                       catalog_path,
-                                                       selected_entry->runNumber,
-                                                       selected_entry->dateStr,
-                                                       selected_entry->folderCount))
-                            {
-                                /* Run folder view event loop */
-                                while (handle_folder_view_window_events(&folder_view_data))
-                                {
-                                    WaitPort(folder_view_data.window->UserPort);
-                                }
+                                struct RestoreRunEntry *selected_entry = 
+                                    &restore_data->run_entries[restore_data->selected_run_index];
+                                char catalog_path[512];
+                                struct iTidyFolderViewWindow folder_view_data;
                                 
-                                /* Close folder view window */
-                                close_folder_view_window(&folder_view_data);
+                                sprintf(catalog_path, "%s/%s/catalog.txt",
+                                       restore_data->backup_root_path,
+                                       selected_entry->runName);
+                                
+                                log_debug(LOG_GUI, "Opening folder view for: %s\n", catalog_path);
+                                
+                                /* Set busy pointer while opening folder view */
+                                safe_set_window_pointer(restore_data->window, TRUE);
+                                
+                                memset(&folder_view_data, 0, sizeof(folder_view_data));
+                                folder_view_data.screen = restore_data->screen;
+                                
+                                if (open_folder_view_window(&folder_view_data,
+                                                           catalog_path,
+                                                           selected_entry->runNumber,
+                                                           selected_entry->dateStr,
+                                                           selected_entry->folderCount))
+                                {
+                                    while (handle_folder_view_window_events(&folder_view_data))
+                                    {
+                                        /* The event loop is now inside handle_folder_view_window_events */
+                                    }
+                                    
+                                    close_folder_view_window(&folder_view_data);
+                                }
+                                else
+                                {
+                                    log_error(LOG_GUI, "ERROR: Failed to open folder view window\n");
+                                }
+                                /* Clear busy pointer */
+                                safe_set_window_pointer(restore_data->window, FALSE);
                             }
-                            else
-                            {
-                                append_to_log("ERROR: Failed to open folder view window\n");
-                            }
-                        }
-                        break;
-                    
-                    case GID_RESTORE_CANCEL:
-                        append_to_log("Cancel button clicked\n");
-                        continue_running = FALSE;
-                        break;
-                }
-                break;
-            
-            case IDCMP_GADGETDOWN:
-                /* Handle ListView scroll arrow buttons */
-                /* ListView scroll arrows generate GADGETDOWN, not GADGETUP */
-                /* GadTools handles the actual scrolling - we just need to handle the event */
-                if (gadget != NULL)
-                {
-                    UWORD gadget_id = gadget->GadgetID;
-                    
-                    if (gadget_id == GID_RESTORE_RUN_LIST || gadget_id == GID_RESTORE_DETAILS)
-                    {
-                        /* Get current top position for debug logging */
-                        LONG current_top = 0;
-                        GT_GetGadgetAttrs(gadget, restore_data->window, NULL,
-                                         GTLV_Top, &current_top,
-                                         TAG_END);
+                            break;
                         
-                        append_to_log("ListView scroll button pressed (gadget=%d, top=%ld)\n", 
-                                     gadget_id, current_top);
-                        
-                        /* GadTools handles the scrolling automatically */
-                        /* Just refresh the window to ensure proper display */
-                        GT_RefreshWindow(restore_data->window, NULL);
+                        case GID_RESTORE_CANCEL_BUTTON:
+                            log_debug(LOG_GUI, "Cancel button clicked\n");
+                            continue_running = FALSE;
+                            break;
                     }
-                }
-                break;
-            
-            case IDCMP_MOUSEBUTTONS:
-                /* Clicks are fully handled by iTidy_HandleListViewGadgetUp() */
-                break;
+                    break;
+            }
         }
-    }
     
     return continue_running;
 }

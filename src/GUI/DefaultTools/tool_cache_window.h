@@ -1,7 +1,10 @@
 /*
  * tool_cache_window.h - iTidy Tool Cache Window Header
  * Displays default tool validation cache with filtering options
- * GadTools-based window for Workbench 2.0+
+ * ReAction-based window for Workbench 3.2+
+ * 
+ * Migrated from GadTools to ReAction following REACTION_MIGRATION_GUIDE.md
+ * Uses ListBrowser gadgets for tool list and details display.
  */
 
 #ifndef ITIDY_TOOL_CACHE_WINDOW_H
@@ -11,38 +14,47 @@
 #include <exec/lists.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
-#include <libraries/gadtools.h>
+#include <intuition/classusr.h>
 
 /*------------------------------------------------------------------------*/
-/* Gadget IDs                                                             */
+/* Gadget IDs (ReAction uses these via GA_ID)                            */
 /*------------------------------------------------------------------------*/
-#define GID_TOOL_FOLDER_PATH    4000
-#define GID_TOOL_BROWSE         4011
-#define GID_TOOL_LIST           4001
-#define GID_TOOL_FILTER_CYCLE   4002
-#define GID_TOOL_REBUILD_CACHE  4005
-#define GID_TOOL_CACHE_CLOSE    4006
-#define GID_TOOL_REPLACE_BATCH  4007
-#define GID_TOOL_REPLACE_SINGLE 4008
-#define GID_TOOL_DETAILS_LIST   4009
-#define GID_TOOL_RESTORE_DEFAULT_TOOLS 4010
-#define GID_TOOL_SCAN_BOTTOM    4012
+enum {
+    GID_TOOL_ROOT_LAYOUT = 4000,
+    GID_TOOL_FOLDER_LAYOUT,
+    GID_TOOL_FOLDER_GETFILE,
+    GID_TOOL_SCAN_BUTTON,
+    GID_TOOL_FILTER_CHOOSER,
+    GID_TOOL_LIST_LISTBROWSER,
+    GID_TOOL_DETAILS_LISTBROWSER,
+    GID_TOOL_REPLACE_BATCH_BUTTON,
+    GID_TOOL_REPLACE_SINGLE_BUTTON,
+    GID_TOOL_RESTORE_TOOLS_BUTTON,
+    GID_TOOL_CLOSE_BUTTON
+};
+
+/* Legacy gadget IDs for backward compatibility */
+#define GID_TOOL_FOLDER_PATH    GID_TOOL_FOLDER_GETFILE
+#define GID_TOOL_BROWSE         GID_TOOL_FOLDER_GETFILE
+#define GID_TOOL_LIST           GID_TOOL_LIST_LISTBROWSER
+#define GID_TOOL_FILTER_CYCLE   GID_TOOL_FILTER_CHOOSER
+#define GID_TOOL_REBUILD_CACHE  GID_TOOL_SCAN_BUTTON
+#define GID_TOOL_CACHE_CLOSE    GID_TOOL_CLOSE_BUTTON
+#define GID_TOOL_REPLACE_BATCH  GID_TOOL_REPLACE_BATCH_BUTTON
+#define GID_TOOL_REPLACE_SINGLE GID_TOOL_REPLACE_SINGLE_BUTTON
+#define GID_TOOL_DETAILS_LIST   GID_TOOL_DETAILS_LISTBROWSER
+#define GID_TOOL_RESTORE_DEFAULT_TOOLS GID_TOOL_RESTORE_TOOLS_BUTTON
+#define GID_TOOL_SCAN_BOTTOM    GID_TOOL_SCAN_BUTTON
 
 /*------------------------------------------------------------------------*/
-/* Window Spacing Constants                                              */
+/* Window Constants                                                       */
 /*------------------------------------------------------------------------*/
-#define TOOL_WINDOW_SPACE_X         8       /* Horizontal spacing */
-#define TOOL_WINDOW_SPACE_Y         8       /* Vertical spacing */
-#define TOOL_WINDOW_MARGIN_LEFT     10      /* Left margin */
-#define TOOL_WINDOW_MARGIN_TOP      10      /* Top margin */
-#define TOOL_WINDOW_MARGIN_RIGHT    10      /* Right margin */
-#define TOOL_WINDOW_MARGIN_BOTTOM   10      /* Bottom margin */
-#define TOOL_WINDOW_BUTTON_PADDING  8       /* Button text padding */
+#define TOOL_WINDOW_TITLE "iTidy - Default Tool Analysis"
 
 /*------------------------------------------------------------------------*/
-/* Standard Window Width                                                 */
+/* Layout Configuration                                                   */
 /*------------------------------------------------------------------------*/
-#define TOOL_WINDOW_WIDTH_CHARS     70      /* Width in characters */
+#define TOOL_NAME_COLUMN_WIDTH  40  /* Maximum characters for tool name column */
 
 /*------------------------------------------------------------------------*/
 /* Filter Types                                                           */
@@ -55,49 +67,54 @@ typedef enum {
 
 /*------------------------------------------------------------------------*/
 /* Tool Cache Display Entry                                              */
+/* This structure is used for internal tracking and cache lookup         */
 /*------------------------------------------------------------------------*/
 struct ToolCacheDisplayEntry
 {
     struct Node node;               /* For linking in tool_entries list */
     struct Node filter_node;        /* For linking in filtered_entries list */
     char *tool_name;                /* Tool name */
-    char *display_text;             /* Formatted display text for listview */
+    char *display_text;             /* Formatted display text (legacy) */
     BOOL exists;                    /* TRUE if tool exists */
     int hit_count;                  /* Number of cache hits (deprecated - use file_count) */
     int file_count;                 /* Number of files using this tool */
     char *full_path;                /* Full path or "(not found)" */
     char *version;                  /* Version string or "(no version)" */
+    int cache_index;                /* Index into g_ToolCache array */
 };
 
 /*------------------------------------------------------------------------*/
-/* Tool Cache Window Data Structure                                      */
+/* Tool Cache Window Data Structure (ReAction)                           */
 /*------------------------------------------------------------------------*/
 struct iTidyToolCacheWindow
 {
+    /* Screen and window */
     struct Screen *screen;              /* Workbench screen */
-    struct Window *window;              /* Tool cache window */
-    APTR visual_info;                   /* GadTools visual info */
-    struct Gadget *glist;               /* Gadget list */
-    struct TextFont *system_font;       /* System default font (if opened) */
-    struct TextAttr system_font_attr;   /* Font attributes (must persist) */
+    struct Window *window;              /* Window pointer (from RA_OpenWindow) */
+    Object *window_obj;                 /* ReAction window object */
     BOOL window_open;                   /* Window state flag */
     
-    /* Gadget pointers */
-    struct Gadget *folder_label;        /* Folder label */
-    struct Gadget *folder_path;         /* Folder path string gadget */
-    struct Gadget *browse_btn;          /* Browse button */
-    struct Gadget *tool_list;           /* ListView showing tools */
-    struct Gadget *details_listview;    /* ListView showing file details */
-    struct Gadget *filter_cycle;        /* Filter cycle gadget */
-    struct Gadget *scan_btn;            /* Scan button (folder row) */
-    struct Gadget *close_btn;           /* Close button */
-    struct Gadget *replace_batch_btn;   /* Replace Tool (Batch) button */
-    struct Gadget *replace_single_btn;  /* Replace Tool (Single) button */
-    struct Gadget *restore_default_tools_btn; /* Restore Default Tools button */
+    /* ReAction gadget objects */
+    Object *folder_getfile_obj;         /* GetFile gadget for folder selection */
+    Object *scan_btn_obj;               /* Scan button */
+    Object *filter_chooser_obj;         /* Filter chooser (dropdown) */
+    Object *tool_listbrowser_obj;       /* ListBrowser for tool list */
+    Object *details_listbrowser_obj;    /* ListBrowser for file details */
+    Object *replace_batch_btn_obj;      /* Replace Tool (Batch) button */
+    Object *replace_single_btn_obj;     /* Replace Tool (Single) button */
+    Object *restore_tools_btn_obj;      /* Restore Default Tools button */
+    Object *close_btn_obj;              /* Close button */
     
-    /* Data */
+    /* ListBrowser node lists */
+    struct List *tool_list_nodes;       /* ListBrowser nodes for tool list */
+    struct List *details_list_nodes;    /* ListBrowser nodes for details */
+    
+    /* Chooser labels list */
+    struct List *filter_labels;         /* Chooser labels for filter dropdown */
+    
+    /* Data structures */
     struct List tool_entries;           /* List of ToolCacheDisplayEntry nodes */
-    struct List filtered_entries;       /* Filtered list for display */
+    struct List filtered_entries;       /* Filtered list for internal tracking */
     ToolFilterType current_filter;      /* Current filter mode */
     ULONG total_count;                  /* Total tools */
     ULONG valid_count;                  /* Tools found */
@@ -105,16 +122,39 @@ struct iTidyToolCacheWindow
     char summary_text[80];              /* Summary bar text */
     char window_title[80];              /* Window title (must persist) */
     
-    /* Details panel data (for selected tool) */
+    /* Selection tracking */
     LONG selected_index;                /* Currently selected index (-1 = none) */
     LONG selected_details_index;        /* Selected index in details panel (-1 = none) */
-    struct List details_list;           /* List for details panel */
+    struct List details_list;           /* Legacy list for details (internal) */
     
-    /* Folder path for Rebuild Cache operation */
+    /* Sorting tracking */
+    ULONG last_sort_column;             /* Last sorted column */
+    ULONG sort_direction;               /* Current sort direction (LBMSORT_FORWARD or LBMSORT_REVERSE) */
+    
+    /* Folder path */
     char folder_path_buffer[256];       /* Current folder path */
     char last_save_path[512];           /* Last saved file path for Save menu */
     
-    /* Folder path display box coordinates (for custom drawing) */
+    /* Legacy compatibility - unused but kept for struct size compatibility */
+    APTR visual_info;                   /* Unused in ReAction version */
+    struct Gadget *glist;               /* Unused in ReAction version */
+    struct TextFont *system_font;       /* Unused in ReAction version */
+    struct TextAttr system_font_attr;   /* Unused in ReAction version */
+    
+    /* Legacy gadget pointers - mapped to obj pointers */
+    struct Gadget *folder_label;        /* Unused - ReAction uses labels */
+    struct Gadget *folder_path;         /* Maps to folder_getfile_obj */
+    struct Gadget *browse_btn;          /* Maps to folder_getfile_obj */
+    struct Gadget *tool_list;           /* Maps to tool_listbrowser_obj */
+    struct Gadget *details_listview;    /* Maps to details_listbrowser_obj */
+    struct Gadget *filter_cycle;        /* Maps to filter_chooser_obj */
+    struct Gadget *scan_btn;            /* Maps to scan_btn_obj */
+    struct Gadget *close_btn;           /* Maps to close_btn_obj */
+    struct Gadget *replace_batch_btn;   /* Maps to replace_batch_btn_obj */
+    struct Gadget *replace_single_btn;  /* Maps to replace_single_btn_obj */
+    struct Gadget *restore_default_tools_btn; /* Maps to restore_tools_btn_obj */
+    
+    /* Legacy folder box coords - unused in ReAction (auto-layout) */
     WORD folder_box_left;
     WORD folder_box_top;
     WORD folder_box_width;
@@ -128,8 +168,8 @@ struct iTidyToolCacheWindow
 /**
  * @brief Open the Tool Cache Window
  * 
- * Opens a window showing the default tool validation cache with statistics
- * and filtering options. Reads data from the global g_ToolCache.
+ * Opens a ReAction window showing the default tool validation cache with 
+ * statistics and filtering options. Reads data from the global g_ToolCache.
  * 
  * @param tool_data Pointer to tool cache window data structure
  * @return BOOL TRUE if successful, FALSE otherwise
@@ -155,7 +195,7 @@ BOOL handle_tool_cache_window_events(struct iTidyToolCacheWindow *tool_data);
  * @brief Build display list from global tool cache
  * 
  * Reads from extern g_ToolCache, g_ToolCacheCount and builds formatted
- * display entries for the listview.
+ * display entries for the listbrowser.
  * 
  * @param tool_data Pointer to tool cache window data
  * @return BOOL TRUE if successful, FALSE on error
@@ -174,7 +214,7 @@ void apply_tool_filter(struct iTidyToolCacheWindow *tool_data);
 /**
  * @brief Update details panel for selected tool
  * 
- * Updates the details listview with information about the currently
+ * Updates the details listbrowser with information about the currently
  * selected tool entry.
  * 
  * @param tool_data Pointer to tool cache window data

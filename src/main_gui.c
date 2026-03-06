@@ -62,12 +62,19 @@
 #include "icon_misc.h"
 #include "dos/getDiskDetails.h"
 #include "Settings/get_fonts.h"
-#include "cli_utilities.h"
 #include "file_directory_handling.h"
+#include "layout_preferences.h"
 #include "GUI/main_window.h"
+#include "deficons/deficons_parser.h"
 
 /* VBCC: Set stack size to 80KB at compile time */
 long __stack = 80000L;
+
+/* VBCC -lauto: open a console window when launched from Workbench in CONSOLE builds.
+ * Without this, printf() output has nowhere to go when double-clicking the icon. */
+#ifdef ENABLE_CONSOLE
+char __stdiowin[] = "CON:0/0/640/300/iTidy Debug Console/CLOSE/AUTO";
+#endif
 
 /* Define global variables */
 struct Screen *screen = NULL;
@@ -97,6 +104,11 @@ int count_icon_corrupted = 0;
 BOOL user_folderViewMode;
 BOOL user_folderFlags;
 BOOL user_stripIconPosition;
+
+/* DefIcons type tree cache (parsed once at startup, accessible globally) */
+DeficonTypeTreeNode *g_cached_deficons_tree = NULL;
+int g_cached_deficons_count = 0;
+
 BOOL user_forceStandardIcons;
 
 //#define VERSION_STRING "$VER: iTidy 2.0 (20.10.2025)"
@@ -113,114 +125,63 @@ extern struct WBStartup *_WBenchMsg;
 /*---------------------------------------------------------------------------*/
 
 /**
- * @brief Check if Workbench 3.0 or later is running
- * 
- * iTidy requires Workbench 3.0 (Kickstart 3.0, v39+) minimum.
- * Earlier versions will crash due to missing GadTools features.
- * 
- * This check uses SysBase->LibNode.lib_Version which reflects the
- * Kickstart/exec.library version:
+ * @brief Check if Workbench 3.2 or later is running
+ *
+ * iTidy v2.0 requires Workbench 3.2 (exec v47+) because it uses the
+ * ReAction GUI toolkit (window.class, layout.gadget, etc.) which is
+ * only bundled with Workbench 3.2+.  Users still running an older
+ * Workbench should keep using iTidy v1.x (GadTools build).
+ *
+ * Relevant exec.library version numbers:
  *   - v37 = Kickstart 2.04 (Workbench 2.0)
- *   - v38 = Kickstart 2.1 (Workbench 2.1)
- *   - v39 = Kickstart 3.0 (Workbench 3.0)
- *   - v40 = Kickstart 3.1 (Workbench 3.1)
- * 
- * @return 1 if OK to run (v39+), 0 if version too old (should quit)
+ *   - v39 = Kickstart 3.0  (Workbench 3.0)
+ *   - v40 = Kickstart 3.1  (Workbench 3.1)
+ *   - v47 = Workbench 3.2  (first ReAction-bundled release)
+ *
+ * AutoRequest() is used for the error dialog because it is available
+ * on all Workbench versions back to 1.x, so the message is always
+ * visible regardless of what the user is running.
+ *
+ * @return 1 if OK to run (v47+), 0 if version too old (caller should quit)
  */
-static int RequireWB3OrBetter(void)
+static int RequireWB32OrBetter(void)
 {
     UWORD detected_version;
-    /* BPTR log_file; */
-    char version_msg[256];
-    
+
     /* Get the exec.library version */
     detected_version = SysBase->LibNode.lib_Version;
-    
-    /* NOTE: Diagnostic log file creation disabled - no longer needed for WB 3.0+ only target */
-    /*
-    log_file = Open((STRPTR)"PROGDIR:version_check.log", MODE_NEWFILE);
-    if (log_file)
+
+    /* Exec v47 == Workbench 3.2 (first version bundling ReAction) */
+    if (detected_version >= 47)
     {
-        sprintf(version_msg, "iTidy Version Check\n");
-        Write(log_file, version_msg, strlen(version_msg));
-        sprintf(version_msg, "===================\n");
-        Write(log_file, version_msg, strlen(version_msg));
-        sprintf(version_msg, "SysBase->LibNode.lib_Version = %u\n", detected_version);
-        Write(log_file, version_msg, strlen(version_msg));
-        sprintf(version_msg, "Required: 39 (Kickstart/WB 3.0) or higher\n");
-        Write(log_file, version_msg, strlen(version_msg));
-        
-        if (detected_version >= 39)
-        {
-            sprintf(version_msg, "Result: OK - Version check passed\n");
-            Write(log_file, version_msg, strlen(version_msg));
-        }
-        else
-        {
-            sprintf(version_msg, "Result: FAILED - Version too old\n");
-            Write(log_file, version_msg, strlen(version_msg));
-            sprintf(version_msg, "Displaying error alert and exiting...\n");
-            Write(log_file, version_msg, strlen(version_msg));
-        }
-        
-        Close(log_file);
-    }
-    */
-    
-    /* Exec v39 == Kickstart 3.0 (Workbench 3.0 era) */
-    if (detected_version >= 39)
-    {
-        /* Version OK - write to console and continue */
-        sprintf(version_msg, "[Version Check] SysBase version %u - OK\n", detected_version);
-        PutStr(version_msg);
         return 1;
     }
 
-    /* Version too old - display error */
-    sprintf(version_msg, "[Version Check] SysBase version %u - TOO OLD (need 39+)\n", detected_version);
-    PutStr(version_msg);
-    
-    /* Display error alert using AutoRequest (compatible with WB1.x+) */
+    /* Version too old - use DisplayAlert() which works at a system level
+       even when no console or Intuition screen is available, so users who
+       double-click from an older Workbench always see the message.
+       Available since OS 1.1. */
     {
-        struct IntuiText body_text;
-        struct IntuiText pos_text;
-        
-        /* Initialize body text (keep it simple - single line) */
-        body_text.FrontPen = 1;
-        body_text.BackPen = 0;
-        body_text.DrawMode = JAM1;
-        body_text.LeftEdge = 10;
-        body_text.TopEdge = 10;
-        body_text.ITextFont = NULL;
-        body_text.IText = (UBYTE *)"iTidy requires Workbench 3.0 or later";
-        body_text.NextText = NULL;
-        
-        /* Initialize positive button text */
-        pos_text.FrontPen = 1;
-        pos_text.BackPen = 0;
-        pos_text.DrawMode = JAM1;
-        pos_text.LeftEdge = 6;
-        pos_text.TopEdge = 3;
-        pos_text.ITextFont = NULL;
-        pos_text.IText = (UBYTE *)"Exit";
-        pos_text.NextText = NULL;
-        
-        /* Try to show requester */
-        AutoRequest(NULL, &body_text, &pos_text, NULL, 0, 0, 300, 60);
-        
-        /* Always echo to Shell (primary output for older systems) */
-        PutStr("\n");
-        PutStr("===============================================\n");
-        PutStr("  iTidy - Version Check Error\n");
-        PutStr("===============================================\n");
-        PutStr("\n");
-        PutStr("iTidy requires Workbench 3.0 or later.\n");
-        PutStr("You appear to be running an older version.\n");
-        PutStr("\n");
-        PutStr("If you need a WB2/WB1 build, please contact:\n");
-        PutStr("GitHub: Kwezza/iTidy\n");
-        PutStr("\n");
+        UBYTE alert_msg[] = {
+            0, 0, 20, 20,
+            'i','T','i','d','y',' ','v','2',
+            ' ','r','e','q','u','i','r','e','s',
+            ' ','W','o','r','k','b','e','n','c','h',
+            ' ','3','.','2',' ','o','r',' ','l','a','t','e','r','.',
+            0,
+            0, 0, 20, 34,
+            'F','o','r',' ','W','B',' ','3','.','0','/','3','.','1',
+            ' ','u','s','e',' ','i','T','i','d','y',' ','v','1','.',
+            0,
+            0   /* end of alert string */
+        };
+
+        DisplayAlert(RECOVERY_ALERT, alert_msg, 50);
     }
+
+    /* Also write to Shell output in case launched from CLI */
+    PutStr("iTidy v2 requires Workbench 3.2 or later.\n");
+    PutStr("For WB 3.0/3.1 use iTidy v1. See: github.com/Kwezza/iTidy\n");
 
     return 0;
 }
@@ -235,14 +196,22 @@ static int RequireWB3OrBetter(void)
  * This structure stores all tooltype values extracted from the program's
  * icon when launched from Workbench. Values are parsed once at startup.
  */
-typedef struct {
+typedef struct ToolTypeSettings_tag {
     BOOL tooltypes_loaded;      /* TRUE if tooltypes were successfully parsed */
     UWORD debug_level;          /* DEBUGLEVEL=n (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR) */
     BOOL debug_level_set;       /* TRUE if DEBUGLEVEL was found in tooltypes */
+    
+    /* LOADPREFS tooltype support */
+    char loadprefs_path[256];   /* Path from LOADPREFS=... */
+    BOOL loadprefs_set;         /* TRUE if LOADPREFS was found in tooltypes */
+
+    /* PERFLOG tooltype support */
+    BOOL performance_log;       /* PERFLOG=YES/NO - enable performance timing logs */
+    BOOL performance_log_set;   /* TRUE if PERFLOG was found in tooltypes */
 } ToolTypeSettings;
 
-/* Global tooltype settings (initialized at startup) */
-static ToolTypeSettings g_tooltypes = { FALSE, 3, FALSE }; /* Default: ERROR level */
+/* Global tooltype settings (initialized at startup) - exported for use by main_window.c */
+ToolTypeSettings g_tooltypes = { FALSE, 4, FALSE, "", FALSE, FALSE, FALSE }; /* Default: DISABLED level, no LOADPREFS, no PERFLOG */
 
 /**
  * @brief Case-insensitive string comparison (snake_case naming)
@@ -280,7 +249,7 @@ static int stricmp_n(const char *str1, const char *str2, int len)
  * Called once at program startup if launched from Workbench.
  * 
  * Supported tooltypes:
- *   DEBUGLEVEL=n  - Set log level (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR)
+ *   DEBUGLEVEL=n  - Set log level (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR, 4=DISABLED)
  * 
  * @param wb_startup Pointer to WBStartup message (NULL if launched from CLI)
  */
@@ -297,8 +266,10 @@ static void parse_program_tooltypes(struct WBStartup *wb_startup)
     
     /* Reset to defaults */
     g_tooltypes.tooltypes_loaded = FALSE;
-    g_tooltypes.debug_level = 3;        /* Default: ERROR (changed from INFO) */
+    g_tooltypes.debug_level = 4;        /* Default: DISABLED (recommended) */
     g_tooltypes.debug_level_set = FALSE;
+    g_tooltypes.performance_log = FALSE;
+    g_tooltypes.performance_log_set = FALSE;
     
     /* If not launched from Workbench, nothing to parse */
     if (wb_startup == NULL)
@@ -351,8 +322,8 @@ static void parse_program_tooltypes(struct WBStartup *wb_startup)
                 {
                     CONSOLE_DEBUG("DEBUG: Found DEBUGLEVEL tooltype: %s\n", tool_value);
                     value = atoi(tool_value);
-                    /* Validate range 0-3 */
-                    if (value >= 0 && value <= 3)
+                    /* Validate range 0-4 (0=DEBUG, 1=INFO, 2=WARN, 3=ERROR, 4=DISABLED) */
+                    if (value >= 0 && value <= 4)
                     {
                         g_tooltypes.debug_level = (UWORD)value;
                         g_tooltypes.debug_level_set = TRUE;
@@ -361,7 +332,7 @@ static void parse_program_tooltypes(struct WBStartup *wb_startup)
                     }
                     else
                     {
-                        CONSOLE_WARNING("WARNING: DEBUGLEVEL=%d out of range (0-3)\n", value);
+                        CONSOLE_WARNING("WARNING: DEBUGLEVEL=%d out of range (0-4)\n", value);
                     }
                 }
                 else
@@ -369,12 +340,60 @@ static void parse_program_tooltypes(struct WBStartup *wb_startup)
                     CONSOLE_DEBUG("DEBUG: No DEBUGLEVEL tooltype found\n");
                 }
                 
-                /* Future tooltypes can be added here */
-                /* Example:
-                 * tool_value = FindToolType(tool_types, "OPTION");
-                 * if (tool_value != NULL) { ... }
-                 */
+                /* Parse LOADPREFS tooltype */
+                tool_value = (STRPTR)FindToolType(tool_types, (STRPTR)"LOADPREFS");
+                if (tool_value != NULL)
+                {
+                    /* Strip leading/trailing whitespace and copy path */
+                    const char *start = tool_value;
+                    const char *end;
+                    
+                    /* Skip leading whitespace */
+                    while (*start && (*start == ' ' || *start == '\t'))
+                        start++;
+                    
+                    /* Find end of string (before trailing whitespace) */
+                    end = start + strlen(start) - 1;
+                    while (end > start && (*end == ' ' || *end == '\t'))
+                        end--;
+                    
+                    /* Copy trimmed path */
+                    size_t len = (size_t)(end - start + 1);
+                    if (len > 0 && len < sizeof(g_tooltypes.loadprefs_path))
+                    {
+                        strncpy(g_tooltypes.loadprefs_path, start, len);
+                        g_tooltypes.loadprefs_path[len] = '\0';
+                        g_tooltypes.loadprefs_set = TRUE;
+                        CONSOLE_DEBUG("DEBUG: LOADPREFS tooltype found: %s\n", g_tooltypes.loadprefs_path);
+                    }
+                }
+                else
+                {
+                    CONSOLE_DEBUG("DEBUG: No LOADPREFS tooltype found\n");
+                }
                 
+                /* Parse PERFLOG=YES/NO */
+                tool_value = (STRPTR)FindToolType(tool_types, (STRPTR)"PERFLOG");
+                if (tool_value != NULL)
+                {
+                    if (MatchToolValue(tool_value, (STRPTR)"YES"))
+                    {
+                        g_tooltypes.performance_log = TRUE;
+                        g_tooltypes.performance_log_set = TRUE;
+                        CONSOLE_DEBUG("DEBUG: PERFLOG=YES found\n");
+                    }
+                    else if (MatchToolValue(tool_value, (STRPTR)"NO"))
+                    {
+                        g_tooltypes.performance_log = FALSE;
+                        g_tooltypes.performance_log_set = TRUE;
+                        CONSOLE_DEBUG("DEBUG: PERFLOG=NO found\n");
+                    }
+                }
+                else
+                {
+                    CONSOLE_DEBUG("DEBUG: No PERFLOG tooltype found\n");
+                }
+
                 g_tooltypes.tooltypes_loaded = TRUE;
                 CONSOLE_DEBUG("DEBUG: ToolTypes loaded successfully\n");
                 /* Logging will report tooltype status after system is initialized */
@@ -597,10 +616,14 @@ void FreeIconErrorList(IconErrorTrackerStruct *tracker)
 
 int main(int argc, char **argv)
 {
-    /* CRITICAL: Check Workbench version FIRST (before any initialization) */
-    if (!RequireWB3OrBetter())
+    /* CRITICAL: Check Workbench version FIRST (before any initialization).
+     * iTidy v2 uses ReAction (window.class, layout.gadget, etc.) which
+     * requires Workbench 3.2+.  If the user is still on WB 3.0/3.1 they
+     * should use iTidy v1 instead - show a clear message before anything
+     * else attempts to open libraries that may not exist on their system. */
+    if (!RequireWB32OrBetter())
     {
-        /* Version check failed - alert displayed, exit cleanly */
+        /* Version check failed - alert already displayed, exit cleanly */
         return RETURN_FAIL;
     }
 
@@ -698,21 +721,24 @@ int main(int argc, char **argv)
     }
     else
     {
-        /* Set default log level (ERROR - least verbose, no tooltype found) */
-        set_global_log_level(LOG_LEVEL_ERROR);
-        /* Don't log anything here - we're at ERROR level, these would be filtered anyway */
+        /* Set default log level (DISABLED - no logging, no tooltype found) */
+        set_global_log_level(LOG_LEVEL_DISABLED);
+        /* Don't log anything here - we're at DISABLED level, these would be filtered anyway */
     }
     
-    /* Disable memory logging by default (can be enabled via Beta Options) */
-    set_memory_logging_enabled(FALSE);
+    /* Disable memory logging by default (controlled by DEBUG_MEMORY_TRACKING build flag in platform.h) */
     
-    /* Disable performance logging by default (can be enabled via Beta Options) */
-    set_performance_logging_enabled(FALSE);
+    /* Apply PERFLOG tooltype (default: disabled) */
+    set_performance_logging_enabled(g_tooltypes.performance_log_set ? g_tooltypes.performance_log : FALSE);
+    
+    /* Dump Workbench screen palette for diagnostic purposes */
+    DumpWorkbenchScreenPalette();
     
     /* Initialize memory tracking if enabled */
     whd_memory_init();
     
     log_info(LOG_GENERAL, "=== iTidy GUI version starting up (VBCC build) ===\n");
+    log_info(LOG_GENERAL, "iTidy v" ITIDY_VERSION " built " __DATE__ " " __TIME__ " (" ITIDY_BUILD_TARGET ")\n");
 
 #ifdef DEBUG
     log_debug(LOG_GENERAL, "iTidy GUI V%s - Amiga Workbench Icon Tidier\n", VERSION);
@@ -725,13 +751,13 @@ int main(int argc, char **argv)
     whd_free(stringWBVersion);
 #endif
 
-    /* KEEP: Secondary version check (primary WB3.0+ check is at startup) */
-    /* This check is now redundant (RequireWB3OrBetter() already enforced v39+) */
-    /* but kept for belt-and-suspenders safety in case GetWorkbenchVersion() differs */
-    if (workbenchVersion < 39000)
+    /* Secondary version check - belt-and-suspenders in case GetWorkbenchVersion()
+     * uses a different source than SysBase->LibNode.lib_Version.
+     * v47000 == Workbench 3.2 in the GetWorkbenchVersion() encoding. */
+    if (workbenchVersion < 47000)
     {
-        CONSOLE_ERROR("This program requires Workbench 3.0 or higher.\n");
-        log_error(LOG_GENERAL, "Workbench version check failed: %d (requires 39000+)\n", workbenchVersion);
+        CONSOLE_ERROR("This program requires Workbench 3.2 or higher.\n");
+        log_error(LOG_GENERAL, "Workbench version check failed: %d (requires 47000+ for WB 3.2)\n", workbenchVersion);
         return RETURN_FAIL;
     }
 
@@ -768,11 +794,112 @@ int main(int argc, char **argv)
     log_debug(LOG_GENERAL, "Workbench screen width %d, height %d\n", screenWidth, screenHight);
 #endif
 
-    /* GUI MIGRATION: Open the GUI window */
-    CONSOLE_STATUS("Opening iTidy GUI window...\n");
-    if (!open_itidy_main_window(&gui_window))
+    /* Initialize global preferences with default values */
+    CONSOLE_STATUS("Initializing preferences with defaults...\n");
+    InitializeGlobalPreferences();
+    
+    /* CRITICAL: Apply tooltype debug level to preferences AFTER initialization
+     * InitializeGlobalPreferences() resets logLevel to DEFAULT_LOG_LEVEL,
+     * so we must update the preference structure to preserve the tooltype setting.
+     * This ensures layout_processor.c respects the user's tooltype choice. */
+    if (g_tooltypes.debug_level_set)
     {
-        CONSOLE_ERROR("Failed to open GUI window\n");
+        LayoutPreferences *prefs = (LayoutPreferences *)GetGlobalPreferences();
+        ((LayoutPreferences *)prefs)->logLevel = g_tooltypes.debug_level;
+        log_info(LOG_GENERAL, "ToolType DEBUGLEVEL=%u applied to preferences\n", (unsigned int)g_tooltypes.debug_level);
+    }
+
+    /* Initialize DefIcons cache (non-fatal if fails) */
+    CONSOLE_STATUS("Loading DefIcons type tree cache...\n");
+    if (parse_deficons_prefs(&g_cached_deficons_tree, &g_cached_deficons_count))
+    {
+        log_info(LOG_GUI, "DefIcons cache loaded successfully: %d types\n", g_cached_deficons_count);
+        CONSOLE_STATUS("DefIcons cache loaded: %d types\n", g_cached_deficons_count);
+        
+#ifdef DEBUG_DEFICONS_TREE_DUMP
+        /* Dump DefIcons tree structure for debugging (disabled by default to avoid log flooding) */
+        {
+            int i, j;
+            int root_count = 0;
+            int child_count = 0;
+            int grandchild_count = 0;
+            
+            log_debug(LOG_GUI, "\n=== DefIcons Type Tree Structure ===\n");
+            
+            /* Count nodes by generation */
+            for (i = 0; i < g_cached_deficons_count; i++)
+            {
+                if (g_cached_deficons_tree[i].generation == 1)
+                    root_count++;
+                else if (g_cached_deficons_tree[i].generation == 2)
+                    child_count++;
+                else if (g_cached_deficons_tree[i].generation == 3)
+                    grandchild_count++;
+            }
+            
+            log_debug(LOG_GUI, "Total types: %d (Roots: %d, Children: %d, Grandchildren: %d)\n",
+                     g_cached_deficons_count, root_count, child_count, grandchild_count);
+            log_debug(LOG_GUI, "\n");
+            
+            /* Dump hierarchical tree */
+            for (i = 0; i < g_cached_deficons_count; i++)
+            {
+                DeficonTypeTreeNode *node = &g_cached_deficons_tree[i];
+                
+                /* Print indentation based on generation */
+                for (j = 0; j < node->generation; j++)
+                {
+                    log_debug(LOG_GUI, "  ");
+                }
+                
+                /* Print node info */
+                if (node->has_children)
+                {
+                    log_debug(LOG_GUI, "%s%s (gen=%d, has_children=YES, parent_idx=%d)\n",
+                             (node->generation == 1) ? "▼ " : "├─ ",
+                             node->type_name,
+                             node->generation,
+                             node->parent_index);
+                }
+                else
+                {
+                    log_debug(LOG_GUI, "%s%s (gen=%d, parent_idx=%d)\n",
+                             (node->generation == 1) ? "• " : "└─ ",
+                             node->type_name,
+                             node->generation,
+                             node->parent_index);
+                }
+            }
+            
+            log_debug(LOG_GUI, "\n=== End DefIcons Tree ===\n\n");
+            
+            /* Sample query: Find parent of a known type */
+            if (g_cached_deficons_count > 0)
+            {
+                const char *sample_type = "mod";  /* Music module type */
+                const char *parent = get_parent_type_name(g_cached_deficons_tree, 
+                                                          g_cached_deficons_count, 
+                                                          sample_type);
+                if (parent)
+                {
+                    log_debug(LOG_GUI, "Sample query: Parent of '%s' is '%s'\n", sample_type, parent);
+                }
+            }
+        }
+#endif
+    }
+    else
+    {
+        log_warning(LOG_GUI, "DefIcons not available (ENV:Sys/deficons.prefs not found)\n");
+        CONSOLE_STATUS("DefIcons not available (requires Workbench 3.2+)\n");
+    }
+
+    /* Initialize ReAction libraries (required for Workbench 3.2+ GUI) */
+    CONSOLE_STATUS("Initializing ReAction libraries...\n");
+    if (!init_reaction_libs())
+    {
+        CONSOLE_ERROR("Failed to initialize ReAction libraries\n");
+        CONSOLE_ERROR("iTidy requires Workbench 3.2 or later with ReAction classes\n");
         /* Cleanup and exit */
         CleanupWindow();
         disposeTimer();
@@ -785,7 +912,32 @@ int main(int argc, char **argv)
         return RETURN_FAIL;
     }
 
+    /* GUI MIGRATION: Open the GUI window */
+    CONSOLE_STATUS("Opening iTidy GUI window...\n");
+    if (!open_itidy_main_window(&gui_window))
+    {
+        CONSOLE_ERROR("Failed to open GUI window\n");
+        /* Cleanup and exit */
+        cleanup_reaction_libs();
+        CleanupWindow();
+        disposeTimer();
+        FreeIconErrorList(&iconsErrorTracker);
+        if (fontPrefs)
+        {
+            FreeVec(fontPrefs);
+            fontPrefs = NULL;
+        }
+        return RETURN_FAIL;
+    }
+
     CONSOLE_STATUS("GUI window opened successfully.\n");
+    
+    /* Check for LOADPREFS tooltype and auto-load preferences if specified */
+    if (g_tooltypes.loadprefs_set && g_tooltypes.loadprefs_path[0] != '\0')
+    {
+        handle_tooltype_loadprefs(&gui_window);
+    }
+    
     CONSOLE_STATUS("Click the close gadget to exit.\n\n");
     
     /* Log CPU and memory information now that logging is fully initialized */
@@ -808,6 +960,20 @@ int main(int argc, char **argv)
     /* GUI MIGRATION: Close the GUI window */
     CONSOLE_STATUS("\nClosing GUI window...\n");
     close_itidy_main_window(&gui_window);
+
+    /* Cleanup ReAction libraries */
+    CONSOLE_STATUS("Cleaning up ReAction libraries...\n");
+    cleanup_reaction_libs();
+
+    /* Cleanup DefIcons cache */
+    CONSOLE_STATUS("Cleaning up DefIcons cache...\n");
+    if (g_cached_deficons_tree)
+    {
+        log_debug(LOG_GUI, "Freeing DefIcons cache (%d types)\n", g_cached_deficons_count);
+        free_deficons_type_tree(g_cached_deficons_tree);
+        g_cached_deficons_tree = NULL;
+        g_cached_deficons_count = 0;
+    }
 
     /* KEEP: Cleanup window system */
 #ifdef DEBUG

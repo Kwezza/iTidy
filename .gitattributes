@@ -1,0 +1,13 @@
+# Default: treat as text and keep LF
+* text=auto eol=lf
+
+# Be explicit for your Amiga text/config formats
+*.txt  text eol=lf
+*.guide text eol=lf
+*.rebuild text eol=lf
+*.reb  text eol=lf
+
+# Anything that must be byte-perfect, mark as binary
+*.info binary
+*.iff  binary
+*.lha  binary

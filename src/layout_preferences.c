@@ -8,7 +8,9 @@
  */
 
 #include <string.h>
+#include <stdio.h>
 #include "layout_preferences.h"
+#include "deficons/deficons_parser.h"
 
 /*========================================================================*/
 /* Global Preferences Singleton                                          */
@@ -22,7 +24,13 @@
  */
 static LayoutPreferences g_AppPreferences;
 
-/*========================================================================*/
+/**
+ * @brief Global exclude paths singleton — separate from LayoutPreferences
+ * to avoid the 9KB copy overhead on every settings window open.
+ */
+static DefIconsExcludePaths g_ExcludePaths;
+
+/*======================================================================*/
 /**
  * @brief Initialize preferences to default values (Classic preset)
  * 
@@ -38,7 +46,7 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     memset(prefs, 0, sizeof(LayoutPreferences));
     
     /* Folder and Scanning Settings */
-    prefs->folder_path[0] = '\0';       /* Empty path initially */
+    strcpy(prefs->folder_path, "SYS:");       /* Empty path initially */
     prefs->recursive_subdirs = FALSE;
     
     /* Layout Settings */
@@ -52,6 +60,10 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     prefs->centerIconsInColumn = DEFAULT_CENTER_ICONS;
     prefs->useColumnWidthOptimization = DEFAULT_OPTIMIZE_COLUMNS;
     prefs->textAlignment = DEFAULT_TEXT_ALIGNMENT;
+    
+    /* Block Grouping Settings */
+    prefs->blockGroupMode = BLOCK_GROUP_NONE;
+    prefs->blockGapSize = BLOCK_GAP_MEDIUM;
     
     /* Window Management */
     prefs->resizeWindows = DEFAULT_RESIZE_WINDOWS;
@@ -79,14 +91,19 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     /* Advanced Settings */
     prefs->skipHiddenFolders = DEFAULT_SKIP_HIDDEN_FOLDERS;
     
-    /* Beta/Experimental Features */
-    prefs->beta_openFoldersAfterProcessing = DEFAULT_BETA_OPEN_FOLDERS_AFTER_PROCESSING;
-    prefs->beta_FindWindowOnWorkbenchAndUpdate = DEFAULT_BETA_FIND_WINDOW_ON_WORKBENCH_AND_UPDATE;
+    /* DefIcons Icon Creation Settings */
+    prefs->enable_deficons_icon_creation = DEFAULT_ENABLE_DEFICONS_ICON_CREATION;
+    strcpy(prefs->deficons_disabled_types, DEFAULT_DEFICONS_DISABLED_TYPES);
+    prefs->deficons_folder_icon_mode = DEFAULT_DEFICONS_FOLDER_ICON_MODE;
+    prefs->deficons_skip_system_assigns = DEFAULT_DEFICONS_SKIP_SYSTEM_ASSIGNS;
+
+    prefs->deficons_icon_size_mode = DEFAULT_DEFICONS_ICON_SIZE_MODE;
+    prefs->deficons_thumbnail_border_mode = DEFAULT_DEFICONS_THUMBNAIL_BORDER_MODE;
+    prefs->deficons_enable_text_previews = DEFAULT_DEFICONS_ENABLE_TEXT_PREVIEWS;
+    prefs->deficons_enable_picture_previews = DEFAULT_DEFICONS_ENABLE_PICTURE_PREVIEWS;
     
     /* Logging and Debug Settings */
     prefs->logLevel = DEFAULT_LOG_LEVEL;
-    prefs->memoryLoggingEnabled = DEFAULT_MEMORY_LOGGING_ENABLED;
-    prefs->enable_performance_logging = DEFAULT_PERFORMANCE_LOGGING_ENABLED;
     
     /* Default Tool Validation Settings */
     prefs->validate_default_tools = DEFAULT_VALIDATE_DEFAULT_TOOLS;
@@ -99,6 +116,26 @@ void InitLayoutPreferences(LayoutPreferences *prefs)
     prefs->backupPrefs.useLha = TRUE;
     strcpy(prefs->backupPrefs.backupRootPath, "PROGDIR:Backups");
     prefs->backupPrefs.maxBackupsPerFolder = 3;
+    
+    /* DefIcons Palette Reduction Settings (v2 fields - must be last) */
+    prefs->deficons_max_icon_colors = DEFAULT_DEFICONS_MAX_ICON_COLORS;
+    prefs->deficons_dither_method = DEFAULT_DEFICONS_DITHER_METHOD;
+    prefs->deficons_lowcolor_mapping = DEFAULT_DEFICONS_LOWCOLOR_MAPPING;
+    prefs->deficons_ultra_mode = DEFAULT_DEFICONS_ULTRA_MODE;
+    prefs->deficons_harmonised_palette = DEFAULT_DEFICONS_HARMONISED_PALETTE;
+
+    /* Per-format picture thumbnail enable bitmask (v3 fields - must be last) */
+    prefs->deficons_picture_formats_enabled = DEFAULT_DEFICONS_PICTURE_FORMATS_ENABLED;
+
+    /* Upscaling control (v3 fields) */
+    prefs->deficons_upscale_thumbnails = DEFAULT_DEFICONS_UPSCALE_THUMBNAILS;
+
+    /* WHDLoad Integration (v4 fields) */
+    prefs->deficons_skip_whdload_folders = DEFAULT_DEFICONS_SKIP_WHDLOAD_FOLDERS;
+
+    /* Replace-iTidy-icons options (v5 fields) */
+    prefs->deficons_replace_itidy_thumbnails    = DEFAULT_DEFICONS_REPLACE_ITIDY_THUMBNAILS;
+    prefs->deficons_replace_itidy_text_previews = DEFAULT_DEFICONS_REPLACE_ITIDY_TEXT_PREVIEWS;
 }
 
 /*========================================================================*/
@@ -252,6 +289,7 @@ void MapGuiToPreferences(LayoutPreferences *prefs,
 void InitializeGlobalPreferences(void)
 {
     InitLayoutPreferences(&g_AppPreferences);
+    reset_deficons_exclude_paths_to_defaults(&g_ExcludePaths);
 }
 
 /*========================================================================*/
@@ -276,14 +314,6 @@ const LayoutPreferences* GetGlobalPreferences(void)
 /*========================================================================*/
 /**
  * @brief Update global preferences with new values
- * 
- * Updates the global preference singleton with values from the provided
- * LayoutPreferences structure. Typically called from GUI event handlers
- * when the user clicks "Apply" or "OK".
- * 
- * @param newPrefs Pointer to LayoutPreferences with new values
- * 
- * @note If newPrefs is NULL, this function does nothing
  */
 /*========================================================================*/
 void UpdateGlobalPreferences(const LayoutPreferences *newPrefs)
@@ -291,8 +321,29 @@ void UpdateGlobalPreferences(const LayoutPreferences *newPrefs)
     if (newPrefs == NULL)
         return;
     
-    /* Copy entire structure */
     memcpy(&g_AppPreferences, newPrefs, sizeof(LayoutPreferences));
+}
+
+/*========================================================================*/
+/**
+ * @brief Get read-write pointer to global exclude paths singleton
+ */
+/*========================================================================*/
+DefIconsExcludePaths *GetGlobalExcludePaths(void)
+{
+    return &g_ExcludePaths;
+}
+
+/*========================================================================*/
+/**
+ * @brief Replace global exclude paths with new values
+ */
+/*========================================================================*/
+void UpdateGlobalExcludePaths(const DefIconsExcludePaths *ep)
+{
+    if (ep == NULL)
+        return;
+    memcpy(&g_ExcludePaths, ep, sizeof(DefIconsExcludePaths));
 }
 
 /*========================================================================*/
@@ -348,4 +399,407 @@ void SetGlobalSkipHiddenFolders(BOOL skip)
     g_AppPreferences.skipHiddenFolders = skip;
 }
 
+/*========================================================================*/
+/**
+ * @brief Check if a DefIcons type is enabled
+ * 
+ * Checks whether automatic icon creation is enabled for a specific
+ * DefIcons type by looking in the disabled types list.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ * @param type_name Type name to check (e.g., "tool", "music", "picture")
+ * 
+ * @return TRUE if type is enabled, FALSE if disabled
+ * 
+ * @note Returns FALSE if deficons_disabled_types contains type_name
+ * @note Returns TRUE if enable_deficons_icon_creation is FALSE (feature disabled)
+ */
+/*========================================================================*/
+BOOL is_deficon_type_enabled(const LayoutPreferences *prefs, const char *type_name)
+{
+    char *ptr;
+    char temp_buffer[256];
+    char search_token[MAX_DEFICONS_TYPE_NAME + 3];  /* ", type_name," */
+    
+    if (prefs == NULL || type_name == NULL || type_name[0] == '\0')
+        return FALSE;
+    
+    /* If feature is disabled, consider all types enabled (no filtering) */
+    if (!prefs->enable_deficons_icon_creation)
+        return TRUE;
+    
+    /* If no disabled types, all are enabled */
+    if (prefs->deficons_disabled_types[0] == '\0')
+        return TRUE;
+    
+    /* Build search token: ",type_name," to avoid partial matches */
+    /* Example: ",tool," won't match ",tooltip," */
+    sprintf(search_token, ",%s,", type_name);
+    
+    /* Build searchable string: ",type1,type2,type3," */
+    sprintf(temp_buffer, ",%s,", prefs->deficons_disabled_types);
+    
+    /* Search for token */
+    ptr = strstr(temp_buffer, search_token);
+    
+    return (ptr == NULL);  /* TRUE if NOT found in disabled list */
+}
+
+/*========================================================================*/
+/**
+ * @brief Add a type to the disabled types list
+ * 
+ * Adds a DefIcons type to the disabled list, preventing automatic
+ * icon creation for that category.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ * @param type_name Type name to disable (e.g., "tool", "font")
+ * 
+ * @return TRUE if added successfully, FALSE on error
+ * 
+ * @note Does nothing if type is already in the list
+ * @note Fails silently if list is full
+ */
+/*========================================================================*/
+BOOL add_disabled_deficon_type(LayoutPreferences *prefs, const char *type_name)
+{
+    char temp_buffer[256];
+    
+    if (prefs == NULL || type_name == NULL || type_name[0] == '\0')
+        return FALSE;
+    
+    /* Check if already in list */
+    if (!is_deficon_type_enabled(prefs, type_name))
+        return TRUE;  /* Already disabled */
+    
+    /* Add to list */
+    if (prefs->deficons_disabled_types[0] == '\0')
+    {
+        /* First entry */
+        strncpy(prefs->deficons_disabled_types, type_name, sizeof(prefs->deficons_disabled_types) - 1);
+        prefs->deficons_disabled_types[sizeof(prefs->deficons_disabled_types) - 1] = '\0';
+    }
+    else
+    {
+        /* Append with comma */
+        snprintf(temp_buffer, sizeof(temp_buffer), "%s,%s", prefs->deficons_disabled_types, type_name);
+        strncpy(prefs->deficons_disabled_types, temp_buffer, sizeof(prefs->deficons_disabled_types) - 1);
+        prefs->deficons_disabled_types[sizeof(prefs->deficons_disabled_types) - 1] = '\0';
+    }
+    
+    return TRUE;
+}
+
+/*========================================================================*/
+/**
+ * @brief Remove a type from the disabled types list
+ * 
+ * Removes a DefIcons type from the disabled list, re-enabling automatic
+ * icon creation for that category.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ * @param type_name Type name to enable (e.g., "tool", "font")
+ * 
+ * @return TRUE if removed successfully, FALSE on error
+ * 
+ * @note Does nothing if type is not in the list
+ */
+/*========================================================================*/
+BOOL remove_disabled_deficon_type(LayoutPreferences *prefs, const char *type_name)
+{
+    char temp_buffer[256];
+    char *tokens[64];
+    int token_count = 0;
+    char *token;
+    char *context = NULL;
+    int i;
+    
+    if (prefs == NULL || type_name == NULL || type_name[0] == '\0')
+        return FALSE;
+    
+    /* Check if in list */
+    if (is_deficon_type_enabled(prefs, type_name))
+        return TRUE;  /* Already enabled */
+    
+    /* Copy to temp buffer for tokenization */
+    strncpy(temp_buffer, prefs->deficons_disabled_types, sizeof(temp_buffer) - 1);
+    temp_buffer[sizeof(temp_buffer) - 1] = '\0';
+    
+    /* Tokenize by comma */
+    token = strtok(temp_buffer, ",");
+    while (token != NULL && token_count < 64)
+    {
+        /* Skip the type we want to remove */
+        if (strcmp(token, type_name) != 0)
+        {
+            tokens[token_count++] = token;
+        }
+        token = strtok(NULL, ",");
+    }
+    
+    /* Rebuild disabled types string */
+    prefs->deficons_disabled_types[0] = '\0';
+    for (i = 0; i < token_count; i++)
+    {
+        if (i > 0)
+        {
+            strncat(prefs->deficons_disabled_types, ",", sizeof(prefs->deficons_disabled_types) - strlen(prefs->deficons_disabled_types) - 1);
+        }
+        strncat(prefs->deficons_disabled_types, tokens[i], sizeof(prefs->deficons_disabled_types) - strlen(prefs->deficons_disabled_types) - 1);
+    }
+    
+    return TRUE;
+}
+
+/*========================================================================*/
+/**
+ * @brief Clear all disabled types (enable all)
+ * 
+ * Clears the disabled types list, enabling automatic icon creation
+ * for all DefIcons categories.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ */
+/*========================================================================*/
+void clear_disabled_deficon_types(LayoutPreferences *prefs)
+{
+    if (prefs == NULL)
+        return;
+    
+    prefs->deficons_disabled_types[0] = '\0';
+}
+
+/*========================================================================*/
+/**
+ * @brief Apply default disabled types after loading deficons tree
+ * 
+ * Sets the default disabled types (tool, prefs, iff, key, kickstart) based on
+ * the screenshot defaults. Silently skips any types that don't exist in the
+ * loaded deficons tree (since deficons.prefs is an external user system file).
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ * @param tree Pointer to DefIcons type tree array (DeficonTypeTreeNode*)
+ * @param count Number of nodes in tree
+ */
+/*========================================================================*/
+void apply_default_deficon_type_selections(LayoutPreferences *prefs, 
+                                           const void *tree_void, 
+                                           int count)
+{
+    const char *default_disabled_types[] = {
+        "tool",
+        "prefs",
+        "iff",
+        "key",
+        "kickstart",
+        NULL
+    };
+    int i, j;
+    const DeficonTypeTreeNode *tree = (const DeficonTypeTreeNode *)tree_void;
+    
+    if (prefs == NULL || tree == NULL || count == 0)
+        return;
+    
+    /* Clear existing disabled types first */
+    clear_disabled_deficon_types(prefs);
+    
+    /* Add each default disabled type if it exists in the tree */
+    for (i = 0; default_disabled_types[i] != NULL; i++)
+    {
+        const char *type_name = default_disabled_types[i];
+        BOOL type_exists = FALSE;
+        
+        /* Check if this type exists in the loaded tree (generation 1 only) */
+        for (j = 0; j < count; j++)
+        {
+            if (tree[j].generation == 1 && 
+                strcmp(tree[j].type_name, type_name) == 0)
+            {
+                type_exists = TRUE;
+                break;
+            }
+        }
+        
+        /* Only add to disabled list if it exists in the tree */
+        if (type_exists)
+        {
+            add_disabled_deficon_type(prefs, type_name);
+        }
+        /* Silently skip types that don't exist in user's deficons.prefs */
+    }
+}
+
+/*========================================================================*/
+/* DefIcons Exclude Paths Helper Functions                               */
+/*========================================================================*/
+
+/**
+ * @brief Default exclude paths list (system directories)
+ * 
+ * Uses DEVICE: placeholder which gets substituted with the actual
+ * volume being scanned at runtime (e.g., DEVICE:Fonts becomes SYS:Fonts
+ * when scanning SYS:, or Work:Fonts when scanning Work:).
+ */
+static const char *DEFAULT_EXCLUDE_PATHS[] = {
+    "DEVICE:Fonts",
+    "DEVICE:Locale",
+    "DEVICE:Classes",
+    "DEVICE:Libs",
+    "DEVICE:C",
+    "DEVICE:Rexxc",
+    "DEVICE:T",
+    "DEVICE:L",
+    "DEVICE:Devs",
+    "DEVICE:Resources",
+    "DEVICE:System",
+    "DEVICE:Storage",
+    "DEVICE:Expansion",
+    "DEVICE:Kickstart",
+    "DEVICE:Env",
+    "DEVICE:Envarc",
+    "DEVICE:Prefs/Env-Archive",
+    NULL
+};
+
+/*========================================================================*/
+/**
+ * @brief Reset exclude paths to default list
+ * 
+ * Resets the exclude paths array to the default list of system
+ * directories that should be skipped during icon creation.
+ * Uses DEVICE: placeholder for portability across volumes.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ */
+/*========================================================================*/
+void reset_deficons_exclude_paths_to_defaults(DefIconsExcludePaths *ep)
+{
+    int i;
+    
+    if (ep == NULL)
+        return;
+    
+    /* Clear existing paths */
+    ep->count = 0;
+    memset(ep->paths, 0, sizeof(ep->paths));
+    
+    /* Copy default paths */
+    for (i = 0; DEFAULT_EXCLUDE_PATHS[i] != NULL && i < MAX_DEFICONS_EXCLUDE_PATHS; i++)
+    {
+        strncpy(ep->paths[i], DEFAULT_EXCLUDE_PATHS[i], DEFICONS_EXCLUDE_PATH_LENGTH - 1);
+        ep->paths[i][DEFICONS_EXCLUDE_PATH_LENGTH - 1] = '\0';
+        ep->count++;
+    }
+}
+
+/*========================================================================*/
+/**
+ * @brief Add a path to the exclude list
+ * 
+ * Adds a directory path to the exclude list. Paths can use the
+ * DEVICE: placeholder for portability (e.g., "DEVICE:Fonts").
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ * @param path Path to add (absolute or DEVICE: pattern)
+ * 
+ * @return TRUE if added successfully, FALSE if list is full or duplicate
+ */
+/*========================================================================*/
+BOOL add_deficons_exclude_path(DefIconsExcludePaths *ep, const char *path)
+{
+    int i;
+    
+    if (ep == NULL || path == NULL || path[0] == '\0')
+        return FALSE;
+    
+    /* Check if list is full */
+    if (ep->count >= MAX_DEFICONS_EXCLUDE_PATHS)
+        return FALSE;
+    
+    /* Check for duplicates (case-insensitive) */
+    for (i = 0; i < ep->count; i++)
+    {
+        if (Stricmp(ep->paths[i], path) == 0)
+            return FALSE;  /* Already exists */
+    }
+    
+    /* Add new path */
+    strncpy(ep->paths[ep->count], path, DEFICONS_EXCLUDE_PATH_LENGTH - 1);
+    ep->paths[ep->count][DEFICONS_EXCLUDE_PATH_LENGTH - 1] = '\0';
+    ep->count++;
+    
+    return TRUE;
+}
+
+/*========================================================================*/
+/**
+ * @brief Remove a path from the exclude list
+ * 
+ * Removes a path at the specified index from the exclude list.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ * @param index Index of path to remove (0-based)
+ * 
+ * @return TRUE if removed successfully, FALSE if index invalid
+ */
+/*========================================================================*/
+BOOL remove_deficons_exclude_path(DefIconsExcludePaths *ep, int index)
+{
+    int i;
+    
+    if (ep == NULL || index < 0 || index >= (int)ep->count)
+        return FALSE;
+    
+    /* Shift remaining entries down */
+    for (i = index; i < (int)ep->count - 1; i++)
+    {
+        strncpy(ep->paths[i], ep->paths[i + 1], DEFICONS_EXCLUDE_PATH_LENGTH);
+    }
+    
+    /* Clear last entry */
+    memset(ep->paths[ep->count - 1], 0, DEFICONS_EXCLUDE_PATH_LENGTH);
+    ep->count--;
+    
+    return TRUE;
+}
+
+/*========================================================================*/
+/**
+ * @brief Modify an existing exclude path
+ * 
+ * Replaces the path at the specified index with a new value.
+ * 
+ * @param prefs Pointer to LayoutPreferences structure
+ * @param index Index of path to modify (0-based)
+ * @param new_path New path value
+ * 
+ * @return TRUE if modified successfully, FALSE if index invalid
+ */
+/*========================================================================*/
+BOOL modify_deficons_exclude_path(DefIconsExcludePaths *ep, int index, const char *new_path)
+{
+    int i;
+    
+    if (ep == NULL || new_path == NULL || new_path[0] == '\0')
+        return FALSE;
+    
+    if (index < 0 || index >= (int)ep->count)
+        return FALSE;
+    
+    /* Check for duplicates with other entries (case-insensitive) */
+    for (i = 0; i < (int)ep->count; i++)
+    {
+        if (i != index && Stricmp(ep->paths[i], new_path) == 0)
+            return FALSE;  /* Duplicate found */
+    }
+    
+    /* Update path */
+    strncpy(ep->paths[index], new_path, DEFICONS_EXCLUDE_PATH_LENGTH - 1);
+    ep->paths[index][DEFICONS_EXCLUDE_PATH_LENGTH - 1] = '\0';
+    
+    return TRUE;
+}
+
+
 /* End of layout_preferences.c */
+

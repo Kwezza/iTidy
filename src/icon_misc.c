@@ -70,7 +70,7 @@ void loadLeftOutIcons(const char *file_path) {
     }
 
     append_to_log("========================================\n");
-    append_to_log("Loading 'left out' icons for device: %s\n", device_name);
+    log_info(LOG_GENERAL, "Loading 'left out' icons for device: %s\n", device_name);
     append_to_log("Looking for .backdrop file: %s\n", backdrop_path);
     
     /* Open the .backdrop file */
@@ -133,7 +133,7 @@ void loadLeftOutIcons(const char *file_path) {
 
     Close(file);
     
-    append_to_log("  --> Total left-out icons loaded: %d\n", i);
+    log_info(LOG_GENERAL, "  --> Total left-out icons loaded: %d\n", i);
     append_to_log("========================================\n");
 }
 
@@ -147,7 +147,7 @@ int isIconLeftOut(const char *icon_path) {
             break;
         }
         if (strcmp(left_out_icons[i], icon_path) == 0) {
-            append_to_log("*** PROTECTED: Icon '%s' is left out on desktop - SKIPPING ***\n", icon_path);
+            log_info(LOG_GENERAL, "*** PROTECTED: Icon '%s' is left out on desktop - SKIPPING ***\n", icon_path);
             return TRUE;  /* Icon found in the list */
         }
     }

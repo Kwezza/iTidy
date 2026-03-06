@@ -1,7 +1,8 @@
 /*
  * restore_window.h - iTidy Restore Window Header
- * GadTools-based Backup Restore GUI for Workbench 2.0+
- * Pure Intuition + GadTools (No MUI, No ReAction)
+ * ReAction GUI for Workbench 3.2+
+ * 
+ * Migrated from GadTools to ReAction.
  */
 
 #ifndef ITIDY_RESTORE_WINDOW_H
@@ -11,34 +12,7 @@
 #include <exec/lists.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
-#include <libraries/gadtools.h>
-
-/* Include listview simple columns API */
-#include "helpers/listview_simple_columns.h"
-
-/*------------------------------------------------------------------------*/
-/* Gadget IDs                                                             */
-/*------------------------------------------------------------------------*/
-#define GID_RESTORE_RUN_LIST        2003
-#define GID_RESTORE_DETAILS         2004
-#define GID_RESTORE_WINDOW_GEOM_CHK 2005
-#define GID_RESTORE_RUN_BTN         2006
-#define GID_RESTORE_VIEW_FOLDERS    2007
-#define GID_RESTORE_DELETE_RUN      2008
-#define GID_RESTORE_CANCEL          2009
-
-/*------------------------------------------------------------------------*/
-/* Window Spacing Constants                                              */
-/*------------------------------------------------------------------------*/
-#define RESTORE_SPACE_X         10      /* Horizontal spacing */
-#define RESTORE_SPACE_Y         8       /* Vertical spacing */
-#define RESTORE_MARGIN_LEFT     4      /* Left margin */
-#define RESTORE_MARGIN_TOP      4      /* Top margin (added to currentWindowBarHeight) */
-#define RESTORE_MARGIN_RIGHT    10      /* Right margin */
-#define RESTORE_MARGIN_BOTTOM   10      /* Bottom margin */
-#define RESTORE_BEVEL_BORDER    4       /* Checkerboard border around bevel */
-#define RESTORE_CONTENT_PADDING 8       /* Padding inside bevel for content */
-#define RESTORE_BUTTON_SPACING  0       /* Space between bevel and buttons */
+#include <intuition/classusr.h>
 
 /*------------------------------------------------------------------------*/
 /* Status Codes                                                           */
@@ -67,34 +41,35 @@ struct RestoreRunEntry
     char statusStr[16];                 /* "Complete" text */
     char fullPath[256];                 /* Full path to run directory */
     BOOL hasCatalog;                    /* TRUE if catalog.txt exists */
+    ULONG iconsCreated;                 /* Number of .info files DefIcons created during run */
 };
 
 /*------------------------------------------------------------------------*/
-/* Main Restore Window Data Structure                                    */
+/* Main Restore Window Data Structure (ReAction)                         */
 /*------------------------------------------------------------------------*/
 struct iTidyRestoreWindow
 {
     struct Screen *screen;              /* Workbench screen */
-    struct Window *window;              /* Restore window */
-    APTR visual_info;                   /* GadTools visual info */
-    struct Gadget *glist;               /* Gadget list */
-    struct TextFont *system_font;       /* System default font (if opened) */
+    struct Window *window;              /* Intuition window */
+    Object *window_obj;                 /* ReAction window object */
     BOOL window_open;                   /* Window state flag */
     
-    /* Gadget pointers */
-    struct Gadget *run_list;
-    struct Gadget *details_listview;   /* Read-only details display */
-    struct Gadget *window_geom_chk;    /* Checkbox: restore window geometry */
-    struct Gadget *restore_run_btn;
-    struct Gadget *view_folders_btn;
-    struct Gadget *delete_run_btn;
-    struct Gadget *cancel_btn;
+    /* ReAction gadget objects */
+    Object *gadgets[16];                /* Gadget object array */
+    Object *run_listbrowser_obj;        /* Run list ListBrowser */
+    Object *details_listbrowser_obj;    /* Details ListBrowser */
+    Object *restore_run_btn;            /* Restore Run button */
+    Object *view_folders_btn;           /* View Folders button */
+    Object *delete_run_btn;             /* Delete Run button */
+    Object *cancel_btn;                 /* Cancel button */
+    
+    /* ListBrowser data lists */
+    struct List *run_list_nodes;        /* ListBrowser nodes for run list */
+    struct List *details_list_nodes;    /* ListBrowser nodes for details */
     
     /* Current state */
     char backup_root_path[256];         /* Current backup location */
     struct RestoreRunEntry *run_entries; /* Array of runs */
-    struct List *run_list_strings;      /* Formatted display list for run ListView */
-    struct List *details_list_strings;  /* List for details ListView */
     ULONG run_count;                    /* Number of runs found */
     LONG selected_run_index;            /* Currently selected (-1 if none) */
     BOOL restore_window_geometry;       /* TRUE to restore window positions (default TRUE) */

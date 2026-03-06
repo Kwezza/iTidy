@@ -1,7 +1,6 @@
 /*
  * main_window.h - iTidy Main Window Header
- * GadTools-based GUI for Workbench 3.0+
- * No MUI - Pure Intuition + GadTools
+ * ReAction GUI for Workbench 3.2+
  */
 
 #ifndef ITIDY_MAIN_WINDOW_H
@@ -10,81 +9,86 @@
 #include <exec/types.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
+#include <intuition/classusr.h>
 #include <libraries/gadtools.h>
 
+/* ReAction gadget ID definitions */
+#include "main_window_reaction.h"
+
 /*------------------------------------------------------------------------*/
-/* Gadget IDs                                                             */
+/* ReAction Library Bases (extern declarations)                           */
+/* Actual variables are defined in main_window.c                          */
 /*------------------------------------------------------------------------*/
-#define GID_FOLDER_PATH      1
-#define GID_BROWSE           2
-#define GID_ORDER            6
-#define GID_SORTBY           7
-#define GID_RECURSIVE        10
-#define GID_BACKUP           11
-#define GID_ADVANCED         14
-#define GID_APPLY            15
-#define GID_CANCEL           16
-#define GID_RESTORE          17
-#define GID_VIEW_TOOL_CACHE  18
-#define GID_WINDOW_POSITION  21
-#define GID_WINDOW_POSITION_HELP 22
+
+extern struct Library *WindowBase;
+extern struct Library *LayoutBase;
+extern struct Library *ButtonBase;
+extern struct Library *CheckBoxBase;
+extern struct Library *ChooserBase;
+extern struct Library *GetFileBase;
+extern struct Library *LabelBase;
 
 /*------------------------------------------------------------------------*/
 /* Main Window Data Structure                                            */
 /*------------------------------------------------------------------------*/
+
 struct iTidyMainWindow
 {
+    /* Screen and window handles */
     struct Screen *screen;              /* Workbench screen */
-    struct Window *window;              /* Main window */
-    APTR visual_info;                   /* GadTools visual info */
-    struct Gadget *glist;               /* Gadget list */
+    struct Window *window;              /* Intuition window (from RA_OpenWindow) */
+    Object *window_obj;                 /* ReAction window object */
+    APTR visual_info;                   /* GadTools visual info (for menus) */
+    struct MsgPort *app_port;           /* Application message port */
     BOOL window_open;                   /* Window state flag */
     
-    /* Gadget pointers for easy access */
-    struct Gadget *folder_label;
-    struct Gadget *folder_path;
-    struct Gadget *browse_btn;
-    struct Gadget *order_cycle;
-    struct Gadget *sortby_cycle;
-    struct Gadget *recursive_check;
-    struct Gadget *backup_check;
-    struct Gadget *advanced_btn;
-    struct Gadget *restore_btn;
-    struct Gadget *apply_btn;
-    struct Gadget *cancel_btn;
-    struct Gadget *view_tool_cache_btn;
-    struct Gadget *window_position_label;
-    struct Gadget *window_position_cycle;
-    struct Gadget *window_position_help_btn;
+    /* Gadget array (ReAction style) */
+    struct Gadget *gadgets[MAIN_WINDOW_GAD_COUNT];
     
-    /* Temporary GUI state (for gadget selections only) */
-    WORD order_selected;
-    WORD sortby_selected;
-    BOOL recursive_subdirs;
-    BOOL enable_backup;
-    WORD window_position_selected;
+    /* Chooser label lists (must be freed on cleanup) */
+    struct List *order_labels;          /* Order chooser labels */
+    struct List *sortby_labels;         /* Sort by chooser labels */
+    struct List *position_labels;       /* Window position chooser labels */
     
-    /* Temporary folder path buffer (for string gadget only) */
+    /* Menu system */
+    struct Menu *menu_strip;            /* GadTools menu strip */
+    
+    /* GUI state (selections from gadgets) */
+    WORD order_selected;                /* Order chooser selection */
+    WORD sortby_selected;               /* Sort by chooser selection */
+    BOOL recursive_subdirs;             /* Cleanup subfolders checkbox */
+    BOOL enable_backup;                 /* Backup icons checkbox */
+    BOOL enable_deficons_icon_creation; /* Create new icons checkbox (DefIcons feature) */
+    WORD window_position_selected;      /* Window position chooser selection */
+    
+    /* Folder path buffer */
     char folder_path_buffer[256];
     
     /* Last save path (for Project menu Save/Save As) */
     char last_save_path[256];
-    
-    /* Folder path display box coordinates (for custom drawing) */
-    WORD folder_box_left;
-    WORD folder_box_top;
-    WORD folder_box_width;
-    WORD folder_box_height;
-    
-    /* Group box rectangles (for layout calculations) */
-    struct Rectangle folder_group_box;
-    struct Rectangle tidy_options_group_box;
-    struct Rectangle tools_group_box;
 };
 
 /*------------------------------------------------------------------------*/
 /* Function Prototypes                                                    */
 /*------------------------------------------------------------------------*/
+
+/**
+ * @brief Initialize ReAction libraries
+ * 
+ * Opens all ReAction class libraries needed for the GUI.
+ * Must be called before any window operations.
+ * 
+ * @return BOOL TRUE if all libraries opened successfully
+ */
+BOOL init_reaction_libs(void);
+
+/**
+ * @brief Cleanup ReAction libraries
+ * 
+ * Closes all ReAction class libraries.
+ * Must be called after all windows are closed.
+ */
+void cleanup_reaction_libs(void);
 
 /**
  * @brief Open the iTidy main window on Workbench screen
@@ -108,5 +112,16 @@ void close_itidy_main_window(struct iTidyMainWindow *win_data);
  * @return BOOL TRUE to continue, FALSE to quit
  */
 BOOL handle_itidy_window_events(struct iTidyMainWindow *win_data);
+
+/**
+ * @brief Auto-load preferences from LOADPREFS tooltype if specified
+ *
+ * This function is called after the main window opens successfully.
+ * It checks for a LOADPREFS tooltype, validates the file, loads preferences,
+ * and updates the GUI. Shows error requesters if the file is missing or invalid.
+ *
+ * @param win_data Pointer to window data structure
+ */
+void handle_tooltype_loadprefs(struct iTidyMainWindow *win_data);
 
 #endif /* ITIDY_MAIN_WINDOW_H */

@@ -9,8 +9,6 @@
 #include <platform/platform_io.h>
 #include <platform/amiga_headers.h>
 
-#include <proto/wb.h>
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -90,14 +88,23 @@
 #include "writeLog.h"
 #include "icon_misc.h"
 #include "spinner.h"
-#include "aspect_ratio_layout.h"
-#include "folder_scanner.h"
+#include "layout/aspect_ratio_layout.h"
+#include "layout/folder_scanner.h"
+#include "layout/icon_sorter.h"
+#include "layout/icon_positioner.h"
+#include "layout/block_layout.h"
+#include "layout/tool_scanner.h"
 
 /* Backup system integration */
-#include "backup_session.h"
-#include "backup_catalog.h"
+#include "backups/backup_session.h"
+#include "backups/backup_catalog.h"
 #include "path_utilities.h"
-#include "GUI/window_enumerator.h"
+
+/* DefIcons icon creation system */
+#include "deficons/deficons_identify.h"
+#include "deficons/deficons_templates.h"
+#include "deficons/deficons_filters.h"
+#include "deficons/deficons_creation.h"
 
 /* Progress window integration */
 #include "GUI/StatusWindows/main_progress_window.h"
@@ -122,18 +129,28 @@ struct iTidyMainProgressWindow *GetCurrentProgressWindow(void)
     return g_progressWindow;
 }
 
+/* Setter for progress window - allows sub-modules (tool_scanner.c) to update the
+ * active progress window stored here. Pass NULL to clear. */
+void SetCurrentProgressWindow(struct iTidyMainProgressWindow *pw)
+{
+    g_progressWindow = pw;
+}
+
 /* Global statistics tracking */
 static ULONG g_foldersProcessed = 0;
 static ULONG g_iconsProcessed = 0;
 static struct DateStamp g_startTime;
 static struct DateStamp g_endTime;
 
-/* Helper macro for dual output (console + progress window) */
+/* DefIcons icon creation statistics tracking now in deficons_creation.c */
+
+/* Helper macro for triple output (console + progress window + log file) */
 #define PROGRESS_STATUS(...) \
     do { \
         char _buf[256]; \
         snprintf(_buf, sizeof(_buf), __VA_ARGS__); \
         CONSOLE_STATUS("%s\n", _buf); \
+        log_info(LOG_GENERAL, "%s\n", _buf); \
         if (g_progressWindow) { \
             itidy_main_progress_window_append_status(g_progressWindow, _buf); \
             itidy_main_progress_window_handle_events(g_progressWindow); \
@@ -161,34 +178,16 @@ static struct DateStamp g_endTime;
         } \
     } while (0)
 
+/* Icon creation stats functions now in deficons_creation.c */
+
+/* Icon creation log functions now in deficons_creation.c */
+
 /* Forward declarations for helper functions */
-static int CompareIconsWithPreferences(const void *a, const void *b, 
-                                      const LayoutPreferences *prefs);
-static void SortIconArrayWithPreferences(IconArray *iconArray, 
-                                        const LayoutPreferences *prefs);
 static BOOL ProcessSingleDirectory(const char *path, 
-                                   const LayoutPreferences *prefs,
-                                   FolderWindowTracker *windowTracker);
+                                   const LayoutPreferences *prefs);
 static BOOL ProcessDirectoryRecursive(const char *path, 
                                      const LayoutPreferences *prefs, 
-                                     int recursion_level,
-                                     FolderWindowTracker *windowTracker);
-
-/* Forward declarations for tool scanning (Phase 1: Rebuild Cache) */
-static BOOL ScanSingleDirectoryForTools(const char *path);
-static BOOL ScanDirectoryRecursiveForTools(const char *path, int recursion_level);
-
-/* Forward declarations for column centering */
-static void CalculateLayoutPositions(IconArray *iconArray, 
-                                    const LayoutPreferences *prefs,
-                                    int targetColumns);
-static void CalculateLayoutPositionsWithColumnCentering(IconArray *iconArray, 
-                                                       const LayoutPreferences *prefs,
-                                                       int targetColumns);
-
-/* Helper functions for sorting */
-static const char* GetFileExtension(const char *filename);
-static int CompareDateStamps(const struct DateStamp *date1, const struct DateStamp *date2);
+                                     int recursion_level);
 
 /*========================================================================*/
 /* Main Processing Function                                              */
@@ -223,8 +222,6 @@ BOOL ProcessDirectoryWithPreferences(void)
     BOOL success = FALSE;
     BackupContext localContext;
     BackupPreferences backupPrefs;
-    FolderWindowTracker windowTracker;
-    BOOL trackerBuilt = FALSE;
     
     /* Get global preferences */
     prefs = GetGlobalPreferences();
@@ -244,51 +241,31 @@ BOOL ProcessDirectoryWithPreferences(void)
     /* Initialize statistics tracking and start timer FIRST */
     g_foldersProcessed = 0;
     g_iconsProcessed = 0;
+    deficons_creation_init_stats();
     
     /* Get start time */
     DateStamp(&g_startTime);
     
-    /* Apply logging preferences before processing */
+    /* Apply logging preferences before processing
+     * Note: prefs->logLevel is set from tooltype at startup in main_gui.c
+     * or from the Log mode menu selection, ensuring user choice is preserved */
     set_global_log_level((LogLevel)prefs->logLevel);
-    set_memory_logging_enabled(prefs->memoryLoggingEnabled);
-    set_performance_logging_enabled(prefs->enable_performance_logging);
+    /* Note: performance logging is controlled by PERFLOG tooltype - set at startup, not overridden here */
     
     log_info(LOG_GENERAL, "Logging preferences applied:\n");
     log_info(LOG_GENERAL, "  Log Level: %s\n",
              prefs->logLevel == 0 ? "DEBUG" :
              prefs->logLevel == 1 ? "INFO" :
              prefs->logLevel == 2 ? "WARNING" : "ERROR");
-    log_info(LOG_GENERAL, "  Memory Logging: %s\n", 
-             prefs->memoryLoggingEnabled ? "ENABLED" : "DISABLED");
-    log_info(LOG_GENERAL, "  Performance Logging: %s\n", 
-             prefs->enable_performance_logging ? "ENABLED" : "DISABLED");
+    log_info(LOG_GENERAL, "  Performance Logging: %s (PERFLOG tooltype)\n", 
+             is_performance_logging_enabled() ? "ENABLED" : "DISABLED");
     
     /* Copy and sanitize the path from preferences */
     strncpy(sanitizedPath, prefs->folder_path, sizeof(sanitizedPath) - 1);
     sanitizedPath[sizeof(sanitizedPath) - 1] = '\0';
     sanitizeAmigaPath(sanitizedPath);
     
-    /* Build window tracker if window moving is enabled (beta feature) */
-    if (prefs->beta_FindWindowOnWorkbenchAndUpdate)
-    {
-        log_info(LOG_GENERAL, "\n*** Building window tracker for open folder windows ***\n");
-        if (BuildFolderWindowList(&windowTracker))
-        {
-            trackerBuilt = TRUE;
-            log_info(LOG_GENERAL, "Window tracker built successfully: %lu window(s) tracked\n", 
-                    windowTracker.count);
-        }
-        else
-        {
-            log_warning(LOG_GENERAL, "Failed to build window tracker - window moving disabled for this run\n");
-            /* Continue without window moving - not a fatal error */
-        }
-    }
-    else
-    {
-        log_info(LOG_GENERAL, "Window moving disabled in preferences\n");
-    }
-    
+
     /* Build PATH search list for default tool validation */
     if (prefs->validate_default_tools)
     {
@@ -304,7 +281,7 @@ BOOL ProcessDirectoryWithPreferences(void)
             /* Initialize tool cache for performance */
             if (InitToolCache())
             {
-                log_info(LOG_GENERAL, "Tool cache initialized\n");
+                log_debug(LOG_GENERAL, "Tool cache initialized\n");
             }
             else
             {
@@ -322,6 +299,48 @@ BOOL ProcessDirectoryWithPreferences(void)
         log_info(LOG_GENERAL, "Default tool validation disabled in preferences\n");
         g_ValidateDefaultTools = FALSE;
     }
+    
+    /* ===================================================================== */
+    /* DUMP CURRENT PREFERENCES FOR DIAGNOSTICS                             */
+    /* ===================================================================== */
+    CONSOLE_STATUS("=== Current Preferences Settings ===");
+    log_info(LOG_GENERAL, "\n*** Current Preferences Settings ***\n");
+    log_info(LOG_GENERAL, "Target Path: %s\n", sanitizedPath);
+    CONSOLE_STATUS("Target Path: %s", sanitizedPath);
+    log_info(LOG_GENERAL, "Recursive Mode: %s\n", prefs->recursive_subdirs ? "YES" : "NO");
+    CONSOLE_STATUS("Recursive Mode: %s", prefs->recursive_subdirs ? "YES" : "NO");
+    log_info(LOG_GENERAL, "Skip Hidden Folders: %s\n", prefs->skipHiddenFolders ? "YES" : "NO");
+    log_info(LOG_GENERAL, "Sort By: %d (%s)\n", prefs->sortBy, 
+             prefs->sortBy == 0 ? "Name" : 
+             prefs->sortBy == 1 ? "Type" : 
+             prefs->sortBy == 2 ? "Date" : 
+             prefs->sortBy == 3 ? "Size" : "Unknown");
+    CONSOLE_STATUS("Sort By: %d", prefs->sortBy);
+    log_info(LOG_GENERAL, "Reverse Sort: %s\n", prefs->reverseSort ? "YES" : "NO");
+    log_info(LOG_GENERAL, "Backup Enabled: %s\n", prefs->backupPrefs.enableUndoBackup ? "YES" : "NO");
+    CONSOLE_STATUS("Backup Enabled: %s", prefs->backupPrefs.enableUndoBackup ? "YES" : "NO");
+    log_info(LOG_GENERAL, "Default Tool Validation: %s\n", prefs->validate_default_tools ? "YES" : "NO");
+    log_info(LOG_GENERAL, "\n--- DefIcons Icon Creation Settings ---\n");
+    CONSOLE_STATUS("--- DefIcons Settings ---");
+    log_info(LOG_GENERAL, "DefIcons icon creation: %s\n", prefs->enable_deficons_icon_creation ? "YES" : "NO");
+    CONSOLE_STATUS("DefIcons icon creation: %s", prefs->enable_deficons_icon_creation ? "YES" : "NO");
+    log_info(LOG_GENERAL, "Disabled Types: '%s'\n", prefs->deficons_disabled_types);
+    log_info(LOG_GENERAL, "Folder Icon Mode: %u (%s)\n", prefs->deficons_folder_icon_mode,
+             prefs->deficons_folder_icon_mode == 0 ? "Smart" :
+             prefs->deficons_folder_icon_mode == 1 ? "Always" :
+             prefs->deficons_folder_icon_mode == 2 ? "Never" : "Unknown");
+    log_info(LOG_GENERAL, "Skip System Assigns: %s\n", prefs->deficons_skip_system_assigns ? "YES" : "NO");
+    log_info(LOG_GENERAL, "Exclude Paths Count: %u\n", GetGlobalExcludePaths()->count);
+    if (GetGlobalExcludePaths()->count > 0)
+    {
+        log_info(LOG_GENERAL, "Exclude Paths List:\n");
+        for (UWORD i = 0; i < GetGlobalExcludePaths()->count; i++)
+        {
+            log_debug(LOG_GENERAL, "  [%u] %s\n", i, GetGlobalExcludePaths()->paths[i]);
+        }
+    }
+    log_info(LOG_GENERAL, "========================================\n\n");
+    CONSOLE_STATUS("===================================");
     
     /* Initialize backup session if backup is enabled */
     if (prefs->backupPrefs.enableUndoBackup)
@@ -348,7 +367,7 @@ BOOL ProcessDirectoryWithPreferences(void)
         else
         {
             CONSOLE_WARNING("Warning: Failed to start backup session - continuing without backup\n");
-            append_to_log("ERROR: Failed to start backup session\n");
+            log_error(LOG_GENERAL, "ERROR: Failed to start backup session\n");
             g_backupContext = NULL;
         }
     }
@@ -363,6 +382,88 @@ BOOL ProcessDirectoryWithPreferences(void)
     
     PROGRESS_STATUS("Processing: %s", sanitizedPath);
     PROGRESS_STATUS("Recursive: %s", prefs->recursive_subdirs ? "Yes" : "No");
+    
+    /* Phase: Icon Creation (DefIcons integration) */
+    /* This runs BEFORE icon tidying to ensure all files have icons */
+    if (prefs->enable_deficons_icon_creation)
+    {
+        iTidy_DefIconsCreationResult creation_result;
+        creation_result.icons_created = 0;
+        creation_result.has_visible_contents = FALSE;
+        
+        log_info(LOG_ICONS, "\n*** Starting DefIcons Icon Creation Phase ***\n");
+        PROGRESS_STATUS("Creating missing icons using DefIcons...");
+        
+        /* Initialize DefIcons modules */
+        if (!deficons_initialize_arexx())
+        {
+            log_error(LOG_ICONS, "Failed to initialize DefIcons ARexx - icon creation disabled\n");
+            PROGRESS_STATUS("Warning: DefIcons not available, skipping icon creation");
+        }
+        else if (!deficons_initialize_templates())
+        {
+            log_error(LOG_ICONS, "Failed to initialize DefIcons templates - icon creation disabled\n");
+            PROGRESS_STATUS("Warning: DefIcons templates not loaded, skipping icon creation");
+            deficons_cleanup_arexx();
+        }
+        else
+        {
+            /* Open created icons manifest in backup run (for restore to delete these) */
+            if (g_backupContext != NULL && g_backupContext->sessionActive)
+            {
+                if (!OpenCreatedIconsManifest(g_backupContext))
+                {
+                    log_warning(LOG_BACKUP, "Failed to open created icons manifest - restore may leave extra icons\n");
+                }
+            }
+            
+            /* Create icons recursively or single folder */
+            if (prefs->recursive_subdirs)
+            {
+                if (deficons_create_missing_icons_recursive(sanitizedPath, prefs, 0,
+                        &creation_result, g_progressWindow, g_backupContext))
+                {
+                    log_info(LOG_ICONS, "Icon creation complete: %lu icon(s) created\n", creation_result.icons_created);
+                    PROGRESS_STATUS("Created %lu icon(s) recursively", creation_result.icons_created);
+                }
+                else
+                {
+                    log_warning(LOG_ICONS, "Icon creation incomplete (errors occurred)\n");
+                    PROGRESS_STATUS("Warning: Icon creation had errors (%lu created)", creation_result.icons_created);
+                }
+            }
+            else
+            {
+                if (deficons_create_missing_icons_in_directory(sanitizedPath, prefs,
+                        &creation_result, g_progressWindow, g_backupContext, FALSE))
+                {
+                    log_info(LOG_ICONS, "Icon creation complete: %lu icon(s) created\n", creation_result.icons_created);
+                    PROGRESS_STATUS("Created %lu icon(s) in current folder", creation_result.icons_created);
+                }
+                else
+                {
+                    log_warning(LOG_ICONS, "Icon creation incomplete (errors occurred)\n");
+                    PROGRESS_STATUS("Warning: Icon creation had errors (%lu created)", creation_result.icons_created);
+                }
+            }
+            
+            /* Clear the heartbeat display after icon creation finishes */
+            if (g_progressWindow)
+            {
+                itidy_main_progress_clear_heartbeat(g_progressWindow);
+            }
+            
+            /* Cleanup DefIcons modules (templates first, then ARexx) */
+            deficons_cleanup_templates();
+            deficons_cleanup_arexx();
+        }
+        
+        /* Update progress heartbeat after icon creation */
+        if (g_progressWindow && creation_result.icons_created > 0)
+        {
+            itidy_main_progress_update_heartbeat(g_progressWindow, "Icons created", creation_result.icons_created, creation_result.icons_created);
+        }
+    }
     
     /* Pre-scan disabled - not currently used */
     /* NOTE: Pre-scan functionality exists but is disabled to improve performance.
@@ -399,26 +500,17 @@ BOOL ProcessDirectoryWithPreferences(void)
     
     if (prefs->recursive_subdirs)
     {
-        success = ProcessDirectoryRecursive(sanitizedPath, prefs, 0, 
-                                           trackerBuilt ? &windowTracker : NULL);
+        success = ProcessDirectoryRecursive(sanitizedPath, prefs, 0);
     }
     else
     {
-        success = ProcessSingleDirectory(sanitizedPath, prefs,
-                                        trackerBuilt ? &windowTracker : NULL);
+        success = ProcessSingleDirectory(sanitizedPath, prefs);
     }
     
     /* Clear heartbeat status now that processing is complete */
     if (g_progressWindow != NULL)
     {
         itidy_main_progress_clear_heartbeat(g_progressWindow);
-    }
-    
-    /* Free window tracker if it was built */
-    if (trackerBuilt)
-    {
-        log_info(LOG_GENERAL, "Freeing window tracker\n");
-        FreeFolderWindowList(&windowTracker);
     }
     
     /* Calculate elapsed time and display statistics */
@@ -451,6 +543,16 @@ BOOL ProcessDirectoryWithPreferences(void)
         PROGRESS_STATUS("  Folders processed: %lu", g_foldersProcessed);
         PROGRESS_STATUS("  Icons processed: %lu", g_iconsProcessed);
         
+        /* Display icon creation statistics if any were created */
+        {
+            ULONG total_created = deficons_creation_get_total();
+            if (total_created > 0)
+            {
+                PROGRESS_STATUS("  Icons created: %lu", total_created);
+                deficons_creation_display_stats();
+            }
+        }
+        
         /* Display default tool validation statistics if enabled */
         if (g_ValidateDefaultTools && g_ToolCache && g_ToolCacheCount > 0)
         {
@@ -479,13 +581,13 @@ BOOL ProcessDirectoryWithPreferences(void)
     /* Free PATH search list if validation was enabled */
     if (g_ValidateDefaultTools)
     {
-        log_info(LOG_GENERAL, "\n*** Tool cache summary ***\n");
+        log_debug(LOG_GENERAL, "\n*** Tool cache summary ***\n");
         DumpToolCache();  /* Show all cached tools after processing */
         
         /* Note: Tool cache is NOT freed here - it remains available for post-processing */
-        log_info(LOG_GENERAL, "Tool cache retained for post-processing\n");
+        log_debug(LOG_GENERAL, "Tool cache retained for post-processing\n");
         
-        log_info(LOG_GENERAL, "Freeing PATH search list\n");
+        log_debug(LOG_GENERAL, "Freeing PATH search list\n");
         FreePathSearchList();
         g_ValidateDefaultTools = FALSE;
     }
@@ -499,12 +601,20 @@ BOOL ProcessDirectoryWithPreferences(void)
         PROGRESS_STATUS("Backup session completed successfully");
         PROGRESS_STATUS("  Folders backed up: %u", g_backupContext->foldersBackedUp);
         PROGRESS_STATUS("  Total bytes archived: %lu", (unsigned long)g_backupContext->totalBytesArchived);
+        if (g_backupContext->iconsCreated > 0)
+        {
+            PROGRESS_STATUS("  Icons created (DefIcons): %lu", g_backupContext->iconsCreated);
+        }
         PROGRESS_STATUS("  Location: %s", g_backupContext->runDirectory);
 
         log_info(LOG_GENERAL, "\n*** Backup session completed ***\n");
         append_to_log("  Folders backed up: %u\n", g_backupContext->foldersBackedUp);
         append_to_log("  Failed backups: %u\n", g_backupContext->failedBackups);
         append_to_log("  Total bytes: %lu\n", (unsigned long)g_backupContext->totalBytesArchived);
+        if (g_backupContext->iconsCreated > 0)
+        {
+            append_to_log("  Icons created (DefIcons): %lu\n", g_backupContext->iconsCreated);
+        }
         append_to_log("  Location: %s\n", g_backupContext->runDirectory);
         
         g_backupContext = NULL;
@@ -514,923 +624,11 @@ BOOL ProcessDirectoryWithPreferences(void)
 }
 
 /*========================================================================*/
-/* Scan Directory for Default Tools Only (No Tidying)                    */
-/*========================================================================*/
-
-/**
- * @brief Scan directories for tools with progress window integration
- * 
- * Wrapper that sets the global progress window pointer before calling
- * ScanDirectoryForToolsOnly(), enabling progress updates and cancellation.
- * 
- * @param progress_window Pointer to opened progress window
- * @return TRUE if successful, FALSE on error or cancellation
- */
-BOOL ScanDirectoryForToolsOnlyWithProgress(struct iTidyMainProgressWindow *progress_window)
-{
-    BOOL result;
-    
-    if (!progress_window)
-    {
-        log_error(LOG_GENERAL, "Error: NULL progress window pointer\n");
-        return FALSE;
-    }
-    
-    /* Set global progress window pointer */
-    g_progressWindow = progress_window;
-    
-    /* Call the main scanning function */
-    result = ScanDirectoryForToolsOnly();
-    
-    /* Clear global progress window pointer */
-    g_progressWindow = NULL;
-    
-    return result;
-}
-
-/**
- * @brief Scan directories and build default tool cache without tidying icons
- * 
- * This function walks through directories and loads icons purely to validate
- * their default tools and populate the tool cache. Unlike ProcessDirectoryWithPreferences,
- * it does NOT sort, layout, resize, or save any changes to icons.
- * 
- * Uses the global preferences for path, recursive mode, and skipHiddenFolders setting.
- * 
- * @return TRUE if scan completed successfully
- */
-BOOL ScanDirectoryForToolsOnly(void)
-{
-    const LayoutPreferences *prefs;
-    char sanitizedPath[512];
-    BOOL success = FALSE;
-    
-    /* Get global preferences */
-    prefs = GetGlobalPreferences();
-    if (!prefs)
-    {
-        log_error(LOG_GENERAL, "ScanDirectoryForToolsOnly: Failed to get global preferences\n");
-        return FALSE;
-    }
-    
-    /* Validate path from preferences */
-    if (!prefs->folder_path || prefs->folder_path[0] == '\0')
-    {
-        log_error(LOG_GENERAL, "ScanDirectoryForToolsOnly: No folder path set in preferences\n");
-        return FALSE;
-    }
-    
-    /* Copy and sanitize the path from preferences */
-    strncpy(sanitizedPath, prefs->folder_path, sizeof(sanitizedPath) - 1);
-    sanitizedPath[sizeof(sanitizedPath) - 1] = '\0';
-    sanitizeAmigaPath(sanitizedPath);
-    
-    /* Check if PATH search list is already built (should be at program startup) */
-    /* If not, build it now */
-    extern char **g_PathSearchList;
-    extern int g_PathSearchCount;
-    
-    if (!g_PathSearchList || g_PathSearchCount == 0)
-    {
-        PROGRESS_STATUS("*** Building PATH search list for default tool scanning ***");
-        if (!BuildPathSearchList())
-        {
-            log_warning(LOG_GENERAL, "Failed to build PATH search list - validation may be limited\n");
-            PROGRESS_STATUS("WARNING: Failed to build PATH search list - validation may be limited");
-        }
-    }
-    else
-    {
-        PROGRESS_STATUS("*** Using PATH search list (already loaded at startup) ***");
-        log_info(LOG_GENERAL, "PATH search list already built (%d directories)\n", g_PathSearchCount);
-    }
-    
-    g_ValidateDefaultTools = TRUE;
-    PROGRESS_STATUS("Default tool validation enabled");
-    
-    /* Free existing cache and initialize fresh */
-    FreeToolCache();
-    if (!InitToolCache())
-    {
-        log_warning(LOG_GENERAL, "Failed to initialize tool cache - scan will be slower\n");
-    }
-    
-    /* Load left-out icons from the device's .backdrop file */
-    loadLeftOutIcons(sanitizedPath);
-    
-    PROGRESS_STATUS("");
-    PROGRESS_STATUS("Scanning for default tools: %s", sanitizedPath);
-    PROGRESS_STATUS("Recursive: %s", prefs->recursive_subdirs ? "Yes" : "No");
-    PROGRESS_STATUS("Mode: SCAN TOOLS ONLY (no tidying)");
-    PROGRESS_STATUS("");
-    
-    CHECK_CANCEL();
-    
-    /* Start scanning */
-    if (prefs->recursive_subdirs)
-    {
-        success = ScanDirectoryRecursiveForTools(sanitizedPath, 0);
-    }
-    else
-    {
-        success = ScanSingleDirectoryForTools(sanitizedPath);
-    }
-    
-    /* Show results */
-    PROGRESS_STATUS("");
-    PROGRESS_STATUS("*** Tool scanning complete ***");
-    DumpToolCache();
-    
-    /* Note: Tool cache remains active for viewing in Tool Cache Window */
-    PROGRESS_STATUS("Tool cache retained for viewing");
-    
-    /* Note: PATH search list is kept loaded for the entire session */
-    /* It will be freed at program exit */
-    g_ValidateDefaultTools = FALSE;
-    
-    return success;
-}
-
-/*========================================================================*/
-/* Scan Single Directory for Tools (Helper Function)                     */
-/*========================================================================*/
-static BOOL ScanSingleDirectoryForTools(const char *path)
-{
-    BPTR lock = 0;
-    IconArray *iconArray = NULL;
-    BOOL success = FALSE;
-    
-    PROGRESS_STATUS("  Scanning: %s", path);
-    CHECK_CANCEL();
-    
-    /* Lock the directory */
-    lock = Lock((STRPTR)path, ACCESS_READ);
-    if (!lock)
-    {
-        LONG error = IoErr();
-        log_error(LOG_GENERAL, "Failed to lock directory: %s (error: %ld)\n", path, error);
-        return FALSE;
-    }
-    
-    /* Create icon array - this automatically validates default tools */
-    iconArray = CreateIconArrayFromPath(lock, path);
-    
-    if (!iconArray)
-    {
-        PROGRESS_STATUS("  No icons found or error reading directory");
-        UnLock(lock);
-        return FALSE;
-    }
-    
-    PROGRESS_STATUS("  Found %lu icons (tools validated)", (unsigned long)iconArray->size);
-    success = TRUE;
-    
-    /* Clean up - we only needed the icons to validate tools */
-    FreeIconArray(iconArray);
-    UnLock(lock);
-    
-    return success;
-}
-
-/*========================================================================*/
-/* Scan Directory Recursively for Tools (Helper Function)                */
-/*========================================================================*/
-static BOOL ScanDirectoryRecursiveForTools(const char *path, int recursion_level)
-{
-    BPTR lock = 0;
-    struct FileInfoBlock *fib = NULL;
-    char subdir[512];
-    BOOL success = FALSE;
-    
-    /* Safety check for recursion depth */
-    if (recursion_level > 50)
-    {
-        log_warning(LOG_GENERAL, "Maximum recursion depth reached at: %s\n", path);
-        return FALSE;
-    }
-    
-    /* Scan this directory first */
-    if (!ScanSingleDirectoryForTools(path))
-    {
-        return FALSE; /* Stop if current directory fails */
-    }
-    
-    /* Small delay to prevent filesystem lock issues on fast systems */
-#if ENABLE_FILESYSTEM_LOCK_DELAY
-    Delay(FILESYSTEM_LOCK_DELAY_TICKS);
-#endif
-    
-    /* Now scan subdirectories */
-    lock = Lock((STRPTR)path, ACCESS_READ);
-    if (!lock)
-    {
-        return FALSE;
-    }
-    
-    fib = AllocDosObject(DOS_FIB, NULL);
-    if (!fib)
-    {
-        UnLock(lock);
-        return FALSE;
-    }
-    
-    if (Examine(lock, fib))
-    {
-        while (ExNext(lock, fib))
-        {
-            /* Only process directories, skip files */
-            if (fib->fib_DirEntryType > 0)
-            {
-                /* Build subdirectory path */
-                if (path[strlen(path) - 1] == ':')
-                {
-                    snprintf(subdir, sizeof(subdir), "%s%s", path, fib->fib_FileName);
-                }
-                else
-                {
-                    snprintf(subdir, sizeof(subdir), "%s/%s", path, fib->fib_FileName);
-                }
-                
-                /* Check for hidden folders (no .info file) */
-                {
-                    char iconPath[520];
-                    BPTR iconLock;
-                    
-                    snprintf(iconPath, sizeof(iconPath), "%s.info", subdir);
-                    iconLock = Lock((STRPTR)iconPath, ACCESS_READ);
-                    
-                    if (!iconLock)
-                    {
-                        /* Hidden folder - skip it */
-                        log_debug(LOG_GENERAL, "Skipping hidden folder: %s\n", subdir);
-                        continue;
-                    }
-                    UnLock(iconLock);
-                }
-                
-                /* Recursively scan subdirectory */
-                PROGRESS_STATUS("");
-                PROGRESS_STATUS("Entering: %s", subdir);
-                ScanDirectoryRecursiveForTools(subdir, recursion_level + 1);
-            }
-        }
-    }
-    
-    FreeDosObject(DOS_FIB, fib);
-    UnLock(lock);
-    
-    return TRUE;
-}
-
-/*========================================================================*/
-/* Calculate Icon Positions Based on Layout Preferences                  */
-/*========================================================================*/
-
-static void CalculateLayoutPositions(IconArray *iconArray, 
-                                    const LayoutPreferences *prefs,
-                                    int targetColumns)
-{
-    int i;
-    int iconSpacingX;   /* Horizontal spacing between icons */
-    int iconSpacingY;   /* Vertical spacing between icons */
-    int currentX;       /* Current X position */
-    int currentY;       /* Current Y position */
-    int maxWidth = 640; /* Default screen width */
-    int effectiveMaxWidth;
-    int rightMargin;    /* Safety margin on right edge */
-    int nextX;
-    int maxHeightInRow = 0; /* Track tallest icon in current row */
-    int rowStartY;      /* Y position where current row started */
-    int rowStartIndex = 0; /* Index of first icon in current row */
-    int adjustmentOffset;
-    int iconsInCurrentRow = 0; /* Track icons placed in current row */
-    
-    /* Use spacing from preferences */
-    iconSpacingX = prefs->iconSpacingX;
-    iconSpacingY = prefs->iconSpacingY;
-    
-    /* Starting positions use spacing as margin */
-    currentX = iconSpacingX;
-    currentY = iconSpacingY;
-    rowStartY = iconSpacingY;
-    rightMargin = iconSpacingX;
-    
-    if (!iconArray || iconArray->size == 0)
-        return;
-    
-    /* Use actual screen width if available */
-    if (screenWidth > 0)
-        maxWidth = screenWidth;
-    
-    /* Apply maxWindowWidthPct to limit the usable width */
-    if (prefs->maxWindowWidthPct > 0 && prefs->maxWindowWidthPct < 100)
-    {
-        effectiveMaxWidth = (maxWidth * prefs->maxWindowWidthPct) / 100;
-    }
-    else
-    {
-        effectiveMaxWidth = maxWidth;
-    }
-    
-#ifdef DEBUG
-    append_to_log("CalculateLayoutPositions: Positioning %d icons (targetColumns=%d)\n", 
-                  iconArray->size, targetColumns);
-    append_to_log("  screenWidth=%d, maxWindowWidthPct=%d, effectiveMaxWidth=%d\n",
-                  maxWidth, prefs->maxWindowWidthPct, effectiveMaxWidth);
-    append_to_log("  textAlignment=%s\n", 
-                  prefs->textAlignment == TEXT_ALIGN_TOP ? "TOP" :
-                  prefs->textAlignment == TEXT_ALIGN_MIDDLE ? "MIDDLE" : "BOTTOM");
-    append_to_log("%-3s | %-30s | %-4s | %-4s | %-5s | %-5s | %-6s\n", 
-                  "ID", "Icon", "NewX", "NewY", "Width", "Height", "Offset");
-    append_to_log("------------------------------------------------------------------------------------\n");
-#endif
-    
-    /* FIRST PASS: Position icons in rows, tracking row boundaries */
-    for (i = 0; i < iconArray->size; i++)
-    {
-        FullIconDetails *icon = &iconArray->array[i];
-        int iconOffset = 0;
-        BOOL shouldWrap = FALSE;
-        
-        /* Calculate where the NEXT icon would start */
-        nextX = currentX + icon->icon_max_width + iconSpacingX;
-        
-        /* Check if we should wrap based on target columns or width constraint */
-        if (targetColumns > 0)
-        {
-            /* Aspect ratio mode: wrap based on column count */
-            shouldWrap = (iconsInCurrentRow >= targetColumns);
-        }
-        else
-        {
-            /* Traditional mode: wrap based on width */
-            shouldWrap = (nextX > (effectiveMaxWidth - rightMargin));
-        }
-        
-        /* If should wrap to next row (but always place at least one icon per row) */
-        if (currentX > iconSpacingX && shouldWrap)
-        {
-            /* Before starting new row, apply vertical alignment to previous row */
-            if (maxHeightInRow > 0)
-            {
-                /* Adjust all icons in the previous row based on alignment setting */
-                for (int j = rowStartIndex; j < i; j++)
-                {
-                    FullIconDetails *rowIcon = &iconArray->array[j];
-                    
-                    /* Calculate adjustment based on alignment mode */
-                    switch (prefs->textAlignment)
-                    {
-                        case TEXT_ALIGN_TOP:
-                            /* No adjustment needed - icons already at top */
-                            adjustmentOffset = 0;
-                            break;
-                            
-                        case TEXT_ALIGN_MIDDLE:
-                            /* Center icon vertically within row height */
-                            adjustmentOffset = (maxHeightInRow - rowIcon->icon_max_height) / 2;
-                            break;
-                            
-                        case TEXT_ALIGN_BOTTOM:
-                            /* Align to bottom of row */
-                            adjustmentOffset = maxHeightInRow - rowIcon->icon_max_height;
-                            break;
-                            
-                        default:
-                            adjustmentOffset = 0;
-                            break;
-                    }
-                    
-                    if (adjustmentOffset > 0)
-                    {
-                        rowIcon->icon_y += adjustmentOffset;
-#ifdef DEBUG
-                        append_to_log("  Adjusted icon %d ('%s') down by %d pixels for %s alignment\n",
-                                      j, rowIcon->icon_text, adjustmentOffset,
-                                      prefs->textAlignment == TEXT_ALIGN_TOP ? "top" :
-                                      prefs->textAlignment == TEXT_ALIGN_MIDDLE ? "middle" : "bottom");
-#endif
-                    }
-                }
-            }
-            
-            /* Start new row - use the tallest icon from previous row */
-            currentX = iconSpacingX;
-            currentY = rowStartY + maxHeightInRow + iconSpacingY;
-            rowStartY = currentY;
-            rowStartIndex = i; /* Mark start of new row */
-            maxHeightInRow = 0; /* Reset for new row */
-            iconsInCurrentRow = 0; /* Reset column counter for new row */
-        }
-        
-        /* If text is wider than icon, center the icon within the text width */
-        if (icon->text_width > icon->icon_width)
-        {
-            iconOffset = (icon->text_width - icon->icon_width) / 2;
-        }
-        
-        /* Set position for this icon (with centering offset if needed) */
-        icon->icon_x = currentX + iconOffset;
-        icon->icon_y = currentY;
-        
-        /* Track the tallest icon in this row */
-        if (icon->icon_max_height > maxHeightInRow)
-            maxHeightInRow = icon->icon_max_height;
-
-#ifdef DEBUG
-        append_to_log("%-3d | %-30s | %-4d | %-4d | %-5d | %-5d | %-3d\n", 
-                      i, icon->icon_text, icon->icon_x, icon->icon_y, 
-                      icon->icon_max_width, icon->icon_max_height, iconOffset);
-#endif
-        
-        /* Advance X position for next icon (using max width, not offset position) */
-        currentX += icon->icon_max_width + iconSpacingX;
-        iconsInCurrentRow++; /* Count icons in current row */
-    }
-    
-    /* SECOND PASS: Adjust the last row with vertical alignment */
-    /* (This handles the final row that didn't trigger the wrap condition) */
-    if (maxHeightInRow > 0)
-    {
-#ifdef DEBUG
-        append_to_log("\nAdjusting final row (indices %d to %d) for vertical alignment\n",
-                      rowStartIndex, iconArray->size - 1);
-        append_to_log("  maxHeightInRow = %d, alignment = %s\n", maxHeightInRow,
-                      prefs->textAlignment == TEXT_ALIGN_TOP ? "top" :
-                      prefs->textAlignment == TEXT_ALIGN_MIDDLE ? "middle" : "bottom");
-#endif
-        
-        for (int j = rowStartIndex; j < iconArray->size; j++)
-        {
-            FullIconDetails *rowIcon = &iconArray->array[j];
-            
-            /* Calculate adjustment based on alignment mode */
-            switch (prefs->textAlignment)
-            {
-                case TEXT_ALIGN_TOP:
-                    /* No adjustment needed - icons already at top */
-                    adjustmentOffset = 0;
-                    break;
-                    
-                case TEXT_ALIGN_MIDDLE:
-                    /* Center icon vertically within row height */
-                    adjustmentOffset = (maxHeightInRow - rowIcon->icon_max_height) / 2;
-                    break;
-                    
-                case TEXT_ALIGN_BOTTOM:
-                    /* Align to bottom of row */
-                    adjustmentOffset = maxHeightInRow - rowIcon->icon_max_height;
-                    break;
-                    
-                default:
-                    adjustmentOffset = 0;
-                    break;
-            }
-            
-            if (adjustmentOffset > 0)
-            {
-                rowIcon->icon_y += adjustmentOffset;
-#ifdef DEBUG
-                append_to_log("  Adjusted icon %d ('%s') down by %d pixels for %s alignment\n",
-                              j, rowIcon->icon_text, adjustmentOffset,
-                              prefs->textAlignment == TEXT_ALIGN_TOP ? "top" :
-                              prefs->textAlignment == TEXT_ALIGN_MIDDLE ? "middle" : "bottom");
-#endif
-            }
-        }
-    }
-    
-#ifdef DEBUG
-    append_to_log("\nFinal icon positions:\n");
-    append_to_log("%-3s | %-30s | %-4s | %-4s\n", "ID", "Icon", "X", "Y");
-    append_to_log("--------------------------------------------\n");
-    for (i = 0; i < iconArray->size; i++)
-    {
-        append_to_log("%-3d | %-30s | %-4d | %-4d\n", 
-                      i, iconArray->array[i].icon_text,
-                      iconArray->array[i].icon_x, iconArray->array[i].icon_y);
-    }
-#endif
-}
-
-/*========================================================================*/
-/* Calculate Icon Positions With Column Centering                        */
-/*========================================================================*/
-/**
- * @brief Position icons with column-based centering
- * 
- * This function implements a two-pass algorithm for centering icons within
- * columns where each column's width is determined by its widest icon.
- * 
- * Algorithm Overview:
- * Phase 1: Statistics & Column Width Calculation
- *   - Calculate average icon width for initial column estimate
- *   - Determine how many columns can fit in window
- *   - Assign icons to columns and calculate actual max width per column
- *   - Validate that total width fits in window (adjust if needed)
- * 
- * Phase 2: Icon Positioning
- *   - Position each icon within its column
- *   - Center narrower icons within their column width
- *   - Apply text alignment adjustments
- * 
- * Performance: Maximum 2 calculation passes, efficient for 1000+ icons
- * 
- * @param iconArray Array of icons to position
- * @param prefs Layout preferences including centerIconsInColumn flag
- */
-static void CalculateLayoutPositionsWithColumnCentering(IconArray *iconArray, 
-                                                       const LayoutPreferences *prefs,
-                                                       int targetColumns)
-{
-    int i, col, row;
-    int iconSpacingX;   /* Horizontal spacing between icons */
-    int iconSpacingY;   /* Vertical spacing between icons */
-    int maxWidth = 640;
-    int effectiveMaxWidth;
-    int rightMargin;
-    int startX;
-    int startY;
-    
-    /* Use spacing from preferences */
-    iconSpacingX = prefs->iconSpacingX;
-    iconSpacingY = prefs->iconSpacingY;
-    
-    /* Starting positions use defined margins (ICON_START_X/Y) for proper window padding */
-    startX = ICON_START_X;
-    startY = ICON_START_Y;
-    rightMargin = iconSpacingX;
-    
-    /* Phase 1 variables: Statistics and column calculation */
-    int totalWidth = 0;
-    int averageWidth = 0;
-    int estimatedColumns = 0;
-    int finalColumns = targetColumns; /* Use aspect ratio calculated columns */
-    int *columnWidths = NULL;
-    int *columnXPositions = NULL;
-    int calculationAttempts = 0;
-    
-    /* Phase 2 variables: Positioning */
-    int maxHeightInRow = 0;
-    int rowStartIndex = 0;
-    int rowStartY = startY;
-    int adjustmentOffset;
-    int iconX, iconY;
-    int centerOffset;
-    
-    if (!iconArray || iconArray->size == 0)
-        return;
-    
-    /* Use actual screen width if available */
-    if (screenWidth > 0)
-        maxWidth = screenWidth;
-    
-    /* Apply maxWindowWidthPct to limit the usable width */
-    if (prefs->maxWindowWidthPct > 0 && prefs->maxWindowWidthPct < 100)
-    {
-        effectiveMaxWidth = (maxWidth * prefs->maxWindowWidthPct) / 100;
-    }
-    else
-    {
-        effectiveMaxWidth = maxWidth;
-    }
-    
-#ifdef DEBUG
-    append_to_log("CalculateLayoutPositionsWithColumnCentering: Processing %d icons\n", 
-                  iconArray->size);
-    append_to_log("  screenWidth=%d, maxWindowWidthPct=%d, effectiveMaxWidth=%d\n",
-                  maxWidth, prefs->maxWindowWidthPct, effectiveMaxWidth);
-#endif
-    
-    /*====================================================================*/
-    /* PHASE 1: STATISTICS & COLUMN WIDTH CALCULATION                    */
-    /*====================================================================*/
-    
-    /* Step 1: Calculate average icon width for initial estimate */
-    totalWidth = 0;
-    for (i = 0; i < iconArray->size; i++)
-    {
-        totalWidth += iconArray->array[i].icon_max_width;
-    }
-    averageWidth = totalWidth / iconArray->size;
-    
-#ifdef DEBUG
-    append_to_log("Phase 1: Statistics\n");
-    append_to_log("  Average icon width: %d pixels\n", averageWidth);
-    append_to_log("  Total icons: %d\n", iconArray->size);
-#endif
-    
-    /* Step 2: Estimate initial column count (or use target from aspect ratio) */
-    if (targetColumns > 0)
-    {
-        /* Use aspect ratio calculated columns */
-        estimatedColumns = targetColumns;
-        finalColumns = targetColumns;
-#ifdef DEBUG
-        append_to_log("  Using aspect ratio target columns: %d\n", targetColumns);
-#endif
-    }
-    else
-    {
-        /* Calculate columns based on width */
-        estimatedColumns = (effectiveMaxWidth - startX - rightMargin) / (averageWidth + iconSpacingX);
-        if (estimatedColumns < 1)
-            estimatedColumns = 1;
-        finalColumns = estimatedColumns;
-#ifdef DEBUG
-        append_to_log("  Initial estimated columns: %d\n", estimatedColumns);
-#endif
-    }
-    
-    /* Allocate arrays for column widths and positions */
-    columnWidths = (int *)malloc(estimatedColumns * sizeof(int));
-    columnXPositions = (int *)malloc(estimatedColumns * sizeof(int));
-    
-    if (!columnWidths || !columnXPositions)
-    {
-        /* Fallback: use standard layout if allocation fails */
-#ifdef DEBUG
-        append_to_log("ERROR: Failed to allocate column arrays, falling back to standard layout\n");
-#endif
-        if (columnWidths) free(columnWidths);
-        if (columnXPositions) free(columnXPositions);
-        CalculateLayoutPositions(iconArray, prefs, targetColumns);
-        return;
-    }
-    
-    /* Step 3 & 4: Calculate actual column widths (with potential adjustment) */
-    /* Skip adjustment loop if using targetColumns */
-    
-    do {
-        calculationAttempts++;
-        
-        /* Clear column width array */
-        for (col = 0; col < finalColumns; col++)
-        {
-            columnWidths[col] = 0;
-        }
-        
-        /* Calculate column widths based on optimization setting */
-        if (prefs->useColumnWidthOptimization)
-        {
-            /* OPTIMIZED: Calculate maximum width for each column individually */
-            for (i = 0; i < iconArray->size; i++)
-            {
-                col = i % finalColumns;
-                if (iconArray->array[i].icon_max_width > columnWidths[col])
-                {
-                    columnWidths[col] = iconArray->array[i].icon_max_width;
-                }
-            }
-            
-#ifdef DEBUG
-            append_to_log("Using optimized column widths (per-column max)\n");
-#endif
-        }
-        else
-        {
-            /* UNIFORM: Use the same width for all columns (widest icon overall) */
-            int uniformWidth = 0;
-            
-            /* Find widest icon across all icons */
-            for (i = 0; i < iconArray->size; i++)
-            {
-                if (iconArray->array[i].icon_max_width > uniformWidth)
-                {
-                    uniformWidth = iconArray->array[i].icon_max_width;
-                }
-            }
-            
-            /* Apply uniform width to all columns */
-            for (col = 0; col < finalColumns; col++)
-            {
-                columnWidths[col] = uniformWidth;
-            }
-            
-#ifdef DEBUG
-            append_to_log("Using uniform column width: %d pixels (widest icon)\n", uniformWidth);
-#endif
-        }
-        
-        /* Step 5: Validate total width */
-        totalWidth = startX;
-        for (col = 0; col < finalColumns; col++)
-        {
-            totalWidth += columnWidths[col];
-            if (col < finalColumns - 1)
-                totalWidth += iconSpacingX;
-        }
-        totalWidth += rightMargin;
-        
-#ifdef DEBUG
-        append_to_log("Attempt %d: %d columns, total width = %d (max = %d)\n",
-                      calculationAttempts, finalColumns, totalWidth, effectiveMaxWidth);
-#endif
-        
-        /* If using targetColumns, accept width even if it exceeds screen */
-        if (targetColumns > 0)
-        {
-#ifdef DEBUG
-            append_to_log("  Using aspect ratio target, accepting width\n");
-#endif
-            break;
-        }
-        
-        /* If doesn't fit and we have more than 1 column, reduce and recalculate */
-        if (totalWidth > effectiveMaxWidth && finalColumns > 1)
-        {
-            finalColumns--;
-#ifdef DEBUG
-            append_to_log("  Width exceeded, reducing to %d columns\n", finalColumns);
-#endif
-        }
-        else
-        {
-            /* Fits! Break out of loop */
-            break;
-        }
-        
-    } while (calculationAttempts < 2); /* Maximum 2 attempts */
-    
-#ifdef DEBUG
-    append_to_log("Final configuration: %d columns, total width = %d\n", 
-                  finalColumns, totalWidth);
-    append_to_log("Column widths: ");
-    for (col = 0; col < finalColumns; col++)
-    {
-        append_to_log("%d ", columnWidths[col]);
-    }
-    append_to_log("\n");
-#endif
-    
-    /* Calculate X position for start of each column */
-    columnXPositions[0] = startX;
-    for (col = 1; col < finalColumns; col++)
-    {
-        columnXPositions[col] = columnXPositions[col - 1] + columnWidths[col - 1] + iconSpacingX;
-    }
-    
-    /*====================================================================*/
-    /* PHASE 2: ICON POSITIONING WITH CENTERING                          */
-    /*====================================================================*/
-    
-#ifdef DEBUG
-    append_to_log("\nPhase 2: Icon Positioning\n");
-    append_to_log("%-3s | %-30s | Col | Row | %-4s | %-4s | Center\n", 
-                  "ID", "Icon", "X", "Y");
-    append_to_log("-------------------------------------------------------------------------\n");
-#endif
-    
-    /* Position each icon within its column */
-    for (i = 0; i < iconArray->size; i++)
-    {
-        FullIconDetails *icon = &iconArray->array[i];
-        
-        /* Determine column and row */
-        col = i % finalColumns;
-        row = i / finalColumns;
-        
-        /* Start a new row? Track row boundaries for text alignment */
-        if (col == 0 && i > 0)
-        {
-            /* Apply vertical alignment to previous row */
-            if (maxHeightInRow > 0)
-            {
-                for (int j = rowStartIndex; j < i; j++)
-                {
-                    FullIconDetails *rowIcon = &iconArray->array[j];
-                    
-                    /* Calculate adjustment based on alignment mode */
-                    switch (prefs->textAlignment)
-                    {
-                        case TEXT_ALIGN_TOP:
-                            /* No adjustment needed - icons already at top */
-                            adjustmentOffset = 0;
-                            break;
-                            
-                        case TEXT_ALIGN_MIDDLE:
-                            /* Center icon vertically within row height */
-                            adjustmentOffset = (maxHeightInRow - rowIcon->icon_max_height) / 2;
-                            break;
-                            
-                        case TEXT_ALIGN_BOTTOM:
-                            /* Align to bottom of row */
-                            adjustmentOffset = maxHeightInRow - rowIcon->icon_max_height;
-                            break;
-                            
-                        default:
-                            adjustmentOffset = 0;
-                            break;
-                    }
-                    
-                    if (adjustmentOffset > 0)
-                    {
-                        rowIcon->icon_y += adjustmentOffset;
-                    }
-                }
-            }
-            
-            /* Move to next row */
-            rowStartY += maxHeightInRow + iconSpacingY;
-            rowStartIndex = i;
-            maxHeightInRow = 0;
-        }
-        
-        /* Calculate Y position */
-        iconY = rowStartY;
-        
-        /* Calculate X position with centering within column */
-        centerOffset = (columnWidths[col] - icon->icon_max_width) / 2;
-        if (centerOffset < 0)
-            centerOffset = 0;
-        
-        iconX = columnXPositions[col] + centerOffset;
-        
-        /* Additional centering if text is wider than icon */
-        if (icon->text_width > icon->icon_width)
-        {
-            int textCenterOffset = (icon->text_width - icon->icon_width) / 2;
-            iconX += textCenterOffset;
-        }
-        
-        /* Set icon position */
-        icon->icon_x = iconX;
-        icon->icon_y = iconY;
-        
-        /* Track tallest icon in current row */
-        if (icon->icon_max_height > maxHeightInRow)
-            maxHeightInRow = icon->icon_max_height;
-        
-#ifdef DEBUG
-        append_to_log("%-3d | %-30s | %-3d | %-3d | %-4d | %-4d | %-6d\n",
-                      i, icon->icon_text, col, row, 
-                      icon->icon_x, icon->icon_y, centerOffset);
-#endif
-    }
-    
-    /* Apply vertical alignment to final row */
-    if (maxHeightInRow > 0)
-    {
-#ifdef DEBUG
-        append_to_log("\nAdjusting final row (indices %d to %d) for vertical alignment\n",
-                      rowStartIndex, iconArray->size - 1);
-        append_to_log("  maxHeightInRow = %d, alignment = %s\n", maxHeightInRow,
-                      prefs->textAlignment == TEXT_ALIGN_TOP ? "top" :
-                      prefs->textAlignment == TEXT_ALIGN_MIDDLE ? "middle" : "bottom");
-#endif
-        for (int j = rowStartIndex; j < iconArray->size; j++)
-        {
-            FullIconDetails *rowIcon = &iconArray->array[j];
-            
-            /* Calculate adjustment based on alignment mode */
-            switch (prefs->textAlignment)
-            {
-                case TEXT_ALIGN_TOP:
-                    /* No adjustment needed - icons already at top */
-                    adjustmentOffset = 0;
-                    break;
-                    
-                case TEXT_ALIGN_MIDDLE:
-                    /* Center icon vertically within row height */
-                    adjustmentOffset = (maxHeightInRow - rowIcon->icon_max_height) / 2;
-                    break;
-                    
-                case TEXT_ALIGN_BOTTOM:
-                    /* Align to bottom of row */
-                    adjustmentOffset = maxHeightInRow - rowIcon->icon_max_height;
-                    break;
-                    
-                default:
-                    adjustmentOffset = 0;
-                    break;
-            }
-            
-            if (adjustmentOffset > 0)
-            {
-                rowIcon->icon_y += adjustmentOffset;
-#ifdef DEBUG
-                append_to_log("  Adjusted icon %d down by %d pixels\n", j, adjustmentOffset);
-#endif
-            }
-        }
-    }
-    
-#ifdef DEBUG
-    append_to_log("\nColumn-centered layout complete!\n");
-#endif
-    
-    /* Cleanup */
-    free(columnWidths);
-    free(columnXPositions);
-}
-
-/*========================================================================*/
 /* Single Directory Processing                                           */
 /*========================================================================*/
 
 static BOOL ProcessSingleDirectory(const char *path, 
-                                   const LayoutPreferences *prefs,
-                                   FolderWindowTracker *windowTracker)
+                                   const LayoutPreferences *prefs)
 {
     BPTR lock = 0;
     IconArray *iconArray = NULL;
@@ -1438,7 +636,7 @@ static BOOL ProcessSingleDirectory(const char *path,
     
     /* Reset logging performance stats for this folder */
     reset_log_performance_stats();
-    
+
 #ifdef DEBUG
     append_to_log("ProcessSingleDirectory: path='%s'\n", path);
 #endif
@@ -1485,7 +683,7 @@ static BOOL ProcessSingleDirectory(const char *path,
         if (prefs->resizeWindows)
         {
             PROGRESS_STATUS("  Resizing to default empty folder size...");
-            resizeFolderToContents((char *)path, iconArray, windowTracker, prefs);
+            resizeFolderToContents((char *)path, iconArray, prefs);
         }
         
         FreeIconArray(iconArray);
@@ -1536,44 +734,67 @@ static BOOL ProcessSingleDirectory(const char *path,
     append_to_log("==== SECTION: CALCULATING LAYOUT ====\n");
 #endif
     
-    /* Calculate optimal layout based on aspect ratio and overflow preferences */
+    /* Check if block grouping mode is enabled */
+    if (prefs->blockGroupMode == BLOCK_GROUP_BY_TYPE)
     {
-        int finalColumns = 0;
-        int finalRows = 0;
+        /* Use block-based layout - group by Workbench icon type */
+        int contentWidth = 0;
+        int contentHeight = 0;
         
-        /* Use aspect ratio calculation to determine optimal columns/rows */
-        CalculateLayoutWithAspectRatio(iconArray, prefs, &finalColumns, &finalRows);
+        log_info(LOG_ICONS, "Using block layout (group by icon type)\n");
         
-#ifdef DEBUG
-        append_to_log("Aspect ratio calculation complete: %d cols × %d rows\n", 
-                      finalColumns, finalRows);
-#endif
-        
-        /* Choose layout algorithm based on centerIconsInColumn preference */
-        if (prefs->centerIconsInColumn)
+        if (!CalculateBlockLayout(iconArray, prefs, &contentWidth, &contentHeight))
         {
-#ifdef DEBUG
-            append_to_log("Using column-centered layout algorithm\n");
-#endif
-            CalculateLayoutPositionsWithColumnCentering(iconArray, prefs, finalColumns);
-        }
-        else
-        {
-#ifdef DEBUG
-            append_to_log("Using standard row-based layout algorithm\n");
-#endif
-            CalculateLayoutPositions(iconArray, prefs, finalColumns);
+            log_error(LOG_ICONS, "Block layout calculation failed - falling back to standard layout\n");
+            PROGRESS_STATUS("  Warning: Block layout failed, using standard layout");
+            goto standard_layout;
         }
         
-        /* Pump events after layout calculation to allow cancellation */
-        PUMP_AND_CHECK_CANCEL();
+        log_debug(LOG_ICONS, "Block layout calculated: %dx%d\n", contentWidth, contentHeight);
     }
+    else
+    {
+standard_layout:
+        /* Calculate optimal layout based on aspect ratio and overflow preferences */
+        {
+            int finalColumns = 0;
+            int finalRows = 0;
+            
+            /* Use aspect ratio calculation to determine optimal columns/rows */
+            CalculateLayoutWithAspectRatio(iconArray, prefs, &finalColumns, &finalRows);
+            
+#ifdef DEBUG
+            append_to_log("Aspect ratio calculation complete: %d cols × %d rows\n", 
+                          finalColumns, finalRows);
+#endif
+            PROGRESS_STATUS("  Layout: %d cols x %d rows", finalColumns, finalRows);
+            
+            /* Choose layout algorithm based on centerIconsInColumn preference */
+            if (prefs->centerIconsInColumn)
+            {
+#ifdef DEBUG
+                append_to_log("Using column-centered layout algorithm\n");
+#endif
+                CalculateLayoutPositionsWithColumnCentering(iconArray, prefs, finalColumns);
+            }
+            else
+            {
+#ifdef DEBUG
+                append_to_log("Using standard row-based layout algorithm\n");
+#endif
+                CalculateLayoutPositions(iconArray, prefs, finalColumns);
+            }
+        }
+    }
+    
+    /* Pump events after layout calculation to allow cancellation */
+    PUMP_AND_CHECK_CANCEL();
     
     /* Resize window if requested */
     if (prefs->resizeWindows)
     {
         PROGRESS_STATUS("  Resizing window...");
-        resizeFolderToContents((char *)path, iconArray, windowTracker, prefs);
+        resizeFolderToContents((char *)path, iconArray, prefs);
     }
     
     PUMP_AND_CHECK_CANCEL();
@@ -1593,39 +814,6 @@ static BOOL ProcessSingleDirectory(const char *path,
         PROGRESS_STATUS("  Failed to save icon positions");
     }
     
-    /* Experimental Feature: Auto-open folders during processing
-     * When enabled, this calls Workbench's OpenWorkbenchObjectA() to open
-     * the folder window after iTidy has tidied the icons. This allows users
-     * to see the results in real-time during recursive operations.
-     */
-    if (prefs->beta_openFoldersAfterProcessing && success)
-    {
-        BOOL openResult;
-        
-#ifdef DEBUG
-        append_to_log("Opening folder window via Workbench: %s\n", path);
-#endif
-        
-        /* OpenWorkbenchObjectA() opens a folder window via Workbench.
-         * - First parameter: Full path to the folder
-         * - Second parameter: TagList (NULL for default behavior)
-         * 
-         * Note: workbench.library is auto-opened by proto/wb.h,
-         * so we don't need to manually OpenLibrary().
-         * 
-         * Returns: TRUE if successful, FALSE otherwise
-         */
-        openResult = OpenWorkbenchObjectA((CONST_STRPTR)path, NULL);
-        
-        if (!openResult)
-        {
-#ifdef DEBUG
-            append_to_log("Warning: Failed to open folder window for: %s\n", path);
-#endif
-            /* Non-fatal error - continue processing even if window open fails */
-        }
-    }
-    
     /* Print logging performance statistics */
     print_log_performance_stats();
     
@@ -1642,8 +830,7 @@ static BOOL ProcessSingleDirectory(const char *path,
 
 static BOOL ProcessDirectoryRecursive(const char *path, 
                                      const LayoutPreferences *prefs, 
-                                     int recursion_level,
-                                     FolderWindowTracker *windowTracker)
+                                     int recursion_level)
 {
     BPTR lock = 0;
     struct FileInfoBlock *fib = NULL;
@@ -1666,7 +853,7 @@ static BOOL ProcessDirectoryRecursive(const char *path,
     }
     
     /* Process this directory first */
-    if (!ProcessSingleDirectory(path, prefs, windowTracker))
+    if (!ProcessSingleDirectory(path, prefs))
     {
         return FALSE; /* Stop if current directory fails */
     }
@@ -1708,6 +895,9 @@ static BOOL ProcessDirectoryRecursive(const char *path,
     {
         while (ExNext(lock, fib))
         {
+            /* Check for cancel between subdirectories */
+            PUMP_AND_CHECK_CANCEL();
+
             /* Only process directories, skip files */
             if (fib->fib_DirEntryType > 0)
             {
@@ -1748,7 +938,7 @@ static BOOL ProcessDirectoryRecursive(const char *path,
                     iTidy_ShortenPathWithParentDir(subdir, shortened_path, 60);
                     PROGRESS_STATUS("Entering: %s", shortened_path);
                 }
-                ProcessDirectoryRecursive(subdir, prefs, recursion_level + 1, windowTracker);
+                ProcessDirectoryRecursive(subdir, prefs, recursion_level + 1);
             }
         }
         success = TRUE;
@@ -1760,240 +950,3 @@ static BOOL ProcessDirectoryRecursive(const char *path,
     return success;
 }
 
-/*========================================================================*/
-/* Helper Functions for Sorting                                          */
-/*========================================================================*/
-
-/**
- * @brief Get file extension from filename
- * @param filename The filename to extract extension from
- * @return Pointer to extension (including dot) or empty string if none
- */
-static const char* GetFileExtension(const char *filename)
-{
-    const char *dot;
-    
-    if (!filename)
-        return "";
-    
-    dot = strrchr(filename, '.');
-    if (!dot || dot == filename)
-        return "";
-    
-    return dot;
-}
-
-/**
- * @brief Compare two DateStamp structures
- * @param date1 First date
- * @param date2 Second date
- * @return <0 if date1 < date2, 0 if equal, >0 if date1 > date2
- */
-static int CompareDateStamps(const struct DateStamp *date1, const struct DateStamp *date2)
-{
-    /* Compare days first (most significant) */
-    if (date1->ds_Days != date2->ds_Days)
-        return (date1->ds_Days > date2->ds_Days) ? 1 : -1;
-    
-    /* Days are equal, compare minutes */
-    if (date1->ds_Minute != date2->ds_Minute)
-        return (date1->ds_Minute > date2->ds_Minute) ? 1 : -1;
-    
-    /* Minutes are equal, compare ticks (1/50th second) */
-    if (date1->ds_Tick != date2->ds_Tick)
-        return (date1->ds_Tick > date2->ds_Tick) ? 1 : -1;
-    
-    /* Dates are identical */
-    return 0;
-}
-
-/*========================================================================*/
-/* Icon Sorting with Preferences                                         */
-/*========================================================================*/
-
-/* Global preference pointer for qsort comparison */
-static const LayoutPreferences *g_sort_prefs = NULL;
-
-/**
- * @brief Wrapper comparison function for qsort
- */
-static int CompareIconsWrapper(const void *a, const void *b)
-{
-    return CompareIconsWithPreferences(a, b, g_sort_prefs);
-}
-
-static void SortIconArrayWithPreferences(IconArray *iconArray, 
-                                        const LayoutPreferences *prefs)
-{
-    int i;
-    
-    if (!iconArray || iconArray->size <= 1 || !prefs)
-    {
-        return;
-    }
-    
-#ifdef DEBUG
-    append_to_log("Sorting %d icons with preferences\n", iconArray->size);
-    append_to_log("  Sort by: %d, Priority: %d, Reverse: %d\n",
-                  prefs->sortBy, prefs->sortPriority, prefs->reverseSort);
-#endif
-    
-    /* Set global preference pointer for qsort */
-    g_sort_prefs = prefs;
-    
-    /* Sort using preference-aware comparison */
-    qsort(iconArray->array, iconArray->size, sizeof(FullIconDetails), 
-          CompareIconsWrapper);
-    
-    /* Clear global pointer */
-    g_sort_prefs = NULL;
-
-#ifdef DEBUG
-    append_to_log("After sorting, icon order:\n");
-    append_to_log("%-3s | %-30s | %-6s\n", "ID", "Icon", "IsDir");
-    append_to_log("--------------------------------------------\n");
-    for (i = 0; i < iconArray->size; i++)
-    {
-        append_to_log("%-3d | %-30s | %-6s\n", 
-                      i, 
-                      iconArray->array[i].icon_text,
-                      iconArray->array[i].is_folder ? "Folder" : "File");
-    }
-#endif
-}
-
-/*========================================================================*/
-/* Preference-Aware Icon Comparison                                      */
-/*========================================================================*/
-
-static int CompareIconsWithPreferences(const void *a, const void *b, 
-                                      const LayoutPreferences *prefs)
-{
-    const FullIconDetails *iconA = (const FullIconDetails *)a;
-    const FullIconDetails *iconB = (const FullIconDetails *)b;
-    int result = 0;
-    const char *extA, *extB;
-    size_t lenA, lenB, maxLen;
-    
-    if (!prefs)
-        return 0;
-    
-    /* Apply folder/file priority first (unless MIXED) */
-    if (prefs->sortPriority == SORT_PRIORITY_FOLDERS_FIRST)
-    {
-        if (iconA->is_folder && !iconB->is_folder) return -1;
-        if (!iconA->is_folder && iconB->is_folder) return 1;
-    }
-    else if (prefs->sortPriority == SORT_PRIORITY_FILES_FIRST)
-    {
-        if (iconA->is_folder && !iconB->is_folder) return 1;
-        if (!iconA->is_folder && iconB->is_folder) return -1;
-    }
-    /* SORT_PRIORITY_MIXED: No folder/file separation */
-    
-    /* Apply primary sort criteria */
-    switch (prefs->sortBy)
-    {
-        case SORT_BY_NAME:
-            /* Sort alphabetically by name */
-            lenA = strlen(iconA->icon_text);
-            lenB = strlen(iconB->icon_text);
-            maxLen = (lenA > lenB) ? lenA : lenB;
-            result = strncasecmp_custom(iconA->icon_text, iconB->icon_text, maxLen);
-            break;
-            
-        case SORT_BY_TYPE:
-            /* Sort by file extension (type) */
-            extA = GetFileExtension(iconA->icon_text);
-            extB = GetFileExtension(iconB->icon_text);
-            
-            /* Compare extensions */
-            lenA = strlen(extA);
-            lenB = strlen(extB);
-            maxLen = (lenA > lenB) ? lenA : lenB;
-            
-            if (lenA == 0 && lenB == 0)
-            {
-                /* Both have no extension, sort by name */
-                lenA = strlen(iconA->icon_text);
-                lenB = strlen(iconB->icon_text);
-                maxLen = (lenA > lenB) ? lenA : lenB;
-                result = strncasecmp_custom(iconA->icon_text, iconB->icon_text, maxLen);
-            }
-            else if (lenA == 0)
-            {
-                /* A has no extension, put it first */
-                result = -1;
-            }
-            else if (lenB == 0)
-            {
-                /* B has no extension, put it first */
-                result = 1;
-            }
-            else
-            {
-                /* Compare extensions */
-                result = strncasecmp_custom(extA, extB, maxLen);
-                
-                /* If extensions are the same, sort by name */
-                if (result == 0)
-                {
-                    lenA = strlen(iconA->icon_text);
-                    lenB = strlen(iconB->icon_text);
-                    maxLen = (lenA > lenB) ? lenA : lenB;
-                    result = strncasecmp_custom(iconA->icon_text, iconB->icon_text, maxLen);
-                }
-            }
-            break;
-            
-        case SORT_BY_DATE:
-            /* Sort by modification date (newest first) */
-            result = CompareDateStamps(&iconB->file_date, &iconA->file_date);
-            
-            /* If dates are the same, sort by name */
-            if (result == 0)
-            {
-                lenA = strlen(iconA->icon_text);
-                lenB = strlen(iconB->icon_text);
-                maxLen = (lenA > lenB) ? lenA : lenB;
-                result = strncasecmp_custom(iconA->icon_text, iconB->icon_text, maxLen);
-            }
-            break;
-            
-        case SORT_BY_SIZE:
-            /* Sort by file size (largest first for files, folders always 0) */
-            if (iconA->file_size > iconB->file_size)
-            {
-                result = -1;  /* A is larger, comes first */
-            }
-            else if (iconA->file_size < iconB->file_size)
-            {
-                result = 1;   /* B is larger, comes first */
-            }
-            else
-            {
-                /* Same size, sort by name */
-                lenA = strlen(iconA->icon_text);
-                lenB = strlen(iconB->icon_text);
-                maxLen = (lenA > lenB) ? lenA : lenB;
-                result = strncasecmp_custom(iconA->icon_text, iconB->icon_text, maxLen);
-            }
-            break;
-            
-        default:
-            /* Unknown sort mode, default to name */
-            lenA = strlen(iconA->icon_text);
-            lenB = strlen(iconB->icon_text);
-            maxLen = (lenA > lenB) ? lenA : lenB;
-            result = strncasecmp_custom(iconA->icon_text, iconB->icon_text, maxLen);
-            break;
-    }
-    
-    /* Apply reverse sort if requested */
-    if (prefs->reverseSort)
-    {
-        result = -result;
-    }
-    
-    return result;
-}

@@ -42,7 +42,8 @@ typedef enum {
     LOG_LEVEL_DEBUG,    /* Verbose debugging information */
     LOG_LEVEL_INFO,     /* Normal informational messages */
     LOG_LEVEL_WARNING,  /* Warning conditions */
-    LOG_LEVEL_ERROR     /* Error conditions */
+    LOG_LEVEL_ERROR,    /* Error conditions */
+    LOG_LEVEL_DISABLED  /* Logging disabled (no messages output) */
 } LogLevel;
 
 /*---------------------------------------------------------------------------*/
@@ -54,6 +55,9 @@ void initialize_log_system(BOOL cleanOldLogs);
 
 /* Shutdown logging system - closes all open file handles */
 void shutdown_log_system(void);
+
+/* Get the current log timestamp string (e.g., "2026-02-06_14-30-45") */
+const char* get_log_timestamp(void);
 
 /* Main logging function with category and level */
 void log_message(LogCategory category, LogLevel level, const char *format, ...);

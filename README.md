@@ -1,102 +1,142 @@
 # iTidy
 
-**An automated Workbench icon layout and window tidy tool for AmigaOS 3.x**
+**A Workbench icon and window tidy tool for AmigaOS 3.2+**
 
-![AmigaOS](https://img.shields.io/badge/AmigaOS-3.x-blue.svg)
+![AmigaOS](https://img.shields.io/badge/AmigaOS-3.2%2B-blue.svg)
 ![License](https://img.shields.io/badge/license-See%20LICENSE-green.svg)
-![Version](https://img.shields.io/badge/version-1.0-orange.svg)
+![Version](https://img.shields.io/badge/version-2.0-orange.svg)
 
-iTidy is a Workbench utility for AmigaOS that automatically arranges icon layouts and adjusts drawer window sizes across entire directory trees.
+Workbench drawers have a way of drifting into chaos over time, especially after large Aminet extractions, cover disks, or years of deferred tidying. iTidy is a small utility that brings things back into shape. Point it at a folder or an entire volume and it will tidy icon layouts and drawer windows in a consistent, repeatable way, with optional recursion through subfolders.
 
-It’s designed for anyone who actively works with their Workbench layout, whether that’s organising game libraries, maintaining project directories, tidying development trees, or cleaning up after large file operations. iTidy removes the repetitive manual work of repositioning icons and resizing windows, letting you bring order back to your Workbench in a consistent, repeatable way.
+Version 2.0 adds a Workbench 3.2 ReAction GUI plus DefIcons-based icon creation, so files without icons can be handled automatically. Where supported, it can also generate thumbnail-style icons for images and text-preview icons for source files. A backup and restore system using LhA lets you roll back any run if you change your mind.
 
-## Features
+## Versions
 
-### Core Functionality
-- **Automatic Icon Grid Layout** - Intelligent icon positioning with configurable spacing and sorting
-- **Smart Window Resizing** - Aspect ratio control with overflow handling for large directories
-- **Recursive Processing** - Process entire directory trees in one operation
-- **LHA Backup System** - Create restore points before making changes
-- **Default Tool Validation** - Find and fix missing or invalid default tool paths
-- **Multiple Sort Options** - Folders First, Files First, Mixed, with reverse sorting
-
-### Advanced Options
-- Configurable icon spacing (X/Y)
-- Multiple aspect ratios (Tall, Square, Compact, Classic, Wide, Ultrawide)
-- Overflow strategies (horizontal, vertical, or balanced expansion)
-- Column width optimization
-- Icon vertical alignment control (top, middle, bottom)
-- Min/max icons per row with auto-calculation
-- Max window width limits (% of screen)
-- Hidden folder filtering
-- NewIcons border stripping (requires icon.library v44+)
-
-### Supported Icon Formats
-- Classic/Standard icons (all AmigaOS versions)
-- NewIcons (extended color icons)
-- OS3.5/OS3.9 Color Icons
-- GlowIcons (both NewIcons-style and Color Icons versions)
+- **v2.x (Current)**: ReAction GUI for Workbench 3.2+. Modern BOOPSI-based interface with icon creation, thumbnail generation, and DefIcons integration.
+- **v1.0-gadtools**: GadTools GUI for Workbench 3.0/3.1. Legacy stable version ([access here](https://github.com/Kwezza/iTidy/releases/tag/v1.0-gadtools))
 
 ## Requirements
 
-- **OS**: AmigaOS Workbench 3.0 or newer
-- **Memory**: At least 1MB free RAM
-- **Storage**: At least 1MB free disk space (more for backups)
-- **Optional**: LhA (required for backup/restore features)
-  - Must be installed in `SYS:C` path
-  - Download from [Aminet](http://aminet.net/package/util/arc/lha)
+- AmigaOS Workbench 3.2 or newer (v2 requires ReAction from WB 3.2)
+- 68000 CPU or better
+- At least 1 MB free RAM (more recommended for large folders, recursion, and icon creation)
+- At least 1 MB free storage space in the installation location (more as backups accumulate)
+- For backup and restore features: LhA must be installed in `C:`
+
+## Features
+
+### Icon Layout
+
+- Automatic icon grid layout with configurable spacing and sorting
+- Sort by name, type, date, or size; reverse sort supported
+- Grouping modes: Folders First, Files First, Mixed, or Grouped By Type (with configurable gap between groups)
+- Configurable icon spacing (horizontal and vertical)
+- Multiple aspect ratio presets (Tall, Square, Compact, Classic, Wide)
+- Overflow strategies: expand horizontally, vertically, or balanced
+- Column width auto-fitting
+- Icon vertical alignment (top, middle, bottom)
+- Min/max icons per row with auto-calculation
+- Max window width limit as a percentage of screen width
+- Window positioning (Centre Screen, Keep Position, Near Parent, No Change)
+- Strip NewIcons borders (requires icon.library v44+)
+- Skip drawers without icons (no `.info` file)
+
+### Icon Creation (DefIcons Integration)
+
+- Creates new icons for files and folders that do not already have them, using the DefIcons system
+- Thumbnail icons for image files (ILBM/IFF, PNG, GIF, BMP, ACBM; JPEG optional)
+- Text preview icons for source files, scripts, and other ASCII content
+- Configurable preview size (48x48, 64x64, 100x100)
+- Configurable colour depth (4 to 256 colours), dithering, palette, and border style
+- Per file-type enable/disable via the DefIcons Categories window
+- Exclude paths list to skip directories during icon creation
+- Folder icon creation (Never, Always, or Smart mode)
+- WHDLoad folder protection (skip icon creation inside WHDLoad game directories)
+- Replace previously generated thumbnails or text previews on subsequent runs
+
+### Default Tool Analysis
+
+- Scan directories for icons with missing or invalid default tool paths
+- Batch replace a tool across all icons that reference it
+- Single-icon replacement mode
+- PATH-based tool resolution
+- Automatic backup before changes
+- Restore previous default tool settings via a session-based backup system
+- Save and load the tool cache between sessions
+- Export tool and file reports as text
+
+### Backup and Restore
+
+- LhA-based backups of `.info` files before making layout changes
+- Session-based restore: restore icons only, or icons and window positions together
+- Folder View window shows the hierarchical contents of any backup run
+- Separate backup system for default tool changes
+- DefIcons-created icons tracked and removed during restore
+
+### Other
+
+- Recursive directory processing in one pass
+- Progress window with per-folder status during processing
+- Preset save/load system for storing different configurations
+- LOADPREFS ToolType to auto-load a preset at startup
+- Logging system with configurable levels (Debug, Info, Warning, Error, Disabled)
+- Performance logging option for benchmarking
+
+## Supported Icon Formats
+
+- Classic/Standard icons (all AmigaOS versions)
+- NewIcons (extended colour icons)
+- OS3.5/OS3.9 colour icons
+- GlowIcons (both NewIcons-style and colour icon versions)
 
 ## Installation
 
-1. Extract the iTidy archive to your desired location (e.g., `SYS:Utilities/iTidy`)
-2. Ensure LhA is installed if you want to use backup features
+1. Extract the iTidy archive to your desired location (e.g. `SYS:Utilities/iTidy`)
+2. Ensure LhA is installed in `C:` if you want to use backup and restore features
 3. Double-click the iTidy icon to launch
 
 ## Quick Start
 
-1. **Launch iTidy** - Double-click the iTidy icon on Workbench
-2. **Select Folder** - Click "Browse..." and choose the folder to tidy
-3. **Choose Options**:
-   - Set icon order (Folders First, Files First, or Mixed)
-   - Enable "Cleanup subfolders" for recursive processing
-   - Enable "Backup icons" to create restore points
-4. **Click Start** - iTidy processes the folder(s) and arranges icons
-5. **Restore if Needed** - Use "Restore Backups..." to undo changes
+1. Launch iTidy by double-clicking the icon on Workbench.
+2. Click **Folder to tidy** and choose the drawer or volume you want to process.
+3. Choose how icons are grouped using the **Grouping** chooser (Folders First is the default).
+4. Enable **Include Subfolders** if you want to process the entire folder tree.
+5. Enable **Back Up Layout Before Changes** if you want a restore point (requires LhA in `C:`).
+6. Click **Start**. A progress window shows what iTidy is doing while it works.
+7. Use **Restore Backups...** to undo changes if needed.
 
-**Tip**: Try iTidy on a small test folder first to see how the options work!
+For your first run, try a small test folder. If you enable backups, you can always restore afterwards.
 
-## Main Features Explained
+## Main Window Options
 
-### Recursive Processing
-Process entire directory trees in one operation - perfect for tidying large WHDLoad collections, archive extractions, or project folders with many subdirectories.
+- **Grouping** -- Folders First, Files First, Mixed, or Grouped By Type
+- **Sort By** -- Name, Type, Date, or Size (disabled when Grouped By Type is selected)
+- **Include Subfolders** -- Recurse through the entire folder tree
+- **Create Icons During Tidy** -- Generate icons for files without them using DefIcons
+- **Back Up Layout Before Changes** -- Create an LhA restore point before each run
+- **Window Position** -- Centre Screen, Keep Position, Near Parent, or No Change
+- **Advanced...** -- Opens the Advanced Settings window (layout, density, limits, columns, filters)
+- **Icon Creation...** -- Configure thumbnail generation, text previews, and DefIcons categories
+- **Fix Default Tools...** -- Scan and repair missing default tool paths
+- **Restore Backups...** -- Restore a previous layout backup run
 
-### Backup & Restore System
-- Creates LHA archives of `.info` files before making changes
-- Restore previous layouts with one click
-- View and manage backup sessions
-- Separate backup system for default tool changes
+## ToolTypes
 
-### Default Tool Analysis
-Scan directories for icons with missing or invalid default tools and fix them:
-- Identify broken default tool paths
-- Batch replace tools across multiple icons
-- PATH-based tool resolution
-- Automatic backup before changes
+These ToolTypes are read from the iTidy program icon when launched from Workbench:
 
-### Smart Window Sizing
-- Multiple aspect ratio presets
-- Configurable overflow handling
-- Screen width limits
-- Automatic column calculation
-- Window positioning options (center, keep, near parent, no change)
+| ToolType | Values | Default | Description |
+|---|---|---|---|
+| `DEBUGLEVEL` | 0-4 | 4 | Log level: 0=Debug, 1=Info, 2=Warning, 3=Error, 4=Disabled |
+| `LOADPREFS` | file path | none | Auto-load a saved preferences file at startup |
+| `PERFLOG` | YES / NO | NO | Enable performance timing logs |
 
 ## Documentation
 
-For detailed instructions, see [docs/manual/README.md](docs/manual/README.md)
+Full documentation is in [docs/manual/iTidy.md](docs/manual/iTidy.md), covering all windows, settings, ToolTypes, backup systems, and troubleshooting.
 
-Topics covered:
+Manual topics:
 - Main window controls
-- Advanced settings detailed guide
+- Advanced settings guide
 - Default tool analysis and fixing
 - Backup and restore procedures
 - Tips and troubleshooting
@@ -104,11 +144,11 @@ Topics covered:
 
 ## Development
 
-iTidy is written in C89/C99 for AmigaOS 3.x using:
+iTidy is written in C for AmigaOS 3.2+ using:
 - **Compiler**: VBCC cross-compiler (v0.9x)
-- **SDK**: Amiga SDK 3.2 (targeting Workbench 3.0 compatibility)
-- **Target**: 68000/68020 (no FPU/MMU required)
-- **GUI**: Native GadTools (Workbench 3.0 gadgets only)
+- **SDK**: AmigaOS 3.2 SDK
+- **Target**: 68000
+- **GUI**: Native ReAction gadgets (Workbench 3.2)
 
 ### Building from Source
 
@@ -124,8 +164,6 @@ make CONSOLE=1
 ```
 
 Build output appears in `build/amiga/` and final binaries in `Bin/Amiga/`.
-
-For development details, see `.github/copilot-instructions.md` and `docs/DEVELOPMENT_LOG.md`.
 
 ## Project Structure
 
@@ -150,31 +188,17 @@ iTidy/
 - iTidy only modifies `.info` files and Workbench drawer/window layout information
 - Your data files are never touched
 - The backup system helps roll back changes, but is not a replacement for regular backups
-- **Always maintain proper system backups before processing important directories**
+- Always maintain proper system backups before processing important directories
 - Try on test folders first, especially for large operations
 
 **Use at your own risk.** The author accepts no responsibility for data loss, corruption, or other issues.
 
-## Tips & Troubleshooting
+## Credits
 
-### Icons Appear Misaligned
-Update icon.library to v44+ for proper OS3.5+ color icon support, or convert icons to NewIcons/classic format.
-
-### Window Positions Not Updating
-Close and reopen drawer windows, or restart Workbench to see position changes.
-
-### Slow Processing on Large Trees
-Processing thousands of folders takes time on real hardware - this is normal. Process in chunks for very large collections.
-
-### "Unable to open your tool" Errors
-Use the "Fix Default Tools..." feature to scan for and repair missing default tool paths.
-
-For more troubleshooting help, see the [user manual](docs/manual/README.md#tips--troubleshooting).
+**Author:** Kerry Thompson  
+**Website:** https://github.com/Kwezza/iTidy  
+**Special thanks:** Darren "dmcoles" Cole for ReBuild, an excellent GUI builder that made the updated interface possible.
 
 ## License
 
-See [LICENSE](LICENSE) file for details.
-
----
-
-Made with ❤️ for the Amiga community
+See [LICENSE](LICENSE) for details.

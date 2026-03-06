@@ -3,11 +3,16 @@
 ################################################################################
 
 # Console output: Set CONSOLE=1 to enable printf output (opens console window)
-# Default: ENABLED for debugging Workbench launch issues
-CONSOLE ?= 1
+# Default: DISABLED for release builds
+CONSOLE ?= 0
+
+# Memory tracking: Set MEMTRACK=1 to enable allocation/leak tracking
+# WARNING: This creates RAM:CRITICAL_FAILURE.log on every run - never use in release builds
+# Default: DISABLED for release builds
+MEMTRACK ?= 0
 
 # Project name
-PROJECT = iTidy
+PROJECT = iTidy2
 
 # Directories
 SRC_DIR = src
@@ -20,19 +25,26 @@ else
     CONSOLE_FLAG =
 endif
 
+# Memory tracking flag
+ifeq ($(MEMTRACK),1)
+    MEMTRACK_FLAG = -DDEBUG_MEMORY_TRACKING
+else
+    MEMTRACK_FLAG =
+endif
+
 # Amiga build configuration (vbcc cross-compiler)
 # VBCC MIGRATION NOTE: Changed to use VBCC v0.9x with Workbench 3.2 SDK
 # Output goes to Bin/Amiga/ for clean separation
 # RELEASE BUILD: Optimized for size (-O2 -size), no debug symbols, no math library (uses fixed-point)
 # Note: VBCC warnings from system headers (51: bitfield, 61: array size) cannot be suppressed
-# EASY_REQUEST_HELPER: -DBUILD_WITH_MOVEWINDOW disabled (causes flicker on slow Amigas)
 # CPU TARGET: 68000 for maximum compatibility (A500/A600/A1200)
 # CONSOLE: Add -DENABLE_CONSOLE via CONSOLE=1 to open console window for debugging
 CC = vc
-CFLAGS = +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG $(CONSOLE_FLAG)
+CFLAGS = +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG $(CONSOLE_FLAG) $(MEMTRACK_FLAG)
+CFLAGS_NOSIZEOPT = +aos68k -c99 -cpu=68000 -O2 -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG $(CONSOLE_FLAG) $(MEMTRACK_FLAG)
 LDFLAGS = +aos68k -cpu=68000 -O2 -size -final -lamiga -lauto
 OUT_DIR = $(BUILD_DIR)/amiga
-BIN_DIR = Bin/Amiga
+BIN_DIR = Bin/Amiga/iTidy2
 BIN = $(BIN_DIR)/$(PROJECT)
 
 ################################################################################
@@ -43,7 +55,11 @@ BIN = $(BIN_DIR)/$(PROJECT)
 # GUI MIGRATION NOTE: Changed from main.c to main_gui.c for GUI version
 CORE_SRCS = \
 	$(SRC_DIR)/main_gui.c \
-	$(SRC_DIR)/icon_types.c \
+	$(SRC_DIR)/icon_types/format.c \
+	$(SRC_DIR)/icon_types/reader.c \
+	$(SRC_DIR)/icon_types/writer.c \
+	$(SRC_DIR)/icon_types/path_manager.c \
+	$(SRC_DIR)/icon_types/tool_cache.c \
 	$(SRC_DIR)/icon_misc.c \
 	$(SRC_DIR)/icon_management.c \
 	$(SRC_DIR)/file_directory_handling.c \
@@ -52,37 +68,65 @@ CORE_SRCS = \
 	$(SRC_DIR)/path_utilities.c \
 	$(SRC_DIR)/spinner.c \
 	$(SRC_DIR)/writeLog.c \
-	$(SRC_DIR)/cli_utilities.c \
 	$(SRC_DIR)/layout_preferences.c \
 	$(SRC_DIR)/layout_processor.c \
-	$(SRC_DIR)/aspect_ratio_layout.c \
-	$(SRC_DIR)/folder_scanner.c \
 	$(SRC_DIR)/string_functions.c
+
+# Layout subsystem source files (extracted from layout_processor.c)
+LAYOUT_SRCS = \
+	$(SRC_DIR)/layout/aspect_ratio_layout.c \
+	$(SRC_DIR)/layout/folder_scanner.c \
+	$(SRC_DIR)/layout/icon_sorter.c \
+	$(SRC_DIR)/layout/icon_positioner.c \
+	$(SRC_DIR)/layout/block_layout.c \
+	$(SRC_DIR)/layout/tool_scanner.c
+
+# DefIcons source files
+DEFICONS_SRCS = \
+	$(SRC_DIR)/deficons/deficons_parser.c \
+	$(SRC_DIR)/deficons/deficons_identify.c \
+	$(SRC_DIR)/deficons/deficons_templates.c \
+	$(SRC_DIR)/deficons/deficons_filters.c \
+	$(SRC_DIR)/deficons/deficons_creation.c
+
+# Icon editing / content-aware preview source files
+ICON_EDIT_SRCS = \
+	$(SRC_DIR)/icon_edit/icon_image_access.c \
+	$(SRC_DIR)/icon_edit/ASCII/icon_text_render.c \
+	$(SRC_DIR)/icon_edit/Image/icon_iff_render.c \
+	$(SRC_DIR)/icon_edit/Image/icon_iff_decode.c \
+	$(SRC_DIR)/icon_edit/Image/icon_image_scale.c \
+	$(SRC_DIR)/icon_edit/Image/icon_datatype_render.c \
+	$(SRC_DIR)/icon_edit/Image/icon_image_bevel.c \
+	$(SRC_DIR)/icon_edit/icon_content_preview.c \
+	$(SRC_DIR)/icon_edit/palette/palette_mapping.c \
+	$(SRC_DIR)/icon_edit/palette/palette_quantization.c \
+	$(SRC_DIR)/icon_edit/palette/palette_dithering.c \
+	$(SRC_DIR)/icon_edit/palette/palette_reduction.c \
+	$(SRC_DIR)/icon_edit/palette/palette_grayscale.c \
+	$(SRC_DIR)/icon_edit/palette/palette_harmonised.c \
+	$(SRC_DIR)/icon_edit/palette/ultra_downsample.c
 
 # Backup system source files
 BACKUP_SRCS = \
-	$(SRC_DIR)/backup_catalog.c \
-	$(SRC_DIR)/backup_lha.c \
-	$(SRC_DIR)/backup_marker.c \
-	$(SRC_DIR)/backup_paths.c \
-	$(SRC_DIR)/backup_runs.c \
-	$(SRC_DIR)/backup_session.c \
-	$(SRC_DIR)/backup_restore.c
-
-# Helper utilities source files
-HELPERS_SRCS = \
-	$(SRC_DIR)/helpers/listview_simple_columns.c \
-	$(SRC_DIR)/helpers/list_formatter.c
+	$(SRC_DIR)/backups/backup_catalog.c \
+	$(SRC_DIR)/backups/backup_lha.c \
+	$(SRC_DIR)/backups/backup_marker.c \
+	$(SRC_DIR)/backups/backup_paths.c \
+	$(SRC_DIR)/backups/backup_runs.c \
+	$(SRC_DIR)/backups/backup_session.c \
+	$(SRC_DIR)/backups/backup_restore.c \
+	$(SRC_DIR)/backups/backdrop_parser.c
 
 # GUI source files
 GUI_SRCS = \
 	$(SRC_DIR)/GUI/main_window.c \
+	$(SRC_DIR)/GUI/main_window_log_handlers.c \
 	$(SRC_DIR)/GUI/advanced_window.c \
-	$(SRC_DIR)/GUI/beta_options_window.c \
-	$(SRC_DIR)/GUI/easy_request_helper.c \
-	$(SRC_DIR)/GUI/window_enumerator.c \
-	$(SRC_DIR)/GUI/wb_classify.c \
-	$(SRC_DIR)/GUI/gui_groupbox.c \
+	$(SRC_DIR)/GUI/deficons/deficons_settings_window.c \
+	$(SRC_DIR)/GUI/deficons/deficons_creation_window.c \
+	$(SRC_DIR)/GUI/exclude_paths_window.c \
+	$(SRC_DIR)/GUI/deficons/text_templates_window.c \
 	$(SRC_DIR)/GUI/gui_utilities.c \
 	$(SRC_DIR)/GUI/StatusWindows/progress_common.c \
 	$(SRC_DIR)/GUI/StatusWindows/progress_window.c \
@@ -93,7 +137,7 @@ GUI_SRCS = \
 DEFAULT_TOOLS_SRCS = \
 	$(SRC_DIR)/GUI/DefaultTools/tool_cache_window.c \
 	$(SRC_DIR)/GUI/DefaultTools/tool_cache_reports.c \
-	$(SRC_DIR)/GUI/DefaultTools/default_tool_update_window.c \
+	$(SRC_DIR)/GUI/DefaultTools/default_tool_update_window_reaction.c \
 	$(SRC_DIR)/GUI/DefaultTools/default_tool_backup.c \
 	$(SRC_DIR)/GUI/DefaultTools/default_tool_restore_window.c
 
@@ -104,7 +148,8 @@ RESTORE_BACKUP_SRCS = \
 
 # DOS subdirectory sources
 DOS_SRCS = \
-	$(SRC_DIR)/DOS/getDiskDetails.c
+	$(SRC_DIR)/DOS/getDiskDetails.c \
+	$(SRC_DIR)/DOS/device_scanner.c
 
 # Settings subdirectory sources
 SETTINGS_SRCS = \
@@ -116,17 +161,19 @@ SETTINGS_SRCS = \
 PLATFORM_SRCS = $(SRC_DIR)/platform/amiga_platform.c
 
 # Memory tracking implementation (conditional - only included if DEBUG_MEMORY_TRACKING is defined)
-# To enable: Uncomment #define DEBUG_MEMORY_TRACKING in src/platform/platform.h
+# To enable: Build with MEMTRACK=1 (e.g. "make MEMTRACK=1")
 MEMORY_TRACKING_SRCS = $(SRC_DIR)/platform/platform.c
 
 # All sources
-SRCS = $(CORE_SRCS) $(BACKUP_SRCS) $(HELPERS_SRCS) $(GUI_SRCS) $(DEFAULT_TOOLS_SRCS) $(RESTORE_BACKUP_SRCS) $(DOS_SRCS) $(SETTINGS_SRCS) $(PLATFORM_SRCS) $(MEMORY_TRACKING_SRCS)
+SRCS = $(CORE_SRCS) $(LAYOUT_SRCS) $(ICON_EDIT_SRCS) $(BACKUP_SRCS) $(GUI_SRCS) $(DEFAULT_TOOLS_SRCS) $(RESTORE_BACKUP_SRCS) $(DOS_SRCS) $(SETTINGS_SRCS) $(PLATFORM_SRCS) $(MEMORY_TRACKING_SRCS)
 
 # Object files (in build directory)
 # Note: platform.c is in include/platform, needs special handling
 CORE_OBJS = $(CORE_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
+LAYOUT_OBJS = $(LAYOUT_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
+DEFICONS_OBJS = $(DEFICONS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
+ICON_EDIT_OBJS = $(ICON_EDIT_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 BACKUP_OBJS = $(BACKUP_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
-HELPERS_OBJS = $(HELPERS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 GUI_OBJS = $(GUI_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 DEFAULT_TOOLS_OBJS = $(DEFAULT_TOOLS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 RESTORE_BACKUP_OBJS = $(RESTORE_BACKUP_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
@@ -135,7 +182,7 @@ SETTINGS_OBJS = $(SETTINGS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 PLATFORM_OBJS = $(PLATFORM_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 MEMORY_TRACKING_OBJS = $(OUT_DIR)/platform_memory.o
 
-OBJS = $(CORE_OBJS) $(BACKUP_OBJS) $(HELPERS_OBJS) $(GUI_OBJS) $(DEFAULT_TOOLS_OBJS) $(RESTORE_BACKUP_OBJS) $(DOS_OBJS) $(SETTINGS_OBJS) $(PLATFORM_OBJS) $(MEMORY_TRACKING_OBJS)
+OBJS = $(CORE_OBJS) $(LAYOUT_OBJS) $(DEFICONS_OBJS) $(ICON_EDIT_OBJS) $(BACKUP_OBJS) $(GUI_OBJS) $(DEFAULT_TOOLS_OBJS) $(RESTORE_BACKUP_OBJS) $(DOS_OBJS) $(SETTINGS_OBJS) $(PLATFORM_OBJS) $(MEMORY_TRACKING_OBJS)
 
 ################################################################################
 # Build Rules
@@ -154,14 +201,24 @@ amiga: all
 # GUI MIGRATION NOTE: Added GUI subdirectory for GUI window source files
 directories:
 	@if not exist "$(OUT_DIR)" mkdir "$(OUT_DIR)"
+	@if not exist "$(OUT_DIR)\icon_types" mkdir "$(OUT_DIR)\icon_types"
+	@if not exist "$(OUT_DIR)\deficons" mkdir "$(OUT_DIR)\deficons"
+	@if not exist "$(OUT_DIR)\backups" mkdir "$(OUT_DIR)\backups"
 	@if not exist "$(OUT_DIR)\DOS" mkdir "$(OUT_DIR)\DOS"
 	@if not exist "$(OUT_DIR)\Settings" mkdir "$(OUT_DIR)\Settings"
 	@if not exist "$(OUT_DIR)\platform" mkdir "$(OUT_DIR)\platform"
 	@if not exist "$(OUT_DIR)\helpers" mkdir "$(OUT_DIR)\helpers"
 	@if not exist "$(OUT_DIR)\GUI" mkdir "$(OUT_DIR)\GUI"
+	@if not exist "$(OUT_DIR)\GUI\deficons" mkdir "$(OUT_DIR)\GUI\deficons"
+	@if not exist "$(OUT_DIR)\icon_edit" mkdir "$(OUT_DIR)\icon_edit"
+	@if not exist "$(OUT_DIR)\icon_edit\palette" mkdir "$(OUT_DIR)\icon_edit\palette"
+	@if not exist "$(OUT_DIR)\icon_edit\Image" mkdir "$(OUT_DIR)\icon_edit\Image"
+	@if not exist "$(OUT_DIR)\icon_edit\ASCII" mkdir "$(OUT_DIR)\icon_edit\ASCII"
 	@if not exist "$(OUT_DIR)\GUI\StatusWindows" mkdir "$(OUT_DIR)\GUI\StatusWindows"
 	@if not exist "$(OUT_DIR)\GUI\DefaultTools" mkdir "$(OUT_DIR)\GUI\DefaultTools"
 	@if not exist "$(OUT_DIR)\GUI\RestoreBackups" mkdir "$(OUT_DIR)\GUI\RestoreBackups"
+	@if not exist "$(OUT_DIR)\GUI\BackdropCleaner" mkdir "$(OUT_DIR)\GUI\BackdropCleaner"
+	@if not exist "$(OUT_DIR)\layout" mkdir "$(OUT_DIR)\layout"
 	@if not exist "$(BIN_DIR)" mkdir "$(BIN_DIR)"
 
 # Link executable
@@ -173,6 +230,12 @@ $(BIN): $(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $^ 
 	@echo Build complete: $(BIN)
 	@echo Release build optimized for size (-O2 -size -final)
+
+# main_window.c: large file - compile without -size flag to avoid
+# 68000 short-branch displacement errors in long switch statements
+$(OUT_DIR)/GUI/main_window.o: $(SRC_DIR)/GUI/main_window.c
+	@echo Compiling [$@] from $< (no-size)
+	$(CC) $(CFLAGS_NOSIZEOPT) -c $< -o $@
 
 # Compile core source files
 $(OUT_DIR)/%.o: $(SRC_DIR)/%.c
@@ -229,7 +292,12 @@ help:
 # Core dependencies (simplified - expand as needed)
 # GUI MIGRATION NOTE: Changed from main.o to main_gui.o
 $(OUT_DIR)/main_gui.o: $(SRC_DIR)/main_gui.c $(SRC_DIR)/GUI/main_window.h
-$(OUT_DIR)/icon_types.o: $(SRC_DIR)/icon_types.c $(SRC_DIR)/icon_types.h
+# Icon types subsystem dependencies (refactored into modular structure)
+$(OUT_DIR)/format.o: $(SRC_DIR)/icon_types/format.c $(SRC_DIR)/icon_types/format.h $(SRC_DIR)/icon_types/icon_types_internal.h
+$(OUT_DIR)/reader.o: $(SRC_DIR)/icon_types/reader.c $(SRC_DIR)/icon_types/reader.h $(SRC_DIR)/icon_types/format.h $(SRC_DIR)/icon_types/icon_types_internal.h
+$(OUT_DIR)/writer.o: $(SRC_DIR)/icon_types/writer.c $(SRC_DIR)/icon_types/writer.h
+$(OUT_DIR)/path_manager.o: $(SRC_DIR)/icon_types/path_manager.c $(SRC_DIR)/icon_types/path_manager.h $(SRC_DIR)/icon_types/icon_types_internal.h
+$(OUT_DIR)/tool_cache.o: $(SRC_DIR)/icon_types/tool_cache.c $(SRC_DIR)/icon_types/tool_cache.h $(SRC_DIR)/icon_types/path_manager.h $(SRC_DIR)/icon_types/icon_types_internal.h
 $(OUT_DIR)/icon_misc.o: $(SRC_DIR)/icon_misc.c $(SRC_DIR)/icon_misc.h
 $(OUT_DIR)/icon_management.o: $(SRC_DIR)/icon_management.c $(SRC_DIR)/icon_management.h
 $(OUT_DIR)/file_directory_handling.o: $(SRC_DIR)/file_directory_handling.c $(SRC_DIR)/file_directory_handling.h
@@ -238,7 +306,6 @@ $(OUT_DIR)/utilities.o: $(SRC_DIR)/utilities.c $(SRC_DIR)/utilities.h
 $(OUT_DIR)/path_utilities.o: $(SRC_DIR)/path_utilities.c $(SRC_DIR)/path_utilities.h
 $(OUT_DIR)/spinner.o: $(SRC_DIR)/spinner.c $(SRC_DIR)/spinner.h
 $(OUT_DIR)/writeLog.o: $(SRC_DIR)/writeLog.c $(SRC_DIR)/writeLog.h
-$(OUT_DIR)/cli_utilities.o: $(SRC_DIR)/cli_utilities.c $(SRC_DIR)/cli_utilities.h
 $(OUT_DIR)/layout_preferences.o: $(SRC_DIR)/layout_preferences.c $(SRC_DIR)/layout_preferences.h
 $(OUT_DIR)/layout_processor.o: $(SRC_DIR)/layout_processor.c $(SRC_DIR)/layout_processor.h
 $(OUT_DIR)/aspect_ratio_layout.o: $(SRC_DIR)/aspect_ratio_layout.c $(SRC_DIR)/aspect_ratio_layout.h
@@ -258,13 +325,29 @@ $(OUT_DIR)/GUI/main_window.o: $(SRC_DIR)/GUI/main_window.c $(SRC_DIR)/GUI/main_w
 $(OUT_DIR)/GUI/advanced_window.o: $(SRC_DIR)/GUI/advanced_window.c $(SRC_DIR)/GUI/advanced_window.h
 $(OUT_DIR)/GUI/restore_window.o: $(SRC_DIR)/GUI/restore_window.c $(SRC_DIR)/GUI/restore_window.h
 $(OUT_DIR)/GUI/folder_view_window.o: $(SRC_DIR)/GUI/folder_view_window.c $(SRC_DIR)/GUI/folder_view_window.h
-$(OUT_DIR)/GUI/easy_request_helper.o: $(SRC_DIR)/GUI/easy_request_helper.c $(SRC_DIR)/GUI/easy_request_helper.h
-$(OUT_DIR)/GUI/window_enumerator.o: $(SRC_DIR)/GUI/window_enumerator.c $(SRC_DIR)/GUI/window_enumerator.h
-$(OUT_DIR)/GUI/wb_classify.o: $(SRC_DIR)/GUI/wb_classify.c $(SRC_DIR)/GUI/wb_classify.h
 
 # Platform-specific
 $(OUT_DIR)/platform/host_platform.o: $(SRC_DIR)/platform/host_platform.c $(SRC_DIR)/platform/platform.h
 $(OUT_DIR)/platform/amiga_platform.o: $(SRC_DIR)/platform/amiga_platform.c $(SRC_DIR)/platform/platform.h
+
+# Icon editing module
+$(OUT_DIR)/icon_edit/icon_image_access.o: $(SRC_DIR)/icon_edit/icon_image_access.c $(SRC_DIR)/icon_edit/icon_image_access.h
+$(OUT_DIR)/icon_edit/ASCII/icon_text_render.o: $(SRC_DIR)/icon_edit/ASCII/icon_text_render.c $(SRC_DIR)/icon_edit/ASCII/icon_text_render.h $(SRC_DIR)/icon_edit/icon_image_access.h
+$(OUT_DIR)/icon_edit/Image/icon_iff_render.o: $(SRC_DIR)/icon_edit/Image/icon_iff_render.c $(SRC_DIR)/icon_edit/Image/icon_iff_render.h $(SRC_DIR)/icon_edit/Image/icon_image_scale.h $(SRC_DIR)/icon_edit/icon_image_access.h
+$(OUT_DIR)/icon_edit/Image/icon_iff_decode.o: $(SRC_DIR)/icon_edit/Image/icon_iff_decode.c $(SRC_DIR)/icon_edit/Image/icon_iff_render.h $(SRC_DIR)/icon_edit/icon_image_access.h
+$(OUT_DIR)/icon_edit/Image/icon_image_scale.o: $(SRC_DIR)/icon_edit/Image/icon_image_scale.c $(SRC_DIR)/icon_edit/Image/icon_image_scale.h $(SRC_DIR)/icon_edit/Image/icon_iff_render.h
+$(OUT_DIR)/icon_edit/Image/icon_datatype_render.o: $(SRC_DIR)/icon_edit/Image/icon_datatype_render.c $(SRC_DIR)/icon_edit/Image/icon_iff_render.h $(SRC_DIR)/icon_edit/Image/icon_image_scale.h $(SRC_DIR)/icon_edit/icon_image_access.h
+$(OUT_DIR)/icon_edit/Image/icon_image_bevel.o: $(SRC_DIR)/icon_edit/Image/icon_image_bevel.c $(SRC_DIR)/icon_edit/Image/icon_image_bevel.h $(SRC_DIR)/icon_edit/icon_image_access.h
+$(OUT_DIR)/icon_edit/icon_content_preview.o: $(SRC_DIR)/icon_edit/icon_content_preview.c $(SRC_DIR)/icon_edit/icon_content_preview.h $(SRC_DIR)/icon_edit/icon_image_access.h $(SRC_DIR)/icon_edit/ASCII/icon_text_render.h $(SRC_DIR)/icon_edit/Image/icon_image_bevel.h
+
+# Palette reduction module
+$(OUT_DIR)/icon_edit/palette/palette_mapping.o: $(SRC_DIR)/icon_edit/palette/palette_mapping.c $(SRC_DIR)/icon_edit/palette/palette_mapping.h $(SRC_DIR)/icon_edit/palette/palette_dithering.h
+$(OUT_DIR)/icon_edit/palette/palette_quantization.o: $(SRC_DIR)/icon_edit/palette/palette_quantization.c $(SRC_DIR)/icon_edit/palette/palette_quantization.h
+$(OUT_DIR)/icon_edit/palette/palette_dithering.o: $(SRC_DIR)/icon_edit/palette/palette_dithering.c $(SRC_DIR)/icon_edit/palette/palette_dithering.h $(SRC_DIR)/icon_edit/palette/palette_mapping.h
+$(OUT_DIR)/icon_edit/palette/palette_reduction.o: $(SRC_DIR)/icon_edit/palette/palette_reduction.c $(SRC_DIR)/icon_edit/palette/palette_reduction.h $(SRC_DIR)/icon_edit/palette/palette_mapping.h $(SRC_DIR)/icon_edit/palette/palette_quantization.h $(SRC_DIR)/icon_edit/palette/palette_dithering.h $(SRC_DIR)/icon_edit/palette/palette_grayscale.h
+$(OUT_DIR)/icon_edit/palette/palette_grayscale.o: $(SRC_DIR)/icon_edit/palette/palette_grayscale.c $(SRC_DIR)/icon_edit/palette/palette_grayscale.h $(SRC_DIR)/icon_edit/palette/palette_mapping.h $(SRC_DIR)/icon_edit/palette/palette_dithering.h
+$(OUT_DIR)/icon_edit/palette/palette_harmonised.o: $(SRC_DIR)/icon_edit/palette/palette_harmonised.c $(SRC_DIR)/icon_edit/palette/palette_harmonised.h $(SRC_DIR)/icon_edit/palette/palette_mapping.h $(SRC_DIR)/icon_edit/palette/palette_dithering.h
+$(OUT_DIR)/icon_edit/palette/ultra_downsample.o: $(SRC_DIR)/icon_edit/palette/ultra_downsample.c $(SRC_DIR)/icon_edit/palette/ultra_downsample.h $(SRC_DIR)/icon_edit/palette/palette_mapping.h $(SRC_DIR)/icon_edit/palette/palette_quantization.h
 
 # All objects depend on platform headers
 $(OBJS): $(SRC_DIR)/platform/platform.h $(SRC_DIR)/platform/platform_types.h
