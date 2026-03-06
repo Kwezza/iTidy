@@ -1,0 +1,62 @@
+Short:        Tidies icons, adds preview icons
+Author:       Kerry Thompson
+Uploader:     kwezza@gmail.com
+Type:         util/wb
+Version:      2.0
+Architecture: m68k-amigaos >= 3.2.0
+Distribution: Aminet
+Requires:     AmigaOS 3.2+; lha (for backups)
+
+Workbench drawers have a way of drifting into chaos over time,
+especially after large extractions, cover disks, or years of
+"I will sort it later" installs.
+
+iTidy is a utility for tidying icon layouts and drawer windows in
+a consistent, repeatable way. It can process a single folder or
+work recursively through subfolders and larger directory trees.
+
+Version 2.0 introduces a Workbench 3.2 ReAction GUI and adds
+DefIcons-based icon creation for supported files that do not
+already have icons. It can also generate preview icons for
+supported image and ASCII text files. Optional LhA-based backups
+allow runs to be rolled back later if needed.
+
+Main features include:
+- Automatic icon grid layout
+- Drawer window resizing and positioning
+- Recursive processing of subfolders
+- Optional LhA-based backup and restore
+- Default Tool validation and repair
+- Icon creation for selected file types using DefIcons
+- Generated preview icons for supported image and ASCII text files
+
+Usage:
+Start iTidy from Workbench, select a folder or partition, choose
+your options, and start processing. Recursive mode can be used to
+tidy entire directory trees in one pass.
+
+Notes:
+- Processing large folder trees can take time on real hardware.
+- Workbench may cache drawer window sizes until windows are reopened
+  or Workbench is restarted.
+- Layout backups and Default Tool backups are handled separately.
+
+Documentation:
+Full documentation is supplied in AmigaGuide format.
+See iTidy2.guide for detailed usage instructions and option
+descriptions.
+
+Disclaimer:
+This program is provided as-is and without warranty.
+No responsibility is accepted for data loss or other damage.
+
+Always back up important data before use.
+
+CHANGELOG:
+[2.0.0] - 2026-03-06
+- New ReAction-based GUI for Workbench 3.2 and later
+- Adds DefIcons integration for creating missing icons
+- Adds generated preview icons for supported image and 
+  ASCII text files
+- Adds backup and restore support for layout changes
+- Adds Default Tool validation and repair
