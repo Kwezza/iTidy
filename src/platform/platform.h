@@ -17,8 +17,8 @@
 /* Memory Allocation Abstraction with Debugging                              */
 /*---------------------------------------------------------------------------*/
 
-/* Enable memory debugging by uncommenting this line */
-#define DEBUG_MEMORY_TRACKING 
+/* Enable memory debugging by passing MEMTRACK=1 to make (e.g. "make MEMTRACK=1") */
+/* Do NOT hardcode this here - it creates RAM:CRITICAL_FAILURE.log on every run */
 
 #ifdef DEBUG_MEMORY_TRACKING
     /* Memory tracking functions - implemented in platform.c */

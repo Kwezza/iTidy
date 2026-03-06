@@ -6,6 +6,11 @@
 # Default: DISABLED for release builds
 CONSOLE ?= 0
 
+# Memory tracking: Set MEMTRACK=1 to enable allocation/leak tracking
+# WARNING: This creates RAM:CRITICAL_FAILURE.log on every run - never use in release builds
+# Default: DISABLED for release builds
+MEMTRACK ?= 0
+
 # Project name
 PROJECT = iTidy2
 
@@ -20,6 +25,13 @@ else
     CONSOLE_FLAG =
 endif
 
+# Memory tracking flag
+ifeq ($(MEMTRACK),1)
+    MEMTRACK_FLAG = -DDEBUG_MEMORY_TRACKING
+else
+    MEMTRACK_FLAG =
+endif
+
 # Amiga build configuration (vbcc cross-compiler)
 # VBCC MIGRATION NOTE: Changed to use VBCC v0.9x with Workbench 3.2 SDK
 # Output goes to Bin/Amiga/ for clean separation
@@ -28,11 +40,11 @@ endif
 # CPU TARGET: 68000 for maximum compatibility (A500/A600/A1200)
 # CONSOLE: Add -DENABLE_CONSOLE via CONSOLE=1 to open console window for debugging
 CC = vc
-CFLAGS = +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG $(CONSOLE_FLAG)
-CFLAGS_NOSIZEOPT = +aos68k -c99 -cpu=68000 -O2 -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG $(CONSOLE_FLAG)
+CFLAGS = +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG $(CONSOLE_FLAG) $(MEMTRACK_FLAG)
+CFLAGS_NOSIZEOPT = +aos68k -c99 -cpu=68000 -O2 -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG $(CONSOLE_FLAG) $(MEMTRACK_FLAG)
 LDFLAGS = +aos68k -cpu=68000 -O2 -size -final -lamiga -lauto
 OUT_DIR = $(BUILD_DIR)/amiga
-BIN_DIR = Bin/Amiga
+BIN_DIR = Bin/Amiga/iTidy2
 BIN = $(BIN_DIR)/$(PROJECT)
 
 ################################################################################
@@ -149,7 +161,7 @@ SETTINGS_SRCS = \
 PLATFORM_SRCS = $(SRC_DIR)/platform/amiga_platform.c
 
 # Memory tracking implementation (conditional - only included if DEBUG_MEMORY_TRACKING is defined)
-# To enable: Uncomment #define DEBUG_MEMORY_TRACKING in src/platform/platform.h
+# To enable: Build with MEMTRACK=1 (e.g. "make MEMTRACK=1")
 MEMORY_TRACKING_SRCS = $(SRC_DIR)/platform/platform.c
 
 # All sources
