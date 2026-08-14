@@ -440,7 +440,7 @@ Agent hand-off:
 ## Status
 
 ```text
-Status: NOT STARTED
+Status: COMPLETE
 ```
 
 ## Goal
@@ -541,7 +541,91 @@ Stop after:
 
 ## Agent hand-off
 
-_Not yet completed._
+```text
+Agent hand-off:
+- Date: 2026-08-14
+- Branch: dev-itidy2
+- Starting revision/commit if known: 3f81f8756b614d801d5c338d1fc38e5a06e25577
+- Summary: Added a read-only, allocation-free shared .info envelope parser
+  and format probe under shared/icon/. The parser walks serialized DiskObject
+  fields byte-by-byte (no struct casts), treats on-disk APTRs as booleans,
+  locates classic images / DefaultTool / ToolTypes / DrawerData / DrawerData2,
+  and reports where classic data ends so later decoders can consume the
+  extension. The probe flags classic, NewIcons, ColorIcon, GlowIcon (256-colour
+  FACE heuristic), PNG, and OS4 ARGB without decoding pixels. iTidy2 still
+  uses its existing icon.library detection path; shared icon sources are
+  compiled into the VBCC binary but not wired into GUI behaviour.
+- Files added:
+    shared/icon/icon_types.h
+    shared/icon/icon_file.h
+    shared/icon/icon_file.c
+    shared/icon/icon_probe.h
+    shared/icon/icon_probe.c
+    src/tests/test_shared_icon.c
+- Files modified:
+    Makefile
+    docs/current refactor/iTidy_Shared_Core_Refactor_Staged_Agent_Prompt.md
+- Files removed/moved:
+    None
+- Build performed:
+    make (VBCC +aos68k -cpu=68000) -> Bin/Amiga/iTidy2/iTidy2
+    make test-icon (GCC host)
+    make test-image (GCC host, Batch 1 regression)
+- Tests performed:
+    Host suite src/tests/test_shared_icon.c covering:
+      big-endian readers and planar size;
+      malformed/truncated/bad-magic/bad-version/zero-width/depth-9/
+        bad ToolTypes count/unterminated text;
+      classic 16x16x1 (buffer not modified; leftover pointers not used
+        as offsets);
+      drawer + selected image + DrawerData2;
+      DefaultTool and ToolTypes access;
+      NewIcons marker + IM1=/IM2=;
+      FORM ICON 8-colour vs 256-colour Glow heuristic, 1 vs 2 IMAG;
+      PNG-only, dual classic+PNG, FORM ARGB unsupported;
+      live Bin/Amiga.info and Bin/Amiga/iTidy2.info (classic_end == EOF).
+    No NewIcons or ColorIcon pixel decoding was implemented or tested.
+- Test result:
+    make test-icon: all shared icon tests passed.
+    make test-image: all shared image tests passed.
+    make (Amiga): success. shared/icon/*.c compiled and linked with no
+    VBCC warnings.
+- Behavioural/regression result:
+    iTidy2 GUI/icon.library behaviour unchanged: existing format.c /
+    reader.c paths were not rewired. Shared parser is additive. Probe
+    does not write the input buffer.
+- Unresolved issues:
+    GlowIcon vs ColorIcon is a FACE max-palette heuristic (>= 255 =>
+    glow). Confirm against real GlowIcon samples in Batch 3.
+    iTidy2 live format detection still uses GetDiskObject / isOS35IconFormat.
+    Parser was not executed on the Amiga/WinUAE target; host tests plus
+    VBCC compile are the Batch 2 evidence.
+- Important decisions:
+    1. Core API is buffer-based and allocation-free. Callers own the
+       bytes. No platform.h / whd_malloc / DOS in shared/icon.
+    2. On-disk APTRs are booleans only. Image/text blobs are sequential
+       after the 78-byte DiskObject, matching IconFormats.txt and verified
+       against Bin/Amiga.info and Bin/Amiga/iTidy2.info.
+    3. DrawerData2 (6 bytes) is consumed when DrawerData is present and
+       ga_UserData lo-byte == 1, unless the remainder already looks like
+       FORM/PNG (defensive).
+    4. Probe walks FORM ICON chunks only far enough to see FACE / count
+       IMAG / notice ARGB. Pixel and palette payloads are not decoded.
+    5. PNG-only files are accepted by icon_probe_buffer() as
+       has_png+has_unsupported; icon_file_parse() still returns BAD_MAGIC.
+    6. iTidy2 existing detectors were left in place. Wiring the shared
+       probe into the front end is later work, not this batch.
+    7. Layout source of truth: support files/IconFormats.txt plus two
+       real drawer icons. Gadget width is at file 0x0C (not 0x08).
+- Notes for next agent:
+    Start Batch 3 (direct ColorIcon / GlowIcon decoder). Use
+    file->extension_offset / extension_size as the FORM ICON start.
+    icon_file_read_u8/u16/u32 and icon_file_range_ok() are the safe
+    readers to reuse. Do not change shared/image or the envelope parser
+    unless a Batch 2 regression is found. Host tests: make test-icon
+    and make test-image. Include path -Ishared is already in CFLAGS.
+    Do not implement NewIcons decoding in Batch 3.
+```
 
 ---
 
@@ -939,20 +1023,21 @@ This section must always be updated by the agent that finishes a batch.
 ## Last completed batch
 
 ```text
-Batch 1 — Shared Image Foundation
+Batch 2 — Shared Raw .info Reader and Icon Probe
 ```
 
 ## Next batch to execute
 
 ```text
-Batch 2 — Shared Raw .info Reader and Icon Probe
+Batch 3 — Direct ColorIcon / GlowIcon Decoder
 ```
 
 ## Known blockers
 
 ```text
-None. Batch 1 Amiga build and host kernel tests succeeded.
-On-target iTidy2 thumbnail visual comparison was not run in the Batch 1 session.
+None. Batch 2 Amiga build and host icon/image tests succeeded.
+GlowIcon detection is a 256-colour FACE heuristic pending real samples
+in Batch 3. Shared probe is not yet wired into iTidy2 GUI detection.
 ```
 
 ## Global hand-off notes

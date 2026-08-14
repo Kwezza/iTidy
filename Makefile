@@ -96,6 +96,11 @@ SHARED_IMAGE_SRCS = \
 	shared/image/image_palette.c \
 	shared/image/image_dither.c
 
+# Shared raw .info reader and format probe (no pixel decoding)
+SHARED_ICON_SRCS = \
+	shared/icon/icon_file.c \
+	shared/icon/icon_probe.c
+
 # Icon editing / content-aware preview source files
 ICON_EDIT_SRCS = \
 	$(SRC_DIR)/icon_edit/icon_image_access.c \
@@ -172,13 +177,14 @@ PLATFORM_SRCS = $(SRC_DIR)/platform/amiga_platform.c
 MEMORY_TRACKING_SRCS = $(SRC_DIR)/platform/platform.c
 
 # All sources
-SRCS = $(CORE_SRCS) $(LAYOUT_SRCS) $(SHARED_IMAGE_SRCS) $(ICON_EDIT_SRCS) $(BACKUP_SRCS) $(GUI_SRCS) $(DEFAULT_TOOLS_SRCS) $(RESTORE_BACKUP_SRCS) $(DOS_SRCS) $(SETTINGS_SRCS) $(PLATFORM_SRCS) $(MEMORY_TRACKING_SRCS)
+SRCS = $(CORE_SRCS) $(LAYOUT_SRCS) $(SHARED_IMAGE_SRCS) $(SHARED_ICON_SRCS) $(ICON_EDIT_SRCS) $(BACKUP_SRCS) $(GUI_SRCS) $(DEFAULT_TOOLS_SRCS) $(RESTORE_BACKUP_SRCS) $(DOS_SRCS) $(SETTINGS_SRCS) $(PLATFORM_SRCS) $(MEMORY_TRACKING_SRCS)
 
 # Object files (in build directory)
 # Note: platform.c is in include/platform, needs special handling
 CORE_OBJS = $(CORE_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 LAYOUT_OBJS = $(LAYOUT_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 SHARED_IMAGE_OBJS = $(SHARED_IMAGE_SRCS:shared/%.c=$(OUT_DIR)/shared/%.o)
+SHARED_ICON_OBJS = $(SHARED_ICON_SRCS:shared/%.c=$(OUT_DIR)/shared/%.o)
 DEFICONS_OBJS = $(DEFICONS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 ICON_EDIT_OBJS = $(ICON_EDIT_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 BACKUP_OBJS = $(BACKUP_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
@@ -190,13 +196,13 @@ SETTINGS_OBJS = $(SETTINGS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 PLATFORM_OBJS = $(PLATFORM_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 MEMORY_TRACKING_OBJS = $(OUT_DIR)/platform_memory.o
 
-OBJS = $(CORE_OBJS) $(LAYOUT_OBJS) $(SHARED_IMAGE_OBJS) $(DEFICONS_OBJS) $(ICON_EDIT_OBJS) $(BACKUP_OBJS) $(GUI_OBJS) $(DEFAULT_TOOLS_OBJS) $(RESTORE_BACKUP_OBJS) $(DOS_OBJS) $(SETTINGS_OBJS) $(PLATFORM_OBJS) $(MEMORY_TRACKING_OBJS)
+OBJS = $(CORE_OBJS) $(LAYOUT_OBJS) $(SHARED_IMAGE_OBJS) $(SHARED_ICON_OBJS) $(DEFICONS_OBJS) $(ICON_EDIT_OBJS) $(BACKUP_OBJS) $(GUI_OBJS) $(DEFAULT_TOOLS_OBJS) $(RESTORE_BACKUP_OBJS) $(DOS_OBJS) $(SETTINGS_OBJS) $(PLATFORM_OBJS) $(MEMORY_TRACKING_OBJS)
 
 ################################################################################
 # Build Rules
 ################################################################################
 
-.PHONY: all clean help amiga directories test-image
+.PHONY: all clean help amiga directories test-image test-icon
 
 # Default target
 all: directories $(BIN)
@@ -229,6 +235,7 @@ directories:
 	@if not exist "$(OUT_DIR)\layout" mkdir "$(OUT_DIR)\layout"
 	@if not exist "$(OUT_DIR)\shared" mkdir "$(OUT_DIR)\shared"
 	@if not exist "$(OUT_DIR)\shared\image" mkdir "$(OUT_DIR)\shared\image"
+	@if not exist "$(OUT_DIR)\shared\icon" mkdir "$(OUT_DIR)\shared\icon"
 	@if not exist "$(BIN_DIR)" mkdir "$(BIN_DIR)"
 
 # Link executable
@@ -278,6 +285,17 @@ test-image:
 	@echo Running $(TEST_IMAGE_BIN)
 	$(TEST_IMAGE_BIN)
 
+TEST_ICON_BIN = src/tests/test_shared_icon.exe
+
+test-icon:
+	@echo Building host shared-icon tests...
+	$(HOST_CC) $(HOST_CFLAGS) -o $(TEST_ICON_BIN) \
+		src/tests/test_shared_icon.c \
+		shared/icon/icon_file.c \
+		shared/icon/icon_probe.c
+	@echo Running $(TEST_ICON_BIN)
+	$(TEST_ICON_BIN)
+
 # Clean build artifacts
 
 clean:
@@ -302,6 +320,7 @@ help:
 	@echo   make clean              - Clean Amiga build artifacts
 	@echo   make clean-all          - Clean all builds
 	@echo   make test-image         - Host GCC regression tests for shared image kernels
+	@echo   make test-icon          - Host GCC regression tests for shared .info reader/probe
 	@echo   make help               - Show this help
 	@echo.
 	@echo Console Output:
