@@ -1,0 +1,181 @@
+[14:56:16][INFO] Log level: DEBUG 
+[14:56:24][INFO] Folder selected: PC:Programming/iTidy/tests/icons 
+[14:56:25][DEBUG] repoistionWindow() START - Path: PC:Programming/iTidy/tests/icons, content: 230x80, mode: 0 
+[14:56:25][DEBUG]   Padding: 0, disableVolumeGauge: 0
+[14:56:25][DEBUG]   IControl: currentBarWidth=18, currentLeftBarWidth=4, currentWindowBarHeight=16, currentBarHeight=14
+[14:56:25][DEBUG]   Chrome: content=230 + leftBar=4 + rightBar=18 + padding=0 = 252 (pre-scrollbar) 
+[14:56:25][DEBUG]   Calculated window with chrome: 270x124 
+[14:56:25][DEBUG]   Screen size: 640x400, Max usable height: 384 
+[14:56:25][DEBUG]   Final window dimensions: 270x124 (after clamping) 
+[14:56:25][DEBUG]   Normal height - centering vertically: 138 
+[14:56:25][DEBUG]   Mode: Center Screen - centering at left=185 
+[14:56:25][INFO] repoistionWindow: PC:Programming/iTidy/tests/icons -> 270x124 at (185,138) 
+[14:56:41][INFO] Opening Advanced Window. Prefs: Aspect=2000, IconsRow=2/0, Spacing=8/8 
+[14:56:57][INFO] Opening tool cache window (cache has 0 entries) 
+[14:56:57][INFO] Synced folder path to global prefs: PC:Programming/iTidy/tests/icons (recursive: Yes) 
+[14:56:57][INFO] === open_tool_cache_window: Starting (ReAction) === 
+[14:56:57][DEBUG] *** Allocating and initializing column info *** 
+[14:56:57][DEBUG] *** Column info allocated successfully *** 
+[14:56:57][DEBUG] Setting up tool cache menus... 
+[14:56:57][INFO] Tool cache menus initialized successfully 
+[14:56:58][INFO] Tool cache window opened successfully 
+[14:56:58][INFO] Menu strip attached to tool cache window 
+[14:56:58][DEBUG] *** Setting LISTBROWSER_TitleClickable to TRUE *** 
+[14:56:58][DEBUG] *** LISTBROWSER: TitleClickable=0, SortColumn=0 *** 
+[14:56:58][DEBUG] build_tool_cache_display_list: No tools in cache 
+[14:56:58][DEBUG] apply_tool_filter: Filter=0, Result count=0 
+[14:56:58][DEBUG] update_tool_details: selected_index=-1 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x00040000, CLASSMASK=0x00040000, GADGETMASK=0x00000000, code=0 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000e0000, CLASSMASK=0x000e0000, GADGETMASK=0x00000000, code=0 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000e0000, CLASSMASK=0x000e0000, GADGETMASK=0x00000000, code=0 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000e0000, CLASSMASK=0x000e0000, GADGETMASK=0x00000000, code=0 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000e0000, CLASSMASK=0x000e0000, GADGETMASK=0x00000000, code=0 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000e0000, CLASSMASK=0x000e0000, GADGETMASK=0x00000000, code=0 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000e0000, CLASSMASK=0x000e0000, GADGETMASK=0x00000000, code=0 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000e0000, CLASSMASK=0x000e0000, GADGETMASK=0x00000000, code=0 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000e0000, CLASSMASK=0x000e0000, GADGETMASK=0x00000000, code=0 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000e0000, CLASSMASK=0x000e0000, GADGETMASK=0x00000000, code=0 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x0008ffff, CLASSMASK=0x00080000, GADGETMASK=0x0000ffff, code=0 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000e0000, CLASSMASK=0x000e0000, GADGETMASK=0x00000000, code=0 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:58][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:58][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:59][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:59][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:59][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:59][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:59][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:59][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:59][DEBUG] ==> RAW EVENT: result=0x000e0000, CLASSMASK=0x000e0000, GADGETMASK=0x00000000, code=0 
+[14:56:59][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:59][DEBUG] ==> RAW EVENT: result=0x000e0000, CLASSMASK=0x000e0000, GADGETMASK=0x00000000, code=0 
+[14:56:59][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:59][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:59][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:59][DEBUG] ==> RAW EVENT: result=0x00010000, CLASSMASK=0x00010000, GADGETMASK=0x00000000, code=0 
+[14:56:59][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:59][DEBUG] Close gadget clicked 
+[14:56:59][DEBUG] ==> RAW EVENT: result=0x000f0000, CLASSMASK=0x000f0000, GADGETMASK=0x00000000, code=255 
+[14:56:59][DEBUG]     WMHI_CLOSEWINDOW=0x00010000, WMHI_GADGETUP=0x00020000, WMHI_GADGETDOWN=0x00140000 
+[14:56:59][INFO] close_tool_cache_window: Starting cleanup 
+[14:56:59][INFO] Menu strip cleared from tool cache window 
+[14:56:59][INFO] Tool cache menus cleaned up 
+[14:56:59][INFO] Tool cache window closed successfully 
+[14:56:59][INFO] Tool cache window closed 
+[14:57:00][INFO] DefIcons creation settings window opened 
+[14:57:08][INFO] Text preview thumbnails toggled: enabled 
+[14:57:08][INFO] Picture preview thumbnails toggled: enabled 
+[14:57:08][INFO] Upscale thumbnails: disabled 
+[14:57:08][INFO] Replace iTidy image thumbnails: disabled 
+[14:57:08][INFO] Replace iTidy text previews: disabled 
+[14:57:08][INFO] Picture format bitmask: 0x00000077 
+[14:57:08][INFO] DefIcons creation settings saved: folder_mode=0, icon_size=1, border_mode=3, text_preview=1, picture_preview=1, max_colors=256, ultra=0, harmonised=0, dither=3, lowcolor=0 
+[14:57:08][INFO] DefIcons creation settings window closed 
+[14:57:08][INFO] DefIcons creation preferences updated 
+[14:57:12][DEBUG] repoistionWindow() START - Path: PC:Programming/iTidy/tests/icons, content: 170x88, mode: 0 
+[14:57:12][DEBUG]   Padding: 0, disableVolumeGauge: 0
+[14:57:12][DEBUG]   IControl: currentBarWidth=18, currentLeftBarWidth=4, currentWindowBarHeight=16, currentBarHeight=14
+[14:57:12][DEBUG]   Chrome: content=170 + leftBar=4 + rightBar=18 + padding=0 = 192 (pre-scrollbar) 
+[14:57:12][DEBUG]   Calculated window with chrome: 210x132 
+[14:57:12][DEBUG]   Screen size: 640x400, Max usable height: 384 
+[14:57:12][DEBUG]   Final window dimensions: 210x132 (after clamping) 
+[14:57:12][DEBUG]   Normal height - centering vertically: 134 
+[14:57:12][DEBUG]   Mode: Center Screen - centering at left=215 
+[14:57:12][INFO] repoistionWindow: PC:Programming/iTidy/tests/icons -> 210x132 at (215,134) 
+[14:57:13][DEBUG] repoistionWindow() START - Path: PC:Programming/iTidy/tests/icons/classic, content: 281x132, mode: 0 
+[14:57:13][DEBUG]   Padding: 0, disableVolumeGauge: 0
+[14:57:13][DEBUG]   IControl: currentBarWidth=18, currentLeftBarWidth=4, currentWindowBarHeight=16, currentBarHeight=14
+[14:57:13][DEBUG]   Chrome: content=281 + leftBar=4 + rightBar=18 + padding=0 = 303 (pre-scrollbar) 
+[14:57:13][DEBUG]   Calculated window with chrome: 321x176 
+[14:57:13][DEBUG]   Screen size: 640x400, Max usable height: 384 
+[14:57:13][DEBUG]   Final window dimensions: 321x176 (after clamping) 
+[14:57:13][DEBUG]   Normal height - centering vertically: 112 
+[14:57:13][DEBUG]   Mode: Center Screen - centering at left=159 
+[14:57:13][INFO] repoistionWindow: PC:Programming/iTidy/tests/icons/classic -> 321x176 at (159,112) 
+[14:57:13][DEBUG] repoistionWindow() START - Path: PC:Programming/iTidy/tests/icons/coloricons, content: 201x66, mode: 0 
+[14:57:13][DEBUG]   Padding: 0, disableVolumeGauge: 0
+[14:57:13][DEBUG]   IControl: currentBarWidth=18, currentLeftBarWidth=4, currentWindowBarHeight=16, currentBarHeight=14
+[14:57:13][DEBUG]   Chrome: content=201 + leftBar=4 + rightBar=18 + padding=0 = 223 (pre-scrollbar) 
+[14:57:13][DEBUG]   Calculated window with chrome: 241x110 
+[14:57:13][DEBUG]   Screen size: 640x400, Max usable height: 384 
+[14:57:13][DEBUG]   Final window dimensions: 241x110 (after clamping) 
+[14:57:13][DEBUG]   Normal height - centering vertically: 145 
+[14:57:13][DEBUG]   Mode: Center Screen - centering at left=199 
+[14:57:13][INFO] repoistionWindow: PC:Programming/iTidy/tests/icons/coloricons -> 241x110 at (199,145) 
+[14:57:14][DEBUG] repoistionWindow() START - Path: PC:Programming/iTidy/tests/icons/newicons, content: 449x264, mode: 0 
+[14:57:14][DEBUG]   Padding: 0, disableVolumeGauge: 0
+[14:57:14][DEBUG]   IControl: currentBarWidth=18, currentLeftBarWidth=4, currentWindowBarHeight=16, currentBarHeight=14
+[14:57:14][DEBUG]   Chrome: content=449 + leftBar=4 + rightBar=18 + padding=0 = 471 (pre-scrollbar) 
+[14:57:14][DEBUG]   Calculated window with chrome: 489x308 
+[14:57:14][DEBUG]   Screen size: 640x400, Max usable height: 384 
+[14:57:14][DEBUG]   Final window dimensions: 489x308 (after clamping) 
+[14:57:14][DEBUG]   Normal height - centering vertically: 46 
+[14:57:14][DEBUG]   Mode: Center Screen - centering at left=75 
+[14:57:14][INFO] repoistionWindow: PC:Programming/iTidy/tests/icons/newicons -> 489x308 at (75,46) 
+[14:57:14][DEBUG] repoistionWindow() START - Path: PC:Programming/iTidy/tests/icons/glowicons, content: 217x66, mode: 0 
+[14:57:14][DEBUG]   Padding: 0, disableVolumeGauge: 0
+[14:57:14][DEBUG]   IControl: currentBarWidth=18, currentLeftBarWidth=4, currentWindowBarHeight=16, currentBarHeight=14
+[14:57:14][DEBUG]   Chrome: content=217 + leftBar=4 + rightBar=18 + padding=0 = 239 (pre-scrollbar) 
+[14:57:14][DEBUG]   Calculated window with chrome: 257x110 
+[14:57:14][DEBUG]   Screen size: 640x400, Max usable height: 384 
+[14:57:14][DEBUG]   Final window dimensions: 257x110 (after clamping) 
+[14:57:14][DEBUG]   Normal height - centering vertically: 145 
+[14:57:14][DEBUG]   Mode: Center Screen - centering at left=191 
+[14:57:14][INFO] repoistionWindow: PC:Programming/iTidy/tests/icons/glowicons -> 257x110 at (191,145) 

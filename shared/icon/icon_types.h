@@ -70,14 +70,16 @@ typedef int iTidy_IconError;
 #define ITIDY_ICON_SRC_UNKNOWN     0UL
 #define ITIDY_ICON_SRC_COLORICON   1UL
 #define ITIDY_ICON_SRC_GLOWICON    2UL
+#define ITIDY_ICON_SRC_NEWICONS    3UL
+#define ITIDY_ICON_SRC_CLASSIC     4UL
 
 typedef struct iTidy_IndexedImage
 {
     UWORD width;
     UWORD height;
     UBYTE *pixels;              /* chunky palette indexes, width*height */
-    iTidy_RGB8 *palette;
-    UWORD palette_count;
+    iTidy_RGB8 *palette;        /* NULL when indexes are Workbench pens */
+    UWORD palette_count;        /* 0 when no embedded RGB palette */
     LONG transparent_index;     /* -1 = none */
 } iTidy_IndexedImage;
 

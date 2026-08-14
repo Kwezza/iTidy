@@ -100,7 +100,10 @@ SHARED_IMAGE_SRCS = \
 SHARED_ICON_SRCS = \
 	shared/icon/icon_file.c \
 	shared/icon/icon_probe.c \
-	shared/icon/icon_coloricon.c
+	shared/icon/icon_coloricon.c \
+	shared/icon/icon_classic.c \
+	shared/icon/icon_newicons.c \
+	shared/icon/icon_decode.c
 
 # Icon editing / content-aware preview source files
 ICON_EDIT_SRCS = \
@@ -203,7 +206,7 @@ OBJS = $(CORE_OBJS) $(LAYOUT_OBJS) $(SHARED_IMAGE_OBJS) $(SHARED_ICON_OBJS) $(DE
 # Build Rules
 ################################################################################
 
-.PHONY: all clean help amiga directories test-image test-icon test-coloricon
+.PHONY: all clean help amiga directories test-image test-icon test-coloricon test-decode
 
 # Default target
 all: directories $(BIN)
@@ -308,6 +311,21 @@ test-coloricon:
 	@echo Running $(TEST_COLORICON_BIN)
 	$(TEST_COLORICON_BIN)
 
+TEST_DECODE_BIN = src/tests/test_shared_decode.exe
+
+test-decode:
+	@echo Building host unified icon decode tests...
+	$(HOST_CC) $(HOST_CFLAGS) -o $(TEST_DECODE_BIN) \
+		src/tests/test_shared_decode.c \
+		shared/icon/icon_file.c \
+		shared/icon/icon_probe.c \
+		shared/icon/icon_coloricon.c \
+		shared/icon/icon_classic.c \
+		shared/icon/icon_newicons.c \
+		shared/icon/icon_decode.c
+	@echo Running $(TEST_DECODE_BIN)
+	$(TEST_DECODE_BIN)
+
 # Clean build artifacts
 
 clean:
@@ -334,6 +352,7 @@ help:
 	@echo   make test-image         - Host GCC regression tests for shared image kernels
 	@echo   make test-icon          - Host GCC regression tests for shared .info reader/probe
 	@echo   make test-coloricon     - Host GCC tests for ColorIcon / GlowIcon decoder
+	@echo   make test-decode        - Host GCC tests for NewIcons, classic, unified decode
 	@echo   make help               - Show this help
 	@echo.
 	@echo Console Output:

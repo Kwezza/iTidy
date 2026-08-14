@@ -1,0 +1,20 @@
+[14:57:12][INFO] [LHA] Command: C:LhA a "PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00001.lha" "PC:Programming/iTidy/tests/icons/classic/#?.info" 
+[14:57:12][DEBUG] Listing archive contents to: PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00001.txt 
+[14:57:12][INFO] About to capture window geometry for: PC:Programming/iTidy/tests/icons/classic
+[14:57:12][INFO] Reading folder window settings for: PC:Programming/iTidy/tests/icons/classic
+[14:57:12][INFO] Folder window settings: LeftEdge=265, TopEdge=236, Width=270, Height=128, ViewMode=1
+[14:57:13][INFO] [LHA] Command: C:LhA a "PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00002.lha" "PC:Programming/iTidy/tests/icons/coloricons/#?.info" 
+[14:57:13][DEBUG] Listing archive contents to: PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00002.txt 
+[14:57:13][INFO] About to capture window geometry for: PC:Programming/iTidy/tests/icons/coloricons
+[14:57:13][INFO] Reading folder window settings for: PC:Programming/iTidy/tests/icons/coloricons
+[14:57:13][INFO] Folder window settings: LeftEdge=265, TopEdge=236, Width=270, Height=128, ViewMode=1
+[14:57:14][INFO] [LHA] Command: C:LhA a "PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00003.lha" "PC:Programming/iTidy/tests/icons/newicons/#?.info" 
+[14:57:14][DEBUG] Listing archive contents to: PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00003.txt 
+[14:57:14][INFO] About to capture window geometry for: PC:Programming/iTidy/tests/icons/newicons
+[14:57:14][INFO] Reading folder window settings for: PC:Programming/iTidy/tests/icons/newicons
+[14:57:14][INFO] Folder window settings: LeftEdge=265, TopEdge=236, Width=270, Height=128, ViewMode=1
+[14:57:14][INFO] [LHA] Command: C:LhA a "PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00004.lha" "PC:Programming/iTidy/tests/icons/glowicons/#?.info" 
+[14:57:14][DEBUG] Listing archive contents to: PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00004.txt 
+[14:57:14][INFO] About to capture window geometry for: PC:Programming/iTidy/tests/icons/glowicons
+[14:57:14][INFO] Reading folder window settings for: PC:Programming/iTidy/tests/icons/glowicons
+[14:57:14][INFO] Folder window settings: LeftEdge=265, TopEdge=236, Width=270, Height=128, ViewMode=1

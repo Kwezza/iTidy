@@ -1,0 +1,1721 @@
+[14:56:25][INFO] *** Starting DefIcons Icon Creation Phase *** 
+[14:56:25][DEBUG] Initializing DefIcons ARexx communication... 
+[14:56:25][DEBUG] Found DEFICONS port at 0x40364ed8 
+[14:56:25][DEBUG] DefIcons ARexx initialization complete 
+[14:56:25][DEBUG] Initializing DefIcons template system... 
+[14:56:25][DEBUG] DefIcons tree available: 124 type nodes 
+[14:56:25][DEBUG] Checking template: ENVARC:Sys/def_project.info 
+[14:56:25][DEBUG] Found template: project → ENVARC:Sys/def_project.info 
+[14:56:25][DEBUG] Found template: project → ENVARC:Sys/def_project.info 
+[14:56:25][DEBUG] Checking template: ENVARC:Sys/def_tool.info 
+[14:56:25][DEBUG] Found template: tool → ENVARC:Sys/def_tool.info 
+[14:56:25][DEBUG] Found template: tool → ENVARC:Sys/def_tool.info 
+[14:56:25][DEBUG] Checking template: ENVARC:Sys/def_drawer.info 
+[14:56:25][DEBUG] Found template: drawer → ENVARC:Sys/def_drawer.info 
+[14:56:25][DEBUG] Found template: drawer → ENVARC:Sys/def_drawer.info 
+[14:56:25][DEBUG] Checking template: ENVARC:Sys/def_ascii.info 
+[14:56:25][DEBUG] Found template: ascii → ENVARC:Sys/def_ascii.info 
+[14:56:25][DEBUG] Found template: ascii → ENVARC:Sys/def_ascii.info 
+[14:56:25][DEBUG] Checking template: ENVARC:Sys/def_picture.info 
+[14:56:25][DEBUG] Found template: picture → ENVARC:Sys/def_picture.info 
+[14:56:25][DEBUG] Found template: picture → ENVARC:Sys/def_picture.info 
+[14:56:25][DEBUG] Checking template: ENVARC:Sys/def_music.info 
+[14:56:25][DEBUG] Found template: music → ENVARC:Sys/def_music.info 
+[14:56:25][DEBUG] Found template: music → ENVARC:Sys/def_music.info 
+[14:56:25][DEBUG] Checking template: ENVARC:Sys/def_sound.info 
+[14:56:25][DEBUG] Found template: sound → ENVARC:Sys/def_sound.info 
+[14:56:25][DEBUG] Found template: sound → ENVARC:Sys/def_sound.info 
+[14:56:25][DEBUG] Checking template: ENVARC:Sys/def_video.info 
+[14:56:25][DEBUG] Found template: video → ENVARC:Sys/def_video.info 
+[14:56:25][DEBUG] Found template: video → ENVARC:Sys/def_video.info 
+[14:56:25][DEBUG] Checking template: ENVARC:Sys/def_archive.info 
+[14:56:25][DEBUG] Found template: archive → ENVARC:Sys/def_archive.info 
+[14:56:25][DEBUG] Found template: archive → ENVARC:Sys/def_archive.info 
+[14:56:25][DEBUG] Checking template: ENVARC:Sys/def_c.info 
+[14:56:25][DEBUG] Found template: c → ENVARC:Sys/def_c.info 
+[14:56:25][DEBUG] Found template: c → ENVARC:Sys/def_c.info 
+[14:56:25][DEBUG] Checking template: ENVARC:Sys/def_h.info 
+[14:56:25][DEBUG] Found template: h → ENVARC:Sys/def_h.info 
+[14:56:25][DEBUG] Found template: h → ENVARC:Sys/def_h.info 
+[14:56:25][DEBUG] Checking template: ENVARC:Sys/def_asm.info 
+[14:56:25][DEBUG] Found template: asm → ENVARC:Sys/def_asm.info 
+[14:56:25][DEBUG] Found template: asm → ENVARC:Sys/def_asm.info 
+[14:56:25][DEBUG] Checking template: ENVARC:Sys/def_rexx.info 
+[14:56:25][DEBUG] Found template: rexx → ENVARC:Sys/def_rexx.info 
+[14:56:25][DEBUG] Found template: rexx → ENVARC:Sys/def_rexx.info 
+[14:56:25][DEBUG] Found 13 common templates 
+[14:56:25][DEBUG] DefIcons template system initialization complete 
+[14:56:25][DEBUG] Icon creation: PC:Programming/iTidy/tests/icons (level 0) 
+[14:56:25][DEBUG] Skipping hidden folder (Never mode): classic 
+[14:56:25][DEBUG] Skipping hidden folder (Never mode): coloricons 
+[14:56:25][DEBUG] Skipping hidden folder (Never mode): malformed 
+[14:56:25][DEBUG] Skipping hidden folder (Never mode): newicons 
+[14:56:25][DEBUG] Skipping hidden folder (Never mode): glowicons 
+[14:56:25][INFO] Icon creation complete: 0 icon(s) created 
+[14:56:25][DEBUG] Cleaning up DefIcons template system... 
+[14:56:25][DEBUG] DefIcons template system cleanup complete 
+[14:56:25][DEBUG] Cleaning up DefIcons ARexx communication... 
+[14:56:25][DEBUG] DefIcons ARexx cleanup complete 
+[14:56:25][DEBUG] CreateIconArrayFromPath ENTRY: lock=269210649, dirPath='PC:Programming/iTidy/tests/icons'
+[14:56:25][DEBUG] Using OPTIMIZED pattern matching (MatchFirst/MatchNext)
+[14:56:25][DEBUG] Icon array created successfully
+[14:56:25][DEBUG] AnchorPath allocated successfully
+[14:56:25][DEBUG] MatchFirst returned 232 (no .info files found or error) 
+[14:57:10][INFO] *** Starting DefIcons Icon Creation Phase *** 
+[14:57:10][DEBUG] Initializing DefIcons ARexx communication... 
+[14:57:10][DEBUG] Found DEFICONS port at 0x40364ed8 
+[14:57:10][DEBUG] DefIcons ARexx initialization complete 
+[14:57:10][DEBUG] Initializing DefIcons template system... 
+[14:57:10][DEBUG] DefIcons tree available: 124 type nodes 
+[14:57:10][DEBUG] Checking template: ENVARC:Sys/def_project.info 
+[14:57:10][DEBUG] Found template: project → ENVARC:Sys/def_project.info 
+[14:57:10][DEBUG] Found template: project → ENVARC:Sys/def_project.info 
+[14:57:10][DEBUG] Checking template: ENVARC:Sys/def_tool.info 
+[14:57:10][DEBUG] Found template: tool → ENVARC:Sys/def_tool.info 
+[14:57:10][DEBUG] Found template: tool → ENVARC:Sys/def_tool.info 
+[14:57:10][DEBUG] Checking template: ENVARC:Sys/def_drawer.info 
+[14:57:10][DEBUG] Found template: drawer → ENVARC:Sys/def_drawer.info 
+[14:57:10][DEBUG] Found template: drawer → ENVARC:Sys/def_drawer.info 
+[14:57:10][DEBUG] Checking template: ENVARC:Sys/def_ascii.info 
+[14:57:10][DEBUG] Found template: ascii → ENVARC:Sys/def_ascii.info 
+[14:57:10][DEBUG] Found template: ascii → ENVARC:Sys/def_ascii.info 
+[14:57:10][DEBUG] Checking template: ENVARC:Sys/def_picture.info 
+[14:57:10][DEBUG] Found template: picture → ENVARC:Sys/def_picture.info 
+[14:57:10][DEBUG] Found template: picture → ENVARC:Sys/def_picture.info 
+[14:57:10][DEBUG] Checking template: ENVARC:Sys/def_music.info 
+[14:57:10][DEBUG] Found template: music → ENVARC:Sys/def_music.info 
+[14:57:10][DEBUG] Found template: music → ENVARC:Sys/def_music.info 
+[14:57:10][DEBUG] Checking template: ENVARC:Sys/def_sound.info 
+[14:57:10][DEBUG] Found template: sound → ENVARC:Sys/def_sound.info 
+[14:57:10][DEBUG] Found template: sound → ENVARC:Sys/def_sound.info 
+[14:57:10][DEBUG] Checking template: ENVARC:Sys/def_video.info 
+[14:57:10][DEBUG] Found template: video → ENVARC:Sys/def_video.info 
+[14:57:10][DEBUG] Found template: video → ENVARC:Sys/def_video.info 
+[14:57:10][DEBUG] Checking template: ENVARC:Sys/def_archive.info 
+[14:57:10][DEBUG] Found template: archive → ENVARC:Sys/def_archive.info 
+[14:57:10][DEBUG] Found template: archive → ENVARC:Sys/def_archive.info 
+[14:57:10][DEBUG] Checking template: ENVARC:Sys/def_c.info 
+[14:57:10][DEBUG] Found template: c → ENVARC:Sys/def_c.info 
+[14:57:10][DEBUG] Found template: c → ENVARC:Sys/def_c.info 
+[14:57:10][DEBUG] Checking template: ENVARC:Sys/def_h.info 
+[14:57:10][DEBUG] Found template: h → ENVARC:Sys/def_h.info 
+[14:57:10][DEBUG] Found template: h → ENVARC:Sys/def_h.info 
+[14:57:10][DEBUG] Checking template: ENVARC:Sys/def_asm.info 
+[14:57:10][DEBUG] Found template: asm → ENVARC:Sys/def_asm.info 
+[14:57:10][DEBUG] Found template: asm → ENVARC:Sys/def_asm.info 
+[14:57:10][DEBUG] Checking template: ENVARC:Sys/def_rexx.info 
+[14:57:10][DEBUG] Found template: rexx → ENVARC:Sys/def_rexx.info 
+[14:57:10][DEBUG] Found template: rexx → ENVARC:Sys/def_rexx.info 
+[14:57:10][DEBUG] Found 13 common templates 
+[14:57:10][DEBUG] DefIcons template system initialization complete 
+[14:57:10][DEBUG] Icon creation: PC:Programming/iTidy/tests/icons (level 0) 
+[14:57:10][DEBUG] No .info for folder, recursing (post-order): classic 
+[14:57:10][DEBUG] Icon creation: PC:Programming/iTidy/tests/icons/classic (level 1) 
+[14:57:10][DEBUG] Icon already exists, skipping: 8x2x1.expected 
+[14:57:10][DEBUG] Icon already exists, skipping: 8x1_selected.expected 
+[14:57:10][DEBUG] Folder icon enabled (mode: Smart, has contents): PC:Programming/iTidy/tests/icons/classic 
+[14:57:10][DEBUG] >>> RESOLVE: Looking for template for type 'drawer' 
+[14:57:10][DEBUG] >>> RESOLVE: Cache miss, trying direct match for 'drawer' 
+[14:57:10][DEBUG] Checking template: ENVARC:Sys/def_drawer.info 
+[14:57:10][DEBUG] Found template: drawer → ENVARC:Sys/def_drawer.info 
+[14:57:10][DEBUG] Template cached: drawer → ENVARC:Sys/def_drawer.info (category: other, fallback: no) 
+[14:57:10][DEBUG] Template resolved: 'drawer' → ENVARC:Sys/def_drawer.info (direct match) 
+[14:57:10][DEBUG] Icon copied: ENVARC:Sys/def_drawer.info -> PC:Programming/iTidy/tests/icons/classic.info 
+[14:57:10][INFO] Created drawer icon (post-order): PC:Programming/iTidy/tests/icons/classic.info 
+[14:57:10][DEBUG] No .info for folder, recursing (post-order): coloricons 
+[14:57:10][DEBUG] Icon creation: PC:Programming/iTidy/tests/icons/coloricons (level 1) 
+[14:57:10][INFO] DefIcons query: 'PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected' → type 'ascii' 
+[14:57:10][DEBUG] Cached: .expected → ascii 
+[14:57:10][DEBUG] >>> RESOLVE: Looking for template for type 'ascii' 
+[14:57:10][DEBUG] >>> RESOLVE: Cache miss, trying direct match for 'ascii' 
+[14:57:10][DEBUG] Checking template: ENVARC:Sys/def_ascii.info 
+[14:57:10][DEBUG] Found template: ascii → ENVARC:Sys/def_ascii.info 
+[14:57:10][DEBUG] Template cached: ascii → ENVARC:Sys/def_ascii.info (category: ascii, fallback: no) 
+[14:57:10][DEBUG] Template resolved: 'ascii' → ENVARC:Sys/def_ascii.info (direct match) 
+[14:57:11][DEBUG] >>> RESOLVE: Looking for template for type 'ascii' 
+[14:57:11][DEBUG] Template cache hit: ascii → ENVARC:Sys/def_ascii.info (hits: 1) 
+[14:57:11][DEBUG] >>> RESOLVE: Cache hit for 'ascii' → 'ENVARC:Sys/def_ascii.info' 
+[14:57:11][DEBUG] Icon copied: ENVARC:Sys/def_ascii.info -> PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected.info 
+[14:57:11][INFO] Created icon: ENVARC:Sys/def_ascii.info -> PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected.info 
+[14:57:11][DEBUG] Calling itidy_apply_content_preview: progress_window=0x4034a8ac, wrapper=0x40525dcc 
+[14:57:11][DEBUG] Found EXCLUDETYPE tooltype: amigaguide,html,install 
+[14:57:11][DEBUG] itidy_apply_content_preview: applying text preview for 'PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected' (type=ascii) 
+[14:57:11][DEBUG] Trying type-specific template: PROGDIR:Icons/def_ascii.info 
+[14:57:11][DEBUG] Using type-specific preview template: PROGDIR:Icons/def_ascii for type=ascii 
+[14:57:11][DEBUG] expand_palette_for_adaptive: expanded 10 colors -> 14 (added 2 main + 2 alt darkened, reused 16 existing) 
+[14:57:11][DEBUG] expand_palette_for_adaptive: expanded 13 colors -> 20 (added 4 main + 3 alt darkened, reused 19 existing) 
+[14:57:11][DEBUG] itidy_icon_image_extract: 42x46, pal=14 entries, selected=yes, real_sel=yes, trans=(0,0), gflags=0x0006, frameless=yes 
+[14:57:11][DEBUG] itidy_parse_safe_area: from ToolType: 10,7,24,33 
+[14:57:11][DEBUG] itidy_get_render_params: exclude_area=26,33,8,8 
+[14:57:11][DEBUG] itidy_resolve_palette_indices: bg = NO_BG (255) from ToolType 
+[14:57:11][DEBUG] itidy_resolve_palette_indices: auto text = 9 (lum=0) 
+[14:57:11][DEBUG] itidy_resolve_palette_indices: auto mid = 5 (lum=138, target=127) 
+[14:57:11][DEBUG] itidy_get_render_params: auto char_width = 1 (safe_width=24) 
+[14:57:11][DEBUG] itidy_get_render_params: adaptive text enabled, darken=40% 
+[14:57:11][DEBUG] itidy_get_render_params: safe=10,7,24,33 bg=255 text=9 mid=5 char_w=1 line_h=1 gap=1 read=4096 adaptive=YES 
+[14:57:11][DEBUG] itidy_render_ascii_preview: file='PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected' safe=24x33 char_w=1 scale=3x1 src_chars=72 src_lines=33 read=4096 
+[14:57:11][DEBUG] build_darken_table: built table with 14 entries, darken=40% 
+[14:57:11][DEBUG] build_darken_table: built table with 14 entries, darken=20% 
+[14:57:11][DEBUG] build_darken_table: built table with 14 entries, darken=13% 
+[14:57:11][DEBUG] build_darken_table: built table with 14 entries, darken=26% 
+[14:57:11][DEBUG] itidy_render_ascii_preview: adaptive text enabled, darken=40% (alt=20%, 33=13%, 67=26%) 
+[14:57:11][DEBUG] itidy_render_ascii_preview: rendered 9 source lines (3x1 scale) from 'PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected' 
+[14:57:11][DEBUG] itidy_apply_content_preview: template has real selected image, rendering text on selected buffer for 'PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected' 
+[14:57:11][DEBUG] itidy_render_ascii_preview: file='PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected' safe=24x33 char_w=1 scale=3x1 src_chars=72 src_lines=33 read=4096 
+[14:57:11][DEBUG] build_darken_table: built table with 20 entries, darken=40% 
+[14:57:11][DEBUG] build_darken_table: built table with 20 entries, darken=20% 
+[14:57:11][DEBUG] build_darken_table: built table with 20 entries, darken=13% 
+[14:57:11][DEBUG] build_darken_table: built table with 20 entries, darken=26% 
+[14:57:11][DEBUG] itidy_render_ascii_preview: adaptive text enabled, darken=40% (alt=20%, 33=13%, 67=26%) 
+[14:57:11][DEBUG] itidy_render_ascii_preview: rendered 9 source lines (3x1 scale) from 'PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected' 
+[14:57:11][DEBUG] itidy_apply_content_preview: successfully rendered text on selected image for 'PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected' 
+[14:57:11][DEBUG] build_selected_image: skipping (no background mode) 
+[14:57:11][DEBUG] [ICON_DUMP] 42x46 pixels, palette: 14 entries 
+[14:57:11][DEBUG] [ICON_DUMP] Palette: 0=000000 1=AAAAAA 2=FFFFFF 3=E3E3E3 4=C6C6C6 5=8A8A8A 6=6A6A6A 7=292929 8=494949 9=000000 10=3B3B3B 11=0C0C0C 12=595959 13=1A1A1A 
+[14:57:11][DEBUG] [ICON_DUMP] Safe area: left=10 top=7 width=24 height=33 
+[14:57:11][DEBUG] [ICON_DUMP] --- Normal image --- 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000111111111111111111111111111111100000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000122222222222222222222222222223100000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444444444444434444343500000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444444444443444343434600000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124465444444444444444434434343800000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124414444444444444434444343433700000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124464444444444443444343434334900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124411444444444444434434343433900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124466144444444434444343433333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124411114444443444343434334333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124466666664444434434343433333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124411111111434444343433333333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444443444343434334333333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444434434343433333323900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444444443443433333333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444443444343434334333333232900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444434344443333333323900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444434444343433333333333232900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444344434333333332323900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444434434343433333323323232900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444434434433333323333322900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123444343444334333333232323232900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444443333323323232222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444343433333333333232322322900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444443333323323232222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444343433333333333232322322900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124343434334333333232323232222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124434443433333333333232222222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124343433333333333232322322222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123444343433333333323223232223900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124343433333323323232222222336700000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123434434333333232232333333569600000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124334333333232323232234415689500000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123434333333332232322214156895000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123333333333232322322311568960000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124343333333323232222455689800000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123333323323232222222556898000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123333333232322322221668960000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000133333232323232222468797500000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000115687999999999999997865000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] --- Selected image (real=yes) --- 
+[14:57:11][DEBUG] [ICON_DUMP] 000000CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC00000 
+[14:57:11][DEBUG] [ICON_DUMP] 00000CBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBC0000 
+[14:57:11][DEBUG] [ICON_DUMP] 0000CBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABC000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1111111111111111111111111111111ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1222222222222222222222222222231ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444444444444344443435ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444444444444444434443434346ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244514444444444444444344343438ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244144444444444444344443434337ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244544444444444434443434343349ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244114444444444444344343434339ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244551444444444344443434333339ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244111144444434443434343343339ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244555555544444344343434333339ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244111111114344443434333333339ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444434443434343343333339ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444444444344343434333333239ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444444434434333333339ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444434443434343343333332329ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444343444433333333239ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444344443434333333333332329ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444443444343333333323239ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444344343434333333233232329ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444344344333333233333229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1234443434443343333332323232329ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444433333233232322229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244443434333333333332323223229ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444433333233232322229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244443434333333333332323223229ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1243434343343333332323232322229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244344434333333333332322222229ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1243434333333333332323223222229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1234443434333333333232232322239ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1243434333333233232322222223367ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1234344343333332322323333335696ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1243343333332323232322344156895ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA123434333333332232322214156895ABC000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA12333333333323232232231156896ABC0000 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1243433333333232322224556898ABC00000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA123333323323232222222556898ABC000000 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA12333333323232232222166896ABC0000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1333332323232322224687975ABC00000000 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA115687999999999999997865ABC000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CCBAAAAAAAAAAAAAAAAAAAAAAAABC0000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 0000CCBBBBBBBBBBBBBBBBBBBBBBBBC00000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 00000CCCCCCCCCCCCCCCCCCCCCCCCC000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] Selected palette differs from normal: 
+[14:57:11][DEBUG] [ICON_DUMP] Selected Palette: 0=000000 1=828282 2=D7D7D7 3=BBBBBB 4=9E9E9E 5=626262 6=424242 7=010101 8=212121 9=000000 10=FFFFFF 11=EFE714 12=DFBA45 13=2F2F2F 14=131313 15=474506 16=423714 17=545454 18=9B960D 19=90782C 
+[14:57:11][DEBUG] [ICON_DUMP] --- Source text (first 5 lines) --- 
+[14:57:11][DEBUG] [ICON_DUMP] src=1 
+[14:57:11][DEBUG] [ICON_DUMP] w=2 
+[14:57:11][DEBUG] [ICON_DUMP] h=2 
+[14:57:11][DEBUG] [ICON_DUMP] pal=2 
+[14:57:11][DEBUG] [ICON_DUMP] trans=0 
+[14:57:11][DEBUG] itidy_icon_image_apply: applied 42x46 image to clone, gflags=0x0006, frameless=yes, real_sel=yes 
+[14:57:11][DEBUG] itidy_stamp_created_tooltypes: stamped 6 entries (kind=text_preview) 
+[14:57:11][DEBUG] itidy_icon_image_save: saved icon to 'PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected' (OS3.5 format) 
+[14:57:11][DEBUG] itidy_apply_content_preview: saved text preview icon for 'PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected' 
+[14:57:11][INFO] Content preview applied: 2x2_raw.expected (type: ascii) 
+[14:57:11][DEBUG] Category tracked: ascii (type: ascii) 
+[14:57:11][INFO] Created 1 icon(s) in: PC:Programming/iTidy/tests/icons/coloricons 
+[14:57:11][DEBUG] Folder icon enabled (mode: Smart, has contents): PC:Programming/iTidy/tests/icons/coloricons 
+[14:57:11][DEBUG] >>> RESOLVE: Looking for template for type 'drawer' 
+[14:57:11][DEBUG] Template cache hit: drawer → ENVARC:Sys/def_drawer.info (hits: 1) 
+[14:57:11][DEBUG] >>> RESOLVE: Cache hit for 'drawer' → 'ENVARC:Sys/def_drawer.info' 
+[14:57:11][DEBUG] Icon copied: ENVARC:Sys/def_drawer.info -> PC:Programming/iTidy/tests/icons/coloricons.info 
+[14:57:11][INFO] Created drawer icon (post-order): PC:Programming/iTidy/tests/icons/coloricons.info 
+[14:57:11][DEBUG] No .info for folder, recursing (post-order): malformed 
+[14:57:11][DEBUG] Icon creation: PC:Programming/iTidy/tests/icons/malformed (level 1) 
+[14:57:11][DEBUG] Folder icon skipped (mode: Smart, no visible contents): PC:Programming/iTidy/tests/icons/malformed 
+[14:57:11][DEBUG] No .info for folder, recursing (post-order): newicons 
+[14:57:11][DEBUG] Icon creation: PC:Programming/iTidy/tests/icons/newicons (level 1) 
+[14:57:11][DEBUG] Cache hit: .expected → ascii (hits: 1) 
+[14:57:11][DEBUG] >>> RESOLVE: Looking for template for type 'ascii' 
+[14:57:11][DEBUG] Template cache hit: ascii → ENVARC:Sys/def_ascii.info (hits: 2) 
+[14:57:11][DEBUG] >>> RESOLVE: Cache hit for 'ascii' → 'ENVARC:Sys/def_ascii.info' 
+[14:57:11][DEBUG] Icon copied: ENVARC:Sys/def_ascii.info -> PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.expected.info 
+[14:57:11][INFO] Created icon: ENVARC:Sys/def_ascii.info -> PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.expected.info 
+[14:57:11][DEBUG] Calling itidy_apply_content_preview: progress_window=0x4034a8ac, wrapper=0x40525dcc 
+[14:57:11][DEBUG] Found EXCLUDETYPE tooltype: amigaguide,html,install 
+[14:57:11][DEBUG] itidy_apply_content_preview: applying text preview for 'PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.expected' (type=ascii) 
+[14:57:11][DEBUG] Trying type-specific template: PROGDIR:Icons/def_ascii.info 
+[14:57:11][DEBUG] Using type-specific preview template: PROGDIR:Icons/def_ascii for type=ascii 
+[14:57:11][DEBUG] expand_palette_for_adaptive: expanded 10 colors -> 14 (added 2 main + 2 alt darkened, reused 16 existing) 
+[14:57:11][DEBUG] expand_palette_for_adaptive: expanded 13 colors -> 20 (added 4 main + 3 alt darkened, reused 19 existing) 
+[14:57:11][DEBUG] itidy_icon_image_extract: 42x46, pal=14 entries, selected=yes, real_sel=yes, trans=(0,0), gflags=0x0006, frameless=yes 
+[14:57:11][DEBUG] itidy_parse_safe_area: from ToolType: 10,7,24,33 
+[14:57:11][DEBUG] itidy_get_render_params: exclude_area=26,33,8,8 
+[14:57:11][DEBUG] itidy_resolve_palette_indices: bg = NO_BG (255) from ToolType 
+[14:57:11][DEBUG] itidy_resolve_palette_indices: auto text = 9 (lum=0) 
+[14:57:11][DEBUG] itidy_resolve_palette_indices: auto mid = 5 (lum=138, target=127) 
+[14:57:11][DEBUG] itidy_get_render_params: auto char_width = 1 (safe_width=24) 
+[14:57:11][DEBUG] itidy_get_render_params: adaptive text enabled, darken=40% 
+[14:57:11][DEBUG] itidy_get_render_params: safe=10,7,24,33 bg=255 text=9 mid=5 char_w=1 line_h=1 gap=1 read=4096 adaptive=YES 
+[14:57:11][DEBUG] itidy_render_ascii_preview: file='PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.expected' safe=24x33 char_w=1 scale=3x1 src_chars=72 src_lines=33 read=4096 
+[14:57:11][DEBUG] build_darken_table: built table with 14 entries, darken=40% 
+[14:57:11][DEBUG] build_darken_table: built table with 14 entries, darken=20% 
+[14:57:11][DEBUG] build_darken_table: built table with 14 entries, darken=13% 
+[14:57:11][DEBUG] build_darken_table: built table with 14 entries, darken=26% 
+[14:57:11][DEBUG] itidy_render_ascii_preview: adaptive text enabled, darken=40% (alt=20%, 33=13%, 67=26%) 
+[14:57:11][DEBUG] itidy_render_ascii_preview: rendered 9 source lines (3x1 scale) from 'PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.expected' 
+[14:57:11][DEBUG] itidy_apply_content_preview: template has real selected image, rendering text on selected buffer for 'PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.expected' 
+[14:57:11][DEBUG] itidy_render_ascii_preview: file='PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.expected' safe=24x33 char_w=1 scale=3x1 src_chars=72 src_lines=33 read=4096 
+[14:57:11][DEBUG] build_darken_table: built table with 20 entries, darken=40% 
+[14:57:11][DEBUG] build_darken_table: built table with 20 entries, darken=20% 
+[14:57:11][DEBUG] build_darken_table: built table with 20 entries, darken=13% 
+[14:57:11][DEBUG] build_darken_table: built table with 20 entries, darken=26% 
+[14:57:11][DEBUG] itidy_render_ascii_preview: adaptive text enabled, darken=40% (alt=20%, 33=13%, 67=26%) 
+[14:57:11][DEBUG] itidy_render_ascii_preview: rendered 9 source lines (3x1 scale) from 'PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.expected' 
+[14:57:11][DEBUG] itidy_apply_content_preview: successfully rendered text on selected image for 'PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.expected' 
+[14:57:11][DEBUG] build_selected_image: skipping (no background mode) 
+[14:57:11][DEBUG] [ICON_DUMP] 42x46 pixels, palette: 14 entries 
+[14:57:11][DEBUG] [ICON_DUMP] Palette: 0=000000 1=AAAAAA 2=FFFFFF 3=E3E3E3 4=C6C6C6 5=8A8A8A 6=6A6A6A 7=292929 8=494949 9=000000 10=3B3B3B 11=0C0C0C 12=595959 13=1A1A1A 
+[14:57:11][DEBUG] [ICON_DUMP] Safe area: left=10 top=7 width=24 height=33 
+[14:57:11][DEBUG] [ICON_DUMP] --- Normal image --- 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000111111111111111111111111111111100000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000122222222222222222222222222223100000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444444444444434444343500000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444444444443444343434600000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124465444444444444444434434343800000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124414444444444444434444343433700000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124464444444444443444343434334900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124411444444444444434434343433900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124466144444444434444343433333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124411114444443444343434334333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124466666664444434434343433333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124411111111434444343433333333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444443444343434334333333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444434434343433333323900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444444443443433333333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444443444343434334333333232900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444434344443333333323900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444434444343433333333333232900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444344434333333332323900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444434434343433333323323232900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444434434433333323333322900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123444343444334333333232323232900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444443333323323232222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444343433333333333232322322900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444443333323323232222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444343433333333333232322322900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124343434334333333232323232222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124434443433333333333232222222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124343433333333333232322322222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123444343433333333323223232223900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124343433333323323232222222336700000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123434434333333232232333333569600000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124334333333232323232234415689500000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123434333333332232322214156895000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123333333333232322322311568960000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124343333333323232222455689800000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123333323323232222222556898000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123333333232322322221668960000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000133333232323232222468797500000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000115687999999999999997865000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] --- Selected image (real=yes) --- 
+[14:57:11][DEBUG] [ICON_DUMP] 000000CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC00000 
+[14:57:11][DEBUG] [ICON_DUMP] 00000CBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBC0000 
+[14:57:11][DEBUG] [ICON_DUMP] 0000CBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABC000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1111111111111111111111111111111ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1222222222222222222222222222231ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444444444444344443435ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444444444444444434443434346ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244514444444444444444344343438ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244144444444444444344443434337ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244544444444444434443434343349ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244114444444444444344343434339ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244551444444444344443434333339ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244111144444434443434343343339ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244555555544444344343434333339ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244111111114344443434333333339ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444434443434343343333339ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444444444344343434333333239ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444444434434333333339ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444434443434343343333332329ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444343444433333333239ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444344443434333333333332329ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444443444343333333323239ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444344343434333333233232329ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444344344333333233333229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1234443434443343333332323232329ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444433333233232322229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244443434333333333332323223229ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444433333233232322229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244443434333333333332323223229ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1243434343343333332323232322229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244344434333333333332322222229ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1243434333333333332323223222229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1234443434333333333232232322239ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1243434333333233232322222223367ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1234344343333332322323333335696ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1243343333332323232322344156895ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA123434333333332232322214156895ABC000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA12333333333323232232231156896ABC0000 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1243433333333232322224556898ABC00000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA123333323323232222222556898ABC000000 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA12333333323232232222166896ABC0000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1333332323232322224687975ABC00000000 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA115687999999999999997865ABC000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CCBAAAAAAAAAAAAAAAAAAAAAAAABC0000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 0000CCBBBBBBBBBBBBBBBBBBBBBBBBC00000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 00000CCCCCCCCCCCCCCCCCCCCCCCCC000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] Selected palette differs from normal: 
+[14:57:11][DEBUG] [ICON_DUMP] Selected Palette: 0=000000 1=828282 2=D7D7D7 3=BBBBBB 4=9E9E9E 5=626262 6=424242 7=010101 8=212121 9=000000 10=FFFFFF 11=EFE714 12=DFBA45 13=2F2F2F 14=131313 15=474506 16=423714 17=545454 18=9B960D 19=90782C 
+[14:57:11][DEBUG] [ICON_DUMP] --- Source text (first 5 lines) --- 
+[14:57:11][DEBUG] [ICON_DUMP] src=3 
+[14:57:11][DEBUG] [ICON_DUMP] w=8 
+[14:57:11][DEBUG] [ICON_DUMP] h=8 
+[14:57:11][DEBUG] [ICON_DUMP] pal=16 
+[14:57:11][DEBUG] [ICON_DUMP] trans=0 
+[14:57:11][DEBUG] itidy_icon_image_apply: applied 42x46 image to clone, gflags=0x0006, frameless=yes, real_sel=yes 
+[14:57:11][DEBUG] itidy_stamp_created_tooltypes: stamped 6 entries (kind=text_preview) 
+[14:57:11][DEBUG] itidy_icon_image_save: saved icon to 'PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.expected' (OS3.5 format) 
+[14:57:11][DEBUG] itidy_apply_content_preview: saved text preview icon for 'PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.expected' 
+[14:57:11][INFO] Content preview applied: 8x8_16col_multiline.expected (type: ascii) 
+[14:57:11][DEBUG] Category tracked: ascii (type: ascii) 
+[14:57:11][DEBUG] Cache hit: .expected → ascii (hits: 2) 
+[14:57:11][DEBUG] >>> RESOLVE: Looking for template for type 'ascii' 
+[14:57:11][DEBUG] Template cache hit: ascii → ENVARC:Sys/def_ascii.info (hits: 3) 
+[14:57:11][DEBUG] >>> RESOLVE: Cache hit for 'ascii' → 'ENVARC:Sys/def_ascii.info' 
+[14:57:11][DEBUG] Icon copied: ENVARC:Sys/def_ascii.info -> PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.expected.info 
+[14:57:11][INFO] Created icon: ENVARC:Sys/def_ascii.info -> PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.expected.info 
+[14:57:11][DEBUG] Calling itidy_apply_content_preview: progress_window=0x4034a8ac, wrapper=0x40525dcc 
+[14:57:11][DEBUG] Found EXCLUDETYPE tooltype: amigaguide,html,install 
+[14:57:11][DEBUG] itidy_apply_content_preview: applying text preview for 'PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.expected' (type=ascii) 
+[14:57:11][DEBUG] Trying type-specific template: PROGDIR:Icons/def_ascii.info 
+[14:57:11][DEBUG] Using type-specific preview template: PROGDIR:Icons/def_ascii for type=ascii 
+[14:57:11][DEBUG] expand_palette_for_adaptive: expanded 10 colors -> 14 (added 2 main + 2 alt darkened, reused 16 existing) 
+[14:57:11][DEBUG] expand_palette_for_adaptive: expanded 13 colors -> 20 (added 4 main + 3 alt darkened, reused 19 existing) 
+[14:57:11][DEBUG] itidy_icon_image_extract: 42x46, pal=14 entries, selected=yes, real_sel=yes, trans=(0,0), gflags=0x0006, frameless=yes 
+[14:57:11][DEBUG] itidy_parse_safe_area: from ToolType: 10,7,24,33 
+[14:57:11][DEBUG] itidy_get_render_params: exclude_area=26,33,8,8 
+[14:57:11][DEBUG] itidy_resolve_palette_indices: bg = NO_BG (255) from ToolType 
+[14:57:11][DEBUG] itidy_resolve_palette_indices: auto text = 9 (lum=0) 
+[14:57:11][DEBUG] itidy_resolve_palette_indices: auto mid = 5 (lum=138, target=127) 
+[14:57:11][DEBUG] itidy_get_render_params: auto char_width = 1 (safe_width=24) 
+[14:57:11][DEBUG] itidy_get_render_params: adaptive text enabled, darken=40% 
+[14:57:11][DEBUG] itidy_get_render_params: safe=10,7,24,33 bg=255 text=9 mid=5 char_w=1 line_h=1 gap=1 read=4096 adaptive=YES 
+[14:57:11][DEBUG] itidy_render_ascii_preview: file='PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.expected' safe=24x33 char_w=1 scale=3x1 src_chars=72 src_lines=33 read=4096 
+[14:57:11][DEBUG] build_darken_table: built table with 14 entries, darken=40% 
+[14:57:11][DEBUG] build_darken_table: built table with 14 entries, darken=20% 
+[14:57:11][DEBUG] build_darken_table: built table with 14 entries, darken=13% 
+[14:57:11][DEBUG] build_darken_table: built table with 14 entries, darken=26% 
+[14:57:11][DEBUG] itidy_render_ascii_preview: adaptive text enabled, darken=40% (alt=20%, 33=13%, 67=26%) 
+[14:57:11][DEBUG] itidy_render_ascii_preview: rendered 9 source lines (3x1 scale) from 'PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.expected' 
+[14:57:11][DEBUG] itidy_apply_content_preview: template has real selected image, rendering text on selected buffer for 'PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.expected' 
+[14:57:11][DEBUG] itidy_render_ascii_preview: file='PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.expected' safe=24x33 char_w=1 scale=3x1 src_chars=72 src_lines=33 read=4096 
+[14:57:11][DEBUG] build_darken_table: built table with 20 entries, darken=40% 
+[14:57:11][DEBUG] build_darken_table: built table with 20 entries, darken=20% 
+[14:57:11][DEBUG] build_darken_table: built table with 20 entries, darken=13% 
+[14:57:11][DEBUG] build_darken_table: built table with 20 entries, darken=26% 
+[14:57:11][DEBUG] itidy_render_ascii_preview: adaptive text enabled, darken=40% (alt=20%, 33=13%, 67=26%) 
+[14:57:11][DEBUG] itidy_render_ascii_preview: rendered 9 source lines (3x1 scale) from 'PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.expected' 
+[14:57:11][DEBUG] itidy_apply_content_preview: successfully rendered text on selected image for 'PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.expected' 
+[14:57:11][DEBUG] build_selected_image: skipping (no background mode) 
+[14:57:11][DEBUG] [ICON_DUMP] 42x46 pixels, palette: 14 entries 
+[14:57:11][DEBUG] [ICON_DUMP] Palette: 0=000000 1=AAAAAA 2=FFFFFF 3=E3E3E3 4=C6C6C6 5=8A8A8A 6=6A6A6A 7=292929 8=494949 9=000000 10=3B3B3B 11=0C0C0C 12=595959 13=1A1A1A 
+[14:57:11][DEBUG] [ICON_DUMP] Safe area: left=10 top=7 width=24 height=33 
+[14:57:11][DEBUG] [ICON_DUMP] --- Normal image --- 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000111111111111111111111111111111100000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000122222222222222222222222222223100000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444444444444434444343500000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444444444443444343434600000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124465444444444444444434434343800000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124414444444444444434444343433700000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124464444444444443444343434334900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124411444444444444434434343433900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124466544444444434444343433333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124411114444443444343434334333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124466666664444434434343433333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124411111111434444343433333333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444443444343434334333333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444434434343433333323900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444444443443433333333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444443444343434334333333232900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444434344443333333323900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444434444343433333333333232900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444344434333333332323900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444434434343433333323323232900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444434434433333323333322900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123444343444334333333232323232900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444443333323323232222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444343433333333333232322322900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444443333323323232222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444343433333333333232322322900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124343434334333333232323232222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124434443433333333333232222222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124343433333333333232322322222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123444343433333333323223232223900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124343433333323323232222222336700000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123434434333333232232333333569600000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124334333333232323232234415689500000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123434333333332232322214156895000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123333333333232322322311568960000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124343333333323232222455689800000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123333323323232222222556898000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123333333232322322221668960000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000133333232323232222468797500000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000115687999999999999997865000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] --- Selected image (real=yes) --- 
+[14:57:11][DEBUG] [ICON_DUMP] 000000CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC00000 
+[14:57:11][DEBUG] [ICON_DUMP] 00000CBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBC0000 
+[14:57:11][DEBUG] [ICON_DUMP] 0000CBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABC000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1111111111111111111111111111111ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1222222222222222222222222222231ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444444444444344443435ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444444444444444434443434346ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244514444444444444444344343438ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244144444444444444344443434337ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244544444444444434443434343349ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244114444444444444344343434339ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244551444444444344443434333339ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244111144444434443434343343339ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244555555544444344343434333339ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244111111114344443434333333339ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444434443434343343333339ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444444444344343434333333239ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444444434434333333339ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444434443434343343333332329ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444343444433333333239ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444344443434333333333332329ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444443444343333333323239ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444344343434333333233232329ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444344344333333233333229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1234443434443343333332323232329ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444433333233232322229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244443434333333333332323223229ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444433333233232322229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244443434333333333332323223229ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1243434343343333332323232322229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244344434333333333332322222229ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1243434333333333332323223222229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1234443434333333333232232322239ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1243434333333233232322222223367ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1234344343333332322323333335696ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1243343333332323232322344156895ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA123434333333332232322214156895ABC000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA12333333333323232232231156896ABC0000 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1243433333333232322224556898ABC00000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA123333323323232222222556898ABC000000 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA12333333323232232222166896ABC0000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1333332323232322224687975ABC00000000 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA115687999999999999997865ABC000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CCBAAAAAAAAAAAAAAAAAAAAAAAABC0000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 0000CCBBBBBBBBBBBBBBBBBBBBBBBBC00000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 00000CCCCCCCCCCCCCCCCCCCCCCCCC000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] Selected palette differs from normal: 
+[14:57:11][DEBUG] [ICON_DUMP] Selected Palette: 0=000000 1=828282 2=D7D7D7 3=BBBBBB 4=9E9E9E 5=626262 6=424242 7=010101 8=212121 9=000000 10=FFFFFF 11=EFE714 12=DFBA45 13=2F2F2F 14=131313 15=474506 16=423714 17=545454 18=9B960D 19=90782C 
+[14:57:11][DEBUG] [ICON_DUMP] --- Source text (first 5 lines) --- 
+[14:57:11][DEBUG] [ICON_DUMP] src=3 
+[14:57:11][DEBUG] [ICON_DUMP] w=4 
+[14:57:11][DEBUG] [ICON_DUMP] h=4 
+[14:57:11][DEBUG] [ICON_DUMP] pal=8 
+[14:57:11][DEBUG] [ICON_DUMP] trans=-1 
+[14:57:11][DEBUG] itidy_icon_image_apply: applied 42x46 image to clone, gflags=0x0006, frameless=yes, real_sel=yes 
+[14:57:11][DEBUG] itidy_stamp_created_tooltypes: stamped 6 entries (kind=text_preview) 
+[14:57:11][DEBUG] itidy_icon_image_save: saved icon to 'PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.expected' (OS3.5 format) 
+[14:57:11][DEBUG] itidy_apply_content_preview: saved text preview icon for 'PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.expected' 
+[14:57:11][INFO] Content preview applied: 4x4_8col_selected.expected (type: ascii) 
+[14:57:11][DEBUG] Category tracked: ascii (type: ascii) 
+[14:57:11][DEBUG] Cache hit: .expected → ascii (hits: 3) 
+[14:57:11][DEBUG] >>> RESOLVE: Looking for template for type 'ascii' 
+[14:57:11][DEBUG] Template cache hit: ascii → ENVARC:Sys/def_ascii.info (hits: 4) 
+[14:57:11][DEBUG] >>> RESOLVE: Cache hit for 'ascii' → 'ENVARC:Sys/def_ascii.info' 
+[14:57:11][DEBUG] Icon copied: ENVARC:Sys/def_ascii.info -> PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.expected.info 
+[14:57:11][INFO] Created icon: ENVARC:Sys/def_ascii.info -> PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.expected.info 
+[14:57:11][DEBUG] Calling itidy_apply_content_preview: progress_window=0x4034a8ac, wrapper=0x40525dcc 
+[14:57:11][DEBUG] Found EXCLUDETYPE tooltype: amigaguide,html,install 
+[14:57:11][DEBUG] itidy_apply_content_preview: applying text preview for 'PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.expected' (type=ascii) 
+[14:57:11][DEBUG] Trying type-specific template: PROGDIR:Icons/def_ascii.info 
+[14:57:11][DEBUG] Using type-specific preview template: PROGDIR:Icons/def_ascii for type=ascii 
+[14:57:11][DEBUG] expand_palette_for_adaptive: expanded 10 colors -> 14 (added 2 main + 2 alt darkened, reused 16 existing) 
+[14:57:11][DEBUG] expand_palette_for_adaptive: expanded 13 colors -> 20 (added 4 main + 3 alt darkened, reused 19 existing) 
+[14:57:11][DEBUG] itidy_icon_image_extract: 42x46, pal=14 entries, selected=yes, real_sel=yes, trans=(0,0), gflags=0x0006, frameless=yes 
+[14:57:11][DEBUG] itidy_parse_safe_area: from ToolType: 10,7,24,33 
+[14:57:11][DEBUG] itidy_get_render_params: exclude_area=26,33,8,8 
+[14:57:11][DEBUG] itidy_resolve_palette_indices: bg = NO_BG (255) from ToolType 
+[14:57:11][DEBUG] itidy_resolve_palette_indices: auto text = 9 (lum=0) 
+[14:57:11][DEBUG] itidy_resolve_palette_indices: auto mid = 5 (lum=138, target=127) 
+[14:57:11][DEBUG] itidy_get_render_params: auto char_width = 1 (safe_width=24) 
+[14:57:11][DEBUG] itidy_get_render_params: adaptive text enabled, darken=40% 
+[14:57:11][DEBUG] itidy_get_render_params: safe=10,7,24,33 bg=255 text=9 mid=5 char_w=1 line_h=1 gap=1 read=4096 adaptive=YES 
+[14:57:11][DEBUG] itidy_render_ascii_preview: file='PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.expected' safe=24x33 char_w=1 scale=3x1 src_chars=72 src_lines=33 read=4096 
+[14:57:11][DEBUG] build_darken_table: built table with 14 entries, darken=40% 
+[14:57:11][DEBUG] build_darken_table: built table with 14 entries, darken=20% 
+[14:57:11][DEBUG] build_darken_table: built table with 14 entries, darken=13% 
+[14:57:11][DEBUG] build_darken_table: built table with 14 entries, darken=26% 
+[14:57:11][DEBUG] itidy_render_ascii_preview: adaptive text enabled, darken=40% (alt=20%, 33=13%, 67=26%) 
+[14:57:11][DEBUG] itidy_render_ascii_preview: rendered 9 source lines (3x1 scale) from 'PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.expected' 
+[14:57:11][DEBUG] itidy_apply_content_preview: template has real selected image, rendering text on selected buffer for 'PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.expected' 
+[14:57:11][DEBUG] itidy_render_ascii_preview: file='PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.expected' safe=24x33 char_w=1 scale=3x1 src_chars=72 src_lines=33 read=4096 
+[14:57:11][DEBUG] build_darken_table: built table with 20 entries, darken=40% 
+[14:57:11][DEBUG] build_darken_table: built table with 20 entries, darken=20% 
+[14:57:11][DEBUG] build_darken_table: built table with 20 entries, darken=13% 
+[14:57:11][DEBUG] build_darken_table: built table with 20 entries, darken=26% 
+[14:57:11][DEBUG] itidy_render_ascii_preview: adaptive text enabled, darken=40% (alt=20%, 33=13%, 67=26%) 
+[14:57:11][DEBUG] itidy_render_ascii_preview: rendered 9 source lines (3x1 scale) from 'PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.expected' 
+[14:57:11][DEBUG] itidy_apply_content_preview: successfully rendered text on selected image for 'PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.expected' 
+[14:57:11][DEBUG] build_selected_image: skipping (no background mode) 
+[14:57:11][DEBUG] [ICON_DUMP] 42x46 pixels, palette: 14 entries 
+[14:57:11][DEBUG] [ICON_DUMP] Palette: 0=000000 1=AAAAAA 2=FFFFFF 3=E3E3E3 4=C6C6C6 5=8A8A8A 6=6A6A6A 7=292929 8=494949 9=000000 10=3B3B3B 11=0C0C0C 12=595959 13=1A1A1A 
+[14:57:11][DEBUG] [ICON_DUMP] Safe area: left=10 top=7 width=24 height=33 
+[14:57:11][DEBUG] [ICON_DUMP] --- Normal image --- 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000111111111111111111111111111111100000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000122222222222222222222222222223100000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444444444444434444343500000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444444444443444343434600000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124465444444444444444434434343800000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124414444444444444434444343433700000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124464444444444443444343434334900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124411444444444444434434343433900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124466544444444434444343433333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124411114444443444343434334333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124466666664444434434343433333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124411111111434444343433333333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444443444343434334333333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444434434343433333323900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444444443443433333333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444443444343434334333333232900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444434344443333333323900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444434444343433333333333232900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444344434333333332323900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444434434343433333323323232900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444434434433333323333322900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123444343444334333333232323232900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444443333323323232222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444343433333333333232322322900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444443333323323232222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444343433333333333232322322900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124343434334333333232323232222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124434443433333333333232222222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124343433333333333232322322222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123444343433333333323223232223900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124343433333323323232222222336700000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123434434333333232232333333569600000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124334333333232323232234415689500000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123434333333332232322214156895000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123333333333232322322311568960000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124343333333323232222455689800000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123333323323232222222556898000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123333333232322322221668960000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000133333232323232222468797500000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000115687999999999999997865000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] --- Selected image (real=yes) --- 
+[14:57:11][DEBUG] [ICON_DUMP] 000000CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC00000 
+[14:57:11][DEBUG] [ICON_DUMP] 00000CBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBC0000 
+[14:57:11][DEBUG] [ICON_DUMP] 0000CBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABC000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1111111111111111111111111111111ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1222222222222222222222222222231ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444444444444344443435ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444444444444444434443434346ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244514444444444444444344343438ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244144444444444444344443434337ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244544444444444434443434343349ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244114444444444444344343434339ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244551444444444344443434333339ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244111144444434443434343343339ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244555555544444344343434333339ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244111111114344443434333333339ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444434443434343343333339ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444444444344343434333333239ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444444434434333333339ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444434443434343343333332329ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444343444433333333239ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444344443434333333333332329ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444443444343333333323239ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444344343434333333233232329ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444344344333333233333229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1234443434443343333332323232329ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444433333233232322229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244443434333333333332323223229ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444433333233232322229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244443434333333333332323223229ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1243434343343333332323232322229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244344434333333333332322222229ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1243434333333333332323223222229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1234443434333333333232232322239ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1243434333333233232322222223367ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1234344343333332322323333335696ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1243343333332323232322344156895ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA123434333333332232322214156895ABC000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA12333333333323232232231156896ABC0000 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1243433333333232322224556898ABC00000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA123333323323232222222556898ABC000000 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA12333333323232232222166896ABC0000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1333332323232322224687975ABC00000000 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA115687999999999999997865ABC000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CCBAAAAAAAAAAAAAAAAAAAAAAAABC0000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 0000CCBBBBBBBBBBBBBBBBBBBBBBBBC00000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 00000CCCCCCCCCCCCCCCCCCCCCCCCC000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] Selected palette differs from normal: 
+[14:57:11][DEBUG] [ICON_DUMP] Selected Palette: 0=000000 1=828282 2=D7D7D7 3=BBBBBB 4=9E9E9E 5=626262 6=424242 7=010101 8=212121 9=000000 10=FFFFFF 11=EFE714 12=DFBA45 13=2F2F2F 14=131313 15=474506 16=423714 17=545454 18=9B960D 19=90782C 
+[14:57:11][DEBUG] [ICON_DUMP] --- Source text (first 5 lines) --- 
+[14:57:11][DEBUG] [ICON_DUMP] src=3 
+[14:57:11][DEBUG] [ICON_DUMP] w=2 
+[14:57:11][DEBUG] [ICON_DUMP] h=1 
+[14:57:11][DEBUG] [ICON_DUMP] pal=2 
+[14:57:11][DEBUG] [ICON_DUMP] trans=-1 
+[14:57:11][DEBUG] itidy_icon_image_apply: applied 42x46 image to clone, gflags=0x0006, frameless=yes, real_sel=yes 
+[14:57:11][DEBUG] itidy_stamp_created_tooltypes: stamped 6 entries (kind=text_preview) 
+[14:57:11][DEBUG] itidy_icon_image_save: saved icon to 'PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.expected' (OS3.5 format) 
+[14:57:11][DEBUG] itidy_apply_content_preview: saved text preview icon for 'PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.expected' 
+[14:57:11][INFO] Content preview applied: 4x2_rle_zeros.expected (type: ascii) 
+[14:57:11][DEBUG] Category tracked: ascii (type: ascii) 
+[14:57:11][DEBUG] Cache hit: .expected → ascii (hits: 4) 
+[14:57:11][DEBUG] >>> RESOLVE: Looking for template for type 'ascii' 
+[14:57:11][DEBUG] Template cache hit: ascii → ENVARC:Sys/def_ascii.info (hits: 5) 
+[14:57:11][DEBUG] >>> RESOLVE: Cache hit for 'ascii' → 'ENVARC:Sys/def_ascii.info' 
+[14:57:11][DEBUG] Icon copied: ENVARC:Sys/def_ascii.info -> PC:Programming/iTidy/tests/icons/newicons/2x2_4col.expected.info 
+[14:57:11][INFO] Created icon: ENVARC:Sys/def_ascii.info -> PC:Programming/iTidy/tests/icons/newicons/2x2_4col.expected.info 
+[14:57:11][DEBUG] Calling itidy_apply_content_preview: progress_window=0x4034a8ac, wrapper=0x40525dcc 
+[14:57:11][DEBUG] Found EXCLUDETYPE tooltype: amigaguide,html,install 
+[14:57:11][DEBUG] itidy_apply_content_preview: applying text preview for 'PC:Programming/iTidy/tests/icons/newicons/2x2_4col.expected' (type=ascii) 
+[14:57:11][DEBUG] Trying type-specific template: PROGDIR:Icons/def_ascii.info 
+[14:57:11][DEBUG] Using type-specific preview template: PROGDIR:Icons/def_ascii for type=ascii 
+[14:57:11][DEBUG] expand_palette_for_adaptive: expanded 10 colors -> 14 (added 2 main + 2 alt darkened, reused 16 existing) 
+[14:57:11][DEBUG] expand_palette_for_adaptive: expanded 13 colors -> 20 (added 4 main + 3 alt darkened, reused 19 existing) 
+[14:57:11][DEBUG] itidy_icon_image_extract: 42x46, pal=14 entries, selected=yes, real_sel=yes, trans=(0,0), gflags=0x0006, frameless=yes 
+[14:57:11][DEBUG] itidy_parse_safe_area: from ToolType: 10,7,24,33 
+[14:57:11][DEBUG] itidy_get_render_params: exclude_area=26,33,8,8 
+[14:57:11][DEBUG] itidy_resolve_palette_indices: bg = NO_BG (255) from ToolType 
+[14:57:11][DEBUG] itidy_resolve_palette_indices: auto text = 9 (lum=0) 
+[14:57:11][DEBUG] itidy_resolve_palette_indices: auto mid = 5 (lum=138, target=127) 
+[14:57:11][DEBUG] itidy_get_render_params: auto char_width = 1 (safe_width=24) 
+[14:57:11][DEBUG] itidy_get_render_params: adaptive text enabled, darken=40% 
+[14:57:11][DEBUG] itidy_get_render_params: safe=10,7,24,33 bg=255 text=9 mid=5 char_w=1 line_h=1 gap=1 read=4096 adaptive=YES 
+[14:57:11][DEBUG] itidy_render_ascii_preview: file='PC:Programming/iTidy/tests/icons/newicons/2x2_4col.expected' safe=24x33 char_w=1 scale=3x1 src_chars=72 src_lines=33 read=4096 
+[14:57:11][DEBUG] build_darken_table: built table with 14 entries, darken=40% 
+[14:57:11][DEBUG] build_darken_table: built table with 14 entries, darken=20% 
+[14:57:11][DEBUG] build_darken_table: built table with 14 entries, darken=13% 
+[14:57:11][DEBUG] build_darken_table: built table with 14 entries, darken=26% 
+[14:57:11][DEBUG] itidy_render_ascii_preview: adaptive text enabled, darken=40% (alt=20%, 33=13%, 67=26%) 
+[14:57:11][DEBUG] itidy_render_ascii_preview: rendered 9 source lines (3x1 scale) from 'PC:Programming/iTidy/tests/icons/newicons/2x2_4col.expected' 
+[14:57:11][DEBUG] itidy_apply_content_preview: template has real selected image, rendering text on selected buffer for 'PC:Programming/iTidy/tests/icons/newicons/2x2_4col.expected' 
+[14:57:11][DEBUG] itidy_render_ascii_preview: file='PC:Programming/iTidy/tests/icons/newicons/2x2_4col.expected' safe=24x33 char_w=1 scale=3x1 src_chars=72 src_lines=33 read=4096 
+[14:57:11][DEBUG] build_darken_table: built table with 20 entries, darken=40% 
+[14:57:11][DEBUG] build_darken_table: built table with 20 entries, darken=20% 
+[14:57:11][DEBUG] build_darken_table: built table with 20 entries, darken=13% 
+[14:57:11][DEBUG] build_darken_table: built table with 20 entries, darken=26% 
+[14:57:11][DEBUG] itidy_render_ascii_preview: adaptive text enabled, darken=40% (alt=20%, 33=13%, 67=26%) 
+[14:57:11][DEBUG] itidy_render_ascii_preview: rendered 9 source lines (3x1 scale) from 'PC:Programming/iTidy/tests/icons/newicons/2x2_4col.expected' 
+[14:57:11][DEBUG] itidy_apply_content_preview: successfully rendered text on selected image for 'PC:Programming/iTidy/tests/icons/newicons/2x2_4col.expected' 
+[14:57:11][DEBUG] build_selected_image: skipping (no background mode) 
+[14:57:11][DEBUG] [ICON_DUMP] 42x46 pixels, palette: 14 entries 
+[14:57:11][DEBUG] [ICON_DUMP] Palette: 0=000000 1=AAAAAA 2=FFFFFF 3=E3E3E3 4=C6C6C6 5=8A8A8A 6=6A6A6A 7=292929 8=494949 9=000000 10=3B3B3B 11=0C0C0C 12=595959 13=1A1A1A 
+[14:57:11][DEBUG] [ICON_DUMP] Safe area: left=10 top=7 width=24 height=33 
+[14:57:11][DEBUG] [ICON_DUMP] --- Normal image --- 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000111111111111111111111111111111100000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000122222222222222222222222222223100000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444444444444434444343500000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444444444443444343434600000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124465444444444444444434434343800000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124414444444444444434444343433700000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124464444444444443444343434334900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124411444444444444434434343433900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124466144444444434444343433333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124411114444443444343434334333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124466666664444434434343433333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124411111111434444343433333333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444443444343434334333333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444434434343433333323900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444444443443433333333900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444443444343434334333333232900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444434344443333333323900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444434444343433333333333232900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444344434333333332323900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444434434343433333323323232900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444434434433333323333322900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123444343444334333333232323232900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444443333323323232222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444343433333333333232322322900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444444444443333323323232222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124444343433333333333232322322900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124343434334333333232323232222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124434443433333333333232222222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124343433333333333232322322222900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123444343433333333323223232223900000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124343433333323323232222222336700000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123434434333333232232333333569600000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124334333333232323232234415689500000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123434333333332232322214156895000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123333333333232322322311568960000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000124343333333323232222455689800000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123333323323232222222556898000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000123333333232322322221668960000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000133333232323232222468797500000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000115687999999999999997865000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] --- Selected image (real=yes) --- 
+[14:57:11][DEBUG] [ICON_DUMP] 000000CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC00000 
+[14:57:11][DEBUG] [ICON_DUMP] 00000CBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBC0000 
+[14:57:11][DEBUG] [ICON_DUMP] 0000CBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABC000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1111111111111111111111111111111ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1222222222222222222222222222231ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444444444444344443435ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444444444444444434443434346ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244514444444444444444344343438ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244144444444444444344443434337ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244544444444444434443434343349ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244114444444444444344343434339ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244551444444444344443434333339ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244111144444434443434343343339ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244555555544444344343434333339ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244111111114344443434333333339ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444434443434343343333339ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444444444344343434333333239ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444444434434333333339ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444434443434343343333332329ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444343444433333333239ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444344443434333333333332329ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444443444343333333323239ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244444344343434333333233232329ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444344344333333233333229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1234443434443343333332323232329ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444433333233232322229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244443434333333333332323223229ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1244444444444433333233232322229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244443434333333333332323223229ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1243434343343333332323232322229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1244344434333333333332322222229ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1243434333333333332323223222229ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1234443434333333333232232322239ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1243434333333233232322222223367ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1234344343333332322323333335696ABCC0 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1243343333332323232322344156895ABC00 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA123434333333332232322214156895ABC000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA12333333333323232232231156896ABC0000 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA1243433333333232322224556898ABC00000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA123333323323232222222556898ABC000000 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA12333333323232232222166896ABC0000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CBA1333332323232322224687975ABC00000000 
+[14:57:11][DEBUG] [ICON_DUMP] 00CCBA115687999999999999997865ABC000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 000CCBAAAAAAAAAAAAAAAAAAAAAAAABC0000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 0000CCBBBBBBBBBBBBBBBBBBBBBBBBC00000000000 
+[14:57:11][DEBUG] [ICON_DUMP] 00000CCCCCCCCCCCCCCCCCCCCCCCCC000000000000 
+[14:57:11][DEBUG] [ICON_DUMP] Selected palette differs from normal: 
+[14:57:11][DEBUG] [ICON_DUMP] Selected Palette: 0=000000 1=828282 2=D7D7D7 3=BBBBBB 4=9E9E9E 5=626262 6=424242 7=010101 8=212121 9=000000 10=FFFFFF 11=EFE714 12=DFBA45 13=2F2F2F 14=131313 15=474506 16=423714 17=545454 18=9B960D 19=90782C 
+[14:57:11][DEBUG] [ICON_DUMP] --- Source text (first 5 lines) --- 
+[14:57:11][DEBUG] [ICON_DUMP] src=3 
+[14:57:11][DEBUG] [ICON_DUMP] w=2 
+[14:57:11][DEBUG] [ICON_DUMP] h=2 
+[14:57:11][DEBUG] [ICON_DUMP] pal=4 
+[14:57:11][DEBUG] [ICON_DUMP] trans=0 
+[14:57:11][DEBUG] itidy_icon_image_apply: applied 42x46 image to clone, gflags=0x0006, frameless=yes, real_sel=yes 
+[14:57:11][DEBUG] itidy_stamp_created_tooltypes: stamped 6 entries (kind=text_preview) 
+[14:57:11][DEBUG] itidy_icon_image_save: saved icon to 'PC:Programming/iTidy/tests/icons/newicons/2x2_4col.expected' (OS3.5 format) 
+[14:57:11][DEBUG] itidy_apply_content_preview: saved text preview icon for 'PC:Programming/iTidy/tests/icons/newicons/2x2_4col.expected' 
+[14:57:11][INFO] Content preview applied: 2x2_4col.expected (type: ascii) 
+[14:57:11][DEBUG] Category tracked: ascii (type: ascii) 
+[14:57:11][INFO] Created 4 icon(s) in: PC:Programming/iTidy/tests/icons/newicons 
+[14:57:11][DEBUG] Folder icon enabled (mode: Smart, has contents): PC:Programming/iTidy/tests/icons/newicons 
+[14:57:11][DEBUG] >>> RESOLVE: Looking for template for type 'drawer' 
+[14:57:11][DEBUG] Template cache hit: drawer → ENVARC:Sys/def_drawer.info (hits: 2) 
+[14:57:11][DEBUG] >>> RESOLVE: Cache hit for 'drawer' → 'ENVARC:Sys/def_drawer.info' 
+[14:57:11][DEBUG] Icon copied: ENVARC:Sys/def_drawer.info -> PC:Programming/iTidy/tests/icons/newicons.info 
+[14:57:11][INFO] Created drawer icon (post-order): PC:Programming/iTidy/tests/icons/newicons.info 
+[14:57:11][DEBUG] No .info for folder, recursing (post-order): glowicons 
+[14:57:11][DEBUG] Icon creation: PC:Programming/iTidy/tests/icons/glowicons (level 1) 
+[14:57:11][DEBUG] Cache hit: .expected → ascii (hits: 5) 
+[14:57:11][DEBUG] >>> RESOLVE: Looking for template for type 'ascii' 
+[14:57:11][DEBUG] Template cache hit: ascii → ENVARC:Sys/def_ascii.info (hits: 6) 
+[14:57:11][DEBUG] >>> RESOLVE: Cache hit for 'ascii' → 'ENVARC:Sys/def_ascii.info' 
+[14:57:11][DEBUG] Icon copied: ENVARC:Sys/def_ascii.info -> PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.expected.info 
+[14:57:11][INFO] Created icon: ENVARC:Sys/def_ascii.info -> PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.expected.info 
+[14:57:11][DEBUG] Calling itidy_apply_content_preview: progress_window=0x4034a8ac, wrapper=0x40525dcc 
+[14:57:11][DEBUG] Found EXCLUDETYPE tooltype: amigaguide,html,install 
+[14:57:11][DEBUG] itidy_apply_content_preview: applying text preview for 'PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.expected' (type=ascii) 
+[14:57:11][DEBUG] Trying type-specific template: PROGDIR:Icons/def_ascii.info 
+[14:57:11][DEBUG] Using type-specific preview template: PROGDIR:Icons/def_ascii for type=ascii 
+[14:57:11][DEBUG] expand_palette_for_adaptive: expanded 10 colors -> 14 (added 2 main + 2 alt darkened, reused 16 existing) 
+[14:57:11][DEBUG] expand_palette_for_adaptive: expanded 13 colors -> 20 (added 4 main + 3 alt darkened, reused 19 existing) 
+[14:57:12][DEBUG] itidy_icon_image_extract: 42x46, pal=14 entries, selected=yes, real_sel=yes, trans=(0,0), gflags=0x0006, frameless=yes 
+[14:57:12][DEBUG] itidy_parse_safe_area: from ToolType: 10,7,24,33 
+[14:57:12][DEBUG] itidy_get_render_params: exclude_area=26,33,8,8 
+[14:57:12][DEBUG] itidy_resolve_palette_indices: bg = NO_BG (255) from ToolType 
+[14:57:12][DEBUG] itidy_resolve_palette_indices: auto text = 9 (lum=0) 
+[14:57:12][DEBUG] itidy_resolve_palette_indices: auto mid = 5 (lum=138, target=127) 
+[14:57:12][DEBUG] itidy_get_render_params: auto char_width = 1 (safe_width=24) 
+[14:57:12][DEBUG] itidy_get_render_params: adaptive text enabled, darken=40% 
+[14:57:12][DEBUG] itidy_get_render_params: safe=10,7,24,33 bg=255 text=9 mid=5 char_w=1 line_h=1 gap=1 read=4096 adaptive=YES 
+[14:57:12][DEBUG] itidy_render_ascii_preview: file='PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.expected' safe=24x33 char_w=1 scale=3x1 src_chars=72 src_lines=33 read=4096 
+[14:57:12][DEBUG] build_darken_table: built table with 14 entries, darken=40% 
+[14:57:12][DEBUG] build_darken_table: built table with 14 entries, darken=20% 
+[14:57:12][DEBUG] build_darken_table: built table with 14 entries, darken=13% 
+[14:57:12][DEBUG] build_darken_table: built table with 14 entries, darken=26% 
+[14:57:12][DEBUG] itidy_render_ascii_preview: adaptive text enabled, darken=40% (alt=20%, 33=13%, 67=26%) 
+[14:57:12][DEBUG] itidy_render_ascii_preview: rendered 9 source lines (3x1 scale) from 'PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.expected' 
+[14:57:12][DEBUG] itidy_apply_content_preview: template has real selected image, rendering text on selected buffer for 'PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.expected' 
+[14:57:12][DEBUG] itidy_render_ascii_preview: file='PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.expected' safe=24x33 char_w=1 scale=3x1 src_chars=72 src_lines=33 read=4096 
+[14:57:12][DEBUG] build_darken_table: built table with 20 entries, darken=40% 
+[14:57:12][DEBUG] build_darken_table: built table with 20 entries, darken=20% 
+[14:57:12][DEBUG] build_darken_table: built table with 20 entries, darken=13% 
+[14:57:12][DEBUG] build_darken_table: built table with 20 entries, darken=26% 
+[14:57:12][DEBUG] itidy_render_ascii_preview: adaptive text enabled, darken=40% (alt=20%, 33=13%, 67=26%) 
+[14:57:12][DEBUG] itidy_render_ascii_preview: rendered 9 source lines (3x1 scale) from 'PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.expected' 
+[14:57:12][DEBUG] itidy_apply_content_preview: successfully rendered text on selected image for 'PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.expected' 
+[14:57:12][DEBUG] build_selected_image: skipping (no background mode) 
+[14:57:12][DEBUG] [ICON_DUMP] 42x46 pixels, palette: 14 entries 
+[14:57:12][DEBUG] [ICON_DUMP] Palette: 0=000000 1=AAAAAA 2=FFFFFF 3=E3E3E3 4=C6C6C6 5=8A8A8A 6=6A6A6A 7=292929 8=494949 9=000000 10=3B3B3B 11=0C0C0C 12=595959 13=1A1A1A 
+[14:57:12][DEBUG] [ICON_DUMP] Safe area: left=10 top=7 width=24 height=33 
+[14:57:12][DEBUG] [ICON_DUMP] --- Normal image --- 
+[14:57:12][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000111111111111111111111111111111100000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000122222222222222222222222222223100000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124444444444444444444434444343500000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124444444444444444443444343434600000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124465444444444444444434434343800000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124414444444444444434444343433700000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124464444444444443444343434334900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124411444444444444434434343433900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124466544444444434444343433333900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124411114444443444343434334333900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124466666664444434434343433333900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124411111111434444343433333333900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124444444443444343434334333333900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124444444444434434343433333323900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124444444444444443443433333333900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124444443444343434334333333232900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124444444444434344443333333323900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124444434444343433333333333232900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124444444444344434333333332323900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124444434434343433333323323232900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124444444434434433333323333322900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000123444343444334333333232323232900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124444444444443333323323232222900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124444343433333333333232322322900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124444444444443333323323232222900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124444343433333333333232322322900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124343434334333333232323232222900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124434443433333333333232222222900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124343433333333333232322322222900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000123444343433333333323223232223900000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124343433333323323232222222336700000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000123434434333333232232333333569600000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124334333333232323232234415689500000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000123434333333332232322214156895000000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000123333333333232322322311568960000000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000124343333333323232222455689800000000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000123333323323232222222556898000000000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000123333333232322322221668960000000000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000133333232323232222468797500000000000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000115687999999999999997865000000000000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:12][DEBUG] [ICON_DUMP] 000000000000000000000000000000000000000000 
+[14:57:12][DEBUG] [ICON_DUMP] --- Selected image (real=yes) --- 
+[14:57:12][DEBUG] [ICON_DUMP] 000000CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC00000 
+[14:57:12][DEBUG] [ICON_DUMP] 00000CBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBC0000 
+[14:57:12][DEBUG] [ICON_DUMP] 0000CBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABC000 
+[14:57:12][DEBUG] [ICON_DUMP] 000CBA1111111111111111111111111111111ABC00 
+[14:57:12][DEBUG] [ICON_DUMP] 00CCBA1222222222222222222222222222231ABCC0 
+[14:57:12][DEBUG] [ICON_DUMP] 000CBA1244444444444444444444344443435ABC00 
+[14:57:12][DEBUG] [ICON_DUMP] 00CCBA1244444444444444444434443434346ABCC0 
+[14:57:12][DEBUG] [ICON_DUMP] 000CBA1244514444444444444444344343438ABC00 
+[14:57:12][DEBUG] [ICON_DUMP] 00CCBA1244144444444444444344443434337ABCC0 
+[14:57:12][DEBUG] [ICON_DUMP] 000CBA1244544444444444434443434343349ABC00 
+[14:57:12][DEBUG] [ICON_DUMP] 00CCBA1244114444444444444344343434339ABCC0 
+[14:57:12][DEBUG] [ICON_DUMP] 000CBA1244551444444444344443434333339ABC00 
+[14:57:12][DEBUG] [ICON_DUMP] 00CCBA1244111144444434443434343343339ABCC0 
+[14:57:12][DEBUG] [ICON_DUMP] 000CBA1244555555544444344343434333339ABC00 
+[14:57:12][DEBUG] [ICON_DUMP] 00CCBA1244111111114344443434333333339ABCC0 
+[14:57:12][DEBUG] [ICON_DUMP] 000CBA1244444444434443434343343333339ABC00 
+[14:57:12][DEBUG] [ICON_DUMP] 00CCBA1244444444444344343434333333239ABCC0 
+[14:57:12][DEBUG] [ICON_DUMP] 000CBA1244444444444444434434333333339ABC00 
+[14:57:12][DEBUG] [ICON_DUMP] 00CCBA1244444434443434343343333332329ABCC0 
+[14:57:12][DEBUG] [ICON_DUMP] 000CBA1244444444444343444433333333239ABC00 
+[14:57:12][DEBUG] [ICON_DUMP] 00CCBA1244444344443434333333333332329ABCC0 
+[14:57:12][DEBUG] [ICON_DUMP] 000CBA1244444444443444343333333323239ABC00 
+[14:57:12][DEBUG] [ICON_DUMP] 00CCBA1244444344343434333333233232329ABCC0 
+[14:57:12][DEBUG] [ICON_DUMP] 000CBA1244444444344344333333233333229ABC00 
+[14:57:12][DEBUG] [ICON_DUMP] 00CCBA1234443434443343333332323232329ABCC0 
+[14:57:12][DEBUG] [ICON_DUMP] 000CBA1244444444444433333233232322229ABC00 
+[14:57:12][DEBUG] [ICON_DUMP] 00CCBA1244443434333333333332323223229ABCC0 
+[14:57:12][DEBUG] [ICON_DUMP] 000CBA1244444444444433333233232322229ABC00 
+[14:57:12][DEBUG] [ICON_DUMP] 00CCBA1244443434333333333332323223229ABCC0 
+[14:57:12][DEBUG] [ICON_DUMP] 000CBA1243434343343333332323232322229ABC00 
+[14:57:12][DEBUG] [ICON_DUMP] 00CCBA1244344434333333333332322222229ABCC0 
+[14:57:12][DEBUG] [ICON_DUMP] 000CBA1243434333333333332323223222229ABC00 
+[14:57:12][DEBUG] [ICON_DUMP] 00CCBA1234443434333333333232232322239ABCC0 
+[14:57:12][DEBUG] [ICON_DUMP] 000CBA1243434333333233232322222223367ABC00 
+[14:57:12][DEBUG] [ICON_DUMP] 00CCBA1234344343333332322323333335696ABCC0 
+[14:57:12][DEBUG] [ICON_DUMP] 000CBA1243343333332323232322344156895ABC00 
+[14:57:12][DEBUG] [ICON_DUMP] 00CCBA123434333333332232322214156895ABC000 
+[14:57:12][DEBUG] [ICON_DUMP] 000CBA12333333333323232232231156896ABC0000 
+[14:57:12][DEBUG] [ICON_DUMP] 00CCBA1243433333333232322224556898ABC00000 
+[14:57:12][DEBUG] [ICON_DUMP] 000CBA123333323323232222222556898ABC000000 
+[14:57:12][DEBUG] [ICON_DUMP] 00CCBA12333333323232232222166896ABC0000000 
+[14:57:12][DEBUG] [ICON_DUMP] 000CBA1333332323232322224687975ABC00000000 
+[14:57:12][DEBUG] [ICON_DUMP] 00CCBA115687999999999999997865ABC000000000 
+[14:57:12][DEBUG] [ICON_DUMP] 000CCBAAAAAAAAAAAAAAAAAAAAAAAABC0000000000 
+[14:57:12][DEBUG] [ICON_DUMP] 0000CCBBBBBBBBBBBBBBBBBBBBBBBBC00000000000 
+[14:57:12][DEBUG] [ICON_DUMP] 00000CCCCCCCCCCCCCCCCCCCCCCCCC000000000000 
+[14:57:12][DEBUG] [ICON_DUMP] Selected palette differs from normal: 
+[14:57:12][DEBUG] [ICON_DUMP] Selected Palette: 0=000000 1=828282 2=D7D7D7 3=BBBBBB 4=9E9E9E 5=626262 6=424242 7=010101 8=212121 9=000000 10=FFFFFF 11=EFE714 12=DFBA45 13=2F2F2F 14=131313 15=474506 16=423714 17=545454 18=9B960D 19=90782C 
+[14:57:12][DEBUG] [ICON_DUMP] --- Source text (first 5 lines) --- 
+[14:57:12][DEBUG] [ICON_DUMP] src=2 
+[14:57:12][DEBUG] [ICON_DUMP] w=2 
+[14:57:12][DEBUG] [ICON_DUMP] h=2 
+[14:57:12][DEBUG] [ICON_DUMP] pal=2 
+[14:57:12][DEBUG] [ICON_DUMP] trans=-1 
+[14:57:12][DEBUG] itidy_icon_image_apply: applied 42x46 image to clone, gflags=0x0006, frameless=yes, real_sel=yes 
+[14:57:12][DEBUG] itidy_stamp_created_tooltypes: stamped 6 entries (kind=text_preview) 
+[14:57:12][DEBUG] itidy_icon_image_save: saved icon to 'PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.expected' (OS3.5 format) 
+[14:57:12][DEBUG] itidy_apply_content_preview: saved text preview icon for 'PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.expected' 
+[14:57:12][INFO] Content preview applied: 2x2_glow.expected (type: ascii) 
+[14:57:12][DEBUG] Category tracked: ascii (type: ascii) 
+[14:57:12][INFO] Created 1 icon(s) in: PC:Programming/iTidy/tests/icons/glowicons 
+[14:57:12][DEBUG] Folder icon enabled (mode: Smart, has contents): PC:Programming/iTidy/tests/icons/glowicons 
+[14:57:12][DEBUG] >>> RESOLVE: Looking for template for type 'drawer' 
+[14:57:12][DEBUG] Template cache hit: drawer → ENVARC:Sys/def_drawer.info (hits: 3) 
+[14:57:12][DEBUG] >>> RESOLVE: Cache hit for 'drawer' → 'ENVARC:Sys/def_drawer.info' 
+[14:57:12][DEBUG] Icon copied: ENVARC:Sys/def_drawer.info -> PC:Programming/iTidy/tests/icons/glowicons.info 
+[14:57:12][INFO] Created drawer icon (post-order): PC:Programming/iTidy/tests/icons/glowicons.info 
+[14:57:12][INFO] Icon creation complete: 10 icon(s) created 
+[14:57:12][DEBUG] Cleaning up DefIcons template system... 
+[14:57:12][DEBUG] Template cache statistics: 
+[14:57:12][DEBUG]   drawer → ENVARC:Sys/def_drawer.info (hits: 3, fallback: no) 
+[14:57:12][DEBUG]   ascii → ENVARC:Sys/def_ascii.info (hits: 6, fallback: no) 
+[14:57:12][INFO] Total cache entries: 2, total hits: 9 
+[14:57:12][DEBUG] DefIcons template system cleanup complete 
+[14:57:12][DEBUG] Cleaning up DefIcons ARexx communication... 
+[14:57:12][DEBUG] Extension cache statistics: 
+[14:57:12][DEBUG]   .expected → ascii (hits: 5) 
+[14:57:12][INFO] Total cache entries: 1, total hits: 5 
+[14:57:12][DEBUG] DefIcons ARexx cleanup complete 
+[14:57:12][DEBUG] CreateIconArrayFromPath ENTRY: lock=269232515, dirPath='PC:Programming/iTidy/tests/icons'
+[14:57:12][DEBUG] Using OPTIMIZED pattern matching (MatchFirst/MatchNext)
+[14:57:12][DEBUG] Icon array created successfully
+[14:57:12][DEBUG] AnchorPath allocated successfully
+[14:57:12][DEBUG] MatchFirst successful, entering processing loop 
+[14:57:12][DEBUG] >>> AFTER MATCHFIRST: ap_Strlen=1024, ap_Buf='PC:Programming/iTidy/tests/icons/glowicons.info' 
+[14:57:12][DEBUG] Pattern matched .info file: 'glowicons.info' 
+[14:57:12][DEBUG] Full path to .info file: 'PC:Programming/iTidy/tests/icons/glowicons.info' 
+[14:57:12][DEBUG] isIconTypeDisk('PC:Programming/iTidy/tests/icons/glowicons.info') = 0 (0=not disk, 1=is disk) 
+[14:57:12][DEBUG] Reading icon details (optimized): PC:Programming/iTidy/tests/icons/glowicons.info 
+[14:57:12][DEBUG]   fullPathAndFile='PC:Programming/iTidy/tests/icons/glowicons.info' 
+[14:57:12][DEBUG]   fileNameNoInfo='glowicons' 
+[14:57:12][DEBUG]   Calling GetIconDetailsFromDisk... 
+[14:57:12][DEBUG] GetIconDetailsFromDisk: No default tool in PC:Programming/iTidy/tests/icons/glowicons 
+[14:57:12][DEBUG] >>> GetIconDetailsFromDisk SUCCESS 
+[14:57:12][DEBUG]   GetIconDetailsFromDisk SUCCESS 
+[14:57:12][DEBUG]   Position: x=232, y=53 
+[14:57:12][DEBUG]   Default Tool: (none) -> glowicons 
+[14:57:12][DEBUG]   Icon type: Standard Workbench format - glowicons 
+[14:57:12][DEBUG]   Calling isDirectory('PC:Programming/iTidy/tests/icons/glowicons.info')... 
+[14:57:12][DEBUG]   isDirectory returned: 1 
+[14:57:12][DEBUG]   Capturing file metadata from fib 
+[14:57:12][DEBUG]   is_folder=1 
+[14:57:12][DEBUG]   date: days=17757, min=728, tick=1374 
+[14:57:12][DEBUG]   Allocating icon_full_path (48 bytes)... 
+[14:57:12][DEBUG]   icon_full_path='PC:Programming/iTidy/tests/icons/glowicons.info' 
+[14:57:12][DEBUG]   Allocating icon_text (10 bytes)... 
+[14:57:12][DEBUG]   icon_text='glowicons' 
+[14:57:12][DEBUG]   Adding icon to array... 
+[14:57:12][DEBUG] >>> About to call AddIconToArray, fileCount=0 
+[14:57:12][DEBUG] >>> AddIconToArray SUCCESS, fileCount now 1 
+[14:57:12][DEBUG]   Icon added successfully, fileCount now: 1 
+[14:57:12][DEBUG] >>> About to call MatchNext, fileCount=1 
+[14:57:12][DEBUG] >>> AnchorPath buffer strlen=1024, buf='PC:Programming/iTidy/tests/icons/glowicons.info' 
+[14:57:12][DEBUG] >>> MatchNext returned: 0 
+[14:57:12][DEBUG] Pattern matched .info file: 'newicons.info' 
+[14:57:12][DEBUG] Full path to .info file: 'PC:Programming/iTidy/tests/icons/newicons.info' 
+[14:57:12][DEBUG] isIconTypeDisk('PC:Programming/iTidy/tests/icons/newicons.info') = 0 (0=not disk, 1=is disk) 
+[14:57:12][DEBUG] Reading icon details (optimized): PC:Programming/iTidy/tests/icons/newicons.info 
+[14:57:12][DEBUG]   fullPathAndFile='PC:Programming/iTidy/tests/icons/newicons.info' 
+[14:57:12][DEBUG]   fileNameNoInfo='newicons' 
+[14:57:12][DEBUG]   Calling GetIconDetailsFromDisk... 
+[14:57:12][DEBUG] GetIconDetailsFromDisk: No default tool in PC:Programming/iTidy/tests/icons/newicons 
+[14:57:12][DEBUG] >>> GetIconDetailsFromDisk SUCCESS 
+[14:57:12][DEBUG]   GetIconDetailsFromDisk SUCCESS 
+[14:57:12][DEBUG]   Position: x=232, y=53 
+[14:57:12][DEBUG]   Default Tool: (none) -> newicons 
+[14:57:12][DEBUG]   Icon type: Standard Workbench format - newicons 
+[14:57:12][DEBUG]   Calling isDirectory('PC:Programming/iTidy/tests/icons/newicons.info')... 
+[14:57:12][DEBUG]   isDirectory returned: 1 
+[14:57:12][DEBUG]   Capturing file metadata from fib 
+[14:57:12][DEBUG]   is_folder=1 
+[14:57:12][DEBUG]   date: days=17757, min=728, tick=1365 
+[14:57:12][DEBUG]   Allocating icon_full_path (47 bytes)... 
+[14:57:12][DEBUG]   icon_full_path='PC:Programming/iTidy/tests/icons/newicons.info' 
+[14:57:12][DEBUG]   Allocating icon_text (9 bytes)... 
+[14:57:12][DEBUG]   icon_text='newicons' 
+[14:57:12][DEBUG]   Adding icon to array... 
+[14:57:12][DEBUG] >>> About to call AddIconToArray, fileCount=1 
+[14:57:12][DEBUG] >>> AddIconToArray SUCCESS, fileCount now 2 
+[14:57:12][DEBUG]   Icon added successfully, fileCount now: 2 
+[14:57:12][DEBUG] >>> About to call MatchNext, fileCount=2 
+[14:57:12][DEBUG] >>> AnchorPath buffer strlen=1024, buf='PC:Programming/iTidy/tests/icons/newicons.info' 
+[14:57:12][DEBUG] >>> MatchNext returned: 0 
+[14:57:12][DEBUG] Pattern matched .info file: 'coloricons.info' 
+[14:57:12][DEBUG] Full path to .info file: 'PC:Programming/iTidy/tests/icons/coloricons.info' 
+[14:57:12][DEBUG] isIconTypeDisk('PC:Programming/iTidy/tests/icons/coloricons.info') = 0 (0=not disk, 1=is disk) 
+[14:57:12][DEBUG] Reading icon details (optimized): PC:Programming/iTidy/tests/icons/coloricons.info 
+[14:57:12][DEBUG]   fullPathAndFile='PC:Programming/iTidy/tests/icons/coloricons.info' 
+[14:57:12][DEBUG]   fileNameNoInfo='coloricons' 
+[14:57:12][DEBUG]   Calling GetIconDetailsFromDisk... 
+[14:57:12][DEBUG] GetIconDetailsFromDisk: No default tool in PC:Programming/iTidy/tests/icons/coloricons 
+[14:57:12][DEBUG] >>> GetIconDetailsFromDisk SUCCESS 
+[14:57:12][DEBUG]   GetIconDetailsFromDisk SUCCESS 
+[14:57:12][DEBUG]   Position: x=232, y=53 
+[14:57:12][DEBUG]   Default Tool: (none) -> coloricons 
+[14:57:12][DEBUG]   Icon type: Standard Workbench format - coloricons 
+[14:57:12][DEBUG]   Calling isDirectory('PC:Programming/iTidy/tests/icons/coloricons.info')... 
+[14:57:12][DEBUG]   isDirectory returned: 1 
+[14:57:12][DEBUG]   Capturing file metadata from fib 
+[14:57:12][DEBUG]   is_folder=1 
+[14:57:12][DEBUG]   date: days=17757, min=728, tick=1326 
+[14:57:12][DEBUG]   Allocating icon_full_path (49 bytes)... 
+[14:57:12][DEBUG]   icon_full_path='PC:Programming/iTidy/tests/icons/coloricons.info' 
+[14:57:12][DEBUG]   Allocating icon_text (11 bytes)... 
+[14:57:12][DEBUG]   icon_text='coloricons' 
+[14:57:12][DEBUG]   Adding icon to array... 
+[14:57:12][DEBUG] >>> About to call AddIconToArray, fileCount=2 
+[14:57:12][DEBUG] >>> AddIconToArray SUCCESS, fileCount now 3 
+[14:57:12][DEBUG]   Icon added successfully, fileCount now: 3 
+[14:57:12][DEBUG] >>> About to call MatchNext, fileCount=3 
+[14:57:12][DEBUG] >>> AnchorPath buffer strlen=1024, buf='PC:Programming/iTidy/tests/icons/coloricons.info' 
+[14:57:12][DEBUG] >>> MatchNext returned: 0 
+[14:57:12][DEBUG] Pattern matched .info file: 'classic.info' 
+[14:57:12][DEBUG] Full path to .info file: 'PC:Programming/iTidy/tests/icons/classic.info' 
+[14:57:12][DEBUG] isIconTypeDisk('PC:Programming/iTidy/tests/icons/classic.info') = 0 (0=not disk, 1=is disk) 
+[14:57:12][DEBUG] Reading icon details (optimized): PC:Programming/iTidy/tests/icons/classic.info 
+[14:57:12][DEBUG]   fullPathAndFile='PC:Programming/iTidy/tests/icons/classic.info' 
+[14:57:12][DEBUG]   fileNameNoInfo='classic' 
+[14:57:12][DEBUG]   Calling GetIconDetailsFromDisk... 
+[14:57:12][DEBUG] GetIconDetailsFromDisk: No default tool in PC:Programming/iTidy/tests/icons/classic 
+[14:57:12][DEBUG] >>> GetIconDetailsFromDisk SUCCESS 
+[14:57:12][DEBUG]   GetIconDetailsFromDisk SUCCESS 
+[14:57:12][DEBUG]   Position: x=232, y=53 
+[14:57:12][DEBUG]   Default Tool: (none) -> classic 
+[14:57:12][DEBUG]   Icon type: Standard Workbench format - classic 
+[14:57:12][DEBUG]   Calling isDirectory('PC:Programming/iTidy/tests/icons/classic.info')... 
+[14:57:12][DEBUG]   isDirectory returned: 1 
+[14:57:12][DEBUG]   Capturing file metadata from fib 
+[14:57:12][DEBUG]   is_folder=1 
+[14:57:12][DEBUG]   date: days=17757, min=728, tick=1316 
+[14:57:12][DEBUG]   Allocating icon_full_path (46 bytes)... 
+[14:57:12][DEBUG]   icon_full_path='PC:Programming/iTidy/tests/icons/classic.info' 
+[14:57:12][DEBUG]   Allocating icon_text (8 bytes)... 
+[14:57:12][DEBUG]   icon_text='classic' 
+[14:57:12][DEBUG]   Adding icon to array... 
+[14:57:12][DEBUG] >>> About to call AddIconToArray, fileCount=3 
+[14:57:12][DEBUG] >>> AddIconToArray SUCCESS, fileCount now 4 
+[14:57:12][DEBUG]   Icon added successfully, fileCount now: 4 
+[14:57:12][DEBUG] >>> About to call MatchNext, fileCount=4 
+[14:57:12][DEBUG] >>> AnchorPath buffer strlen=1024, buf='PC:Programming/iTidy/tests/icons/classic.info' 
+[14:57:12][DEBUG] >>> MatchNext returned: 232 
+[14:57:12][DEBUG] CreateIconArrayFromPath ENTRY: lock=268929561, dirPath='PC:Programming/iTidy/tests/icons/classic'
+[14:57:12][DEBUG] Using OPTIMIZED pattern matching (MatchFirst/MatchNext)
+[14:57:12][DEBUG] Icon array created successfully
+[14:57:12][DEBUG] AnchorPath allocated successfully
+[14:57:12][DEBUG] MatchFirst successful, entering processing loop 
+[14:57:12][DEBUG] >>> AFTER MATCHFIRST: ap_Strlen=1024, ap_Buf='PC:Programming/iTidy/tests/icons/classic/8x1_selected.expected.info' 
+[14:57:12][DEBUG] Pattern matched .info file: '8x1_selected.expected.info' 
+[14:57:12][DEBUG] Full path to .info file: 'PC:Programming/iTidy/tests/icons/classic/8x1_selected.expected.info' 
+[14:57:12][DEBUG] isIconTypeDisk('PC:Programming/iTidy/tests/icons/classic/8x1_selected.expected.info') = 0 (0=not disk, 1=is disk) 
+[14:57:12][DEBUG] Reading icon details (optimized): PC:Programming/iTidy/tests/icons/classic/8x1_selected.expected.info 
+[14:57:12][DEBUG]   fullPathAndFile='PC:Programming/iTidy/tests/icons/classic/8x1_selected.expected.info' 
+[14:57:12][DEBUG]   fileNameNoInfo='8x1_selected.expected' 
+[14:57:12][DEBUG]   Calling GetIconDetailsFromDisk... 
+[14:57:12][DEBUG] GetIconDetailsFromDisk: Found default tool 'SYS:Utilities/MultiView' in PC:Programming/iTidy/tests/icons/classic/8x1_selected.expected 
+[14:57:12][DEBUG] >>> GetIconDetailsFromDisk SUCCESS 
+[14:57:12][DEBUG]   GetIconDetailsFromDisk SUCCESS 
+[14:57:12][DEBUG]   Position: x=175, y=8 
+[14:57:12][DEBUG] ValidateDefaultTool: Checking explicit path 'SYS:Utilities/MultiView' 
+[14:57:12][DEBUG]   -> Found at explicit path 
+[14:57:12][DEBUG]   -> Version: MultiView 47.17 (9.1.2023) 
+[14:57:12][DEBUG] AddToolToCache: Cached 'SYS:Utilities/MultiView' -> EXISTS [SYS:Utilities/MultiView] v:MultiView 47.17 (9.1.2023) 
+[14:57:12][DEBUG] AddFileReferenceToToolCache: Added file 'PC:Programming/iTidy/tests/icons/classic/8x1_selected.expected.info' to tool 'SYS:Utilities/MultiView' (1/200) 
+[14:57:12][DEBUG]   Default Tool: 'SYS:Utilities/MultiView' -> 8x1_selected.expected [EXISTS] 
+[14:57:12][DEBUG]   Icon type: OS3.5 format - 8x1_selected.expected 
+[14:57:12][DEBUG]   Calling isDirectory('PC:Programming/iTidy/tests/icons/classic/8x1_selected.expected.info')... 
+[14:57:12][DEBUG]   isDirectory returned: 0 
+[14:57:12][DEBUG]   Capturing file metadata from fib 
+[14:57:12][DEBUG]   is_folder=0 
+[14:57:12][DEBUG]   file_size=1902 
+[14:57:12][DEBUG]   date: days=17757, min=727, tick=887 
+[14:57:12][DEBUG]   Allocating icon_full_path (68 bytes)... 
+[14:57:12][DEBUG]   icon_full_path='PC:Programming/iTidy/tests/icons/classic/8x1_selected.expected.info' 
+[14:57:12][DEBUG]   Allocating icon_text (22 bytes)... 
+[14:57:12][DEBUG]   icon_text='8x1_selected.expected' 
+[14:57:12][DEBUG]   Adding icon to array... 
+[14:57:12][DEBUG] >>> About to call AddIconToArray, fileCount=0 
+[14:57:12][DEBUG] >>> AddIconToArray SUCCESS, fileCount now 1 
+[14:57:12][DEBUG]   Icon added successfully, fileCount now: 1 
+[14:57:12][DEBUG] >>> About to call MatchNext, fileCount=1 
+[14:57:12][DEBUG] >>> AnchorPath buffer strlen=1024, buf='PC:Programming/iTidy/tests/icons/classic/8x1_selected.expected.info' 
+[14:57:12][DEBUG] >>> MatchNext returned: 0 
+[14:57:12][DEBUG] Pattern matched .info file: '8x2x1.expected.info' 
+[14:57:12][DEBUG] Full path to .info file: 'PC:Programming/iTidy/tests/icons/classic/8x2x1.expected.info' 
+[14:57:12][DEBUG] isIconTypeDisk('PC:Programming/iTidy/tests/icons/classic/8x2x1.expected.info') = 0 (0=not disk, 1=is disk) 
+[14:57:12][DEBUG] Reading icon details (optimized): PC:Programming/iTidy/tests/icons/classic/8x2x1.expected.info 
+[14:57:12][DEBUG]   fullPathAndFile='PC:Programming/iTidy/tests/icons/classic/8x2x1.expected.info' 
+[14:57:12][DEBUG]   fileNameNoInfo='8x2x1.expected' 
+[14:57:12][DEBUG]   Calling GetIconDetailsFromDisk... 
+[14:57:12][DEBUG] GetIconDetailsFromDisk: Found default tool 'SYS:Utilities/MultiView' in PC:Programming/iTidy/tests/icons/classic/8x2x1.expected 
+[14:57:12][DEBUG] >>> GetIconDetailsFromDisk SUCCESS 
+[14:57:12][DEBUG]   GetIconDetailsFromDisk SUCCESS 
+[14:57:12][DEBUG]   Position: x=175, y=74 
+[14:57:12][DEBUG] ValidateDefaultTool: Cache hit for 'SYS:Utilities/MultiView' -> EXISTS 
+[14:57:12][DEBUG] AddFileReferenceToToolCache: Added file 'PC:Programming/iTidy/tests/icons/classic/8x2x1.expected.info' to tool 'SYS:Utilities/MultiView' (2/200) 
+[14:57:12][DEBUG]   Default Tool: 'SYS:Utilities/MultiView' -> 8x2x1.expected [EXISTS] 
+[14:57:12][DEBUG]   Icon type: OS3.5 format - 8x2x1.expected 
+[14:57:12][DEBUG]   Calling isDirectory('PC:Programming/iTidy/tests/icons/classic/8x2x1.expected.info')... 
+[14:57:12][DEBUG]   isDirectory returned: 0 
+[14:57:12][DEBUG]   Capturing file metadata from fib 
+[14:57:12][DEBUG]   is_folder=0 
+[14:57:12][DEBUG]   file_size=1895 
+[14:57:12][DEBUG]   date: days=17757, min=727, tick=887 
+[14:57:12][DEBUG]   Allocating icon_full_path (61 bytes)... 
+[14:57:12][DEBUG]   icon_full_path='PC:Programming/iTidy/tests/icons/classic/8x2x1.expected.info' 
+[14:57:12][DEBUG]   Allocating icon_text (15 bytes)... 
+[14:57:12][DEBUG]   icon_text='8x2x1.expected' 
+[14:57:12][DEBUG]   Adding icon to array... 
+[14:57:12][DEBUG] >>> About to call AddIconToArray, fileCount=1 
+[14:57:12][DEBUG] >>> AddIconToArray SUCCESS, fileCount now 2 
+[14:57:12][DEBUG]   Icon added successfully, fileCount now: 2 
+[14:57:12][DEBUG] >>> About to call MatchNext, fileCount=2 
+[14:57:12][DEBUG] >>> AnchorPath buffer strlen=1024, buf='PC:Programming/iTidy/tests/icons/classic/8x2x1.expected.info' 
+[14:57:12][DEBUG] >>> MatchNext returned: 0 
+[14:57:12][DEBUG] Pattern matched .info file: '8x2x1.info' 
+[14:57:12][DEBUG] Full path to .info file: 'PC:Programming/iTidy/tests/icons/classic/8x2x1.info' 
+[14:57:12][DEBUG] isIconTypeDisk('PC:Programming/iTidy/tests/icons/classic/8x2x1.info') = 0 (0=not disk, 1=is disk) 
+[14:57:12][DEBUG] Reading icon details (optimized): PC:Programming/iTidy/tests/icons/classic/8x2x1.info 
+[14:57:12][DEBUG]   fullPathAndFile='PC:Programming/iTidy/tests/icons/classic/8x2x1.info' 
+[14:57:12][DEBUG]   fileNameNoInfo='8x2x1' 
+[14:57:12][DEBUG]   Calling GetIconDetailsFromDisk... 
+[14:57:12][DEBUG] GetIconDetailsFromDisk: No default tool in PC:Programming/iTidy/tests/icons/classic/8x2x1 
+[14:57:12][DEBUG] >>> GetIconDetailsFromDisk SUCCESS 
+[14:57:12][DEBUG]   GetIconDetailsFromDisk SUCCESS 
+[14:57:12][DEBUG]   Position: x=52, y=94 
+[14:57:12][DEBUG]   Default Tool: (none) -> 8x2x1 
+[14:57:12][DEBUG]   Icon type: Standard Workbench format - 8x2x1 
+[14:57:12][DEBUG]   Calling isDirectory('PC:Programming/iTidy/tests/icons/classic/8x2x1.info')... 
+[14:57:12][DEBUG]   isDirectory returned: 0 
+[14:57:12][DEBUG]   Capturing file metadata from fib 
+[14:57:12][DEBUG]   is_folder=0 
+[14:57:12][DEBUG]   file_size=102 
+[14:57:12][DEBUG]   date: days=17757, min=727, tick=887 
+[14:57:12][DEBUG]   Allocating icon_full_path (52 bytes)... 
+[14:57:12][DEBUG]   icon_full_path='PC:Programming/iTidy/tests/icons/classic/8x2x1.info' 
+[14:57:12][DEBUG]   Allocating icon_text (6 bytes)... 
+[14:57:12][DEBUG]   icon_text='8x2x1' 
+[14:57:12][DEBUG]   Adding icon to array... 
+[14:57:12][DEBUG] >>> About to call AddIconToArray, fileCount=2 
+[14:57:12][DEBUG] >>> AddIconToArray SUCCESS, fileCount now 3 
+[14:57:12][DEBUG]   Icon added successfully, fileCount now: 3 
+[14:57:12][DEBUG] >>> About to call MatchNext, fileCount=3 
+[14:57:12][DEBUG] >>> AnchorPath buffer strlen=1024, buf='PC:Programming/iTidy/tests/icons/classic/8x2x1.info' 
+[14:57:12][DEBUG] >>> MatchNext returned: 0 
+[14:57:12][DEBUG] Pattern matched .info file: '8x1_selected.info' 
+[14:57:12][DEBUG] Full path to .info file: 'PC:Programming/iTidy/tests/icons/classic/8x1_selected.info' 
+[14:57:12][DEBUG] isIconTypeDisk('PC:Programming/iTidy/tests/icons/classic/8x1_selected.info') = 0 (0=not disk, 1=is disk) 
+[14:57:12][DEBUG] Reading icon details (optimized): PC:Programming/iTidy/tests/icons/classic/8x1_selected.info 
+[14:57:12][DEBUG]   fullPathAndFile='PC:Programming/iTidy/tests/icons/classic/8x1_selected.info' 
+[14:57:12][DEBUG]   fileNameNoInfo='8x1_selected' 
+[14:57:12][DEBUG]   Calling GetIconDetailsFromDisk... 
+[14:57:12][DEBUG] GetIconDetailsFromDisk: No default tool in PC:Programming/iTidy/tests/icons/classic/8x1_selected 
+[14:57:12][DEBUG] >>> GetIconDetailsFromDisk SUCCESS 
+[14:57:12][DEBUG]   GetIconDetailsFromDisk SUCCESS 
+[14:57:12][DEBUG]   Position: x=52, y=29 
+[14:57:12][DEBUG]   Default Tool: (none) -> 8x1_selected 
+[14:57:12][DEBUG]   Icon type: Standard Workbench format - 8x1_selected 
+[14:57:12][DEBUG]   Calling isDirectory('PC:Programming/iTidy/tests/icons/classic/8x1_selected.info')... 
+[14:57:12][DEBUG]   isDirectory returned: 0 
+[14:57:12][DEBUG]   Capturing file metadata from fib 
+[14:57:12][DEBUG]   is_folder=0 
+[14:57:12][DEBUG]   file_size=122 
+[14:57:12][DEBUG]   date: days=17757, min=727, tick=887 
+[14:57:12][DEBUG]   Allocating icon_full_path (59 bytes)... 
+[14:57:12][DEBUG]   icon_full_path='PC:Programming/iTidy/tests/icons/classic/8x1_selected.info' 
+[14:57:12][DEBUG]   Allocating icon_text (13 bytes)... 
+[14:57:12][DEBUG]   icon_text='8x1_selected' 
+[14:57:12][DEBUG]   Adding icon to array... 
+[14:57:12][DEBUG] >>> About to call AddIconToArray, fileCount=3 
+[14:57:12][DEBUG] >>> AddIconToArray SUCCESS, fileCount now 4 
+[14:57:12][DEBUG]   Icon added successfully, fileCount now: 4 
+[14:57:12][DEBUG] >>> About to call MatchNext, fileCount=4 
+[14:57:12][DEBUG] >>> AnchorPath buffer strlen=1024, buf='PC:Programming/iTidy/tests/icons/classic/8x1_selected.info' 
+[14:57:12][DEBUG] >>> MatchNext returned: 232 
+[14:57:13][DEBUG] CreateIconArrayFromPath ENTRY: lock=268929561, dirPath='PC:Programming/iTidy/tests/icons/coloricons'
+[14:57:13][DEBUG] Using OPTIMIZED pattern matching (MatchFirst/MatchNext)
+[14:57:13][DEBUG] Icon array created successfully
+[14:57:13][DEBUG] AnchorPath allocated successfully
+[14:57:13][DEBUG] MatchFirst successful, entering processing loop 
+[14:57:13][DEBUG] >>> AFTER MATCHFIRST: ap_Strlen=1024, ap_Buf='PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected.info' 
+[14:57:13][DEBUG] Pattern matched .info file: '2x2_raw.expected.info' 
+[14:57:13][DEBUG] Full path to .info file: 'PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected.info' 
+[14:57:13][DEBUG] isIconTypeDisk('PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected.info') = 0 (0=not disk, 1=is disk) 
+[14:57:13][DEBUG] Reading icon details (optimized): PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected.info 
+[14:57:13][DEBUG]   fullPathAndFile='PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected.info' 
+[14:57:13][DEBUG]   fileNameNoInfo='2x2_raw.expected' 
+[14:57:13][DEBUG]   Calling GetIconDetailsFromDisk... 
+[14:57:13][DEBUG] GetIconDetailsFromDisk: Found default tool 'SYS:Utilities/MultiView' in PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected 
+[14:57:13][DEBUG] >>> GetIconDetailsFromDisk SUCCESS 
+[14:57:13][DEBUG]   GetIconDetailsFromDisk SUCCESS 
+[14:57:13][DEBUG]   Position: x=341, y=8 
+[14:57:13][DEBUG] ValidateDefaultTool: Cache hit for 'SYS:Utilities/MultiView' -> EXISTS 
+[14:57:13][DEBUG] AddFileReferenceToToolCache: Added file 'PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected.info' to tool 'SYS:Utilities/MultiView' (3/200) 
+[14:57:13][DEBUG]   Default Tool: 'SYS:Utilities/MultiView' -> 2x2_raw.expected [EXISTS] 
+[14:57:13][DEBUG]   Icon type: OS3.5 format - 2x2_raw.expected 
+[14:57:13][DEBUG]   Calling isDirectory('PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected.info')... 
+[14:57:13][DEBUG]   isDirectory returned: 0 
+[14:57:13][DEBUG]   Capturing file metadata from fib 
+[14:57:13][DEBUG]   is_folder=0 
+[14:57:13][DEBUG]   file_size=1897 
+[14:57:13][DEBUG]   date: days=17757, min=728, tick=1325 
+[14:57:13][DEBUG]   Allocating icon_full_path (66 bytes)... 
+[14:57:13][DEBUG]   icon_full_path='PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected.info' 
+[14:57:13][DEBUG]   Allocating icon_text (17 bytes)... 
+[14:57:13][DEBUG]   icon_text='2x2_raw.expected' 
+[14:57:13][DEBUG]   Adding icon to array... 
+[14:57:13][DEBUG] >>> About to call AddIconToArray, fileCount=0 
+[14:57:13][DEBUG] >>> AddIconToArray SUCCESS, fileCount now 1 
+[14:57:13][DEBUG]   Icon added successfully, fileCount now: 1 
+[14:57:13][DEBUG] >>> About to call MatchNext, fileCount=1 
+[14:57:13][DEBUG] >>> AnchorPath buffer strlen=1024, buf='PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected.info' 
+[14:57:13][DEBUG] >>> MatchNext returned: 0 
+[14:57:13][DEBUG] Pattern matched .info file: '2x2_raw.info' 
+[14:57:13][DEBUG] Full path to .info file: 'PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.info' 
+[14:57:13][DEBUG] isIconTypeDisk('PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.info') = 0 (0=not disk, 1=is disk) 
+[14:57:13][DEBUG] Reading icon details (optimized): PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.info 
+[14:57:13][DEBUG]   fullPathAndFile='PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.info' 
+[14:57:13][DEBUG]   fileNameNoInfo='2x2_raw' 
+[14:57:13][DEBUG]   Calling GetIconDetailsFromDisk... 
+[14:57:13][DEBUG] GetIconDetailsFromDisk: No default tool in PC:Programming/iTidy/tests/icons/coloricons/2x2_raw 
+[14:57:13][DEBUG] >>> GetIconDetailsFromDisk SUCCESS 
+[14:57:13][DEBUG]   GetIconDetailsFromDisk SUCCESS 
+[14:57:13][DEBUG]   Position: x=-2147483648, y=-2147483648 
+[14:57:13][DEBUG]   Default Tool: (none) -> 2x2_raw 
+[14:57:13][DEBUG]   Icon type: OS3.5 format - 2x2_raw 
+[14:57:13][DEBUG]   Calling isDirectory('PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.info')... 
+[14:57:13][DEBUG]   isDirectory returned: 0 
+[14:57:13][DEBUG]   Capturing file metadata from fib 
+[14:57:13][DEBUG]   is_folder=0 
+[14:57:13][DEBUG]   file_size=184 
+[14:57:13][DEBUG]   date: days=17757, min=717, tick=1478 
+[14:57:13][DEBUG]   Allocating icon_full_path (57 bytes)... 
+[14:57:13][DEBUG]   icon_full_path='PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.info' 
+[14:57:13][DEBUG]   Allocating icon_text (8 bytes)... 
+[14:57:13][DEBUG]   icon_text='2x2_raw' 
+[14:57:13][DEBUG]   Adding icon to array... 
+[14:57:13][DEBUG] >>> About to call AddIconToArray, fileCount=1 
+[14:57:13][DEBUG] >>> AddIconToArray SUCCESS, fileCount now 2 
+[14:57:13][DEBUG]   Icon added successfully, fileCount now: 2 
+[14:57:13][DEBUG] >>> About to call MatchNext, fileCount=2 
+[14:57:13][DEBUG] >>> AnchorPath buffer strlen=1024, buf='PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.info' 
+[14:57:13][DEBUG] >>> MatchNext returned: 232 
+[14:57:13][DEBUG] CreateIconArrayFromPath ENTRY: lock=268929561, dirPath='PC:Programming/iTidy/tests/icons/newicons'
+[14:57:13][DEBUG] Using OPTIMIZED pattern matching (MatchFirst/MatchNext)
+[14:57:13][DEBUG] Icon array created successfully
+[14:57:13][DEBUG] AnchorPath allocated successfully
+[14:57:13][DEBUG] MatchFirst successful, entering processing loop 
+[14:57:13][DEBUG] >>> AFTER MATCHFIRST: ap_Strlen=1024, ap_Buf='PC:Programming/iTidy/tests/icons/newicons/2x2_4col.expected.info' 
+[14:57:13][DEBUG] Pattern matched .info file: '2x2_4col.expected.info' 
+[14:57:13][DEBUG] Full path to .info file: 'PC:Programming/iTidy/tests/icons/newicons/2x2_4col.expected.info' 
+[14:57:13][DEBUG] isIconTypeDisk('PC:Programming/iTidy/tests/icons/newicons/2x2_4col.expected.info') = 0 (0=not disk, 1=is disk) 
+[14:57:13][DEBUG] Reading icon details (optimized): PC:Programming/iTidy/tests/icons/newicons/2x2_4col.expected.info 
+[14:57:13][DEBUG]   fullPathAndFile='PC:Programming/iTidy/tests/icons/newicons/2x2_4col.expected.info' 
+[14:57:13][DEBUG]   fileNameNoInfo='2x2_4col.expected' 
+[14:57:13][DEBUG]   Calling GetIconDetailsFromDisk... 
+[14:57:13][DEBUG] GetIconDetailsFromDisk: Found default tool 'SYS:Utilities/MultiView' in PC:Programming/iTidy/tests/icons/newicons/2x2_4col.expected 
+[14:57:13][DEBUG] >>> GetIconDetailsFromDisk SUCCESS 
+[14:57:13][DEBUG]   GetIconDetailsFromDisk SUCCESS 
+[14:57:13][DEBUG]   Position: x=341, y=8 
+[14:57:13][DEBUG] ValidateDefaultTool: Cache hit for 'SYS:Utilities/MultiView' -> EXISTS 
+[14:57:13][DEBUG] AddFileReferenceToToolCache: Added file 'PC:Programming/iTidy/tests/icons/newicons/2x2_4col.expected.info' to tool 'SYS:Utilities/MultiView' (4/200) 
+[14:57:13][DEBUG]   Default Tool: 'SYS:Utilities/MultiView' -> 2x2_4col.expected [EXISTS] 
+[14:57:13][DEBUG]   Icon type: OS3.5 format - 2x2_4col.expected 
+[14:57:13][DEBUG]   Calling isDirectory('PC:Programming/iTidy/tests/icons/newicons/2x2_4col.expected.info')... 
+[14:57:13][DEBUG]   isDirectory returned: 0 
+[14:57:13][DEBUG]   Capturing file metadata from fib 
+[14:57:13][DEBUG]   is_folder=0 
+[14:57:13][DEBUG]   file_size=1898 
+[14:57:13][DEBUG]   date: days=17757, min=728, tick=1364 
+[14:57:13][DEBUG]   Allocating icon_full_path (65 bytes)... 
+[14:57:13][DEBUG]   icon_full_path='PC:Programming/iTidy/tests/icons/newicons/2x2_4col.expected.info' 
+[14:57:13][DEBUG]   Allocating icon_text (18 bytes)... 
+[14:57:13][DEBUG]   icon_text='2x2_4col.expected' 
+[14:57:13][DEBUG]   Adding icon to array... 
+[14:57:13][DEBUG] >>> About to call AddIconToArray, fileCount=0 
+[14:57:13][DEBUG] >>> AddIconToArray SUCCESS, fileCount now 1 
+[14:57:13][DEBUG]   Icon added successfully, fileCount now: 1 
+[14:57:13][DEBUG] >>> About to call MatchNext, fileCount=1 
+[14:57:13][DEBUG] >>> AnchorPath buffer strlen=1024, buf='PC:Programming/iTidy/tests/icons/newicons/2x2_4col.expected.info' 
+[14:57:13][DEBUG] >>> MatchNext returned: 0 
+[14:57:13][DEBUG] Pattern matched .info file: '4x2_rle_zeros.expected.info' 
+[14:57:13][DEBUG] Full path to .info file: 'PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.expected.info' 
+[14:57:13][DEBUG] isIconTypeDisk('PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.expected.info') = 0 (0=not disk, 1=is disk) 
+[14:57:13][DEBUG] Reading icon details (optimized): PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.expected.info 
+[14:57:13][DEBUG]   fullPathAndFile='PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.expected.info' 
+[14:57:13][DEBUG]   fileNameNoInfo='4x2_rle_zeros.expected' 
+[14:57:13][DEBUG]   Calling GetIconDetailsFromDisk... 
+[14:57:13][DEBUG] GetIconDetailsFromDisk: Found default tool 'SYS:Utilities/MultiView' in PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.expected 
+[14:57:13][DEBUG] >>> GetIconDetailsFromDisk SUCCESS 
+[14:57:13][DEBUG]   GetIconDetailsFromDisk SUCCESS 
+[14:57:13][DEBUG]   Position: x=341, y=8 
+[14:57:13][DEBUG] ValidateDefaultTool: Cache hit for 'SYS:Utilities/MultiView' -> EXISTS 
+[14:57:13][DEBUG] AddFileReferenceToToolCache: Added file 'PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.expected.info' to tool 'SYS:Utilities/MultiView' (5/200) 
+[14:57:13][DEBUG]   Default Tool: 'SYS:Utilities/MultiView' -> 4x2_rle_zeros.expected [EXISTS] 
+[14:57:13][DEBUG]   Icon type: OS3.5 format - 4x2_rle_zeros.expected 
+[14:57:13][DEBUG]   Calling isDirectory('PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.expected.info')... 
+[14:57:13][DEBUG]   isDirectory returned: 0 
+[14:57:13][DEBUG]   Capturing file metadata from fib 
+[14:57:13][DEBUG]   is_folder=0 
+[14:57:13][DEBUG]   file_size=1903 
+[14:57:13][DEBUG]   date: days=17757, min=728, tick=1355 
+[14:57:13][DEBUG]   Allocating icon_full_path (70 bytes)... 
+[14:57:13][DEBUG]   icon_full_path='PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.expected.info' 
+[14:57:13][DEBUG]   Allocating icon_text (23 bytes)... 
+[14:57:13][DEBUG]   icon_text='4x2_rle_zeros.expected' 
+[14:57:13][DEBUG]   Adding icon to array... 
+[14:57:13][DEBUG] >>> About to call AddIconToArray, fileCount=1 
+[14:57:13][DEBUG] >>> AddIconToArray SUCCESS, fileCount now 2 
+[14:57:13][DEBUG]   Icon added successfully, fileCount now: 2 
+[14:57:13][DEBUG] >>> About to call MatchNext, fileCount=2 
+[14:57:13][DEBUG] >>> AnchorPath buffer strlen=1024, buf='PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.expected.info' 
+[14:57:13][DEBUG] >>> MatchNext returned: 0 
+[14:57:13][DEBUG] Pattern matched .info file: '4x4_8col_selected.expected.info' 
+[14:57:13][DEBUG] Full path to .info file: 'PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.expected.info' 
+[14:57:13][DEBUG] isIconTypeDisk('PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.expected.info') = 0 (0=not disk, 1=is disk) 
+[14:57:13][DEBUG] Reading icon details (optimized): PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.expected.info 
+[14:57:13][DEBUG]   fullPathAndFile='PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.expected.info' 
+[14:57:13][DEBUG]   fileNameNoInfo='4x4_8col_selected.expected' 
+[14:57:13][DEBUG]   Calling GetIconDetailsFromDisk... 
+[14:57:13][DEBUG] GetIconDetailsFromDisk: Found default tool 'SYS:Utilities/MultiView' in PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.expected 
+[14:57:13][DEBUG] >>> GetIconDetailsFromDisk SUCCESS 
+[14:57:13][DEBUG]   GetIconDetailsFromDisk SUCCESS 
+[14:57:13][DEBUG]   Position: x=341, y=8 
+[14:57:13][DEBUG] ValidateDefaultTool: Cache hit for 'SYS:Utilities/MultiView' -> EXISTS 
+[14:57:13][DEBUG] AddFileReferenceToToolCache: Added file 'PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.expected.info' to tool 'SYS:Utilities/MultiView' (6/200) 
+[14:57:13][DEBUG]   Default Tool: 'SYS:Utilities/MultiView' -> 4x4_8col_selected.expected [EXISTS] 
+[14:57:13][DEBUG]   Icon type: OS3.5 format - 4x4_8col_selected.expected 
+[14:57:13][DEBUG]   Calling isDirectory('PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.expected.info')... 
+[14:57:13][DEBUG]   isDirectory returned: 0 
+[14:57:13][DEBUG]   Capturing file metadata from fib 
+[14:57:13][DEBUG]   is_folder=0 
+[14:57:13][DEBUG]   file_size=1907 
+[14:57:13][DEBUG]   date: days=17757, min=728, tick=1344 
+[14:57:13][DEBUG]   Allocating icon_full_path (74 bytes)... 
+[14:57:13][DEBUG]   icon_full_path='PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.expected.info' 
+[14:57:13][DEBUG]   Allocating icon_text (27 bytes)... 
+[14:57:13][DEBUG]   icon_text='4x4_8col_selected.expected' 
+[14:57:13][DEBUG]   Adding icon to array... 
+[14:57:13][DEBUG] >>> About to call AddIconToArray, fileCount=2 
+[14:57:13][DEBUG] >>> AddIconToArray SUCCESS, fileCount now 3 
+[14:57:13][DEBUG]   Icon added successfully, fileCount now: 3 
+[14:57:13][DEBUG] >>> About to call MatchNext, fileCount=3 
+[14:57:13][DEBUG] >>> AnchorPath buffer strlen=1024, buf='PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.expected.info' 
+[14:57:13][DEBUG] >>> MatchNext returned: 0 
+[14:57:13][DEBUG] Pattern matched .info file: '8x8_16col_multiline.expected.info' 
+[14:57:13][DEBUG] Full path to .info file: 'PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.expected.info' 
+[14:57:13][DEBUG] isIconTypeDisk('PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.expected.info') = 0 (0=not disk, 1=is disk) 
+[14:57:13][DEBUG] Reading icon details (optimized): PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.expected.info 
+[14:57:13][DEBUG]   fullPathAndFile='PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.expected.info' 
+[14:57:13][DEBUG]   fileNameNoInfo='8x8_16col_multiline.expected' 
+[14:57:13][DEBUG]   Calling GetIconDetailsFromDisk... 
+[14:57:13][DEBUG] GetIconDetailsFromDisk: Found default tool 'SYS:Utilities/MultiView' in PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.expected 
+[14:57:13][DEBUG] >>> GetIconDetailsFromDisk SUCCESS 
+[14:57:13][DEBUG]   GetIconDetailsFromDisk SUCCESS 
+[14:57:13][DEBUG]   Position: x=341, y=8 
+[14:57:13][DEBUG] ValidateDefaultTool: Cache hit for 'SYS:Utilities/MultiView' -> EXISTS 
+[14:57:13][DEBUG] AddFileReferenceToToolCache: Added file 'PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.expected.info' to tool 'SYS:Utilities/MultiView' (7/200) 
+[14:57:13][DEBUG]   Default Tool: 'SYS:Utilities/MultiView' -> 8x8_16col_multiline.expected [EXISTS] 
+[14:57:13][DEBUG]   Icon type: OS3.5 format - 8x8_16col_multiline.expected 
+[14:57:13][DEBUG]   Calling isDirectory('PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.expected.info')... 
+[14:57:13][DEBUG]   isDirectory returned: 0 
+[14:57:13][DEBUG]   Capturing file metadata from fib 
+[14:57:13][DEBUG]   is_folder=0 
+[14:57:13][DEBUG]   file_size=1909 
+[14:57:13][DEBUG]   date: days=17757, min=728, tick=1335 
+[14:57:13][DEBUG]   Allocating icon_full_path (76 bytes)... 
+[14:57:13][DEBUG]   icon_full_path='PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.expected.info' 
+[14:57:13][DEBUG]   Allocating icon_text (29 bytes)... 
+[14:57:13][DEBUG]   icon_text='8x8_16col_multiline.expected' 
+[14:57:13][DEBUG]   Adding icon to array... 
+[14:57:13][DEBUG] >>> About to call AddIconToArray, fileCount=3 
+[14:57:13][DEBUG] >>> AddIconToArray SUCCESS, fileCount now 4 
+[14:57:13][DEBUG]   Icon added successfully, fileCount now: 4 
+[14:57:13][DEBUG] >>> About to call MatchNext, fileCount=4 
+[14:57:13][DEBUG] >>> AnchorPath buffer strlen=1024, buf='PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.expected.info' 
+[14:57:13][DEBUG] >>> MatchNext returned: 0 
+[14:57:13][DEBUG] Pattern matched .info file: '8x8_16col_multiline.info' 
+[14:57:13][DEBUG] Full path to .info file: 'PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.info' 
+[14:57:13][DEBUG] isIconTypeDisk('PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.info') = 0 (0=not disk, 1=is disk) 
+[14:57:13][DEBUG] Reading icon details (optimized): PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.info 
+[14:57:13][DEBUG]   fullPathAndFile='PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.info' 
+[14:57:13][DEBUG]   fileNameNoInfo='8x8_16col_multiline' 
+[14:57:13][DEBUG]   Calling GetIconDetailsFromDisk... 
+[14:57:13][DEBUG] GetIconDetailsFromDisk: No default tool in PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline 
+[14:57:13][DEBUG] >>> GetIconDetailsFromDisk SUCCESS 
+[14:57:13][DEBUG]   GetIconDetailsFromDisk SUCCESS 
+[14:57:13][DEBUG]   Position: x=-2147483648, y=-2147483648 
+[14:57:13][DEBUG]   Default Tool: (none) -> 8x8_16col_multiline 
+[14:57:13][DEBUG]   Icon type: NewIcon format - 8x8_16col_multiline 
+[14:57:13][DEBUG]   Calling isDirectory('PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.info')... 
+[14:57:13][DEBUG]   isDirectory returned: 0 
+[14:57:13][DEBUG]   Capturing file metadata from fib 
+[14:57:13][DEBUG]   is_folder=0 
+[14:57:13][DEBUG]   file_size=330 
+[14:57:13][DEBUG]   date: days=17757, min=717, tick=1478 
+[14:57:13][DEBUG]   Allocating icon_full_path (67 bytes)... 
+[14:57:13][DEBUG]   icon_full_path='PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.info' 
+[14:57:13][DEBUG]   Allocating icon_text (20 bytes)... 
+[14:57:13][DEBUG]   icon_text='8x8_16col_multiline' 
+[14:57:13][DEBUG]   Adding icon to array... 
+[14:57:13][DEBUG] >>> About to call AddIconToArray, fileCount=4 
+[14:57:13][DEBUG] >>> AddIconToArray SUCCESS, fileCount now 5 
+[14:57:13][DEBUG]   Icon added successfully, fileCount now: 5 
+[14:57:13][DEBUG] >>> About to call MatchNext, fileCount=5 
+[14:57:13][DEBUG] >>> AnchorPath buffer strlen=1024, buf='PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.info' 
+[14:57:13][DEBUG] >>> MatchNext returned: 0 
+[14:57:13][DEBUG] Pattern matched .info file: '4x4_8col_selected.info' 
+[14:57:13][DEBUG] Full path to .info file: 'PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.info' 
+[14:57:13][DEBUG] isIconTypeDisk('PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.info') = 0 (0=not disk, 1=is disk) 
+[14:57:13][DEBUG] Reading icon details (optimized): PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.info 
+[14:57:13][DEBUG]   fullPathAndFile='PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.info' 
+[14:57:13][DEBUG]   fileNameNoInfo='4x4_8col_selected' 
+[14:57:13][DEBUG]   Calling GetIconDetailsFromDisk... 
+[14:57:13][DEBUG] GetIconDetailsFromDisk: No default tool in PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected 
+[14:57:13][DEBUG] >>> GetIconDetailsFromDisk SUCCESS 
+[14:57:13][DEBUG]   GetIconDetailsFromDisk SUCCESS 
+[14:57:13][DEBUG]   Position: x=-2147483648, y=-2147483648 
+[14:57:13][DEBUG]   Default Tool: (none) -> 4x4_8col_selected 
+[14:57:13][DEBUG]   Icon type: NewIcon format - 4x4_8col_selected 
+[14:57:13][DEBUG]   Calling isDirectory('PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.info')... 
+[14:57:13][DEBUG]   isDirectory returned: 0 
+[14:57:13][DEBUG]   Capturing file metadata from fib 
+[14:57:13][DEBUG]   is_folder=0 
+[14:57:13][DEBUG]   file_size=277 
+[14:57:13][DEBUG]   date: days=17757, min=717, tick=1478 
+[14:57:13][DEBUG]   Allocating icon_full_path (65 bytes)... 
+[14:57:13][DEBUG]   icon_full_path='PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.info' 
+[14:57:13][DEBUG]   Allocating icon_text (18 bytes)... 
+[14:57:13][DEBUG]   icon_text='4x4_8col_selected' 
+[14:57:13][DEBUG]   Adding icon to array... 
+[14:57:13][DEBUG] >>> About to call AddIconToArray, fileCount=5 
+[14:57:13][DEBUG] >>> AddIconToArray SUCCESS, fileCount now 6 
+[14:57:13][DEBUG]   Icon added successfully, fileCount now: 6 
+[14:57:13][DEBUG] >>> About to call MatchNext, fileCount=6 
+[14:57:13][DEBUG] >>> AnchorPath buffer strlen=1024, buf='PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.info' 
+[14:57:13][DEBUG] >>> MatchNext returned: 0 
+[14:57:13][DEBUG] Pattern matched .info file: '4x2_rle_zeros.info' 
+[14:57:13][DEBUG] Full path to .info file: 'PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.info' 
+[14:57:13][DEBUG] isIconTypeDisk('PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.info') = 0 (0=not disk, 1=is disk) 
+[14:57:13][DEBUG] Reading icon details (optimized): PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.info 
+[14:57:13][DEBUG]   fullPathAndFile='PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.info' 
+[14:57:13][DEBUG]   fileNameNoInfo='4x2_rle_zeros' 
+[14:57:13][DEBUG]   Calling GetIconDetailsFromDisk... 
+[14:57:13][DEBUG] GetIconDetailsFromDisk: No default tool in PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros 
+[14:57:13][DEBUG] >>> GetIconDetailsFromDisk SUCCESS 
+[14:57:13][DEBUG]   GetIconDetailsFromDisk SUCCESS 
+[14:57:13][DEBUG]   Position: x=-2147483648, y=-2147483648 
+[14:57:13][DEBUG]   Default Tool: (none) -> 4x2_rle_zeros 
+[14:57:13][DEBUG]   Icon type: NewIcon format - 4x2_rle_zeros 
+[14:57:13][DEBUG]   Calling isDirectory('PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.info')... 
+[14:57:13][DEBUG]   isDirectory returned: 0 
+[14:57:13][DEBUG]   Capturing file metadata from fib 
+[14:57:13][DEBUG]   is_folder=0 
+[14:57:13][DEBUG]   file_size=201 
+[14:57:13][DEBUG]   date: days=17757, min=717, tick=1478 
+[14:57:13][DEBUG]   Allocating icon_full_path (61 bytes)... 
+[14:57:13][DEBUG]   icon_full_path='PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.info' 
+[14:57:13][DEBUG]   Allocating icon_text (14 bytes)... 
+[14:57:13][DEBUG]   icon_text='4x2_rle_zeros' 
+[14:57:13][DEBUG]   Adding icon to array... 
+[14:57:13][DEBUG] >>> About to call AddIconToArray, fileCount=6 
+[14:57:13][DEBUG] >>> AddIconToArray SUCCESS, fileCount now 7 
+[14:57:13][DEBUG]   Icon added successfully, fileCount now: 7 
+[14:57:13][DEBUG] >>> About to call MatchNext, fileCount=7 
+[14:57:13][DEBUG] >>> AnchorPath buffer strlen=1024, buf='PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.info' 
+[14:57:13][DEBUG] >>> MatchNext returned: 0 
+[14:57:14][DEBUG] Pattern matched .info file: '2x2_4col.info' 
+[14:57:14][DEBUG] Full path to .info file: 'PC:Programming/iTidy/tests/icons/newicons/2x2_4col.info' 
+[14:57:14][DEBUG] isIconTypeDisk('PC:Programming/iTidy/tests/icons/newicons/2x2_4col.info') = 0 (0=not disk, 1=is disk) 
+[14:57:14][DEBUG] Reading icon details (optimized): PC:Programming/iTidy/tests/icons/newicons/2x2_4col.info 
+[14:57:14][DEBUG]   fullPathAndFile='PC:Programming/iTidy/tests/icons/newicons/2x2_4col.info' 
+[14:57:14][DEBUG]   fileNameNoInfo='2x2_4col' 
+[14:57:14][DEBUG]   Calling GetIconDetailsFromDisk... 
+[14:57:14][DEBUG] GetIconDetailsFromDisk: No default tool in PC:Programming/iTidy/tests/icons/newicons/2x2_4col 
+[14:57:14][DEBUG] >>> GetIconDetailsFromDisk SUCCESS 
+[14:57:14][DEBUG]   GetIconDetailsFromDisk SUCCESS 
+[14:57:14][DEBUG]   Position: x=-2147483648, y=-2147483648 
+[14:57:14][DEBUG]   Default Tool: (none) -> 2x2_4col 
+[14:57:14][DEBUG]   Icon type: NewIcon format - 2x2_4col 
+[14:57:14][DEBUG]   Calling isDirectory('PC:Programming/iTidy/tests/icons/newicons/2x2_4col.info')... 
+[14:57:14][DEBUG]   isDirectory returned: 0 
+[14:57:14][DEBUG]   Capturing file metadata from fib 
+[14:57:14][DEBUG]   is_folder=0 
+[14:57:14][DEBUG]   file_size=214 
+[14:57:14][DEBUG]   date: days=17757, min=717, tick=1478 
+[14:57:14][DEBUG]   Allocating icon_full_path (56 bytes)... 
+[14:57:14][DEBUG]   icon_full_path='PC:Programming/iTidy/tests/icons/newicons/2x2_4col.info' 
+[14:57:14][DEBUG]   Allocating icon_text (9 bytes)... 
+[14:57:14][DEBUG]   icon_text='2x2_4col' 
+[14:57:14][DEBUG]   Adding icon to array... 
+[14:57:14][DEBUG] >>> About to call AddIconToArray, fileCount=7 
+[14:57:14][DEBUG] >>> AddIconToArray SUCCESS, fileCount now 8 
+[14:57:14][DEBUG]   Icon added successfully, fileCount now: 8 
+[14:57:14][DEBUG] >>> About to call MatchNext, fileCount=8 
+[14:57:14][DEBUG] >>> AnchorPath buffer strlen=1024, buf='PC:Programming/iTidy/tests/icons/newicons/2x2_4col.info' 
+[14:57:14][DEBUG] >>> MatchNext returned: 232 
+[14:57:14][DEBUG] CreateIconArrayFromPath ENTRY: lock=268929561, dirPath='PC:Programming/iTidy/tests/icons/glowicons'
+[14:57:14][DEBUG] Using OPTIMIZED pattern matching (MatchFirst/MatchNext)
+[14:57:14][DEBUG] Icon array created successfully
+[14:57:14][DEBUG] AnchorPath allocated successfully
+[14:57:14][DEBUG] MatchFirst successful, entering processing loop 
+[14:57:14][DEBUG] >>> AFTER MATCHFIRST: ap_Strlen=1024, ap_Buf='PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.expected.info' 
+[14:57:14][DEBUG] Pattern matched .info file: '2x2_glow.expected.info' 
+[14:57:14][DEBUG] Full path to .info file: 'PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.expected.info' 
+[14:57:14][DEBUG] isIconTypeDisk('PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.expected.info') = 0 (0=not disk, 1=is disk) 
+[14:57:14][DEBUG] Reading icon details (optimized): PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.expected.info 
+[14:57:14][DEBUG]   fullPathAndFile='PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.expected.info' 
+[14:57:14][DEBUG]   fileNameNoInfo='2x2_glow.expected' 
+[14:57:14][DEBUG]   Calling GetIconDetailsFromDisk... 
+[14:57:14][DEBUG] GetIconDetailsFromDisk: Found default tool 'SYS:Utilities/MultiView' in PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.expected 
+[14:57:14][DEBUG] >>> GetIconDetailsFromDisk SUCCESS 
+[14:57:14][DEBUG]   GetIconDetailsFromDisk SUCCESS 
+[14:57:14][DEBUG]   Position: x=341, y=8 
+[14:57:14][DEBUG] ValidateDefaultTool: Cache hit for 'SYS:Utilities/MultiView' -> EXISTS 
+[14:57:14][DEBUG] AddFileReferenceToToolCache: Added file 'PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.expected.info' to tool 'SYS:Utilities/MultiView' (8/200) 
+[14:57:14][DEBUG]   Default Tool: 'SYS:Utilities/MultiView' -> 2x2_glow.expected [EXISTS] 
+[14:57:14][DEBUG]   Icon type: OS3.5 format - 2x2_glow.expected 
+[14:57:14][DEBUG]   Calling isDirectory('PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.expected.info')... 
+[14:57:14][DEBUG]   isDirectory returned: 0 
+[14:57:14][DEBUG]   Capturing file metadata from fib 
+[14:57:14][DEBUG]   is_folder=0 
+[14:57:14][DEBUG]   file_size=1898 
+[14:57:14][DEBUG]   date: days=17757, min=728, tick=1373 
+[14:57:14][DEBUG]   Allocating icon_full_path (66 bytes)... 
+[14:57:14][DEBUG]   icon_full_path='PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.expected.info' 
+[14:57:14][DEBUG]   Allocating icon_text (18 bytes)... 
+[14:57:14][DEBUG]   icon_text='2x2_glow.expected' 
+[14:57:14][DEBUG]   Adding icon to array... 
+[14:57:14][DEBUG] >>> About to call AddIconToArray, fileCount=0 
+[14:57:14][DEBUG] >>> AddIconToArray SUCCESS, fileCount now 1 
+[14:57:14][DEBUG]   Icon added successfully, fileCount now: 1 
+[14:57:14][DEBUG] >>> About to call MatchNext, fileCount=1 
+[14:57:14][DEBUG] >>> AnchorPath buffer strlen=1024, buf='PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.expected.info' 
+[14:57:14][DEBUG] >>> MatchNext returned: 0 
+[14:57:14][DEBUG] Pattern matched .info file: '2x2_glow.info' 
+[14:57:14][DEBUG] Full path to .info file: 'PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.info' 
+[14:57:14][DEBUG] isIconTypeDisk('PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.info') = 0 (0=not disk, 1=is disk) 
+[14:57:14][DEBUG] Reading icon details (optimized): PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.info 
+[14:57:14][DEBUG]   fullPathAndFile='PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.info' 
+[14:57:14][DEBUG]   fileNameNoInfo='2x2_glow' 
+[14:57:14][DEBUG]   Calling GetIconDetailsFromDisk... 
+[14:57:14][DEBUG] GetIconDetailsFromDisk: No default tool in PC:Programming/iTidy/tests/icons/glowicons/2x2_glow 
+[14:57:14][DEBUG] >>> GetIconDetailsFromDisk SUCCESS 
+[14:57:14][DEBUG]   GetIconDetailsFromDisk SUCCESS 
+[14:57:14][DEBUG]   Position: x=-2147483648, y=-2147483648 
+[14:57:14][DEBUG]   Default Tool: (none) -> 2x2_glow 
+[14:57:14][DEBUG]   Icon type: OS3.5 format - 2x2_glow 
+[14:57:14][DEBUG]   Calling isDirectory('PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.info')... 
+[14:57:14][DEBUG]   isDirectory returned: 0 
+[14:57:14][DEBUG]   Capturing file metadata from fib 
+[14:57:14][DEBUG]   is_folder=0 
+[14:57:14][DEBUG]   file_size=184 
+[14:57:14][DEBUG]   date: days=17757, min=717, tick=1478 
+[14:57:14][DEBUG]   Allocating icon_full_path (57 bytes)... 
+[14:57:14][DEBUG]   icon_full_path='PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.info' 
+[14:57:14][DEBUG]   Allocating icon_text (9 bytes)... 
+[14:57:14][DEBUG]   icon_text='2x2_glow' 
+[14:57:14][DEBUG]   Adding icon to array... 
+[14:57:14][DEBUG] >>> About to call AddIconToArray, fileCount=1 
+[14:57:14][DEBUG] >>> AddIconToArray SUCCESS, fileCount now 2 
+[14:57:14][DEBUG]   Icon added successfully, fileCount now: 2 
+[14:57:14][DEBUG] >>> About to call MatchNext, fileCount=2 
+[14:57:14][DEBUG] >>> AnchorPath buffer strlen=1024, buf='PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.info' 
+[14:57:14][DEBUG] >>> MatchNext returned: 232 
+[14:57:14][INFO] Icons created: 10 
+[14:57:14][INFO]   drawer: 4 
+[14:57:14][INFO]   ascii: 6 

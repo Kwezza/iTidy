@@ -65,7 +65,7 @@ const char *icon_error_string(iTidy_IconError err)
         case ITIDY_ICON_ERR_BAD_COUNT:     return "impossible count";
         case ITIDY_ICON_ERR_BAD_TEXT:      return "malformed text blob";
         case ITIDY_ICON_ERR_UNSUPPORTED:   return "unsupported icon extension";
-        case ITIDY_ICON_ERR_NO_DATA:       return "no ColorIcon image data";
+        case ITIDY_ICON_ERR_NO_DATA:       return "no image data";
         case ITIDY_ICON_ERR_ALLOC:         return "out of memory";
         default:                           return "unknown error";
     }

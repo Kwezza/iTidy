@@ -1,0 +1,23 @@
+iTidy Backup Catalog v1.1
+===============================================================================
+Run Number: 0006
+Session Started: 2026-08-11 14:57:10
+Source Directory: PC:Programming/iTidy/tests/icons
+LhA Path: C:LhA
+===============================================================================
+
+# Index    | Subfolder | Size    | Icons | Original Path                            | Window Geometry | VM
+-----------+-----------+---------+-------+------------------------------------------+----------------+---
+00001.lha  | 000/      | 3 KB    | 4     | PC:Programming/iTidy/tests/icons/classic | 270x128+265+236 | 1
+00002.lha  | 000/      | 1 KB    | 2     | PC:Programming/iTidy/tests/icons/coloricons | 270x128+265+236 | 1
+00003.lha  | 000/      | 6 KB    | 8     | PC:Programming/iTidy/tests/icons/newicons | 270x128+265+236 | 1
+00004.lha  | 000/      | 1 KB    | 2     | PC:Programming/iTidy/tests/icons/glowicons | 270x128+265+236 | 1
+
+===============================================================================
+Session Ended: 2026-08-11 14:57:14
+Total Archives: 4
+Successful: 4
+Failed: 0
+Total Size: 12 KB
+Icons Created: 10
+===============================================================================

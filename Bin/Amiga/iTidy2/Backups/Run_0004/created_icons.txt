@@ -1,0 +1,7 @@
+; iTidy Created Icons Manifest
+; One .info file path per line
+; These files were created by DefIcons during this run
+; Restore will delete these files to return folders to pre-iTidy state
+;
+PC:Programming/iTidy/tests/icons/classic/8x2x1.expected.info
+PC:Programming/iTidy/tests/icons/classic/8x1_selected.expected.info

@@ -1,0 +1,1021 @@
+[14:53:58][INFO] Log system initialized - timestamp: 2026-08-11_14-53-58 
+[14:53:58][INFO] Logs directory: PROGDIR:logs/ 
+[14:53:58][DEBUG] Category general -> PROGDIR:logs/general_2026-08-11_14-53-58.log 
+[14:53:58][DEBUG] Category memory -> PROGDIR:logs/memory_2026-08-11_14-53-58.log 
+[14:53:58][DEBUG] Category gui -> PROGDIR:logs/gui_2026-08-11_14-53-58.log 
+[14:53:58][DEBUG] Category icons -> PROGDIR:logs/icons_2026-08-11_14-53-58.log 
+[14:53:58][DEBUG] Category backup -> PROGDIR:logs/backup_2026-08-11_14-53-58.log 
+[14:53:58][DEBUG] Category errors -> PROGDIR:logs/errors_2026-08-11_14-53-58.log 
+[14:56:16][INFO] iTidy v2.0 built Mar 06 2026 15:27:54 (68000) 
+[14:56:25][INFO] Logging preferences applied: 
+[14:56:25][INFO]   Log Level: DEBUG 
+[14:56:25][INFO]   Performance Logging: DISABLED (PERFLOG tooltype) 
+[14:56:25][INFO] *** Building PATH search list for default tool validation *** 
+[14:56:25][INFO] BuildPathSearchList: Parsing startup scripts for PATH commands... 
+[14:56:25][DEBUG] BuildPathSearchList: Opening S:Startup-Sequence 
+[14:56:25][DEBUG] BuildPathSearchList: Parsing S:Startup-Sequence for PATH commands... 
+[14:56:25][DEBUG]   Found PATH command: 'Path >NIL: RAM: C: SYS:Utilities SYS:Rexxc SYS:System S: SYS:Prefs SYS:WBStartup SYS:Tools SYS:Tools/Commodities' 
+[14:56:25][DEBUG]   -> REPLACE mode: clearing 0 existing paths 
+[14:56:25][DEBUG]     Added path [1]: '>NIL:' 
+[14:56:25][DEBUG]     Added path [2]: 'RAM:' 
+[14:56:25][DEBUG]     Added path [3]: 'C:' 
+[14:56:25][DEBUG]     Added path [4]: 'SYS:Utilities/' 
+[14:56:25][DEBUG]     Added path [5]: 'SYS:Rexxc/' 
+[14:56:25][DEBUG]     Added path [6]: 'SYS:System/' 
+[14:56:25][DEBUG]     Added path [7]: 'S:' 
+[14:56:25][DEBUG]     Added path [8]: 'SYS:Prefs/' 
+[14:56:25][DEBUG]     Added path [9]: 'SYS:WBStartup/' 
+[14:56:25][DEBUG]     Added path [10]: 'SYS:Tools/' 
+[14:56:25][DEBUG]     Added path [11]: 'SYS:Tools/Commodities/' 
+[14:56:25][DEBUG] BuildPathSearchList: Finished parsing S:Startup-Sequence, current path count: 11 
+[14:56:25][DEBUG] BuildPathSearchList: Opening S:User-Startup 
+[14:56:25][DEBUG] BuildPathSearchList: Parsing S:User-Startup for PATH commands... 
+[14:56:25][DEBUG]   Found PATH command: 'path sc:c add' 
+[14:56:25][DEBUG]   -> ADD mode: appending to existing 11 paths 
+[14:56:25][DEBUG]     Added path [12]: 'sc:c/' 
+[14:56:25][DEBUG]   Found PATH command: 'Path AmiSSL: ADD' 
+[14:56:25][DEBUG]   -> ADD mode: appending to existing 12 paths 
+[14:56:25][DEBUG]     Added path [13]: 'AmiSSL:' 
+[14:56:25][DEBUG] BuildPathSearchList: Finished parsing S:User-Startup, current path count: 13 
+[14:56:25][DEBUG] BuildPathSearchList: Allocating global array for 13 paths 
+[14:56:25][DEBUG] BuildPathSearchList: Final PATH list: 
+[14:56:25][DEBUG]   [1] >NIL: 
+[14:56:25][DEBUG]   [2] RAM: 
+[14:56:25][DEBUG]   [3] C: 
+[14:56:25][DEBUG]   [4] SYS:Utilities/ 
+[14:56:25][DEBUG]   [5] SYS:Rexxc/ 
+[14:56:25][DEBUG]   [6] SYS:System/ 
+[14:56:25][DEBUG]   [7] S: 
+[14:56:25][DEBUG]   [8] SYS:Prefs/ 
+[14:56:25][DEBUG]   [9] SYS:WBStartup/ 
+[14:56:25][DEBUG]   [10] SYS:Tools/ 
+[14:56:25][DEBUG]   [11] SYS:Tools/Commodities/ 
+[14:56:25][DEBUG]   [12] sc:c/ 
+[14:56:25][DEBUG]   [13] AmiSSL: 
+[14:56:25][INFO] BuildPathSearchList: SUCCESS - Built PATH list with 13 directories from startup scripts 
+[14:56:25][INFO] Default tool validation enabled 
+[14:56:25][DEBUG] FreeToolCache: Tool cache freed 
+[14:56:25][DEBUG] InitToolCache: Cache initialized (capacity: 20) 
+[14:56:25][DEBUG] Tool cache initialized 
+[14:56:25][INFO] *** Current Preferences Settings *** 
+[14:56:25][INFO] Target Path: PC:Programming/iTidy/tests/icons 
+[14:56:25][INFO] Recursive Mode: YES 
+[14:56:25][INFO] Skip Hidden Folders: YES 
+[14:56:25][INFO] Sort By: 0 (Name) 
+[14:56:25][INFO] Reverse Sort: NO 
+[14:56:25][INFO] Backup Enabled: YES 
+[14:56:25][INFO] Default Tool Validation: YES 
+[14:56:25][INFO] --- DefIcons Icon Creation Settings --- 
+[14:56:25][INFO] DefIcons icon creation: YES 
+[14:56:25][INFO] Disabled Types: 'tool,prefs,iff,key,kickstart' 
+[14:56:25][INFO] Folder Icon Mode: 2 (Never) 
+[14:56:25][INFO] Skip System Assigns: YES 
+[14:56:25][INFO] Exclude Paths Count: 17 
+[14:56:25][INFO] Exclude Paths List: 
+[14:56:25][DEBUG]   [0] DEVICE:Fonts 
+[14:56:25][DEBUG]   [1] DEVICE:Locale 
+[14:56:25][DEBUG]   [2] DEVICE:Classes 
+[14:56:25][DEBUG]   [3] DEVICE:Libs 
+[14:56:25][DEBUG]   [4] DEVICE:C 
+[14:56:25][DEBUG]   [5] DEVICE:Rexxc 
+[14:56:25][DEBUG]   [6] DEVICE:T 
+[14:56:25][DEBUG]   [7] DEVICE:L 
+[14:56:25][DEBUG]   [8] DEVICE:Devs 
+[14:56:25][DEBUG]   [9] DEVICE:Resources 
+[14:56:25][DEBUG]   [10] DEVICE:System 
+[14:56:25][DEBUG]   [11] DEVICE:Storage 
+[14:56:25][DEBUG]   [12] DEVICE:Expansion 
+[14:56:25][DEBUG]   [13] DEVICE:Kickstart 
+[14:56:25][DEBUG]   [14] DEVICE:Env 
+[14:56:25][DEBUG]   [15] DEVICE:Envarc 
+[14:56:25][DEBUG]   [16] DEVICE:Prefs/Env-Archive 
+[14:56:25][INFO] ======================================== 
+[14:56:25][DEBUG] [BACKUP] Initializing backup session... 
+[14:56:25][DEBUG] [BACKUP] Root path: PROGDIR:Backups 
+[14:56:25][DEBUG] [BACKUP] Source directory: PC:Programming/iTidy/tests/icons 
+[14:56:25][DEBUG] [BACKUP] LHA found at: C:LhA 
+[14:56:25][DEBUG] [BACKUP] Created run directory: PROGDIR:Backups/Run_0005 (run 5) 
+[14:56:25][DEBUG] [BACKUP] Catalog created successfully 
+[14:56:25][DEBUG] [BACKUP] Session initialized successfully 
+[14:56:25][DEBUG] Backup session started: PROGDIR:Backups/Run_0005 
+[14:56:25][DEBUG] Source directory: PC:Programming/iTidy/tests/icons 
+[14:56:25][DEBUG] ======================================== 
+[14:56:25][INFO] Loading 'left out' icons for device: PC 
+[14:56:25][DEBUG] Looking for .backdrop file: PC:.backdrop 
+[14:56:25][DEBUG]   --> .backdrop file opened successfully 
+[14:56:25][DEBUG]   --> Reading .backdrop file contents: 
+[14:56:25][DEBUG]       [0] PC:Programming/ListView.info (from .backdrop entry: ':Programming/ListView') 
+[14:56:25][DEBUG]       [1] PC:Programming/GUI-WHDload-downloader/build/amiga/test.txt.info (from .backdrop entry: ':Programming/GUI-WHDload-downloader/build/amiga/test.txt') 
+[14:56:25][DEBUG]       [2] PC:Programming/GUI-WHDload-downloader.info (from .backdrop entry: ':Programming/GUI-WHDload-downloader') 
+[14:56:25][DEBUG]       [3] PC:Programming/GUI-WHDload-downloader/build/amiga/html-parsing.info (from .backdrop entry: ':Programming/GUI-WHDload-downloader/build/amiga/html-parsing') 
+[14:56:25][DEBUG]       [4] PC:Programming/iTidy/src/templates.info (from .backdrop entry: ':Programming/iTidy/src/templates') 
+[14:56:25][DEBUG]       [5] PC:Programming/MD-2-AmigaGuide/docs.info (from .backdrop entry: ':Programming/MD-2-AmigaGuide/docs') 
+[14:56:25][DEBUG]       [6] PC:Programming/iTidy/Tests/test-icons.info (from .backdrop entry: ':Programming/iTidy/Tests/test-icons') 
+[14:56:25][DEBUG]       [7] PC:Programming/iTidy/Tests/multiIcon.info (from .backdrop entry: ':Programming/iTidy/Tests/multiIcon') 
+[14:56:25][DEBUG]       [8] PC:Rebuild/Rebuild.info (from .backdrop entry: ':Rebuild/Rebuild') 
+[14:56:25][DEBUG]       [9] PC:Programming/iTidy/Tests/ReActon.info (from .backdrop entry: ':Programming/iTidy/Tests/ReActon') 
+[14:56:25][DEBUG]       [10] PC:Programming/iTidy/Tests.info (from .backdrop entry: ':Programming/iTidy/Tests') 
+[14:56:25][DEBUG]       [11] PC:Programming/iTidy/Bin/Amiga/iTidy2.info (from .backdrop entry: ':Programming/iTidy/Bin/Amiga/iTidy2') 
+[14:56:25][DEBUG]       [12] PC:Programming/PFS3-Defrag-map/Bin/Amiga.info (from .backdrop entry: ':Programming/PFS3-Defrag-map/Bin/Amiga') 
+[14:56:25][DEBUG]       [13] PC:Programming/RichListview.info (from .backdrop entry: ':Programming/RichListview') 
+[14:56:25][INFO]   --> Total left-out icons loaded: 14 
+[14:56:25][DEBUG] ======================================== 
+[14:56:25][INFO] Processing: PC:Programming/iTidy/tests/icons 
+[14:56:25][INFO] Recursive: Yes 
+[14:56:25][INFO] Creating missing icons using DefIcons... 
+[14:56:25][DEBUG] [BACKUP] Created icons manifest opened: PROGDIR:Backups/Run_0005/created_icons.txt 
+[14:56:25][INFO]   Creating icons: PC:Programming/iTidy/tests/icons 
+[14:56:25][INFO] Created 0 icon(s) recursively 
+[14:56:25][DEBUG] ProcessDirectoryRecursive: path='PC:Programming/iTidy/tests/icons', level=0 
+[14:56:25][DEBUG] ProcessSingleDirectory: path='PC:Programming/iTidy/tests/icons' 
+[14:56:25][INFO]   Scanning for icons... 
+[14:56:25][DEBUG] ==== SECTION: LOADING ICONS ==== 
+[14:56:25][DEBUG] >>> CreateIconArrayFromPath ENTRY: lock=269210649, dirPath='PC:Programming/iTidy/tests/icons' 
+[14:56:25][DEBUG] >>> AFTER ALLOCATION: anchorPath=0x4030e294, ap_Buf=0x4030e3ac, ap_Strlen=1024 
+[14:56:25][DEBUG] >>> AFTER ALLOCATION: First 20 bytes of ap_Buf: [00 00 00 00 00...] 
+[14:56:25][DEBUG] Pattern: 'PC:Programming/iTidy/tests/icons/#?.info' 
+[14:56:25][DEBUG] No icons in the folder that can be arranged 
+[14:56:25][INFO]   No icons found in directory 
+[14:56:25][DEBUG] No icons in directory: PC:Programming/iTidy/tests/icons 
+[14:56:25][INFO]   Resizing to default empty folder size... 
+[14:56:25][DEBUG] resizeFolderToContents ENTRY: dirPath='PC:Programming/iTidy/tests/icons', iconArray->size=0 
+[14:56:25][DEBUG] Content dimensions: 0×0 (with margins) 
+[14:56:25][DEBUG] Calculated maxWidth=0, maxHeight=0 before calling repoistionWindow
+[14:56:25][DEBUG] No icons in folder - using default empty folder size: 230x80 
+[14:56:25][DEBUG]   Final position: left=185, top=138, width=270, height=124 
+[14:56:25][DEBUG] Unable to load disk.info for folder: PC:Programming/iTidy/tests/icons 
+[14:56:25][DEBUG] Skipping hidden folder (no .info): PC:Programming/iTidy/tests/icons/classic 
+[14:56:25][DEBUG] Skipping hidden folder (no .info): PC:Programming/iTidy/tests/icons/coloricons 
+[14:56:25][DEBUG] Skipping hidden folder (no .info): PC:Programming/iTidy/tests/icons/malformed 
+[14:56:25][DEBUG] Skipping hidden folder (no .info): PC:Programming/iTidy/tests/icons/newicons 
+[14:56:25][DEBUG] Skipping hidden folder (no .info): PC:Programming/iTidy/tests/icons/glowicons 
+[14:56:25][INFO] 
+[14:56:25][INFO] === Processing Statistics === 
+[14:56:25][INFO]   Folders processed: 0 
+[14:56:25][INFO]   Icons processed: 0 
+[14:56:25][INFO]   Total time: 0 seconds 
+[14:56:25][DEBUG] *** Tool cache summary *** 
+[14:56:25][DEBUG] *** Tool Cache: Empty *** 
+[14:56:25][DEBUG] Tool cache retained for post-processing 
+[14:56:25][DEBUG] Freeing PATH search list 
+[14:56:25][DEBUG] FreePathSearchList: PATH list freed 
+[14:56:25][INFO] 
+[14:56:25][INFO] *** Finalizing backup session *** 
+[14:56:25][DEBUG] [BACKUP] Created icons manifest closed (0 icons recorded) 
+[14:56:25][INFO] Backup session completed successfully 
+[14:56:25][INFO]   Folders backed up: 0 
+[14:56:25][INFO]   Total bytes archived: 0 
+[14:56:25][INFO]   Location: PROGDIR:Backups/Run_0005 
+[14:56:25][INFO] *** Backup session completed *** 
+[14:56:25][DEBUG]   Folders backed up: 0 
+[14:56:25][DEBUG]   Failed backups: 0 
+[14:56:25][DEBUG]   Total bytes: 0 
+[14:56:25][DEBUG]   Location: PROGDIR:Backups/Run_0005 
+[14:57:10][INFO] Logging preferences applied: 
+[14:57:10][INFO]   Log Level: DEBUG 
+[14:57:10][INFO]   Performance Logging: DISABLED (PERFLOG tooltype) 
+[14:57:10][INFO] *** Building PATH search list for default tool validation *** 
+[14:57:10][INFO] BuildPathSearchList: Parsing startup scripts for PATH commands... 
+[14:57:10][DEBUG] BuildPathSearchList: Opening S:Startup-Sequence 
+[14:57:10][DEBUG] BuildPathSearchList: Parsing S:Startup-Sequence for PATH commands... 
+[14:57:10][DEBUG]   Found PATH command: 'Path >NIL: RAM: C: SYS:Utilities SYS:Rexxc SYS:System S: SYS:Prefs SYS:WBStartup SYS:Tools SYS:Tools/Commodities' 
+[14:57:10][DEBUG]   -> REPLACE mode: clearing 0 existing paths 
+[14:57:10][DEBUG]     Added path [1]: '>NIL:' 
+[14:57:10][DEBUG]     Added path [2]: 'RAM:' 
+[14:57:10][DEBUG]     Added path [3]: 'C:' 
+[14:57:10][DEBUG]     Added path [4]: 'SYS:Utilities/' 
+[14:57:10][DEBUG]     Added path [5]: 'SYS:Rexxc/' 
+[14:57:10][DEBUG]     Added path [6]: 'SYS:System/' 
+[14:57:10][DEBUG]     Added path [7]: 'S:' 
+[14:57:10][DEBUG]     Added path [8]: 'SYS:Prefs/' 
+[14:57:10][DEBUG]     Added path [9]: 'SYS:WBStartup/' 
+[14:57:10][DEBUG]     Added path [10]: 'SYS:Tools/' 
+[14:57:10][DEBUG]     Added path [11]: 'SYS:Tools/Commodities/' 
+[14:57:10][DEBUG] BuildPathSearchList: Finished parsing S:Startup-Sequence, current path count: 11 
+[14:57:10][DEBUG] BuildPathSearchList: Opening S:User-Startup 
+[14:57:10][DEBUG] BuildPathSearchList: Parsing S:User-Startup for PATH commands... 
+[14:57:10][DEBUG]   Found PATH command: 'path sc:c add' 
+[14:57:10][DEBUG]   -> ADD mode: appending to existing 11 paths 
+[14:57:10][DEBUG]     Added path [12]: 'sc:c/' 
+[14:57:10][DEBUG]   Found PATH command: 'Path AmiSSL: ADD' 
+[14:57:10][DEBUG]   -> ADD mode: appending to existing 12 paths 
+[14:57:10][DEBUG]     Added path [13]: 'AmiSSL:' 
+[14:57:10][DEBUG] BuildPathSearchList: Finished parsing S:User-Startup, current path count: 13 
+[14:57:10][DEBUG] BuildPathSearchList: Allocating global array for 13 paths 
+[14:57:10][DEBUG] BuildPathSearchList: Final PATH list: 
+[14:57:10][DEBUG]   [1] >NIL: 
+[14:57:10][DEBUG]   [2] RAM: 
+[14:57:10][DEBUG]   [3] C: 
+[14:57:10][DEBUG]   [4] SYS:Utilities/ 
+[14:57:10][DEBUG]   [5] SYS:Rexxc/ 
+[14:57:10][DEBUG]   [6] SYS:System/ 
+[14:57:10][DEBUG]   [7] S: 
+[14:57:10][DEBUG]   [8] SYS:Prefs/ 
+[14:57:10][DEBUG]   [9] SYS:WBStartup/ 
+[14:57:10][DEBUG]   [10] SYS:Tools/ 
+[14:57:10][DEBUG]   [11] SYS:Tools/Commodities/ 
+[14:57:10][DEBUG]   [12] sc:c/ 
+[14:57:10][DEBUG]   [13] AmiSSL: 
+[14:57:10][INFO] BuildPathSearchList: SUCCESS - Built PATH list with 13 directories from startup scripts 
+[14:57:10][INFO] Default tool validation enabled 
+[14:57:10][DEBUG] FreeToolCache: Tool cache freed 
+[14:57:10][DEBUG] InitToolCache: Cache initialized (capacity: 20) 
+[14:57:10][DEBUG] Tool cache initialized 
+[14:57:10][INFO] *** Current Preferences Settings *** 
+[14:57:10][INFO] Target Path: PC:Programming/iTidy/tests/icons 
+[14:57:10][INFO] Recursive Mode: YES 
+[14:57:10][INFO] Skip Hidden Folders: YES 
+[14:57:10][INFO] Sort By: 0 (Name) 
+[14:57:10][INFO] Reverse Sort: NO 
+[14:57:10][INFO] Backup Enabled: YES 
+[14:57:10][INFO] Default Tool Validation: YES 
+[14:57:10][INFO] --- DefIcons Icon Creation Settings --- 
+[14:57:10][INFO] DefIcons icon creation: YES 
+[14:57:10][INFO] Disabled Types: 'tool,prefs,iff,key,kickstart' 
+[14:57:10][INFO] Folder Icon Mode: 0 (Smart) 
+[14:57:10][INFO] Skip System Assigns: YES 
+[14:57:10][INFO] Exclude Paths Count: 17 
+[14:57:10][INFO] Exclude Paths List: 
+[14:57:10][DEBUG]   [0] DEVICE:Fonts 
+[14:57:10][DEBUG]   [1] DEVICE:Locale 
+[14:57:10][DEBUG]   [2] DEVICE:Classes 
+[14:57:10][DEBUG]   [3] DEVICE:Libs 
+[14:57:10][DEBUG]   [4] DEVICE:C 
+[14:57:10][DEBUG]   [5] DEVICE:Rexxc 
+[14:57:10][DEBUG]   [6] DEVICE:T 
+[14:57:10][DEBUG]   [7] DEVICE:L 
+[14:57:10][DEBUG]   [8] DEVICE:Devs 
+[14:57:10][DEBUG]   [9] DEVICE:Resources 
+[14:57:10][DEBUG]   [10] DEVICE:System 
+[14:57:10][DEBUG]   [11] DEVICE:Storage 
+[14:57:10][DEBUG]   [12] DEVICE:Expansion 
+[14:57:10][DEBUG]   [13] DEVICE:Kickstart 
+[14:57:10][DEBUG]   [14] DEVICE:Env 
+[14:57:10][DEBUG]   [15] DEVICE:Envarc 
+[14:57:10][DEBUG]   [16] DEVICE:Prefs/Env-Archive 
+[14:57:10][INFO] ======================================== 
+[14:57:10][DEBUG] [BACKUP] Initializing backup session... 
+[14:57:10][DEBUG] [BACKUP] Root path: PROGDIR:Backups 
+[14:57:10][DEBUG] [BACKUP] Source directory: PC:Programming/iTidy/tests/icons 
+[14:57:10][DEBUG] [BACKUP] LHA found at: C:LhA 
+[14:57:10][DEBUG] [BACKUP] Created run directory: PROGDIR:Backups/Run_0006 (run 6) 
+[14:57:10][DEBUG] [BACKUP] Catalog created successfully 
+[14:57:10][DEBUG] [BACKUP] Session initialized successfully 
+[14:57:10][DEBUG] Backup session started: PROGDIR:Backups/Run_0006 
+[14:57:10][DEBUG] Source directory: PC:Programming/iTidy/tests/icons 
+[14:57:10][DEBUG] ======================================== 
+[14:57:10][INFO] Loading 'left out' icons for device: PC 
+[14:57:10][DEBUG] Looking for .backdrop file: PC:.backdrop 
+[14:57:10][DEBUG]   --> .backdrop file opened successfully 
+[14:57:10][DEBUG]   --> Reading .backdrop file contents: 
+[14:57:10][DEBUG]       [0] PC:Programming/ListView.info (from .backdrop entry: ':Programming/ListView') 
+[14:57:10][DEBUG]       [1] PC:Programming/GUI-WHDload-downloader/build/amiga/test.txt.info (from .backdrop entry: ':Programming/GUI-WHDload-downloader/build/amiga/test.txt') 
+[14:57:10][DEBUG]       [2] PC:Programming/GUI-WHDload-downloader.info (from .backdrop entry: ':Programming/GUI-WHDload-downloader') 
+[14:57:10][DEBUG]       [3] PC:Programming/GUI-WHDload-downloader/build/amiga/html-parsing.info (from .backdrop entry: ':Programming/GUI-WHDload-downloader/build/amiga/html-parsing') 
+[14:57:10][DEBUG]       [4] PC:Programming/iTidy/src/templates.info (from .backdrop entry: ':Programming/iTidy/src/templates') 
+[14:57:10][DEBUG]       [5] PC:Programming/MD-2-AmigaGuide/docs.info (from .backdrop entry: ':Programming/MD-2-AmigaGuide/docs') 
+[14:57:10][DEBUG]       [6] PC:Programming/iTidy/Tests/test-icons.info (from .backdrop entry: ':Programming/iTidy/Tests/test-icons') 
+[14:57:10][DEBUG]       [7] PC:Programming/iTidy/Tests/multiIcon.info (from .backdrop entry: ':Programming/iTidy/Tests/multiIcon') 
+[14:57:10][DEBUG]       [8] PC:Rebuild/Rebuild.info (from .backdrop entry: ':Rebuild/Rebuild') 
+[14:57:10][DEBUG]       [9] PC:Programming/iTidy/Tests/ReActon.info (from .backdrop entry: ':Programming/iTidy/Tests/ReActon') 
+[14:57:10][DEBUG]       [10] PC:Programming/iTidy/Tests.info (from .backdrop entry: ':Programming/iTidy/Tests') 
+[14:57:10][DEBUG]       [11] PC:Programming/iTidy/Bin/Amiga/iTidy2.info (from .backdrop entry: ':Programming/iTidy/Bin/Amiga/iTidy2') 
+[14:57:10][DEBUG]       [12] PC:Programming/PFS3-Defrag-map/Bin/Amiga.info (from .backdrop entry: ':Programming/PFS3-Defrag-map/Bin/Amiga') 
+[14:57:10][DEBUG]       [13] PC:Programming/RichListview.info (from .backdrop entry: ':Programming/RichListview') 
+[14:57:10][INFO]   --> Total left-out icons loaded: 14 
+[14:57:10][DEBUG] ======================================== 
+[14:57:10][INFO] Processing: PC:Programming/iTidy/tests/icons 
+[14:57:10][INFO] Recursive: Yes 
+[14:57:10][INFO] Creating missing icons using DefIcons... 
+[14:57:10][DEBUG] [BACKUP] Created icons manifest opened: PROGDIR:Backups/Run_0006/created_icons.txt 
+[14:57:10][INFO]   Creating icons: PC:Programming/iTidy/tests/icons 
+[14:57:10][INFO]   Creating icons: PC:Programming/iTidy/tests/icons/classic 
+[14:57:10][INFO]   Creating icons: PC:Programming/iTidy/tests/icons/coloricons 
+[14:57:11][INFO]   Creating icons: PC:Programming/iTidy/tests/icons/malformed 
+[14:57:11][INFO]   Creating icons: PC:Programming/iTidy/tests/icons/newicons 
+[14:57:11][INFO]   Creating icons: PC:Programming/iTidy/tests/icons/glowicons 
+[14:57:12][INFO] Created 10 icon(s) recursively 
+[14:57:12][DEBUG] ProcessDirectoryRecursive: path='PC:Programming/iTidy/tests/icons', level=0 
+[14:57:12][DEBUG] ProcessSingleDirectory: path='PC:Programming/iTidy/tests/icons' 
+[14:57:12][INFO]   Scanning for icons... 
+[14:57:12][DEBUG] ==== SECTION: LOADING ICONS ==== 
+[14:57:12][DEBUG] >>> CreateIconArrayFromPath ENTRY: lock=269232515, dirPath='PC:Programming/iTidy/tests/icons' 
+[14:57:12][DEBUG] >>> AFTER ALLOCATION: anchorPath=0x4030e5b4, ap_Buf=0x4030e6cc, ap_Strlen=1024 
+[14:57:12][DEBUG] >>> AFTER ALLOCATION: First 20 bytes of ap_Buf: [00 00 00 00 00...] 
+[14:57:12][DEBUG] Pattern: 'PC:Programming/iTidy/tests/icons/#?.info' 
+[14:57:12][DEBUG] ID  | Width  | Height | TxtW   | TxtH   | MaxW   | MaxH   | X        | Y        | Border | Type     | IsDir  | Size       | Date       | Icon                
+[14:57:12][DEBUG] ------------------------------------------------------------------------------------------------------------------------------------------ 
+[14:57:12][DEBUG] 0   | 60     | 24     | 72     | 8      | 72     | 36     | 232      | 53       | 3      | Standard | Folder | 0          | 17757.728  | glowicons           
+[14:57:12][DEBUG] 1   | 60     | 24     | 64     | 8      | 64     | 36     | 232      | 53       | 3      | Standard | Folder | 0          | 17757.728  | newicons            
+[14:57:12][DEBUG] 2   | 60     | 24     | 80     | 8      | 80     | 36     | 232      | 53       | 3      | Standard | Folder | 0          | 17757.728  | coloricons          
+[14:57:12][DEBUG] 3   | 60     | 24     | 56     | 8      | 63     | 36     | 232      | 53       | 3      | Standard | Folder | 0          | 17757.728  | classic             
+[14:57:12][INFO]   Found 4 icons 
+[14:57:12][INFO]   Creating backup... 
+[14:57:12][DEBUG] [BACKUP] Backing up folder: PC:Programming/iTidy/tests/icons (index: 1) 
+[14:57:12][DEBUG] [BACKUP] Folder has no .info files, skipping 
+[14:57:12][INFO]   Warning: Backup failed (status 8) - continuing anyway 
+[14:57:12][INFO]   Sorting icons... 
+[14:57:12][DEBUG] ==== SECTION: SORTING ICONS ==== 
+[14:57:12][DEBUG] Sorting 4 icons with preferences 
+[14:57:12][DEBUG]   Sort by: 0, Priority: 0, Reverse: 0 
+[14:57:12][DEBUG] After sorting, icon order: 
+[14:57:12][DEBUG] ID  | Icon                           | IsDir 
+[14:57:12][DEBUG] -------------------------------------------- 
+[14:57:12][DEBUG] 0   | classic                        | Folder 
+[14:57:12][DEBUG] 1   | coloricons                     | Folder 
+[14:57:12][DEBUG] 2   | glowicons                      | Folder 
+[14:57:12][DEBUG] 3   | newicons                       | Folder 
+[14:57:12][DEBUG] ==== SECTION: CALCULATING LAYOUT ==== 
+[14:57:12][DEBUG] ==== CalculateLayoutWithAspectRatio ==== 
+[14:57:12][DEBUG] Icons: 4 
+[14:57:12][DEBUG] Preferences: 
+[14:57:12][DEBUG]   aspectRatio: 2000 
+[14:57:12][DEBUG]   overflowMode: 0 (0=HORIZ, 1=VERT, 2=BOTH) 
+[14:57:12][DEBUG]   minIconsPerRow: 2 
+[14:57:12][DEBUG]   maxIconsPerRow: 0 
+[14:57:12][DEBUG]   iconSpacing: 8×8 
+[14:57:12][DEBUG] Average icon size: 69×36 pixels 
+[14:57:12][DEBUG] Screen constraints: 640×389 (usable) 
+[14:57:12][DEBUG] Auto mode: effectiveWidth=352, margins=36, baseMaxCols=4, maxCols=7
+[14:57:12][DEBUG] --- STAGE 1: Calculate Ideal Layout ---
+[14:57:12][DEBUG] CalculateOptimalIconsPerRow: 
+[14:57:12][DEBUG]   totalIcons=4, avgWidth=69, avgHeight=36 
+[14:57:12][DEBUG]   targetRatio=2000, minCols=2, maxCols=7 
+[14:57:12][DEBUG]   Try 2 cols: 2 rows, 138×72 = 1916 ratio (diff: 84) <- NEW BEST 
+[14:57:12][DEBUG]   Try 3 cols: 2 rows, 207×72 = 2875 ratio (diff: 875) 
+[14:57:12][DEBUG]   Try 4 cols: 1 rows, 276×36 = 7666 ratio (diff: 5666) 
+[14:57:12][DEBUG]   Result: 2 columns (ratio diff: 84) 
+[14:57:12][DEBUG] Ideal layout: 2 cols × 2 rows
+[14:57:12][DEBUG] Ideal window: 182×116 pixels
+[14:57:12][DEBUG] --- STAGE 2: Check Screen Fit ---
+[14:57:12][DEBUG] Fits width: YES (182 <= 640)
+[14:57:12][DEBUG] Fits height: YES (116 <= 389)
+[14:57:12][DEBUG] Result: FITS - Using ideal aspect ratio layout
+[14:57:12][DEBUG] ==== Final Layout Decision ==== 
+[14:57:12][DEBUG] Columns: 2 
+[14:57:12][DEBUG] Rows: 2 
+[14:57:12][DEBUG] Total positions: 4 (icons: 4) 
+[14:57:12][DEBUG] Aspect ratio calculation complete: 2 cols × 2 rows 
+[14:57:12][INFO]   Layout: 2 cols x 2 rows 
+[14:57:12][DEBUG] Using column-centered layout algorithm 
+[14:57:12][DEBUG] CalculateLayoutPositionsWithColumnCentering: Processing 4 icons 
+[14:57:12][DEBUG]   screenWidth=640, maxWindowWidthPct=55, effectiveMaxWidth=352 
+[14:57:12][DEBUG] Phase 1: Statistics 
+[14:57:12][DEBUG]   Average icon width: 69 pixels 
+[14:57:12][DEBUG]   Total icons: 4 
+[14:57:12][DEBUG]   Using aspect ratio target columns: 2 
+[14:57:12][DEBUG] Using optimized column widths (per-column max) 
+[14:57:12][DEBUG] Attempt 1: 2 columns, total width = 178 (max = 352) 
+[14:57:12][DEBUG]   Using aspect ratio target, accepting width 
+[14:57:12][DEBUG] Final configuration: 2 columns, total width = 178 
+[14:57:12][DEBUG] Column widths: 
+[14:57:12][DEBUG] 72 
+[14:57:12][DEBUG] 80 
+[14:57:12][DEBUG] 
+[14:57:12][DEBUG] Phase 2: Icon Positioning 
+[14:57:12][DEBUG] ID  | Icon                           | Col | Row | X    | Y    | Center 
+[14:57:12][DEBUG] ------------------------------------------------------------------------- 
+[14:57:12][DEBUG] 0   | classic                        | 0   | 0   | 14   | 8    | 4     
+[14:57:12][DEBUG] 1   | coloricons                     | 1   | 0   | 100  | 8    | 0     
+[14:57:12][DEBUG] 2   | glowicons                      | 0   | 1   | 16   | 52   | 0     
+[14:57:12][DEBUG] 3   | newicons                       | 1   | 1   | 100  | 52   | 8     
+[14:57:12][DEBUG] Column-centered layout complete! 
+[14:57:12][INFO]   Resizing window... 
+[14:57:12][DEBUG] resizeFolderToContents ENTRY: dirPath='PC:Programming/iTidy/tests/icons', iconArray->size=4 
+[14:57:12][DEBUG] Content dimensions: 170×88 (with margins) 
+[14:57:12][DEBUG] Calculated maxWidth=170, maxHeight=88 before calling repoistionWindow
+[14:57:12][DEBUG]   Final position: left=215, top=134, width=210, height=132 
+[14:57:12][DEBUG] Unable to load disk.info for folder: PC:Programming/iTidy/tests/icons 
+[14:57:12][INFO]   Saving icon positions... 
+[14:57:12][DEBUG] ==== SECTION: SAVING ICONS ==== 
+[14:57:12][DEBUG] saveIconsPositionsToDisk: ENTRY, iconArray=0x4030e59c 
+[14:57:12][DEBUG] saveIconsPositionsToDisk: iconArraySize=4 
+[14:57:12][DEBUG] ID  | X    | Y    | Icon                                    
+[14:57:12][DEBUG] -------------------------------------------------------------- 
+[14:57:12][DEBUG] Processing icon 0: classic 
+[14:57:12][DEBUG] 0   | 14   | 8    | classic                                 
+[14:57:12][DEBUG]    Saved OK: PC:Programming/iTidy/tests/icons/classic 
+[14:57:12][DEBUG] Processing icon 1: coloricons 
+[14:57:12][DEBUG] 1   | 100  | 8    | coloricons                              
+[14:57:12][DEBUG]    Saved OK: PC:Programming/iTidy/tests/icons/coloricons 
+[14:57:12][DEBUG] Processing icon 2: glowicons 
+[14:57:12][DEBUG] 2   | 16   | 52   | glowicons                               
+[14:57:12][DEBUG]    Saved OK: PC:Programming/iTidy/tests/icons/glowicons 
+[14:57:12][DEBUG] Processing icon 3: newicons 
+[14:57:12][DEBUG] 3   | 100  | 52   | newicons                                
+[14:57:12][DEBUG]    Saved OK: PC:Programming/iTidy/tests/icons/newicons 
+[14:57:12][DEBUG] ==== ICON SAVING PERFORMANCE ==== 
+[14:57:12][DEBUG] saveIconsPositionsToDisk() execution time: 
+[14:57:12][DEBUG]   28031 microseconds (28.031 ms) 
+[14:57:12][DEBUG]   Icons saved: 4 
+[14:57:12][DEBUG]   Time per icon: 7007 microseconds 
+[14:57:12][DEBUG] ================================= 
+[14:57:12][INFO]   Done! 
+[14:57:12][INFO] 
+[14:57:12][INFO] Entering: PC:Programming/iTidy/tests/icons/classic 
+[14:57:12][DEBUG] ProcessDirectoryRecursive: path='PC:Programming/iTidy/tests/icons/classic', level=1 
+[14:57:12][DEBUG] ProcessSingleDirectory: path='PC:Programming/iTidy/tests/icons/classic' 
+[14:57:12][INFO]   Scanning for icons... 
+[14:57:12][DEBUG] ==== SECTION: LOADING ICONS ==== 
+[14:57:12][DEBUG] >>> CreateIconArrayFromPath ENTRY: lock=268929561, dirPath='PC:Programming/iTidy/tests/icons/classic' 
+[14:57:12][DEBUG] >>> AFTER ALLOCATION: anchorPath=0x4030e5b4, ap_Buf=0x4030e6cc, ap_Strlen=1024 
+[14:57:12][DEBUG] >>> AFTER ALLOCATION: First 20 bytes of ap_Buf: [00 00 00 00 00...] 
+[14:57:12][DEBUG] Pattern: 'PC:Programming/iTidy/tests/icons/classic/#?.info' 
+[14:57:12][DEBUG] Error: Unable to lock path: PC:Programming/iTidy/tests/icons/classic/8x2x1 
+[14:57:12][DEBUG] Error: Unable to lock path: PC:Programming/iTidy/tests/icons/classic/8x1_selected 
+[14:57:12][DEBUG] ID  | Width  | Height | TxtW   | TxtH   | MaxW   | MaxH   | X        | Y        | Border | Type     | IsDir  | Size       | Date       | Icon                
+[14:57:12][DEBUG] ------------------------------------------------------------------------------------------------------------------------------------------ 
+[14:57:12][DEBUG] 0   | 45     | 49     | 168    | 8      | 168    | 58     | 175      | 8        | 0      | OS3.5    | File   | 1902       | 17757.727  | 8x1_selected.expected 
+[14:57:12][DEBUG] 1   | 45     | 49     | 112    | 8      | 112    | 58     | 175      | 74       | 0      | OS3.5    | File   | 1895       | 17757.727  | 8x2x1.expected      
+[14:57:12][DEBUG] 2   | 11     | 5      | 40     | 8      | 40     | 17     | 52       | 94       | 3      | Standard | File   | 102        | 17757.727  | 8x2x1               
+[14:57:12][DEBUG] 3   | 11     | 4      | 96     | 8      | 96     | 16     | 52       | 29       | 3      | Standard | File   | 122        | 17757.727  | 8x1_selected        
+[14:57:12][INFO]   Found 4 icons 
+[14:57:12][INFO]   Creating backup... 
+[14:57:12][DEBUG] [BACKUP] Backing up folder: PC:Programming/iTidy/tests/icons/classic (index: 1) 
+[14:57:12][DEBUG] [BACKUP] Using provided icon count: 4 
+[14:57:12][DEBUG] [BACKUP] Root folder: NO 
+[14:57:12][DEBUG] [BACKUP] Archive path: PROGDIR:Backups/Run_0006/000/00001.lha 
+[14:57:12][DEBUG] [BACKUP] Ensuring subfolder exists: PROGDIR:Backups/Run_0006/000 
+[14:57:12][DEBUG] [BACKUP] Creating archive: PROGDIR:Backups/Run_0006/000/00001.lha from PC:Programming/iTidy/tests/icons/classic 
+[14:57:12][DEBUG] [BACKUP] Expanded 'PROGDIR:Backups/Run_0006/000/00001.lha' to 'PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00001.lha' 
+[14:57:12][DEBUG] [BACKUP] [LHA] Command: C:LhA a "PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00001.lha" "PC:Programming/iTidy/tests/icons/classic/#?.info" 
+[14:57:12][DEBUG] [BACKUP] Executing LHA: C:LhA a "PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00001.lha" "PC:Programming/iTidy/tests/icons/classic/#?.info" 
+[14:57:12][DEBUG] [BACKUP] LHA command succeeded 
+[14:57:12][DEBUG] [BACKUP] Executing LHA: C:LhA l "PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00001.lha" > "PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00001.txt" 
+[14:57:12][DEBUG] [BACKUP] LHA command succeeded 
+[14:57:12][DEBUG] [BACKUP] Archive created successfully 
+[14:57:12][DEBUG] [BACKUP] Creating path marker... 
+[14:57:12][DEBUG] [BACKUP] Using temp directory: T: 
+[14:57:12][DEBUG] [BACKUP] Creating path marker: T:_PATH.txt 
+[14:57:12][DEBUG] [BACKUP] Original path: PC:Programming/iTidy/tests/icons/classic 
+[14:57:12][DEBUG] [BACKUP] Path marker created: T:_PATH.txt 
+[14:57:12][DEBUG] [BACKUP] Adding marker to archive... 
+[14:57:12][DEBUG] [BACKUP] WARNING: Failed to add marker to archive (non-fatal) 
+[14:57:12][DEBUG] [BACKUP] Captured window geometry: 270x128+265+236 (view mode 1) 
+[14:57:12][INFO]   Backup created successfully 
+[14:57:12][INFO]   Sorting icons... 
+[14:57:12][DEBUG] ==== SECTION: SORTING ICONS ==== 
+[14:57:12][DEBUG] Sorting 4 icons with preferences 
+[14:57:12][DEBUG]   Sort by: 0, Priority: 0, Reverse: 0 
+[14:57:12][DEBUG] After sorting, icon order: 
+[14:57:12][DEBUG] ID  | Icon                           | IsDir 
+[14:57:12][DEBUG] -------------------------------------------- 
+[14:57:12][DEBUG] 0   | 8x1_selected                   | File  
+[14:57:12][DEBUG] 1   | 8x1_selected.expected          | File  
+[14:57:12][DEBUG] 2   | 8x2x1                          | File  
+[14:57:12][DEBUG] 3   | 8x2x1.expected                 | File  
+[14:57:12][DEBUG] ==== SECTION: CALCULATING LAYOUT ==== 
+[14:57:12][DEBUG] ==== CalculateLayoutWithAspectRatio ==== 
+[14:57:12][DEBUG] Icons: 4 
+[14:57:12][DEBUG] Preferences: 
+[14:57:12][DEBUG]   aspectRatio: 2000 
+[14:57:12][DEBUG]   overflowMode: 0 (0=HORIZ, 1=VERT, 2=BOTH) 
+[14:57:12][DEBUG]   minIconsPerRow: 2 
+[14:57:12][DEBUG]   maxIconsPerRow: 0 
+[14:57:12][DEBUG]   iconSpacing: 8×8 
+[14:57:12][DEBUG] Average icon size: 104×37 pixels 
+[14:57:12][DEBUG] Screen constraints: 640×389 (usable) 
+[14:57:12][DEBUG] Auto mode: effectiveWidth=352, margins=36, baseMaxCols=2, maxCols=5
+[14:57:12][DEBUG] --- STAGE 1: Calculate Ideal Layout ---
+[14:57:12][DEBUG] CalculateOptimalIconsPerRow: 
+[14:57:12][DEBUG]   totalIcons=4, avgWidth=104, avgHeight=37 
+[14:57:12][DEBUG]   targetRatio=2000, minCols=2, maxCols=5 
+[14:57:12][DEBUG]   Try 2 cols: 2 rows, 208×74 = 2810 ratio (diff: 810) <- NEW BEST 
+[14:57:12][DEBUG]   Try 3 cols: 2 rows, 312×74 = 4216 ratio (diff: 2216) 
+[14:57:12][DEBUG]   Try 4 cols: 1 rows, 416×37 = 11243 ratio (diff: 9243) 
+[14:57:12][DEBUG]   Result: 2 columns (ratio diff: 810) 
+[14:57:12][DEBUG] Ideal layout: 2 cols × 2 rows
+[14:57:12][DEBUG] Ideal window: 252×118 pixels
+[14:57:12][DEBUG] --- STAGE 2: Check Screen Fit ---
+[14:57:12][DEBUG] Fits width: YES (252 <= 640)
+[14:57:12][DEBUG] Fits height: YES (118 <= 389)
+[14:57:12][DEBUG] Result: FITS - Using ideal aspect ratio layout
+[14:57:12][DEBUG] ==== Final Layout Decision ==== 
+[14:57:12][DEBUG] Columns: 2 
+[14:57:12][DEBUG] Rows: 2 
+[14:57:12][DEBUG] Total positions: 4 (icons: 4) 
+[14:57:12][DEBUG] Aspect ratio calculation complete: 2 cols × 2 rows 
+[14:57:12][INFO]   Layout: 2 cols x 2 rows 
+[14:57:12][DEBUG] Using column-centered layout algorithm 
+[14:57:12][DEBUG] CalculateLayoutPositionsWithColumnCentering: Processing 4 icons 
+[14:57:12][DEBUG]   screenWidth=640, maxWindowWidthPct=55, effectiveMaxWidth=352 
+[14:57:12][DEBUG] Phase 1: Statistics 
+[14:57:12][DEBUG]   Average icon width: 104 pixels 
+[14:57:12][DEBUG]   Total icons: 4 
+[14:57:13][DEBUG]   Using aspect ratio target columns: 2 
+[14:57:13][DEBUG] Using optimized column widths (per-column max) 
+[14:57:13][DEBUG] Attempt 1: 2 columns, total width = 290 (max = 352) 
+[14:57:13][DEBUG]   Using aspect ratio target, accepting width 
+[14:57:13][DEBUG] Final configuration: 2 columns, total width = 290 
+[14:57:13][DEBUG] Column widths: 
+[14:57:13][DEBUG] 96 
+[14:57:13][DEBUG] 168 
+[14:57:13][DEBUG] 
+[14:57:13][DEBUG] Phase 2: Icon Positioning 
+[14:57:13][DEBUG] ID  | Icon                           | Col | Row | X    | Y    | Center 
+[14:57:13][DEBUG] ------------------------------------------------------------------------- 
+[14:57:13][DEBUG] 0   | 8x1_selected                   | 0   | 0   | 52   | 8    | 0     
+[14:57:13][DEBUG] 1   | 8x1_selected.expected          | 1   | 0   | 175  | 8    | 0     
+[14:57:13][DEBUG] 2   | 8x2x1                          | 0   | 1   | 52   | 74   | 28    
+[14:57:13][DEBUG] 3   | 8x2x1.expected                 | 1   | 1   | 175  | 74   | 28    
+[14:57:13][DEBUG] Column-centered layout complete! 
+[14:57:13][INFO]   Resizing window... 
+[14:57:13][DEBUG] resizeFolderToContents ENTRY: dirPath='PC:Programming/iTidy/tests/icons/classic', iconArray->size=4 
+[14:57:13][DEBUG] Content dimensions: 281×132 (with margins) 
+[14:57:13][DEBUG] Calculated maxWidth=281, maxHeight=132 before calling repoistionWindow
+[14:57:13][DEBUG]   Final position: left=159, top=112, width=321, height=176 
+[14:57:13][DEBUG] Saved folder settings ok for PC:Programming/iTidy/tests/icons/classic 
+[14:57:13][INFO]   Saving icon positions... 
+[14:57:13][DEBUG] ==== SECTION: SAVING ICONS ==== 
+[14:57:13][DEBUG] saveIconsPositionsToDisk: ENTRY, iconArray=0x4030e59c 
+[14:57:13][DEBUG] saveIconsPositionsToDisk: iconArraySize=4 
+[14:57:13][DEBUG] ID  | X    | Y    | Icon                                    
+[14:57:13][DEBUG] -------------------------------------------------------------- 
+[14:57:13][DEBUG] Processing icon 0: 8x1_selected 
+[14:57:13][DEBUG] 0   | 52   | 29   | 8x1_selected                            
+[14:57:13][DEBUG]    Saved OK: PC:Programming/iTidy/tests/icons/classic/8x1_selected 
+[14:57:13][DEBUG] Processing icon 1: 8x1_selected.expected 
+[14:57:13][DEBUG] 1   | 175  | 8    | 8x1_selected.expected                   
+[14:57:13][DEBUG]    Saved OK: PC:Programming/iTidy/tests/icons/classic/8x1_selected.expected 
+[14:57:13][DEBUG] Processing icon 2: 8x2x1 
+[14:57:13][DEBUG] 2   | 52   | 94   | 8x2x1                                   
+[14:57:13][DEBUG]    Saved OK: PC:Programming/iTidy/tests/icons/classic/8x2x1 
+[14:57:13][DEBUG] Processing icon 3: 8x2x1.expected 
+[14:57:13][DEBUG] 3   | 175  | 74   | 8x2x1.expected                          
+[14:57:13][DEBUG]    Saved OK: PC:Programming/iTidy/tests/icons/classic/8x2x1.expected 
+[14:57:13][DEBUG] ==== ICON SAVING PERFORMANCE ==== 
+[14:57:13][DEBUG] saveIconsPositionsToDisk() execution time: 
+[14:57:13][DEBUG]   27321 microseconds (27.321 ms) 
+[14:57:13][DEBUG]   Icons saved: 4 
+[14:57:13][DEBUG]   Time per icon: 6830 microseconds 
+[14:57:13][DEBUG] ================================= 
+[14:57:13][INFO]   Done! 
+[14:57:13][INFO] 
+[14:57:13][INFO] Entering: PC:Programming/iTidy/tests/icons/coloricons 
+[14:57:13][DEBUG] ProcessDirectoryRecursive: path='PC:Programming/iTidy/tests/icons/coloricons', level=1 
+[14:57:13][DEBUG] ProcessSingleDirectory: path='PC:Programming/iTidy/tests/icons/coloricons' 
+[14:57:13][INFO]   Scanning for icons... 
+[14:57:13][DEBUG] ==== SECTION: LOADING ICONS ==== 
+[14:57:13][DEBUG] >>> CreateIconArrayFromPath ENTRY: lock=268929561, dirPath='PC:Programming/iTidy/tests/icons/coloricons' 
+[14:57:13][DEBUG] >>> AFTER ALLOCATION: anchorPath=0x4030e5b4, ap_Buf=0x4030e6cc, ap_Strlen=1024 
+[14:57:13][DEBUG] >>> AFTER ALLOCATION: First 20 bytes of ap_Buf: [00 00 00 00 00...] 
+[14:57:13][DEBUG] Pattern: 'PC:Programming/iTidy/tests/icons/coloricons/#?.info' 
+[14:57:13][DEBUG] Error: Unable to lock path: PC:Programming/iTidy/tests/icons/coloricons/2x2_raw 
+[14:57:13][DEBUG] ID  | Width  | Height | TxtW   | TxtH   | MaxW   | MaxH   | X        | Y        | Border | Type     | IsDir  | Size       | Date       | Icon                
+[14:57:13][DEBUG] ------------------------------------------------------------------------------------------------------------------------------------------ 
+[14:57:13][DEBUG] 0   | 45     | 49     | 128    | 8      | 128    | 58     | 341      | 8        | 0      | OS3.5    | File   | 1897       | 17757.728  | 2x2_raw.expected    
+[14:57:13][DEBUG] 1   | 5      | 5      | 56     | 8      | 56     | 17     | None     | None     | 3      | OS3.5    | File   | 184        | 17757.717  | 2x2_raw             
+[14:57:13][INFO]   Found 2 icons 
+[14:57:13][INFO]   Creating backup... 
+[14:57:13][DEBUG] [BACKUP] Backing up folder: PC:Programming/iTidy/tests/icons/coloricons (index: 2) 
+[14:57:13][DEBUG] [BACKUP] Using provided icon count: 2 
+[14:57:13][DEBUG] [BACKUP] Root folder: NO 
+[14:57:13][DEBUG] [BACKUP] Archive path: PROGDIR:Backups/Run_0006/000/00002.lha 
+[14:57:13][DEBUG] [BACKUP] Ensuring subfolder exists: PROGDIR:Backups/Run_0006/000 
+[14:57:13][DEBUG] [BACKUP] Creating archive: PROGDIR:Backups/Run_0006/000/00002.lha from PC:Programming/iTidy/tests/icons/coloricons 
+[14:57:13][DEBUG] [BACKUP] Expanded 'PROGDIR:Backups/Run_0006/000/00002.lha' to 'PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00002.lha' 
+[14:57:13][DEBUG] [BACKUP] [LHA] Command: C:LhA a "PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00002.lha" "PC:Programming/iTidy/tests/icons/coloricons/#?.info" 
+[14:57:13][DEBUG] [BACKUP] Executing LHA: C:LhA a "PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00002.lha" "PC:Programming/iTidy/tests/icons/coloricons/#?.info" 
+[14:57:13][DEBUG] [BACKUP] LHA command succeeded 
+[14:57:13][DEBUG] [BACKUP] Executing LHA: C:LhA l "PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00002.lha" > "PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00002.txt" 
+[14:57:13][DEBUG] [BACKUP] LHA command succeeded 
+[14:57:13][DEBUG] [BACKUP] Archive created successfully 
+[14:57:13][DEBUG] [BACKUP] Creating path marker... 
+[14:57:13][DEBUG] [BACKUP] Using temp directory: T: 
+[14:57:13][DEBUG] [BACKUP] Creating path marker: T:_PATH.txt 
+[14:57:13][DEBUG] [BACKUP] Original path: PC:Programming/iTidy/tests/icons/coloricons 
+[14:57:13][DEBUG] [BACKUP] Path marker created: T:_PATH.txt 
+[14:57:13][DEBUG] [BACKUP] Adding marker to archive... 
+[14:57:13][DEBUG] [BACKUP] WARNING: Failed to add marker to archive (non-fatal) 
+[14:57:13][DEBUG] [BACKUP] Captured window geometry: 270x128+265+236 (view mode 1) 
+[14:57:13][INFO]   Backup created successfully 
+[14:57:13][INFO]   Sorting icons... 
+[14:57:13][DEBUG] ==== SECTION: SORTING ICONS ==== 
+[14:57:13][DEBUG] Sorting 2 icons with preferences 
+[14:57:13][DEBUG]   Sort by: 0, Priority: 0, Reverse: 0 
+[14:57:13][DEBUG] After sorting, icon order: 
+[14:57:13][DEBUG] ID  | Icon                           | IsDir 
+[14:57:13][DEBUG] -------------------------------------------- 
+[14:57:13][DEBUG] 0   | 2x2_raw                        | File  
+[14:57:13][DEBUG] 1   | 2x2_raw.expected               | File  
+[14:57:13][DEBUG] ==== SECTION: CALCULATING LAYOUT ==== 
+[14:57:13][DEBUG] ==== CalculateLayoutWithAspectRatio ==== 
+[14:57:13][DEBUG] Icons: 2 
+[14:57:13][DEBUG] Preferences: 
+[14:57:13][DEBUG]   aspectRatio: 2000 
+[14:57:13][DEBUG]   overflowMode: 0 (0=HORIZ, 1=VERT, 2=BOTH) 
+[14:57:13][DEBUG]   minIconsPerRow: 2 
+[14:57:13][DEBUG]   maxIconsPerRow: 0 
+[14:57:13][DEBUG]   iconSpacing: 8×8 
+[14:57:13][DEBUG] Average icon size: 92×37 pixels 
+[14:57:13][DEBUG] Screen constraints: 640×389 (usable) 
+[14:57:13][DEBUG] Auto mode: effectiveWidth=352, margins=36, baseMaxCols=3, maxCols=6
+[14:57:13][DEBUG] --- STAGE 1: Calculate Ideal Layout ---
+[14:57:13][DEBUG] CalculateOptimalIconsPerRow: 
+[14:57:13][DEBUG]   totalIcons=2, avgWidth=92, avgHeight=37 
+[14:57:13][DEBUG]   targetRatio=2000, minCols=2, maxCols=6 
+[14:57:13][DEBUG]   Try 2 cols: 1 rows, 184×37 = 4972 ratio (diff: 2972) <- NEW BEST 
+[14:57:13][DEBUG]   Result: 2 columns (ratio diff: 2972) 
+[14:57:13][DEBUG] Ideal layout: 2 cols × 1 rows
+[14:57:13][DEBUG] Ideal window: 228×73 pixels
+[14:57:13][DEBUG] --- STAGE 2: Check Screen Fit ---
+[14:57:13][DEBUG] Fits width: YES (228 <= 640)
+[14:57:13][DEBUG] Fits height: YES (73 <= 389)
+[14:57:13][DEBUG] Result: FITS - Using ideal aspect ratio layout
+[14:57:13][DEBUG] ==== Final Layout Decision ==== 
+[14:57:13][DEBUG] Columns: 2 
+[14:57:13][DEBUG] Rows: 1 
+[14:57:13][DEBUG] Total positions: 2 (icons: 2) 
+[14:57:13][DEBUG] Aspect ratio calculation complete: 2 cols × 1 rows 
+[14:57:13][INFO]   Layout: 2 cols x 1 rows 
+[14:57:13][DEBUG] Using column-centered layout algorithm 
+[14:57:13][DEBUG] CalculateLayoutPositionsWithColumnCentering: Processing 2 icons 
+[14:57:13][DEBUG]   screenWidth=640, maxWindowWidthPct=55, effectiveMaxWidth=352 
+[14:57:13][DEBUG] Phase 1: Statistics 
+[14:57:13][DEBUG]   Average icon width: 92 pixels 
+[14:57:13][DEBUG]   Total icons: 2 
+[14:57:13][DEBUG]   Using aspect ratio target columns: 2 
+[14:57:13][DEBUG] Using optimized column widths (per-column max) 
+[14:57:13][DEBUG] Attempt 1: 2 columns, total width = 210 (max = 352) 
+[14:57:13][DEBUG]   Using aspect ratio target, accepting width 
+[14:57:13][DEBUG] Final configuration: 2 columns, total width = 210 
+[14:57:13][DEBUG] Column widths: 
+[14:57:13][DEBUG] 56 
+[14:57:13][DEBUG] 128 
+[14:57:13][DEBUG] 
+[14:57:13][DEBUG] Phase 2: Icon Positioning 
+[14:57:13][DEBUG] ID  | Icon                           | Col | Row | X    | Y    | Center 
+[14:57:13][DEBUG] ------------------------------------------------------------------------- 
+[14:57:13][DEBUG] 0   | 2x2_raw                        | 0   | 0   | 35   | 8    | 0     
+[14:57:13][DEBUG] 1   | 2x2_raw.expected               | 1   | 0   | 115  | 8    | 0     
+[14:57:13][DEBUG] Column-centered layout complete! 
+[14:57:13][INFO]   Resizing window... 
+[14:57:13][DEBUG] resizeFolderToContents ENTRY: dirPath='PC:Programming/iTidy/tests/icons/coloricons', iconArray->size=2 
+[14:57:13][DEBUG] Content dimensions: 201×66 (with margins) 
+[14:57:13][DEBUG] Calculated maxWidth=201, maxHeight=66 before calling repoistionWindow
+[14:57:13][DEBUG]   Final position: left=199, top=145, width=241, height=110 
+[14:57:13][DEBUG] Saved folder settings ok for PC:Programming/iTidy/tests/icons/coloricons 
+[14:57:13][INFO]   Saving icon positions... 
+[14:57:13][DEBUG] ==== SECTION: SAVING ICONS ==== 
+[14:57:13][DEBUG] saveIconsPositionsToDisk: ENTRY, iconArray=0x4030e59c 
+[14:57:13][DEBUG] saveIconsPositionsToDisk: iconArraySize=2 
+[14:57:13][DEBUG] ID  | X    | Y    | Icon                                    
+[14:57:13][DEBUG] -------------------------------------------------------------- 
+[14:57:13][DEBUG] Processing icon 0: 2x2_raw 
+[14:57:13][DEBUG] 0   | 35   | 28   | 2x2_raw                                 
+[14:57:13][DEBUG]    Saved OK: PC:Programming/iTidy/tests/icons/coloricons/2x2_raw 
+[14:57:13][DEBUG] Processing icon 1: 2x2_raw.expected 
+[14:57:13][DEBUG] 1   | 115  | 8    | 2x2_raw.expected                        
+[14:57:13][DEBUG]    Saved OK: PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected 
+[14:57:13][DEBUG] ==== ICON SAVING PERFORMANCE ==== 
+[14:57:13][DEBUG] saveIconsPositionsToDisk() execution time: 
+[14:57:13][DEBUG]   15264 microseconds (15.264 ms) 
+[14:57:13][DEBUG]   Icons saved: 2 
+[14:57:13][DEBUG]   Time per icon: 7632 microseconds 
+[14:57:13][DEBUG] ================================= 
+[14:57:13][INFO]   Done! 
+[14:57:13][DEBUG] Skipping hidden folder (no .info): PC:Programming/iTidy/tests/icons/malformed 
+[14:57:13][INFO] 
+[14:57:13][INFO] Entering: PC:Programming/iTidy/tests/icons/newicons 
+[14:57:13][DEBUG] ProcessDirectoryRecursive: path='PC:Programming/iTidy/tests/icons/newicons', level=1 
+[14:57:13][DEBUG] ProcessSingleDirectory: path='PC:Programming/iTidy/tests/icons/newicons' 
+[14:57:13][INFO]   Scanning for icons... 
+[14:57:13][DEBUG] ==== SECTION: LOADING ICONS ==== 
+[14:57:13][DEBUG] >>> CreateIconArrayFromPath ENTRY: lock=268929561, dirPath='PC:Programming/iTidy/tests/icons/newicons' 
+[14:57:13][DEBUG] >>> AFTER ALLOCATION: anchorPath=0x4030e5b4, ap_Buf=0x4030e6cc, ap_Strlen=1024 
+[14:57:13][DEBUG] >>> AFTER ALLOCATION: First 20 bytes of ap_Buf: [00 00 00 00 00...] 
+[14:57:13][DEBUG] Pattern: 'PC:Programming/iTidy/tests/icons/newicons/#?.info' 
+[14:57:13][DEBUG] File path copy: PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.info 
+[14:57:13][DEBUG] Found IM tooltype: 'IM1=B))!1 _�!/Z B��&\�' (length: 22) 
+[14:57:13][DEBUG] Found icon size from IM1=: width = 8 (char ')'=0x29), height = 8 (char ')'=0x29) 
+[14:57:13][DEBUG] Error: Unable to lock path: PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline 
+[14:57:13][DEBUG] File path copy: PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.info 
+[14:57:13][DEBUG] Found IM tooltype: 'IM1=C%%!) _�"'\0`�d,,ɳ!_0H5�f"^P�C� I��%<��' (length: 44) 
+[14:57:13][DEBUG] Found icon size from IM1=: width = 4 (char '%'=0x25), height = 4 (char '%'=0x25) 
+[14:57:13][DEBUG] Error: Unable to lock path: PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected 
+[14:57:13][DEBUG] File path copy: PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.info 
+[14:57:13][DEBUG] Found IM tooltype: 'IM1=C#"!#�  /���`' (length: 17) 
+[14:57:13][DEBUG] Found icon size from IM1=: width = 2 (char '#'=0x23), height = 1 (char '"'=0x22) 
+[14:57:13][DEBUG] Error: Unable to lock path: PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros 
+[14:57:14][DEBUG] File path copy: PC:Programming/iTidy/tests/icons/newicons/2x2_4col.info 
+[14:57:14][DEBUG] Found IM tooltype: 'IM1=B##!%�`  '�   _��� V' (length: 24) 
+[14:57:14][DEBUG] Found icon size from IM1=: width = 2 (char '#'=0x23), height = 2 (char '#'=0x23) 
+[14:57:14][DEBUG] Error: Unable to lock path: PC:Programming/iTidy/tests/icons/newicons/2x2_4col 
+[14:57:14][DEBUG] ID  | Width  | Height | TxtW   | TxtH   | MaxW   | MaxH   | X        | Y        | Border | Type     | IsDir  | Size       | Date       | Icon                
+[14:57:14][DEBUG] ------------------------------------------------------------------------------------------------------------------------------------------ 
+[14:57:14][DEBUG] 0   | 45     | 49     | 136    | 8      | 136    | 58     | 341      | 8        | 0      | OS3.5    | File   | 1898       | 17757.728  | 2x2_4col.expected   
+[14:57:14][DEBUG] 1   | 45     | 49     | 176    | 8      | 176    | 58     | 341      | 8        | 0      | OS3.5    | File   | 1903       | 17757.728  | 4x2_rle_zeros.expected 
+[14:57:14][DEBUG] 2   | 45     | 49     | 208    | 8      | 208    | 58     | 341      | 8        | 0      | OS3.5    | File   | 1907       | 17757.728  | 4x4_8col_selected.expected 
+[14:57:14][DEBUG] 3   | 45     | 49     | 224    | 8      | 224    | 58     | 341      | 8        | 0      | OS3.5    | File   | 1909       | 17757.728  | 8x8_16col_multiline.expected 
+[14:57:14][DEBUG] 4   | 11     | 11     | 152    | 8      | 152    | 23     | None     | None     | 3      | NewIcon  | File   | 330        | 17757.717  | 8x8_16col_multiline 
+[14:57:14][DEBUG] 5   | 7      | 7      | 136    | 8      | 136    | 19     | None     | None     | 3      | NewIcon  | File   | 277        | 17757.717  | 4x4_8col_selected   
+[14:57:14][DEBUG] 6   | 5      | 4      | 104    | 8      | 104    | 16     | None     | None     | 3      | NewIcon  | File   | 201        | 17757.717  | 4x2_rle_zeros       
+[14:57:14][DEBUG] 7   | 5      | 5      | 64     | 8      | 64     | 17     | None     | None     | 3      | NewIcon  | File   | 214        | 17757.717  | 2x2_4col            
+[14:57:14][INFO]   Found 8 icons 
+[14:57:14][INFO]   Creating backup... 
+[14:57:14][DEBUG] [BACKUP] Backing up folder: PC:Programming/iTidy/tests/icons/newicons (index: 3) 
+[14:57:14][DEBUG] [BACKUP] Using provided icon count: 8 
+[14:57:14][DEBUG] [BACKUP] Root folder: NO 
+[14:57:14][DEBUG] [BACKUP] Archive path: PROGDIR:Backups/Run_0006/000/00003.lha 
+[14:57:14][DEBUG] [BACKUP] Ensuring subfolder exists: PROGDIR:Backups/Run_0006/000 
+[14:57:14][DEBUG] [BACKUP] Creating archive: PROGDIR:Backups/Run_0006/000/00003.lha from PC:Programming/iTidy/tests/icons/newicons 
+[14:57:14][DEBUG] [BACKUP] Expanded 'PROGDIR:Backups/Run_0006/000/00003.lha' to 'PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00003.lha' 
+[14:57:14][DEBUG] [BACKUP] [LHA] Command: C:LhA a "PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00003.lha" "PC:Programming/iTidy/tests/icons/newicons/#?.info" 
+[14:57:14][DEBUG] [BACKUP] Executing LHA: C:LhA a "PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00003.lha" "PC:Programming/iTidy/tests/icons/newicons/#?.info" 
+[14:57:14][DEBUG] [BACKUP] LHA command succeeded 
+[14:57:14][DEBUG] [BACKUP] Executing LHA: C:LhA l "PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00003.lha" > "PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00003.txt" 
+[14:57:14][DEBUG] [BACKUP] LHA command succeeded 
+[14:57:14][DEBUG] [BACKUP] Archive created successfully 
+[14:57:14][DEBUG] [BACKUP] Creating path marker... 
+[14:57:14][DEBUG] [BACKUP] Using temp directory: T: 
+[14:57:14][DEBUG] [BACKUP] Creating path marker: T:_PATH.txt 
+[14:57:14][DEBUG] [BACKUP] Original path: PC:Programming/iTidy/tests/icons/newicons 
+[14:57:14][DEBUG] [BACKUP] Path marker created: T:_PATH.txt 
+[14:57:14][DEBUG] [BACKUP] Adding marker to archive... 
+[14:57:14][DEBUG] [BACKUP] WARNING: Failed to add marker to archive (non-fatal) 
+[14:57:14][DEBUG] [BACKUP] Captured window geometry: 270x128+265+236 (view mode 1) 
+[14:57:14][INFO]   Backup created successfully 
+[14:57:14][INFO]   Sorting icons... 
+[14:57:14][DEBUG] ==== SECTION: SORTING ICONS ==== 
+[14:57:14][DEBUG] Sorting 8 icons with preferences 
+[14:57:14][DEBUG]   Sort by: 0, Priority: 0, Reverse: 0 
+[14:57:14][DEBUG] After sorting, icon order: 
+[14:57:14][DEBUG] ID  | Icon                           | IsDir 
+[14:57:14][DEBUG] -------------------------------------------- 
+[14:57:14][DEBUG] 0   | 2x2_4col                       | File  
+[14:57:14][DEBUG] 1   | 2x2_4col.expected              | File  
+[14:57:14][DEBUG] 2   | 4x2_rle_zeros                  | File  
+[14:57:14][DEBUG] 3   | 4x2_rle_zeros.expected         | File  
+[14:57:14][DEBUG] 4   | 4x4_8col_selected              | File  
+[14:57:14][DEBUG] 5   | 4x4_8col_selected.expected     | File  
+[14:57:14][DEBUG] 6   | 8x8_16col_multiline.expected   | File  
+[14:57:14][DEBUG] 7   | 8x8_16col_multiline            | File  
+[14:57:14][DEBUG] ==== SECTION: CALCULATING LAYOUT ==== 
+[14:57:14][DEBUG] ==== CalculateLayoutWithAspectRatio ==== 
+[14:57:14][DEBUG] Icons: 8 
+[14:57:14][DEBUG] Preferences: 
+[14:57:14][DEBUG]   aspectRatio: 2000 
+[14:57:14][DEBUG]   overflowMode: 0 (0=HORIZ, 1=VERT, 2=BOTH) 
+[14:57:14][DEBUG]   minIconsPerRow: 2 
+[14:57:14][DEBUG]   maxIconsPerRow: 0 
+[14:57:14][DEBUG]   iconSpacing: 8×8 
+[14:57:14][DEBUG] Average icon size: 150×38 pixels 
+[14:57:14][DEBUG] Screen constraints: 640×389 (usable) 
+[14:57:14][DEBUG] Auto mode: effectiveWidth=352, margins=36, baseMaxCols=2, maxCols=3
+[14:57:14][DEBUG] --- STAGE 1: Calculate Ideal Layout ---
+[14:57:14][DEBUG] CalculateOptimalIconsPerRow: 
+[14:57:14][DEBUG]   totalIcons=8, avgWidth=150, avgHeight=38 
+[14:57:14][DEBUG]   targetRatio=2000, minCols=2, maxCols=3 
+[14:57:14][DEBUG]   Try 2 cols: 4 rows, 300×152 = 1973 ratio (diff: 27) <- NEW BEST 
+[14:57:14][DEBUG]   Try 3 cols: 3 rows, 450×114 = 3947 ratio (diff: 1947) 
+[14:57:14][DEBUG]   Result: 2 columns (ratio diff: 27) 
+[14:57:14][DEBUG] Ideal layout: 2 cols × 4 rows
+[14:57:14][DEBUG] Ideal window: 344×212 pixels
+[14:57:14][DEBUG] --- STAGE 2: Check Screen Fit ---
+[14:57:14][DEBUG] Fits width: YES (344 <= 640)
+[14:57:14][DEBUG] Fits height: YES (212 <= 389)
+[14:57:14][DEBUG] Result: FITS - Using ideal aspect ratio layout
+[14:57:14][DEBUG] ==== Final Layout Decision ==== 
+[14:57:14][DEBUG] Columns: 2 
+[14:57:14][DEBUG] Rows: 4 
+[14:57:14][DEBUG] Total positions: 8 (icons: 8) 
+[14:57:14][DEBUG] Aspect ratio calculation complete: 2 cols × 4 rows 
+[14:57:14][INFO]   Layout: 2 cols x 4 rows 
+[14:57:14][DEBUG] Using column-centered layout algorithm 
+[14:57:14][DEBUG] CalculateLayoutPositionsWithColumnCentering: Processing 8 icons 
+[14:57:14][DEBUG]   screenWidth=640, maxWindowWidthPct=55, effectiveMaxWidth=352 
+[14:57:14][DEBUG] Phase 1: Statistics 
+[14:57:14][DEBUG]   Average icon width: 150 pixels 
+[14:57:14][DEBUG]   Total icons: 8 
+[14:57:14][DEBUG]   Using aspect ratio target columns: 2 
+[14:57:14][DEBUG] Using optimized column widths (per-column max) 
+[14:57:14][DEBUG] Attempt 1: 2 columns, total width = 458 (max = 352) 
+[14:57:14][DEBUG]   Using aspect ratio target, accepting width 
+[14:57:14][DEBUG] Final configuration: 2 columns, total width = 458 
+[14:57:14][DEBUG] Column widths: 
+[14:57:14][DEBUG] 224 
+[14:57:14][DEBUG] 208 
+[14:57:14][DEBUG] 
+[14:57:14][DEBUG] Phase 2: Icon Positioning 
+[14:57:14][DEBUG] ID  | Icon                           | Col | Row | X    | Y    | Center 
+[14:57:14][DEBUG] ------------------------------------------------------------------------- 
+[14:57:14][DEBUG] 0   | 2x2_4col                       | 0   | 0   | 119  | 8    | 80    
+[14:57:14][DEBUG] 1   | 2x2_4col.expected              | 1   | 0   | 323  | 8    | 36    
+[14:57:14][DEBUG] 2   | 4x2_rle_zeros                  | 0   | 1   | 119  | 74   | 60    
+[14:57:14][DEBUG] 3   | 4x2_rle_zeros.expected         | 1   | 1   | 323  | 74   | 16    
+[14:57:14][DEBUG] 4   | 4x4_8col_selected              | 0   | 2   | 118  | 140  | 44    
+[14:57:14][DEBUG] 5   | 4x4_8col_selected.expected     | 1   | 2   | 323  | 140  | 0     
+[14:57:14][DEBUG] 6   | 8x8_16col_multiline.expected   | 0   | 3   | 99   | 206  | 0     
+[14:57:14][DEBUG] 7   | 8x8_16col_multiline            | 1   | 3   | 340  | 206  | 28    
+[14:57:14][DEBUG] Column-centered layout complete! 
+[14:57:14][INFO]   Resizing window... 
+[14:57:14][DEBUG] resizeFolderToContents ENTRY: dirPath='PC:Programming/iTidy/tests/icons/newicons', iconArray->size=8 
+[14:57:14][DEBUG] Content dimensions: 449×264 (with margins) 
+[14:57:14][DEBUG] Calculated maxWidth=449, maxHeight=264 before calling repoistionWindow
+[14:57:14][DEBUG]   Final position: left=75, top=46, width=489, height=308 
+[14:57:14][DEBUG] Saved folder settings ok for PC:Programming/iTidy/tests/icons/newicons 
+[14:57:14][INFO]   Saving icon positions... 
+[14:57:14][DEBUG] ==== SECTION: SAVING ICONS ==== 
+[14:57:14][DEBUG] saveIconsPositionsToDisk: ENTRY, iconArray=0x4030e59c 
+[14:57:14][DEBUG] saveIconsPositionsToDisk: iconArraySize=8 
+[14:57:14][DEBUG] ID  | X    | Y    | Icon                                    
+[14:57:14][DEBUG] -------------------------------------------------------------- 
+[14:57:14][DEBUG] Processing icon 0: 2x2_4col 
+[14:57:14][DEBUG] 0   | 119  | 28   | 2x2_4col                                
+[14:57:14][DEBUG]    Saved OK: PC:Programming/iTidy/tests/icons/newicons/2x2_4col 
+[14:57:14][DEBUG] Processing icon 1: 2x2_4col.expected 
+[14:57:14][DEBUG] 1   | 323  | 8    | 2x2_4col.expected                       
+[14:57:14][DEBUG]    Saved OK: PC:Programming/iTidy/tests/icons/newicons/2x2_4col.expected 
+[14:57:14][DEBUG] Processing icon 2: 4x2_rle_zeros 
+[14:57:14][DEBUG] 2   | 119  | 95   | 4x2_rle_zeros                           
+[14:57:14][DEBUG]    Saved OK: PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros 
+[14:57:14][DEBUG] Processing icon 3: 4x2_rle_zeros.expected 
+[14:57:14][DEBUG] 3   | 323  | 74   | 4x2_rle_zeros.expected                  
+[14:57:14][DEBUG]    Saved OK: PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.expected 
+[14:57:14][DEBUG] Processing icon 4: 4x4_8col_selected 
+[14:57:14][DEBUG] 4   | 118  | 159  | 4x4_8col_selected                       
+[14:57:14][DEBUG]    Saved OK: PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected 
+[14:57:14][DEBUG] Processing icon 5: 4x4_8col_selected.expected 
+[14:57:14][DEBUG] 5   | 323  | 140  | 4x4_8col_selected.expected              
+[14:57:14][DEBUG]    Saved OK: PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.expected 
+[14:57:14][DEBUG] Processing icon 6: 8x8_16col_multiline.expected 
+[14:57:14][DEBUG] 6   | 99   | 206  | 8x8_16col_multiline.expected            
+[14:57:14][DEBUG]    Saved OK: PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.expected 
+[14:57:14][DEBUG] Processing icon 7: 8x8_16col_multiline 
+[14:57:14][DEBUG] 7   | 340  | 223  | 8x8_16col_multiline                     
+[14:57:14][DEBUG]    Saved OK: PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline 
+[14:57:14][DEBUG] ==== ICON SAVING PERFORMANCE ==== 
+[14:57:14][DEBUG] saveIconsPositionsToDisk() execution time: 
+[14:57:14][DEBUG]   58877 microseconds (58.877 ms) 
+[14:57:14][DEBUG]   Icons saved: 8 
+[14:57:14][DEBUG]   Time per icon: 7359 microseconds 
+[14:57:14][DEBUG] ================================= 
+[14:57:14][INFO]   Done! 
+[14:57:14][INFO] 
+[14:57:14][INFO] Entering: PC:Programming/iTidy/tests/icons/glowicons 
+[14:57:14][DEBUG] ProcessDirectoryRecursive: path='PC:Programming/iTidy/tests/icons/glowicons', level=1 
+[14:57:14][DEBUG] ProcessSingleDirectory: path='PC:Programming/iTidy/tests/icons/glowicons' 
+[14:57:14][INFO]   Scanning for icons... 
+[14:57:14][DEBUG] ==== SECTION: LOADING ICONS ==== 
+[14:57:14][DEBUG] >>> CreateIconArrayFromPath ENTRY: lock=268929561, dirPath='PC:Programming/iTidy/tests/icons/glowicons' 
+[14:57:14][DEBUG] >>> AFTER ALLOCATION: anchorPath=0x4030e5b4, ap_Buf=0x4030e6cc, ap_Strlen=1024 
+[14:57:14][DEBUG] >>> AFTER ALLOCATION: First 20 bytes of ap_Buf: [00 00 00 00 00...] 
+[14:57:14][DEBUG] Pattern: 'PC:Programming/iTidy/tests/icons/glowicons/#?.info' 
+[14:57:14][DEBUG] Error: Unable to lock path: PC:Programming/iTidy/tests/icons/glowicons/2x2_glow 
+[14:57:14][DEBUG] ID  | Width  | Height | TxtW   | TxtH   | MaxW   | MaxH   | X        | Y        | Border | Type     | IsDir  | Size       | Date       | Icon                
+[14:57:14][DEBUG] ------------------------------------------------------------------------------------------------------------------------------------------ 
+[14:57:14][DEBUG] 0   | 45     | 49     | 136    | 8      | 136    | 58     | 341      | 8        | 0      | OS3.5    | File   | 1898       | 17757.728  | 2x2_glow.expected   
+[14:57:14][DEBUG] 1   | 5      | 5      | 64     | 8      | 64     | 17     | None     | None     | 3      | OS3.5    | File   | 184        | 17757.717  | 2x2_glow            
+[14:57:14][INFO]   Found 2 icons 
+[14:57:14][INFO]   Creating backup... 
+[14:57:14][DEBUG] [BACKUP] Backing up folder: PC:Programming/iTidy/tests/icons/glowicons (index: 4) 
+[14:57:14][DEBUG] [BACKUP] Using provided icon count: 2 
+[14:57:14][DEBUG] [BACKUP] Root folder: NO 
+[14:57:14][DEBUG] [BACKUP] Archive path: PROGDIR:Backups/Run_0006/000/00004.lha 
+[14:57:14][DEBUG] [BACKUP] Ensuring subfolder exists: PROGDIR:Backups/Run_0006/000 
+[14:57:14][DEBUG] [BACKUP] Creating archive: PROGDIR:Backups/Run_0006/000/00004.lha from PC:Programming/iTidy/tests/icons/glowicons 
+[14:57:14][DEBUG] [BACKUP] Expanded 'PROGDIR:Backups/Run_0006/000/00004.lha' to 'PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00004.lha' 
+[14:57:14][DEBUG] [BACKUP] [LHA] Command: C:LhA a "PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00004.lha" "PC:Programming/iTidy/tests/icons/glowicons/#?.info" 
+[14:57:14][DEBUG] [BACKUP] Executing LHA: C:LhA a "PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00004.lha" "PC:Programming/iTidy/tests/icons/glowicons/#?.info" 
+[14:57:14][DEBUG] [BACKUP] LHA command succeeded 
+[14:57:14][DEBUG] [BACKUP] Executing LHA: C:LhA l "PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00004.lha" > "PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00004.txt" 
+[14:57:14][DEBUG] [BACKUP] LHA command succeeded 
+[14:57:14][DEBUG] [BACKUP] Archive created successfully 
+[14:57:14][DEBUG] [BACKUP] Creating path marker... 
+[14:57:14][DEBUG] [BACKUP] Using temp directory: T: 
+[14:57:14][DEBUG] [BACKUP] Creating path marker: T:_PATH.txt 
+[14:57:14][DEBUG] [BACKUP] Original path: PC:Programming/iTidy/tests/icons/glowicons 
+[14:57:14][DEBUG] [BACKUP] Path marker created: T:_PATH.txt 
+[14:57:14][DEBUG] [BACKUP] Adding marker to archive... 
+[14:57:14][DEBUG] [BACKUP] WARNING: Failed to add marker to archive (non-fatal) 
+[14:57:14][DEBUG] [BACKUP] Captured window geometry: 270x128+265+236 (view mode 1) 
+[14:57:14][INFO]   Backup created successfully 
+[14:57:14][INFO]   Sorting icons... 
+[14:57:14][DEBUG] ==== SECTION: SORTING ICONS ==== 
+[14:57:14][DEBUG] Sorting 2 icons with preferences 
+[14:57:14][DEBUG]   Sort by: 0, Priority: 0, Reverse: 0 
+[14:57:14][DEBUG] After sorting, icon order: 
+[14:57:14][DEBUG] ID  | Icon                           | IsDir 
+[14:57:14][DEBUG] -------------------------------------------- 
+[14:57:14][DEBUG] 0   | 2x2_glow                       | File  
+[14:57:14][DEBUG] 1   | 2x2_glow.expected              | File  
+[14:57:14][DEBUG] ==== SECTION: CALCULATING LAYOUT ==== 
+[14:57:14][DEBUG] ==== CalculateLayoutWithAspectRatio ==== 
+[14:57:14][DEBUG] Icons: 2 
+[14:57:14][DEBUG] Preferences: 
+[14:57:14][DEBUG]   aspectRatio: 2000 
+[14:57:14][DEBUG]   overflowMode: 0 (0=HORIZ, 1=VERT, 2=BOTH) 
+[14:57:14][DEBUG]   minIconsPerRow: 2 
+[14:57:14][DEBUG]   maxIconsPerRow: 0 
+[14:57:14][DEBUG]   iconSpacing: 8×8 
+[14:57:14][DEBUG] Average icon size: 100×37 pixels 
+[14:57:14][DEBUG] Screen constraints: 640×389 (usable) 
+[14:57:14][DEBUG] Auto mode: effectiveWidth=352, margins=36, baseMaxCols=2, maxCols=5
+[14:57:14][DEBUG] --- STAGE 1: Calculate Ideal Layout ---
+[14:57:14][DEBUG] CalculateOptimalIconsPerRow: 
+[14:57:14][DEBUG]   totalIcons=2, avgWidth=100, avgHeight=37 
+[14:57:14][DEBUG]   targetRatio=2000, minCols=2, maxCols=5 
+[14:57:14][DEBUG]   Try 2 cols: 1 rows, 200×37 = 5405 ratio (diff: 3405) <- NEW BEST 
+[14:57:14][DEBUG]   Result: 2 columns (ratio diff: 3405) 
+[14:57:14][DEBUG] Ideal layout: 2 cols × 1 rows
+[14:57:14][DEBUG] Ideal window: 244×73 pixels
+[14:57:14][DEBUG] --- STAGE 2: Check Screen Fit ---
+[14:57:14][DEBUG] Fits width: YES (244 <= 640)
+[14:57:14][DEBUG] Fits height: YES (73 <= 389)
+[14:57:14][DEBUG] Result: FITS - Using ideal aspect ratio layout
+[14:57:14][DEBUG] ==== Final Layout Decision ==== 
+[14:57:14][DEBUG] Columns: 2 
+[14:57:14][DEBUG] Rows: 1 
+[14:57:14][DEBUG] Total positions: 2 (icons: 2) 
+[14:57:14][DEBUG] Aspect ratio calculation complete: 2 cols × 1 rows 
+[14:57:14][INFO]   Layout: 2 cols x 1 rows 
+[14:57:14][DEBUG] Using column-centered layout algorithm 
+[14:57:14][DEBUG] CalculateLayoutPositionsWithColumnCentering: Processing 2 icons 
+[14:57:14][DEBUG]   screenWidth=640, maxWindowWidthPct=55, effectiveMaxWidth=352 
+[14:57:14][DEBUG] Phase 1: Statistics 
+[14:57:14][DEBUG]   Average icon width: 100 pixels 
+[14:57:14][DEBUG]   Total icons: 2 
+[14:57:14][DEBUG]   Using aspect ratio target columns: 2 
+[14:57:14][DEBUG] Using optimized column widths (per-column max) 
+[14:57:14][DEBUG] Attempt 1: 2 columns, total width = 226 (max = 352) 
+[14:57:14][DEBUG]   Using aspect ratio target, accepting width 
+[14:57:14][DEBUG] Final configuration: 2 columns, total width = 226 
+[14:57:14][DEBUG] Column widths: 
+[14:57:14][DEBUG] 64 
+[14:57:14][DEBUG] 136 
+[14:57:14][DEBUG] 
+[14:57:14][DEBUG] Phase 2: Icon Positioning 
+[14:57:14][DEBUG] ID  | Icon                           | Col | Row | X    | Y    | Center 
+[14:57:14][DEBUG] ------------------------------------------------------------------------- 
+[14:57:14][DEBUG] 0   | 2x2_glow                       | 0   | 0   | 39   | 8    | 0     
+[14:57:14][DEBUG] 1   | 2x2_glow.expected              | 1   | 0   | 127  | 8    | 0     
+[14:57:14][DEBUG] Column-centered layout complete! 
+[14:57:14][INFO]   Resizing window... 
+[14:57:14][DEBUG] resizeFolderToContents ENTRY: dirPath='PC:Programming/iTidy/tests/icons/glowicons', iconArray->size=2 
+[14:57:14][DEBUG] Content dimensions: 217×66 (with margins) 
+[14:57:14][DEBUG] Calculated maxWidth=217, maxHeight=66 before calling repoistionWindow
+[14:57:14][DEBUG]   Final position: left=191, top=145, width=257, height=110 
+[14:57:14][DEBUG] Saved folder settings ok for PC:Programming/iTidy/tests/icons/glowicons 
+[14:57:14][INFO]   Saving icon positions... 
+[14:57:14][DEBUG] ==== SECTION: SAVING ICONS ==== 
+[14:57:14][DEBUG] saveIconsPositionsToDisk: ENTRY, iconArray=0x4030e59c 
+[14:57:14][DEBUG] saveIconsPositionsToDisk: iconArraySize=2 
+[14:57:14][DEBUG] ID  | X    | Y    | Icon                                    
+[14:57:14][DEBUG] -------------------------------------------------------------- 
+[14:57:14][DEBUG] Processing icon 0: 2x2_glow 
+[14:57:14][DEBUG] 0   | 39   | 28   | 2x2_glow                                
+[14:57:14][DEBUG]    Saved OK: PC:Programming/iTidy/tests/icons/glowicons/2x2_glow 
+[14:57:14][DEBUG] Processing icon 1: 2x2_glow.expected 
+[14:57:14][DEBUG] 1   | 127  | 8    | 2x2_glow.expected                       
+[14:57:14][DEBUG]    Saved OK: PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.expected 
+[14:57:14][DEBUG] ==== ICON SAVING PERFORMANCE ==== 
+[14:57:14][DEBUG] saveIconsPositionsToDisk() execution time: 
+[14:57:14][DEBUG]   30013 microseconds (30.013 ms) 
+[14:57:14][DEBUG]   Icons saved: 2 
+[14:57:14][DEBUG]   Time per icon: 15006 microseconds 
+[14:57:14][DEBUG] ================================= 
+[14:57:14][INFO]   Done! 
+[14:57:14][INFO] 
+[14:57:14][INFO] === Processing Statistics === 
+[14:57:14][INFO]   Folders processed: 5 
+[14:57:14][INFO]   Icons processed: 20 
+[14:57:14][INFO]   Icons created: 10 
+[14:57:14][INFO]   Default tools: 1 valid, 0 missing 
+[14:57:14][INFO]   Total time: 3 seconds 
+[14:57:14][DEBUG] *** Tool cache summary *** 
+[14:57:14][DEBUG] ======================================== 
+[14:57:14][DEBUG] Tool Validation Cache Summary 
+[14:57:14][DEBUG] ======================================== 
+[14:57:14][DEBUG] Total tools cached: 1 
+[14:57:14][DEBUG] Cache capacity: 20 
+[14:57:14][DEBUG] Tool Name             | Hits | Status  | Files | Full Path                              | Version 
+[14:57:14][DEBUG] ----------------------|------|---------|-------|----------------------------------------|--------------------------- 
+[14:57:14][DEBUG] SYS:Utilities/MultiView |    7 | EXISTS  |     8 | SYS:Utilities/MultiView                | MultiView 47.17 (9.1.2023) 
+[14:57:14][DEBUG]     Files using this tool: 
+[14:57:14][DEBUG]       [  1] PC:Programming/iTidy/tests/icons/classic/8x1_selected.expected.info 
+[14:57:14][DEBUG]       [  2] PC:Programming/iTidy/tests/icons/classic/8x2x1.expected.info 
+[14:57:14][DEBUG]       [  3] PC:Programming/iTidy/tests/icons/coloricons/2x2_raw.expected.info 
+[14:57:14][DEBUG]       [  4] PC:Programming/iTidy/tests/icons/newicons/2x2_4col.expected.info 
+[14:57:14][DEBUG]       [  5] PC:Programming/iTidy/tests/icons/newicons/4x2_rle_zeros.expected.info 
+[14:57:14][DEBUG]       [  6] PC:Programming/iTidy/tests/icons/newicons/4x4_8col_selected.expected.info 
+[14:57:14][DEBUG]       [  7] PC:Programming/iTidy/tests/icons/newicons/8x8_16col_multiline.expected.info 
+[14:57:14][DEBUG]       [  8] PC:Programming/iTidy/tests/icons/glowicons/2x2_glow.expected.info 
+[14:57:14][DEBUG] 
+[14:57:14][DEBUG] ======================================== 
+[14:57:14][DEBUG] Tool cache retained for post-processing 
+[14:57:14][DEBUG] Freeing PATH search list 
+[14:57:14][DEBUG] FreePathSearchList: PATH list freed 
+[14:57:14][INFO] 
+[14:57:14][INFO] *** Finalizing backup session *** 
+[14:57:14][DEBUG] [BACKUP] Created icons manifest closed (10 icons recorded) 
+[14:57:14][INFO] Backup session completed successfully 
+[14:57:14][INFO]   Folders backed up: 4 
+[14:57:14][INFO]   Total bytes archived: 12966 
+[14:57:14][INFO]   Icons created (DefIcons): 10 
+[14:57:14][INFO]   Location: PROGDIR:Backups/Run_0006 
+[14:57:14][INFO] *** Backup session completed *** 
+[14:57:14][DEBUG]   Folders backed up: 4 
+[14:57:14][DEBUG]   Failed backups: 0 
+[14:57:14][DEBUG]   Total bytes: 12966 
+[14:57:14][DEBUG]   Icons created (DefIcons): 10 
+[14:57:14][DEBUG]   Location: PROGDIR:Backups/Run_0006 

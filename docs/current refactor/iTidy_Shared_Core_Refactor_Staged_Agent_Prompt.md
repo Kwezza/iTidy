@@ -830,7 +830,7 @@ Agent hand-off:
 ## Status
 
 ```text
-Status: NOT STARTED
+Status: COMPLETE
 ```
 
 ## Goal
@@ -938,7 +938,109 @@ Do not yet implement the user-facing classic conversion UI.
 
 ## Agent hand-off
 
-_Not yet completed._
+```text
+Agent hand-off:
+- Date: 2026-08-14
+- Branch: dev-itidy2
+- Starting revision/commit if known: 804e925 Direct ColorIcon/GlowIcon decoder
+- Summary: Completed the shared input side. Added a NewIcons IM1=/IM2=
+  decoder (7-bit ASCII + RLE zeros, transparency, selected image,
+  conservative 93x93 / 256-colour limits), a classic planar decoder
+  (chunky Workbench-pen indexes via PlanePick/PlaneOnOff, no embedded
+  RGB palette), and a unified icon_decode() / icon_decode_buffer() API
+  with BEST preference ColorIcon/GlowIcon then NewIcons then classic.
+  PNG-only and ARGB-only payloads return UNSUPPORTED rather than
+  corrupt. Wrote a reusable tests/icons/ corpus with .info samples and
+  .expected CRC sidecars. iTidy2 GUI is still not wired to the shared
+  decoders. No conversion UI.
+- Files added:
+    shared/icon/icon_newicons.c
+    shared/icon/icon_newicons.h
+    shared/icon/icon_classic.c
+    shared/icon/icon_classic.h
+    shared/icon/icon_decode.c
+    shared/icon/icon_decode.h
+    src/tests/test_shared_decode.c
+    tests/icons/classic/
+    tests/icons/newicons/
+    tests/icons/coloricons/
+    tests/icons/glowicons/
+    tests/icons/malformed/
+- Files modified:
+    shared/icon/icon_types.h
+    shared/icon/icon_file.c
+    Makefile
+    docs/current refactor/iTidy_Shared_Core_Refactor_Staged_Agent_Prompt.md
+- Files removed/moved:
+    None
+- Build performed:
+    make (VBCC +aos68k -cpu=68000) -> Bin/Amiga/iTidy2/iTidy2
+    make test-decode (GCC host)
+    make test-coloricon / test-icon / test-image (host regression)
+- Tests performed:
+    Host suite src/tests/test_shared_decode.c covering:
+      classic 8x2x1 planar pixels; selected image + PlaneOnOff pens;
+      classic with no image => NO_DATA;
+      NewIcons 2x2 4-colour + transparency index 0;
+      NewIcons 4x4 8-colour normal+selected;
+      NewIcons 8x8 16-colour split across short ToolType lines
+      (sample bits continue across IM1= wraps; prefixes not concatenated);
+      NewIcons RLE zero groups (0xD1);
+      truncated IM1= header, zero dimensions, marker without IM1=;
+      BEST prefers ColorIcon over NewIcons over classic;
+      explicit REQ_NEWICONS / REQ_CLASSIC;
+      PNG-only => UNSUPPORTED; FORM ARGB with classic fallback;
+      ColorIcon and GlowIcon corpus samples;
+      reload of written tests/icons/*.info files;
+      input buffer not modified.
+    Batch 1-3 host suites still pass.
+- Test result:
+    make test-decode: all shared decode tests passed.
+    make test-icon / test-coloricon / test-image: all passed.
+    make (Amiga): success. New shared icon .c files compiled and linked
+    with no VBCC warnings.
+- Behavioural/regression result:
+    iTidy2 GUI/icon.library path unchanged. Shared decoders are additive.
+    Batch 1-3 host tests still pass.
+- Unresolved issues:
+    No on-target comparison against NewIcons.library or icon.library
+    v44+ for live NewIcons/ColorIcon samples.
+    Glow vs ColorIcon remains the FACE max-palette>=255 heuristic.
+    Shared decode API is not wired into the iTidy2 GUI.
+    NewIcons colours >256 (rare stored-257 case in IconFormats.txt)
+    are rejected as BAD_COUNT.
+- Important decisions:
+    1. Unified API is icon_decode(file, request, out) and
+       icon_decode_buffer(), with ITIDY_ICON_REQ_BEST/COLORICON/
+       NEWICONS/CLASSIC. icon_decoded_free() remains the free path.
+    2. BEST tries ColorIcon, then NewIcons, then classic. ColorIcon
+       NO_DATA may fall through; other ColorIcon errors do not.
+       PNG-only is UNSUPPORTED (caught before DiskObject parse).
+    3. Classic output: source_format CLASSIC, palette NULL,
+       palette_count 0, indexes are Workbench pens after PlanePick/
+       PlaneOnOff. Callers supply the screen palette later (Batch 5).
+    4. NewIcons: first five payload bytes of IM1=/IM2= are raw header;
+       remaining bytes are 7-bit ASCII (0x20-0x6F / 0xA1-0xD0) and
+       0xD1-0xFF zero RLE. bpp = ceil(log2(ncolors)), 0 if one colour.
+       'B' => transparent index 0, otherwise none.
+    5. NewIcons ToolType boundary: do not concatenate "IM1=" prefixes
+       or the 5-byte header. Already-unpacked sample bits are kept
+       across lines so a palette/pixel field can finish after a 7-bit
+       character wrap. GetBits is atomic (does not consume on short
+       read). Pad flush is typically end-of-image only.
+    6. Limits: NewIcons width/height 1..93, colours 1..256.
+    7. ITIDY_ICON_SRC_NEWICONS=3, ITIDY_ICON_SRC_CLASSIC=4.
+    8. Corpus lives under tests/icons/ with .expected CRC sidecars.
+       Host test make test-decode regenerates/overwrites those files.
+- Notes for next agent:
+    Start Batch 5 only on branch dev-classic, after Batches 1-4.
+    Do not implement conversion UI in Batch 5 until the shared modules
+    compile in Classic. Do not change the Batch 4 decoders unless a
+    regression is found. Host tests: make test-decode, test-coloricon,
+    test-icon, test-image. Include path -Ishared is already in CFLAGS.
+    iTidy2 still uses icon.library; wiring shared decode into a GUI
+    is later work.
+```
 
 ---
 
@@ -1103,22 +1205,23 @@ This section must always be updated by the agent that finishes a batch.
 ## Last completed batch
 
 ```text
-Batch 3 — Direct ColorIcon / GlowIcon Decoder
+Batch 4 — NewIcons + Classic Decoder + Unified API
 ```
 
 ## Next batch to execute
 
 ```text
-Batch 4 — NewIcons + Classic Decoder + Unified API
+Batch 5 — Consume Shared Core from iTidy Classic
 ```
 
 ## Known blockers
 
 ```text
-None. Batch 3 Amiga build and host image/icon/coloricon tests succeeded.
-icon.library v44+ oracle comparison was not run. GlowIcon vs ColorIcon
-remains a FACE max-palette heuristic. Shared decoder is not wired into
-the iTidy2 GUI.
+None for starting Batch 5 on branch dev-classic. Shared input decode
+is complete on host tests. icon.library / NewIcons.library oracle
+comparison was not run on Amiga. Shared decoders are compiled into
+iTidy2 but not wired into the GUI. Do not start Batch 5 on
+dev-itidy2 / main / v1.
 ```
 
 ## Global hand-off notes

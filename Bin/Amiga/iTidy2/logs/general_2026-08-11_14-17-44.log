@@ -1,8 +1,0 @@
-[14:17:44][INFO] Log system initialized - timestamp: 2026-08-11_14-17-44 
-[14:17:44][INFO] Logs directory: PROGDIR:logs/ 
-[14:17:44][DEBUG] Category general -> PROGDIR:logs/general_2026-08-11_14-17-44.log 
-[14:17:44][DEBUG] Category memory -> PROGDIR:logs/memory_2026-08-11_14-17-44.log 
-[14:17:44][DEBUG] Category gui -> PROGDIR:logs/gui_2026-08-11_14-17-44.log 
-[14:17:44][DEBUG] Category icons -> PROGDIR:logs/icons_2026-08-11_14-17-44.log 
-[14:17:44][DEBUG] Category backup -> PROGDIR:logs/backup_2026-08-11_14-17-44.log 
-[14:17:44][DEBUG] Category errors -> PROGDIR:logs/errors_2026-08-11_14-17-44.log 

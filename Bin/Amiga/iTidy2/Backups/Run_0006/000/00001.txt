@@ -1,0 +1,17 @@
+LhA Freeware Version 2.15 68040+ 
+Copyright (c) 1991-94 by Stefan Boberg.
+Copyright (c) 1998,1999 by Jim Cooper and David Tritscher.
+Copyright (c) 2004-2011 by Sven Ottemann.
+
+Listing of archive 'PC:Programming/iTidy/Bin/Amiga/iTidy2/Backups/Run_0006/000/00001.lha':
+Original  Packed Ratio    Date     Time    Name
+-------- ------- ----- --------- --------  -------------
+    1902    1406 26.0% 14-Aug-26 12:07:16  8x1_selected.expected.info
+     122      66 45.9% 14-Aug-26 12:07:16  8x1_selected.info
+    1895    1401 26.0% 14-Aug-26 12:07:16  8x2x1.expected.info
+     102      61 40.1% 14-Aug-26 12:07:16  8x2x1.info
+-------- ------- ----- --------- --------
+    4021    2934 27.0% 14-Aug-26 12:08:28   4 files
+
+Operation successful.
+
