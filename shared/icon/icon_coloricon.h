@@ -1,8 +1,9 @@
 /*
- * icon_coloricon.h - Direct OS3.5 ColorIcon / GlowIcon decoder
+ * icon_coloricon.h - Direct OS3.5/3.9 ColorIcon decoder (FORM ICON)
  *
  * Decodes IFF FORM ICON (FACE + IMAG) from a parsed .info envelope.
- * Does not use icon.library. Does not decode NewIcons.
+ * GlowIcon imagery uses the same encoding; SRC_GLOWICON is a heuristic label.
+ * Does not use icon.library. Does not decode NewIcons or ARGB/PNG.
  *
  * Target: 68000+, Workbench 2.x+, C89/C99 subset
  */

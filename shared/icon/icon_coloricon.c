@@ -1,17 +1,20 @@
 /*
- * icon_coloricon.c - Direct decoder for OS3.5 ColorIcon / GlowIcon
+ * icon_coloricon.c - Direct decoder for OS3.5/3.9 ColorIcon (FORM ICON)
  *
- * Layout from support files/IconFormats.txt:
+ * GlowIcon is not a separate on-disk encoding: the same FACE+IMAG path is
+ * used. source_format may still label SRC_GLOWICON via a FACE heuristic.
+ *
+ * Layout (AROS diskobj35io / IconFormats.txt, bytes big-endian):
  *   FORM / size / ICON
- *   FACE: width-1, height-1, flags, aspect, max palette entries-1
- *   IMAG: header (10 bytes) then image bytes then optional RGB palette
- *   Odd chunk sizes are padded to even.
- *   Unknown chunks are skipped.
+ *   FACE: width-1, height-1, flags, aspect, max palette RGB bytes-1
+ *   IMAG: 10-byte header, then image stream, then optional RGB palette
+ *   Odd chunk sizes are padded to even. Unknown chunks are skipped.
  *
- * Image format 0: one byte per pixel.
- * Image format 1: IFF PackBits over a bitstream of im_Depth-bit entries
- *   (control is 8 bits; 0x80 is a no-op). Palette RLE uses 8-bit entries.
- * Second IMAG may omit its palette and inherit the first.
+ * Image format 0: one byte per pixel (even when depth < 8).
+ * Image format 1: continuous bitstream RLE (8-bit control, depth-bit
+ *   samples; 0x80 is a no-op). Palette RLE uses 8-bit entries.
+ * Palette length is num_colors*3, not 2^depth. Second IMAG may omit its
+ * palette and inherit a copy of the first.
  */
 
 #include "icon_coloricon.h"
@@ -221,6 +224,7 @@ static iTidy_IconError parse_imag_header(const UBYTE *data, ULONG size,
 
     hdr->num_colors = (UWORD)num_m1 + 1U;
     hdr->image_bytes = (ULONG)image_m1 + 1UL;
+    /* Only meaningful when HASPALETTE; otherwise do not consume these bytes. */
     hdr->pal_bytes = (ULONG)pal_m1 + 1UL;
     hdr->has_transparent = (hdr->flags & IMAG_FLAG_TRANSPARENT) ? TRUE : FALSE;
     hdr->has_palette = (hdr->flags & IMAG_FLAG_PALETTE) ? TRUE : FALSE;
@@ -235,6 +239,9 @@ static iTidy_IconError parse_imag_header(const UBYTE *data, ULONG size,
         return ITIDY_ICON_ERR_UNSUPPORTED;
     }
     if (hdr->num_colors == 0)
+        return ITIDY_ICON_ERR_BAD_COUNT;
+    /* Actual colour count, not 2^depth; must still fit in depth bits. */
+    if (hdr->num_colors > (UWORD)(1U << hdr->depth))
         return ITIDY_ICON_ERR_BAD_COUNT;
 
     {
@@ -260,7 +267,8 @@ static iTidy_IconError decode_pixels(const UBYTE *src, ULONG src_len,
 {
     if (format == FMT_UNCOMPRESSED)
     {
-        if (src_len < dest_count)
+        /* Raw ColorIcon imagery is one byte per pixel, not depth-packed. */
+        if (src_len != dest_count)
             return ITIDY_ICON_ERR_TRUNCATED;
         memcpy(dest, src, (size_t)dest_count);
         return ITIDY_ICON_OK;
@@ -289,7 +297,7 @@ static iTidy_IconError decode_palette(const UBYTE *src, ULONG src_len,
 
     if (format == FMT_UNCOMPRESSED)
     {
-        if (src_len < rgb_count)
+        if (src_len != rgb_count)
         {
             whd_free(rgb);
             return ITIDY_ICON_ERR_TRUNCATED;
@@ -390,10 +398,29 @@ static iTidy_IconError decode_imag(const UBYTE *data, ULONG size,
         return ITIDY_ICON_ERR_NO_DATA;
     }
 
+    {
+        ULONG i;
+        for (i = 0; i < pixel_count; i++)
+        {
+            if ((UWORD)out->pixels[i] >= out->palette_count)
+            {
+                image_clear(out);
+                return ITIDY_ICON_ERR_BAD_COUNT;
+            }
+        }
+    }
+
     out->width = width;
     out->height = height;
     if (hdr.has_transparent)
+    {
+        if ((UWORD)hdr.transparent >= out->palette_count)
+        {
+            image_clear(out);
+            return ITIDY_ICON_ERR_BAD_COUNT;
+        }
         out->transparent_index = (LONG)hdr.transparent;
+    }
     else
         out->transparent_index = -1;
 
@@ -529,6 +556,10 @@ static iTidy_IconError decode_form_icon(const UBYTE *data, ULONG size,
         return ITIDY_ICON_ERR_NO_DATA;
     }
 
+    /*
+     * Historical GlowIcon label: FACE MaxPaletteBytes (RGB byte count - 1)
+     * >= 255. Same IMAG decoder; not a distinct binary format.
+     */
     if (max_pal_m1 >= 255U)
         out->source_format = ITIDY_ICON_SRC_GLOWICON;
     else

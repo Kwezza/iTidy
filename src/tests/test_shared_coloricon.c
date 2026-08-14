@@ -865,6 +865,395 @@ static void test_malformed(void)
     expect_err("null out", icon_coloricon_decode(NULL, NULL), ITIDY_ICON_ERR_NULL);
 }
 
+/* Research golden vector: depth-2 literal 03 1B -> 0,1,2,3 */
+static void test_rle_depth2_literal_boundary(void)
+{
+    Buf file, inner, imag;
+    iTidy_IconFile parsed;
+    iTidy_DecodedIcon dec;
+    UBYTE stored[2] = { 0x03, 0x1B };
+    UBYTE want[4] = { 0, 1, 2, 3 };
+    ImagSpec spec;
+
+    memset(&spec, 0, sizeof(spec));
+    spec.flags = 0x02;
+    spec.image_format = 1;
+    spec.pal_format = 0;
+    spec.depth = 2;
+    spec.pixel_stored = stored;
+    spec.pixel_stored_len = 2;
+    spec.palette = pal4;
+    spec.pal_count = 4;
+
+    buf_init(&imag);
+    build_imag_payload(&imag, &spec);
+    buf_init(&inner);
+    buf_append(&inner, "ICON", 4);
+    append_face(&inner, 4, 1, 0, 11); /* max RGB bytes-1 for 4 colours */
+    append_chunk(&inner, "IMAG", imag.data, imag.len);
+    wrap_icon(&file, 4, 1, 1);
+    append_form_from_inner(&file, &inner);
+
+    expect_err("d2 lit parse", icon_file_parse(file.data, file.len, &parsed), ITIDY_ICON_OK);
+    expect_err("d2 lit decode", icon_coloricon_decode(&parsed, &dec), ITIDY_ICON_OK);
+    expect_eq_u("d2 lit w", dec.normal.width, 4);
+    expect_eq_u("d2 lit h", dec.normal.height, 1);
+    expect_mem("d2 lit pixels", dec.normal.pixels, want, 4);
+
+    icon_decoded_free(&dec);
+    buf_free(&imag);
+    buf_free(&inner);
+    buf_free(&file);
+}
+
+/* Research: FD 00 at depth 1 repeats value 0 four times */
+static void test_rle_depth1_repeat_boundary(void)
+{
+    Buf file, inner, imag;
+    iTidy_IconFile parsed;
+    iTidy_DecodedIcon dec;
+    UBYTE stored[2] = { 0xFD, 0x00 };
+    UBYTE want[4] = { 0, 0, 0, 0 };
+    iTidy_RGB8 pal2[2] = { { 0, 0, 0 }, { 255, 255, 255 } };
+    ImagSpec spec;
+
+    memset(&spec, 0, sizeof(spec));
+    spec.flags = 0x02;
+    spec.image_format = 1;
+    spec.pal_format = 0;
+    spec.depth = 1;
+    spec.pixel_stored = stored;
+    spec.pixel_stored_len = 2;
+    spec.palette = pal2;
+    spec.pal_count = 2;
+
+    buf_init(&imag);
+    build_imag_payload(&imag, &spec);
+    buf_init(&inner);
+    buf_append(&inner, "ICON", 4);
+    append_face(&inner, 4, 1, 0, 5);
+    append_chunk(&inner, "IMAG", imag.data, imag.len);
+    wrap_icon(&file, 4, 1, 1);
+    append_form_from_inner(&file, &inner);
+
+    expect_err("d1 rep parse", icon_file_parse(file.data, file.len, &parsed), ITIDY_ICON_OK);
+    expect_err("d1 rep decode", icon_coloricon_decode(&parsed, &dec), ITIDY_ICON_OK);
+    expect_mem("d1 rep pixels", dec.normal.pixels, want, 4);
+
+    icon_decoded_free(&dec);
+    buf_free(&imag);
+    buf_free(&inner);
+    buf_free(&file);
+}
+
+/* Uncompressed depth < 8 is still one byte per pixel */
+static void test_raw_sub8_depth(void)
+{
+    Buf file, inner, imag;
+    iTidy_IconFile parsed;
+    iTidy_DecodedIcon dec;
+    UBYTE pixels[4] = { 0, 1, 1, 0 };
+    iTidy_RGB8 pal2[2] = { { 0, 0, 0 }, { 255, 255, 255 } };
+    ImagSpec spec;
+
+    memset(&spec, 0, sizeof(spec));
+    spec.flags = 0x02;
+    spec.image_format = 0;
+    spec.pal_format = 0;
+    spec.depth = 1;
+    spec.pixels = pixels;
+    spec.pixel_count = 4;
+    spec.palette = pal2;
+    spec.pal_count = 2;
+
+    buf_init(&imag);
+    build_imag_payload(&imag, &spec);
+    buf_init(&inner);
+    buf_append(&inner, "ICON", 4);
+    append_face(&inner, 2, 2, 0, 5);
+    append_chunk(&inner, "IMAG", imag.data, imag.len);
+    wrap_icon(&file, 2, 2, 1);
+    append_form_from_inner(&file, &inner);
+
+    expect_err("raw d1 parse", icon_file_parse(file.data, file.len, &parsed), ITIDY_ICON_OK);
+    expect_err("raw d1 decode", icon_coloricon_decode(&parsed, &dec), ITIDY_ICON_OK);
+    expect_mem("raw d1 pixels", dec.normal.pixels, pixels, 4);
+    expect_eq_u("raw d1 pal", dec.normal.palette_count, 2);
+
+    icon_decoded_free(&dec);
+    buf_free(&imag);
+    buf_free(&inner);
+    buf_free(&file);
+}
+
+/*
+ * Critical regression: palette size is num_colors*3, not (1<<depth)*3.
+ * depth=5 with 17 colours => 51 RGB bytes.
+ */
+static void test_palette_17_at_depth5(void)
+{
+    Buf file, inner, imag;
+    iTidy_IconFile parsed;
+    iTidy_DecodedIcon dec;
+    iTidy_RGB8 pal17[17];
+    UBYTE pixels[4];
+    ImagSpec spec;
+    unsigned i;
+
+    for (i = 0; i < 17; i++)
+    {
+        pal17[i].r = (UBYTE)i;
+        pal17[i].g = (UBYTE)(255 - i);
+        pal17[i].b = (UBYTE)(i * 3);
+    }
+    pixels[0] = 0;
+    pixels[1] = 16;
+    pixels[2] = 8;
+    pixels[3] = 1;
+
+    memset(&spec, 0, sizeof(spec));
+    spec.transparent = 16;
+    spec.flags = 0x03;
+    spec.image_format = 0;
+    spec.pal_format = 0;
+    spec.depth = 5;
+    spec.pixels = pixels;
+    spec.pixel_count = 4;
+    spec.palette = pal17;
+    spec.pal_count = 17;
+
+    buf_init(&imag);
+    build_imag_payload(&imag, &spec);
+    /* Raw palette must be exactly 51 bytes for 17 colours. */
+    expect_eq_u("17c imag payload has 51 rgb",
+                (unsigned)(imag.len - 10UL - 4UL), 51U);
+
+    buf_init(&inner);
+    buf_append(&inner, "ICON", 4);
+    append_face(&inner, 2, 2, 0, 50); /* 17*3 - 1 */
+    append_chunk(&inner, "IMAG", imag.data, imag.len);
+    wrap_icon(&file, 2, 2, 1);
+    append_form_from_inner(&file, &inner);
+
+    expect_err("17c parse", icon_file_parse(file.data, file.len, &parsed), ITIDY_ICON_OK);
+    expect_err("17c decode", icon_coloricon_decode(&parsed, &dec), ITIDY_ICON_OK);
+    expect_eq_u("17c pal count", dec.normal.palette_count, 17);
+    expect_eq_u("17c pal16 r", dec.normal.palette[16].r, 16);
+    expect_eq_i("17c trans non-zero", (int)dec.normal.transparent_index, 16);
+    expect_mem("17c pixels", dec.normal.pixels, pixels, 4);
+
+    icon_decoded_free(&dec);
+    buf_free(&imag);
+    buf_free(&inner);
+    buf_free(&file);
+}
+
+static void test_reject_bad_index_and_formats(void)
+{
+    Buf file, inner, imag;
+    iTidy_IconFile parsed;
+    iTidy_DecodedIcon dec;
+    UBYTE bad_pix[4] = { 0, 1, 2, 4 }; /* index 4 with only 4 colours */
+    ImagSpec spec;
+
+    memset(&spec, 0, sizeof(spec));
+    spec.flags = 0x02;
+    spec.image_format = 0;
+    spec.pal_format = 0;
+    spec.depth = 8;
+    spec.pixels = bad_pix;
+    spec.pixel_count = 4;
+    spec.palette = pal4;
+    spec.pal_count = 4;
+
+    buf_init(&imag);
+    build_imag_payload(&imag, &spec);
+    buf_init(&inner);
+    buf_append(&inner, "ICON", 4);
+    append_face(&inner, 2, 2, 0, 11);
+    append_chunk(&inner, "IMAG", imag.data, imag.len);
+    wrap_icon(&file, 2, 2, 1);
+    append_form_from_inner(&file, &inner);
+
+    expect_err("bad idx parse", icon_file_parse(file.data, file.len, &parsed), ITIDY_ICON_OK);
+    expect_err("bad idx", icon_coloricon_decode(&parsed, &dec), ITIDY_ICON_ERR_BAD_COUNT);
+    buf_free(&imag);
+    buf_free(&inner);
+    buf_free(&file);
+
+    {
+        Buf payload;
+        buf_init(&payload);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 1);
+        buf_u8(&payload, 0x02);
+        buf_u8(&payload, 2); /* unsupported image format */
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 8);
+        buf_u16(&payload, 3);
+        buf_u16(&payload, 5);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 0);
+
+        buf_init(&inner);
+        buf_append(&inner, "ICON", 4);
+        append_face(&inner, 2, 2, 0, 5);
+        append_chunk(&inner, "IMAG", payload.data, payload.len);
+        wrap_icon(&file, 2, 2, 1);
+        append_form_from_inner(&file, &inner);
+
+        expect_err("bad imgfmt parse",
+                   icon_file_parse(file.data, file.len, &parsed), ITIDY_ICON_OK);
+        expect_err("bad imgfmt", icon_coloricon_decode(&parsed, &dec),
+                   ITIDY_ICON_ERR_UNSUPPORTED);
+        buf_free(&payload);
+        buf_free(&inner);
+        buf_free(&file);
+    }
+
+    {
+        Buf payload;
+        buf_init(&payload);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 1);
+        buf_u8(&payload, 0x02);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 2); /* unsupported palette format */
+        buf_u8(&payload, 8);
+        buf_u16(&payload, 3);
+        buf_u16(&payload, 5);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 0);
+
+        buf_init(&inner);
+        buf_append(&inner, "ICON", 4);
+        append_face(&inner, 2, 2, 0, 5);
+        append_chunk(&inner, "IMAG", payload.data, payload.len);
+        wrap_icon(&file, 2, 2, 1);
+        append_form_from_inner(&file, &inner);
+
+        expect_err("bad palfmt parse",
+                   icon_file_parse(file.data, file.len, &parsed), ITIDY_ICON_OK);
+        expect_err("bad palfmt", icon_coloricon_decode(&parsed, &dec),
+                   ITIDY_ICON_ERR_UNSUPPORTED);
+        buf_free(&payload);
+        buf_free(&inner);
+        buf_free(&file);
+    }
+
+    {
+        Buf stored;
+        BitWriter bw;
+        ImagSpec trunc;
+        UBYTE unused[1] = { 0 };
+
+        buf_init(&stored);
+        bw_init(&bw, &stored);
+        bw_bits(&bw, 0x03, 8); /* ask for 4 literals */
+        bw_bits(&bw, 1, 8);    /* only one sample, then EOF */
+        bw_flush(&bw);
+
+        memset(&trunc, 0, sizeof(trunc));
+        trunc.flags = 0x02;
+        trunc.image_format = 1;
+        trunc.pal_format = 0;
+        trunc.depth = 8;
+        trunc.pixel_stored = stored.data;
+        trunc.pixel_stored_len = stored.len;
+        trunc.palette = pal4;
+        trunc.pal_count = 4;
+        trunc.pixels = unused;
+        trunc.pixel_count = 1;
+
+        buf_init(&imag);
+        build_imag_payload(&imag, &trunc);
+        buf_init(&inner);
+        buf_append(&inner, "ICON", 4);
+        append_face(&inner, 2, 2, 0, 11);
+        append_chunk(&inner, "IMAG", imag.data, imag.len);
+        wrap_icon(&file, 2, 2, 1);
+        append_form_from_inner(&file, &inner);
+
+        expect_err("trunc rle parse",
+                   icon_file_parse(file.data, file.len, &parsed), ITIDY_ICON_OK);
+        expect_err("trunc rle", icon_coloricon_decode(&parsed, &dec),
+                   ITIDY_ICON_ERR_TRUNCATED);
+        buf_free(&stored);
+        buf_free(&imag);
+        buf_free(&inner);
+        buf_free(&file);
+    }
+
+    {
+        /* num_colors > 1<<depth */
+        Buf payload;
+        buf_init(&payload);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 16); /* 17 colours */
+        buf_u8(&payload, 0x02);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 0);
+        buf_u8(&payload, 4); /* depth 4 => max 16 colours */
+        buf_u16(&payload, 3);
+        buf_u16(&payload, 50);
+        buf_zeros(&payload, 4 + 51);
+
+        buf_init(&inner);
+        buf_append(&inner, "ICON", 4);
+        append_face(&inner, 2, 2, 0, 50);
+        append_chunk(&inner, "IMAG", payload.data, payload.len);
+        wrap_icon(&file, 2, 2, 1);
+        append_form_from_inner(&file, &inner);
+
+        expect_err("ncol>depth parse",
+                   icon_file_parse(file.data, file.len, &parsed), ITIDY_ICON_OK);
+        expect_err("ncol>depth", icon_coloricon_decode(&parsed, &dec),
+                   ITIDY_ICON_ERR_BAD_COUNT);
+        buf_free(&payload);
+        buf_free(&inner);
+        buf_free(&file);
+    }
+}
+
+static void test_form_icon_argb_only_not_coloricon(void)
+{
+    Buf file, inner;
+    iTidy_IconFile parsed;
+    iTidy_DecodedIcon dec;
+    UBYTE face[6] = { 1, 1, 0, 0x11, 0, 3 };
+    UBYTE argb[4] = { 0, 0, 0, 0 };
+
+    buf_init(&inner);
+    buf_append(&inner, "ICON", 4);
+    append_chunk(&inner, "FACE", face, 6);
+    append_chunk(&inner, "ARGB", argb, 4);
+    wrap_icon(&file, 2, 2, 1);
+    append_form_from_inner(&file, &inner);
+
+    expect_err("argb-only parse", icon_file_parse(file.data, file.len, &parsed), ITIDY_ICON_OK);
+    expect_err("argb-only decode", icon_coloricon_decode(&parsed, &dec),
+               ITIDY_ICON_ERR_UNSUPPORTED);
+
+    buf_free(&inner);
+    buf_free(&file);
+}
+
 int main(void)
 {
     test_raw_image_and_palette();
@@ -875,6 +1264,12 @@ int main(void)
     test_unknown_chunk_and_reorder();
     test_glow_heuristic();
     test_malformed();
+    test_rle_depth2_literal_boundary();
+    test_rle_depth1_repeat_boundary();
+    test_raw_sub8_depth();
+    test_palette_17_at_depth5();
+    test_reject_bad_index_and_formats();
+    test_form_icon_argb_only_not_coloricon();
 
     if (g_failures)
     {

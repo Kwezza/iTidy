@@ -681,6 +681,36 @@ static void test_png_and_unsupported(void)
     expect_true("argb unsupported", probe.has_unsupported);
     expect_false("argb not coloricon", probe.has_coloricon);
     buf_free(&b);
+
+    /* FORM ICON containing only FACE+ARGB must not look like ColorIcon. */
+    {
+        Buf inner;
+        UBYTE face[6] = { 15, 15, 0, 0x11, 0, 3 };
+        UBYTE argb[4] = { 0, 0, 0, 1 };
+
+        buf_init(&inner);
+        buf_append(&inner, "ICON", 4);
+        append_chunk(&inner, "FACE", face, 6);
+        append_chunk(&inner, "ARGB", argb, 4);
+
+        buf_init(&b);
+        append_diskobject(&b, ITIDY_ICON_WB_TOOL, 1, 0, 0, 0, 0, 0, 0, 16, 16);
+        append_image(&b, 16, 16, 1);
+        buf_append(&b, "FORM", 4);
+        buf_u32(&b, (unsigned)inner.len);
+        buf_append(&b, inner.data, inner.len);
+
+        expect_err("icon+argb parse",
+                   icon_file_parse(b.data, b.len, &file), ITIDY_ICON_OK);
+        expect_err("icon+argb probe",
+                   icon_probe_file(&file, &probe), ITIDY_ICON_OK);
+        expect_true("icon+argb has os4", probe.has_os4_argb);
+        expect_false("icon+argb not coloricon", probe.has_coloricon);
+        expect_true("icon+argb still classic", probe.has_classic);
+
+        buf_free(&inner);
+        buf_free(&b);
+    }
 }
 
 static void test_real_icons(void)

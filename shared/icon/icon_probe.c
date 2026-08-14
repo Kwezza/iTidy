@@ -95,7 +95,6 @@ static void walk_iff_icon(const UBYTE *data, ULONG size,
     ULONG end;
     ULONG imag_count = 0;
     UWORD max_pal = 0;
-    BOOL saw_face = FALSE;
 
     /* form_size excludes the FORM+size header (8 bytes) and includes "ICON". */
     if (!icon_file_range_ok(size, form_offset + 8UL, form_size))
@@ -121,7 +120,6 @@ static void walk_iff_icon(const UBYTE *data, ULONG size,
 
         if (fourcc_eq(data + pos, "FACE") && chunk_size >= 6UL)
         {
-            saw_face = TRUE;
             if (!icon_file_read_u16(data, size, payload + 4UL, &max_pal))
                 max_pal = 0;
         }
@@ -141,11 +139,14 @@ static void walk_iff_icon(const UBYTE *data, ULONG size,
         pos = payload + padded;
     }
 
-    if (saw_face || imag_count > 0)
+    /* OS3.5 ColorIcon requires at least one IMAG; FACE+ARGB alone is not. */
+    if (imag_count > 0UL)
         out->has_coloricon = TRUE;
 
-    /* FACE MaxPal field is documented as max palette entries minus 1
-     * (despite the "Bytes" name). 256-colour GlowIcons store 255. */
+    /*
+     * GlowIcon is the same FORM ICON/IMAG encoding. Historical label when
+     * FACE MaxPaletteBytes (max RGB palette byte count - 1) >= 255.
+     */
     if (out->has_coloricon && max_pal >= 255U)
         out->has_glowicon = TRUE;
 
@@ -207,7 +208,7 @@ static void scan_extension(const iTidy_IconFile *file, iTidy_IconProbe *out)
 
     if (fourcc_eq(data + type_off, "ICON"))
     {
-        out->has_coloricon = TRUE;
+        /* has_coloricon set only if walk finds IMAG (not ARGB-only). */
         walk_iff_icon(data, size, offset, form_size, out);
         return;
     }
