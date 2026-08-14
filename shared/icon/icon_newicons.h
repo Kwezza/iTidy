@@ -1,11 +1,13 @@
 /*
  * icon_newicons.h - NewIcons IM1=/IM2= ToolType decoder
  *
- * Decodes chunky indexed imagery stored in ToolTypes. Each ToolType is a
- * new ASCII segment (do not concatenate "IM1="/"IM2=" prefixes). Unpacked
- * sample bits are kept across lines so a palette or pixel field may
- * finish after a 7-bit character wrap. Incomplete GetBits requests do
- * not consume bits.
+ * Decodes chunky indexed imagery stored in ToolTypes. Each physical
+ * IM1=/IM2= ToolType is a framing boundary: residual bits are discarded
+ * and samples never straddle strings. Palette decoding finishes on a
+ * ToolType boundary; pixel decoding starts on the next same-image line.
+ * Ordinary 7-bit groups and RLE zero groups share one ordered bitstream.
+ *
+ * The ToolType table is never modified.
  *
  * Target: 68000+, Workbench 2.x+, C89/C99 subset
  */
@@ -22,6 +24,7 @@
  * release them with icon_decoded_free().
  *
  * Does not resize, dither, remap pens, or write files.
+ * Does not rewrite ToolTypes.
  * On error, *out is zeroed and no allocations are retained.
  */
 iTidy_IconError icon_newicons_decode(const iTidy_IconFile *file,

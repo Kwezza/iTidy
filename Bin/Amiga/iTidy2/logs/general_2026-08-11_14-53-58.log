@@ -1019,3 +1019,22 @@
 [14:57:14][DEBUG]   Total bytes: 12966 
 [14:57:14][DEBUG]   Icons created (DefIcons): 10 
 [14:57:14][DEBUG]   Location: PROGDIR:Backups/Run_0006 
+[16:04:48][DEBUG] DEBUG: About to call CleanupWindow()... 
+[16:04:48][DEBUG] DEBUG: CleanupWindow() completed 
+[16:04:48][DEBUG] DEBUG: About to call disposeTimer()... 
+[16:04:48][DEBUG] DEBUG: disposeTimer() completed 
+[16:04:48][DEBUG] DEBUG: About to call FreeIconErrorList()... 
+[16:04:48][DEBUG] DEBUG: FreeIconErrorList() completed 
+[16:04:48][DEBUG] DEBUG: About to free fontPrefs (ptr=1076940596)... 
+[16:04:48][DEBUG] DEBUG: fontPrefs freed successfully 
+[16:04:48][DEBUG] DEBUG: Checking for tool cache to free... 
+[16:04:48][DEBUG] FreeToolCache: Tool cache freed 
+[16:04:48][DEBUG] DEBUG: Tool cache cleanup completed 
+[16:04:48][DEBUG] DEBUG: Freeing PATH search list... 
+[16:04:48][DEBUG] DEBUG: PATH search list freed 
+[16:04:48][INFO] ========== LOG SYSTEM SHUTDOWN ========== 
+[16:04:48][INFO]   general: 1035 messages, 70447 bytes 
+[16:04:48][INFO]   gui: 184 messages, 16456 bytes 
+[16:04:48][INFO]   icons: 1721 messages, 134039 bytes 
+[16:04:48][INFO]   backup: 20 messages, 2306 bytes 
+[16:04:48][INFO] ========================================= 

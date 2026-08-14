@@ -206,7 +206,7 @@ OBJS = $(CORE_OBJS) $(LAYOUT_OBJS) $(SHARED_IMAGE_OBJS) $(SHARED_ICON_OBJS) $(DE
 # Build Rules
 ################################################################################
 
-.PHONY: all clean help amiga directories test-image test-icon test-coloricon test-decode
+.PHONY: all clean help amiga directories test-image test-icon test-coloricon test-decode test-icon-amiga
 
 # Default target
 all: directories $(BIN)
@@ -240,6 +240,8 @@ directories:
 	@if not exist "$(OUT_DIR)\shared" mkdir "$(OUT_DIR)\shared"
 	@if not exist "$(OUT_DIR)\shared\image" mkdir "$(OUT_DIR)\shared\image"
 	@if not exist "$(OUT_DIR)\shared\icon" mkdir "$(OUT_DIR)\shared\icon"
+	@if not exist "$(OUT_DIR)\tests" mkdir "$(OUT_DIR)\tests"
+	@if not exist "$(OUT_DIR)\tests\amiga" mkdir "$(OUT_DIR)\tests\amiga"
 	@if not exist "$(BIN_DIR)" mkdir "$(BIN_DIR)"
 
 # Link executable
@@ -326,6 +328,16 @@ test-decode:
 	@echo Running $(TEST_DECODE_BIN)
 	$(TEST_DECODE_BIN)
 
+# Amiga CLI validator for shared icon decode against a real .info corpus.
+# Separate from the iTidy2 GUI executable. Reuses SHARED_ICON_OBJS.
+TEST_ICON_AMIGA_BIN = $(BIN_DIR)/iTidyIconTest
+TEST_ICON_AMIGA_OBJ = $(OUT_DIR)/tests/amiga/icon_decode_test.o
+
+test-icon-amiga: directories $(SHARED_ICON_OBJS) $(TEST_ICON_AMIGA_OBJ)
+	@echo Linking Amiga icon decoder test CLI: $(TEST_ICON_AMIGA_BIN)
+	$(CC) $(LDFLAGS) -o $(TEST_ICON_AMIGA_BIN) $(TEST_ICON_AMIGA_OBJ) $(SHARED_ICON_OBJS)
+	@echo Build complete: $(TEST_ICON_AMIGA_BIN)
+
 # Clean build artifacts
 
 clean:
@@ -353,6 +365,7 @@ help:
 	@echo   make test-icon          - Host GCC regression tests for shared .info reader/probe
 	@echo   make test-coloricon     - Host GCC tests for ColorIcon / GlowIcon decoder
 	@echo   make test-decode        - Host GCC tests for NewIcons, classic, unified decode
+	@echo   make test-icon-amiga    - Amiga CLI validator (Bin/Amiga/iTidy2/iTidyIconTest)
 	@echo   make help               - Show this help
 	@echo.
 	@echo Console Output:

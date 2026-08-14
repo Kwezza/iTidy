@@ -1042,6 +1042,288 @@ Agent hand-off:
     is later work.
 ```
 
+### Batch 4 amendment — NewIcons per-line palette flush (2026-08-14)
+
+```text
+Amiga COMPARE (output.compare.txt) matched all 10 ColorIcon/GlowIcon
+files against icon.library v44+ and mismatched both NewIcons files.
+Cause: leftover pad bits on the IM1=/IM2= string that completes the
+palette were consumed as pixels. IconFormats.txt flushes that string;
+pixels start on the next ToolType line.
+
+Change:
+- shared/icon/icon_newicons.c: after the palette completes, if further
+  IM1=/IM2= lines exist, discard leftover bits and continue. Single-line
+  streams still read pixels from the same string (host RLE unit test).
+- src/tests/test_shared_decode.c: host encoder flushes and starts a new
+  line after the palette; regression loads
+  TestsIcons/test-icons/Newicons/Apps.info and 0016.info (dimensions,
+  palette RGB, pixel CRCs).
+
+Host: make test-decode / test-icon / test-coloricon / test-image.
+Amiga: make test-icon-amiga -> Bin/Amiga/iTidy2/iTidyIconTest
+User should re-run:
+  Bin/Amiga/iTidy2/iTidyIconTest TestsIcons/test-icons COMPARE
+Apps.info palette CRC was already matching; pixel CRC changed
+6C34D7C1 -> AFFA4641. 0016.info palette CRC unchanged (DAD2D1EE);
+COMPARE had palette_match=no vs icon.library — re-check after this fix.
+ColorIcon/GlowIcon/classic unchanged.
+```
+
+### Batch 4 amendment — RGB-composite COMPARE (2026-08-14)
+
+```text
+Batch 4 remains COMPLETE. Decoder algorithms were not changed.
+This is a validator-only extension in src/tests/amiga/icon_decode_test.c.
+
+COMPARE now reports, for palette-mapped ColorIcon/GlowIcon/NewIcons:
+
+  index_pixels_match / palette_match / rgb_composite_match
+  selected_index_match / selected_palette_match / selected_rgb_match
+
+RGB composite (independently for normal and selected):
+  shared_rgb[p] = shared_palette[shared_pixels[p]]
+  oracle_rgb[p] = oracle_palette[oracle_pixels[p]]
+
+Palette indexes are bounds-checked. Invalid index -> ORACLE RGB: FAIL.
+Transparent pixels are compared semantically (both transparent = match;
+one transparent = mismatch) so dummy RGB behind a transparent index
+cannot create a false mismatch.
+
+ORACLE RESULT remains index-level MATCH (ColorIcon/GlowIcon control).
+ORACLE RGB: MATCH | MISMATCH | N/A | FAIL (invalid palette index)
+
+Host: make test-image / test-icon / test-coloricon / test-decode
+Amiga: make test-icon-amiga; make (iTidy2)
+Do not start Batch 5. User must re-run:
+
+  Bin/Amiga/iTidy2/iTidyIconTest TestsIcons/test-icons COMPARE
+
+Question this answers: are NewIcons Apps.info / 0016.info visually
+identical to icon.library despite differing indexes?
+```
+
+---
+
+## Batch 4 Validation Extension — Real Icon Amiga CLI
+
+Batch 4 remains **COMPLETE**. This is a validation extension only. Batch 5 was not started.
+
+```text
+Batch 4 Validation Extension — Real Icon Amiga CLI
+- Date: 2026-08-14
+- Branch: dev-itidy2
+- Starting revision: 9acf665 NewIcons and classic decoder + unified API
+- Summary: Added a standalone 68000 Amiga Shell CLI that recursively
+  scans a real .info corpus, probes with icon_probe_buffer(), decodes
+  BEST via icon_decode_buffer(), prints per-file reports (format flags,
+  dimensions, palettes, IEEE CRC32, symbolic+numeric errors) and a
+  calculated summary. One failing icon does not abort the scan.
+  Decoder algorithms were not changed. iTidy2 GUI is unchanged.
+- Test CLI source: src/tests/amiga/icon_decode_test.c
+- Build target: make test-icon-amiga
+- Output binary: Bin/Amiga/iTidy2/iTidyIconTest
+- Real icon corpus:
+    TestsIcons/test-icons
+    (source .info files were not renamed, rewritten, or altered)
+- Files added:
+    src/tests/amiga/icon_decode_test.c
+- Files modified:
+    Makefile
+    docs/current refactor/iTidy_Shared_Core_Refactor_Staged_Agent_Prompt.md
+- Host tests:
+    make test-image: all passed
+    make test-icon: all passed
+    make test-coloricon: all passed
+    make test-decode: all passed
+- Amiga build:
+    make (iTidy2): success, already up to date; no production sources
+      changed. Bin/Amiga/iTidy2/iTidy2 unchanged.
+    make test-icon-amiga: success, no VBCC warnings.
+      Binary Bin/Amiga/iTidy2/iTidyIconTest (68000, -lamiga -lauto,
+      no ReAction, no GUI).
+- Oracle comparison implemented: YES, optional CLI mode only.
+    Syntax: iTidyIconTest <path> COMPARE   (or COMPARE as the only arg)
+    Uses GetIconTagList(ICONGETA_RemapIcon=FALSE) + IconControlA()
+    inside the test utility. Does not call itidy_icon_image_extract()
+    (that path logs, may expand palettes, and LayoutIconA-rasterises
+    classic icons). Shared modules are not linked to icon.library.
+    CLASSIC decodes are skipped (Workbench pens vs palette-mapped).
+    Requires icon.library v44+ at runtime. Not yet run on the Amiga.
+- Decoder changes required: none
+- New regression tests added: none (no decoder bugs found in this
+  session; the CLI has not yet been executed on the Amiga corpus)
+- Remaining issues:
+    1. User must run iTidyIconTest on the Amiga and paste the full
+       Shell output for review before Batch 5.
+    2. TestsIcons/test-icons also contains drawer .info files at the
+       category roots (ColorIcons.info, OS3.info, …) and
+       AQUARIUMBACKGROUND.HAM.info. The CLI scans every .info it finds;
+       folder names are organisational hints only.
+    3. OS4 PNG/ARGB-only icons are expected UNSUPPORTED unless a
+       classic/NewIcons/ColorIcon fallback is also present.
+    4. make test-decode rewrites tests/icons/*.info sidecars as before.
+- Exact command for user:
+    From the iTidy project root (so TestsIcons/test-icons is visible):
+
+        Bin/Amiga/iTidy2/iTidyIconTest
+
+    Equivalent explicit default corpus:
+
+        Bin/Amiga/iTidy2/iTidyIconTest TestsIcons/test-icons
+
+    Custom AmigaDOS path (directory or a single .info file):
+
+        Bin/Amiga/iTidy2/iTidyIconTest TestsIcons:test-icons
+        Bin/Amiga/iTidy2/iTidyIconTest <path-to-one.info>
+
+    Optional icon.library oracle:
+
+        Bin/Amiga/iTidy2/iTidyIconTest TestsIcons/test-icons COMPARE
+
+    Help:
+
+        Bin/Amiga/iTidy2/iTidyIconTest ?
+- Notes for user:
+    Copy the complete CLI output (every FILE block plus the summary)
+    back into the development discussion. Do not start Batch 5 until
+    that output has been reviewed. Do not switch to dev-classic yet.
+```
+
+---
+
+## Batch 4 Validation Extension — NewIcons Ordered RLE + Physical Framing
+
+Batch 4 remains **COMPLETE**. This is a NewIcons decoder correction pass.
+**Batch 5 was not started.**
+
+```text
+Batch 4 Validation Extension — NewIcons Ordered RLE + Physical Framing
+- Date: 2026-08-14
+- Branch: dev-itidy2
+- Starting revision: 9acf665 NewIcons and classic decoder + unified API
+- Research report:
+    docs\current refactor\deep-research-report-newIcons.md
+- Summary: Fixed the two proven NewIcons defects together. RLE-generated
+  zero 7-bit groups now enter the same ordered accumulator as ordinary
+  groups (the old zero_queued priority queue is gone). Residual bits are
+  discarded at every physical IM1=/IM2= ToolType boundary. Palette
+  completion ends that physical line; pixels begin on the next same-image
+  ToolType. bpp is max(1, ceil(log2(ncolors))). IM2 remains an independent
+  image. 257-colour streams are accepted with 9-bit samples and rejected
+  if index 256 is actually referenced. Collection is marker-aware and
+  contiguous. Decoding never rewrites ToolTypes. ColorIcon/GlowIcon/
+  classic paths were not changed.
+- Decoder files modified:
+    shared/icon/icon_newicons.c
+    shared/icon/icon_newicons.h
+- Test files modified:
+    src/tests/test_shared_decode.c
+    src/tests/amiga/icon_decode_test.c (NewIcons RGB-mismatch IM1/IM2 hint)
+- RLE ordering fix: YES. zero_queued removed. Pending RLE groups are
+  shifted into acc after existing residual bits.
+- Per-ToolType flush fix: YES. ni_attach_line resets acc/nbits/RLE state.
+- Palette/pixel transition fix: YES. After palette completion the rest of
+  that physical line is padding; pixels start on the next ToolType.
+  Same-line palette-plus-pixels synthetics are no longer canonical.
+- bpp minimum fix: YES. One-colour palettes use 1 bit, not 0.
+- 257-colour handling: IMPLEMENTED. Accept 257, decode 9-bit samples into
+  a UWORD, down-convert to UBYTE if every referenced index is 0..255,
+  return UNSUPPORTED if index 256 is used. No silent wrap of 256 to 0.
+- Marker-aware parsing: COMPLETED. Exact marker
+  "*** DON'T EDIT THE FOLLOWING LINES!! ***" starts the NewIcons region.
+  IM1= / IM2= runs after it must be contiguous. Unrelated ToolTypes before
+  the marker are ignored. If the marker is absent, collection still starts
+  at the first IM1=/IM2= so truncated host samples remain diagnosable.
+  The original ToolType array is never modified.
+- Host tests:
+    make test-decode: all passed (including microscopic RLE 6F D1,
+      physical-boundary 6F then 20, IM2 independent 8-vs-9 palette,
+      1-bit bpp, 256, 257, marker ignore, truncated continuation)
+    make test-image: all passed
+    make test-icon: all passed
+    make test-coloricon: all passed
+- Normal Amiga build: make -> Bin/Amiga/iTidy2/iTidy2 success,
+  icon_newicons.c compiled 68000 with no VBCC warnings.
+- Validator build: make test-icon-amiga ->
+  Bin/Amiga/iTidy2/iTidyIconTest success, no VBCC warnings.
+- Apps.info host result:
+    decode OK, 36x40, pal 8 / selected pal 9, trans 0
+    palette CRC C7DCC148 (unchanged, already matched icon.library)
+    pixel CRC 22CF0A9F (was known-bad AFFA4641)
+    selected pixel CRC 70EA1B88 (was known-bad F914E881)
+- 0016.info host result:
+    decode OK, 42x42, pal 32 / selected pal 32, trans 0
+    palette CRC A5BF3CAD (CHANGED from known-bad DAD2D1EE —
+      first-line RLE was corrupting palette bytes)
+    pixel CRC 96DB489A (was known-bad E88DAA8C)
+    selected pixel CRC 372E4ECC (was known-bad 49ACFE9B)
+- RGB oracle result: NOT YET RUN on the Amiga in this session
+  (amiga MCP agent did not answer). User must run COMPARE.
+- Raw palette/index oracle result: NOT YET RUN. RGB MATCH is the
+  acceptance criterion; raw index mismatch vs icon.library may still
+  be correct.
+- Remaining issues:
+    1. User must re-run Amiga COMPARE before Batch 5:
+         Bin/Amiga/iTidy2/iTidyIconTest TestsIcons/test-icons COMPARE
+    2. New pixel/palette CRCs above are host fingerprints of the
+       corrected decoder, not yet confirmed against icon.library RGB.
+    3. Full bitstream diagnostics (encoded-byte offset, nearest RLE
+       token, nbits before token) were not added as a default dump.
+       COMPARE already prints first RGB mismatch pixel/x/y/indexes
+       plus IM1 vs IM2. If RGB still fails, a forensic pass should
+       instrument the bit reader rather than speculate further.
+- Batch 5 ready?: NO — awaiting Amiga RGB COMPARE on Apps.info and
+  0016.info.
+- Notes for next agent:
+    Do not start Batch 5. Do not change ColorIcon/GlowIcon/classic.
+    If COMPARE RGB is MATCH for both NewIcons files, Batch 5 may
+    proceed on dev-classic. If RGB still mismatches, do not rewrite
+    the decoder; add first-mismatch bitstream diagnostics (physical
+    ToolType index, encoded-byte offset, last RLE token, nbits,
+    phase, IM1/IM2, sample index) and stop.
+    Do not guess replacement CRCs into tests until COMPARE confirms.
+    Decoding must continue to leave ToolTypes immutable.
+```
+
+### COMPARE confirmation (2026-08-14)
+
+```text
+Source: output.compare4.txt
+Command: Bin/Amiga/iTidy2/iTidyIconTest TestsIcons/test-icons COMPARE
+
+Decode failures:            0  (29/29 PASS)
+RGB mismatches:             0
+Invalid palette indexes:    0
+Index mismatches:           0
+
+ColorIcon (6) + GlowIcon (4): all prior MATCH remain MATCH
+  (index, palette, selected, RGB)
+
+NewIcons Apps.info:
+  normal RGB:     MATCH
+  selected RGB:   MATCH
+  raw index:      MATCH
+  raw palette:    MATCH
+  CRCs: pal C7DCC148  pix 22CF0A9F  sel pix 70EA1B88
+
+NewIcons 0016.info:
+  normal RGB:     MATCH
+  selected RGB:   MATCH
+  raw index:      MATCH
+  raw palette:    MATCH
+  CRCs: pal A5BF3CAD  pix 96DB489A  sel pix 372E4ECC
+
+Classic: 17 SKIPPED by design (Workbench pens)
+
+These CRCs are now canonical. Raw equality was stronger than required:
+RGB MATCH was the acceptance bar; icon.library also agreed on indexes
+and palettes for both NewIcons files.
+
+Batch 5 ready?: YES, on branch dev-classic only.
+Do not start Batch 5 on dev-itidy2 / main / v1.
+```
+
 ---
 
 # BATCH 5 — CONSUME SHARED CORE FROM iTIDY CLASSIC
@@ -1217,10 +1499,13 @@ Batch 5 — Consume Shared Core from iTidy Classic
 ## Known blockers
 
 ```text
-None for starting Batch 5 on branch dev-classic. Shared input decode
-is complete on host tests. icon.library / NewIcons.library oracle
-comparison was not run on Amiga. Shared decoders are compiled into
-iTidy2 but not wired into the GUI. Do not start Batch 5 on
+None for Batch 4. Amiga COMPARE (output.compare4.txt, 2026-08-14) is a
+full pass: 0 decode failures, 0 RGB mismatches, 0 invalid indexes.
+NewIcons Apps.info and 0016.info MATCH icon.library on RGB and on raw
+index/palette. ColorIcon/GlowIcon remain MATCH. Classic remains
+intentionally skipped.
+
+Batch 5 is unblocked but must run on branch dev-classic, not
 dev-itidy2 / main / v1.
 ```
 
@@ -1232,6 +1517,13 @@ docs\current refactor\iTidy_Shared_Core_Unification_Plan.md
 
 This file is the persistent implementation/runbook.
 Every agent must update it before stopping.
+
+Batch 4 validation CLI: make test-icon-amiga ->
+Bin/Amiga/iTidy2/iTidyIconTest
+Default corpus: TestsIcons/test-icons
+NewIcons ordered-RLE + physical framing fix is in shared/icon/icon_newicons.c.
+Amiga COMPARE (output.compare4.txt) confirmed NewIcons RGB and raw
+index/palette MATCH. Batch 5 may start on dev-classic.
 ```
 
 ---

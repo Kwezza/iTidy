@@ -1,0 +1,1239 @@
+iTidyIconTest — shared icon decoder validation
+Scan root: TestsIcons/test-icons
+Request:   BEST (ColorIcon/GlowIcon, then NewIcons, then classic)
+Oracle:    COMPARE (icon.library v44+ + RGB composite)
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/MUI/HD.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      no
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         CLASSIC (4)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           55 x 23
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    410175DD
+SELECTED:
+  present:        yes
+  size:           55 x 23
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    DB5AA744
+ORACLE:
+  available:      no
+  reason:         CLASSIC uses Workbench pens; not compared
+ORACLE RESULT: SKIPPED
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/MUI/drawer.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      no
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         CLASSIC (4)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           56 x 15
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    290E3C59
+SELECTED:
+  present:        yes
+  size:           56 x 15
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    EBB5F50E
+ORACLE:
+  available:      no
+  reason:         CLASSIC uses Workbench pens; not compared
+ORACLE RESULT: SKIPPED
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/MUI/Disk.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      no
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         CLASSIC (4)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           44 x 23
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    F0DF8A8E
+SELECTED:
+  present:        yes
+  size:           44 x 23
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    4A7DDE13
+ORACLE:
+  available:      no
+  reason:         CLASSIC uses Workbench pens; not compared
+ORACLE RESULT: SKIPPED
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/alpha/System.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      yes
+  glowicon:       yes
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         GLOWICON (2)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           64 x 64
+  palette:        228
+  palette_crc32:  5117D80A
+  transparent:    0
+  pixel_crc32:    287418F5
+SELECTED:
+  present:        yes
+  size:           64 x 64
+  palette:        247
+  palette_crc32:  DD4572FD
+  transparent:    0
+  pixel_crc32:    857212B3
+ORACLE:
+  available:               yes
+  size_match:              yes  (lib 64 x 64)
+  index_pixels_match:      yes
+  palette_match:           yes  (lib 228 colours)
+  trans_match:             yes  (lib 0)
+  rgb_composite_match:     yes
+  selected_match:          yes  (lib has_image2=yes)
+  selected_index_match:    yes
+  selected_palette_match:  yes
+  selected_rgb_match:      yes
+ORACLE RESULT: MATCH
+ORACLE RGB: MATCH
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/alpha/Games.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      yes
+  glowicon:       yes
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         GLOWICON (2)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           64 x 64
+  palette:        231
+  palette_crc32:  7BC7D302
+  transparent:    0
+  pixel_crc32:    FCE214E0
+SELECTED:
+  present:        yes
+  size:           64 x 64
+  palette:        241
+  palette_crc32:  E0C0CF12
+  transparent:    0
+  pixel_crc32:    981765C4
+ORACLE:
+  available:               yes
+  size_match:              yes  (lib 64 x 64)
+  index_pixels_match:      yes
+  palette_match:           yes  (lib 231 colours)
+  trans_match:             yes  (lib 0)
+  rgb_composite_match:     yes
+  selected_match:          yes  (lib has_image2=yes)
+  selected_index_match:    yes
+  selected_palette_match:  yes
+  selected_rgb_match:      yes
+ORACLE RESULT: MATCH
+ORACLE RGB: MATCH
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/Newicons/Apps.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       yes
+  coloricon:      no
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         NEWICONS (3)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           36 x 40
+  palette:        8
+  palette_crc32:  C7DCC148
+  transparent:    0
+  pixel_crc32:    AFFA4641
+SELECTED:
+  present:        yes
+  size:           36 x 40
+  palette:        9
+  palette_crc32:  858B4EE8
+  transparent:    0
+  pixel_crc32:    F914E881
+ORACLE:
+  available:               yes
+  size_match:              yes  (lib 36 x 40)
+  index_pixels_match:      no
+  palette_match:           yes  (lib 8 colours)
+  trans_match:             yes  (lib 0)
+  rgb_composite_match:     no
+  rgb_first_mismatch:   pixel 207 at 27,5
+  shared_index:        0
+  oracle_index:        6
+  shared_transparent:  yes
+  oracle_transparent:  no
+  selected_match:          no  (lib has_image2=yes)
+  selected_index_match:    no
+  selected_palette_match:  yes
+  selected_rgb_match:      no
+  selected_rgb_first_mismatch:   pixel 376 at 16,10
+  shared_index:        1
+  oracle_index:        3
+  shared_rgb:          136,136,136
+  oracle_rgb:          204,204,204
+ORACLE RESULT: MISMATCH
+ORACLE RGB: MISMATCH
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/Newicons/0016.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       yes
+  coloricon:      no
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         NEWICONS (3)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           42 x 42
+  palette:        32
+  palette_crc32:  DAD2D1EE
+  transparent:    0
+  pixel_crc32:    E88DAA8C
+SELECTED:
+  present:        yes
+  size:           42 x 42
+  palette:        32
+  palette_crc32:  DAD2D1EE
+  transparent:    0
+  pixel_crc32:    49ACFE9B
+ORACLE:
+  available:               yes
+  size_match:              yes  (lib 42 x 42)
+  index_pixels_match:      no
+  palette_match:           no  (lib 32 colours)
+  trans_match:             yes  (lib 0)
+  rgb_composite_match:     no
+  rgb_first_mismatch:   pixel 23 at 23,0
+  shared_index:        0
+  oracle_index:        30
+  shared_transparent:  yes
+  oracle_transparent:  no
+  selected_match:          no  (lib has_image2=yes)
+  selected_index_match:    no
+  selected_palette_match:  no
+  selected_rgb_match:      no
+  selected_rgb_first_mismatch:   pixel 15 at 15,0
+  shared_index:        0
+  oracle_index:        24
+  shared_transparent:  yes
+  oracle_transparent:  no
+ORACLE RESULT: MISMATCH
+ORACLE RGB: MISMATCH
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/ColorIcons/System_drawer.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      yes
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         COLORICON (1)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           62 x 28
+  palette:        64
+  palette_crc32:  20136ACA
+  transparent:    0
+  pixel_crc32:    25579895
+SELECTED:
+  present:        yes
+  size:           62 x 28
+  palette:        64
+  palette_crc32:  84810DE9
+  transparent:    0
+  pixel_crc32:    423D507A
+ORACLE:
+  available:               yes
+  size_match:              yes  (lib 62 x 28)
+  index_pixels_match:      yes
+  palette_match:           yes  (lib 64 colours)
+  trans_match:             yes  (lib 0)
+  rgb_composite_match:     yes
+  selected_match:          yes  (lib has_image2=yes)
+  selected_index_match:    yes
+  selected_palette_match:  yes
+  selected_rgb_match:      yes
+ORACLE RESULT: MATCH
+ORACLE RGB: MATCH
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/ColorIcons/screen2.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      yes
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         COLORICON (1)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           46 x 46
+  palette:        16
+  palette_crc32:  C45D6A09
+  transparent:    0
+  pixel_crc32:    B2B4A12F
+SELECTED:
+  present:        yes
+  size:           46 x 46
+  palette:        17
+  palette_crc32:  17221524
+  transparent:    0
+  pixel_crc32:    99675A1E
+ORACLE:
+  available:               yes
+  size_match:              yes  (lib 46 x 46)
+  index_pixels_match:      yes
+  palette_match:           yes  (lib 16 colours)
+  trans_match:             yes  (lib 0)
+  rgb_composite_match:     yes
+  selected_match:          yes  (lib has_image2=yes)
+  selected_index_match:    yes
+  selected_palette_match:  yes
+  selected_rgb_match:      yes
+ORACLE RESULT: MATCH
+ORACLE RGB: MATCH
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/ColorIcons/screen.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      yes
+  glowicon:       yes
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         GLOWICON (2)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           48 x 48
+  palette:        113
+  palette_crc32:  E1A0F555
+  transparent:    0
+  pixel_crc32:    F00B2BC7
+SELECTED:
+  present:        yes
+  size:           48 x 48
+  palette:        106
+  palette_crc32:  C7B5204E
+  transparent:    0
+  pixel_crc32:    1C2ACD11
+ORACLE:
+  available:               yes
+  size_match:              yes  (lib 48 x 48)
+  index_pixels_match:      yes
+  palette_match:           yes  (lib 113 colours)
+  trans_match:             yes  (lib 0)
+  rgb_composite_match:     yes
+  selected_match:          yes  (lib has_image2=yes)
+  selected_index_match:    yes
+  selected_palette_match:  yes
+  selected_rgb_match:      yes
+ORACLE RESULT: MATCH
+ORACLE RGB: MATCH
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/ColorIcons/disk.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      yes
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         COLORICON (1)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           31 x 33
+  palette:        11
+  palette_crc32:  F2CE1494
+  transparent:    0
+  pixel_crc32:    EE40252B
+SELECTED:
+  present:        no
+ORACLE:
+  available:               yes
+  size_match:              yes  (lib 31 x 33)
+  index_pixels_match:      yes
+  palette_match:           yes  (lib 11 colours)
+  trans_match:             yes  (lib 0)
+  rgb_composite_match:     yes
+  selected_match:          yes  (lib has_image2=no)
+  selected_index_match:    n/a
+  selected_palette_match:  n/a
+  selected_rgb_match:      n/a
+ORACLE RESULT: MATCH
+ORACLE RGB: MATCH
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/ColorIcons/AmigaMail.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      yes
+  glowicon:       yes
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         GLOWICON (2)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           48 x 48
+  palette:        221
+  palette_crc32:  FD57C987
+  transparent:    0
+  pixel_crc32:    5BD571BD
+SELECTED:
+  present:        yes
+  size:           48 x 48
+  palette:        157
+  palette_crc32:  36274A94
+  transparent:    0
+  pixel_crc32:    8233D3C3
+ORACLE:
+  available:               yes
+  size_match:              yes  (lib 48 x 48)
+  index_pixels_match:      yes
+  palette_match:           yes  (lib 221 colours)
+  trans_match:             yes  (lib 0)
+  rgb_composite_match:     yes
+  selected_match:          yes  (lib has_image2=yes)
+  selected_index_match:    yes
+  selected_palette_match:  yes
+  selected_rgb_match:      yes
+ORACLE RESULT: MATCH
+ORACLE RGB: MATCH
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/OS1.3/Prefs.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      no
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         CLASSIC (4)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           73 x 18
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    33C0E4A4
+SELECTED:
+  present:        yes
+  size:           73 x 18
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    853335BD
+ORACLE:
+  available:      no
+  reason:         CLASSIC uses Workbench pens; not compared
+ORACLE RESULT: SKIPPED
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/OS1.3/Disk.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      no
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       no
+DECODE:
+  result:         OK (0) ok
+  source:         CLASSIC (4)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           35 x 16
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    AFBA417B
+SELECTED:
+  present:        no
+ORACLE:
+  available:      no
+  reason:         CLASSIC uses Workbench pens; not compared
+ORACLE RESULT: SKIPPED
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/OS4/install.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      no
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       no
+DECODE:
+  result:         OK (0) ok
+  source:         CLASSIC (4)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           48 x 20
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    C4A4B284
+SELECTED:
+  present:        no
+ORACLE:
+  available:      no
+  reason:         CLASSIC uses Workbench pens; not compared
+ORACLE RESULT: SKIPPED
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/OS4/drawer.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      no
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         CLASSIC (4)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           48 x 14
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    02038445
+SELECTED:
+  present:        yes
+  size:           48 x 14
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    67E5A464
+ORACLE:
+  available:      no
+  reason:         CLASSIC uses Workbench pens; not compared
+ORACLE RESULT: SKIPPED
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/OS4/Aladdin4D.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      no
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         CLASSIC (4)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           64 x 65
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    D777DB19
+SELECTED:
+  present:        yes
+  size:           64 x 65
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    34195BEA
+ORACLE:
+  available:      no
+  reason:         CLASSIC uses Workbench pens; not compared
+ORACLE RESULT: SKIPPED
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/OS3/Orange.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      yes
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         COLORICON (1)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           46 x 46
+  palette:        13
+  palette_crc32:  FAF10618
+  transparent:    0
+  pixel_crc32:    A81CA4A5
+SELECTED:
+  present:        yes
+  size:           46 x 46
+  palette:        15
+  palette_crc32:  412A540B
+  transparent:    0
+  pixel_crc32:    7B94951A
+ORACLE:
+  available:               yes
+  size_match:              yes  (lib 46 x 46)
+  index_pixels_match:      yes
+  palette_match:           yes  (lib 13 colours)
+  trans_match:             yes  (lib 0)
+  rgb_composite_match:     yes
+  selected_match:          yes  (lib has_image2=yes)
+  selected_index_match:    yes
+  selected_palette_match:  yes
+  selected_rgb_match:      yes
+ORACLE RESULT: MATCH
+ORACLE RGB: MATCH
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/OS3/green.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      yes
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         COLORICON (1)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           46 x 46
+  palette:        14
+  palette_crc32:  68A9C558
+  transparent:    0
+  pixel_crc32:    43F3976F
+SELECTED:
+  present:        yes
+  size:           46 x 46
+  palette:        15
+  palette_crc32:  AF26F241
+  transparent:    0
+  pixel_crc32:    C5B412E7
+ORACLE:
+  available:               yes
+  size_match:              yes  (lib 46 x 46)
+  index_pixels_match:      yes
+  palette_match:           yes  (lib 14 colours)
+  trans_match:             yes  (lib 0)
+  rgb_composite_match:     yes
+  selected_match:          yes  (lib has_image2=yes)
+  selected_index_match:    yes
+  selected_palette_match:  yes
+  selected_rgb_match:      yes
+ORACLE RESULT: MATCH
+ORACLE RGB: MATCH
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/OS3/Disk.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      no
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       no
+DECODE:
+  result:         OK (0) ok
+  source:         CLASSIC (4)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           36 x 17
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    6140DE83
+SELECTED:
+  present:        no
+ORACLE:
+  available:      no
+  reason:         CLASSIC uses Workbench pens; not compared
+ORACLE RESULT: SKIPPED
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/OS3/Blue.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      yes
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         COLORICON (1)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           42 x 42
+  palette:        21
+  palette_crc32:  C97A2430
+  transparent:    0
+  pixel_crc32:    8E6B6E5F
+SELECTED:
+  present:        yes
+  size:           42 x 42
+  palette:        21
+  palette_crc32:  C97A2430
+  transparent:    0
+  pixel_crc32:    640F948C
+ORACLE:
+  available:               yes
+  size_match:              yes  (lib 42 x 42)
+  index_pixels_match:      yes
+  palette_match:           yes  (lib 21 colours)
+  trans_match:             yes  (lib 0)
+  rgb_composite_match:     yes
+  selected_match:          yes  (lib has_image2=yes)
+  selected_index_match:    yes
+  selected_palette_match:  yes
+  selected_rgb_match:      yes
+ORACLE RESULT: MATCH
+ORACLE RGB: MATCH
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/OS4.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      no
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         CLASSIC (4)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           57 x 21
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    4DEE3FEF
+SELECTED:
+  present:        yes
+  size:           57 x 21
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    3472F656
+ORACLE:
+  available:      no
+  reason:         CLASSIC uses Workbench pens; not compared
+ORACLE RESULT: SKIPPED
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/OS3.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      no
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         CLASSIC (4)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           57 x 21
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    4DEE3FEF
+SELECTED:
+  present:        yes
+  size:           57 x 21
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    3472F656
+ORACLE:
+  available:      no
+  reason:         CLASSIC uses Workbench pens; not compared
+ORACLE RESULT: SKIPPED
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/OS1.3.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      no
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         CLASSIC (4)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           57 x 21
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    4DEE3FEF
+SELECTED:
+  present:        yes
+  size:           57 x 21
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    3472F656
+ORACLE:
+  available:      no
+  reason:         CLASSIC uses Workbench pens; not compared
+ORACLE RESULT: SKIPPED
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/Newicons.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      no
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         CLASSIC (4)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           57 x 21
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    4DEE3FEF
+SELECTED:
+  present:        yes
+  size:           57 x 21
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    3472F656
+ORACLE:
+  available:      no
+  reason:         CLASSIC uses Workbench pens; not compared
+ORACLE RESULT: SKIPPED
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/MUI.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      no
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         CLASSIC (4)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           57 x 21
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    4DEE3FEF
+SELECTED:
+  present:        yes
+  size:           57 x 21
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    3472F656
+ORACLE:
+  available:      no
+  reason:         CLASSIC uses Workbench pens; not compared
+ORACLE RESULT: SKIPPED
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/ColorIcons.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      no
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         CLASSIC (4)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           57 x 21
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    4DEE3FEF
+SELECTED:
+  present:        yes
+  size:           57 x 21
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    3472F656
+ORACLE:
+  available:      no
+  reason:         CLASSIC uses Workbench pens; not compared
+ORACLE RESULT: SKIPPED
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/AQUARIUMBACKGROUND.HAM.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      no
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       no
+DECODE:
+  result:         OK (0) ok
+  source:         CLASSIC (4)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           64 x 40
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    61B3AC4B
+SELECTED:
+  present:        no
+ORACLE:
+  available:      no
+  reason:         CLASSIC uses Workbench pens; not compared
+ORACLE RESULT: SKIPPED
+STATUS: PASS
+
+------------------------------------------------------------
+FILE: TestsIcons/test-icons/alpha.info
+------------------------------------------------------------
+PROBE:
+  result:         OK
+  classic:        yes
+  newicons:       no
+  coloricon:      no
+  glowicon:       no
+  png:            no
+  argb:           no
+  unsupported:    no
+  normal:         yes
+  selected:       yes
+DECODE:
+  result:         OK (0) ok
+  source:         CLASSIC (4)
+  frameless:      no
+NORMAL:
+  present:        yes
+  size:           57 x 21
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    4DEE3FEF
+SELECTED:
+  present:        yes
+  size:           57 x 21
+  palette:        WORKBENCH_PENS
+  palette_crc32:  N/A
+  transparent:    none
+  pixel_crc32:    3472F656
+ORACLE:
+  available:      no
+  reason:         CLASSIC uses Workbench pens; not compared
+ORACLE RESULT: SKIPPED
+STATUS: PASS
+
+============================================================
+iTidy Shared Icon Decoder Validation Summary
+============================================================
+Files scanned:              29
+Decoded successfully:       29
+Expected unsupported:       0
+Failures:                   0
+
+Formats decoded:
+  Classic:                  17
+  NewIcons:                 2
+  ColorIcon:                6
+  GlowIcon:                 4
+
+Unsupported:
+  PNG/ARGB/other:           0
+
+Oracle (icon.library v44+):
+  Attempts:                 29
+  Matches:                  10
+  Mismatches:               2
+  Skipped:                  17
+  RGB composite matches:    10
+  RGB composite mismatches: 2
+  RGB composite skipped:    0
+  RGB invalid palette idx:  0
+
+RESULT: PASS
+============================================================

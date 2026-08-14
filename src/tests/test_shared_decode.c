@@ -339,7 +339,7 @@ static int ni_payload_len(NiEnc *e)
     return (int)strlen(ni_cur(e)) - (int)strlen(e->prefix);
 }
 
-static void ni_new_line(NiEnc *e)
+static void ni_new_line_raw(NiEnc *e)
 {
     if (e->nlines >= NI_MAX_LINES)
     {
@@ -362,7 +362,7 @@ static void ni_emit7(NiEnc *e, unsigned seven)
 
     plen = ni_payload_len(e);
     if (plen >= e->max_payload)
-        ni_new_line(e);
+        ni_new_line_raw(e);
 
     {
         char *cur = ni_cur(e);
@@ -394,9 +394,37 @@ static void ni_put_bit(NiEnc *e, unsigned bit)
     }
 }
 
+static int ni_bits_left_on_line(NiEnc *e)
+{
+    int plen = ni_payload_len(e);
+    int slots = e->max_payload - plen;
+
+    if (slots < 0)
+        slots = 0;
+    if (e->nbits > 0)
+    {
+        if (slots == 0)
+            return 7 - e->nbits;
+        return (7 - e->nbits) + (slots - 1) * 7;
+    }
+    return slots * 7;
+}
+
+static void ni_end_line(NiEnc *e)
+{
+    ni_flush_bits(e);
+    ni_new_line_raw(e);
+    e->acc = 0;
+    e->nbits = 0;
+}
+
 static void ni_put_bits(NiEnc *e, unsigned val, int nbits)
 {
     int i;
+
+    /* A sample must not straddle physical ToolType strings. */
+    if (nbits > ni_bits_left_on_line(e))
+        ni_end_line(e);
     for (i = nbits - 1; i >= 0; i--)
         ni_put_bit(e, (val >> i) & 1U);
 }
@@ -432,22 +460,45 @@ static void ni_emit_rle_zeros(NiEnc *e, int groups)
         groups = 47;
     plen = ni_payload_len(e);
     if (plen >= e->max_payload)
-        ni_new_line(e);
+        ni_new_line_raw(e);
     cur = ni_cur(e);
     n = (int)strlen(cur);
     cur[n] = (char)(0xD0 + groups);
     cur[n + 1] = '\0';
 }
 
+static void ni_raw_payload_bytes(NiEnc *e, const unsigned char *bytes, int n)
+{
+    int i;
+
+    ni_flush_bits(e);
+    e->acc = 0;
+    e->nbits = 0;
+    for (i = 0; i < n; i++)
+    {
+        char *cur;
+        int len;
+
+        if (ni_payload_len(e) >= e->max_payload)
+            ni_new_line_raw(e);
+        cur = ni_cur(e);
+        len = (int)strlen(cur);
+        cur[len] = (char)bytes[i];
+        cur[len + 1] = '\0';
+    }
+}
+
 static int colour_bpp(int ncolors)
 {
     int n = 1;
     int bpp = 0;
-    while (n < ncolors && bpp < 8)
+    while (n < ncolors && bpp < 9)
     {
         n <<= 1;
         bpp++;
     }
+    if (bpp < 1)
+        bpp = 1;
     return bpp;
 }
 
@@ -466,8 +517,10 @@ static void ni_encode_image(NiEnc *e, int trans, int w, int h,
         ni_put_bits(e, pal[i].g, 8);
         ni_put_bits(e, pal[i].b, 8);
     }
-    if (bpp == 0)
-        return;
+    /* Canonical framing: palette completes on a physical ToolType.
+     * Pixels begin on the next same-image string. Same-line
+     * palette-plus-pixels encodings are not canonical NewIcons. */
+    ni_end_line(e);
     for (i = 0; i < count; i++)
         ni_put_bits(e, pixels[i], bpp);
     ni_finish(e);
@@ -842,8 +895,9 @@ static void test_newicons_16col_and_boundary(void)
     for (i = 0; i < 64; i++)
         pix[i] = (UBYTE)(i & 15);
 
-    /* Short lines wrap 7-bit groups; sample bits must continue across
-     * ToolType boundaries (not a naive IM1= string concatenation). */
+    /* Palette is flushed onto its own IM1= string(s); pixel lines follow.
+     * Each physical ToolType is independently padded. Samples do not
+     * straddle IM1= wraps. */
     ni_start(&e, "IM1=", 18);
     ni_encode_image(&e, 1, 8, 8, pal, 16, pix);
     expect_true("ni16 multi-line", e.nlines > 1);
@@ -892,6 +946,8 @@ static void test_newicons_rle_zeros(void)
     ni_put_bits(&e, 255, 8);
     ni_put_bits(&e, 255, 8);
     ni_put_bits(&e, 255, 8);
+    /* Canonical: pixels start on the next physical IM1= ToolType. */
+    ni_end_line(&e);
     ni_put_bits(&e, 0, 1);
     ni_put_bits(&e, 1, 1);
     ni_finish(&e);
@@ -913,6 +969,476 @@ static void test_newicons_rle_zeros(void)
                 "tests/icons/newicons/4x2_rle_zeros.expected", &b, &dec);
     icon_decoded_free(&dec);
     buf_free(&b);
+}
+
+/* Microscopic ordered-RLE regression: encoded 6F D1 must not let RLE
+ * zeros overtake residual accumulator bits. Old zero_queued priority
+ * yielded sample[2]==0 instead of 4. */
+static void test_newicons_rle_order_micro(void)
+{
+    NiEnc e;
+    Buf b;
+    iTidy_RGB8 pal[8];
+    const char *tts[16];
+    int i;
+    iTidy_IconFile file;
+    iTidy_DecodedIcon dec;
+    unsigned char pix_bytes[2];
+    UBYTE expect[4];
+
+    for (i = 0; i < 8; i++)
+    {
+        pal[i].r = (UBYTE)(i * 8);
+        pal[i].g = (UBYTE)(i * 16);
+        pal[i].b = (UBYTE)(i * 24);
+    }
+
+    ni_start(&e, "IM1=", 123);
+    ni_put_header(&e, 0, 2, 2, 8);
+    for (i = 0; i < 8; i++)
+    {
+        ni_put_bits(&e, pal[i].r, 8);
+        ni_put_bits(&e, pal[i].g, 8);
+        ni_put_bits(&e, pal[i].b, 8);
+    }
+    ni_end_line(&e);
+    pix_bytes[0] = 0x6FU;
+    pix_bytes[1] = 0xD1U;
+    ni_raw_payload_bytes(&e, pix_bytes, 2);
+
+    tts[0] = "*** DON'T EDIT THE FOLLOWING LINES!! ***";
+    for (i = 0; i < e.nlines; i++)
+        tts[1 + i] = e.lines[i];
+    build_with_tooltypes(&b, tts, 1 + e.nlines, 1);
+
+    expect_err("rle-order parse", icon_file_parse(b.data, b.len, &file), ITIDY_ICON_OK);
+    expect_err("rle-order decode", icon_newicons_decode(&file, &dec), ITIDY_ICON_OK);
+    expect[0] = 4;
+    expect[1] = 7;
+    expect[2] = 4;
+    expect[3] = 0;
+    expect_eq_u("rle-order s0", dec.normal.pixels[0], 4);
+    expect_eq_u("rle-order s1", dec.normal.pixels[1], 7);
+    expect_eq_u("rle-order s2", dec.normal.pixels[2], 4);
+    expect_eq_u("rle-order s3", dec.normal.pixels[3], 0);
+    expect_mem("rle-order pixels", dec.normal.pixels, expect, 4);
+
+    icon_decoded_free(&dec);
+    buf_free(&b);
+}
+
+/* 8-bit samples of 6F D1 must begin with 0x9E, not 0x01 (zero-first). */
+static void test_newicons_rle_order_8bit(void)
+{
+    NiEnc e;
+    Buf b;
+    const char *tts[8];
+    int i;
+    iTidy_IconFile file;
+    iTidy_DecodedIcon dec;
+    unsigned char pal_bytes[4];
+    unsigned char pix_bytes[2];
+
+    /* 1x1, 1 colour, 8-bit palette samples then 1-bit pixel. */
+    ni_start(&e, "IM1=", 123);
+    ni_put_header(&e, 0, 1, 1, 1);
+    pal_bytes[0] = 0x6FU;
+    pal_bytes[1] = 0xD1U;
+    pal_bytes[2] = 0x20U;
+    pal_bytes[3] = 0x20U;
+    ni_raw_payload_bytes(&e, pal_bytes, 4);
+    ni_end_line(&e);
+    pix_bytes[0] = 0x20U;
+    pix_bytes[1] = 0x20U;
+    ni_raw_payload_bytes(&e, pix_bytes, 2);
+
+    tts[0] = "*** DON'T EDIT THE FOLLOWING LINES!! ***";
+    for (i = 0; i < e.nlines; i++)
+        tts[1 + i] = e.lines[i];
+    build_with_tooltypes(&b, tts, 1 + e.nlines, 1);
+
+    expect_err("rle-8bit parse", icon_file_parse(b.data, b.len, &file), ITIDY_ICON_OK);
+    expect_err("rle-8bit decode", icon_newicons_decode(&file, &dec), ITIDY_ICON_OK);
+    expect_eq_u("rle-8bit first pal", dec.normal.palette[0].r, 0x9EU);
+    expect_eq_u("rle-8bit bpp1 pix", dec.normal.pixels[0], 0);
+    expect_eq_u("rle-8bit pal count", dec.normal.palette_count, 1);
+
+    icon_decoded_free(&dec);
+    buf_free(&b);
+}
+
+/* Physical ToolType flush: trailing bit of line 1 must not join line 2. */
+static void test_newicons_physical_boundary(void)
+{
+    NiEnc e;
+    Buf b;
+    iTidy_RGB8 pal[8];
+    const char *tts[16];
+    int i;
+    iTidy_IconFile file;
+    iTidy_DecodedIcon dec;
+    unsigned char line1[1];
+    unsigned char line2[1];
+
+    for (i = 0; i < 8; i++)
+    {
+        pal[i].r = (UBYTE)i;
+        pal[i].g = (UBYTE)(i * 2);
+        pal[i].b = (UBYTE)(i * 3);
+    }
+
+    ni_start(&e, "IM1=", 123);
+    ni_put_header(&e, 0, 2, 2, 8);
+    for (i = 0; i < 8; i++)
+    {
+        ni_put_bits(&e, pal[i].r, 8);
+        ni_put_bits(&e, pal[i].g, 8);
+        ni_put_bits(&e, pal[i].b, 8);
+    }
+    ni_end_line(&e);
+    line1[0] = 0x6FU;
+    ni_raw_payload_bytes(&e, line1, 1);
+    ni_end_line(&e);
+    line2[0] = 0x20U;
+    ni_raw_payload_bytes(&e, line2, 1);
+
+    tts[0] = "*** DON'T EDIT THE FOLLOWING LINES!! ***";
+    for (i = 0; i < e.nlines; i++)
+        tts[1 + i] = e.lines[i];
+    build_with_tooltypes(&b, tts, 1 + e.nlines, 1);
+
+    expect_err("phys-bound parse", icon_file_parse(b.data, b.len, &file), ITIDY_ICON_OK);
+    expect_err("phys-bound decode", icon_newicons_decode(&file, &dec), ITIDY_ICON_OK);
+    expect_eq_u("phys-bound s0", dec.normal.pixels[0], 4);
+    expect_eq_u("phys-bound s1", dec.normal.pixels[1], 7);
+    expect_eq_u("phys-bound s2", dec.normal.pixels[2], 0);
+    expect_eq_u("phys-bound s3", dec.normal.pixels[3], 0);
+
+    icon_decoded_free(&dec);
+    buf_free(&b);
+}
+
+static void test_newicons_im2_independent_palette(void)
+{
+    NiEnc e1, e2;
+    Buf b;
+    iTidy_RGB8 pal1[8];
+    iTidy_RGB8 pal2[9];
+    UBYTE pix1[4];
+    UBYTE pix2[4];
+    const char *tts[32];
+    int i;
+    iTidy_IconFile file;
+    iTidy_DecodedIcon dec;
+
+    for (i = 0; i < 8; i++)
+    {
+        pal1[i].r = (UBYTE)(i * 10);
+        pal1[i].g = 0;
+        pal1[i].b = 0;
+    }
+    for (i = 0; i < 9; i++)
+    {
+        pal2[i].r = 0;
+        pal2[i].g = (UBYTE)(i * 20);
+        pal2[i].b = 255;
+    }
+    pix1[0] = 0; pix1[1] = 1; pix1[2] = 2; pix1[3] = 7;
+    pix2[0] = 8; pix2[1] = 0; pix2[2] = 4; pix2[3] = 8;
+
+    ni_start(&e1, "IM1=", 123);
+    ni_encode_image(&e1, 1, 2, 2, pal1, 8, pix1);
+    ni_start(&e2, "IM2=", 123);
+    ni_encode_image(&e2, 1, 2, 2, pal2, 9, pix2);
+
+    tts[0] = "*** DON'T EDIT THE FOLLOWING LINES!! ***";
+    for (i = 0; i < e1.nlines; i++)
+        tts[1 + i] = e1.lines[i];
+    for (i = 0; i < e2.nlines; i++)
+        tts[1 + e1.nlines + i] = e2.lines[i];
+
+    build_with_tooltypes(&b, tts, 1 + e1.nlines + e2.nlines, 1);
+    expect_err("im2-pal parse", icon_file_parse(b.data, b.len, &file), ITIDY_ICON_OK);
+    expect_err("im2-pal decode", icon_newicons_decode(&file, &dec), ITIDY_ICON_OK);
+    expect_true("im2-pal selected", dec.has_selected);
+    expect_eq_u("im2-pal n1", dec.normal.palette_count, 8);
+    expect_eq_u("im2-pal n2", dec.selected.palette_count, 9);
+    expect_mem("im2-pal pix1", dec.normal.pixels, pix1, 4);
+    expect_mem("im2-pal pix2", dec.selected.pixels, pix2, 4);
+    expect_eq_u("im2-pal pal2[8].g", dec.selected.palette[8].g, 160);
+
+    icon_decoded_free(&dec);
+    buf_free(&b);
+}
+
+static void test_newicons_one_colour_bpp1(void)
+{
+    NiEnc e;
+    Buf b;
+    iTidy_RGB8 pal[1];
+    UBYTE pix[4];
+    const char *tts[8];
+    int i;
+    iTidy_IconFile file;
+    iTidy_DecodedIcon dec;
+
+    pal[0].r = 10; pal[0].g = 20; pal[0].b = 30;
+    pix[0] = 0; pix[1] = 0; pix[2] = 0; pix[3] = 0;
+
+    ni_start(&e, "IM1=", 123);
+    ni_encode_image(&e, 0, 2, 2, pal, 1, pix);
+    tts[0] = "*** DON'T EDIT THE FOLLOWING LINES!! ***";
+    for (i = 0; i < e.nlines; i++)
+        tts[1 + i] = e.lines[i];
+    build_with_tooltypes(&b, tts, 1 + e.nlines, 1);
+
+    expect_err("bpp1 parse", icon_file_parse(b.data, b.len, &file), ITIDY_ICON_OK);
+    expect_err("bpp1 decode", icon_newicons_decode(&file, &dec), ITIDY_ICON_OK);
+    expect_eq_u("bpp1 pal", dec.normal.palette_count, 1);
+    expect_mem("bpp1 pixels", dec.normal.pixels, pix, 4);
+    expect_eq_u("bpp1 rgb r", dec.normal.palette[0].r, 10);
+
+    icon_decoded_free(&dec);
+    buf_free(&b);
+}
+
+static void test_newicons_256_and_257(void)
+{
+    NiEnc e;
+    Buf b;
+    iTidy_RGB8 pal[257];
+    UBYTE pix[1];
+    const char *tts[NI_MAX_LINES + 4];
+    int i;
+    iTidy_IconFile file;
+    iTidy_DecodedIcon dec;
+
+    for (i = 0; i < 257; i++)
+    {
+        pal[i].r = (UBYTE)i;
+        pal[i].g = (UBYTE)(255 - (i & 255));
+        pal[i].b = 128;
+    }
+    pix[0] = 0;
+
+    ni_start(&e, "IM1=", 123);
+    ni_encode_image(&e, 0, 1, 1, pal, 256, pix);
+    tts[0] = "*** DON'T EDIT THE FOLLOWING LINES!! ***";
+    for (i = 0; i < e.nlines; i++)
+        tts[1 + i] = e.lines[i];
+    build_with_tooltypes(&b, tts, 1 + e.nlines, 1);
+    expect_err("ni256 parse", icon_file_parse(b.data, b.len, &file), ITIDY_ICON_OK);
+    expect_err("ni256 decode", icon_newicons_decode(&file, &dec), ITIDY_ICON_OK);
+    expect_eq_u("ni256 pal", dec.normal.palette_count, 256);
+    expect_eq_u("ni256 pix", dec.normal.pixels[0], 0);
+    expect_eq_u("ni256 pal255.r", dec.normal.palette[255].r, 255);
+    icon_decoded_free(&dec);
+    buf_free(&b);
+
+    ni_start(&e, "IM1=", 123);
+    ni_encode_image(&e, 0, 1, 1, pal, 257, pix);
+    tts[0] = "*** DON'T EDIT THE FOLLOWING LINES!! ***";
+    for (i = 0; i < e.nlines; i++)
+        tts[1 + i] = e.lines[i];
+    build_with_tooltypes(&b, tts, 1 + e.nlines, 1);
+    expect_err("ni257 parse", icon_file_parse(b.data, b.len, &file), ITIDY_ICON_OK);
+    expect_err("ni257 decode", icon_newicons_decode(&file, &dec), ITIDY_ICON_OK);
+    expect_eq_u("ni257 pal", dec.normal.palette_count, 257);
+    expect_eq_u("ni257 pix", dec.normal.pixels[0], 0);
+    expect_eq_u("ni257 pal256.r", dec.normal.palette[256].r, 0);
+    icon_decoded_free(&dec);
+    buf_free(&b);
+}
+
+static void test_newicons_257_index256_unsupported(void)
+{
+    NiEnc e;
+    Buf b;
+    iTidy_RGB8 pal[257];
+    UBYTE pix[1];
+    const char *tts[NI_MAX_LINES + 4];
+    int i;
+    iTidy_IconFile file;
+    iTidy_DecodedIcon dec;
+
+    for (i = 0; i < 257; i++)
+    {
+        pal[i].r = 1;
+        pal[i].g = 2;
+        pal[i].b = 3;
+    }
+    pix[0] = 0;
+
+    ni_start(&e, "IM1=", 123);
+    ni_put_header(&e, 0, 1, 1, 257);
+    for (i = 0; i < 257; i++)
+    {
+        ni_put_bits(&e, pal[i].r, 8);
+        ni_put_bits(&e, pal[i].g, 8);
+        ni_put_bits(&e, pal[i].b, 8);
+    }
+    ni_end_line(&e);
+    /* 9-bit sample 256 = 100000000 */
+    ni_put_bits(&e, 256, 9);
+    ni_finish(&e);
+
+    tts[0] = "*** DON'T EDIT THE FOLLOWING LINES!! ***";
+    for (i = 0; i < e.nlines; i++)
+        tts[1 + i] = e.lines[i];
+    build_with_tooltypes(&b, tts, 1 + e.nlines, 1);
+    expect_err("ni257-big parse", icon_file_parse(b.data, b.len, &file), ITIDY_ICON_OK);
+    expect_err("ni257-big decode", icon_newicons_decode(&file, &dec),
+               ITIDY_ICON_ERR_UNSUPPORTED);
+    buf_free(&b);
+    (void)pix;
+}
+
+static void test_newicons_marker_and_truncated(void)
+{
+    NiEnc e;
+    Buf b;
+    iTidy_RGB8 pal[2];
+    UBYTE pix[4];
+    const char *tts[16];
+    int i;
+    iTidy_IconFile file;
+    iTidy_DecodedIcon dec;
+    const char *trunc_pix[] = {
+        "*** DON'T EDIT THE FOLLOWING LINES!! ***",
+        "IM1=C##!)"
+    };
+
+    pal[0].r = 1; pal[0].g = 2; pal[0].b = 3;
+    pal[1].r = 4; pal[1].g = 5; pal[1].b = 6;
+    pix[0] = 0; pix[1] = 1; pix[2] = 1; pix[3] = 0;
+
+    /* Unrelated IM1= before the marker must not be decoded. */
+    ni_start(&e, "IM1=", 123);
+    ni_encode_image(&e, 0, 2, 2, pal, 2, pix);
+    tts[0] = "IM1=not-a-real-newicon";
+    tts[1] = "SCREEN=Workbench";
+    tts[2] = "*** DON'T EDIT THE FOLLOWING LINES!! ***";
+    for (i = 0; i < e.nlines; i++)
+        tts[3 + i] = e.lines[i];
+    build_with_tooltypes(&b, tts, 3 + e.nlines, 1);
+    expect_err("marker-ignore parse", icon_file_parse(b.data, b.len, &file),
+               ITIDY_ICON_OK);
+    expect_err("marker-ignore decode", icon_newicons_decode(&file, &dec),
+               ITIDY_ICON_OK);
+    expect_mem("marker-ignore pixels", dec.normal.pixels, pix, 4);
+    icon_decoded_free(&dec);
+    buf_free(&b);
+
+    /* Palette header only: no pixel ToolType after palette completion. */
+    build_with_tooltypes(&b, trunc_pix, 2, 1);
+    expect_err("trunc-cont parse", icon_file_parse(b.data, b.len, &file),
+               ITIDY_ICON_OK);
+    expect_err("trunc-cont decode", icon_newicons_decode(&file, &dec),
+               ITIDY_ICON_ERR_TRUNCATED);
+    buf_free(&b);
+}
+
+/* Real NewIcons files from TestsIcons/test-icons.
+ * Known-bad pixel CRCs from the pre-RLE-order decoder must not be
+ * promoted to expected results. New pixel CRCs are printed; they are
+ * locked after Amiga RGB COMPARE confirms icon.library. */
+static void test_newicons_real_files(void)
+{
+    static const char *apps = "TestsIcons/test-icons/Newicons/Apps.info";
+    static const char *ni16 = "TestsIcons/test-icons/Newicons/0016.info";
+    ULONG sz;
+    UBYTE *buf;
+    iTidy_DecodedIcon dec;
+
+    buf = load_file(apps, &sz);
+    if (buf == NULL)
+    {
+        fail("real Apps.info", "missing TestsIcons/test-icons/Newicons/Apps.info");
+    }
+    else
+    {
+        expect_err("real Apps decode",
+                   icon_decode_buffer(buf, sz, ITIDY_ICON_REQ_BEST, &dec),
+                   ITIDY_ICON_OK);
+        expect_eq_u("real Apps src", (unsigned)dec.source_format,
+                    ITIDY_ICON_SRC_NEWICONS);
+        expect_eq_u("real Apps w", dec.normal.width, 36);
+        expect_eq_u("real Apps h", dec.normal.height, 40);
+        expect_eq_u("real Apps pal", dec.normal.palette_count, 8);
+        expect_eq_i("real Apps trans", (int)dec.normal.transparent_index, 0);
+        if (dec.normal.palette != NULL)
+        {
+            expect_eq_u("real Apps pal0 r", dec.normal.palette[0].r, 165);
+            expect_eq_u("real Apps pal0 g", dec.normal.palette[0].g, 168);
+            expect_eq_u("real Apps pal0 b", dec.normal.palette[0].b, 168);
+            expect_eq_u("real Apps pal7 r", dec.normal.palette[7].r, 255);
+        }
+        expect_true("real Apps selected", dec.has_selected);
+        expect_eq_u("real Apps sel w", dec.selected.width, 36);
+        expect_eq_u("real Apps sel h", dec.selected.height, 40);
+        expect_eq_u("real Apps sel pal", dec.selected.palette_count, 9);
+        expect_eq_i("real Apps sel trans", (int)dec.selected.transparent_index, 0);
+        {
+            ULONG n = (ULONG)dec.normal.width * (ULONG)dec.normal.height;
+            ULONG sn = (ULONG)dec.selected.width * (ULONG)dec.selected.height;
+            unsigned pix_crc = (unsigned)crc32_buf(dec.normal.pixels, n);
+            unsigned pal_crc = (unsigned)crc32_buf((const UBYTE *)dec.normal.palette, 8UL * 3UL);
+            unsigned sel_crc = (unsigned)crc32_buf(dec.selected.pixels, sn);
+            printf("Apps.info host crc pix=%08X pal=%08X sel=%08X\n",
+                   pix_crc, pal_crc, sel_crc);
+            /* Known-bad fingerprints of the zero-priority / carry-bits decoder. */
+            expect_true("real Apps pix crc not known-bad",
+                        pix_crc != 0xAFFA4641U);
+            expect_eq_u("real Apps pal crc", pal_crc, 0xC7DCC148U);
+            expect_true("real Apps sel pix crc not known-bad",
+                        sel_crc != 0xF914E881U);
+        }
+        icon_decoded_free(&dec);
+        free(buf);
+    }
+
+    buf = load_file(ni16, &sz);
+    if (buf == NULL)
+    {
+        fail("real 0016.info", "missing TestsIcons/test-icons/Newicons/0016.info");
+    }
+    else
+    {
+        expect_err("real 0016 decode",
+                   icon_decode_buffer(buf, sz, ITIDY_ICON_REQ_BEST, &dec),
+                   ITIDY_ICON_OK);
+        expect_eq_u("real 0016 src", (unsigned)dec.source_format,
+                    ITIDY_ICON_SRC_NEWICONS);
+        expect_eq_u("real 0016 w", dec.normal.width, 42);
+        expect_eq_u("real 0016 h", dec.normal.height, 42);
+        expect_eq_u("real 0016 pal", dec.normal.palette_count, 32);
+        expect_eq_i("real 0016 trans", (int)dec.normal.transparent_index, 0);
+        if (dec.normal.palette != NULL)
+        {
+            expect_eq_u("real 0016 pal0 r", dec.normal.palette[0].r, 149);
+            expect_eq_u("real 0016 pal1 r", dec.normal.palette[1].r, 0);
+            expect_eq_u("real 0016 pal2 r", dec.normal.palette[2].r, 255);
+        }
+        expect_true("real 0016 selected", dec.has_selected);
+        expect_eq_u("real 0016 sel w", dec.selected.width, 42);
+        expect_eq_u("real 0016 sel pal", dec.selected.palette_count, 32);
+        {
+            ULONG n = (ULONG)dec.normal.width * (ULONG)dec.normal.height;
+            ULONG sn = (ULONG)dec.selected.width * (ULONG)dec.selected.height;
+            unsigned pix_crc = (unsigned)crc32_buf(dec.normal.pixels, n);
+            unsigned pal_crc = (unsigned)crc32_buf((const UBYTE *)dec.normal.palette, 32UL * 3UL);
+            unsigned sel_crc = (unsigned)crc32_buf(dec.selected.pixels, sn);
+            printf("0016.info host crc pix=%08X pal=%08X sel=%08X\n",
+                   pix_crc, pal_crc, sel_crc);
+            expect_true("real 0016 pix crc not known-bad",
+                        pix_crc != 0xE88DAA8CU);
+            expect_true("real 0016 sel pix crc not known-bad",
+                        sel_crc != 0x49ACFE9BU);
+            (void)pal_crc;
+        }
+        icon_decoded_free(&dec);
+        free(buf);
+    }
 }
 
 static void test_newicons_malformed(void)
@@ -1178,6 +1704,15 @@ int main(void)
     test_newicons_selected_8col();
     test_newicons_16col_and_boundary();
     test_newicons_rle_zeros();
+    test_newicons_rle_order_micro();
+    test_newicons_rle_order_8bit();
+    test_newicons_physical_boundary();
+    test_newicons_im2_independent_palette();
+    test_newicons_one_colour_bpp1();
+    test_newicons_256_and_257();
+    test_newicons_257_index256_unsupported();
+    test_newicons_marker_and_truncated();
+    test_newicons_real_files();
     test_newicons_malformed();
     test_unified_preference();
     test_unified_newicons_over_classic();
