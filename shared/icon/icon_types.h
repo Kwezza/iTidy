@@ -12,6 +12,7 @@
 #define ITIDY_ICON_TYPES_H
 
 #include <exec/types.h>
+#include <image/image_types.h>
 
 /*========================================================================*/
 /* DiskObject constants (on-disk, big-endian)                             */
@@ -58,7 +59,42 @@ typedef int iTidy_IconError;
 #define ITIDY_ICON_ERR_BAD_DIMENSION  7
 #define ITIDY_ICON_ERR_BAD_COUNT      8
 #define ITIDY_ICON_ERR_BAD_TEXT       9
+#define ITIDY_ICON_ERR_UNSUPPORTED    10
+#define ITIDY_ICON_ERR_NO_DATA        11
+#define ITIDY_ICON_ERR_ALLOC          12
+
+/*========================================================================*/
+/* Decoded image (neutral, frontend-independent)                          */
+/*========================================================================*/
+
+#define ITIDY_ICON_SRC_UNKNOWN     0UL
+#define ITIDY_ICON_SRC_COLORICON   1UL
+#define ITIDY_ICON_SRC_GLOWICON    2UL
+
+typedef struct iTidy_IndexedImage
+{
+    UWORD width;
+    UWORD height;
+    UBYTE *pixels;              /* chunky palette indexes, width*height */
+    iTidy_RGB8 *palette;
+    UWORD palette_count;
+    LONG transparent_index;     /* -1 = none */
+} iTidy_IndexedImage;
+
+typedef struct iTidy_DecodedIcon
+{
+    ULONG source_format;        /* ITIDY_ICON_SRC_* */
+    BOOL frameless;
+    iTidy_IndexedImage normal;
+    iTidy_IndexedImage selected;
+    BOOL has_selected;
+} iTidy_DecodedIcon;
 
 const char *icon_error_string(iTidy_IconError err);
+
+/**
+ * Free decoder-owned pixel and palette buffers. Safe on a zeroed struct.
+ */
+void icon_decoded_free(iTidy_DecodedIcon *decoded);
 
 #endif /* ITIDY_ICON_TYPES_H */

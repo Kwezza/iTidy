@@ -634,7 +634,7 @@ Agent hand-off:
 ## Status
 
 ```text
-Status: NOT STARTED
+Status: COMPLETE
 ```
 
 ## Goal
@@ -741,7 +741,87 @@ Do not implement NewIcons in the same batch.
 
 ## Agent hand-off
 
-_Not yet completed._
+```text
+Agent hand-off:
+- Date: 2026-08-14
+- Branch: dev-itidy2
+- Starting revision/commit if known: 8850e0af0db519b376ceeba81bc27c2b43d86aa5
+- Summary: Added a direct ColorIcon/GlowIcon decoder under shared/icon/
+  that walks IFF FORM ICON using the Batch 2 envelope offsets. One decoder
+  covers both formats: FACE + IMAG, raw and PackBits-bitstream RLE for
+  image and palette, transparency, selected image, selected palette
+  inheritance, unknown-chunk skip, odd-size padding, and FACE-after-IMAG
+  reorder. Output is iTidy_DecodedIcon (chunky indexes + RGB8 palette).
+  No resize/dither/pen mapping/GUI. NewIcons not implemented. iTidy2 GUI
+  still uses icon.library; shared decoder is compiled in but not wired.
+- Files added:
+    shared/icon/icon_coloricon.h
+    shared/icon/icon_coloricon.c
+    src/tests/test_shared_coloricon.c
+- Files modified:
+    shared/icon/icon_types.h
+    shared/icon/icon_file.c
+    Makefile
+    docs/current refactor/iTidy_Shared_Core_Refactor_Staged_Agent_Prompt.md
+- Files removed/moved:
+    None
+- Build performed:
+    make (VBCC +aos68k -cpu=68000) -> Bin/Amiga/iTidy2/iTidy2
+    make test-coloricon (GCC host)
+    make test-icon (GCC host, Batch 2 regression)
+    make test-image (GCC host, Batch 1 regression)
+- Tests performed:
+    Host suite src/tests/test_shared_coloricon.c covering:
+      raw image + raw palette + transparency;
+      RLE image (including 0x80 NOP);
+      RLE palette;
+      both compressed (2-bit image samples);
+      selected image with inherited palette + frameless FACE flag;
+      unknown odd-sized chunk and FACE after IMAG;
+      256-colour FACE heuristic => GLOWICON;
+      no extension, FORM ARGB, FACE without IMAG, truncated IMAG,
+      RLE dest overrun, NULL out;
+      input buffer not modified.
+    icon.library v44+ oracle comparison was not run (no Amiga/WinUAE
+    ColorIcon samples in-tree; decoder not wired to iTidy2 extract path).
+- Test result:
+    make test-coloricon: all shared ColorIcon tests passed.
+    make test-icon: all shared icon tests passed.
+    make test-image: all shared image tests passed.
+    make (Amiga): success. icon_coloricon.c compiled and linked with no
+    VBCC warnings.
+- Behavioural/regression result:
+    iTidy2 GUI/icon.library path unchanged. Shared decoder is additive.
+    Batch 1/2 host tests still pass.
+- Unresolved issues:
+    No on-target comparison against IconControlA() pixel/palette dumps.
+    Glow vs ColorIcon remains the FACE max-palette>=255 heuristic.
+    Permanent tests/icons/ corpus is deferred to Batch 4.
+- Important decisions:
+    1. Neutral iTidy_IndexedImage / iTidy_DecodedIcon live in
+       icon_types.h (reused by later classic/NewIcons decoders).
+       RGB is shared iTidy_RGB8 from image_types.h.
+    2. Allocation uses whd_malloc/whd_free via platform.h, matching
+       shared/image. Callers must icon_decoded_free().
+    3. RLE is a continuous MSB-first bitstream: 8-bit PackBits control
+       then im_Depth-bit (image) or 8-bit (palette) samples, per
+       IconFormats.txt. Uncompressed image is one byte per pixel.
+    4. First IMAG must carry a palette; later IMAG without bit1 inherits
+       by copying the first palette (independent ownership).
+    5. FACE is located in a first pass so IMAG may precede FACE.
+       Unknown chunks and ARGB are skipped; ARGB-only FORM ICON returns
+       UNSUPPORTED rather than corrupt.
+    6. Decoder is not wired into iTidy2 GUI. Oracle validation against
+       icon.library is left for a later Amiga run.
+    7. New error codes: UNSUPPORTED=10, NO_DATA=11, ALLOC=12.
+- Notes for next agent:
+    Start Batch 4 (NewIcons + classic planar decoder + unified decode
+    API). Do not change the ColorIcon decoder unless a regression is
+    found. Host tests: make test-coloricon, make test-icon, make
+    test-image. Include path -Ishared is already in CFLAGS. Respect
+    NewIcons ToolType bitstream segmentation; do not concatenate IM1=
+    strings blindly. Do not implement classic conversion UI yet.
+```
 
 ---
 
@@ -1023,21 +1103,22 @@ This section must always be updated by the agent that finishes a batch.
 ## Last completed batch
 
 ```text
-Batch 2 — Shared Raw .info Reader and Icon Probe
+Batch 3 — Direct ColorIcon / GlowIcon Decoder
 ```
 
 ## Next batch to execute
 
 ```text
-Batch 3 — Direct ColorIcon / GlowIcon Decoder
+Batch 4 — NewIcons + Classic Decoder + Unified API
 ```
 
 ## Known blockers
 
 ```text
-None. Batch 2 Amiga build and host icon/image tests succeeded.
-GlowIcon detection is a 256-colour FACE heuristic pending real samples
-in Batch 3. Shared probe is not yet wired into iTidy2 GUI detection.
+None. Batch 3 Amiga build and host image/icon/coloricon tests succeeded.
+icon.library v44+ oracle comparison was not run. GlowIcon vs ColorIcon
+remains a FACE max-palette heuristic. Shared decoder is not wired into
+the iTidy2 GUI.
 ```
 
 ## Global hand-off notes
