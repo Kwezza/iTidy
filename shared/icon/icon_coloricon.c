@@ -1,17 +1,20 @@
 /*
  * icon_coloricon.c - Direct decoder for OS3.5 ColorIcon / GlowIcon
  *
- * Layout from support files/IconFormats.txt:
+ * Layout (IconFormats.txt + deep-research-report-colorIcons.md):
  *   FORM / size / ICON
- *   FACE: width-1, height-1, flags, aspect, max palette entries-1
+ *   FACE: width-1, height-1, flags, aspect, max palette RGB bytes-1
  *   IMAG: header (10 bytes) then image bytes then optional RGB palette
  *   Odd chunk sizes are padded to even.
  *   Unknown chunks are skipped.
  *
- * Image format 0: one byte per pixel.
- * Image format 1: IFF PackBits over a bitstream of im_Depth-bit entries
- *   (control is 8 bits; 0x80 is a no-op). Palette RLE uses 8-bit entries.
+ * Image format 0: one byte per pixel (even when Depth < 8).
+ * Image format 1: ColorIcon variable-bit RLE — continuous bitstream of
+ *   8-bit controls and Depth-bit samples (0x80 is a no-op; do not
+ *   byte-align between fields). Palette RLE uses 8-bit entries.
  * Second IMAG may omit its palette and inherit the first.
+ * GlowIcon is the same IMAG encoding; FACE max-palette-bytes is only a
+ * labelling heuristic (see source_format).
  */
 
 #include "icon_coloricon.h"
@@ -221,9 +224,14 @@ static iTidy_IconError parse_imag_header(const UBYTE *data, ULONG size,
 
     hdr->num_colors = (UWORD)num_m1 + 1U;
     hdr->image_bytes = (ULONG)image_m1 + 1UL;
-    hdr->pal_bytes = (ULONG)pal_m1 + 1UL;
     hdr->has_transparent = (hdr->flags & IMAG_FLAG_TRANSPARENT) ? TRUE : FALSE;
     hdr->has_palette = (hdr->flags & IMAG_FLAG_PALETTE) ? TRUE : FALSE;
+    /* Palette size field is meaningful only when HASPALETTE is set.
+     * A stored size of 0 must not become a 1-byte palette consume. */
+    if (hdr->has_palette)
+        hdr->pal_bytes = (ULONG)pal_m1 + 1UL;
+    else
+        hdr->pal_bytes = 0;
 
     if (hdr->depth == 0 || hdr->depth > ITIDY_ICON_MAX_DEPTH)
         return ITIDY_ICON_ERR_BAD_DIMENSION;
@@ -236,6 +244,13 @@ static iTidy_IconError parse_imag_header(const UBYTE *data, ULONG size,
     }
     if (hdr->num_colors == 0)
         return ITIDY_ICON_ERR_BAD_COUNT;
+    /* Actual colour count is NumColors+1, not 2^Depth. When a palette is
+     * present it must still fit in Depth bits. */
+    if (hdr->has_palette &&
+        (ULONG)hdr->num_colors > (1UL << hdr->depth))
+    {
+        return ITIDY_ICON_ERR_BAD_COUNT;
+    }
 
     {
         ULONG need = IMAG_HEADER_SIZE + hdr->image_bytes;
@@ -260,7 +275,8 @@ static iTidy_IconError decode_pixels(const UBYTE *src, ULONG src_len,
 {
     if (format == FMT_UNCOMPRESSED)
     {
-        if (src_len < dest_count)
+        /* Raw ColorIcon imagery is one byte per pixel, not Depth-packed. */
+        if (src_len != dest_count)
             return ITIDY_ICON_ERR_TRUNCATED;
         memcpy(dest, src, (size_t)dest_count);
         return ITIDY_ICON_OK;
@@ -289,7 +305,8 @@ static iTidy_IconError decode_palette(const UBYTE *src, ULONG src_len,
 
     if (format == FMT_UNCOMPRESSED)
     {
-        if (src_len < rgb_count)
+        /* Palette RGB byte count is num_colors * 3, not (1 << depth) * 3. */
+        if (src_len != rgb_count)
         {
             whd_free(rgb);
             return ITIDY_ICON_ERR_TRUNCATED;
@@ -323,6 +340,34 @@ static iTidy_IconError decode_palette(const UBYTE *src, ULONG src_len,
     }
     img->palette_count = num_colors;
     whd_free(rgb);
+    return ITIDY_ICON_OK;
+}
+
+static iTidy_IconError validate_indices(const iTidy_IndexedImage *img)
+{
+    ULONG i;
+    ULONG pixel_count;
+    UWORD lim;
+
+    if (img == NULL || img->pixels == NULL || img->palette == NULL ||
+        img->palette_count == 0)
+    {
+        return ITIDY_ICON_ERR_NO_DATA;
+    }
+    if (!mul_ok((ULONG)img->width, (ULONG)img->height, &pixel_count))
+        return ITIDY_ICON_ERR_OVERFLOW;
+
+    lim = img->palette_count;
+    for (i = 0; i < pixel_count; i++)
+    {
+        if ((UWORD)img->pixels[i] >= lim)
+            return ITIDY_ICON_ERR_BAD_COUNT;
+    }
+    if (img->transparent_index >= 0 &&
+        (ULONG)img->transparent_index >= (ULONG)lim)
+    {
+        return ITIDY_ICON_ERR_BAD_COUNT;
+    }
     return ITIDY_ICON_OK;
 }
 
@@ -397,6 +442,13 @@ static iTidy_IconError decode_imag(const UBYTE *data, ULONG size,
     else
         out->transparent_index = -1;
 
+    err = validate_indices(out);
+    if (err != ITIDY_ICON_OK)
+    {
+        image_clear(out);
+        return err;
+    }
+
     return ITIDY_ICON_OK;
 }
 
@@ -437,7 +489,7 @@ static iTidy_IconError decode_form_icon(const UBYTE *data, ULONG size,
     ULONG next_pos;
     UWORD width = 0;
     UWORD height = 0;
-    UWORD max_pal_m1 = 0;
+    UWORD max_pal_bytes_m1 = 0;
     BOOL saw_face = FALSE;
     BOOL saw_argb = FALSE;
     int imag_count = 0;
@@ -469,7 +521,7 @@ static iTidy_IconError decode_form_icon(const UBYTE *data, ULONG size,
             if (!icon_file_read_u8(data, size, payload, &w_m1) ||
                 !icon_file_read_u8(data, size, payload + 1UL, &h_m1) ||
                 !icon_file_read_u8(data, size, payload + 2UL, &flags) ||
-                !icon_file_read_u16(data, size, payload + 4UL, &max_pal_m1))
+                !icon_file_read_u16(data, size, payload + 4UL, &max_pal_bytes_m1))
             {
                 return ITIDY_ICON_ERR_TRUNCATED;
             }
@@ -529,7 +581,8 @@ static iTidy_IconError decode_form_icon(const UBYTE *data, ULONG size,
         return ITIDY_ICON_ERR_NO_DATA;
     }
 
-    if (max_pal_m1 >= 255U)
+    /* Labelling only: same IMAG decoder. FACE stores max RGB bytes - 1. */
+    if (max_pal_bytes_m1 >= 255U)
         out->source_format = ITIDY_ICON_SRC_GLOWICON;
     else
         out->source_format = ITIDY_ICON_SRC_COLORICON;

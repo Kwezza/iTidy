@@ -141,11 +141,12 @@ static void walk_iff_icon(const UBYTE *data, ULONG size,
         pos = payload + padded;
     }
 
-    if (saw_face || imag_count > 0)
+    /* OS3.5 ColorIcon = FACE + at least one IMAG. FACE/ARGB alone is not. */
+    if (saw_face && imag_count > 0)
         out->has_coloricon = TRUE;
 
-    /* FACE MaxPal field is documented as max palette entries minus 1
-     * (despite the "Bytes" name). 256-colour GlowIcons store 255. */
+    /* FACE word is max palette RGB byte count minus 1 (AROS MaxPaletteBytes).
+     * >= 255 (~85+ colours) is the historical GlowIcon labelling heuristic. */
     if (out->has_coloricon && max_pal >= 255U)
         out->has_glowicon = TRUE;
 
@@ -207,7 +208,6 @@ static void scan_extension(const iTidy_IconFile *file, iTidy_IconProbe *out)
 
     if (fourcc_eq(data + type_off, "ICON"))
     {
-        out->has_coloricon = TRUE;
         walk_iff_icon(data, size, offset, form_size, out);
         return;
     }
