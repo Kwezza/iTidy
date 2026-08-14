@@ -1,0 +1,128 @@
+################################################################################
+# iTidy Classic — shared image/icon regression tests
+#
+# Separate from the production Makefile. Do not add these targets to `make`.
+#
+# Usage:
+#   make -f Makefile.tests test-image
+#   make -f Makefile.tests test-icon
+#   make -f Makefile.tests test-coloricon
+#   make -f Makefile.tests test-decode
+#   make -f Makefile.tests test-icon-amiga
+#   make -f Makefile.tests test-all
+#   make -f Makefile.tests clean-tests
+################################################################################
+
+# Host GCC regression tests (no Amiga SDK)
+HOST_CC = gcc
+HOST_CFLAGS = -std=c99 -Wall -Wextra -Isrc/tests/host_stubs -Isrc/tests/stubs -Ishared
+
+TEST_IMAGE_BIN = src/tests/test_shared_image.exe
+TEST_ICON_BIN = src/tests/test_shared_icon.exe
+TEST_COLORICON_BIN = src/tests/test_shared_coloricon.exe
+TEST_DECODE_BIN = src/tests/test_shared_decode.exe
+
+SHARED_IMAGE_SRCS = \
+	shared/image/image_log.c \
+	shared/image/image_scale.c \
+	shared/image/image_palette.c \
+	shared/image/image_dither.c
+
+SHARED_ICON_SRCS = \
+	shared/icon/icon_file.c \
+	shared/icon/icon_probe.c \
+	shared/icon/icon_coloricon.c \
+	shared/icon/icon_classic.c \
+	shared/icon/icon_newicons.c \
+	shared/icon/icon_decode.c
+
+# Amiga CLI validator: 68000, no FPU, classic AmigaOS, no ReAction
+CC = vc
+TEST_AMIGA_CFLAGS = +aos68k -c99 -cpu=68000 -O2 -size -Isrc/tests/stubs -Ishared -DPLATFORM_AMIGA=1 -D__AMIGA__
+TEST_AMIGA_LDFLAGS = +aos68k -cpu=68000 -O2 -size -final -lamiga -lauto
+TEST_OUT_DIR = build/tests
+TEST_BIN_DIR = Bin/Amiga/Tests
+TEST_ICON_AMIGA_BIN = $(TEST_BIN_DIR)/iTidyIconTest
+TEST_ICON_AMIGA_OBJ = $(TEST_OUT_DIR)/amiga/icon_decode_test.o
+SHARED_ICON_OBJS = $(SHARED_ICON_SRCS:shared/%.c=$(TEST_OUT_DIR)/shared/%.o)
+
+.PHONY: test-image test-icon test-coloricon test-decode test-icon-amiga test-all clean-tests help directories
+
+help:
+	@echo iTidy Classic shared-core test build
+	@echo ====================================
+	@echo.
+	@echo Targets:
+	@echo   make -f Makefile.tests test-image       - Host GCC shared image kernels
+	@echo   make -f Makefile.tests test-icon        - Host GCC .info reader/probe
+	@echo   make -f Makefile.tests test-coloricon   - Host GCC ColorIcon/GlowIcon
+	@echo   make -f Makefile.tests test-decode      - Host GCC NewIcons/classic/unified
+	@echo   make -f Makefile.tests test-icon-amiga  - Amiga CLI validator (68000)
+	@echo   make -f Makefile.tests test-all         - All host regression suites
+	@echo   make -f Makefile.tests clean-tests      - Remove test outputs only
+	@echo.
+	@echo Amiga validator: $(TEST_ICON_AMIGA_BIN)
+
+test-all: test-image test-icon test-coloricon test-decode
+
+test-image:
+	@echo Building host shared-image tests...
+	$(HOST_CC) $(HOST_CFLAGS) -o $(TEST_IMAGE_BIN) \
+		src/tests/test_shared_image.c \
+		$(SHARED_IMAGE_SRCS)
+	@echo Running $(TEST_IMAGE_BIN)
+	$(TEST_IMAGE_BIN)
+
+test-icon:
+	@echo Building host shared-icon tests...
+	$(HOST_CC) $(HOST_CFLAGS) -o $(TEST_ICON_BIN) \
+		src/tests/test_shared_icon.c \
+		shared/icon/icon_file.c \
+		shared/icon/icon_probe.c
+	@echo Running $(TEST_ICON_BIN)
+	$(TEST_ICON_BIN)
+
+test-coloricon:
+	@echo Building host ColorIcon decoder tests...
+	$(HOST_CC) $(HOST_CFLAGS) -o $(TEST_COLORICON_BIN) \
+		src/tests/test_shared_coloricon.c \
+		shared/icon/icon_file.c \
+		shared/icon/icon_coloricon.c
+	@echo Running $(TEST_COLORICON_BIN)
+	$(TEST_COLORICON_BIN)
+
+test-decode:
+	@echo Building host unified icon decode tests...
+	$(HOST_CC) $(HOST_CFLAGS) -o $(TEST_DECODE_BIN) \
+		src/tests/test_shared_decode.c \
+		$(SHARED_ICON_SRCS)
+	@echo Running $(TEST_DECODE_BIN)
+	$(TEST_DECODE_BIN)
+
+directories:
+	@if not exist "build\tests" mkdir "build\tests"
+	@if not exist "build\tests\shared" mkdir "build\tests\shared"
+	@if not exist "build\tests\shared\icon" mkdir "build\tests\shared\icon"
+	@if not exist "build\tests\amiga" mkdir "build\tests\amiga"
+	@if not exist "Bin\Amiga" mkdir "Bin\Amiga"
+	@if not exist "Bin\Amiga\Tests" mkdir "Bin\Amiga\Tests"
+
+$(TEST_OUT_DIR)/shared/%.o: shared/%.c
+	@echo Compiling [$@] from $<
+	$(CC) $(TEST_AMIGA_CFLAGS) -c $< -o $@
+
+$(TEST_OUT_DIR)/amiga/icon_decode_test.o: src/tests/amiga/icon_decode_test.c
+	@echo Compiling [$@] from $<
+	$(CC) $(TEST_AMIGA_CFLAGS) -c $< -o $@
+
+test-icon-amiga: directories $(SHARED_ICON_OBJS) $(TEST_ICON_AMIGA_OBJ)
+	@echo Linking Amiga icon decoder test CLI: $(TEST_ICON_AMIGA_BIN)
+	$(CC) $(TEST_AMIGA_LDFLAGS) -o $(TEST_ICON_AMIGA_BIN) $(TEST_ICON_AMIGA_OBJ) $(SHARED_ICON_OBJS)
+	@echo Build complete: $(TEST_ICON_AMIGA_BIN)
+
+clean-tests:
+	@echo Cleaning shared test outputs...
+	rm -f $(TEST_IMAGE_BIN) $(TEST_ICON_BIN) $(TEST_COLORICON_BIN) $(TEST_DECODE_BIN)
+	rm -rf $(TEST_OUT_DIR)
+	rm -f $(TEST_ICON_AMIGA_BIN)
+	@echo Test clean complete.
