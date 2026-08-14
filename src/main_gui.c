@@ -59,6 +59,7 @@
 #include "utilities.h"
 #include "spinner.h"
 #include "writeLog.h"
+#include <image/image_types.h>
 #include "icon_misc.h"
 #include "dos/getDiskDetails.h"
 #include "Settings/get_fonts.h"
@@ -614,6 +615,29 @@ void FreeIconErrorList(IconErrorTrackerStruct *tracker)
     tracker->count = 0;
 }
 
+static void itidy2_shared_image_log(int level, const char *message)
+{
+    LogLevel ll;
+
+    switch (level)
+    {
+        case ITIDY_IMAGE_LOG_ERROR:
+            ll = LOG_LEVEL_ERROR;
+            break;
+        case ITIDY_IMAGE_LOG_WARNING:
+            ll = LOG_LEVEL_WARNING;
+            break;
+        case ITIDY_IMAGE_LOG_INFO:
+            ll = LOG_LEVEL_INFO;
+            break;
+        default:
+            ll = LOG_LEVEL_DEBUG;
+            break;
+    }
+
+    log_message(LOG_ICONS, ll, "%s", message ? message : "");
+}
+
 int main(int argc, char **argv)
 {
     /* CRITICAL: Check Workbench version FIRST (before any initialization).
@@ -705,6 +729,7 @@ int main(int argc, char **argv)
 
     /* Initialize enhanced logging system (TRUE = clean old logs) */
     initialize_log_system(TRUE);
+    image_set_log_fn(itidy2_shared_image_log);
     
     /* Parse program tooltypes from Workbench (if launched from WB) */
     parse_program_tooltypes(wb_startup);

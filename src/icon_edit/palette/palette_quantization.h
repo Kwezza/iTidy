@@ -18,44 +18,7 @@
 
 #include <exec/types.h>
 #include <datatypes/pictureclass.h>  /* struct ColorRegister */
-
-/*========================================================================*/
-/* Constants                                                              */
-/*========================================================================*/
-
-/** Maximum number of color boxes during Median Cut splitting */
-#define ITIDY_MAX_COLOR_BOXES 256
-
-/*========================================================================*/
-/* Types                                                                  */
-/*========================================================================*/
-
-/**
- * @brief Histogram entry tracking a unique RGB color and its frequency.
- */
-typedef struct {
-    UBYTE r, g, b;    /* RGB color value */
-    UBYTE _pad;       /* Alignment padding */
-    ULONG count;      /* Number of pixels using this color */
-} iTidy_ColorEntry;
-
-/**
- * @brief A "box" in RGB color space used during Median Cut splitting.
- *
- * Represents a rectangular region in 3D color space containing
- * a subset of the histogram entries. The box is split along its
- * longest axis at the median to produce two child boxes.
- */
-typedef struct {
-    UWORD start;      /* Start index in histogram array */
-    UWORD count;      /* Number of entries in this box */
-    UBYTE r_min, r_max;  /* Red channel bounds */
-    UBYTE g_min, g_max;  /* Green channel bounds */
-    UBYTE b_min, b_max;  /* Blue channel bounds */
-    UBYTE longest_axis;  /* 0=R, 1=G, 2=B — axis with greatest range */
-    UBYTE _pad;          /* Alignment padding */
-    ULONG pixel_count;   /* Total pixel count in this box (sum of entry counts) */
-} iTidy_ColorBox;
+#include <image/image_palette.h>     /* iTidy_ColorEntry, iTidy_ColorBox, ITIDY_MAX_COLOR_BOXES */
 
 /*========================================================================*/
 /* Public API                                                             */

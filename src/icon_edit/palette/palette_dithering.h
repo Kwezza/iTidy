@@ -24,17 +24,7 @@
 /* Dithering Method Constants                                             */
 /*========================================================================*/
 
-/** No dithering — pure nearest-color match */
-#define ITIDY_DITHER_NONE     0
-
-/** Ordered dithering using 4x4 Bayer threshold matrix (fast) */
-#define ITIDY_DITHER_ORDERED  1
-
-/** Floyd-Steinberg error diffusion dithering (best quality) */
-#define ITIDY_DITHER_FLOYD    2
-
-/** Auto — select best method based on color count */
-#define ITIDY_DITHER_AUTO     3
+#include <image/image_dither.h>  /* ITIDY_DITHER_* */
 
 /*========================================================================*/
 /* Bayer Ordered Dithering                                                */

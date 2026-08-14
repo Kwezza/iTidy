@@ -40,8 +40,8 @@ endif
 # CPU TARGET: 68000 for maximum compatibility (A500/A600/A1200)
 # CONSOLE: Add -DENABLE_CONSOLE via CONSOLE=1 to open console window for debugging
 CC = vc
-CFLAGS = +aos68k -c99 -cpu=68000 -O2 -size -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG $(CONSOLE_FLAG) $(MEMTRACK_FLAG)
-CFLAGS_NOSIZEOPT = +aos68k -c99 -cpu=68000 -O2 -Isrc -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG $(CONSOLE_FLAG) $(MEMTRACK_FLAG)
+CFLAGS = +aos68k -c99 -cpu=68000 -O2 -size -Isrc -Ishared -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG $(CONSOLE_FLAG) $(MEMTRACK_FLAG)
+CFLAGS_NOSIZEOPT = +aos68k -c99 -cpu=68000 -O2 -Isrc -Ishared -DPLATFORM_AMIGA=1 -D__AMIGA__ -DDEBUG $(CONSOLE_FLAG) $(MEMTRACK_FLAG)
 LDFLAGS = +aos68k -cpu=68000 -O2 -size -final -lamiga -lauto
 OUT_DIR = $(BUILD_DIR)/amiga
 BIN_DIR = Bin/Amiga/iTidy2
@@ -88,6 +88,13 @@ DEFICONS_SRCS = \
 	$(SRC_DIR)/deficons/deficons_templates.c \
 	$(SRC_DIR)/deficons/deficons_filters.c \
 	$(SRC_DIR)/deficons/deficons_creation.c
+
+# Shared image kernels (authoritative copies; iTidy2 files are adapters)
+SHARED_IMAGE_SRCS = \
+	shared/image/image_log.c \
+	shared/image/image_scale.c \
+	shared/image/image_palette.c \
+	shared/image/image_dither.c
 
 # Icon editing / content-aware preview source files
 ICON_EDIT_SRCS = \
@@ -165,12 +172,13 @@ PLATFORM_SRCS = $(SRC_DIR)/platform/amiga_platform.c
 MEMORY_TRACKING_SRCS = $(SRC_DIR)/platform/platform.c
 
 # All sources
-SRCS = $(CORE_SRCS) $(LAYOUT_SRCS) $(ICON_EDIT_SRCS) $(BACKUP_SRCS) $(GUI_SRCS) $(DEFAULT_TOOLS_SRCS) $(RESTORE_BACKUP_SRCS) $(DOS_SRCS) $(SETTINGS_SRCS) $(PLATFORM_SRCS) $(MEMORY_TRACKING_SRCS)
+SRCS = $(CORE_SRCS) $(LAYOUT_SRCS) $(SHARED_IMAGE_SRCS) $(ICON_EDIT_SRCS) $(BACKUP_SRCS) $(GUI_SRCS) $(DEFAULT_TOOLS_SRCS) $(RESTORE_BACKUP_SRCS) $(DOS_SRCS) $(SETTINGS_SRCS) $(PLATFORM_SRCS) $(MEMORY_TRACKING_SRCS)
 
 # Object files (in build directory)
 # Note: platform.c is in include/platform, needs special handling
 CORE_OBJS = $(CORE_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 LAYOUT_OBJS = $(LAYOUT_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
+SHARED_IMAGE_OBJS = $(SHARED_IMAGE_SRCS:shared/%.c=$(OUT_DIR)/shared/%.o)
 DEFICONS_OBJS = $(DEFICONS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 ICON_EDIT_OBJS = $(ICON_EDIT_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 BACKUP_OBJS = $(BACKUP_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
@@ -182,13 +190,13 @@ SETTINGS_OBJS = $(SETTINGS_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 PLATFORM_OBJS = $(PLATFORM_SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 MEMORY_TRACKING_OBJS = $(OUT_DIR)/platform_memory.o
 
-OBJS = $(CORE_OBJS) $(LAYOUT_OBJS) $(DEFICONS_OBJS) $(ICON_EDIT_OBJS) $(BACKUP_OBJS) $(GUI_OBJS) $(DEFAULT_TOOLS_OBJS) $(RESTORE_BACKUP_OBJS) $(DOS_OBJS) $(SETTINGS_OBJS) $(PLATFORM_OBJS) $(MEMORY_TRACKING_OBJS)
+OBJS = $(CORE_OBJS) $(LAYOUT_OBJS) $(SHARED_IMAGE_OBJS) $(DEFICONS_OBJS) $(ICON_EDIT_OBJS) $(BACKUP_OBJS) $(GUI_OBJS) $(DEFAULT_TOOLS_OBJS) $(RESTORE_BACKUP_OBJS) $(DOS_OBJS) $(SETTINGS_OBJS) $(PLATFORM_OBJS) $(MEMORY_TRACKING_OBJS)
 
 ################################################################################
 # Build Rules
 ################################################################################
 
-.PHONY: all clean help amiga directories
+.PHONY: all clean help amiga directories test-image
 
 # Default target
 all: directories $(BIN)
@@ -219,6 +227,8 @@ directories:
 	@if not exist "$(OUT_DIR)\GUI\RestoreBackups" mkdir "$(OUT_DIR)\GUI\RestoreBackups"
 	@if not exist "$(OUT_DIR)\GUI\BackdropCleaner" mkdir "$(OUT_DIR)\GUI\BackdropCleaner"
 	@if not exist "$(OUT_DIR)\layout" mkdir "$(OUT_DIR)\layout"
+	@if not exist "$(OUT_DIR)\shared" mkdir "$(OUT_DIR)\shared"
+	@if not exist "$(OUT_DIR)\shared\image" mkdir "$(OUT_DIR)\shared\image"
 	@if not exist "$(BIN_DIR)" mkdir "$(BIN_DIR)"
 
 # Link executable
@@ -242,10 +252,31 @@ $(OUT_DIR)/%.o: $(SRC_DIR)/%.c
 	@echo Compiling [$@] from $<
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# Compile shared image kernels
+$(OUT_DIR)/shared/%.o: shared/%.c
+	@echo Compiling [$@] from $<
+	$(CC) $(CFLAGS) -c $< -o $@
+
 # Compile memory tracking (from include directory)
 $(OUT_DIR)/platform_memory.o: $(SRC_DIR)/platform/platform.c
 	@echo Compiling memory tracking: $@
 	$(CC) $(CFLAGS) -c $< -o $@
+
+# Host regression tests for shared image kernels (GCC, no Amiga SDK)
+HOST_CC = gcc
+HOST_CFLAGS = -std=c99 -Wall -Wextra -Isrc -Ishared -Isrc/tests/host_stubs
+TEST_IMAGE_BIN = src/tests/test_shared_image.exe
+
+test-image:
+	@echo Building host shared-image tests...
+	$(HOST_CC) $(HOST_CFLAGS) -o $(TEST_IMAGE_BIN) \
+		src/tests/test_shared_image.c \
+		shared/image/image_log.c \
+		shared/image/image_scale.c \
+		shared/image/image_palette.c \
+		shared/image/image_dither.c
+	@echo Running $(TEST_IMAGE_BIN)
+	$(TEST_IMAGE_BIN)
 
 # Clean build artifacts
 
@@ -270,6 +301,7 @@ help:
 	@echo   make amiga              - Shortcut alias for default build
 	@echo   make clean              - Clean Amiga build artifacts
 	@echo   make clean-all          - Clean all builds
+	@echo   make test-image         - Host GCC regression tests for shared image kernels
 	@echo   make help               - Show this help
 	@echo.
 	@echo Console Output:
